@@ -37,8 +37,6 @@ class SettingsService {
   public static LOG_API_ERRORS = 'settings.log_api_errors';
   public static LOG_API_ALL = 'settings.log_api_all';
   public static LOG_NOTIFY_ALL = 'settings.log_notify_all';
-  public static ADMIN_PUBLIC_KEY = 'settings.admin_public_key';
-  public static ADMIN_ACCOUNT_RS = 'settings.admin_account_rs';
   public static CLOUD_URL = 'settings.cloud_url';
   public static LOG_CLOUD_ERRORS = 'settings.log_cloud_errors';
   public static LOG_CLOUD_ALL = 'settings.log_cloud_all';
