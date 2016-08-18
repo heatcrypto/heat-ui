@@ -110,7 +110,3 @@ Now to access your app go to
 http://localhost:9001/dist
 
 We recommend using Goolgle Chrome Debugger which comes with Chrome to inspect any running code. Since browsers don't understand TypeScript it had to be compiled to JavaScript. To still be able to find the TypeScript line on which a JavaScript error occured, the console uses source maps that map the TypeScript to the JavaScript.
-
-
-
-
