@@ -1,0 +1,16 @@
+{
+  "version": "1.7.5",
+  "compilerOptions": {
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "noEmitHelpers": true,
+    "target": "es5",
+    "removeComments": true,
+    "sourceMap": true
+  },
+  "exclude": [
+    "node_modules",
+    "bower_components"
+  ],
+  "compileOnSave": false
+}
