@@ -27,7 +27,7 @@ declare var SHA256_write: any;
 declare var SHA256_finalize: any;
 declare var pako: any;
 declare var CryptoJS: any;
-module lompsa.crypto {
+module heat.crypto {
 
   var _hash = {
     init: SHA256_init,
@@ -359,7 +359,7 @@ module lompsa.crypto {
       "account": crypto.getAccountIdFromPublicKey(publicKey),
       "publicKey": converters.hexStringToByteArray(publicKey)
     };
-    var encrypted = lompsa.crypto.encryptNote(message, options, secretPhrase, uncompressed);
+    var encrypted = heat.crypto.encryptNote(message, options, secretPhrase, uncompressed);
     return {
       isText: true,
       data: encrypted.message,
