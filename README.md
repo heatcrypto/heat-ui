@@ -16,7 +16,7 @@ In heat-ui you find:
   3. byte/binary support (**object mappers**)
   4. **user/key** management
   5. **settings** framework (with ui bindings)
-  6. create, inspect or veryfy **HEAT Ledger transactions**
+  6. create, inspect or verify **HEAT Ledger transactions**
 - UI components
   1. **real-time update** on web socket events
   2. **advanced dialog support** (standard, input, multi page wizard)
@@ -72,6 +72,44 @@ sudo apt-get install npm
 ```
 
 ### Gulp
+
+Heat-ui uses http://gulpjs.com/ as its main build tool, we prefer gulp over its rivals because of the speed it offers. The streaming and paralel architecture of gulp allows us to perform builds almost instantly, together with the strong error checking in Visual Studio Code and the instant feedback development goes a lot faster than standard JavaScript apps.
+
+Follow these steps to install gulp requirements.
+
+```
+npm install --global gulp-cli
+```
+
+### Auto install dependencies
+
+Now that you have nodejs, npm and gulp installed we can initialize all heat-ui development tools and dependent libraries by running the provided `package.json` with npm.
+
+Installing the dependencies
+
+```
+cd /my/path/to/heat-ui
+npm init
+```
+
+The initial installation of all dependencies could take a while, several minutes.
+
+### Start the development server
+
+Heat-ui comes with a fully configured development server, the server auto compiles from TypeScript to Javascript whenever you change a file. The development server allows you to access your compiled app at a localhost address, straight from your browser. Hit refresh to load your latest changes.
+
+To start the development server
+
+```
+cd /my/path/to/heat-ui
+gulp play
+```
+
+Now to access your app go to
+
+http://localhost:9001/dist
+
+We recommend using Goolgle Chrome Debugger which comes with Chrome to inspect any running code. Since browsers don't understand TypeScript it had to be compiled to JavaScript. To still be able to find the TypeScript line on which a JavaScript error occured, the console uses source maps that map the TypeScript to the JavaScript.
 
 
 
