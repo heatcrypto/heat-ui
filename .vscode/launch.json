@@ -1,0 +1,13 @@
+{
+  "version": "0.1.0",
+  "configurations": [
+    {
+      "name": "Attach to url with files served from ./dist",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "./dist",
+      "sourceMaps": true
+    }
+  ]
+}
