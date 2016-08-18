@@ -1,0 +1,58 @@
+### Replicator Messages ###
+
+Since we have the replication db on the server we now have a place where
+we can store data that is non essential for blockchain operations.
+Yet this data is still guarded against fraud and loss since it lives on
+the blockchain in the form of arbitrary messages.
+
+The client side Replicator Messages have a matching server side entry in
+the replication code, whenever the server detects a replicator message it
+will forward the contents to the handler for that type of message.
+
+The server side handler will then extract the data in the message which only
+this specific handler knows how to interpret.
+
+Data is transported in the form of byte arrays (this is also called binary
+data) which allow for efficient protocol definitions of any kind of
+data type (short, int16, int32, longs, strings, byte arrays etc).
+
+The use of byte buffers is the standard method of transaction and block
+encoding and decoding in FIMK server and can be seen all over the java code,
+if you need to know how to store a certain type variable just look it
+up in FIMK Java code and use it like that.
+
+Replicator messages are created client side and are always contained in a
+Replicator Bundle which is somewhat like a list structure, this is to
+allow multiple messages to be encoded in one single FIMK Arbitrary Message
+(AM) or Encrypted Message (EM).
+
+### Binary Protocol ###
+
+AM and EM are send to the network marked binary, set `**IsText=false`.
+
+We'll interpret a message as a Replicator Message if it starts with the
+4 byte Int32 value `2011120615`. (Java -> buffer.getInt()).
+
+What follows is a 1 byte Int8 that indicates the binary protocol version,
+for now this will always contain the value 1.
+
+What follows is a 4 byte Int32 value indicating the length of the next
+part which are all the bytes that make up the entire encoded message.
+In case multiple messages are combined the following 4 bytes is again a
+length of the array of bytes that follows etc etc, messages can be
+combined endlessly like that.
+
+### Replicator Protocol ###
+
+To be able to forward messages to their handlers, each message is prepended
+with a 2 byte type indicator, this can hold a number from 0 to 32,767).
+
+Following the 2 byte type indicator are the message contents which are to be
+interpreted by the handler.
+
+### Server Side Authentication ###
+
+Most Replicator Messages should only be applied when send by the rightfull
+user. The Replicator Handlers on the server thus always have access to the
+sender account the client side Replicator Messages dont have to include this
+since it comes standard with each transaction.
