@@ -4,12 +4,12 @@ Heat-ui framework is a complete end to end development setup.
 
 In heat-ui you find:
 
-- Visual Studio Code configuration and setup
-- TypeScript configuration for Visual Studio Code
-- Full code completion for all Angular, Angular Material and all our own code
-- Gulp development and build setup
-- Gulp TypeScript configurations
-- Local development server TypeScript bindings
+- **Visual Studio Code** configuration and setup
+- **TypeScript** configuration for Visual Studio Code
+- Full **code completion** for all Angular, Angular Material and all our own code
+- **Gulp development and build** setup
+- **Gulp TypeScript** configurations
+- Local **development server** TypeScript bindings
 - TypeScript client side services
   1. cryptography
   2. networking, real-time push pull and pubsub
@@ -21,10 +21,18 @@ In heat-ui you find:
   1. real-time update on web socket events
   2. dialog support (standard, input, multi page wizard)
   3. auto complete support (see server results as you type)
-- Angular Material and the Google Material Design rules
-- Coded in Angular 2 style :sunglasses:
-- Bootstrapper that injects Angular 2 compatible `Component`, `Service`, `Inject` (and others) TypeScript decorators.
-- High compatibility with Angular 2 through our very own Angular 1 to Angular 2 bridge
+- Angular Material and the **Google Material Design** rules
+- Coded in **Angular 2 style** :sunglasses:
+- **Bootstrapper** that injects Angular 2 compatible `Component`, `Service`, `Inject` (and others) TypeScript decorators.
+- High **compatibility with Angular 2** through our very own **Angular 1 to Angular 2 bridge**
+
+## Note
+
+At Heat Ledger Ltd we currently do our client and server development on Debian/Ubuntu desktops, we find it to be an excellent open source free! and secure platform. While we try and help new developers coming to heat-ui as best as possible, it is unfortunately not possible to include detailed step by step instructions for platforms that are not Debian based. Looking at you here Windows and Mac.
+
+In time it is our goal to include detailed step by step instructions for all platforms. So if you are using heat-ui and you are on Windows or Mac? Please be so kind to record the steps that it involved and provide those to us so we can share them with any other new user/developer that comes after you.
+
+That said, we will be including links to documents describing the various steps for all supported platforms.
 
 ## Installation
 
@@ -45,6 +53,10 @@ One of the main reasons why creating applications with heat-ui goes so fast is b
 Please go ahead to https://code.visualstudio.com and install the latest version for your platform. 
 
 ### Node-JS
+
+Heat-ui makes extensive use of nodejs. We use if for dependency managemnt, to power our builds and to assist in development through auto-recompiling and to power up your local development server.
+
+Complete installation instructions for nodejs are out of the scope of this document since those instructions depend largely on the platform you are on.
 
 
 
