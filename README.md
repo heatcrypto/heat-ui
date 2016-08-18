@@ -11,16 +11,16 @@ In heat-ui you find:
 - **Gulp TypeScript** configurations
 - Local **development server** TypeScript bindings
 - TypeScript client side services
-  1. cryptography
-  2. networking, real-time push pull and pubsub
-  3. byte/binary support (object mappers)
-  4. user/key management
-  5. settings framework (with ui bindings)
-  6. create, inspect or veryfy HEAT Ledger transactions
+  1. **cryptography**
+  2. networking, **real-time push pull and pubsub**
+  3. byte/binary support (**object mappers**)
+  4. **user/key** management
+  5. **settings** framework (with ui bindings)
+  6. create, inspect or veryfy **HEAT Ledger transactions**
 - UI components
-  1. real-time update on web socket events
-  2. dialog support (standard, input, multi page wizard)
-  3. auto complete support (see server results as you type)
+  1. **real-time update** on web socket events
+  2. **advanced dialog support** (standard, input, multi page wizard)
+  3. **auto complete** support (see server results as you type)
 - Angular Material and the **Google Material Design** rules
 - Coded in **Angular 2 style** :sunglasses:
 - **Bootstrapper** that injects Angular 2 compatible `Component`, `Service`, `Inject` (and others) TypeScript decorators.
@@ -57,6 +57,22 @@ Please go ahead to https://code.visualstudio.com and install the latest version 
 Heat-ui makes extensive use of nodejs. We use if for dependency managemnt, to power our builds and to assist in development through auto-recompiling and to power up your local development server.
 
 Complete installation instructions for nodejs are out of the scope of this document since those instructions depend largely on the platform you are on.
+
+Windows and Mac users please look at anyone of these links:
+
+- https://www.google.com/search?q=how+to+install+nodejs (GIYF)
+- https://howtonode.org/how-to-install-nodejs
+
+Debian/Ubuntu users please follow these steps
+
+```
+sudo apt-get update
+sudo apt-get install nodejs
+sudo apt-get install npm
+```
+
+### Gulp
+
 
 
 
