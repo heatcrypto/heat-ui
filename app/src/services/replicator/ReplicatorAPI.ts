@@ -24,7 +24,7 @@ abstract class ReplicatorAPI {
 
   private SET_FLAG = 1;
   private RESET_FLAG = 2;
-  private MESSAGE_REPLY_TO = 11;
+  private MESSAGE_REPLY_TO = 3;
 
   private address: AddressService = <AddressService> heat.$inject.get('address');
 
