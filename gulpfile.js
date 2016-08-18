@@ -97,7 +97,7 @@ gulp.task('ts2js', function () {
   gulp.src(PATHS.src)
     .pipe(sourcemaps.init())
     .pipe(typescript(extend(tscConfig.compilerOptions, { sortOutput: true })))
-    .pipe(concat('lompsa.js'))
+    .pipe(concat('heat-ui.js'))
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
