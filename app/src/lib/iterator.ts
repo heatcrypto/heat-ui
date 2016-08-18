@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-module lompsa {
+module heat {
   export class Iterator<T> {
     constructor(public array: Array<T>) {}
 

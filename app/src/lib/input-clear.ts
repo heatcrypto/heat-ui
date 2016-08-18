@@ -1,4 +1,4 @@
-lompsa.Loader.directive('inputClear', () => {
+heat.Loader.directive('inputClear', () => {
   return {
     restrict: 'A',
     compile: function (element, attrs) {

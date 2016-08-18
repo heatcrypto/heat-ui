@@ -34,8 +34,8 @@ angular.element(document).ready(() => {
   `);
 });
 
-lompsa.Loader.run(() => {
-  lompsa.Loader.app.animation('.slide-toggle', ['$animateCss', function($animateCss) {
+heat.Loader.run(() => {
+  heat.Loader.app.animation('.slide-toggle', ['$animateCss', function($animateCss) {
     var lastId = 0;
     var _cache = {};
 

@@ -218,7 +218,7 @@ module converters {
   //   return res;
   // }
 
-  // slightly optimized (without string concatenation - lompsa)
+  // slightly optimized (without string concatenation - heat)
 	export function shortArrayToHexString(ary:Array<number>):string {
     var res: Array<string> = [];
     for (var i = 0; i < ary.length; i++) {
