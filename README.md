@@ -1,6 +1,6 @@
 # Heat Ledger Client Framework
 In this `README` you will find step by step instructions to get up and running developing **heat-ui** applications.
-Heat-ui framework is a complete end to end development setup. 
+Heat-ui framework is a complete end to end development setup.
 
 In heat-ui you find:
 
@@ -50,7 +50,7 @@ Visual Studio Code is a Microsoft Open Source project that provides you with a c
 
 One of the main reasons why creating applications with heat-ui goes so fast is because of the powerfull tooling provided by Visual Studio Code and it's of TypeScript. Unlike any other Javascript application you've made before, through VS Code we get the same productivity boost one finds when using an IDE for Java, C++, C# or any other strongly typed language.
 
-Please go ahead to https://code.visualstudio.com and install the latest version for your platform. 
+Please go ahead to https://code.visualstudio.com and install the latest version for your platform.
 
 ### Node-JS
 
@@ -93,6 +93,17 @@ npm init
 ```
 
 The initial installation of all dependencies could take a while, several minutes.
+
+### Install Type Definitions
+
+The nice thing with TypeScript is of course its strong typing, which gets even better when we can include type definitions for non-TypeScript libraries.
+Through type definitions you get full code completion and inspection for all external libraries we use (Angular, Angular Material, etc..)
+
+To install the required type definitions
+
+```
+tsd install
+```
 
 ### Start the development server
 
