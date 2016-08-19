@@ -9,8 +9,7 @@
     "sourceMap": true
   },
   "exclude": [
-    "node_modules",
-    "bower_components"
+    "node_modules"
   ],
   "compileOnSave": false
 }
