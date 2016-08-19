@@ -1,3 +1,4 @@
 .config
 deploy.sh
 tools
+node_modules
