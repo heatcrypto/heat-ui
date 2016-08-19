@@ -121,3 +121,9 @@ Now to access your app go to
 http://localhost:9001/dist
 
 We recommend using Goolgle Chrome Debugger which comes with Chrome to inspect any running code. Since browsers don't understand TypeScript it had to be compiled to JavaScript. To still be able to find the TypeScript line on which a JavaScript error occured, the console uses source maps that map the TypeScript to the JavaScript.
+
+### Build desktop versions
+
+Heat-ui uses Electron from Github to provide users with an installable desktop application. Electron and therefor heat-ui works on all modern operating systems. (Fun fact, Visual Studio Code is also built on Electron).
+
+To build the actual desktop releases we use https://github.com/electron-userland/electron-packager.
