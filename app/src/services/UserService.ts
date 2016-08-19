@@ -56,9 +56,6 @@ class UserService extends EventEmitter {
   /* Indicates if the user has verified his registration email. */
   public verified: boolean = false;
 
-  /* The ICloudUser object as returned from cloud.getUser */
-  public cloudUser: ICloudUser = null;
-
   constructor(private $q,
               private address: AddressService,
               private $window: angular.IWindowService,
@@ -88,33 +85,6 @@ class UserService extends EventEmitter {
       },
       () => {
         this.verified = false;
-      }
-    ).finally(
-      () => {
-        /* Only lookup regular users. */
-        var cloud = <CloudService> heat.$inject.get('cloud');
-        return cloud.api.getUser(this.accountRS).then(
-          (user: ICloudUser) => {
-            if (angular.isString(user.email)) {
-              this.email = user.email;
-              this.name = user.name
-              this.verified = true;
-              this.cloudUser = user;
-            }
-          },
-          () => {
-            /* Leave this in during development, catches the case where there is no
-                user entry for an account. (Should not happen on main net) */
-            var deferred = this.$q.defer();
-
-            this.email = 'user-dummy@heatledger.com'
-            this.name = 'User Dummy';
-            this.verified = true;
-
-            deferred.resolve();
-            return deferred.promise;
-          }
-        )
       }
     )
   }
