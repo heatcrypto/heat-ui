@@ -126,4 +126,4 @@ We recommend using Goolgle Chrome Debugger which comes with Chrome to inspect an
 
 Heat-ui uses Electron from Github to provide users with an installable desktop application. Electron and therefor heat-ui works on all modern operating systems. (Fun fact, Visual Studio Code is also built on Electron).
 
-To build the actual desktop releases we use https://github.com/electron-userland/electron-packager.
+To build the actual desktop releases we use https://github.com/electron-userland/electron-packager. Note that you need Node.js > 4.0 to use electron-packager.
