@@ -116,7 +116,7 @@ module dialogs {
 
     sendCloudMessage() {
       var escaped = this.escape(this.message);
-      var encrypted = lompsa.crypto.encryptMessage(escaped, this.publicKey, this.user.secretPhrase);
+      var encrypted = heat.crypto.encryptMessage(escaped, this.publicKey, this.user.secretPhrase);
       var req: ICloudSaveMessageRequest = {
         senderRS: this.user.accountRS,
         recipientRS: this.account,
