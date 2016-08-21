@@ -68,20 +68,20 @@ class UserService extends EventEmitter {
   refresh() {
     return this.engine.socket().api.getAccount(this.accountRS).then(
       (account: IGetAccountResponse) => {
-        this.email = account.accountEmail;
-        this.accountColorId = account.accountColorId;
-        this.accountColorName = account.accountColorName || 'EUR';
-        this.verified = true;
+        // this.email = account.accountEmail;
+        // this.accountColorId = account.accountColorId;
+        // this.accountColorName = account.accountColorName || 'EUR';
+        // this.verified = true;
 
-        /* Store the sigin so it can be used from regular sigin the next time */
-        if (!this.localKeyStore.find(this.email)) {
-          this.localKeyStore.add({
-            email: this.email,
-            accountRS: this.accountRS,
-            pincode: '12345',
-            secretPhrase: this.secretPhrase
-          })
-        }
+        // /* Store the sigin so it can be used from regular sigin the next time */
+        // if (!this.localKeyStore.find(this.email)) {
+        //   this.localKeyStore.add({
+        //     email: this.email,
+        //     accountRS: this.accountRS,
+        //     pincode: '12345',
+        //     secretPhrase: this.secretPhrase
+        //   })
+        // }
       },
       () => {
         this.verified = false;
