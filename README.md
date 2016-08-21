@@ -1,8 +1,8 @@
+![Heat Ledger logo](http://i.imgur.com/vJbM2XS.png "Heat Ledger logo")
+
 # Heat Ledger Client Framework
 In this `README` you will find step by step instructions to get up and running developing **heat-ui** applications.
 Heat-ui framework is a complete end to end development setup.
-
-![Heat Ledger logo](http://i.imgur.com/vJbM2XS.png "Heat Ledger logo")
 
 In heat-ui you find:
 
