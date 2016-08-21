@@ -22,8 +22,7 @@
  * */
 
 interface ILocalKey {
-  email: string;
-  accountRS: string;
+  account: string;
   pincode: string;
   secretPhrase: string;
 }
@@ -39,47 +38,52 @@ class LocalKeyStoreService {
   storage: Storage = window.localStorage;
 
   add(key: ILocalKey) {
-    this.storage.setItem('LOCAL_KEY_STORE_ENTRY' + ':' + key.email, this.encode(key));
+    this.storage.setItem('LOCAL_KEY_STORE_ENTRY' + ':' + key.account, this.encode(key));
   }
 
-  list(): Array<ILocalKey> {
-    var list: Array<ILocalKey> = [];
+  list(): Array<string> {
+    var list: Array<string> = [];
     for (var i=0; i<this.storage.length; i++) {
       if (isKeyStoreKey(this.storage.key(i))) {
-        var key = this.load(this.storage.key(i));
+        var key = this.storage.key(i);
         if (key) {
-          list.push(key);
+          list.push(key.replace('LOCAL_KEY_STORE_ENTRY:', ''));
         }
       }
     }
     return list;
   }
 
-  remove(email: string) {
-    this.storage.removeItem('LOCAL_KEY_STORE_ENTRY' + ':' + email);
-  }
-
-  find(email: string): ILocalKey {
-    return this.list().find((entry) => entry.email == email);
+  remove(account: string) {
+    this.storage.removeItem('LOCAL_KEY_STORE_ENTRY' + ':' + account);
   }
 
   encode(key: ILocalKey): string {
-    return JSON.stringify({
-      accountRS: key.accountRS,
-      email: key.email.toLowerCase(),
+    var payload = JSON.stringify({
+      account: key.account,
       secretPhrase: key.secretPhrase,
       pincode: key.pincode
     });
+    var message = heat.crypto.passphraseEncrypt(payload, key.pincode);
+    return message.encode();
   }
 
-  decode(decoded: string): ILocalKey {
-    return JSON.parse(decoded);
+  decode(encoded: string, passphrase: string): ILocalKey {
+    var message = heat.crypto.PassphraseEncryptedMessage.decode(encoded);
+    var json_str = heat.crypto.passphraseDecrypt(message, passphrase);
+    var json = JSON.parse(json_str);
+    return {
+      account: json['account'],
+      secretPhrase: json['secretPhrase'],
+      pincode: json['pincode']
+    }
   }
 
-  load(keyName: string): ILocalKey {
+  load(account: string, passphrase: string): ILocalKey {
+    var keyName = 'LOCAL_KEY_STORE_ENTRY' + ':' + account;
     var contents = this.storage.getItem(keyName);
     try {
-      return this.decode(contents);
+      return this.decode(contents, passphrase);
     } catch (e) {
       console.log(e);
     }
