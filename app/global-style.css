@@ -1,0 +1,4 @@
+/* With this code, if there is no error, there is no space below the input. */
+md-input-container .md-errors-spacer {
+    min-height: 0;
+}
