@@ -426,5 +426,71 @@ module heat.crypto {
     var plaintext = converters.wordArrayToByteArray(decrypted);
     return plaintext;
   }
-}
 
+  export class PassphraseEncryptedMessage {
+    ciphertext: string;
+    salt: string;
+    iv: string;
+    HMAC: string;
+
+    constructor(ciphertext: string, salt: string, iv: string, HMAC: string) {
+      this.ciphertext = ciphertext;
+      this.salt = salt;
+      this.iv = iv;
+      this.HMAC = HMAC;
+    }
+
+    static decode(encoded: string): PassphraseEncryptedMessage {
+      var json = JSON.parse(encoded);
+      return new PassphraseEncryptedMessage(json[0],json[1],json[2],json[3]);
+    }
+
+    encode(): string {
+      return JSON.stringify([
+        this.ciphertext,
+        this.salt,
+        this.iv,
+        this.HMAC
+      ]);
+    }
+  }
+
+  export function passphraseEncrypt(message: string, passphrase: string): PassphraseEncryptedMessage {
+    var salt = CryptoJS.lib.WordArray.random(256/8);
+    var key = CryptoJS.PBKDF2(passphrase, salt, { iterations: 10, hasher:CryptoJS.algo.SHA256});
+    var iv = CryptoJS.lib.WordArray.random(128 / 8);
+
+    var encrypted = CryptoJS.AES.encrypt(message, key, { iv: iv });
+
+    var ciphertext = CryptoJS.enc.Base64.stringify(encrypted.ciphertext);
+    var salt_str = CryptoJS.enc.Hex.stringify(salt);
+    var iv_str = CryptoJS.enc.Hex.stringify(iv);
+
+    var key_str = CryptoJS.enc.Hex.stringify(key);
+    var HMAC = CryptoJS.HmacSHA256(ciphertext + iv_str, key_str);
+    var HMAC_str = CryptoJS.enc.Hex.stringify(HMAC);
+
+    return new PassphraseEncryptedMessage(ciphertext, salt_str, iv_str, HMAC_str);
+  }
+
+  export function passphraseDecrypt(cp: PassphraseEncryptedMessage, passphrase: string): string {
+    var iv = CryptoJS.enc.Hex.parse(cp.iv);
+    var salt = CryptoJS.enc.Hex.parse(cp.salt);
+    var key = CryptoJS.PBKDF2(passphrase, salt, { iterations: 10, hasher:CryptoJS.algo.SHA256});
+    var ciphertext = CryptoJS.enc.Base64.parse(cp.ciphertext);
+    var key_str = CryptoJS.enc.Hex.stringify(key);
+    var HMAC = CryptoJS.HmacSHA256(cp.ciphertext + cp.iv, key_str);
+    var HMAC_str = CryptoJS.enc.Hex.stringify(HMAC);
+
+    // compare HMACs
+    if (HMAC_str != cp.HMAC) {
+        return null;
+    }
+    var _cp = CryptoJS.lib.CipherParams.create({
+      ciphertext: ciphertext
+    });
+
+    var decrypted = CryptoJS.AES.decrypt(_cp,key,{iv: iv});
+    return decrypted.toString(CryptoJS.enc.Utf8);
+  }
+}
