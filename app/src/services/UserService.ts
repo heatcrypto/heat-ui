@@ -38,23 +38,8 @@ class UserService extends EventEmitter {
   /* Account identifier in RS format, for API usage purpose */
   public accountRS: string;
 
-  /* Account color info */
-  public accountColorId: string;
   public accountColorName: string;
-
-  /* User email address */
-  public email: string;
-
-  /* User full name */
-  public name: string;
-
-  /* Account id used for display purposes, will hold the full `accountRS` address
-     when used as FIMK or NXT wallet. Holds the RS address without the engine
-     prefix for use in third party systems. */
-  public identifier: string;
-
-  /* Indicates if the user has verified his registration email. */
-  public verified: boolean = false;
+  public accountColorId: string;
 
   constructor(private $q,
               private address: AddressService,
@@ -66,27 +51,9 @@ class UserService extends EventEmitter {
   }
 
   refresh() {
-    return this.engine.socket().api.getAccount(this.accountRS).then(
-      (account: IGetAccountResponse) => {
-        // this.email = account.accountEmail;
-        // this.accountColorId = account.accountColorId;
-        // this.accountColorName = account.accountColorName || 'EUR';
-        // this.verified = true;
-
-        // /* Store the sigin so it can be used from regular sigin the next time */
-        // if (!this.localKeyStore.find(this.email)) {
-        //   this.localKeyStore.add({
-        //     email: this.email,
-        //     accountRS: this.accountRS,
-        //     pincode: '12345',
-        //     secretPhrase: this.secretPhrase
-        //   })
-        // }
-      },
-      () => {
-        this.verified = false;
-      }
-    )
+    var deferred = this.$q.defer();
+    deferred.resolve();
+    return deferred.promise;
   }
 
   /**
@@ -104,28 +71,19 @@ class UserService extends EventEmitter {
     this.secretPhrase = secretPhrase;
     this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
     this.accountRS = this.address.numericToRS(heat.crypto.getAccountId(secretPhrase));
-    this.identifier = this.accountRS.replace(/^FIM-/,'');
     this.unlocked = true;
 
     /* The other parts are on the blockchain */
-    this.refresh().then(
-      () => {
-        this.identifier = this.email || utils.normalizeRsAccount(this.accountRS);
-        deferred.resolve();
-        this.emit(UserService.EVENT_UNLOCKED);
-      }
-    );
+    this.refresh().then(() => {
+      deferred.resolve();
+      this.emit(UserService.EVENT_UNLOCKED);
+    });
     return deferred.promise;
   }
 
   lock() {
     this.secretPhrase = null;
     this.accountRS = null;
-    this.identifier = null;
-    this.email = null;
-    this.name = null;
-    this.accountColorId = null;
-    this.accountColorName = null;
     this.unlocked = null;
     this.emit(UserService.EVENT_LOCKED);
     this.$window.location.reload();
