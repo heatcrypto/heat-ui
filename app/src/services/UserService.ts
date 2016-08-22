@@ -38,6 +38,9 @@ class UserService extends EventEmitter {
   /* Account identifier in RS format, for API usage purpose */
   public accountRS: string;
 
+  /* Account in numeric format */
+  public account: string;
+
   public accountColorName: string;
   public accountColorId: string;
 
@@ -70,7 +73,8 @@ class UserService extends EventEmitter {
     /* Everything obtained from the secret phrase */
     this.secretPhrase = secretPhrase;
     this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
-    this.accountRS = this.address.numericToRS(heat.crypto.getAccountId(secretPhrase));
+    this.account = heat.crypto.getAccountId(secretPhrase);
+    this.accountRS = this.address.numericToRS(this.account);
     this.unlocked = true;
 
     /* The other parts are on the blockchain */
