@@ -47,6 +47,10 @@ var PATHS = {
   ],
   tshelpers: [
     'app/src/tshelpers.js'
+  ],
+  electron: [
+    'app/electron.js',
+    'app/package.json'
   ]
 };
 
@@ -110,6 +114,8 @@ gulp.task('copy:dist', ['tshelpers','libjs'], function () {
   gulp.src(PATHS.loading)
     .pipe(gulp.dest('dist/loading'));
   gulp.src(PATHS.html)
+    .pipe(gulp.dest('dist'));
+  gulp.src(PATHS.electron)
     .pipe(gulp.dest('dist'));
 });
 
