@@ -3,3 +3,4 @@ deploy.sh
 tools
 node_modules
 dist
+npm-debug.log
