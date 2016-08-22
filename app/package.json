@@ -1,0 +1,22 @@
+{
+  "name": "heat-ui",
+  "version": "0.0.1",
+  "description": "Heat Ledger Desktop Wallet",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Heat-Ledger-Ltd/heat-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Heat-Ledger-Ltd/heat-ui/issues"
+  },
+  "author": "Dennis de Klerk",
+  "license": "MIT",
+  "homepage": "http://heatledger.com",
+  "devDependencies": {
+    "electron-prebuilt": "^1.2.0"
+  }
+}
