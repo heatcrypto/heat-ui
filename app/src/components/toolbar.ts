@@ -42,6 +42,7 @@
         <application-welcome-message ng-if="vm.user.unlocked && vm.user.verified"></application-welcome-message>
         <span flex></span>
         <application-system-time></application-system-time>
+        <md-button ng-if="vm.user.unlocked" aria-label="Sign off" ng-click="vm.user.lock()">Sign off</md-button>
         <md-button class="md-icon-button" aria-label="Open Settings" ng-click="vm.rightSidenavToggle()">
           <md-icon md-font-library="material-icons">more_vert</md-icon>
         </md-button>
