@@ -48,9 +48,9 @@ class SettingsService {
   public static TRANSACTION_PROCESSING_VISUALIZATION = 'settings.transaction_processing_visualization';
 
   constructor() {
-    this.settings[SettingsService.WEBSOCKET_URL] = 'wss://robots.mofowallet.org:6986/ws/'; // TEST FIMK
+    this.settings[SettingsService.WEBSOCKET_URL] = 'wss://zombies.mofowallet.org:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
-    this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:7986/ws/';
+    this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
     this.settings[SettingsService.RS_ADDRESS_PREFIX] = 'HEAT';
     this.settings[SettingsService.ENGINE_TYPE] = 'heat';
     this.settings[SettingsService.BASE_FEE] = '0.001';
@@ -65,7 +65,7 @@ class SettingsService {
     this.settings[SettingsService.LOG_API_ERRORS] = true;
     this.settings[SettingsService.LOG_API_ALL] = false;
     this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
-    this.settings[SettingsService.CLOUD_URL] = "http://robots.mofowallet.org:8080";
+    this.settings[SettingsService.CLOUD_URL] = "http://zombies.mofowallet.org:8080";
     this.settings[SettingsService.LOG_CLOUD_ERRORS] = true;
     this.settings[SettingsService.LOG_CLOUD_ALL] = true;
     this.settings[SettingsService.LOG_CLOUD_NOTIFY_ALL] = true;
@@ -84,13 +84,13 @@ class SettingsService {
     };
 
     this.settings[SettingsService.CLOUD_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://robots.mofowallet.org:8080/socket";
+    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://zombies.mofowallet.org:8080/socket";
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
 
     /* Override with test endpoints */
     var LOCAL_TEST = false;
     if (LOCAL_TEST) {
-      this.settings[SettingsService.WEBSOCKET_URL] = 'ws://localhost:6986/ws/'; // TEST NET FIMK
+      this.settings[SettingsService.WEBSOCKET_URL] = 'ws://localhost:8884/ws/'; // TEST NET FIMK
       this.settings[SettingsService.CLOUD_URL] = "http://localhost:9000";
       this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://localhost:9000/socket";
     }
