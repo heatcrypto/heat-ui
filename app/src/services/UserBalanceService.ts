@@ -46,9 +46,11 @@ class UserBalanceService extends AbstractDataProvider<IUserBalance> {
       this.userUnlocked();
     }
     else {
-      user.addListener(UserService.EVENT_UNLOCKED, () => {
-        this.userUnlocked();
-      })
+      var listener = () => {
+        this.userUnlocked()
+        user.removeListener(UserService.EVENT_UNLOCKED, listener);
+      };
+      user.addListener(UserService.EVENT_UNLOCKED, listener);
     }
   }
 
