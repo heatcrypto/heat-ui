@@ -38,10 +38,10 @@
         <md-button class="md-icon-button" ng-click="vm.leftSidenavToggle()" aria-label="Menu">
           <md-icon md-font-library="material-icons">menu</md-icon>
         </md-button>
-        <application-title ng-hide="vm.user.unlocked && vm.user.verified"></application-title>
-        <application-welcome-message ng-if="vm.user.unlocked && vm.user.verified"></application-welcome-message>
+        <application-title ng-hide="vm.user.unlocked"></application-title>
+        <user-balance ng-if="vm.user.unlocked && !vm.user.newAccount"></user-balance>
         <span flex></span>
-        <application-system-time></application-system-time>
+        <!--<application-system-time></application-system-time>-->
         <md-button ng-if="vm.user.unlocked" aria-label="Sign off" ng-click="vm.user.lock()">Sign off</md-button>
         <md-button class="md-icon-button" aria-label="Open Settings" ng-click="vm.rightSidenavToggle()">
           <md-icon md-font-library="material-icons">more_vert</md-icon>
@@ -49,23 +49,13 @@
       </div>
     </md-toolbar>`
 })
-@Inject('$scope','$mdSidenav','user','userBalance','messageCount','sendmoney','$rootScope','$location','cloud')
+@Inject('$scope','$mdSidenav','user','sendmoney')
 class ToolbarComponent {
-
-  userBalance: DataProvider<IUserBalance>;
-  messageCount: DataProvider<IMessageCount>;
 
   constructor(private $scope: angular.IScope,
               private $mdSidenav,
               public user: UserService,
-              userBalance: UserBalanceService,
-              messageCount: MessageCountService,
-              private sendmoney: SendmoneyService,
-              $rootScope: angular.IRootScopeService,
-              $location: angular.ILocationService,
-              private cloud: CloudService) {
-    this.userBalance = userBalance.createProvider($scope);
-    this.messageCount = messageCount.createProvider($scope);
+              private sendmoney: SendmoneyService) {
   }
 
   leftSidenav: string;
