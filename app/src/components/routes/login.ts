@@ -120,7 +120,8 @@
     </div>
   `
 })
-@Inject('$scope','user','$location','engine','$rootScope','localKeyStore','$routeParams','secretGenerator','address','clipboard')
+@Inject('$scope','$q','user','$location','engine','localKeyStore',
+        'secretGenerator','clipboard','$mdToast')
 class LoginComponent {
 
   page: number = 0;
@@ -131,22 +132,28 @@ class LoginComponent {
   account: string;
   localKeys: Array<string> = [];
   key: ILocalKey = null;
+  loading: boolean = false;
 
   constructor(private $scope: angular.IScope,
+              private $q: angular.IQService,
               private user: UserService,
               private $location: angular.ILocationService,
               private engine: EngineService,
-              private $rootScope: angular.IScope,
               private localKeyStore: LocalKeyStoreService,
-              private $routeParams,
               private secretGenerator: SecretGeneratorService,
-              private address: AddressService,
-              private clipboard: ClipboardService) {
+              private clipboard: ClipboardService,
+              private $mdToast: angular.material.IToastService) {
     this.localKeys = localKeyStore.list();
     this.isNewInstall = this.localKeys.length == 0;
     if (!this.isNewInstall) {
       this.account = this.localKeys[0];
     }
+  }
+
+  setLoading(loading: boolean) {
+    this.$scope.$evalAsync(() => {
+      this.loading = loading;
+    });
   }
 
   resetAll() {
@@ -207,8 +214,41 @@ class LoginComponent {
   }
 
   login() {
-    this.user.unlock(this.secretPhrase).then(() => {
-      this.$location.path('messenger');
+    this.setLoading(true);
+    this.isExistingAccount().then((exists) => {
+      this.setLoading(false);
+      if (exists) {
+        this.user.unlock(this.secretPhrase, false).then(() => {
+          this.$location.path('messenger');
+        });
+      }
+      else {
+        this.user.unlock(this.secretPhrase, true).then(() => {
+          this.$location.path('new');
+        });
+      }
+    }).catch((error) => {
+      this.setLoading(false);
+      this.$mdToast.show(
+        this.$mdToast.simple()
+            .textContent("Error: " + error.description)
+            .hideDelay(6000)
+      );
     });
+  }
+
+  isExistingAccount(): angular.IPromise<boolean> {
+    var deferred = this.$q.defer();
+    this.engine.socket().api.getAccount(this.account).then(() => {
+      deferred.resolve(true);
+    }).catch((error: ServerEngineError) => {
+      if (error.code == 5 && error.description == "Unknown account") {
+        deferred.resolve(false);
+      }
+      else {
+        deferred.reject(error);
+      }
+    });
+    return deferred.promise;
   }
 }
