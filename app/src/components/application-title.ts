@@ -23,7 +23,7 @@
 @Component({
   selector: 'applicationTitle',
   template: `
-    <span>{{vm.name}}</span><!--&nbsp;<span>{{vm.version}}</span>-->
+    <span>{{vm.name}}</span>&nbsp;<span>{{vm.version}}</span>
   `
 })
 @Inject('settings')
