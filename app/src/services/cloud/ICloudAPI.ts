@@ -49,6 +49,8 @@ interface ICloudAPI {
   getPublicKey(account: string): angular.IPromise<string>;
 
   getAccount(accountRS: string): angular.IPromise<ICloudAccount>;
+
+  register(request: ICloudRegisterRequest): angular.IPromise<any>;
 }
 
 interface ICloudAccount {
@@ -232,4 +234,9 @@ interface ICloudGetTrashedRequest {
 interface ICloudUpdateFlagRequest {
   id: string;
   flag: number;
+}
+
+interface ICloudRegisterRequest {
+  captcha: string;
+  publicKey: string;
 }

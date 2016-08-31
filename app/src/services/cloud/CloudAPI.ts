@@ -163,4 +163,8 @@ class CloudAPI implements ICloudAPI {
   getAccount(accountRS: string): angular.IPromise<ICloudAccount> {
     return this.cloud.send("search/account", {accountRS: accountRS});
   }
+
+  register(request: ICloudRegisterRequest): angular.IPromise<any> {
+    return this.cloud.send("register", request, true);
+  }
 }
