@@ -41,8 +41,11 @@ class UserService extends EventEmitter {
   /* Account in numeric format */
   public account: string;
 
-  public accountColorName: string;
-  public accountColorId: string;
+  /* New accounts don't yet exist on the blockchain */
+  public newAccount: boolean;
+
+  public accountColorName: string = "HEAT";
+  public accountColorId: string = "0";
 
   constructor(private $q,
               private address: AddressService,
@@ -65,10 +68,12 @@ class UserService extends EventEmitter {
    * reason.
    *
    * @param secretPhrase user secret phrase
+   * @param newAccount boolean
    * @returns Promise
    */
-  unlock(secretPhrase: string): angular.IPromise<any> {
+  unlock(secretPhrase: string, newAccount: boolean): angular.IPromise<any> {
     var deferred = this.$q.defer();
+    this.newAccount = newAccount;
 
     /* Everything obtained from the secret phrase */
     this.secretPhrase = secretPhrase;
