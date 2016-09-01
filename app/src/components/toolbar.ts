@@ -21,13 +21,13 @@
  * SOFTWARE.
  * */
 @Component({
-  selector: 'heatToolbar',
+  selector: 'toolbar',
   inputs: ['@leftSidenav', '@rightSidenav'],
   styles: [`
-  heat-toolbar .admin-menu .md-button:not(.active) {
+  toolbar .admin-menu .md-button:not(.active) {
     background-color: #FFA726;
   }
-  heat-toolbar .admin-selected-user .md-button {
+  toolbar .admin-selected-user .md-button {
     margin-right: 18px;
     margin-left: 0px;
   }
@@ -35,7 +35,7 @@
   template: `
     <md-toolbar>
       <div class="md-toolbar-tools">
-        <md-button class="md-icon-button" ng-click="vm.leftSidenavToggle()" aria-label="Menu">
+        <md-button class="md-icon-button" ng-click="vm.leftSidenavToggle()" ng-show="vm.user.unlocked" aria-label="Menu">
           <md-icon md-font-library="material-icons">menu</md-icon>
         </md-button>
         <application-title ng-hide="vm.user.unlocked"></application-title>
