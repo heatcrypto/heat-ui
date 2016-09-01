@@ -35,7 +35,7 @@
       </md-menu-item>
       <md-menu-item>
         <md-button ng-click="vm.showSendmoneyDialog($event); vm.close()">
-          <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;Send EUR
+          <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;Send HEAT
         </md-button>
       </md-menu-item>
       <md-menu-item>
