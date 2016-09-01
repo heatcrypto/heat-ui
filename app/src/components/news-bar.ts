@@ -25,16 +25,23 @@
   styles: [`
   `],
   template: `
-    <div layout="row" flex>
-      Hello
+    <div layout="column" flex>
+      <p class="md-title">HEAT ICO claim process available!</p>
+      <p class="md-subhead">2016-09-03</p>
+      <p><a href="#/claim">Click to claim HEAT ICO tokens</a></p>
     </div>
   `
 })
-@Inject('$scope','user')
+@Inject('$scope','user','$mdBottomSheet','$location','$rootScope')
 class NewsBarComponent {
-
   constructor(private $scope: angular.IScope,
-              public user: UserService) {
+              private user: UserService,
+              private $mdBottomSheet: angular.material.IBottomSheetService,
+              private $location: angular.ILocationService,
+              private $rootScope: angular.IRootScopeService) {
+    $rootScope.$on('$locationChangeSuccess', () => {
+      this.$mdBottomSheet.hide(true);
+    });
   }
 }
 
