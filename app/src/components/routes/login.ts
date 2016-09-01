@@ -41,7 +41,7 @@
   `],
   template: `
     <div layout="column" flex layout-align="center center">
-      <div class="md-whiteframe-2dp" style="width:500px" layout="column" layout-padding>
+      <div style="width:380px" layout="column" layout-padding> <!-- class="md-whiteframe-2dp" -->
         <div layout="column" flex ng-if="vm.page == 0" layout-padding>
           <center><p class="md-title">Welcome to Heat Ledger</p></center>
           <div layout="row" ng-show="vm.isNewInstall">
@@ -57,7 +57,7 @@
             </md-input-container>
             <md-input-container flex ng-show="vm.account">
               <label>Pin Code</label>
-              <input ng-model="vm.pincode" require name="pincode" ng-change="vm.pincodeChanged()" maxlength="5">
+              <input ng-model="vm.pincode" required name="pincode" ng-change="vm.pincodeChanged()" maxlength="5">
             </md-input-container>
             <div layout="row">
               <md-button class="md-primary" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex>Sign in</md-button>
@@ -83,7 +83,7 @@
             </md-input-container>
             <md-input-container flex>
               <label>Pin Code (required 5 numbers)</label>
-              <input ng-model="vm.pincode" require name="pincode" maxlength="5">
+              <input ng-model="vm.pincode" required name="pincode" maxlength="5">
             </md-input-container>
             <div layout="row">
               <md-button ng-click="vm.back($event)" flex>Back</md-button>
@@ -107,7 +107,7 @@
             </md-input-container>
             <md-input-container flex>
               <label>Pin Code (required 5 numbers)</label>
-              <input ng-model="vm.pincode" require name="pincode" maxlength="5">
+              <input ng-model="vm.pincode" required name="pincode" maxlength="5">
             </md-input-container>
             <div layout="row">
               <md-button ng-click="vm.back($event)" flex>Back</md-button>
@@ -219,7 +219,7 @@ class LoginComponent {
       this.setLoading(false);
       if (exists) {
         this.user.unlock(this.secretPhrase, false).then(() => {
-          this.$location.path('messenger');
+          this.$location.path('home');
         });
       }
       else {
