@@ -38,8 +38,9 @@
           <heat-left-sidenav flex layout-fill layout="column" sidenav-id="left-sidenav"></heat-left-sidenav>
         </md-sidenav>
         <md-content flex layout-fill layout="column">
-          <heat-toolbar left-sidenav="left-sidenav" right-sidenav="right-sidenav"></heat-toolbar>
+          <toolbar left-sidenav="left-sidenav" right-sidenav="right-sidenav"></toolbar>
           <div ng-viewport flex layout-fill layout="column"></div>
+          <md-button class="md-accent" onclick="window.showNewsBar(event)">News Bar</md-button>
         </md-content>
         <md-sidenav class="md-sidenav-right md-whiteframe-z2" md-component-id="right-sidenav" flex>
           <heat-right-sidenav flex layout-fill layout="column" sidenav-id="right-sidenav"></heat-right-sidenav>
