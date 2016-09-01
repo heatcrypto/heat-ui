@@ -165,6 +165,6 @@ class CloudAPI implements ICloudAPI {
   }
 
   register(request: ICloudRegisterRequest): angular.IPromise<any> {
-    return this.cloud.send("register", request, true);
+    return this.cloud.send("register", request);
   }
 }
