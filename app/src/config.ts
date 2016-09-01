@@ -24,8 +24,8 @@ heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider',
                       ($mdThemingProvider,   noCAPTCHAProvider) => {
 
   $mdThemingProvider.theme('default')
-                    .primaryPalette('indigo')
-                    .accentPalette('pink');
+                    .primaryPalette('deep-orange')
+                    .accentPalette('grey');
 
   noCAPTCHAProvider.setSiteKey('6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc');
   noCAPTCHAProvider.setTheme('light');
