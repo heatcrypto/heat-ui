@@ -39,7 +39,7 @@
           <md-icon md-font-library="material-icons">menu</md-icon>
         </md-button>
         <application-title ng-hide="vm.user.unlocked"></application-title>
-        <user-balance ng-if="vm.user.unlocked && !vm.user.newAccount"></user-balance>
+        <!--<user-balance ng-if="vm.user.unlocked && !vm.user.newAccount"></user-balance>-->
         <span flex></span>
         <!--<application-system-time></application-system-time>-->
         <md-button ng-if="vm.user.unlocked" aria-label="Sign off" ng-click="vm.user.lock()">Sign off</md-button>
