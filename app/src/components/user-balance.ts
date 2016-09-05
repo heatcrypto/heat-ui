@@ -32,12 +32,6 @@
     user-balance .error .md-button {
       cursor: default;
     }
-    user-balance md-progress-linear {
-      height: 2px;
-    }
-    user-balance md-progress-linear .md-container {
-      height: 2px;
-    }
   `],
   template: `
     <div layout="column">
@@ -46,7 +40,7 @@
       </span>
       <md-progress-linear md-mode="indeterminate" ng-if="vm.loading"></md-progress-linear>
       <span class="balance error" ng-show="vm.showError">
-        ERROR<md-button class="md-icon-button">
+        <elipses-loading></elipses-loading><md-button class="md-icon-button">
           <md-tooltip md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
           <md-icon md-font-library="material-icons">error</md-icon>
         </md-button>
@@ -54,7 +48,7 @@
     </div>
   `
 })
-@Inject('$scope','user','engine','$q')
+@Inject('$scope','user','engine','$q','$timeout')
 class UserBalanceComponent {
 
   private balanceHQT: string = "0";
@@ -67,7 +61,8 @@ class UserBalanceComponent {
   constructor(private $scope: angular.IScope,
               public user: UserService,
               private engine: EngineService,
-              private $q: angular.IQService) {
+              private $q: angular.IQService,
+              private $timeout: angular.ITimeoutService) {
 
     var refresh = () => { this.refresh() };
 
@@ -100,6 +95,7 @@ class UserBalanceComponent {
         this.showError = true;
         this.errorDescription = error.description;
         this.loading = false;
+        this.$timeout(3000, false).then(() => { this.refresh() });
       });
     });
   }
