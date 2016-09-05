@@ -124,14 +124,20 @@ http://localhost:9001/dist
 
 We recommend using Goolgle Chrome Debugger which comes with Chrome to inspect any running code. Since browsers don't understand TypeScript it had to be compiled to JavaScript. To still be able to find the TypeScript line on which a JavaScript error occured, the console uses source maps that map the TypeScript to the JavaScript.
 
-### Build desktop versions
+### Building desktop versions
 
 Heat-ui uses Electron from Github to provide users with an installable desktop application. Electron and therefor heat-ui works on all modern operating systems. (Fun fact, Visual Studio Code is also built on Electron).
 
 To build the actual desktop releases we use https://github.com/electron-userland/electron-packager. Note that you need Node.js > 4.0 to use electron-packager.
 
-To get to know more about Electron and the awesome set of projects involved please have a look here https://github.com/sindresorhus/awesome-electron.
-
 ### Native operating system installer/updater
 
-Another great tool from the Electron eco-system is https://github.com/electron-userland/electron-builder with it we can create single click installers and updaters for heat-ui desktop application.
+Heat-ui desktop edition comes with installers for Windows, Mac and Linux.
+
+https://github.com/electron-userland/electron-builder
+
+### Links
+
+https://github.com/sindresorhus/awesome-electron.
+
+*To be continued..*
