@@ -55,10 +55,6 @@
         <div layout="column" flex>
           <p>Messages</p>
         </div>
-        <div layout="column" flex>
-          <p>News</p>
-          <a href="#/claim">Click to claim HEAT ICO tokens</a>
-        </div>
       </div>
     </div>
   `
