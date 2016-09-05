@@ -65,7 +65,7 @@ class SettingsService {
     this.settings[SettingsService.LOG_API_ERRORS] = true;
     this.settings[SettingsService.LOG_API_ALL] = false;
     this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
-    this.settings[SettingsService.CLOUD_URL] = "http://zombies.mofowallet.org:8080";
+    this.settings[SettingsService.CLOUD_URL] = "http://alpha.heatledger.com:8080";
     this.settings[SettingsService.LOG_CLOUD_ERRORS] = true;
     this.settings[SettingsService.LOG_CLOUD_ALL] = true;
     this.settings[SettingsService.LOG_CLOUD_NOTIFY_ALL] = true;
