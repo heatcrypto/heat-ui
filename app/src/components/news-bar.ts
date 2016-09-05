@@ -23,12 +23,17 @@
 @Component({
   selector: 'newsBar',
   styles: [`
+    news-bar > div {
+      padding-top: 30px;
+      padding-bottom: 30px;
+    }
   `],
   template: `
     <div layout="column" flex>
-      <p class="md-title">HEAT ICO claim process available!</p>
-      <p class="md-subhead">2016-09-03</p>
-      <p><a href="#/claim">Click to claim HEAT ICO tokens</a></p>
+      <span class="md-title">HEAT ICO claim process available!</span>
+      <span class="md-subhead">2016-09-03</span>
+      <br>
+      <span><a href="#/claim">Click to claim HEAT ICO tokens</a></span>
     </div>
   `
 })
