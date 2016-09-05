@@ -167,4 +167,8 @@ class CloudAPI implements ICloudAPI {
   register(request: ICloudRegisterRequest): angular.IPromise<any> {
     return this.cloud.send("register", request);
   }
+
+  getIcoPaymentCount(sender: string, currency: string): angular.IPromise<number> {
+    return this.cloud.send("icopayment/count", {sender:sender, currency:currency}, true, "count");
+  }
 }

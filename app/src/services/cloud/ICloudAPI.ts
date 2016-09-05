@@ -51,6 +51,7 @@ interface ICloudAPI {
   getAccount(accountRS: string): angular.IPromise<ICloudAccount>;
 
   register(request: ICloudRegisterRequest): angular.IPromise<any>;
+  getIcoPaymentCount(sender: string, currency: string): angular.IPromise<number>;
 }
 
 interface ICloudAccount {
