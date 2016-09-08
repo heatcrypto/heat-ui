@@ -59,13 +59,13 @@ class DialogFieldAccount extends AbstractDialogField {
         md-floating-label="{{vm.label}}"
         md-min-length="1"
         md-items="item in vm.f.search(vm.searchText)"
-        md-item-text="item.accountEmail||item.accountRS"
+        md-item-text="item.accountEmail||item.account"
         md-search-text="vm.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem">
         <md-item-template>
-          <span>{{item.accountEmail||item.accountRS}}</span>
+          <span>{{item.accountEmail||item.account}}</span>
         </md-item-template>
         <md-not-found>
           No matches found.
@@ -89,7 +89,7 @@ class DialogFieldAccountComponent {
   }
 
   selectedItemChange() {
-    this.f.value = this.selectedItem ? this.selectedItem.accountRS : '';
+    this.f.value = this.selectedItem ? this.selectedItem.account : '';
   }
 
   searchTextChange() {
