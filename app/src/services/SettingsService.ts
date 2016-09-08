@@ -53,7 +53,7 @@ class SettingsService {
     this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
     this.settings[SettingsService.RS_ADDRESS_PREFIX] = 'HEAT';
     this.settings[SettingsService.ENGINE_TYPE] = 'heat';
-    this.settings[SettingsService.BASE_FEE] = '0.001';
+    this.settings[SettingsService.BASE_FEE] = '0.1';
 
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
@@ -88,12 +88,16 @@ class SettingsService {
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
 
     /* Override with test endpoints */
-    var LOCAL_TEST = false;
-    if (LOCAL_TEST) {
-      this.settings[SettingsService.WEBSOCKET_URL] = 'ws://localhost:8884/ws/'; // TEST NET FIMK
+    var LOCAL_HEAT_LEDGER = false;
+    if (LOCAL_HEAT_LEDGER) {
+      this.settings[SettingsService.WEBSOCKET_URL] = 'ws://localhost:8884/ws/';
+    }
+    var LOCAL_HEAT_SERVER = false;
+    if (LOCAL_HEAT_SERVER) {
       this.settings[SettingsService.CLOUD_URL] = "http://localhost:9000";
       this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://localhost:9000/socket";
     }
+
   }
 
   settings={};
