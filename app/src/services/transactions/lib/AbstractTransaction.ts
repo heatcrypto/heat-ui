@@ -53,6 +53,10 @@ abstract class AbstractTransaction {
       transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(8, 40));
       transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 40));
     }
+    else if (this.engine.type == EngineType.HEAT) {
+      transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 8));
+      transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(16, 48));
+    }
     else {
       throw new Error('Unsupported engine type');
     }
@@ -84,6 +88,10 @@ abstract class AbstractTransaction {
       else if (this.engine.type == EngineType.NXT) {
         data.recipient = "1739068987193023818";
         data.recipientRS = "NXT-MRCC-2YLS-8M54-3CMAJ";
+      }
+      else if (this.engine.type == EngineType.HEAT) {
+        data.recipient = "1739068987193023818";
+        data.recipientRS = "HEAT-MRCC-2YLS-8M54-3CMAJ";
       }
       else {
         throw new Error('Unsupported engine type');
