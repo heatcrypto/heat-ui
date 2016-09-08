@@ -44,7 +44,7 @@
       <div style="width:380px" layout="column" layout-padding> <!-- class="md-whiteframe-2dp" -->
         <div layout="column" flex ng-if="vm.page == 0" layout-padding>
           <center><p class="md-title">Welcome to Heat Ledger</p></center>
-          <div layout="row" ng-show="vm.isNewInstall">
+          <div layout="column" ng-show="vm.isNewInstall">
             <md-button class="md-raised md-primary" ng-click="vm.gotoPage(1)" flex>Create New Account</md-button>
             <md-button class="md-raised" ng-click="vm.gotoPage(2)" flex>Add Existing Account</md-button>
           </div>
