@@ -76,20 +76,40 @@ class SendmessageDialog extends GenericDialog {
       builder.account('recipient', this.recipient).
               label('Recipient').
               readonly(this.readonlyRecipient).
-              required().
-              asyncValidate("Recipient does not have a publickey", (recipient) => {
-                var deferred = this.$q.defer();
-                this.cloud.api.getPublicKey(recipient).then(
+              onchange(() => {
+                this.fields['recipientPublicKey'].value = null;
+                this.fields['message'].changed();
+                this.cloud.api.getPublicKey(this.fields['recipient'].value).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
-                    deferred.resolve();
-                  },
-                  deferred.reject
+                  }
                 );
-                return deferred.promise;
-              }),
+              }).
+              required(),
       builder.text('message', this.userMessage).
-              label('Message'),
+              asyncValidate("No recipient public key", (message) => {
+                var deferred = this.$q.defer();
+                if (String(message).trim().length == 0 || !this.fields['recipient'].value) {
+                  deferred.resolve();
+                }
+                else {
+                  if (this.fields['recipientPublicKey'].value) {
+                    deferred.resolve();
+                  }
+                  else {
+                    this.cloud.api.getPublicKey(this.fields['recipient'].value).then(
+                      (publicKey) => {
+                        this.fields['recipientPublicKey'].value = publicKey;
+                        deferred.resolve();
+                      },
+                      deferred.reject
+                    );
+                  }
+                }
+                return deferred.promise;
+              }).
+              label('Message').
+              required(),
       builder.hidden('recipientPublicKey', this.recipientPublicKey).required()
     ]
   }
