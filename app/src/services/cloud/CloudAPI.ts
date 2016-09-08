@@ -142,7 +142,7 @@ class CloudAPI implements ICloudAPI {
         if (angular.isString(publicKey)) {
           var id = heat.crypto.getAccountIdFromPublicKey(publicKey);
           var rs = this.address.numericToRS(id);
-          if (rs == accountRS) {
+          if (rs == accountRS || id == accountRS) {
             deferred.resolve(publicKey);
             return;
           }
@@ -169,6 +169,10 @@ class CloudAPI implements ICloudAPI {
   }
 
   getIcoPaymentCount(sender: string, currency: string): angular.IPromise<number> {
-    return this.cloud.send("icopayment/count", {sender:sender, currency:currency}, true, "count");
+    return this.cloud.send("claim/count", {sender:sender, currency:currency}, true, "count");
+  }
+
+  startClaimProcess(sender: string, currency: string): angular.IPromise<any> {
+    return this.cloud.send("claim/start", {sender:sender, currency:currency}, true);
   }
 }
