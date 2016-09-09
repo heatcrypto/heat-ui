@@ -130,6 +130,16 @@ Heat-ui uses Electron from Github to provide users with an installable desktop a
 
 To build the actual desktop releases we use https://github.com/electron-userland/electron-packager. Note that you need Node.js > 4.0 to use electron-packager.
 
+Examples:
+
+```
+# To build a windows package
+$ electron-packager ./dist --platform=win32 --arch=x64
+
+# To build a linux package
+$ electron-packager ./dist --platform=linux --arch=x64
+```
+
 ### Native operating system installer/updater
 
 Heat-ui desktop edition comes with installers for Windows, Mac and Linux.
