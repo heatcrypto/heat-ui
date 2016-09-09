@@ -37,7 +37,9 @@ class SettingsService {
   public static LOG_API_ERRORS = 'settings.log_api_errors';
   public static LOG_API_ALL = 'settings.log_api_all';
   public static LOG_NOTIFY_ALL = 'settings.log_notify_all';
-  public static CLOUD_URL = 'settings.cloud_url';
+  // public static CLOUD_URL = 'settings.cloud_url';
+  public static CLOUD_HOST = 'settings.cloud_host';
+  public static CLOUD_PORT = 'settings.cloud_port';
   public static LOG_CLOUD_ERRORS = 'settings.log_cloud_errors';
   public static LOG_CLOUD_ALL = 'settings.log_cloud_all';
   public static LOG_CLOUD_NOTIFY_ALL = 'settings.log_cloud_notify_all';
@@ -65,7 +67,8 @@ class SettingsService {
     this.settings[SettingsService.LOG_API_ERRORS] = true;
     this.settings[SettingsService.LOG_API_ALL] = false;
     this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
-    this.settings[SettingsService.CLOUD_URL] = "http://alpha.heatledger.com:8080";
+    this.settings[SettingsService.CLOUD_HOST] = "http://alpha.heatledger.com";
+    this.settings[SettingsService.CLOUD_PORT] = 8080;
     this.settings[SettingsService.LOG_CLOUD_ERRORS] = true;
     this.settings[SettingsService.LOG_CLOUD_ALL] = true;
     this.settings[SettingsService.LOG_CLOUD_NOTIFY_ALL] = true;
@@ -94,7 +97,8 @@ class SettingsService {
     }
     var LOCAL_HEAT_SERVER = false;
     if (LOCAL_HEAT_SERVER) {
-      this.settings[SettingsService.CLOUD_URL] = "http://localhost:9000";
+      this.settings[SettingsService.CLOUD_HOST] = "http://localhost";
+      this.settings[SettingsService.CLOUD_PORT] = 9000;
       this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://localhost:9000/socket";
     }
 
