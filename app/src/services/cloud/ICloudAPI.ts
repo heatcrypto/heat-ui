@@ -77,9 +77,11 @@ interface ICloudGetPaymentCountRequest {
 
 interface ICloudPayment {
   transactionId: string,
+  recipient: string,
   recipientRS: string,
   recipientPublicKey: string,
   recipientIdentifier: string,
+  sender: string,
   senderRS: string,
   senderPublicKey: string,
   senderIdentifier: string,
@@ -107,10 +109,12 @@ interface ICloudMessage {
   unread: boolean;
   recipientStatus: number;
   senderStatus: number;
+  sender: string;
   senderRS: string;
   senderName: string;
   senderEmail: string;
   senderPublicKey: string;
+  recipient: string;
   recipientRS: string;
   recipientName: string;
   recipientEmail: string;
