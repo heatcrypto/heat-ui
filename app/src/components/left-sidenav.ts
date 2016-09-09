@@ -24,8 +24,8 @@
   selector: 'heatLeftSidenav',
   inputs: ['@sidenavId'],
   template: `
-    <md-toolbar class="md-theme-indigo md-tall">
-      <h1 class="md-toolbar-tools">Navigate</h1>
+    <md-toolbar class="md-theme-indigo">
+      <h1 class="md-toolbar-tools"></h1>
     </md-toolbar>
     <md-content layout-padding flex layout="column">
       <md-menu-item>
