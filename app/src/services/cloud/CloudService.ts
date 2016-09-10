@@ -99,8 +99,10 @@ class CloudService {
   private browserHttpPost(url: string, request: any, headers: any, onSuccess: Function, onFailure: Function) {
     this.$http.post(url, request, headers).then(
       (response) => {
-        (angular.isDefined(response.data.success) && !response.data.success) ?
-          onFailure(response) : onSuccess(response)
+        if ((angular.isDefined(response.data.success) && !response.data.success))
+          onFailure(response);
+        else
+          onSuccess(response);
       },
       (response) => { onFailure(response) }
     )
@@ -123,7 +125,13 @@ class CloudService {
       res.setEncoding('utf8');
       var body = [];
       res.on('data', (chunk) => { body.push(chunk) });
-      res.on('end', () => { onSuccess({data: JSON.parse(body.join(''))}) });
+      res.on('end', () => {
+        var response = {data: JSON.parse(body.join(''))};
+        if ((angular.isDefined(response.data.success) && !response.data.success))
+          onFailure(response)
+        else
+          onSuccess(response)
+      });
     });
     req.on('error', (e) => { onFailure(e) });
     req.write(body);
