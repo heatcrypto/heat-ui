@@ -23,7 +23,7 @@
 @Component({
   selector: 'rightSidenav',
   template: `
-    <md-toolbar class="md-theme-indigo md-tall">
+    <md-toolbar class="md-theme-indigo">
       <h1 class="md-toolbar-tools">Settings</h1>
     </md-toolbar>
     <md-content layout-padding flex>
