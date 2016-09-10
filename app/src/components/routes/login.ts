@@ -121,7 +121,7 @@
   `
 })
 @Inject('$scope','$q','user','$location','engine','localKeyStore',
-        'secretGenerator','clipboard','$mdToast')
+        'secretGenerator','clipboard','$mdToast','env')
 class LoginComponent {
 
   page: number = 0;
@@ -142,7 +142,8 @@ class LoginComponent {
               private localKeyStore: LocalKeyStoreService,
               private secretGenerator: SecretGeneratorService,
               private clipboard: ClipboardService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private env: EnvService) {
     this.localKeys = localKeyStore.list();
     this.isNewInstall = this.localKeys.length == 0;
     if (!this.isNewInstall) {
@@ -217,7 +218,7 @@ class LoginComponent {
     this.setLoading(true);
     this.isExistingAccount().then((exists) => {
       this.setLoading(false);
-      if (exists) {
+      if (exists || this.env.type == EnvType.NODEJS) {
         this.user.unlock(this.secretPhrase, false).then(() => {
           this.$location.path('home');
         });
