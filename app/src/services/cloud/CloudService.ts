@@ -20,8 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+declare var require : any;
 @Service('cloud')
-@Inject('$q','$http','settings','user','$timeout','address')
+@Inject('$q','$http','settings','user','$timeout','address','env')
 class CloudService {
 
   public api = new CloudAPI(this, this.user, this.$q, this.address);
@@ -33,7 +34,8 @@ class CloudService {
               private settings: SettingsService,
               private user: UserService,
               private $timeout: angular.ITimeoutService,
-              private address: AddressService) {}
+              private address: AddressService,
+              private env: EnvService) {}
 
   getAuthData(): Object {
     var timestamp = Date.now();
@@ -51,34 +53,114 @@ class CloudService {
     }
   }
 
+  // send(route: string, request: any, withAuth?: boolean, returns?: string): angular.IPromise<any> {
+  //   var deferred = this.$q.defer();
+  //   var req = request||{};
+  //   if (withAuth) {
+  //     req = angular.extend(req, this.getAuthData());
+  //   }
+  //   this.$http.post(
+  //     this.settings.get(SettingsService.CLOUD_URL)+'/'+route,
+  //     req,
+  //     {headers: {'Content-Type': 'application/json'} }
+  //   ).then(
+  //     (response) => {
+  //       if (angular.isDefined(response.data.success) && !response.data.success) {
+  //         this.logErrorResponse(route, request, response);
+  //         deferred.reject()
+  //       }
+  //       else {
+  //         this.logResponse(route, request, response);
+  //         var data = angular.isString(returns) ? response.data[returns] : response.data;
+  //         deferred.resolve(data);
+  //       }
+  //     },
+  //     (response) => {
+  //       this.logErrorResponse(route, request, response);
+  //       deferred.reject()
+  //     }
+  //   )
+  //   return deferred.promise;
+  // }
+
   send(route: string, request: any, withAuth?: boolean, returns?: string): angular.IPromise<any> {
     var deferred = this.$q.defer();
     var req = request||{};
     if (withAuth) {
       req = angular.extend(req, this.getAuthData());
     }
-    this.$http.post(
-      this.settings.get(SettingsService.CLOUD_URL)+'/'+route,
-      req,
-      {headers: {'Content-Type': 'application/json'} }
-    ).then(
-      (response) => {
-        if (angular.isDefined(response.data.success) && !response.data.success) {
-          this.logErrorResponse(route, request, response);
-          deferred.reject()
-        }
-        else {
+
+    if (this.env.type == EnvType.BROWSER) {
+      this.browserHttpPost(
+        [this.settings.get(SettingsService.CLOUD_HOST),':',
+         this.settings.get(SettingsService.CLOUD_PORT),'/',route].join(''),
+        req,
+        {headers: {'Content-Type': 'application/json'} },
+        (response)=>{
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
+        },(response)=>{
+          this.logErrorResponse(route, request, response);
+          deferred.reject();
         }
-      },
-      (response) => {
-        this.logErrorResponse(route, request, response);
-        deferred.reject()
-      }
-    )
+      );
+    }
+    else if (this.env.type == EnvType.NODEJS) {
+      this.nodeHttpPost(
+        this.settings.get(SettingsService.CLOUD_HOST).replace(/^(\w+:\/\/)/,''),
+        this.settings.get(SettingsService.CLOUD_PORT),
+        '/' + route,
+        req,
+        (response)=>{
+          console.log("BACK FROM nodeHttpPost",response);
+          this.logResponse(route, request, response);
+          var data = angular.isString(returns) ? response.data[returns] : response.data;
+          deferred.resolve(data);
+        },(response)=>{
+          this.logErrorResponse(route, request, response);
+          deferred.reject();
+        }
+      )
+    }
     return deferred.promise;
+  }
+
+  private browserHttpPost(url: string, request: any, headers: any, onSuccess: Function, onFailure: Function) {
+    this.$http.post(url, request, headers).then(
+      (response) => {
+        (angular.isDefined(response.data.success) && !response.data.success) ?
+          onFailure(response) : onSuccess(response)
+      },
+      (response) => { onFailure(response) }
+    )
+  }
+
+  /* Private lazy collection of loaded nodejs requires */
+  private node: any;
+
+  private nodeHttpPost(hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
+    this.node = this.node || { http: require('http') };
+    var body = JSON.stringify(request);
+    var options = {
+      hostname: hostname,
+      port: port,
+      path: path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        "Content-Length": converters.stringToByteArray(body).length
+      }
+    };
+    var req = this.node.http.request(options, (res) => {
+      res.setEncoding('utf8');
+      var body = [];
+      res.on('data', (chunk) => { body.push(chunk) });
+      res.on('end', () => { onSuccess({data: JSON.parse(body.join(''))}) });
+    });
+    req.on('error', (e) => { onFailure(e) });
+    req.write(body);
+    req.end();
   }
 
   private logResponse(route: string, request: any, response: any) {
