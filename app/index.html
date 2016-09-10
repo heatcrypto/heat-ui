@@ -57,7 +57,13 @@
     <div ng-message="parse">Invalid contents</div>
   </script>
 
+  <!-- NOTE! In order to not have the core modules load in a different way when
+       loaded in Electron (nodejs env) as compared to loading in a browser.
+       We hide the window.require and window.modeule at the start of
+       node_modules.js and restore them at the end. -->
+
   <!-- build:js node_modules.js -->
+  <script src="../app/node_helpers/make-nodejs-hidden.js" defer></script>
   <script src="../node_modules/angular/angular.js" defer></script>
   <script src="../node_modules/angular-new-router/dist/router.es5.js" defer></script>
   <script src="../node_modules/angular-animate/angular-animate.js" defer></script>
@@ -71,7 +77,8 @@
   <script src="../node_modules/angular-material-data-table/dist/md-data-table.js" defer></script>
   <script src="../node_modules/long/dist/long.js" defer></script>
   <script src="../node_modules/bytebuffer/dist/bytebuffer.js" defer></script>
-  <script src="../app/make-dcodeIO-bytebuffer-global.js" defer></script>
+  <script src="../app/node_helpers/make-dcodeIO-bytebuffer-global.js" defer></script>
+  <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <!-- endbuild -->
   <!-- build:chart charting.js -->
   <script src="../node_modules/techan/node_modules/d3/d3.js" defer></script>
