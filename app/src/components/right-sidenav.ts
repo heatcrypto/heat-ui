@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 @Component({
-  selector: 'lompsaRightSidenav',
+  selector: 'rightSidenav',
   template: `
     <md-toolbar class="md-theme-indigo md-tall">
       <h1 class="md-toolbar-tools">Settings</h1>

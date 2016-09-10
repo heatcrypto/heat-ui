@@ -22,7 +22,7 @@
  * */
 @Component({
   selector: 'toolbar',
-  inputs: ['@leftSidenav', '@rightSidenav'],
+  inputs: ['@leftSidenavId', '@rightSidenavId'],
   styles: [`
   toolbar .admin-menu .md-button:not(.active) {
     background-color: #FFA726;
@@ -58,15 +58,15 @@ class ToolbarComponent {
               private sendmoney: SendmoneyService) {
   }
 
-  leftSidenav: string;
-  rightSidenav: string;
+  leftSidenavId: string;
+  rightSidenavId: string;
 
   leftSidenavToggle() {
-    this.$mdSidenav(this.leftSidenav).toggle();
+    this.$mdSidenav(this.leftSidenavId).toggle();
   }
 
   rightSidenavToggle() {
-    this.$mdSidenav(this.rightSidenav).toggle();
+    this.$mdSidenav(this.rightSidenavId).toggle();
   }
 
   showSendmoneyDialog($event) {

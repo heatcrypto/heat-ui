@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 @Component({
-  selector: 'heatLeftSidenav',
+  selector: 'leftSidenav',
   inputs: ['@sidenavId'],
   template: `
     <md-toolbar class="md-theme-indigo">
