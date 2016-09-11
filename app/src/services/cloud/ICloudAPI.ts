@@ -163,6 +163,7 @@ interface ICloudGetMessageContactsRequest {
 }
 
 interface ICloudMessageContact {
+  account: string;
   accountRS: string;
   accountName: string;
   accountEmail: string;
