@@ -89,11 +89,13 @@ module heat {
       Loader.controller_fn = null;
       Loader.factory_fn = null;
 
-      heat.$inject = angular.bootstrap(document, [appName]);
+      angular.bootstrap(document, [appName]);
+      heat.$inject = angular.resumeBootstrap([]);
 
       if (angular.isFunction(Loader['runThisTestAtStartup'])) {
         Loader['runThisTestAtStartup']();
       }
+      console.log("Application bootstrapped. angular.bootstrap(**) returned", heat.$inject);
     }
 
     static config(array: any) { Loader.config_fn.push(array) }
