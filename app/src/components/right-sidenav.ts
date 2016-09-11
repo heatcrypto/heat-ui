@@ -28,6 +28,11 @@
     </md-toolbar>
     <md-content layout-padding flex>
       <md-menu-content flex>
+        <md-menu-item ng-if="vm.showOpenDevTools">
+          <md-button ng-click="vm.opendevTools()">
+            Developer Tools
+          </md-button>
+        </md-menu-item>
         <md-menu-item>
           <md-button ng-click="vm.about($event)">
             About {{ vm.applicationName }}
@@ -41,18 +46,22 @@
       </md-menu-content>
     </md-content>`
 })
-@Inject('user','settings','$mdDialog','$location')
+@Inject('user','settings','$mdDialog','$location','env','electron')
 class RightSidenavComponent {
 
+  public showOpenDevTools: boolean = false;
   public applicationName: string;
   private applicationVersion: string;
 
   constructor(public user: UserService,
               public settings: SettingsService,
               public $mdDialog: angular.material.IDialogService,
-              public $location: angular.ILocationService) {
+              public $location: angular.ILocationService,
+              env: EnvService,
+              private electron: ElectronService) {
     this.applicationName = settings.get(SettingsService.APPLICATION_NAME);
     this.applicationVersion = settings.get(SettingsService.APPLICATION_VERSION);
+    this.showOpenDevTools = env.type == EnvType.NODEJS;
   }
 
   signout() {
@@ -61,5 +70,9 @@ class RightSidenavComponent {
 
   about($event) {
     dialogs.about($event);
+  }
+
+  opendevTools() {
+    this.electron.openDevTools(OpenDevToolsMode.detach);
   }
 }
