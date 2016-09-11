@@ -24,8 +24,10 @@
   selector: 'leftSidenav',
   inputs: ['@sidenavId'],
   template: `
-    <md-toolbar class="md-theme-indigo">
-      <h1 class="md-toolbar-tools"></h1>
+    <md-toolbar>
+      <div class="md-toolbar-tools">
+        <application-title></application-title>
+      </div>
     </md-toolbar>
     <md-content layout-padding flex layout="column">
       <md-menu-item>
