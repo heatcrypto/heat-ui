@@ -20,20 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/messenger')
+@RouteConfig('/messenger/:publickey')
 @Component({
   selector: 'messenger',
+  inputs: ['publickey'],
   template: `
-    <div layout="column" flex layout-align="center center">
-      <h1>Hello {{vm.user.account}}</h1>
-      <p>Welcome to Heat Ledger</p>
+    <div layout="column" flex>
+      <div flex layout="column" style="overflow-x:auto">
+      </div>
+      <div layout="column" layout-padding>
+        <edit-message publickey="vm.publickey" flex layout="column"></edit-message>
+      </div>
     </div>
   `
 })
-@Inject('$scope','user')
+@Inject('$scope','user','engine','cloud')
 class MessengerComponent {
 
+  /* @inputs */
+  publickey: string;
+
   constructor(private $scope: angular.IScope,
-              public user: UserService) {
-  }
+              private user: UserService,
+              private engine: EngineService,
+              private cloud: CloudService) {}
 }
