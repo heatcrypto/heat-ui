@@ -60,8 +60,8 @@ class SettingsService {
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
 
-    this.settings[SettingsService.APPLICATION_NAME] = 'Heat';
-    this.settings[SettingsService.APPLICATION_VERSION] = 'v0.0.1e';
+    this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
+    this.settings[SettingsService.APPLICATION_VERSION] = 'v0.1.0a';
     this.settings[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
     this.settings[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
     this.settings[SettingsService.LOG_API_ERRORS] = true;
@@ -101,7 +101,6 @@ class SettingsService {
       this.settings[SettingsService.CLOUD_PORT] = 9000;
       this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://localhost:9000/socket";
     }
-
   }
 
   settings={};
