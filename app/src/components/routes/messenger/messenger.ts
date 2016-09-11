@@ -25,9 +25,11 @@
   selector: 'messenger',
   inputs: ['publickey'],
   template: `
-    <div layout="column" flex>
-      <div flex layout="column" style="overflow-x:auto">
-      </div>
+    <div layout="column" flex layout-fill>
+      <md-content flex layout="column" flex layout-fill>
+        <message-collection publickey="vm.publickey" first-index="0" last-index="100" is-last="true"
+          layout="column" flex></message-collection>
+      </md-content>
       <div layout="column" layout-padding>
         <edit-message publickey="vm.publickey" flex layout="column"></edit-message>
       </div>
