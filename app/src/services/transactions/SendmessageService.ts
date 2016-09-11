@@ -87,7 +87,7 @@ class SendmessageDialog extends GenericDialog {
               }).
               required(),
       builder.text('message', this.userMessage).
-              rows(3).
+              rows(2).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
                 if (String(message).trim().length == 0 || !this.fields['recipient'].value) {
