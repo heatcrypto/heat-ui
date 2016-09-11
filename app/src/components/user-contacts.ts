@@ -31,8 +31,9 @@
     <div layout="column" flex>
       <md-content layout="column">
         <md-menu-item ng-repeat="contact in vm.contacts" ng-click="vm.goToContact(contact, $event)">
-          <md-button href="#/home" ng-click="vm.close()">
-            <md-icon md-font-library="material-icons" class="md-avatar-icon">person</md-icon>&nbsp;{{contact.account}}
+          <md-button href="#/messenger/{{contact.accountPublicKey}}">
+            <md-icon md-font-library="material-icons" class="md-avatar">person</md-icon>
+            {{contact.account}}
           </md-button>
         </md-menu-item>
       </md-content>
@@ -43,6 +44,7 @@
 class UserContactsComponent {
 
   public contacts : Array<ICloudMessageContact> = [];
+  private refresh: Function;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -50,12 +52,20 @@ class UserContactsComponent {
               private cloud: CloudService,
               private $q: angular.IQService,
               private $timeout: angular.ITimeoutService) {
-    if (user.unlocked) {
+    if (user.unlocked)
       this.getContacts();
-    }
-    else {
+    else
       user.on(UserService.EVENT_UNLOCKED, () => { this.getContacts() });
-    }
+
+    this.refresh = () => { this.getContacts() };
+
+    var topic = new TransactionTopicBuilder().account(this.user.account);
+    var observer = engine.socket().observe<TransactionObserver>(topic).
+      add(this.refresh).
+      remove(this.refresh).
+      confirm(this.refresh);
+
+    $scope.$on("$destroy",() => { observer.destroy() });
   }
 
   goToContact(contact, $event) {
