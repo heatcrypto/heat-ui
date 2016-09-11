@@ -42,17 +42,11 @@
           <span flex></span>
           <span>{{message.date}}</span>
         </div>
-        <div>{{message.contents}}</div>
+        <div><p>{{message.contents}}</p></div>
       </div>
     </div>
   `
 })
-
-
-        // <div layout="column" class="message-body">
-        //   <span>{{message.contents}}</span>
-        // </div>
-
 @Inject('$scope','sendmessage','cloud','address','user','settings','$location', '$anchorScroll','engine')
 class MessageCollectionComponent {
 
