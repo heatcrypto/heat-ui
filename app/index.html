@@ -32,20 +32,16 @@
 
     <div layout="column" flex layout-fill class="application-content">
       <div layout="row" flex  layout-fill>
-        <md-sidenav style="width:240px" class="md-sidenav-left md-whiteframe-z2" md-component-id="left-sidenav"
-            >
-            <!-- md-is-locked-open="$mdMedia('gt-md') && userUnlocked"> -->
-          <heat-left-sidenav flex layout-fill layout="column" sidenav-id="left-sidenav"></heat-left-sidenav>
+        <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left-sidenav"
+            md-is-locked-open="$mdMedia('gt-md') && userUnlocked" style="width:240px">
+          <left-sidenav flex layout="column" sidenav-id="left-sidenav"></left-sidenav>
         </md-sidenav>
         <md-content flex layout-fill layout="column">
-          <toolbar left-sidenav="left-sidenav" right-sidenav="right-sidenav"></toolbar>
-          <div ng-viewport flex layout-fill layout="column" style="overflow:auto"></div>
-          <div layout="row" ng-if="userUnlocked" layout-margin flex>
-            <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">HEAT ICO claim process available</md-button>
-          </div>
+          <toolbar left-sidenav-id="left-sidenav" right-sidenav-id="right-sidenav"></toolbar>
+          <div ng-viewport flex layout-fill layout="column"></div>
         </md-content>
         <md-sidenav class="md-sidenav-right md-whiteframe-z2" md-component-id="right-sidenav" flex>
-          <heat-right-sidenav flex layout-fill layout="column" sidenav-id="right-sidenav"></heat-right-sidenav>
+          <right-sidenav flex layout-fill layout="column" sidenav-id="right-sidenav"></right-sidenav>
         </md-sidenav>
       </div>
     </div>
@@ -81,8 +77,10 @@
   <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <!-- endbuild -->
   <!-- build:chart charting.js -->
+  <script src="../app/node_helpers/make-nodejs-hidden.js" defer></script>
   <script src="../node_modules/techan/node_modules/d3/d3.js" defer></script>
   <script src="../node_modules/techan/dist/techan.js" defer></script>
+  <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <!-- endbuild -->
 
   <!-- <script src="../node_modules/clipboard/dist/clipboard.js" defer></script> -->
