@@ -23,6 +23,12 @@
 @Component({
   selector: 'leftSidenav',
   inputs: ['@sidenavId'],
+  styles: [`
+    left-sidenav .no-padding {
+      padding-top: 0px;
+      padding-bottom: 0px;
+    }
+  `],
   template: `
     <md-toolbar>
       <div class="md-toolbar-tools">
@@ -32,28 +38,34 @@
     <md-content layout-padding flex layout="column">
       <md-menu-item>
         <md-button href="#/home" ng-click="vm.close()">
-          <md-icon md-font-library="material-icons">dashboard</md-icon>&nbsp;Account
+          <md-icon md-font-library="material-icons">home</md-icon>&nbsp;HOME
         </md-button>
       </md-menu-item>
       <md-menu-item>
         <md-button ng-click="vm.showSendmoneyDialog($event); vm.close()">
-          <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;Send HEAT
+          <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;SEND HEAT
         </md-button>
       </md-menu-item>
       <md-menu-item>
-        <md-button href="#/messenger" ng-click="vm.close()">
-          <md-icon md-font-library="material-icons">mail_outline</md-icon>&nbsp;Messages
+        <md-button ng-click="vm.showSendmessageDialog($event); vm.close()">
+          <md-icon md-font-library="material-icons">mail_outline</md-icon>&nbsp;SEND MESSAGE
         </md-button>
+      </md-menu-item>
+      <md-menu-item class="no-padding">
+        <md-divider></md-divider>
+      </md-menu-item>
+      <md-menu-item>
       </md-menu-item>
     </md-content>`
 })
-@Inject('sendmoney','$mdSidenav')
+@Inject('sendmoney','$mdSidenav','sendmessage')
 class LeftSidenavComponent {
 
   sidenavId: string;
 
   constructor(private sendmoney: SendmoneyService,
-              private $mdSidenav) {}
+              private $mdSidenav,
+              private sendmessage: SendmessageService) {}
 
   close() {
     this.$mdSidenav(this.sidenavId).close()
@@ -61,5 +73,9 @@ class LeftSidenavComponent {
 
   showSendmoneyDialog($event) {
     this.sendmoney.dialog($event).show();
+  }
+
+  showSendmessageDialog($event) {
+    this.sendmessage.dialog($event).show();
   }
 }
