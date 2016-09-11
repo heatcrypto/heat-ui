@@ -135,6 +135,7 @@ class CloudAPI implements ICloudAPI {
     return this.cloud.send("search/identifier", request, true, "accounts");
   }
 
+  /* Also supports numeric id's should really be renamed */
   getPublicKey(accountRS: string): angular.IPromise<string> {
     var deferred = this.$q.defer();
     this.cloud.send("search/publickey", {accountRS: accountRS}, false, "publicKey").then(
