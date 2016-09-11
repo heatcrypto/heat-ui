@@ -35,10 +35,10 @@
   template: `
     <md-toolbar>
       <div class="md-toolbar-tools">
-        <md-button class="md-icon-button" ng-click="vm.leftSidenavToggle()" ng-show="vm.user.unlocked" aria-label="Menu">
+        <md-button class="md-icon-button" ng-click="vm.leftSidenavToggle()" hide-gt-sm ng-hide="!vm.user.unlocked" aria-label="Menu">
           <md-icon md-font-library="material-icons">menu</md-icon>
         </md-button>
-        <application-title ng-hide="vm.user.unlocked"></application-title>
+        <application-title hide-gt-md></application-title>
         <!--<user-balance ng-if="vm.user.unlocked && !vm.user.newAccount"></user-balance>-->
         <span flex></span>
         <!--<application-system-time></application-system-time>-->
