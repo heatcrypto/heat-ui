@@ -35,40 +35,42 @@
         <application-title></application-title>
       </div>
     </md-toolbar>
-    <md-content layout-padding flex layout="column">
-      <md-menu-item>
-        <md-button href="#/home" ng-click="vm.close()">
-          <md-icon md-font-library="material-icons">home</md-icon>&nbsp;HOME
-        </md-button>
-      </md-menu-item>
-      <md-menu-item>
-        <md-button ng-click="vm.showSendmoneyDialog($event); vm.close()">
-          <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;SEND HEAT
-        </md-button>
-      </md-menu-item>
-      <md-menu-item>
-        <md-button ng-click="vm.showSendmessageDialog($event); vm.close()">
-          <md-icon md-font-library="material-icons">mail_outline</md-icon>&nbsp;SEND MESSAGE
-        </md-button>
-      </md-menu-item>
-      <md-menu-item class="no-padding">
-        <md-divider></md-divider>
-      </md-menu-item>
-      <md-menu-item>
-      </md-menu-item>
-    </md-content>`
+    <div layout="column" flex layout-padding>
+      <md-content layout="column">
+        <md-menu-item>
+          <md-button href="#/home" ng-click="vm.close()">
+            <md-icon md-font-library="material-icons">home</md-icon>&nbsp;HOME
+          </md-button>
+        </md-menu-item>
+        <md-menu-item>
+          <md-button ng-click="vm.showSendmoneyDialog($event); vm.close()">
+            <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;SEND HEAT
+          </md-button>
+        </md-menu-item>
+        <md-menu-item>
+          <md-button ng-click="vm.showSendmessageDialog($event); vm.close()">
+            <md-icon md-font-library="material-icons">mail_outline</md-icon>&nbsp;SEND MESSAGE
+          </md-button>
+        </md-menu-item>
+      </md-content>
+      <user-contacts flex layout="column"></user-contacts>
+    </div>
+  `
 })
-@Inject('sendmoney','$mdSidenav','sendmessage')
+@Inject('sendmoney','$mdSidenav','sendmessage','$mdMedia')
 class LeftSidenavComponent {
 
   sidenavId: string;
 
   constructor(private sendmoney: SendmoneyService,
               private $mdSidenav,
-              private sendmessage: SendmessageService) {}
+              private sendmessage: SendmessageService,
+              private $mdMedia) {}
 
   close() {
-    this.$mdSidenav(this.sidenavId).close()
+    if (!this.$mdMedia('gt-sm')) {
+      this.$mdSidenav(this.sidenavId).close()
+    }
   }
 
   showSendmoneyDialog($event) {
