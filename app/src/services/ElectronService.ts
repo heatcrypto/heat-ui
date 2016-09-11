@@ -43,7 +43,7 @@ class ElectronService {
   /* Return the first instance since the second one is the dev-tools window,
      when we start using multi-window ui this needs a look. */
   // TODO
-  private getMainWindowWebContents() : any {
+  private getMainWindowWebContents() {
     try {
       return require('electron').remote.webContents.getAllWebContents()[0];
     } catch (e) {
@@ -54,9 +54,7 @@ class ElectronService {
   }
 
   openDevTools(option: OpenDevToolsMode) {
-    if (this.enabled && !this.isDevToolsOpened()) {
-      this.getMainWindowWebContents().openDevTools({mode:option});
-    }
+    this.enabled && this.getMainWindowWebContents().openDevTools({mode:option});
   }
 
   toggleDevTools() {
