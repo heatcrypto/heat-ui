@@ -22,9 +22,17 @@
  * SOFTWARE.
  * */
 class DialogFieldText extends AbstractDialogField {
+
+  _rows: number = 0;
+
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
     this.selector('field-text');
+  }
+
+  rows(rows: number) {
+    this._rows = rows;
+    return this;
   }
 }
 
@@ -35,8 +43,11 @@ class DialogFieldText extends AbstractDialogField {
     <ng-form name="userForm" layout="row">
       <md-input-container class="md-block" flex ng-class="{'async-validator-pending':userForm.userField.$pending}">
         <label>{{vm.label}}</label>
-        <input field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
+        <input ng-if="!vm.f._rows" field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
             name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly" ng-trim="false">
+        <textarea ng-if="vm.f._rows" field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
+            name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly"
+            ng-trim="false" rows="{{vm.f._rows}}"></textarea>
         <md-progress-linear md-mode="indeterminate" ng-if="userForm.userField.$pending"></md-progress-linear>
         <div ng-messages="userForm.userField.$error" ng-if="userForm.userField.$dirty">
           <div ng-messages-include="error-messages"></div>
