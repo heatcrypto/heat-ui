@@ -95,7 +95,6 @@ module heat {
       if (angular.isFunction(Loader['runThisTestAtStartup'])) {
         Loader['runThisTestAtStartup']();
       }
-      console.log("Application bootstrapped. angular.bootstrap(**) returned", heat.$inject);
     }
 
     static config(array: any) { Loader.config_fn.push(array) }
