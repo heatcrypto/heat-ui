@@ -103,6 +103,7 @@ class SendmoneyDialog extends GenericDialog {
                 return deferred.promise;
               }),
       builder.text('message', this.userMessage).
+              rows(2).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
                 if (String(message).trim().length == 0 || !this.fields['recipient'].value) {
