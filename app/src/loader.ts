@@ -26,9 +26,6 @@ module heat {
 
   export class Loader {
 
-    /* Stick whatever code you want in here and it will run at startup. */
-    private static runThisTestAtStartup() {}
-
     static app: angular.IModule;
     private static config_fn = [];
     private static run_fn = [];
@@ -39,6 +36,9 @@ module heat {
     constructor() {
       Loader.controller('AppController', ['$router','user','$location','$scope','$rootScope',
       function ($router, user: UserService, $location: angular.ILocationService, $scope: angular.IScope, $rootScope: angular.IScope) {
+
+        heat.$inject = angular.element(document).injector();
+
         $router.config({ path: '/', redirectTo: '/login' });
 
         function isUnlocked() {
@@ -89,12 +89,7 @@ module heat {
       Loader.controller_fn = null;
       Loader.factory_fn = null;
 
-      heat.$inject = angular.bootstrap(document, [appName]);
-      heat.$inject = heat.$inject || angular.resumeBootstrap([]);
-
-      if (angular.isFunction(Loader['runThisTestAtStartup'])) {
-        Loader['runThisTestAtStartup']();
-      }
+      angular.bootstrap(document, [appName]);
     }
 
     static config(array: any) { Loader.config_fn.push(array) }
