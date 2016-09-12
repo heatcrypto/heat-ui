@@ -32,30 +32,23 @@
   template: `
     <div layout="column" layout-fill flex>
       <div layout="row">
-        <md-button ng-click="vm.showEditor=true" ng-if="!vm.showEditor">Reply</md-button>
+        <md-button class="md-primary" ng-click="vm.sendMessage($event)" ng-disabled="!vm.messageText">Send Message</md-button>
+        <md-button ng-click="vm.messageText=''">Cancel</md-button>
       </div>
-      <div layout="column" flex ng-if="vm.showEditor" class="messenger-editor">
-        <div layout="row">
-          <md-button class="md-primary" ng-click="vm.sendMessage($event)" ng-disabled="!vm.messageText">Send Message</md-button>
-          <md-button ng-click="vm.showEditor=false; vm.messageText=''">Cancel</md-button>
-        </div>
-        <textarea ng-model="vm.messageText" flex></textarea>
-      </div>
+      <textarea ng-model="vm.messageText" flex rows="4"></textarea>
     </div>
   `
 })
-@Inject('$scope','sendmessage','cloud','address')
+@Inject('$scope','sendmessage','address')
 class EditMessageComponent {
 
   /* @inputs */
   publickey: string;
 
-  private showEditor = false;
   private messageText: string;
 
   constructor(private $scope: angular.IScope,
               private sendmessage: SendmessageService,
-              private cloud: CloudService,
               private address: AddressService) {}
 
   sendMessage($event) {
@@ -66,7 +59,6 @@ class EditMessageComponent {
          send().
          then(() => {
       this.$scope.$evalAsync(() => {
-        this.showEditor = false;
         this.messageText = '';
       });
     });
