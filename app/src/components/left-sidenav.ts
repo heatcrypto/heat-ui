@@ -53,7 +53,13 @@
           </md-button>
         </md-menu-item>
       </md-content>
-      <user-contacts flex layout="column"></user-contacts>
+      <md-divider></md-divider>
+      <md-content layout="column" flex>
+        <user-contacts flex layout="column"></user-contacts>
+      </md-content>
+      <div layout="column">
+        <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">NEWS</md-button>
+      </div>
     </div>
   `
 })
