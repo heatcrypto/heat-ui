@@ -24,13 +24,9 @@
   selector: 'editMessage',
   inputs: ['publickey'],
   styles: [`
-    edit-message .messenger-editor {
-      height: 160px;
-      min-height: 160px;
-    }
   `],
   template: `
-    <div layout="column" layout-fill flex>
+    <div layout="column" flex="noshrink">
       <div layout="row">
         <md-button class="md-primary" ng-click="vm.sendMessage($event)" ng-disabled="!vm.messageText">Send Message</md-button>
         <md-button ng-click="vm.messageText=''">Cancel</md-button>
