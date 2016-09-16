@@ -26,11 +26,16 @@
     user-contacts .small-icon {
       font-size: 24px;
     }
+    user-contacts md-menu-item.active {
+      font-weight: bold;
+      color: green;
+    }
   `],
   template: `
     <div layout="column" flex>
       <md-content layout="column">
-        <md-menu-item ng-repeat="contact in vm.contacts" ng-click="vm.goToContact(contact, $event)">
+        <md-menu-item ng-repeat="contact in vm.contacts" ng-click="vm.goToContact(contact, $event)"
+          ng-class="{'active': vm.isActiveContact(contact)}">
           <md-button href="#/messenger/{{contact.accountPublicKey}}">
             <md-icon md-font-library="material-icons" class="md-avatar">person</md-icon>
             {{contact.account}}
@@ -40,18 +45,21 @@
     </div>
   `
 })
-@Inject('$scope','user','engine','cloud','$q','$timeout')
+@Inject('$scope','user','engine','cloud','$q','$timeout','$location','$rootScope')
 class UserContactsComponent {
 
   public contacts : Array<ICloudMessageContact> = [];
   private refresh: Function;
+  private activePublicKey: string;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
               private engine: EngineService,
               private cloud: CloudService,
               private $q: angular.IQService,
-              private $timeout: angular.ITimeoutService) {
+              private $timeout: angular.ITimeoutService,
+              private $location: angular.ILocationService,
+              private $rootScope: angular.IRootScopeService) {
     if (user.unlocked)
       this.getContacts();
     else
@@ -66,6 +74,16 @@ class UserContactsComponent {
       confirm(this.refresh);
 
     $scope.$on("$destroy",() => { observer.destroy() });
+
+    $rootScope.$on('$locationChangeSuccess', () => {
+      console.log("LocationChange", $location.path());
+      var path = $location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1);
+      this.activePublicKey = (route == "messenger") ? params[0] : null;
+    });
+  }
+
+  isActiveContact(contact: ICloudMessageContact): boolean {
+    return contact.accountPublicKey == this.activePublicKey;
   }
 
   goToContact(contact, $event) {
