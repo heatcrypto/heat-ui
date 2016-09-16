@@ -23,57 +23,33 @@
 @RouteConfig('/home')
 @Component({
   selector: 'home',
-  styles: [`
-    home user-balance {
-      font-weight: bold;
-    }
-  `],
   template: `
-    <div layout="column" flex layout-padding>
+    <div layout="column" flex layout-padding layout-fill>
       <div layout="column">
         <div layout="column" layout-gt-sm="row">
           <div layout="column">
-            <user-balance class="md-display-1"></user-balance>
+            <user-balance class="md-display-2"></user-balance>
+          </div>
+          <div flex hide show-gt-sm></div>
+          <div layout="column">
+            <span class="md-subhead"><small>Account: </small></span>
             <div layout="row" layout-align="start center">
               <span id="home-user-id">{{ vm.user.account }}</span>&nbsp;<copy-text element-id="home-user-id" message="Copied Account Id"></copy-text>
             </div>
           </div>
-          <div layout="row">
-            <md-button ng-click="vm.showSendmoneyDialog($event); vm.close()">
-              <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;Send HEAT
-            </md-button>
-            <md-button ng-click="vm.showSendmessageDialog($event); vm.close()">
-              <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;Send Message
-            </md-button>
-          </div>
         </div>
       </div>
-      <div layout="column" layout-gt-sm="row" flex>
-        <div layout="column" flex>
-          <p>Transactions</p>
-        </div>
-        <div layout="column" flex>
-          <p>Messages</p>
-        </div>
+      <div layout="column" flex layout-fill>
+        <user-payments-table flex layout-fill></user-payments-table>
       </div>
     </div>
   `
 })
-@Inject('$scope','user','cloud','sendmoney','sendmessage')
+@Inject('$scope','user','cloud')
 class HomeComponent {
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
-              private cloud: CloudService,
-              private sendmoney: SendmoneyService,
-              private sendmessage: SendmessageService) {
-  }
-
-  showSendmoneyDialog($event) {
-    this.sendmoney.dialog($event).show();
-  }
-
-  showSendmessageDialog($event) {
-    this.sendmessage.dialog($event).show();
+              private cloud: CloudService) {
   }
 }
