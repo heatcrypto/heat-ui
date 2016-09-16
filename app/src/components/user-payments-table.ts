@@ -62,6 +62,7 @@
       <th md-column md-numeric>
         <span>Amount</span>
       </th>
+      <th md-column></th>
       <th md-column md-order-by="sender_id">
         <span>Sender</span>
       </th>
@@ -71,7 +72,6 @@
       <th md-column class="stretch">
         <span>Message</span>
       </th>
-      <th md-column></th>
     `,`
       <td md-cell class="confirmed-td">
         <elipses-loading ng-if="!item.confirmed"></elipses-loading>
@@ -83,6 +83,8 @@
       <td md-cell md-numeric nowrap>
         <money precision="8" amount="item.amount" symbol="vm.user.accountColorName"
           outgoing="item.outgoing" fraction="2"></money>
+      </td>
+      <td md-cell>
         <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
           {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
         </md-icon>
@@ -95,11 +97,6 @@
       </td>
       <td md-cell class="stretch">
         <div class="message-text">{{item.messageText}}</div>
-      </td>
-      <td md-cell>
-        <md-button class="md-icon-button" ng-click="vm.showDetails($event, item)">
-          <md-icon md-font-library="material-icons">more_vert</md-icon>
-        </md-button>
       </td>
     `
   )
