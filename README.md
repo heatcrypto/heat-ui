@@ -107,6 +107,12 @@ To install the required type definitions
 tsd install
 ```
 
+To install new definitions use this command.
+
+```
+tsd install angular-scroll --save
+```
+
 ### Start the development server
 
 Heat-ui comes with a fully configured development server, the server auto compiles from TypeScript to Javascript whenever you change a file. The development server allows you to access your compiled app at a localhost address, straight from your browser. Hit refresh to load your latest changes.
