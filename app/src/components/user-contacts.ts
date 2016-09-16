@@ -35,7 +35,7 @@
     <div layout="column" flex>
       <md-content layout="column">
         <md-menu-item ng-repeat="contact in vm.contacts" ng-click="vm.goToContact(contact, $event)"
-          ng-class="{'active': vm.isActiveContact(contact)}">
+          ng-class="{'active': (contact.accountPublicKey == vm.activePublicKey) }">
           <md-button href="#/messenger/{{contact.accountPublicKey}}">
             <md-icon md-font-library="material-icons" class="md-avatar">person</md-icon>
             {{contact.account}}
@@ -80,10 +80,6 @@ class UserContactsComponent {
       var path = $location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1);
       this.activePublicKey = (route == "messenger") ? params[0] : null;
     });
-  }
-
-  isActiveContact(contact: ICloudMessageContact): boolean {
-    return contact.accountPublicKey == this.activePublicKey;
   }
 
   goToContact(contact, $event) {
