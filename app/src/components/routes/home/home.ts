@@ -35,7 +35,7 @@
           <div layout="column">
             <user-balance class="md-display-1"></user-balance>
             <div layout="row" layout-align="start center">
-              <span id="home-user-id">{{ vm.user.account }}</span>&nbsp;<copy-text element-id="home-user-id" message="Coppied Account Id"></copy-text>
+              <span id="home-user-id">{{ vm.user.account }}</span>&nbsp;<copy-text element-id="home-user-id" message="Copied Account Id"></copy-text>
             </div>
           </div>
           <div layout="row">
