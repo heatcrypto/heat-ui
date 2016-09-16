@@ -45,6 +45,7 @@
     "angular-new-router": "0.5.3",
     "angular-route": "1.5.8",
     "angular-sanitize": "1.5.8",
+    "angular-scroll": "^1.0.0",
     "bytebuffer": "5.0.1",
     "dateformat": "1.0.12",
     "filesaver.js": "0.2.0",
