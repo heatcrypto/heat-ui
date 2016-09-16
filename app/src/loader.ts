@@ -71,7 +71,8 @@ module heat {
         'ngMessages',
         'noCAPTCHA',
         'md.data.table',
-        'ngSanitize'
+        'ngSanitize',
+        'duScroll'
       ]);
     }
 
