@@ -24,14 +24,18 @@
 @Component({
   selector: 'messenger',
   inputs: ['publickey'],
+  styles: [`
+    messenger edit-message {
+      min-height: 80px;
+    }
+  `],
   template: `
-    <div layout="column" flex layout-fill>
-      <md-content flex layout="column" flex layout-fill>
-        <message-collection publickey="vm.publickey" first-index="0" last-index="100" is-last="true"
-          layout="column" flex></message-collection>
+    <div layout="column" flex  layout-padding>
+      <md-content flex id="message-batch-container">
+        <message-batch-viewer flex layout="column" publickey="::vm.publickey"></message-batch-viewer>
       </md-content>
-      <div layout="column" layout-padding>
-        <edit-message publickey="vm.publickey" flex layout="column"></edit-message>
+      <div layout="column" flex="none">
+        <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
       </div>
     </div>
   `
