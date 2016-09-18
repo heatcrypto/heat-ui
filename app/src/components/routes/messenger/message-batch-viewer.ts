@@ -22,7 +22,7 @@
  * */
 @Component({
   selector: 'messageBatchViewer',
-  inputs: ['publickey'],
+  inputs: ['publickey','@containerId'],
   styles: [`
     message-batch-viewer .message-item {
       min-height: 80px;
@@ -30,7 +30,7 @@
   `],
   template: `
     <div layout="column" flex>
-      <div class="scroll-up" layout="row" flex ng-show="vm.canScrollUp" layout-align="center">
+      <div class="scroll-up" layout="row" flex ng-hide="vm.getParentScope().loading || vm.batches[vm.batches.length-1].firstIndex == 0" layout-align="center">
         <md-button ng-click="vm.scrollUp()">Go up</md-button>
       </div>
       <div layout="column">
@@ -46,30 +46,18 @@
 @Inject('$scope','$q','$timeout','$document','engine','user','cloud','settings')
 class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
-  private data = [];
-  private buildTestData(size: number) {
-    for (var i=0; i<size; i++) {
-      this.data.push({
-        name: "Name "+i,
-        index: i,
-        sender: "33873874972872987",
-        date: "22-03-2013 12:57PM"
-      });
-    }
-  }
-
   private publickey: string; // @input
+  private containerId: string; // @input
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
-              private $timeout: angular.ITimeoutService,
+              $timeout: angular.ITimeoutService,
               private $document: angular.IDocumentService,
               private engine: EngineService,
               private user: UserService,
               private cloud: CloudService,
               private settings: SettingsService) {
-    super($scope, $q);
-    this.buildTestData(105);
+    super($scope, $q, $timeout);
 
     var topic = new TransactionTopicBuilder().account(this.user.account);
     var observer = engine.socket().observe<TransactionObserver>(topic)
@@ -84,48 +72,55 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   loadInitial() {
     var deferred = this.$q.defer();
     this.clear();
+    this.$scope.$evalAsync(() => { this.getParentScope().loading = true });
     this.getBatch(0).then((batch) => {
       this.$scope.$evalAsync(() => { // ensure contents are rendered
-        this.$timeout(500).then(() => { // resolve promise in next event loop
+        this.getParentScope().loading = false;
+        this.$timeout(0).then(() => { // resolve promise in next event loop
           deferred.resolve();
         });
       })
     });
     deferred.promise.then(() => {
-      this.goTo(this.getFirst().getLast().__id, 0, 1000);
+      this.goTo(this.getFirst().getLast().__id, 0, 1);
     });
     return deferred.promise;
   }
 
   /* websocket event listener */
   onMessageAdded() {
-    this.getFirst().loadMore().then(() => {
-      // scroll to the new last element
-      this.goTo(this.getFirst().getLast().__id, 0, 100);
+    var batch = this.getFirst();
+    batch.loadMore().then(() => {
+      var entry = batch.getLast();
+      var id = entry.__id;
+      this.$scope.$evalAsync(() => {
+        this.$timeout(0).then(() => { // leave render loop before coming back and doing the scroll
+          this.goTo(id, 0, 1000); // scroll to the new last element
+        })
+      })
     });
   }
 
   /* websocket event listener */
-  onMessageRemoved() {
-
-  }
+  onMessageRemoved() {}
 
   /* websocket event listener */
-  onMessageConfirmed() {
-
-  }
+  onMessageConfirmed() {}
 
   goTo(id: string, offset?: number, duration?: number) : angular.IPromise<any> {
-    var container = <duScroll.IDocumentService> angular.element(document.getElementById("message-batch-container"));
+    var container = this.getScrollContainer();
     var element = angular.element(document.getElementById(id));
     var _offset = offset || 30;
     var _duration = duration || 2000;
     return container.duScrollToElement(element, _offset, _duration, heat.easing.easeOutCubic);
   }
 
+  getScrollContainer() : duScroll.IDocumentService {
+     return <duScroll.IDocumentService> angular.element(document.getElementById(this.containerId))
+  }
+
   getCount() : angular.IPromise<number> {
     var deferred = this.$q.defer();
-    // this.$timeout(1000).then(() => { deferred.resolve(this.data.length) });
     this.cloud.api.getMessageCount(
         this.user.accountRS,
         heat.crypto.getAccountIdFromPublicKey(this.publickey)
@@ -136,9 +131,9 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
       deferred.reject);
     return deferred.promise;
   }
+
   getItems(firstIndex: number, lastIndex: number) : angular.IPromise<Array<any>> {
     var deferred = this.$q.defer();
-    // this.$timeout(1000).then(() => { deferred.resolve(this.data.slice(firstIndex, lastIndex)) });
     var request: ICloudGetMessagesRequest = {
       accountRS: heat.crypto.getAccountIdFromPublicKey(this.publickey),
       firstIndex: firstIndex,
@@ -147,12 +142,14 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
       sortColumn: 'timestamp'
     }
     this.cloud.api.getMessages(request).then((messages) => {
+      var index = firstIndex;
       deferred.resolve(messages.map((message) => {
         var date = utils.timestampToDate(message.timestamp);
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         message['date'] = dateFormat(date, format);
         message['outgoing'] = this.user.accountRS == message.senderRS;
         message['contents'] = this.decryptMessage(message);
+        message['index'] = index++;
         return message;
       }));
     })
