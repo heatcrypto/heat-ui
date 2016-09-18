@@ -48,6 +48,7 @@ class SettingsService {
   public static CLOUD_RPC_TIMEOUT = 'settings.cloud_rpc_timeout';
   public static CLOUD_WEBSOCKET_URL = 'settings.cloud_websocket_url';
   public static TRANSACTION_PROCESSING_VISUALIZATION = 'settings.transaction_processing_visualization';
+  public static NEWS_URL = 'settings.news_url';
 
   constructor() {
     this.settings[SettingsService.WEBSOCKET_URL] = 'wss://zombies.mofowallet.org:8884/ws/';
@@ -89,6 +90,7 @@ class SettingsService {
     this.settings[SettingsService.CLOUD_RPC_TIMEOUT] = 30 * 1000;
     this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://zombies.mofowallet.org:8080/socket";
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
+    this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
 
     /* Override with test endpoints */
     var LOCAL_HEAT_LEDGER = false;
