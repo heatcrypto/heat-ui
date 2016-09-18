@@ -53,9 +53,9 @@
     <div ng-message="parse">Invalid contents</div>
   </script>
 
-  <!-- NOTE! In order to not have the core modules load in a different way when
-       loaded in Electron (nodejs env) as compared to loading in a browser.
-       We hide the window.require and window.modeule at the start of
+  <!-- NOTE! In order to NOT have the core modules load in a different way when
+       loaded in Electron (nodejs) env as compared to loading in a browser env.
+       We hide the window.require and window.module at the start of
        node_modules.js and restore them at the end. -->
 
   <!-- build:js node_modules.js -->
@@ -83,8 +83,6 @@
   <script src="../node_modules/techan/dist/techan.js" defer></script>
   <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <!-- endbuild -->
-
-  <!-- <script src="../node_modules/clipboard/dist/clipboard.js" defer></script> -->
 
   <script src="lib.js" defer></script>
   <script src="tshelpers.js" defer></script>
