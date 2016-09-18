@@ -43,7 +43,8 @@
     </div>
   `
 })
-@Inject('$scope','$q','$timeout','$document','engine','user','cloud','settings')
+@Inject('$scope','$q','$timeout','$document','engine','user','cloud','settings',
+        'render','controlCharRender')
 class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   private publickey: string; // @input
@@ -56,7 +57,9 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
               private engine: EngineService,
               private user: UserService,
               private cloud: CloudService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private render: RenderService,
+              private controlCharRender: ControlCharRenderService) {
     super($scope, $q, $timeout);
 
     var topic = new TransactionTopicBuilder().account(this.user.account);
@@ -150,6 +153,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
         message['outgoing'] = this.user.accountRS == message.senderRS;
         message['contents'] = this.decryptMessage(message);
         message['index'] = index++;
+        message['html'] = this.render.render(message['contents'], [this.controlCharRender]);
         return message;
       }));
     })
