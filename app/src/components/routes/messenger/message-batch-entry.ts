@@ -44,7 +44,7 @@
         <div layout="row" class="header">
           <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;</b>{{::vm.message.date}}
         </div>
-        <div layout="column">{{ vm.message.contents }}</div>
+        <div layout="column" ng-bind-html="vm.message.html"></div>
       </div>
     </div>
   `
