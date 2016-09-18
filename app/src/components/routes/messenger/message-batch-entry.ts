@@ -25,17 +25,23 @@
   inputs: ['message'],
   styles: [`
     message-batch-entry md-icon {
-      padding-top: 4px;
+      padding-top: 8px;
       font-size: 32px !important;
+    }
+    message-batch-entry .header {
+      font-size: 15px;
+    }
+    message-batch-entry .batch-entry {
+      padding-left: 0px;
     }
   `],
   template: `
-    <div layout="row" flex layout-align="start start" layout-padding>
+    <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
       <div layout="column">
         <md-icon md-font-library="material-icons">{{::vm.icon}}</md-icon>
       </div>
       <div layout="column" flex layout-padding>
-        <div layout="row">
+        <div layout="row" class="header">
           <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;</b>{{::vm.message.date}}
         </div>
         <div layout="column">{{ vm.message.contents }}</div>
