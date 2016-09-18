@@ -1,4 +1,4 @@
-///<reference path='../RenderingService.ts'/>
+///<reference path='../RenderService.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.
