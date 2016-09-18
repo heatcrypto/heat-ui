@@ -24,15 +24,16 @@ abstract class AbstractBatchViewerComponent {
 
   public batches : Array<Batch> = [];
   public batchSize: number = 10;
-  public canScrollUp: boolean = true;
 
   constructor(public $scope: angular.IScope,
-              public $q: angular.IQService) {
-  }
+              public $q: angular.IQService,
+              public $timeout: angular.ITimeoutService) {}
 
   abstract getCount() : angular.IPromise<number>;
 
   abstract getItems(firstIndex: number, lastIndex: number) : angular.IPromise<Array<any>>;
+
+  abstract getScrollContainer() : duScroll.IDocumentService;
 
   public clear() {
     this.batches = [];
@@ -49,6 +50,10 @@ abstract class AbstractBatchViewerComponent {
   /* Get the firstIndex from the lastly added batch */
   public getFirstIndex() : number {
     return this.getLast().firstIndex
+  }
+
+  protected getParentScope() {
+    return this.$scope.$parent['vm'];
   }
 
   public getBatch(index: number) : angular.IPromise<Batch> {
@@ -68,7 +73,7 @@ abstract class AbstractBatchViewerComponent {
     if (angular.isDefined(this.batches[index-1])) {
       var previousFirstIndex = this.batches[index-1].firstIndex;
       var firstIndex = Math.max(0, previousFirstIndex-this.batchSize);
-      var lastIndex = previousFirstIndex;
+      var lastIndex = previousFirstIndex-1;
       this.getItems(firstIndex, lastIndex).then(
         (items) => {
           this.batches[index] = new Batch(this, items, firstIndex, lastIndex)
@@ -87,7 +92,7 @@ abstract class AbstractBatchViewerComponent {
           firstIndex = Math.max(0, firstIndex - this.batchSize);
           this.getItems(firstIndex, lastIndex).then(
             (items) => {
-              this.batches[index] = new Batch(this, items, firstIndex, lastIndex)
+              this.batches[index] = new Batch(this, items, firstIndex, lastIndex);
               deferred.resolve(this.batches[index]);
             },
             deferred.reject
@@ -102,9 +107,33 @@ abstract class AbstractBatchViewerComponent {
   protected scrollUp() {
     if (this.getFirstIndex() > 0) {
       var batchIndex = this.batches.length -1;
+      var topBatch = this.batches[batchIndex];
+      var topEntryId = topBatch.getFirst().__id;
+      var topEntryElement = angular.element(document.getElementById(topEntryId));
+
+      // 1. set ui to display as loading, this reveals the progress indicator and hides the
+      //    load more button (automatically bringing the top entry to the top)
+      this.$scope.$evalAsync(() => { this.getParentScope().loading = true });
+
+      // 2. load the next batch
       this.getBatch(batchIndex +1).then(() => {
         this.$scope.$evalAsync(() => {
-          this.canScrollUp = this.getFirstIndex() > 0;
+          // flush ui updates by leaving the event loop
+          this.$timeout(500).then(() => {
+            // the new entries have been added to the ui which auto-scrolls the container
+            // to the top. we however want to instantly have the previously 'at the top'
+            // element back at the top.
+            this.getScrollContainer().duScrollToElement(topEntryElement, 0, 0, null).then(() => {
+              this.$scope.$evalAsync(() => {
+                this.getParentScope().loading = false
+                this.$timeout(0).then(() => {
+                  var offset = this.getScrollContainer()[0].clientHeight -
+                              topEntryElement[0].offsetHeight;
+                  this.getScrollContainer().duScrollToElement(topEntryElement, offset, 1200, heat.easing.easeOutCubic);
+                })
+              });
+            });
+          });
         });
       });
     }
@@ -113,6 +142,7 @@ abstract class AbstractBatchViewerComponent {
 
 class Batch {
   static COUNTER = 0;
+
   constructor(private viewer: AbstractBatchViewerComponent,
               public entries: Array<any>,
               public firstIndex: number,
@@ -121,16 +151,21 @@ class Batch {
   }
 
   public loadMore() : angular.IPromise<any> {
+    var batch = this; // Some weirdness going on here which is causing the window var to be
+                      // assigned to typescript this inside the first getCount.
+                      // This will do for now.
     var deferred = this.viewer.$q.defer();
     this.viewer.getCount().then(
       (count) => {
-        if ((count -1) > this.lastIndex) {
-          this.viewer.getItems(this.lastIndex +1, count -1).then(
+        if (count > batch.lastIndex) {
+          batch.viewer.getItems(batch.lastIndex, count).then(
             (items) => {
               items.forEach((item) => {
-                this.entries.push(item);
-                this.lastIndex++;
+                item["__id"] = `batch-entry-${Batch.COUNTER++}`;
+                batch.entries.push(item);
+                batch.lastIndex++;
               });
+              deferred.resolve(items);
             },
             deferred.reject
           )
