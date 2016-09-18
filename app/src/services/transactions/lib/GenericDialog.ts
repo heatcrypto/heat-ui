@@ -328,7 +328,7 @@ function GenericDialogCreateController(dialog: GenericDialog) {
               }
 
               /* Close by itself on instant send */
-              else if (this.instantSend) {
+              else /* if (this.instantSend) */ {
                 setTimeout(() => { this.dialogHide() }, 666);
               }
             });
