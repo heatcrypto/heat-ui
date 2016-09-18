@@ -59,7 +59,7 @@ class NewsBarComponent {
   `],
   template: `
     <div layout="column">
-      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">{{vm.news.first().title}}</md-button>
+      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">NEWS: {{vm.news.first().title}}</md-button>
     </div>
   `
 })
