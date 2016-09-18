@@ -28,13 +28,35 @@
     messenger edit-message {
       min-height: 80px;
     }
+    messenger .outer-container {
+      padding-top: 0px;
+      padding-bottom: 0px;
+    }
+    messenger md-content {
+      padding-top: 2px;
+    }
+    messenger .progress-indicator {
+      padding-left: 0px;
+      padding-right: 0px;
+    }
+    messenger md-progress-linear > .md-container {
+      height: 3px;
+      max-height: 3px;
+    }
+    messenger .edit-message {
+      padding-right: 0px;
+    }
   `],
   template: `
-    <div layout="column" flex  layout-padding>
+    <div layout="column" flex layout-padding class="outer-container">
+      <div class="row" class="progress-indicator" flex ng-show="vm.loading">
+        <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
+      </div>
       <md-content flex id="message-batch-container">
-        <message-batch-viewer flex layout="column" publickey="::vm.publickey"></message-batch-viewer>
+        <message-batch-viewer flex layout="column" container-id="message-batch-container"
+                publickey="::vm.publickey"></message-batch-viewer>
       </md-content>
-      <div layout="column" flex="none">
+      <div layout="column" flex="none" class="edit-message">
         <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
       </div>
     </div>
@@ -43,11 +65,11 @@
 @Inject('$scope','user','engine','cloud')
 class MessengerComponent {
 
-  /* @inputs */
-  publickey: string;
+  publickey: string; // @input
+  loading: boolean;
 
   constructor(private $scope: angular.IScope,
               private user: UserService,
               private engine: EngineService,
-              private cloud: CloudService) {}
+              private cloud: CloudService) { }
 }
