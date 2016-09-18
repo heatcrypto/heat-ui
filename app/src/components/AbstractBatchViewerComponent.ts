@@ -119,7 +119,7 @@ abstract class AbstractBatchViewerComponent {
       this.getBatch(batchIndex +1).then(() => {
         this.$scope.$evalAsync(() => {
           // flush ui updates by leaving the event loop
-          this.$timeout(500).then(() => {
+          this.$timeout(0).then(() => {
             // the new entries have been added to the ui which auto-scrolls the container
             // to the top. we however want to instantly have the previously 'at the top'
             // element back at the top.
