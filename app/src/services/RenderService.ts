@@ -31,6 +31,6 @@ class RenderService {
     renderers.forEach((renderer) => {
       text = renderer.toHtml(text);
     });
-    return "";
+    return text;
   }
 }
