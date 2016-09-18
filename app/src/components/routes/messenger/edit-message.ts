@@ -24,28 +24,39 @@
   selector: 'editMessage',
   inputs: ['publickey'],
   styles: [`
+    edit-message .md-button {
+      margin: 0px;
+      min-width: 46px;
+    }
   `],
   template: `
     <div layout="column" flex="noshrink">
-      <div layout="row">
-        <md-button class="md-primary" ng-click="vm.sendMessage($event)" ng-disabled="!vm.messageText">Send Message</md-button>
-        <md-button ng-click="vm.messageText=''">Cancel</md-button>
-      </div>
-      <textarea ng-model="vm.messageText" flex rows="4"></textarea>
+      <form hide-gt-xs name="editMessageForm" ng-submit="vm.sendMessage($event)" flex layout="row">
+        <textarea ng-model="vm.messageText" flex rows="4"></textarea>
+        <md-button type="submit">
+          <md-icon md-font-library="material-icons">send</md-icon>
+        </md-button>
+      </form>
+      <textarea hide-xs ng-model="vm.messageText" flex rows="4" ng-keypress="vm.onKeyPress($event)"></textarea>
     </div>
   `
 })
 @Inject('$scope','sendmessage','address')
 class EditMessageComponent {
 
-  /* @inputs */
-  publickey: string;
+  publickey: string; // @inputs
 
   private messageText: string;
 
   constructor(private $scope: angular.IScope,
               private sendmessage: SendmessageService,
               private address: AddressService) {}
+
+  onKeyPress($event: KeyboardEvent) {
+    if ($event.keyCode == 13 && !$event.shiftKey) {
+      this.sendMessage($event);
+    }
+  }
 
   sendMessage($event) {
     var account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
