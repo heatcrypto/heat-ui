@@ -90,7 +90,7 @@ class SettingsService {
     };
 
     this.settings[SettingsService.CLOUD_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "wss://alpha.heatledger.com:8080/socket";
+    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "wss://alpha.heatledger.com:8443/socket";
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
