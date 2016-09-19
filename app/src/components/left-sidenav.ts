@@ -44,11 +44,6 @@
             </md-button>
           </md-menu-item>
           <md-menu-item>
-            <md-button href="#/explorer" ng-click="vm.close()">
-              <md-icon md-font-library="material-icons">explore</md-icon>&nbsp;BLOCKCHAIN
-            </md-button>
-          </md-menu-item>
-          <md-menu-item>
             <md-button ng-click="vm.showSendmoneyDialog($event); vm.close()">
               <md-icon md-font-library="material-icons">toll</md-icon>&nbsp;SEND HEAT
             </md-button>
@@ -56,6 +51,11 @@
           <md-menu-item>
             <md-button ng-click="vm.showSendmessageDialog($event); vm.close()">
               <md-icon md-font-library="material-icons">mail_outline</md-icon>&nbsp;SEND MESSAGE
+            </md-button>
+          </md-menu-item>
+          <md-menu-item>
+            <md-button href="#/explorer" ng-click="vm.close()">
+              <md-icon md-font-library="material-icons">explore</md-icon>&nbsp;BLOCKCHAIN
             </md-button>
           </md-menu-item>
         </md-content>
