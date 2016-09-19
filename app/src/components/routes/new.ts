@@ -35,28 +35,29 @@ declare var __dirname: any;
   template: `
     <div layout="column" flex layout-align="center center">
       <p class="md-title">Howdy new user</p>
-      <p>To start using your new account it needs to be registered on the blockchain.</p>
+      <p>Your HEAT test account is pending activation.</p>
       <div layout="column" flex>
-        <p>Please be so kind to check the box below and click the big button and we'll make sure your account is registered and ready to use in seconds.</p>
         <div layout="column" flex>
-          <input type="hidden" ng-model="vm.captchaResponse" name="captchaResponse" required>
           <div layout="column" ng-if="vm.isBrowser">
             <center>
+              <p>Please be so kind to check the box below and click the big button and we'll make sure your account is registered and ready to use in seconds.</p>
               <no-captcha flex g-recaptcha-response="vm.captchaResponse"
                 theme="light" expired-callback="vm.captchaExpired"></no-captcha>
             </center>
           </div>
           <div layout="column" ng-if="!vm.isBrowser">
             <center>
+              <p>Please continue to human user verification by clicking on the CONTINUE button below.</p>
               <md-button ng-click="vm.doChallenge()"
                 class="md-raised md-primary"
-                ng-disabled="vm.captchaResponse">Continue</md-button>
+                ng-disabled="vm.captchaResponse">CONTINUE</md-button>
             </center>
           </div>
           <div layout="column">
             <center>
+              <p>After verification, activate your test account by clicking on the "ACTIVATE ACCOUNT" button below.</p>
               <md-button class="md-raised md-primary" ng-disabled="!vm.captchaResponse"
-                ng-click="vm.registerAccount($event)">Create Account</md-button>
+                ng-click="vm.registerAccount($event)">ACTIVATE ACCOUNT</md-button>
             </center>
           </div>
         </div>
@@ -115,7 +116,7 @@ class NewComponent {
       this.captchaWindow = null;
     }
     var url = this.settings.get(SettingsService.CAPTCHA_POPUP);
-    this.captchaWindow = <Window> window.open(url,"New Window", "width=600,height=600,resizable=1,modal=1");
+    this.captchaWindow = <Window> window.open(url,"New Window", "width=432,height=550,resizable=true,modal=true,center=true");
     var resolved = false;
     window.addEventListener("message", (event) => {
       try {
