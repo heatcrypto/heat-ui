@@ -112,7 +112,7 @@ class CloudService {
   private node: any;
 
   private nodeHttpPost(hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
-    this.node = this.node || { http: require('http') };
+    this.node = this.node || { http: require('https') };
     var body = JSON.stringify(request);
     var options = {
       hostname: hostname, port: port, path: path, method: 'POST',
