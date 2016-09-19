@@ -70,8 +70,8 @@ class SettingsService {
     this.settings[SettingsService.LOG_API_ERRORS] = true;
     this.settings[SettingsService.LOG_API_ALL] = false;
     this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
-    this.settings[SettingsService.CLOUD_HOST] = "http://alpha.heatledger.com";
-    this.settings[SettingsService.CLOUD_PORT] = 8080;
+    this.settings[SettingsService.CLOUD_HOST] = "https://alpha.heatledger.com";
+    this.settings[SettingsService.CLOUD_PORT] = 8443;
     this.settings[SettingsService.LOG_CLOUD_ERRORS] = true;
     this.settings[SettingsService.LOG_CLOUD_ALL] = true;
     this.settings[SettingsService.LOG_CLOUD_NOTIFY_ALL] = true;
@@ -90,7 +90,7 @@ class SettingsService {
     };
 
     this.settings[SettingsService.CLOUD_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://zombies.mofowallet.org:8080/socket";
+    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "wss://alpha.heatledger.com:8080/socket";
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
