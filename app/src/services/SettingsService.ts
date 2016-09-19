@@ -49,6 +49,8 @@ class SettingsService {
   public static CLOUD_WEBSOCKET_URL = 'settings.cloud_websocket_url';
   public static TRANSACTION_PROCESSING_VISUALIZATION = 'settings.transaction_processing_visualization';
   public static NEWS_URL = 'settings.news_url';
+  public static CAPTCHA_SITE_KEY = 'settings.captcha_site_key';
+  public static CAPTCHA_POPUP = 'settings.captcha_popup';
 
   constructor() {
     this.settings[SettingsService.WEBSOCKET_URL] = 'wss://zombies.mofowallet.org:8884/ws/';
@@ -91,6 +93,8 @@ class SettingsService {
     this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://zombies.mofowallet.org:8080/socket";
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
+    this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
+    this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
 
     /* Override with test endpoints */
     var LOCAL_HEAT_LEDGER = false;
