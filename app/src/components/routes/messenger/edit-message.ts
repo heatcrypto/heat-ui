@@ -38,7 +38,7 @@
         </md-button>
       </form>
       <textarea hide-xs ng-model="vm.messageText" flex rows="4"
-        ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, ENTER+SHIFT for new line"></textarea>
+        ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line"></textarea>
     </div>
   `
 })
