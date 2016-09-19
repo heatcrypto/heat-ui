@@ -37,7 +37,8 @@
           <md-icon md-font-library="material-icons">send</md-icon>
         </md-button>
       </form>
-      <textarea hide-xs ng-model="vm.messageText" flex rows="4" ng-keypress="vm.onKeyPress($event)"></textarea>
+      <textarea hide-xs ng-model="vm.messageText" flex rows="4"
+        ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, ENTER+SHIFT for new line"></textarea>
     </div>
   `
 })
