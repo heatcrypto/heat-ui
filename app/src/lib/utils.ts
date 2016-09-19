@@ -293,7 +293,7 @@ module utils {
       };
       var callNow = immediate && !timeout;
       clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
+      timeout = setTimeout(later, wait||100);
       if (callNow) func.apply(context, args);
     };
   };
