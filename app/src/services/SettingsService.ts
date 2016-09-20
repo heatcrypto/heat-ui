@@ -23,6 +23,11 @@
 @Service('settings')
 class SettingsService {
 
+  /* DO NOT TOUCH.
+     Replaced with contents of VERSION file by release.sh */
+  private VERSION = "%BUILD_OVERRIDE_VERSION%";
+  private BUILD = "%BUILD_OVERRIDE_BUILD%";
+
   public static WEBSOCKET_URL = 'settings.websocket_url';
   public static WEBSOCKET_URL_FALLBACK = 'settings.websocket_url_fallback';
   public static WEBSOCKET_URL_LOCALHOST = 'settings.websocket_url_localhost';
@@ -32,6 +37,7 @@ class SettingsService {
   public static DATEFORMAT_DEFAULT = 'settings.dateformat_default';
   public static APPLICATION_NAME = 'settings.application_name';
   public static APPLICATION_VERSION = 'settings.application_version';
+  public static APPLICATION_BUILD = 'settings.application_build';
   public static SOCKET_RPC_TIMEOUT = 'settings.socket_rpc_timeout';
   public static SOCKET_RECONNECT_DELAY = 'settings.socket_reconnect_delay';
   public static LOG_API_ERRORS = 'settings.log_api_errors';
@@ -64,7 +70,8 @@ class SettingsService {
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
 
     this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
-    this.settings[SettingsService.APPLICATION_VERSION] = 'v0.1.0a';
+    this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
+    this.settings[SettingsService.APPLICATION_BUILD] = this.BUILD;
     this.settings[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
     this.settings[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
     this.settings[SettingsService.LOG_API_ERRORS] = true;
