@@ -152,6 +152,12 @@ Heat-ui desktop edition comes with installers for Windows, Mac and Linux.
 
 https://github.com/electron-userland/electron-builder
 
+```
+npm install electron-builder --save-dev
+```
+
+When building on Linux look here for dependencies https://github.com/electron-userland/electron-builder/wiki/Multi-Platform-Build#linux
+
 ### Links
 
 https://github.com/sindresorhus/awesome-electron.
