@@ -144,4 +144,9 @@ gulp.task('build', ['clean','ts2js','usemin','copy:dist'], function () {
     .pipe(gulp.dest('dist'));
 });
 
+gulp.task('electron', function () {
+  return gulp.src('app/electron/*')
+    .pipe(gulp.dest('dist/electron'));
+});
+
 gulp.task('default', ['play']);
