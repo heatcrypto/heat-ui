@@ -4,7 +4,4 @@ tools
 node_modules
 dist
 npm-debug.log
-heat-ui-linux-x64
-heat-ui-linux-x64.zip
-heat-ui-win32-x64
-heat-ui-win32-x64.zip
+releases
