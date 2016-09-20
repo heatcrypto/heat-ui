@@ -22,17 +22,23 @@
  * */
 
 const electron = require('electron')
+const path = require("path")
 const app = electron.app
 const BrowserWindow = electron.BrowserWindow
+const APP_DIR = path.join(__dirname,'..')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 
 function createWindow () {
-  mainWindow = new BrowserWindow({width: 800, height: 600})
-  mainWindow.loadURL(`file://${__dirname}/index.html`)
-  // mainWindow.webContents.openDevTools()
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    icon:`${APP_DIR}/electron/app-icon.png`
+  })
+  mainWindow.loadURL(`file://${APP_DIR}/index.html`)
+  mainWindow.webContents.openDevTools()
 
   mainWindow.on('closed', function () {
     mainWindow = null
