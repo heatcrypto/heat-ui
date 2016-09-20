@@ -83,7 +83,6 @@ class CloudService {
         '/' + route,
         req,
         (response)=>{
-          console.log("BACK FROM nodeHttpPost",response);
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
