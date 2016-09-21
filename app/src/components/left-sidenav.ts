@@ -63,8 +63,8 @@
         <md-content layout="column" flex>
           <user-contacts flex layout="column"></user-contacts>
         </md-content>
+        <news-button layout="column"></news-button>
       </div>
-      <news-button layout="column"></news-button>
     </div>
   `
 })
