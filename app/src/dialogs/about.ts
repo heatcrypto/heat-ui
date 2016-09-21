@@ -28,11 +28,12 @@ module dialogs {
       title: 'About',
       targetEvent: $event,
       template: `
-        {{vm.applicationName}} {{vm.applicationVersion}}
+        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationVersion}}</p>
       `,
       locals: {
         applicationName: settings.get(SettingsService.APPLICATION_NAME),
         applicationVersion: settings.get(SettingsService.APPLICATION_VERSION),
+        applicationBuild: settings.get(SettingsService.APPLICATION_BUILD),
       }
     })
   }
