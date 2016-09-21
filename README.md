@@ -107,6 +107,12 @@ To install the required type definitions
 tsd install
 ```
 
+To install new definitions use this command.
+
+```
+tsd install angular-scroll --save
+```
+
 ### Start the development server
 
 Heat-ui comes with a fully configured development server, the server auto compiles from TypeScript to Javascript whenever you change a file. The development server allows you to access your compiled app at a localhost address, straight from your browser. Hit refresh to load your latest changes.
@@ -145,6 +151,12 @@ $ electron-packager ./dist --platform=linux --arch=x64
 Heat-ui desktop edition comes with installers for Windows, Mac and Linux.
 
 https://github.com/electron-userland/electron-builder
+
+```
+npm install electron-builder --save-dev
+```
+
+When building on Linux look here for dependencies https://github.com/electron-userland/electron-builder/wiki/Multi-Platform-Build#linux
 
 ### Links
 

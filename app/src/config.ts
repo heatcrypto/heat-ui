@@ -21,12 +21,12 @@
  * SOFTWARE.
  * */
 heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider',
-                      ($mdThemingProvider,   noCAPTCHAProvider) => {
+                      ($mdThemingProvider, noCAPTCHAProvider) => {
 
   $mdThemingProvider.theme('default')
                     .primaryPalette('deep-orange')
                     .accentPalette('grey');
 
-  noCAPTCHAProvider.setSiteKey('6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc');
+  noCAPTCHAProvider.setSiteKey("6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc");
   noCAPTCHAProvider.setTheme('light');
 }]);

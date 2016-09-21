@@ -20,35 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-
-const electron = require('electron')
-const app = electron.app
-const BrowserWindow = electron.BrowserWindow
-
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
-
-function createWindow () {
-  mainWindow = new BrowserWindow({width: 800, height: 600})
-  mainWindow.loadURL(`file://${__dirname}/index.html`)
-  // mainWindow.webContents.openDevTools()
-
-  mainWindow.on('closed', function () {
-    mainWindow = null
-  })
+@Component({
+  selector: 'messageBatchEntry',
+  inputs: ['message'],
+  styles: [`
+    message-batch-entry md-icon {
+      padding-top: 8px;
+      font-size: 32px !important;
+    }
+    message-batch-entry .header {
+      font-size: 15px;
+    }
+    message-batch-entry .batch-entry {
+      padding-left: 0px;
+    }
+  `],
+  template: `
+    <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
+      <div layout="column">
+        <md-icon md-font-library="material-icons">{{::vm.icon}}</md-icon>
+      </div>
+      <div layout="column" flex layout-padding>
+        <div layout="row" class="header">
+          <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;</b>{{::vm.message.date}}
+        </div>
+        <div layout="column" ng-bind-html="vm.message.html"></div>
+      </div>
+    </div>
+  `
+})
+//@Inject('$scope','$q','$timeout')
+class MessageBatchEntryComponent {
+  message: ICloudMessage; // @input
+  icon: string;
+  constructor() {
+    this.icon = this.message['outgoing'] ? 'chat_bubble_outline' : 'comment';
+  }
 }
-
-app.on('ready', createWindow)
-
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', function () {
-  if (mainWindow === null) {
-    createWindow()
-  }
-})

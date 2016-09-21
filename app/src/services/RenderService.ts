@@ -20,36 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/home')
-@Component({
-  selector: 'home',
-  template: `
-    <div layout="column" flex layout-padding layout-fill>
-      <div layout="column">
-        <div layout="column" layout-gt-sm="row">
-          <div layout="column">
-            <user-balance class="md-display-2"></user-balance>
-          </div>
-          <div flex hide show-gt-sm></div>
-          <div layout="column">
-            <span class="md-subhead"><small>Account: </small></span>
-            <div layout="row" layout-align="start center">
-              <span id="home-user-id">{{ vm.user.account }}</span>&nbsp;<copy-text element-id="home-user-id" message="Copied Account Id"></copy-text>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div layout="column" flex layout-fill>
-        <user-payments-table flex layout-fill></user-payments-table>
-      </div>
-    </div>
-  `
-})
-@Inject('$scope','user','cloud')
-class HomeComponent {
+interface IRenderer {
+  toHtml(rawText: string) : string;
+}
 
-  constructor(private $scope: angular.IScope,
-              public user: UserService,
-              private cloud: CloudService) {
+@Service('render')
+class RenderService {
+  public render(rawText: string, renderers: Array<IRenderer>) : string {
+    var text = rawText;
+    renderers.forEach((renderer) => {
+      text = renderer.toHtml(text);
+    });
+    return text;
   }
 }

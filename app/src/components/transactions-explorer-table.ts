@@ -22,31 +22,31 @@
  * SOFTWARE.
  * */
 @Component({
-  selector: 'userPaymentsTable',
+  selector: 'transactionsExplorerTable',
   styles: [`
-    user-payments-table .confirmed-th {
+    transactions-explorer-table .confirmed-th {
       text-align: center;
       width: 32px;
     }
-    user-payments-table .confirmed-td * {
+    transactions-explorer-table .confirmed-td * {
       font-size: 16px;
     }
-    user-payments-table .outgoing {
+    transactions-explorer-table .outgoing {
       color: #f44336 !important;
       font-size: 16px;
     }
-    user-payments-table .incoming {
+    transactions-explorer-table .incoming {
       color: #8BC34A !important;
       font-size: 16px;
     }
-    user-payments-table .stretch {
+    transactions-explorer-table .stretch {
       width: 99%;
     }
-    user-payments-table td {
+    transactions-explorer-table td {
       vertical-align: top !important;
       padding-top: 18px !important;
     }
-    user-payments-table .message-text {
+    transactions-explorer-table .message-text {
       margin-bottom: 18px;
     }
   `],
@@ -59,19 +59,22 @@
       <th md-column md-order-by="timestamp">
         <span>Date</span>
       </th>
+      <th md-column>
+        <span>Sender</span>
+      </th>
+      <th md-column>
+        <span>Recipient</span>
+      </th>
       <th md-column md-numeric>
         <span>Amount</span>
       </th>
-      <th md-column></th>
-      <th md-column md-order-by="sender_id">
-        <span>Sender</span>
+      <th md-column md-numeric>
+        <span>Fee</span>
       </th>
-      <th md-column md-order-by="recipient_id">
-        <span>Recipient</span>
+      <th md-column>
+        <span>Type</span>
       </th>
-      <th md-column class="stretch">
-        <span>Message</span>
-      </th>
+
     `,`
       <td md-cell class="confirmed-td">
         <elipses-loading ng-if="!item.confirmed"></elipses-loading>
@@ -80,66 +83,69 @@
       <td md-cell nowrap>
         <timestamp timestamp-value="item.timestamp"></timestamp>
       </td>
-      <td md-cell md-numeric nowrap>
-        <money precision="8" amount="item.amount" symbol="vm.user.accountColorName"
-          outgoing="item.outgoing" fraction="2"></money>
-      </td>
-      <td md-cell>
-        <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
-          {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
-        </md-icon>
-      </td>
       <td md-cell nowrap>
         <span>{{item.sender}}</span>
       </td>
       <td md-cell nowrap>
         <span>{{item.recipient}}</span>
       </td>
-      <td md-cell class="stretch">
-        <div class="message-text">{{item.messageText}}</div>
+      <td md-cell md-numeric nowrap>
+        <money precision="8" amount="item.amountNQT" symbol="'HEAT'" fraction="2"></money>
+      </td>
+      <td md-cell md-numeric nowrap>
+        <money precision="8" amount="item.feeNQT" symbol="'HEAT'" fraction="2"></money>
+      </td>
+      <td md-cell>
+        <span>{{item.transactionType}}</span>
       </td>
     `
   )
 })
-@Inject('$scope','$q','$timeout','user','cloud','engine')
-class UserPaymentsTableComponent extends AbstractDataTableComponent {
+@Inject('$scope','$q','$timeout','user','engine','$interval')
+class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
               private user: UserService,
-              private cloud: CloudService,
-              private engine: EngineService) {
+              private engine: EngineService,
+              private $interval: angular.IIntervalService) {
     super($scope, $q, $timeout, "-timestamp");
+    this.query =  {
+      order: '-timestamp',
+      limit: 10,
+      page: 1
+    };
 
-    var topic = new TransactionTopicBuilder().account(this.user.account);
+    var topic = new TransactionTopicBuilder();
     var observer = engine.socket().observe<TransactionObserver>(topic).
       add(this.refresh).
       remove(this.refresh).
       confirm(this.refresh);
 
     $scope.$on("$destroy",() => { observer.destroy() });
-
     this.refresh();
   }
 
   getCount() : angular.IPromise<number> {
-    return this.cloud.api.getPaymentCount({ accountRS: this.user.accountRS });
+    var deferred = this.$q.defer();
+    this.engine.socket().api.getBlockchainStatus().then((status) => {
+      deferred.resolve(40000);
+    },deferred.reject);
+    return deferred.promise;
   }
 
   getPageItems(forceSort?: string, forcePage?: number, forceLimit?: number): angular.IPromise<Array<any>> {
     var deferred = this.$q.defer();
-    var request = this.createGetPaymentsRequest(forceSort, forcePage, forceLimit);
-    this.cloud.api.getPayments(request).then(
-      (payments) => {
+    var request = this.createGetBlockchainTransactionsRequest(forceSort, forcePage, forceLimit);
+    this.engine.socket().api.getBlockchainTransactions("", request).then(
+      (transactions) => {
         deferred.resolve(
-          payments.map(
-            (payment) => {
-              payment['outgoing'] = this.user.accountRS == payment.senderRS;
-              payment['messageText'] = this.parseMessage(payment);
-              return payment;
-            }
-          )
+          transactions.map((transaction) => {
+            transaction['confirmed'] = angular.isDefined(transaction.confirmations) ? true : false;
+            transaction['transactionType'] = this.getTransactionType(transaction);
+            return transaction;
+          })
         );
       },
       deferred.reject
@@ -147,40 +153,24 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
     return deferred.promise;
   }
 
-  createGetPaymentsRequest(forceSort?: string, forcePage?: number, forceLimit?: number): ICloudGetPaymentsRequest {
-    var sortColumn = forceSort || this.query.order;
+  createGetBlockchainTransactionsRequest(forceSort?: string, forcePage?: number, forceLimit?: number): IGetBlockchainTransactionsRequest {
     var page = forcePage || this.query.page;
     var limit = forceLimit || this.query.limit;
 
     var from = (page-1) * limit;
     var to = from + limit;
-    var sortAsc = true;
 
-    /* Must remove the - sign at start of order column */
-    if (/-\w+/.test(sortColumn)) {
-      sortAsc = false;
-      sortColumn = sortColumn.substring(1);
-    }
     return {
-      accountRS: this.user.accountRS,
       firstIndex: from,
-      lastIndex: to,
-      sortColumn: sortColumn,
-      sortAsc: sortAsc
+      lastIndex: to
     }
   }
 
-  parseMessage(payment: ICloudPayment) {
-    if (payment.message) {
-      var message = payment.message;
-      if (message.recipientRS == this.user.accountRS) {
-        return heat.crypto.decryptMessage(message.data, message.nonce, message.senderPublicKey, this.user.secretPhrase);
-      }
-      else if (message.senderRS == this.user.accountRS) {
-        return heat.crypto.decryptMessage(message.data, message.nonce, message.recipientPublicKey, this.user.secretPhrase);
-      }
-      return "[Encrypted]";
-    }
-    return "";
+  getTransactionType(transaction: ITransaction) {
+    if (transaction.type == 0 && transaction.subtype == 0)
+      return "payment";
+    if (transaction.type == 1 && transaction.subtype == 0)
+      return "message";
+    return "other";
   }
 }

@@ -20,36 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/home')
+@RouteConfig('/explorer')
 @Component({
-  selector: 'home',
+  selector: 'explorer',
   template: `
-    <div layout="column" flex layout-padding layout-fill>
-      <div layout="column">
-        <div layout="column" layout-gt-sm="row">
-          <div layout="column">
-            <user-balance class="md-display-2"></user-balance>
-          </div>
-          <div flex hide show-gt-sm></div>
-          <div layout="column">
-            <span class="md-subhead"><small>Account: </small></span>
-            <div layout="row" layout-align="start center">
-              <span id="home-user-id">{{ vm.user.account }}</span>&nbsp;<copy-text element-id="home-user-id" message="Copied Account Id"></copy-text>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div layout="column" flex layout-fill>
-        <user-payments-table flex layout-fill></user-payments-table>
+    <div layout="column" flex layout-padding>
+      <div layout="column" flex>
+        <md-tabs md-border-bottom flex layout="column">
+          <md-tab label="BLOCKS" flex layout="column">
+            <md-content class="md-padding" flex layout="column">
+              <blocks-explorer-table layout="column" flex></blocks-explorer-table>
+            </md-content>
+          </md-tab>
+          <md-tab label="TRANSACTIONS" flex layout="column">
+            <md-content class="md-padding" flex layout="column">
+              <transactions-explorer-table layout="column" flex></transactions-explorer-table>
+            </md-content>
+          </md-tab>
+        </md-tabs>
       </div>
     </div>
   `
 })
-@Inject('$scope','user','cloud')
-class HomeComponent {
-
+@Inject('$scope','user')
+class ExplorerComponent {
   constructor(private $scope: angular.IScope,
-              public user: UserService,
-              private cloud: CloudService) {
+              public user: UserService) {
   }
 }

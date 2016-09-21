@@ -20,36 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/home')
-@Component({
-  selector: 'home',
-  template: `
-    <div layout="column" flex layout-padding layout-fill>
-      <div layout="column">
-        <div layout="column" layout-gt-sm="row">
-          <div layout="column">
-            <user-balance class="md-display-2"></user-balance>
-          </div>
-          <div flex hide show-gt-sm></div>
-          <div layout="column">
-            <span class="md-subhead"><small>Account: </small></span>
-            <div layout="row" layout-align="start center">
-              <span id="home-user-id">{{ vm.user.account }}</span>&nbsp;<copy-text element-id="home-user-id" message="Copied Account Id"></copy-text>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div layout="column" flex layout-fill>
-        <user-payments-table flex layout-fill></user-payments-table>
-      </div>
-    </div>
-  `
-})
-@Inject('$scope','user','cloud')
-class HomeComponent {
+@Service('news')
+@Inject('$rootScope','settings','$http','$q')
+class NewsService {
 
-  constructor(private $scope: angular.IScope,
-              public user: UserService,
-              private cloud: CloudService) {
+  public entries: Array<NewsEntry> = [];
+
+  constructor(private $rootScope: angular.IRootScopeService,
+              private settings: SettingsService,
+              private $http: angular.IHttpService,
+              private $q: angular.IQService) {
+    this.load();
   }
+
+  first() : NewsEntry {
+    return this.entries[0];
+  }
+
+  load() {
+    var deferred = this.$q.defer();
+    var url = this.settings.get(SettingsService.NEWS_URL);
+    this.$http.get(url).then(
+      (response : any) => {
+        this.$rootScope.$evalAsync(() => {
+          this.entries = response.data.map((e:any) => new NewsEntry(e.date, e.title, e.content));
+        })
+      },
+      deferred.reject
+    )
+    return deferred.promise;
+  }
+}
+
+class NewsEntry {
+  constructor(public date: string,
+              public title: string,
+              public content: string) {}
 }

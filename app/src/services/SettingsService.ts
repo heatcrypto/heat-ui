@@ -23,6 +23,11 @@
 @Service('settings')
 class SettingsService {
 
+  /* DO NOT TOUCH.
+     Replaced with contents of VERSION file by release.sh */
+  private VERSION = "%BUILD_OVERRIDE_VERSION%";
+  private BUILD = "%BUILD_OVERRIDE_BUILD%";
+
   public static WEBSOCKET_URL = 'settings.websocket_url';
   public static WEBSOCKET_URL_FALLBACK = 'settings.websocket_url_fallback';
   public static WEBSOCKET_URL_LOCALHOST = 'settings.websocket_url_localhost';
@@ -32,6 +37,7 @@ class SettingsService {
   public static DATEFORMAT_DEFAULT = 'settings.dateformat_default';
   public static APPLICATION_NAME = 'settings.application_name';
   public static APPLICATION_VERSION = 'settings.application_version';
+  public static APPLICATION_BUILD = 'settings.application_build';
   public static SOCKET_RPC_TIMEOUT = 'settings.socket_rpc_timeout';
   public static SOCKET_RECONNECT_DELAY = 'settings.socket_reconnect_delay';
   public static LOG_API_ERRORS = 'settings.log_api_errors';
@@ -48,6 +54,9 @@ class SettingsService {
   public static CLOUD_RPC_TIMEOUT = 'settings.cloud_rpc_timeout';
   public static CLOUD_WEBSOCKET_URL = 'settings.cloud_websocket_url';
   public static TRANSACTION_PROCESSING_VISUALIZATION = 'settings.transaction_processing_visualization';
+  public static NEWS_URL = 'settings.news_url';
+  public static CAPTCHA_SITE_KEY = 'settings.captcha_site_key';
+  public static CAPTCHA_POPUP = 'settings.captcha_popup';
 
   constructor() {
     this.settings[SettingsService.WEBSOCKET_URL] = 'wss://zombies.mofowallet.org:8884/ws/';
@@ -61,14 +70,15 @@ class SettingsService {
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
 
     this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
-    this.settings[SettingsService.APPLICATION_VERSION] = 'v0.1.0a';
+    this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
+    this.settings[SettingsService.APPLICATION_BUILD] = this.BUILD;
     this.settings[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
     this.settings[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
     this.settings[SettingsService.LOG_API_ERRORS] = true;
     this.settings[SettingsService.LOG_API_ALL] = false;
     this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
-    this.settings[SettingsService.CLOUD_HOST] = "http://alpha.heatledger.com";
-    this.settings[SettingsService.CLOUD_PORT] = 8080;
+    this.settings[SettingsService.CLOUD_HOST] = "https://alpha.heatledger.com";
+    this.settings[SettingsService.CLOUD_PORT] = 8443;
     this.settings[SettingsService.LOG_CLOUD_ERRORS] = true;
     this.settings[SettingsService.LOG_CLOUD_ALL] = true;
     this.settings[SettingsService.LOG_CLOUD_NOTIFY_ALL] = true;
@@ -87,8 +97,11 @@ class SettingsService {
     };
 
     this.settings[SettingsService.CLOUD_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://zombies.mofowallet.org:8080/socket";
+    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "wss://alpha.heatledger.com:8443/socket";
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
+    this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
+    this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
+    this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
 
     /* Override with test endpoints */
     var LOCAL_HEAT_LEDGER = false;

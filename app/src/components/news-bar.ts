@@ -30,24 +30,43 @@
   `],
   template: `
     <div layout="column" flex>
-      <span class="md-title">HEAT ICO claim process available!</span>
-      <span class="md-subhead">2016-09-03</span>
+      <span class="md-title">{{vm.news.first().title}}</span>
+      <span class="md-subhead">{{vm.news.first().date}}</span>
       <br>
-      <span><a href="#/claim">Click to claim HEAT ICO tokens</a></span>
+      <span>{{vm.news.first().content}}</span>
     </div>
   `
 })
-@Inject('$scope','user','$mdBottomSheet','$location','$rootScope')
+@Inject('$scope','user','$mdBottomSheet','$location','$rootScope','news')
 class NewsBarComponent {
   constructor(private $scope: angular.IScope,
               private user: UserService,
               private $mdBottomSheet: angular.material.IBottomSheetService,
               private $location: angular.ILocationService,
-              private $rootScope: angular.IRootScopeService) {
+              private $rootScope: angular.IRootScopeService,
+              private news: NewsService) {
     $rootScope.$on('$locationChangeSuccess', () => {
       this.$mdBottomSheet.hide(true);
     });
   }
+}
+
+@Component({
+  selector: 'newsButton',
+  styles: [`
+    news-button {
+    }
+  `],
+  template: `
+    <div layout="column">
+      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">NEWS: {{vm.news.first().title}}</md-button>
+    </div>
+  `
+})
+@Inject('$scope','news')
+class NewsButtonComponent {
+  constructor(private $scope: angular.IScope,
+              public news: NewsService) {}
 }
 
 heat.Loader.run(['$mdBottomSheet',

@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+declare var __dirname: any;
 @RouteConfig('/new')
 @Component({
   selector: 'new',
@@ -34,39 +35,59 @@
   template: `
     <div layout="column" flex layout-align="center center">
       <p class="md-title">Howdy new user</p>
-      <p>To start using your new account it needs to be registered on the blockchain.</p>
-      <p>Please be so kind to check the box below and click the big button and we'll make sure your account is registered and ready to use in seconds.</p>
-      <form name="captchaForm">
-        <p>
-          <input type="hidden" ng-model="vm.captchaResponse" name="captchaResponse" required>
-          <no-captcha flex g-recaptcha-response="vm.captchaResponse"
-            theme="light" expired-callback="vm.captchaExpired"></no-captcha>
-        </p>
-        <p>
-          <center>
-            <md-button class="md-raised md-primary" ng-disabled="captchaForm.$invalid"
-              ng-click="vm.registerAccount($event)">Create Account</md-button>
-          </center>
-        </p>
-      </form>
+      <p>Your HEAT test account is pending activation.</p>
+      <div layout="column" flex>
+        <div layout="column" flex>
+          <div layout="column" ng-if="vm.isBrowser">
+            <center>
+              <p>Please be so kind to check the box below and click the big button and we'll make sure your account is registered and ready to use in seconds.</p>
+              <no-captcha flex g-recaptcha-response="vm.captchaResponse"
+                theme="light" expired-callback="vm.captchaExpired"></no-captcha>
+            </center>
+          </div>
+          <div layout="column" ng-if="!vm.isBrowser">
+            <center>
+              <p>Please continue to human user verification by clicking on the CONTINUE button below.</p>
+              <md-button ng-click="vm.doChallenge()"
+                class="md-raised md-primary"
+                ng-disabled="vm.captchaResponse">CONTINUE</md-button>
+            </center>
+          </div>
+          <div layout="column">
+            <center>
+              <p>After verification, activate your test account by clicking on the "ACTIVATE ACCOUNT" button below.</p>
+              <md-button class="md-raised md-primary" ng-disabled="!vm.captchaResponse"
+                ng-click="vm.registerAccount($event)">ACTIVATE ACCOUNT</md-button>
+            </center>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
-@Inject('$scope','user','cloud','$location')
+@Inject('$scope','user','cloud','$location','env','$q','settings')
 class NewComponent {
 
   private captchaResponse: string;
   private loading: boolean = false;
   private captchaExpired: any;
+  private isBrowser: boolean = false;
+  private captchaWindow: Window;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
               private cloud: CloudService,
-              private $location: angular.ILocationService) {
-    this.captchaExpired = () => {
-      this.$scope.$evalAsync(() => {
-        this.captchaResponse = null;
-      })
+              private $location: angular.ILocationService,
+              private env: EnvService,
+              private $q: angular.IQService,
+              private settings: SettingsService) {
+    if (env.type == EnvType.BROWSER) {
+      this.captchaExpired = () => {
+        this.$scope.$evalAsync(() => {
+          this.captchaResponse = null;
+        })
+      }
+      this.isBrowser = true;
     }
   }
 
@@ -78,5 +99,48 @@ class NewComponent {
     this.cloud.api.register(request).then(() => {
       this.$location.path('home');
     })
+  }
+
+  doChallenge() {
+    this.showChallenge().then((response : string) => {
+      this.$scope.$evalAsync(() => {
+        this.captchaResponse = response;
+      });
+    })
+  }
+
+  showChallenge() : angular.IPromise<string> {
+    var deferred = this.$q.defer();
+    if (angular.isDefined(this.captchaWindow)) {
+      this.captchaWindow.close();
+      this.captchaWindow = null;
+    }
+    var url = this.settings.get(SettingsService.CAPTCHA_POPUP);
+    this.captchaWindow = <Window> window.open(url,"New Window", "width=432,height=550,resizable=true,modal=true,center=true");
+    var resolved = false;
+    window.addEventListener("message", (event) => {
+      try {
+        var data = JSON.parse(event.data);
+        switch (data.messageType) {
+          case "token": {
+            if (angular.isString(data.message.response)) {
+              resolved = true;
+              deferred.resolve(data.message.response);
+              this.captchaWindow.close();
+            }
+            break;
+          }
+          case "beforeunload": {
+            if (!resolved) {
+              resolved = true;
+              deferred.resolve(null);
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Postmessage parse error', e);
+      }
+    }, false);
+    return deferred.promise;
   }
 }

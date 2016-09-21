@@ -63,8 +63,8 @@
               <md-button class="md-primary" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex>Sign in</md-button>
             </div>
             <div layout="row" layout-align="center" class="smalller-font">
-              <a href ng-click="vm.gotoPage(1)">create account</a>&nbsp;|&nbsp;
-              <a href ng-click="vm.gotoPage(2)">add account</a>
+              <md-button ng-click="vm.gotoPage(1)" flex>create account</md-button>
+              <md-button ng-click="vm.gotoPage(2)" flex>add account</md-button>
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@ class LoginComponent {
     this.setLoading(true);
     this.isExistingAccount().then((exists) => {
       this.setLoading(false);
-      if (exists || this.env.type == EnvType.NODEJS) {
+      if (exists) {
         this.user.unlock(this.secretPhrase, false).then(() => {
           this.$location.path('home');
         });

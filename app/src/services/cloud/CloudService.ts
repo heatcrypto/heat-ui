@@ -83,7 +83,6 @@ class CloudService {
         '/' + route,
         req,
         (response)=>{
-          console.log("BACK FROM nodeHttpPost",response);
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
@@ -112,7 +111,7 @@ class CloudService {
   private node: any;
 
   private nodeHttpPost(hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
-    this.node = this.node || { http: require('http') };
+    this.node = this.node || { http: require('https') };
     var body = JSON.stringify(request);
     var options = {
       hostname: hostname, port: port, path: path, method: 'POST',

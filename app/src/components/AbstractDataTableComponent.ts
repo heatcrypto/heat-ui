@@ -71,7 +71,7 @@ abstract class AbstractDataTableComponent {
     this.query.order = defaultSortColumn;
     this.onReorderBind = angular.bind(this, this.onReorder);
     this.onPaginateBind = angular.bind(this, this.onPaginate);
-    this.refresh = () => {
+    this.refresh = utils.debounce(() => {
       this.promise = [
         this.getCount().then((count) => {
           this.$scope.$evalAsync(() => {
@@ -82,7 +82,7 @@ abstract class AbstractDataTableComponent {
         }),
         this.getPage()
       ];
-    }
+    }, 50, true);
   }
 
   abstract getCount(): angular.IPromise<number>;
