@@ -53,13 +53,11 @@ class NewsBarComponent {
 
 @Component({
   selector: 'newsButton',
-  styles: [`
-    news-button {
-    }
-  `],
   template: `
     <div layout="column">
-      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">NEWS: {{vm.news.first().title}}</md-button>
+      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">
+        <span>NEWS {{vm.news.first().date}}: {{vm.news.first().title}}</span>
+      </md-button>
     </div>
   `
 })
