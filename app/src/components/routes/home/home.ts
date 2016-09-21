@@ -45,11 +45,7 @@
     </div>
   `
 })
-@Inject('$scope','user','cloud')
+@Inject('user')
 class HomeComponent {
-
-  constructor(private $scope: angular.IScope,
-              public user: UserService,
-              private cloud: CloudService) {
-  }
+  constructor(public user: UserService) {}
 }
