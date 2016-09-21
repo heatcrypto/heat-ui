@@ -2,7 +2,7 @@
   "name": "heat",
   "version": "0.1.0",
   "description": "Heat Ledger Generic Client Framework",
-  "author": "Dennis de Klerk",
+  "author": "Heat Ledger Ltd",
   "homepage": "http://heatledger.com",
   "license": "MIT",
   "main": "gulpfile.js",
@@ -59,8 +59,9 @@
   "build": {
     "appId": "com.heatledger.heat-ui",
     "copyright": "Copyright © 2016 Heat Ledger Ltd",
+    "productName": "Heat",
     "asar": false,
-    "compression": "normal",
+    "compression": "maximum",
     "mac": {
       "category": "public.app-category.finance"
     },
