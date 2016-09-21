@@ -57,7 +57,7 @@ class SendmoneyDialog extends GenericDialog {
               private userMessage: string,
               private bundle: ReplicatorBundle) {
     super($event);
-    this.dialogTitle = 'Send Money';
+    this.dialogTitle = 'Send HEAT';
     this.dialogDescription = 'Description on how to send money';
     this.okBtnTitle = 'SEND';
 
