@@ -38,12 +38,20 @@
       cursor: pointer;
       font-size: 18px;
     }
+    login .wallet {
+      height: 140px;
+    }
   `],
   template: `
-    <div layout="column" flex layout-align="center center">
-      <div style="width:380px" layout="column" layout-padding> <!-- class="md-whiteframe-2dp" -->
-        <div layout="column" flex ng-if="vm.page == 0" layout-padding>
-          <center><p class="md-title">Welcome to Heat Ledger</p></center>
+    <div layout="column" flex layout-align="start center">
+      <div layout="column" layout-padding> <!-- class="md-whiteframe-2dp" -->
+        <center>
+          <img src="assets/heatwallet.png" class="wallet">
+        </center>
+        <div layout="column" flex ng-if="vm.page == 0">
+          <center>
+            <p class="md-title">Welcome to Heat</p>
+          </center>
           <div layout="column" ng-show="vm.isNewInstall">
             <md-button class="md-raised md-primary" ng-click="vm.gotoPage(1)" flex>Create New Account</md-button>
             <md-button class="md-raised" ng-click="vm.gotoPage(2)" flex>Add Existing Account</md-button>
@@ -60,7 +68,7 @@
               <input ng-model="vm.pincode" required name="pincode" ng-change="vm.pincodeChanged()" maxlength="5">
             </md-input-container>
             <div layout="row">
-              <md-button class="md-primary" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex>Sign in</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex>Sign in</md-button>
             </div>
             <div layout="row" layout-align="center" class="smalller-font">
               <md-button ng-click="vm.gotoPage(1)" flex>create account</md-button>
@@ -117,6 +125,9 @@
           </div>
         </div>
       </div>
+    </div>
+    <div layout="row">
+      <news-button layout="column"></news-button>
     </div>
   `
 })
