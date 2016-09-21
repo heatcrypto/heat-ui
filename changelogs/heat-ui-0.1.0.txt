@@ -1,0 +1,28 @@
+This is the initial Aplha release of the Heat Client Framework also known as
+the heat-ui project.
+
+Heat-ui already is a robust and extensible framework for building multi device,
+cross OS crypto currency clients.
+
+Out of the box heat-ui runs in your browser on your PC and on your mobile
+devices through its use of responsive designed ui controls.
+
+Heat-ui also comes as a Windows installable application, as a MacOS
+application (although currently in experimental phase) and as a Linux desktop
+application.
+
+Pending target devices are Android and IPhone. All distributions for all
+platforms use the same code base.
+
+This Alpha release also is available online at https://alpha.heatledger.com as
+a fully functional browser based version.
+
+The goal of this Alpha release is to showcase and test the extensive framework
+built by Heat Ledger Ltd.
+
+This alpha version connects to Heat Test Net, we invite anyone to play around
+and try it out. When creating a new account new users get 1.000 TEST HEAT for
+free.
+
+Functionality in this version consists of blockchain based instant messaging,
+sending and receiving Test HEAT and a simple block explorer.
