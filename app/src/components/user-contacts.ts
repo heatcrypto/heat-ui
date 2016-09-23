@@ -34,23 +34,24 @@
   template: `
     <div layout="column" flex>
       <md-content layout="column">
-        <md-menu-item ng-repeat="contact in vm.contacts" ng-click="vm.goToContact(contact, $event)"
+        <md-menu-item ng-repeat="contact in vm.contacts"
           ng-class="{'active': (contact.accountPublicKey == vm.activePublicKey) }">
           <md-button href="#/messenger/{{contact.accountPublicKey}}">
             <md-icon md-font-library="material-icons" class="md-avatar">person</md-icon>
-            {{contact.account}}
+            {{contact.account}}<span ng-show="contact.hasUnreadMessage"><b> YES</b></span>
           </md-button>
         </md-menu-item>
       </md-content>
     </div>
   `
 })
-@Inject('$scope','user','engine','cloud','$q','$timeout','$location','$rootScope')
+@Inject('$scope','user','engine','cloud','$q','$timeout','$location','$rootScope','storage')
 class UserContactsComponent {
 
   public contacts : Array<ICloudMessageContact> = [];
   private refresh: Function;
   private activePublicKey: string;
+  private lastestTimestampStore: Store;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -59,7 +60,10 @@ class UserContactsComponent {
               private $q: angular.IQService,
               private $timeout: angular.ITimeoutService,
               private $location: angular.ILocationService,
-              private $rootScope: angular.IRootScopeService) {
+              private $rootScope: angular.IRootScopeService,
+              storage: StorageService) {
+    this.lastestTimestampStore = storage.namespace('contacts.latestTimestamp');
+
     if (user.unlocked)
       this.getContacts();
     else
@@ -82,10 +86,6 @@ class UserContactsComponent {
     });
   }
 
-  goToContact(contact, $event) {
-
-  }
-
   getCloudGetMessageContactsRequest() : ICloudGetMessageContactsRequest {
     return {
       accountRS: this.user.accountRS,
@@ -97,8 +97,15 @@ class UserContactsComponent {
   getContacts() {
     this.cloud.api.getMessageContacts(this.getCloudGetMessageContactsRequest()).then((contacts) => {
       this.$scope.$evalAsync(() => {
-        this.contacts = contacts
+        this.contacts = contacts.map((contact) => {
+          contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
+          return contact;
+        })
       });
     })
+  }
+
+  contactHasUnreadMessage(contact: ICloudMessageContact): boolean {
+    return contact.latestTimestamp > this.lastestTimestampStore.getNumber(contact.account, 0);
   }
 }
