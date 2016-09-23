@@ -47,24 +47,24 @@ class Store {
     localStorage.setItem(this.prefix + path, JSON.stringify(val));
   }
 
-  public get(path: string): any {
-    return this.read(path);
+  public get(path: string, defaultValue?: any): any {
+    return this.read(path, defaultValue);
   }
 
-  public getObject<T>(path: string): T {
-    return this.read(path);
+  public getObject<T>(path: string, defaultValue?: T): T {
+    return this.read(path, defaultValue);
   }
 
-  public getNumber(path: string): number {
-    return this.read(path);
+  public getNumber(path: string, defaultValue?: number): number {
+    return this.read(path, defaultValue);
   }
 
-  public getBoolean(path: string): boolean {
-    return this.read(path);
+  public getBoolean(path: string, defaultValue?: boolean): boolean {
+    return this.read(path, defaultValue);
   }
 
-  public getString(path: string): string {
-    return this.read(path);
+  public getString(path: string, defaultValue?: string): string {
+    return this.read(path, defaultValue);
   }
 
   public forEach(callbackFn: (namespacedKey: string, value?: any, fullyQualifiedKey?: string)=>void) {
@@ -89,7 +89,7 @@ class Store {
     return keys;
   }
 
-  private read(path: string): any {
+  private read(path: string, defaultValue?: any): any {
     var text: string = localStorage.getItem(this.prefix + path);
     if (angular.isString(text)) {
       try {
@@ -98,6 +98,6 @@ class Store {
         console.error(`Could not read localStorage key '${path}', throws`, e);
       }
     }
-    return null;
+    return angular.isDefined(defaultValue) ? defaultValue : null;
   }
 }
