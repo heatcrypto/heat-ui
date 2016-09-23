@@ -27,35 +27,54 @@ interface ILocalKey {
   secretPhrase: string;
 }
 
-var LOCAL_KEY_STORE_ENTRY = 'LOCAL_KEY_STORE_ENTRY';
-function isKeyStoreKey(key: string) {
-  return key.indexOf(LOCAL_KEY_STORE_ENTRY) == 0;
+/* Find all entries that start with 'LOCAL_KEY_STORE_ENTRY:', move them
+ * into the namespaced @store parameter. Replace each key which has the
+ * form LOCAL_KEY_STORE_ENTRY:[account id]. With the new form which
+ * is 'key.[account id]'. */
+function updateLegacyLocalKeyStoreData(store: Store) {
+
+  // collect all legacy keys
+  var keys = [];
+  for (var i=0; i<localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.indexOf('LOCAL_KEY_STORE_ENTRY:') == 0) {
+      keys.push(key);
+    }
+  }
+
+  // move all keys and their values into the new namespace
+  keys.forEach((keyName) => {
+    var newKey = keyName.replace('LOCAL_KEY_STORE_ENTRY:','key.');
+    var value = localStorage.getItem(keyName);
+    store.put(newKey, value);
+  });
+
+  // remove all deprecated keys [DONT DO THIS FOR NOW ... ]
+  // keys.forEach((keyName) => { localStorage.removeItem(keyName) });
 }
 
-@Service('localKeyStore')
-class LocalKeyStoreService {
 
-  storage: Storage = window.localStorage;
+@Service('localKeyStore')
+@Inject('storage')
+class LocalKeyStoreService {
+  private store: Store;
+  constructor(storage: StorageService) {
+    this.store = storage.namespace("keystore");
+    updateLegacyLocalKeyStoreData(this.store); // Need to do this to stay compatible with 0.1.0 release format.
+  }
 
   add(key: ILocalKey) {
-    this.storage.setItem('LOCAL_KEY_STORE_ENTRY' + ':' + key.account, this.encode(key));
+    this.store.put(`key.${key.account}`, this.encode(key));
   }
 
   list(): Array<string> {
-    var list: Array<string> = [];
-    for (var i=0; i<this.storage.length; i++) {
-      if (isKeyStoreKey(this.storage.key(i))) {
-        var key = this.storage.key(i);
-        if (key) {
-          list.push(key.replace('LOCAL_KEY_STORE_ENTRY:', ''));
-        }
-      }
-    }
-    return list;
+    return this.store.keys().
+                      filter((keyName) => keyName.indexOf("key.") == 0).
+                      map((keyName) => keyName.substring("key.".length));
   }
 
   remove(account: string) {
-    this.storage.removeItem('LOCAL_KEY_STORE_ENTRY' + ':' + account);
+    this.store.remove("key."+account);
   }
 
   encode(key: ILocalKey): string {
@@ -80,8 +99,7 @@ class LocalKeyStoreService {
   }
 
   load(account: string, passphrase: string): ILocalKey {
-    var keyName = 'LOCAL_KEY_STORE_ENTRY' + ':' + account;
-    var contents = this.storage.getItem(keyName);
+    var contents = this.store.get("key."+account);
     try {
       return this.decode(contents, passphrase);
     } catch (e) {
