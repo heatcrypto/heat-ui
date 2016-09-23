@@ -44,11 +44,12 @@
   `
 })
 @Inject('$scope','$q','$timeout','$document','engine','user','cloud','settings',
-        'render','controlCharRender')
+        'render','controlCharRender','storage')
 class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   private publickey: string; // @input
   private containerId: string; // @input
+  private lastestTimestampStore: Store;
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
@@ -59,8 +60,10 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
               private cloud: CloudService,
               private settings: SettingsService,
               private render: RenderService,
-              private controlCharRender: ControlCharRenderService) {
+              private controlCharRender: ControlCharRenderService,
+              storage: StorageService) {
     super($scope, $q, $timeout);
+    this.lastestTimestampStore = storage.namespace('contacts.latestTimestamp');
 
     var topic = new TransactionTopicBuilder().account(this.user.account);
     var observer = engine.socket().observe<TransactionObserver>(topic)
@@ -154,6 +157,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
         message['contents'] = this.decryptMessage(message);
         message['index'] = index++;
         message['html'] = this.render.render(message['contents'], [this.controlCharRender]);
+        this.updateLatestMessageReadTimestamp(message);
         return message;
       }));
     })
@@ -168,5 +172,13 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
       return heat.crypto.decryptMessage(message.data, message.nonce, message.recipientPublicKey, this.user.secretPhrase);
     }
     return "[Encrypted]";
+  }
+
+  updateLatestMessageReadTimestamp(message: ICloudMessage) {
+    var account = this.user.accountRS == message.senderRS ? message.recipient : message.sender;
+    var latestTimestamp = this.lastestTimestampStore.getNumber(account, 0);
+    if (message.timestamp > latestTimestamp) {
+      this.lastestTimestampStore.put(account, message.timestamp);
+    }
   }
 }
