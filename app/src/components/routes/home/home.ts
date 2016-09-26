@@ -47,5 +47,7 @@
 })
 @Inject('user')
 class HomeComponent {
-  constructor(public user: UserService) {}
+  constructor(public user: UserService) {
+    user.requireLogin();
+  }
 }
