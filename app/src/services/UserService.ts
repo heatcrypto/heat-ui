@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 @Service('user')
-@Inject('$q','address','$window','engine','localKeyStore','settings')
+@Inject('$q','address','$window','engine','localKeyStore','settings','$location')
 class UserService extends EventEmitter {
 
   public static EVENT_UNLOCKED = 'unlocked';
@@ -52,7 +52,8 @@ class UserService extends EventEmitter {
               private $window: angular.IWindowService,
               private engine: EngineService,
               private localKeyStore: LocalKeyStoreService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private $location: angular.ILocationService) {
     super();
   }
 
@@ -96,5 +97,11 @@ class UserService extends EventEmitter {
     this.unlocked = null;
     this.emit(UserService.EVENT_LOCKED);
     this.$window.location.reload();
+  }
+
+  requireLogin() {
+    if (!this.unlocked) {
+      this.$location.path('login');
+    }
   }
 }
