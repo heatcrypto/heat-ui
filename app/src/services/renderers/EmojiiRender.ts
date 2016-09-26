@@ -23,6 +23,9 @@
  * */
 @Service('emojiiRender')
 class EmojiiRenderService implements IRenderer {
+
+  // TODO implement this emoji picker https://codepen.io/needim/pen/rxKZmy
+
   toHtml(rawText: string) : string {
     return rawText;
   }
