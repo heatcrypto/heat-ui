@@ -46,5 +46,6 @@
 class ExplorerComponent {
   constructor(private $scope: angular.IScope,
               public user: UserService) {
+    user.requireLogin();
   }
 }
