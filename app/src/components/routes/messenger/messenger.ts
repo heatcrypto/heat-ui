@@ -71,5 +71,7 @@ class MessengerComponent {
   constructor(private $scope: angular.IScope,
               private user: UserService,
               private engine: EngineService,
-              private cloud: CloudService) { }
+              private cloud: CloudService) {
+    user.requireLogin();
+  }
 }
