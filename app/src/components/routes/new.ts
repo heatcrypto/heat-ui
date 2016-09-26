@@ -81,6 +81,7 @@ class NewComponent {
               private env: EnvService,
               private $q: angular.IQService,
               private settings: SettingsService) {
+    user.requireLogin();
     if (env.type == EnvType.BROWSER) {
       this.captchaExpired = () => {
         this.$scope.$evalAsync(() => {
