@@ -1,5 +1,6 @@
 .config
 deploy.sh
+test_deploy.sh
 release.sh
 tools
 node_modules
