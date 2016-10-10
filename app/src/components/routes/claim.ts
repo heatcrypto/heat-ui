@@ -32,48 +32,39 @@
     }
   `],
   template: `
-    <div layout="column" flex layout-align="start center">
-      <p class="md-display-1">Claim HEAT ICO Tokens</p>
+    <div layout="column" layout-padding>
+      <span class="md-display-1">Claim HEAT ICO Tokens</span>
       <p ng-hide="vm.participates">Please complete the form below to claim your HEAT ICO Tokens</p>
       <p ng-show="vm.participates">Please click the button to continue</p>
-      <div layout="column" flex ng-hide="vm.participates">
-        <form name="claimForm">
-          <div layout="column" flex style="width:380px">
-            <md-input-container>
-              <label>ICO Source</label>
-              <md-select ng-model="vm.source" ng-change="vm.sourceChanged();" required ng-disabled="vm.participates">
-                <md-option value=""></md-option>
-                <md-option value="BTC">BTC</md-option>
-                <md-option value="ETH">ETH</md-option>
-                <md-option value="FIMK">FIMK</md-option>
-                <md-option value="NXT">NXT</md-option>
-              </md-select>
-            </md-input-container>
-            <md-input-container flex ng-show="vm.source">
-              <label>{{vm.source}}&nbsp;Address</label>
-              <input ng-model="vm.address" required name="address" maxlength="300" ng-disabled="vm.participates">
-            </md-input-container>
-            <md-input-container flex>
-              <center>
-                <md-button class="md-raised md-primary" ng-disabled="claimForm.$invalid || vm.participates"
-                  ng-click="vm.continue($event)">Continue</md-button>
-              </center>
-            </md-input-container>
-            <p ng-if="vm.noParticipant">The address you provided does not seem to participate in the ICO</p>
-            <p ng-if="vm.checkingParticipates">Checking to see if this address participates&nbsp;<elipses-loading></elipses-loading></p>
-          </div>
-        </form>
+      <form name="claimForm">
+        <div layout="column" flex style="width:380px">
+          <md-input-container>
+            <label>ICO Source</label>
+            <md-select ng-model="vm.source" ng-change="vm.sourceChanged();" required ng-disabled="vm.participates">
+              <md-option value=""></md-option>
+              <md-option value="BTC">BTC</md-option>
+              <md-option value="ETH">ETH</md-option>
+              <md-option value="FIMK">FIMK</md-option>
+              <md-option value="NXT">NXT</md-option>
+            </md-select>
+          </md-input-container>
+          <md-input-container flex ng-show="vm.source">
+            <label>{{vm.source}}&nbsp;Address</label>
+            <input ng-model="vm.address" required name="address" maxlength="300" ng-disabled="vm.participates">
+          </md-input-container>
+        </div>
+      </form>
+      <div layout="column" layout-align-gt-sm="start start">
+        <md-button class="md-raised md-primary" ng-disabled="claimForm.$invalid || vm.participates"
+          ng-click="vm.continue($event)">Continue</md-button>
       </div>
-      <div layout="column" flex ng-show="vm.participates">
-        <center>
-          <md-button class="md-raised md-primary" ng-disabled="!vm.participates"
-            ng-click="vm.beginVerification($event)">Click to begin verification process</md-button>
-        </center>
-      </div>
+      <p ng-show="vm.noParticipant">The address you provided does not seem to participate in the ICO</p>
+      <p ng-show="vm.checkingParticipates">Checking to see if this address participates&nbsp;<elipses-loading></elipses-loading></p>
+
     </div>
   `
 })
-@Inject('$scope','user','cloud','$q','$timeout')
+@Inject('$scope','user','cloud','$q','$timeout','$location')
 class ClaimComponent {
 
   private source: string = "";
@@ -86,32 +77,44 @@ class ClaimComponent {
               public user: UserService,
               private cloud: CloudService,
               private $q: angular.IQService,
-              private $timeout: angular.ITimeoutService) {
+              private $timeout: angular.ITimeoutService,
+              private $location: angular.ILocationService) {
+    user.requireLogin();
   }
 
   sourceChanged() {
     this.address = "";
   }
 
-  beginVerification() {
-
-  }
-
   continue() {
-    this.$scope.$evalAsync(() => { this.checkingParticipates = true });
+    this.$scope.$evalAsync(() => {
+      this.noParticipant = false;
+      this.checkingParticipates = true
+    });
     this.addressParticipatedInICO().then((participates) => {
-      this.$scope.$evalAsync(() => {
-        this.checkingParticipates = false;
-        this.participates = participates;
-      });
+      if (participates) {
+        this.$location.path(`/claim2/${this.source}/${this.address}`)
+      }
+      else {
+        this.$scope.$evalAsync(() => {
+          this.checkingParticipates = false;
+          this.participates = participates;
+          this.noParticipant = !participates;
+        });
+      }
     });
   }
 
   addressParticipatedInICO(): angular.IPromise<boolean> {
     var deferred = this.$q.defer();
-    this.$timeout(3000, true).then(() => {
-      deferred.resolve(true);
-    });
+    this.cloud.api.claimCount(this.address, this.source).then(
+      (count) => {
+        deferred.resolve(count > 0);
+      },
+      () => {
+        deferred.reject();
+      }
+    );
     return deferred.promise;
   }
 }
