@@ -63,20 +63,20 @@ class ClipboardService {
    * success, in case the text could not be copied but an instruction is
    * displayed to use CTRL+C.
    */
-  copyWithUI(element: Element, successMessage: string) {
-    this.copy(element).then(
+  copyWithUI(element: Element, successMessage: string) : angular.IPromise<any> {
+    return this.copy(element).then(
       () => {
         this.$mdToast.show(
           this.$mdToast.simple()
               .textContent(successMessage)
-              .hideDelay(3000)
+              .hideDelay(5000)
         )
       },
       () => {
         this.$mdToast.show(
           this.$mdToast.simple()
               .textContent("Press CTRL+V to copy")
-              .hideDelay(6000)
+              .hideDelay(10000)
         )
       }
     )
