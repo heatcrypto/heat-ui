@@ -58,35 +58,50 @@ class SecretGeneratorService {
   public generate(langCode: string): angular.IPromise<string> {
     var deferred = this.$q.defer();
     this.getWordlist(langCode).then((wordList) => {
-
-      var words = [];
-      var crypto = window.crypto || window['msCrypto'];
-      var random = new Uint32Array(128 / 32);
-      crypto.getRandomValues(random);
-
-      var x, w1, w2, w3, n=wordList.length;
-      for (var i=0; i<random.length; i++) {
-        x = random[i];
-        w1 = x % n;
-        w2 = (((x / n) >> 0) + w1) % n;
-        w3 = (((((x / n) >> 0) / n) >> 0) + w2) % n;
-
-        words.push(wordList[w1]);
-        words.push(wordList[w2]);
-        words.push(wordList[w3]);
-      }
-      crypto.getRandomValues(random);
-
-      // only if using a word list of 7776 words or longer can we use 10 words,
-      // otherwise use 12 words
-      if (wordList.length >= 7776) {
-        words = words.slice(0, 10);
-      }
-
-      deferred.resolve(words.join(" "));
+      deferred.resolve(this.generateSecret(wordList));
 
     }, deferred.reject);
     return deferred.promise;
+  }
+
+  public generateBulk(langCode: string, count: number): angular.IPromise<Array<string>> {
+    var deferred = this.$q.defer();
+    this.getWordlist(langCode).then((wordList) => {
+      var bulk: Array<string> = [];
+      for (var i=0; i<count; i++) {
+        bulk.push(this.generateSecret(wordList));
+      }
+      deferred.resolve(bulk);
+    }, deferred.reject);
+    return deferred.promise;
+  }
+
+  private generateSecret(wordList: string[]) : string {
+      var words = [];
+    var crypto = window.crypto || window['msCrypto'];
+    var random = new Uint32Array(128 / 32);
+    crypto.getRandomValues(random);
+
+    var x, w1, w2, w3, n=wordList.length;
+    for (var i=0; i<random.length; i++) {
+      x = random[i];
+      w1 = x % n;
+      w2 = (((x / n) >> 0) + w1) % n;
+      w3 = (((((x / n) >> 0) / n) >> 0) + w2) % n;
+
+      words.push(wordList[w1]);
+      words.push(wordList[w2]);
+      words.push(wordList[w3]);
+    }
+    crypto.getRandomValues(random);
+
+    // only if using a word list of 7776 words or longer can we use 10 words,
+    // otherwise use 12 words
+    if (wordList.length >= 7776) {
+      words = words.slice(0, 10);
+    }
+
+    return words.join(" ");
   }
 
   private getWordlist(langCode: string): angular.IPromise<Array<string>> {
