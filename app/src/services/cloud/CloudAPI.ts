@@ -169,11 +169,29 @@ class CloudAPI implements ICloudAPI {
     return this.cloud.send("register", request);
   }
 
-  getIcoPaymentCount(sender: string, currency: string): angular.IPromise<number> {
+  /* ICO Claim Process */
+
+  claimCount(sender: string, currency: string): angular.IPromise<number> {
     return this.cloud.send("claim/count", {sender:sender, currency:currency}, true, "count");
   }
 
-  startClaimProcess(sender: string, currency: string): angular.IPromise<any> {
-    return this.cloud.send("claim/start", {sender:sender, currency:currency}, true);
+  claimStatus(sender: string, currency: string): angular.IPromise<ICloudClaimStatus> {
+    return this.cloud.send("claim/status", {sender:sender, currency:currency}, true, "status");
+  }
+
+  claimCreate(sender: string, currency: string): angular.IPromise<string> {
+    return this.cloud.send("claim/create", {sender:sender, currency:currency}, true, "confirmationAddress");
+  }
+
+  claimVerified() : angular.IPromise<Array<ICloudVerifiedAddress>> {
+    return this.cloud.send("claim/verified", {}, true, "verified");
+  }
+
+  claimCouponSet(coupon: string) : angular.IPromise<any> {
+    return this.cloud.send("claim/couponset", {coupon: coupon}, true);
+  }
+
+  claimCouponGet() : angular.IPromise<string> {
+    return this.cloud.send("claim/couponget", {}, true, "coupon");
   }
 }

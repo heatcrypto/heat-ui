@@ -51,8 +51,15 @@ interface ICloudAPI {
   getAccount(accountRS: string): angular.IPromise<ICloudAccount>;
 
   register(request: ICloudRegisterRequest): angular.IPromise<any>;
-  getIcoPaymentCount(sender: string, currency: string): angular.IPromise<number>;
-  startClaimProcess(sender: string, currency: string): angular.IPromise<any>;
+
+  /* ICO Claim Process */
+
+  claimCount(sender: string, currency: string): angular.IPromise<number>;
+  claimStatus(sender: string, currency: string): angular.IPromise<ICloudClaimStatus>;
+  claimCreate(sender: string, currency: string): angular.IPromise<string>;
+  claimVerified(): angular.IPromise<Array<ICloudVerifiedAddress>>;
+  claimCouponSet(coupon: string): angular.IPromise<any>;
+  claimCouponGet(): angular.IPromise<string>;
 }
 
 interface ICloudAccount {
@@ -246,4 +253,24 @@ interface ICloudUpdateFlagRequest {
 interface ICloudRegisterRequest {
   captcha: string;
   publicKey: string;
+}
+
+enum ClaimStatus {
+  CHALLENGE_NOT_CREATED = 1,
+  CHALLENGE_NOT_CONFIRMED = 2,
+  CHALLENGE_VERIFIED = 3,
+  CHALLENGE_VERIFIED_BY_OTHER = 4
+}
+
+interface ICloudClaimStatus {
+  currency: string;
+  publicKey: string;
+  address: string;
+  status: ClaimStatus;
+  confirmationAddress: string;
+}
+
+interface ICloudVerifiedAddress {
+  currency: string;
+  address: string;
 }
