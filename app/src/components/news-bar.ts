@@ -33,7 +33,8 @@
       <span class="md-title">{{vm.news.first().title}}</span>
       <span class="md-subhead">{{vm.news.first().date}}</span>
       <br>
-      <span>{{vm.news.first().content}}</span>
+      <span>{{vm.news.first().content}}<br>
+      <a href="#/claim">Claim your heat</a></span>
     </div>
   `
 })
