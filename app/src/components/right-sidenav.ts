@@ -43,6 +43,11 @@
             Sign out
           </md-button>
         </md-menu-item>
+        <!--<md-menu-item>
+          <md-button href="#/bulk">
+            Bulk
+          </md-button>
+        </md-menu-item>-->
       </md-menu-content>
     </md-content>`
 })
