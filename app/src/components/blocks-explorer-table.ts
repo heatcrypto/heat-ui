@@ -117,6 +117,11 @@ class BlockExplorerTableComponent extends AbstractDataTableComponent {
     // quick and dirty solution
     var interval = $interval(() => { this.refresh() }, 15*1000, 0, false);
     $scope.$on('$destroy', () => { $interval.cancel(interval) });
+
+    // better solution uses actual websocket subscribe topcis.
+    // use these two!!
+    var TOPIC_BLOCK_POPPED = 'blockPoppedNew';
+    var TOPIC_BLOCK_PUSHED = 'blockPushedNew';
   }
 
   getCount() : angular.IPromise<number> {
