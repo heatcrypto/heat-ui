@@ -30,6 +30,10 @@
       font-weight: bold;
       color: green;
     }
+    user-contacts .has-unread-message {
+      font-size: 100%;
+      color: #E91E63;
+    }
   `],
   template: `
     <div layout="column" flex>
@@ -38,7 +42,10 @@
           ng-class="{'active': (contact.accountPublicKey == vm.activePublicKey) }">
           <md-button href="#/messenger/{{contact.accountPublicKey}}">
             <md-icon md-font-library="material-icons" class="md-avatar">contact_mail</md-icon>
-            {{contact.account}}<span ng-show="contact.hasUnreadMessage"><b> YES</b></span>
+            {{contact.account}}
+          </md-button>
+          <md-button href="#/messenger/{{contact.accountPublicKey}}" class="md-secondary md-icon-button" ng-show="contact.hasUnreadMessage">
+            <md-icon md-font-library="material-icons" class="has-unread-message">fiber_manual_record</md-icon>
           </md-button>
         </md-menu-item>
       </md-content>
