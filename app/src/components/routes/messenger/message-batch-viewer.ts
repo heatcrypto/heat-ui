@@ -49,7 +49,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   private publickey: string; // @input
   private containerId: string; // @input
-  private lastestTimestampStore: Store;
+  private store: Store;
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
@@ -63,7 +63,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
               private controlCharRender: ControlCharRenderService,
               storage: StorageService) {
     super($scope, $q, $timeout);
-    this.lastestTimestampStore = storage.namespace('contacts.latestTimestamp');
+    this.store = storage.namespace('contacts.latestTimestamp',$scope);
 
     var topic = new TransactionTopicBuilder().account(this.user.account);
     var observer = engine.socket().observe<TransactionObserver>(topic)
@@ -175,10 +175,10 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   }
 
   updateLatestMessageReadTimestamp(message: ICloudMessage) {
-    var account = this.user.accountRS == message.senderRS ? message.recipient : message.sender;
-    var latestTimestamp = this.lastestTimestampStore.getNumber(account, 0);
+    var account = this.user.account == message.sender ? message.recipient : message.sender;
+    var latestTimestamp = this.store.getNumber(account, 0);
     if (message.timestamp > latestTimestamp) {
-      this.lastestTimestampStore.put(account, message.timestamp);
+      this.store.put(account, message.timestamp);
     }
   }
 }
