@@ -60,13 +60,6 @@ class EventEmitter {
       listener.apply(null, args);
     });
   }
-
-  once(event: string, listener: IEventListenerFunction) {
-    this.addListener(event, (...args: Array<any>) => {
-      listener.apply(null, args);
-      this.removeListener(event, listener);
-    });
-  }
 }
 
 class EventEmitterCache {
