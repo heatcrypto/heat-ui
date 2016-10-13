@@ -32,7 +32,8 @@
     }
     user-contacts .has-unread-message {
       font-size: 100%;
-      color: #E91E63;
+      text-align: center;
+      line-height: 1.6;
     }
   `],
   template: `
@@ -44,7 +45,7 @@
             <md-icon md-font-library="material-icons" class="md-avatar">contact_mail</md-icon>
             {{contact.account}}
           </md-button>
-          <md-button href="#/messenger/{{contact.accountPublicKey}}" class="md-secondary md-icon-button" ng-show="contact.hasUnreadMessage">
+          <md-button href="#/messenger/{{contact.accountPublicKey}}" class="md-secondary md-icon-button md-primary" ng-show="contact.hasUnreadMessage">
             <md-icon md-font-library="material-icons" class="has-unread-message">fiber_manual_record</md-icon>
           </md-button>
         </md-menu-item>
@@ -56,9 +57,9 @@
 class UserContactsComponent {
 
   public contacts : Array<ICloudMessageContact> = [];
-  private refresh: Function;
+  private refresh: IEventListenerFunction;
   private activePublicKey: string;
-  private lastestTimestampStore: Store;
+  private store: Store;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -69,28 +70,38 @@ class UserContactsComponent {
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService) {
-    this.lastestTimestampStore = storage.namespace('contacts.latestTimestamp');
 
-    if (user.unlocked)
-      this.getContacts();
-    else
-      user.on(UserService.EVENT_UNLOCKED, () => { this.getContacts() });
+    this.refresh = utils.debounce(
+      () => {
+        this.getContacts()
+      },
+    500, true);
+    this.store = storage.namespace('contacts.latestTimestamp', $scope);
+    this.store.on(Store.EVENT_PUT, this.refresh);
 
-    this.refresh = () => { this.getContacts() };
-
-    var topic = new TransactionTopicBuilder().account(this.user.account);
-    var observer = engine.socket().observe<TransactionObserver>(topic).
-      add(this.refresh).
-      remove(this.refresh).
-      confirm(this.refresh);
-
-    $scope.$on("$destroy",() => { observer.destroy() });
+    if (user.unlocked) {
+      this.init();
+    }
+    else {
+      user.on(UserService.EVENT_UNLOCKED, () => {
+        this.init();
+      });
+    }
 
     $rootScope.$on('$locationChangeSuccess', () => {
-      console.log("LocationChange", $location.path());
       var path = $location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1);
       this.activePublicKey = (route == "messenger") ? params[0] : null;
     });
+  }
+
+  init() {
+    this.getContacts();
+    var topic = new TransactionTopicBuilder().account(this.user.account);
+    var observer = this.engine.socket().observe<TransactionObserver>(topic).
+      add(this.refresh).
+      remove(this.refresh).
+      confirm(this.refresh);
+    this.$scope.$on("$destroy",() => { observer.destroy() });
   }
 
   getCloudGetMessageContactsRequest() : ICloudGetMessageContactsRequest {
@@ -113,6 +124,6 @@ class UserContactsComponent {
   }
 
   contactHasUnreadMessage(contact: ICloudMessageContact): boolean {
-    return contact.latestTimestamp > this.lastestTimestampStore.getNumber(contact.account, 0);
+    return contact.latestTimestamp > this.store.getNumber(contact.account, 0);
   }
 }
