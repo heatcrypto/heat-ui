@@ -59,7 +59,7 @@ function updateLegacyLocalKeyStoreData(store: Store) {
 class LocalKeyStoreService {
   private store: Store;
   constructor(storage: StorageService) {
-    this.store = storage.namespace("keystore");
+    this.store = storage.namespace("keystore", null, true);
     updateLegacyLocalKeyStoreData(this.store); // Need to do this to stay compatible with 0.1.0 release format.
   }
 
