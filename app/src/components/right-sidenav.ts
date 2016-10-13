@@ -22,6 +22,7 @@
  * */
 @Component({
   selector: 'rightSidenav',
+  inputs: ['@sidenavId'],
   template: `
     <md-toolbar class="md-theme-indigo">
       <h1 class="md-toolbar-tools">Settings</h1>
@@ -51,22 +52,33 @@
       </md-menu-content>
     </md-content>`
 })
-@Inject('user','settings','$mdDialog','$location','env','electron')
+@Inject('user','settings','$mdDialog','$location','env','electron','$rootScope','$mdSidenav')
 class RightSidenavComponent {
 
   public showOpenDevTools: boolean = false;
   public applicationName: string;
   private applicationVersion: string;
 
+  sidenavId: string;
+
   constructor(public user: UserService,
               public settings: SettingsService,
               public $mdDialog: angular.material.IDialogService,
               public $location: angular.ILocationService,
               env: EnvService,
-              private electron: ElectronService) {
+              private electron: ElectronService,
+              private $rootScope: angular.IRootScopeService,
+              private $mdSidenav: angular.material.ISidenavService) {
     this.applicationName = settings.get(SettingsService.APPLICATION_NAME);
     this.applicationVersion = settings.get(SettingsService.APPLICATION_VERSION);
     this.showOpenDevTools = env.type == EnvType.NODEJS;
+    $rootScope.$on('$locationChangeSuccess', () => {
+      this.close();
+    });
+  }
+
+  close() {
+    this.$mdSidenav(this.sidenavId).close()
   }
 
   signout() {
