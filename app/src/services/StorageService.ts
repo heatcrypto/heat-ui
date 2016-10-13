@@ -22,17 +22,105 @@
  * */
 @Service('storage')
 class StorageService {
-  public namespace(namespace: string) : Store {
-    return new Store(namespace);
+
+  private stores: IStringHashMap<Array<Store>> = {};
+  private user: UserService;
+
+  /**
+   * Creates a namespaced Store object
+   *
+   * @param namespace String
+   *    The storage namespace, meaning all keys are prepended with this namespace and
+   *    a dot '.' before they are passed on to the real storage backend
+   * @param $scope IScope
+   *    Optional $scope object, if provided the Store will be removed and unregistered
+   *    when the scope is destroyed
+   * @param globalScope Boolean
+   *    Optional argument indicating that unlike the default behavior (where we include
+   *    the current signed in user account into the namespace key) we want the namespace
+   *    to be used as. This is meant for properties that are accessible to all users.
+   */
+  public namespace(namespace: string, $scope?: angular.IScope, globalScope?: boolean) : Store {
+    var store = new Store(namespace, this);
+    if ($scope) {
+      $scope.$on('$destroy',() => {
+        this.removeStore(store)
+      });
+    }
+    this.addStore(store);
+    if (!angular.isDefined(globalScope) || !globalScope) {
+      this.user = this.user || <UserService> heat.$inject.get('user'); // causes circular dependency if done through DI.
+      if (this.user.unlocked) {
+        store.enable(this.user.account);
+      }
+      else {
+        var closure = () => {
+          this.user.removeListener(UserService.EVENT_UNLOCKED, closure);
+          store.enable(this.user.account);
+        }
+        this.user.on(UserService.EVENT_UNLOCKED, closure);
+      }
+    }
+    else {
+      store.enable();
+    }
+    return store;
+  }
+
+  private addStore(store: Store) {
+    (this.stores[store.namespace] = this.stores[store.namespace] || []).push(store);
+  }
+
+  private removeStore(store: Store) {
+    if (angular.isArray(this.stores[store.namespace])) {
+      this.stores[store.namespace] = this.stores[store.namespace].filter((s) => s != store);
+      if (this.stores[store.namespace].length == 0) {
+        delete this.stores[store.namespace];
+      }
+    }
+    store.removeAllListeners();
+  }
+
+  public emit(namespace: string, event: string, ...args: Array<any>) {
+    var ns = this.stores[namespace];
+    if (angular.isArray(ns)) {
+      ns.forEach((store) => {
+        store.emit.apply(store, [event].concat(args))
+      });
+    }
   }
 }
 
-class Store {
+class Store extends EventEmitter {
+
+  public static EVENT_PUT = 'put';
+  public static EVENT_REMOVE = 'remove';
+
   private prefix: string;
-  constructor(public namespace: string) {
+  private enabled: boolean = false;
+
+  constructor(public namespace: string, private storage: StorageService) {
+    super();
     if (!angular.isString(namespace) || !utils.emptyToNull(namespace))
       throw new Error('Illegal argument, namespace must be a non-empty string');
-    this.prefix = namespace + ".";
+  }
+
+  public enable(userScope?: string) {
+    this.prefix = this.namespace + ".";
+    if (angular.isDefined(userScope)) {
+      this.prefix = userScope + "." + this.prefix;
+    }
+    this.enabled = true;
+  }
+
+  public disable() {
+    this.enabled = false;
+  }
+
+  private ensureIsEnabled() {
+    if (!this.enabled) {
+      throw new Error('Store not enabled. Are you accessing a user scoped Store without a user being signed in?');
+    }
   }
 
   public clear() {
@@ -40,11 +128,17 @@ class Store {
   }
 
   public remove(path: string) {
-    localStorage.removeItem(this.prefix + path)
+    this.ensureIsEnabled();
+    var key = this.prefix + path;
+    localStorage.removeItem(key);
+    this.storage.emit(this.namespace, Store.EVENT_REMOVE, key);
   }
 
   public put(path: string, val: any) {
-    localStorage.setItem(this.prefix + path, JSON.stringify(val));
+    this.ensureIsEnabled();
+    var key = this.prefix + path, value = JSON.stringify(val)
+    localStorage.setItem(key, value);
+    this.storage.emit(this.namespace, Store.EVENT_PUT, key, value);
   }
 
   public get(path: string, defaultValue?: any): any {
@@ -90,6 +184,7 @@ class Store {
   }
 
   private read(path: string, defaultValue?: any): any {
+    this.ensureIsEnabled();
     var text: string = localStorage.getItem(this.prefix + path);
     if (angular.isString(text)) {
       try {
