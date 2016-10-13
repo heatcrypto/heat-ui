@@ -42,16 +42,21 @@
     </div>
   `
 })
-@Inject('$scope','sendmessage','address')
+@Inject('$scope','sendmessage','address','storage','$timeout')
 class EditMessageComponent {
 
   publickey: string; // @inputs
 
   private messageText: string;
+  private store: Store;
 
   constructor(private $scope: angular.IScope,
               private sendmessage: SendmessageService,
-              private address: AddressService) {}
+              private address: AddressService,
+              storage: StorageService,
+              private $timeout: angular.ITimeoutService) {
+    this.store = storage.namespace('contacts.latestTimestamp', $scope);
+  }
 
   onKeyPress($event: KeyboardEvent) {
     if ($event.keyCode == 13 && !$event.shiftKey) {
@@ -69,6 +74,14 @@ class EditMessageComponent {
       this.$scope.$evalAsync(() => {
         this.messageText = '';
       });
+      // This solves (for now) the need to re-set the unread status in the
+      // user-contacts component. A proper solution would include a change to
+      // the server API where we return the lastTimestamp - but only for
+      // messages received.
+      this.$timeout(2 * 1000, false).then(() => {
+        var latestTimestamp = this.store.getNumber(account, 0);
+        this.store.put(account, latestTimestamp + 1);
+      })
     });
   }
 }
