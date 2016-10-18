@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" ng-controller="AppController as app" class="loading">
+<html lang="en" ng-controller="AppController as app" class="loading hide-live-agent">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
@@ -90,6 +90,22 @@
   <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
       new heat.Loader();
+    });
+  </script>
+  <script type="text/javascript" defer>
+    document.addEventListener("DOMContentLoaded", function() {
+      (function(d, src, c) { var t=d.scripts[d.scripts.length - 1],s=d.createElement('script');s.id='la_x2s6df8d';s.async=true;s.src=src;s.onload=s.onreadystatechange=function(){var rs=this.readyState;if(rs&&(rs!='complete')&&(rs!='loaded')){return;}c(this);};t.parentElement.insertBefore(s,t.nextSibling);})(document,
+      'https://heatledger.ladesk.com/scripts/track.js',
+      function(e){
+        var button = LiveAgent.createButton('837d4f1c', e);
+        angular.element(document).find('head').append(`
+          <style type="text/css">
+            html.hide-live-agent #${button.elementId} {
+              display: none;
+            }
+          </style>
+        `);
+      });
     });
   </script>
 </html>
