@@ -58,6 +58,11 @@
               <md-icon md-font-library="material-icons">explore</md-icon>&nbsp;BLOCKCHAIN
             </md-button>
           </md-menu-item>
+          <md-menu-item>
+            <md-button class="md-primary" href="#/claim" ng-click="vm.close()">
+              <md-icon md-font-library="material-icons">redeem</md-icon>&nbsp;CLAIM YOUR HEAT
+            </md-button>
+          </md-menu-item>
         </md-content>
         <md-divider></md-divider>
         <md-content layout="column" flex>
