@@ -1,0 +1,32 @@
+This release contains various smaller bug fixes, a new local storage solution,
+new and unread message notifications and a temporary ICO claim section for
+claiming your genesis HEAT.
+
+User support/feedback functionality has also been added to the client, use it
+whenever you need help during the ICO claim process.
+
+To claim your HEAT you could use both the web version and the desktop versions,
+it is however more secure to use the desktop version since you can verifify
+it's origin in ways that are simply not possible with any website.
+
+The ICO claim process will ask you to provide the address(es) from which you've
+sent your donations and will provide you with a confirmation address and a
+small payment to your ICO address (to cover the transaction costs).
+
+You are then to send a payment from your ICO address to the confirmation address
+to confirm your ownership of that address. Confirmation is near instant and will
+be visible in the claim section.
+
+Your HEAT-TEST account (the one you use in this client) will be your final *real*
+genesis account in the HEAT genesis block, so make sure you use a unique
+secret phrase. You can claim multiple ICO addresses and assign them all to your
+one single HEAT account.
+
+The claim process helps you to properly backup your HEAT secret phrase (aka your
+super secret/super important master key). Through the client UI you have the
+option to:
+
+  1. Print your secret phrase directly from the app to your printer
+  2. Save/download your secret phrase to a file on your computer
+  3. Copy the secret phrase to your clipboard
+  4. View the secret phrase and make a picture/hand written note/etc..
