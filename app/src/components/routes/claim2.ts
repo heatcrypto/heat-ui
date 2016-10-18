@@ -161,7 +161,7 @@ declare var saveAs: any;
     </div>
   `
 })
-@Inject('$scope','user','cloud','$q','$timeout','clipboard','$interval')
+@Inject('$scope','user','cloud','$q','$timeout','clipboard','$interval','env')
 class Claim2Component {
   currency: string; // @input
   address: string; // @input
@@ -208,7 +208,8 @@ class Claim2Component {
               private $q: angular.IQService,
               private $timeout: angular.ITimeoutService,
               private clipboard: ClipboardService,
-              private $interval: angular.IIntervalService) {
+              private $interval: angular.IIntervalService,
+              private env: EnvService) {
     try {
       this.isFileSaverSupported = !!new Blob;
     } catch (e) {}
@@ -311,13 +312,23 @@ class Claim2Component {
   }
 
   printPassphrase() {
-    var popup = window.open();
-    popup.document.write(`
-      <style type="text/css">html { font-family: GillSans, Calibri, Trebuchet, sans-serif; }</style>
-      ${this.templateHTML()}
-    `);
-    popup.print();
-    popup.close();
+    var style = '<style type="text/css">html { font-family: GillSans, Calibri, Trebuchet, sans-serif; }</style>';
+    if (this.env.type == EnvType.NODEJS) {
+      var url = `data:text/html,<!DOCTYPE html><head>${style}</head><body>${this.templateHTML()}</body>`;
+      var popup = window.open(url);
+      this.$timeout(3000,false).then(() => {
+        popup.print();
+      });
+    }
+    else {
+      var popup = window.open();
+      popup.document.write(`
+        ${style}
+        ${this.templateHTML()}
+      `);
+      popup.print();
+      popup.close();
+    }
   }
 
   savePassphrase() {
