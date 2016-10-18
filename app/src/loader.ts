@@ -47,6 +47,18 @@ module heat {
               $location.path('login');
             }
           }
+          // Live agent show-hide contact button.
+          var el = angular.element(document.documentElement);
+          if (/\/claim/.test($location.path()) || /\/claim2\/\w+/.test($location.path())) {
+            if (el.hasClass('hide-live-agent')) {
+              el.removeClass('hide-live-agent');
+            }
+          }
+          else {
+            if (!el.hasClass('hide-live-agent')) {
+              el.addClass('hide-live-agent');
+            }
+          }
         }
 
         isUnlocked();
