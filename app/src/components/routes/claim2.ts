@@ -43,7 +43,7 @@ declare var saveAs: any;
         <p class="emphazised">Your HEAT genesis account will be *this* account you are now logged into.<br>
         Please make sure you use a confidential passphrase.<br>If you wish to use a different account, please create a new account and start
         the verification process from there.</p>
-        <p>We advise you print or write down your HEAT genesis passprase, if lost you will loose access to your HEAT.<br>
+        <p>We advise you print or write down your HEAT genesis passprase, if lost you will lose access to your HEAT.<br>
         Please pick one or more methods to back up your passphrase listed below.</p>
         <br>
         <div layout="row">
