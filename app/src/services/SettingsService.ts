@@ -59,7 +59,7 @@ class SettingsService {
   public static CAPTCHA_POPUP = 'settings.captcha_popup';
 
   constructor() {
-    this.settings[SettingsService.WEBSOCKET_URL] = 'wss://zombies.mofowallet.org:8884/ws/';
+    this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
     this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
     this.settings[SettingsService.RS_ADDRESS_PREFIX] = 'HEAT';
