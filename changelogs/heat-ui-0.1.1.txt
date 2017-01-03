@@ -1,3 +1,8 @@
+**EXTRA UPDATE**
+    8 november 2016.
+    Updated server end points to match new certificates
+**EXTRA UPDATE**
+
 This release contains various smaller bug fixes, a new local storage solution,
 new and unread message notifications and a temporary ICO claim section for
 claiming your genesis HEAT.
