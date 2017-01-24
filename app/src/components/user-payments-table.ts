@@ -49,6 +49,9 @@
     user-payments-table .message-text {
       margin-bottom: 18px;
     }
+    user-payments-table .message-text pre {
+      margin-top: 0px;
+    }
   `],
   template: AbstractDataTableComponent.template(`
       <th md-column class="confirmed-th">
@@ -59,16 +62,21 @@
       <th md-column md-order-by="timestamp">
         <span>Date</span>
       </th>
-      <th md-column md-numeric>
+      <th md-column md-numeric md-order-by="amount">
         <span>Amount</span>
       </th>
       <th md-column></th>
-      <th md-column md-order-by="sender_id">
+      <th md-column>
+        <span>Account</span>
+      </th>
+      <!--
+      <th md-column md-order-by="sender">
         <span>Sender</span>
       </th>
-      <th md-column md-order-by="recipient_id">
+      <th md-column md-order-by="recipient">
         <span>Recipient</span>
       </th>
+      -->
       <th md-column class="stretch">
         <span>Message</span>
       </th>
@@ -81,7 +89,7 @@
         <timestamp timestamp-value="item.timestamp"></timestamp>
       </td>
       <td md-cell md-numeric nowrap>
-        <money precision="8" amount="item.amount" symbol="vm.user.accountColorName"
+        <money precision="8" amount="item.quantity" symbol="item.symbol"
           outgoing="item.outgoing" fraction="2"></money>
       </td>
       <td md-cell>
@@ -90,53 +98,68 @@
         </md-icon>
       </td>
       <td md-cell nowrap>
+        <span>{{item.account}}</span>
+      </td>
+      <!--
+      <td md-cell nowrap>
         <span>{{item.sender}}</span>
       </td>
       <td md-cell nowrap>
         <span>{{item.recipient}}</span>
       </td>
+      -->
       <td md-cell class="stretch">
-        <div class="message-text">{{item.messageText}}</div>
+        <div class="message-text" ng-show="item.messageText"><pre>{{item.messageText}}</pre></div>
       </td>
     `
   )
 })
-@Inject('$scope','$q','$timeout','user','cloud','engine')
+@Inject('$scope','$q','$timeout','user','heat','HTTPNotify','assetInfo')
 class UserPaymentsTableComponent extends AbstractDataTableComponent {
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
               private user: UserService,
-              private cloud: CloudService,
-              private engine: EngineService) {
+              private heat: HeatService,
+              private HTTPNotify: HTTPNotifyService,
+              private assetInfo: AssetInfoService) {
     super($scope, $q, $timeout, "-timestamp");
 
-    var topic = new TransactionTopicBuilder().account(this.user.account);
-    var observer = engine.socket().observe<TransactionObserver>(topic).
-      add(this.refresh).
-      remove(this.refresh).
-      confirm(this.refresh);
-
-    $scope.$on("$destroy",() => { observer.destroy() });
+    this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
 
     this.refresh();
   }
 
   getCount() : angular.IPromise<number> {
-    return this.cloud.api.getPaymentCount({ accountRS: this.user.accountRS });
+    return this.heat.api.getPaymentsCount(this.user.account,'all');
   }
 
-  getPageItems(forceSort?: string, forcePage?: number, forceLimit?: number): angular.IPromise<Array<any>> {
+  getPageItems(forceSort?: string, forcePage?: number, forceLimit?: number): angular.IPromise<Array<IHeatPayment>> {
     var deferred = this.$q.defer();
-    var request = this.createGetPaymentsRequest(forceSort, forcePage, forceLimit);
-    this.cloud.api.getPayments(request).then(
+    this.createGetPaymentsRequest(forceSort, forcePage, forceLimit).then(
       (payments) => {
         deferred.resolve(
           payments.map(
             (payment) => {
-              payment['outgoing'] = this.user.accountRS == payment.senderRS;
+              payment['confirmed'] = payment.blockId != '0';
+              payment['outgoing'] = this.user.account == payment.sender;
               payment['messageText'] = this.parseMessage(payment);
+              payment['account'] = this.user.account == payment.sender ? payment.recipient : payment.sender;
+              if (payment.timestamp == 0) {
+                payment['messageText'] = 'Hello this is your <b>GENESIS</b> payment. Thank you.'
+              }
+              if (payment.currency != "0") {
+                payment['symbol'] = payment.currency;
+                this.assetInfo.getInfo(payment.currency).then((info) => {
+                  this.$scope.$evalAsync(() => {
+                    payment['symbol'] = info.symbol;
+                  });
+                })
+              }
+              else {
+                payment['symbol'] = 'HEAT';
+              }
               return payment;
             }
           )
@@ -147,7 +170,7 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
     return deferred.promise;
   }
 
-  createGetPaymentsRequest(forceSort?: string, forcePage?: number, forceLimit?: number): ICloudGetPaymentsRequest {
+  createGetPaymentsRequest(forceSort?: string, forcePage?: number, forceLimit?: number): angular.IPromise<Array<IHeatPayment>> {
     var sortColumn = forceSort || this.query.order;
     var page = forcePage || this.query.page;
     var limit = forceLimit || this.query.limit;
@@ -161,26 +184,10 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
       sortAsc = false;
       sortColumn = sortColumn.substring(1);
     }
-    return {
-      accountRS: this.user.accountRS,
-      firstIndex: from,
-      lastIndex: to,
-      sortColumn: sortColumn,
-      sortAsc: sortAsc
-    }
+    return this.heat.api.getPayments(this.user.account, 'all', sortColumn, sortAsc, from, to);
   }
 
-  parseMessage(payment: ICloudPayment) {
-    if (payment.message) {
-      var message = payment.message;
-      if (message.recipientRS == this.user.accountRS) {
-        return heat.crypto.decryptMessage(message.data, message.nonce, message.senderPublicKey, this.user.secretPhrase);
-      }
-      else if (message.senderRS == this.user.accountRS) {
-        return heat.crypto.decryptMessage(message.data, message.nonce, message.recipientPublicKey, this.user.secretPhrase);
-      }
-      return "[Encrypted]";
-    }
-    return "";
+  parseMessage(payment: IHeatPayment) {
+    return this.heat.getHeatMessageContents(payment);
   }
 }
