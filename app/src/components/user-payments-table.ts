@@ -126,7 +126,11 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
               private assetInfo: AssetInfoService) {
     super($scope, $q, $timeout, "-timestamp");
 
-    this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
+    this.HTTPNotify.on(()=>{
+      if (this.query.page == 1) {
+        this.refresh();
+      }
+    }, $scope);
 
     this.refresh();
   }

@@ -103,7 +103,7 @@
     `
   )
 })
-@Inject('$scope','$q','$timeout','user','heat','$interval')
+@Inject('$scope','$q','$timeout','user','heat','HTTPNotify')
 class BlockExplorerTableComponent extends AbstractDataTableComponent {
 
   constructor($scope: angular.IScope,
@@ -111,7 +111,7 @@ class BlockExplorerTableComponent extends AbstractDataTableComponent {
               $timeout: angular.ITimeoutService,
               private user: UserService,
               private heat: HeatService,
-              private $interval: angular.IIntervalService) {
+              private HTTPNotify: HTTPNotifyService) {
     super($scope, $q, $timeout, "-timestamp");
     this.query =  {
       order: '-timestamp',
@@ -120,9 +120,11 @@ class BlockExplorerTableComponent extends AbstractDataTableComponent {
     };
     this.refresh();
 
-    // quick and dirty solution
-    var interval = $interval(() => { this.refresh() }, 15*1000, 0, false);
-    $scope.$on('$destroy', () => { $interval.cancel(interval) });
+    HTTPNotify.on(()=>{
+      if (this.query.page == 1) {
+        this.refresh();
+      }
+    },$scope);
   }
 
   getCount() : angular.IPromise<number> {
