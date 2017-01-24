@@ -39,7 +39,9 @@
       font-size: 18px;
     }
     login .wallet {
-      width: 160px;
+      width: 260px;
+      padding-top: 24px;
+      padding-bottom: 24px;
     }
     login .outer-container {
       width: 100%;
@@ -47,15 +49,37 @@
     }
   `],
   template: `
-    <div layout="column" flex layout-align="start center">
-      <div layout="column" layout-padding class="outer-container"> <!-- class="md-whiteframe-2dp" -->
+      <div layout="column" flex layout-align="start center">
+        <div layout="column" layout-padding class="outer-container">
+          <div layout="column" layout-align="start center" layout-padding>
+            <img src="assets/heatwallet.png" class="wallet">
+          </div>
+          <div layout="column" flex>
+            <md-input-container flex>
+              <label>Secret phrase</label>
+              <textarea rows="2" flex ng-model="vm.secretPhrase" id="create-new-textarea" ng-trim="false"></textarea>
+              <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
+            </md-input-container>
+          </div>
+          <div layout="row">
+            <md-button class="md-primary md-raised" ng-click="vm.loginSecretPhrase()" ng-disabled="!vm.secretPhrase" flex aria-label="Sign in">Sign in</md-button>
+          </div>
+        </div>
+      </div>
+      <div layout="row">
+        <news-button layout="column"></news-button>
+      </div>
+
+      <!--
+
+      <div layout="column" layout-padding class="outer-container">
         <div layout="column" flex ng-if="vm.page == 0">
           <div layout="column" layout-align="start center" layout-padding>
             <img src="assets/heatwallet.png" class="wallet">
           </div>
           <div layout="column" ng-show="vm.isNewInstall">
-            <md-button class="md-raised md-primary" ng-click="vm.gotoPage(1)" flex>Create New Account</md-button>
-            <md-button class="md-raised" ng-click="vm.gotoPage(2)" flex>Add Existing Account</md-button>
+            <md-button class="md-raised md-primary" ng-click="vm.gotoPage(1)" flex aria-label="Create">Create New Account</md-button>
+            <md-button class="md-raised" ng-click="vm.gotoPage(2)" flex aria-label="Add">Add Existing Account</md-button>
           </div>
           <div layout="column" flex ng-hide="vm.isNewInstall">
             <md-input-container>
@@ -69,11 +93,11 @@
               <input ng-model="vm.pincode" required name="pincode" ng-change="vm.pincodeChanged()" maxlength="5">
             </md-input-container>
             <div layout="row">
-              <md-button class="md-primary md-raised" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex>Sign in</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex aria-label="Sign in">Sign in</md-button>
             </div>
             <div layout="row" layout-align="center" class="smalller-font">
-              <md-button ng-click="vm.gotoPage(1)" flex>create account</md-button>
-              <md-button ng-click="vm.gotoPage(2)" flex>add account</md-button>
+              <md-button ng-click="vm.gotoPage(1)" flex aria-label="Create">create account</md-button>
+              <md-button ng-click="vm.gotoPage(2)" flex aria-label="Add">add account</md-button>
             </div>
           </div>
         </div>
@@ -84,7 +108,7 @@
           <div layout="column" flex>
             <md-input-container flex>
               <label>Secret phrase</label>
-              <textarea rows="2" flex ng-model="vm.secretPhrase" readonly id="create-new-textarea"></textarea>
+              <textarea rows="2" flex ng-model="vm.secretPhrase" readonly id="create-new-textarea" ng-trim="false"></textarea>
               <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
             </md-input-container>
             <md-input-container flex>
@@ -97,9 +121,9 @@
               <input ng-model="vm.pincode" required name="pincode" maxlength="5">
             </md-input-container>
             <div layout="row">
-              <md-button ng-click="vm.back($event)" flex>Back</md-button>
+              <md-button ng-click="vm.back($event)" flex aria-label="Back">Back</md-button>
               <md-button class="md-primary" ng-click="vm.addAccount($event)"
-                ng-disabled="!vm.secretPhrase || !vm.isValidPincode(vm.pincode)" flex>Add</md-button>
+                ng-disabled="!vm.secretPhrase || !vm.isValidPincode(vm.pincode)" flex aria-label="Add">Add</md-button>
             </div>
           </div>
         </div>
@@ -110,7 +134,7 @@
           <div layout="column" flex>
             <md-input-container flex>
               <label>Secret phrase</label>
-              <textarea rows="2" flex ng-model="vm.secretPhrase" id="add-existing-textarea" ng-change="vm.secretPhraseChanged()"></textarea>
+              <textarea rows="2" flex ng-model="vm.secretPhrase" id="add-existing-textarea" ng-change="vm.secretPhraseChanged()" ng-trim="false"></textarea>
               <md-icon md-font-library="material-icons" ng-click="vm.copy('add-existing-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
             </md-input-container>
             <md-input-container flex>
@@ -123,20 +147,18 @@
               <input ng-model="vm.pincode" required name="pincode" maxlength="5">
             </md-input-container>
             <div layout="row">
-              <md-button ng-click="vm.back($event)" flex>Back</md-button>
+              <md-button ng-click="vm.back($event)" flex aria-label="Back">Back</md-button>
               <md-button class="md-primary" ng-click="vm.addAccount($event)"
-                ng-disabled="!vm.secretPhrase || !vm.isValidPincode(vm.pincode)" flex>Add</md-button>
+                ng-disabled="!vm.secretPhrase || !vm.isValidPincode(vm.pincode)" flex aria-label="Add">Add</md-button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div layout="row">
-      <news-button layout="column"></news-button>
-    </div>
+    -->
   `
 })
-@Inject('$scope','$q','user','$location','engine','localKeyStore',
+@Inject('$scope','$q','user','$location','heat','localKeyStore',
         'secretGenerator','clipboard','$mdToast','env')
 class LoginComponent {
 
@@ -154,7 +176,7 @@ class LoginComponent {
               private $q: angular.IQService,
               private user: UserService,
               private $location: angular.ILocationService,
-              private engine: EngineService,
+              private heat: HeatService,
               private localKeyStore: LocalKeyStoreService,
               private secretGenerator: SecretGeneratorService,
               private clipboard: ClipboardService,
@@ -230,6 +252,12 @@ class LoginComponent {
     this.account = heat.crypto.getAccountIdFromPublicKey(this.publicKey);
   }
 
+  loginSecretPhrase() {
+    this.user.unlock(this.secretPhrase, false).then(() => {
+      this.$location.path('home');
+    });
+  }
+
   login() {
     this.setLoading(true);
     this.isExistingAccount().then((exists) => {
@@ -256,7 +284,8 @@ class LoginComponent {
 
   isExistingAccount(): angular.IPromise<boolean> {
     var deferred = this.$q.defer();
-    this.engine.socket().api.getAccount(this.account).then(() => {
+    /*
+    this.heat.api.getAccountBalance(this.account, "0").then(() => {
       deferred.resolve(true);
     }).catch((error: ServerEngineError) => {
       if (error.code == 5 && error.description == "Unknown account") {
@@ -266,6 +295,7 @@ class LoginComponent {
         deferred.reject(error);
       }
     });
+    */
     return deferred.promise;
   }
 }
