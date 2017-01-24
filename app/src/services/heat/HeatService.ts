@@ -62,13 +62,13 @@ class HeatService {
 
   getAuthData(): Object {
     var timestamp = Date.now();
-    var baseMessage = this.user.accountRS + timestamp;
+    var baseMessage = this.user.account + timestamp;
     var message = converters.stringToHexString(baseMessage);
     var secret = converters.stringToHexString(this.user.secretPhrase)
     var signature = heat.crypto.signBytes(message, secret);
     return {
       auth: {
-        accountRS: this.user.accountRS,
+        accountRS: this.user.account,
         timestamp: timestamp,
         signature: signature,
         publicKey: this.user.publicKey
