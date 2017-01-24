@@ -23,19 +23,17 @@
  * SOFTWARE.
  * */
 @Service('sendmoney')
-@Inject('$q','address','engine','user','cloud')
+@Inject('$q','user','heat')
 class SendmoneyService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
-              private address: AddressService,
-              engine: EngineService,
               private user: UserService,
-              private cloud: CloudService) {
-    super('sendMoney', engine)
+              private heat: HeatService) {
+    super();
   }
 
-  dialog($event?, recipient?: string, recipientPublicKey?: string, amount?: string, userMessage?: string, bundle?: ReplicatorBundle): IGenericDialog {
-    return new SendmoneyDialog($event, this, this.$q, this.address, this.user, this.cloud, recipient, recipientPublicKey, amount, userMessage, bundle);
+  dialog($event?, recipient?: string, recipientPublicKey?: string, amount?: string, userMessage?: string): IGenericDialog {
+    return new SendmoneyDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, amount, userMessage);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition): boolean {
@@ -48,14 +46,12 @@ class SendmoneyDialog extends GenericDialog {
   constructor($event,
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
-              private address: AddressService,
               private user: UserService,
-              private cloud: CloudService,
+              private heat: HeatService,
               private recipient: string,
               private recipientPublicKey: string,
               private amount: string,
-              private userMessage: string,
-              private bundle: ReplicatorBundle) {
+              private userMessage: string) {
     super($event);
     this.dialogTitle = 'Send Money';
     this.dialogDescription = 'Description on how to send money';
@@ -75,7 +71,7 @@ class SendmoneyDialog extends GenericDialog {
               onchange(() => {
                 this.fields['recipientPublicKey'].value = null;
                 this.fields['message'].changed();
-                this.cloud.api.getPublicKey(this.fields['recipient'].value).then(
+                this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
                   }
@@ -87,16 +83,20 @@ class SendmoneyDialog extends GenericDialog {
               required().
               precision(8).
               symbol(this.user.accountColorName).
-              asyncValidate("Not enough funds", (amountNQT) => {
+              asyncValidate("Not enough funds", (amount) => {
                 var deferred = this.$q.defer();
-                this.transaction.engine.socket().api.getAccount(this.user.accountRS).then(
-                  (response: IGetAccountResponse) => {
-                    var available: jsbn.BigInteger = new BigInteger(response.unconfirmedBalanceNQT);
-                    var total: jsbn.BigInteger = new BigInteger(amountNQT).add(new BigInteger(this.transaction.engine.getBaseFeeNQT()));
-                    if (available.compareTo(total) > 0) {
-                      deferred.resolve();
-                    }
-                    else {
+                this.heat.api.getAccountBalance(this.user.account, '0').then(
+                  (balance: IHeatAccountBalance) => {
+                    try {
+                      var avail = new Big(balance.unconfirmedBalance);
+                      var total = new Big(amount).add(new Big(HeatAPI.fee.standard));
+                      if (avail.gte(total) > 0) {
+                        deferred.resolve();
+                      }
+                      else {
+                        deferred.reject();
+                      }
+                    } catch (e) {
                       deferred.reject();
                     }
                   }, deferred.reject);
@@ -106,7 +106,7 @@ class SendmoneyDialog extends GenericDialog {
               rows(2).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
-                if (String(message).trim().length == 0 || !this.fields['recipient'].value) {
+                if (String(message).trim().length == 0) {
                   deferred.resolve();
                 }
                 else {
@@ -114,7 +114,7 @@ class SendmoneyDialog extends GenericDialog {
                     deferred.resolve();
                   }
                   else {
-                    this.cloud.api.getPublicKey(this.fields['recipient'].value).then(
+                    this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                       (publicKey) => {
                         this.fields['recipientPublicKey'].value = publicKey;
                         deferred.resolve();
@@ -126,27 +126,47 @@ class SendmoneyDialog extends GenericDialog {
                 return deferred.promise;
               }).
               label('Message'),
-      builder.hidden('recipientPublicKey', this.recipientPublicKey).required()
+      builder.hidden('recipientPublicKey', this.recipientPublicKey)
     ]
   }
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
-    builder.deadline(1440).
-            feeNQT(this.transaction.engine.getBaseFeeNQT()).
-            secretPhrase(this.user.secretPhrase).
-            json({
-              recipient: this.address.rsToNumeric(this.fields['recipient'].value),
-              amountNQT: this.fields['amount'].value,
-              recipientPublicKey: this.fields['recipientPublicKey'].value,
+    builder.secretPhrase(this.user.secretPhrase)
+           .feeNQT(HeatAPI.fee.standard)
+           .attachment('OrdinaryPayment', <IHeatCreateOrdinaryPayment>{
+              amountHQT: this.fields['amount'].value
             });
+    builder.recipient(this.fields['recipient'].value);
+    builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
     if (this.fields['message'].value) {
       builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
     }
-    if (angular.isDefined(this.bundle)) {
-      builder.bundle(this.bundle);
-    }
+    // if (angular.isDefined(this.bundle)) {
+    //   builder.bundle(this.bundle);
+    // }
     return builder;
   }
+
+
+  // /* @override */
+  // getTransactionBuilder(): TransactionBuilder {
+  //   var builder = new TransactionBuilder(this.transaction);
+  //   builder.deadline(1440).
+  //           feeNQT(this.transaction.engine.getBaseFeeNQT()).
+  //           secretPhrase(this.user.secretPhrase).
+  //           json({
+  //             recipient: this.address.rsToNumeric(this.fields['recipient'].value),
+  //             amountNQT: this.fields['amount'].value,
+  //             recipientPublicKey: this.fields['recipientPublicKey'].value,
+  //           });
+  //   if (this.fields['message'].value) {
+  //     builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
+  //   }
+  //   if (angular.isDefined(this.bundle)) {
+  //     builder.bundle(this.bundle);
+  //   }
+  //   return builder;
+  // }
 }
