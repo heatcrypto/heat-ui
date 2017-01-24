@@ -21,10 +21,10 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function paymentDetails($event, payment: ICloudPayment) {
+  export function paymentDetails($event, payment: IHeatPayment) {
 
     var settings: SettingsService = <SettingsService> heat.$inject.get('settings');
-
+    /*
     dialogs.dialog({
       id: 'paymentDetails',
       title: 'Payment details',
@@ -57,5 +57,6 @@ module dialogs {
         </div>
       `
     })
+    */
   }
 }
