@@ -48,14 +48,14 @@ class Money {
   }
 
   render() {
+    /*
     var precision = this.precision ? parseInt(this.precision) : 8;
     this.amountNXT = utils.convertNQT(this.amount, precision);
-
     var fraction = this.fraction ? parseInt(this.fraction) : 0;
     if (fraction) {
       this.amountNXT = utils.roundTo(this.amountNXT, fraction);
     }
-
-    this.amountFormatted = utils.commaFormat(this.amountNXT);
+    */
+    this.amountFormatted = utils.formatQNT(this.amount,parseInt(this.precision));
   }
 }
