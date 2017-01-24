@@ -40,21 +40,22 @@ enum TransactionMessageType {
 class TransactionBuilder {
 
   private $q = <angular.IQService> heat.$inject.get('$q');
-  private engine = <EngineService> heat.$inject.get('engine');
-  private address = <AddressService> heat.$inject.get('address');
   private user = <UserService> heat.$inject.get('user');
+  private settings = <SettingsService> heat.$inject.get('settings');
+  private heat = <HeatService> heat.$inject.get('heat');
 
-  private _feeNQT: string = this.engine.getBaseFeeNQT();
+  private _feeHQT: string;
   private _deadline: number = 1440;
   private _message: string;
   private _messageType: TransactionMessageType;
+  private _messageIsBinary: boolean = false;
   private _secretPhrase: string;
-  private _recipientPublickey: string;
-  private _json: any;
-  private _transactionArgs: any = {};
-  private _transactionData: any = {};
-  private _transactionBytes: any = {};
-  private _bundle: ReplicatorBundle;
+  private _recipientPublicKey: string;
+  private _recipient: string;
+  private _attachment: any;
+  private _transactionArgs: IHeatCreateTransactionInput;
+  private _transactionData: IHeatCreateTransactionOutput;
+  private _transactionBytes: string;
 
   /* Client side calculated transaction full hash, set when `sign` completes */
   public transactionFullHash: string;
@@ -69,8 +70,8 @@ class TransactionBuilder {
     return this;
   }
 
-  public feeNQT(feeNQT: string): TransactionBuilder {
-    this._feeNQT = feeNQT;
+  public feeNQT(feeHQT: string): TransactionBuilder {
+    this._feeHQT = feeHQT;
     return this;
   }
 
@@ -79,25 +80,27 @@ class TransactionBuilder {
     return this;
   }
 
-  public recipientPublickey(recipientPublickey: string): TransactionBuilder {
-    this._recipientPublickey = recipientPublickey;
+  public recipientPublicKey(recipientPublicKey: string): TransactionBuilder {
+    this._recipientPublicKey = recipientPublicKey;
     return this;
   }
 
-  public message(message: string, messageType: TransactionMessageType): TransactionBuilder {
+  public recipient(recipient: string): TransactionBuilder {
+    this._recipient = recipient;
+    return this;
+  }
+
+  public message(message: string, messageType: TransactionMessageType, isBinary?: boolean): TransactionBuilder {
     this._message = message;
     this._messageType = messageType;
-    return this;
-  }
-
-  public bundle(bundle: ReplicatorBundle): TransactionBuilder {
-    this._bundle = bundle;
+    this._messageIsBinary = isBinary;
     return this;
   }
 
   /* Accepts a function or an object */
-  public json(json: any): TransactionBuilder {
-    this._json = json;
+  public attachment(name: string, attachment: any): TransactionBuilder {
+    this._attachment = {};
+    this._attachment[name] = attachment;
     return this;
   }
 
@@ -115,8 +118,8 @@ class TransactionBuilder {
       /* could throw an error during encrypting of message */
       this._transactionArgs = this.getCreateTransactionArgs();
 
-      var p = this.engine.socket().callAPIFunction(this.transaction.requestType, this._transactionArgs);
-      p.then((data:any) => {
+      var p = this.heat.api.createTransaction(this._transactionArgs);
+      p.then((data:IHeatCreateTransactionOutput) => {
         this._transactionData = data;
         deferred.resolve();
       }).
@@ -172,8 +175,8 @@ class TransactionBuilder {
   public broadcast(): angular.IPromise<ITransactionBuilderBroadcastResponse> {
     var deferred = this.$q.defer();
 
-    var p = this.engine.socket().api.broadcastTransaction(this._transactionBytes);
-    p.then((data) => {
+    var p = this.heat.api.broadcast({ transactionBytes: this._transactionBytes});
+    p.then((data: IHeatBroadcastOutput) => {
       if (data.fullHash != this.transactionFullHash) {
         deferred.resolve({
           success: false,
@@ -213,15 +216,24 @@ class TransactionBuilder {
    * Constructs the arguments for the `createTransaction` server API call.
    * @returns Object with arguments as properties
    */
-  private getCreateTransactionArgs(): any {
-    var json = angular.isFunction(this._json) ? this._json.call(null) : (this._json||{});
-    var args: any = angular.extend({
-      "feeNQT": this._feeNQT,
-      "deadline": String(this._deadline),
-      "sender": heat.crypto.getAccountId(this._secretPhrase),
-      "publicKey": heat.crypto.secretPhraseToPublicKey(this._secretPhrase)
-    }, json);
-
+  private getCreateTransactionArgs(): IHeatCreateTransactionInput {
+    var attachment = angular.isFunction(this._attachment) ? this._attachment.call(null) : (this._attachment||{});
+    if (!angular.isDefined(this._feeHQT)) {
+      throw new Error("You must provide a fee");
+    }
+    var args: IHeatCreateTransactionInput = {
+      fee: this._feeHQT,
+      deadline: this._deadline,
+      publicKey: heat.crypto.secretPhraseToPublicKey(this._secretPhrase),
+      broadcast: false
+    };
+    angular.extend(args, attachment);
+    if (utils.emptyToNull(this._recipientPublicKey)) {
+      args.recipientPublicKey = this._recipientPublicKey;
+    }
+    if (utils.emptyToNull(this._recipient)) {
+      args.recipient = this._recipient;
+    }
     if (utils.emptyToNull(this._message)) {
       switch (this._messageType) {
         case TransactionMessageType.TO_SELF: {
@@ -229,50 +241,18 @@ class TransactionBuilder {
           break;
         }
         case TransactionMessageType.TO_RECIPIENT: {
-          if (!angular.isDefined(args["recipient"])) {
-            throw new Error("You must provide a recipient");
+          if (!angular.isDefined(args.recipientPublicKey)) {
+            throw new Error("You must provide a recipient that has a publickey");
           }
-          if (!angular.isDefined(args["recipientPublicKey"])) {
-            throw new Error("You must provide a recipientPublicKey");
-          }
-          var accountFromPublicKey = heat.crypto.getAccountIdFromPublicKey(args["recipientPublicKey"]);
-          if (accountFromPublicKey != args["recipient"]) {
-            throw new Error("Recipient and Recipient Public Key don't match");
-          }
-          var publicKey = converters.hexStringToByteArray(args["recipientPublicKey"]);
-          angular.extend(args, this.encryptToRecipient(this._message, args["recipient"], publicKey));
+          var publicKey = converters.hexStringToByteArray(args.recipientPublicKey);
+          angular.extend(args, this.encryptToRecipient(this._message, args.recipient, publicKey));
           break;
         }
         case TransactionMessageType.PUBLIC: {
-          args["message"] = this._message;
-          args["messageIsText"] = 'true';
+          args.message = this._message;
+          args.messageIsText = !this._messageIsBinary;
           break;
         }
-      }
-    }
-
-    if (angular.isObject(this._bundle) && this._bundle !== null) {
-      if (this._bundle.encrypt) {
-        if (this._recipientPublickey == this.user.publicKey) {
-          if (angular.isString(args["encryptToSelfMessageData"])) {
-            throw new Error('Cannot combine encrypted bundle and TO_SELF message');
-          }
-          angular.extend(args, this.encryptToSelf(this._bundle.toBytes(), true));
-        }
-        else {
-          if (angular.isString(args["encryptedMessageData"])) {
-            throw new Error('Cannot combine encrypted bundle and TO_RECIPIENT message');
-          }
-          var publicKey = converters.hexStringToByteArray(args["recipientPublicKey"]);
-          angular.extend(args, this.encryptToRecipient(this._bundle.toBytes(), args["recipient"], publicKey, true));
-        }
-      }
-      else {
-        if (angular.isString(args["message"])) {
-          throw new Error('It is not possible to add an unencrypted bundle and PUBLIC message at the same time');
-        }
-        args["message"] = this._bundle.toHex();
-        args["messageIsText"] = 'false';
       }
     }
     return args;
@@ -286,7 +266,7 @@ class TransactionBuilder {
     return {
       "encryptToSelfMessageData": encrypted.message,
       "encryptToSelfMessageNonce": encrypted.nonce,
-      "messageToEncryptToSelfIsText": isBinary ? "false" : "true"
+      "messageToEncryptToSelfIsText": !isBinary
     };
   }
 
@@ -301,7 +281,7 @@ class TransactionBuilder {
     return {
       "encryptedMessageData": encrypted.message,
       "encryptedMessageNonce": encrypted.nonce,
-      "messageToEncryptIsText": isBinary ? "false" : "true"
+      "messageToEncryptIsText": !isBinary
     };
   }
 }
