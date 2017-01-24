@@ -23,50 +23,40 @@
  * SOFTWARE.
  * */
 @Service('sendmessage')
-@Inject('$q','address','engine','user','cloud')
+@Inject('$q','user','heat')
 class SendmessageService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
-              private address: AddressService,
-              engine: EngineService,
               private user: UserService,
-              private cloud: CloudService) {
-    super('sendMessage', engine)
+              private heat: HeatService) {
+    super();
   }
 
-  dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string, bundle?: ReplicatorBundle): IGenericDialog {
-    return new SendmessageDialog($event, this, this.$q, this.address, this.user, this.cloud, recipient, recipientPublicKey, userMessage, bundle);
+  dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): IGenericDialog {
+    return new SendmessageDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, userMessage);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition): boolean {
     return transaction.type === 1 && transaction.subtype === 0;
   }
 }
-
 class SendmessageDialog extends GenericDialog {
-
-  public readonlyRecipient: boolean;
-  public messageType: TransactionMessageType;
 
   constructor($event,
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
-              private address: AddressService,
               private user: UserService,
-              private cloud: CloudService,
+              private heat: HeatService,
               private recipient: string,
               private recipientPublicKey: string,
-              private userMessage: string,
-              private bundle: ReplicatorBundle) {
+              private userMessage: string) {
     super($event);
     this.dialogTitle = 'Send Message';
     this.dialogDescription = 'Description on how to send message';
     this.okBtnTitle = 'SEND';
 
-    this.readonlyRecipient = angular.isString(this.recipient);
     this.recipient = this.recipient || '';
-    this.userMessage = this.userMessage || '';
-    this.messageType = TransactionMessageType.TO_RECIPIENT;
+    this.recipientPublicKey = this.recipientPublicKey || null;
   }
 
   /* @override */
@@ -75,11 +65,10 @@ class SendmessageDialog extends GenericDialog {
     return [
       builder.account('recipient', this.recipient).
               label('Recipient').
-              readonly(this.readonlyRecipient).
               onchange(() => {
                 this.fields['recipientPublicKey'].value = null;
                 this.fields['message'].changed();
-                this.cloud.api.getPublicKey(this.fields['recipient'].value).then(
+                this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
                   }
@@ -90,7 +79,7 @@ class SendmessageDialog extends GenericDialog {
               rows(2).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
-                if (String(message).trim().length == 0 || !this.fields['recipient'].value) {
+                if (String(message).trim().length == 0) {
                   deferred.resolve();
                 }
                 else {
@@ -98,7 +87,7 @@ class SendmessageDialog extends GenericDialog {
                     deferred.resolve();
                   }
                   else {
-                    this.cloud.api.getPublicKey(this.fields['recipient'].value).then(
+                    this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                       (publicKey) => {
                         this.fields['recipientPublicKey'].value = publicKey;
                         deferred.resolve();
@@ -109,26 +98,26 @@ class SendmessageDialog extends GenericDialog {
                 }
                 return deferred.promise;
               }).
-              label('Message').
-              required(),
-      builder.hidden('recipientPublicKey', this.recipientPublicKey).required()
+              label('Message'),
+      builder.hidden('recipientPublicKey', this.recipientPublicKey)
     ]
   }
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
-    builder.deadline(1440).
-            feeNQT(this.transaction.engine.getBaseFeeNQT()).
-            secretPhrase(this.user.secretPhrase).
-            json({
-              recipient: this.address.rsToNumeric(this.fields['recipient'].value),
-              recipientPublicKey: this.fields['recipientPublicKey'].value
-            }).
-            message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
-    if (angular.isDefined(this.bundle)) {
-      builder.bundle(this.bundle);
+    builder.secretPhrase(this.user.secretPhrase)
+           .feeNQT(HeatAPI.fee.standard)
+           .attachment('ArbitraryMessage', <IHeatCreateArbitraryMessage>{
+            });
+    builder.recipient(this.fields['recipient'].value);
+    builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
+    if (this.fields['message'].value) {
+      builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
     }
+    // if (angular.isDefined(this.bundle)) {
+    //   builder.bundle(this.bundle);
+    // }
     return builder;
   }
 }
