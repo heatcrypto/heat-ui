@@ -30,3 +30,13 @@ heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider',
   noCAPTCHAProvider.setSiteKey("6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc");
   noCAPTCHAProvider.setTheme('light');
 }]);
+
+/*
+
+Configure ngSantize, look into allowing html content in messages
+
+heat.Loader.config(['$compileProvider', ($compileProvider) => {
+  $compileProvider.aHrefSanitizationWhitelist(null);
+  $compileProvider.imgSrcSanitizationWhitelist(null);
+}]);
+*/
