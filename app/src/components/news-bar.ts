@@ -55,7 +55,7 @@ class NewsBarComponent {
   selector: 'newsButton',
   template: `
     <div layout="column">
-      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)">
+      <md-button class="md-primary md-raised" onclick="window.showNewsBar(event)" aria-label="News">
         <span>NEWS {{vm.news.first().date}}: {{vm.news.first().title}}</span>
       </md-button>
     </div>
