@@ -43,20 +43,21 @@ class SettingsService {
   public static LOG_API_ERRORS = 'settings.log_api_errors';
   public static LOG_API_ALL = 'settings.log_api_all';
   public static LOG_NOTIFY_ALL = 'settings.log_notify_all';
-  // public static CLOUD_URL = 'settings.cloud_url';
-  public static CLOUD_HOST = 'settings.cloud_host';
-  public static CLOUD_PORT = 'settings.cloud_port';
-  public static LOG_CLOUD_ERRORS = 'settings.log_cloud_errors';
-  public static LOG_CLOUD_ALL = 'settings.log_cloud_all';
-  public static LOG_CLOUD_NOTIFY_ALL = 'settings.log_cloud_notify_all';
   public static DICE_WORD_FOLDER = 'settings.dice_word_folder';
   public static DICE_WORD_SUPPORTED_LANG = 'settings.dice_word_supported_lang';
-  public static CLOUD_RPC_TIMEOUT = 'settings.cloud_rpc_timeout';
-  public static CLOUD_WEBSOCKET_URL = 'settings.cloud_websocket_url';
   public static TRANSACTION_PROCESSING_VISUALIZATION = 'settings.transaction_processing_visualization';
   public static NEWS_URL = 'settings.news_url';
   public static CAPTCHA_SITE_KEY = 'settings.captcha_site_key';
   public static CAPTCHA_POPUP = 'settings.captcha_popup';
+
+  /* We are dropping the old CLOUD* and SOCKET* server api endpoints in favor of HEAT* server api */
+  public static HEAT_RPC_TIMEOUT = 'settings.heat_rpc_timeout';
+  public static HEAT_WEBSOCKET_URL = 'settings.heat_websocket_url';
+  public static LOG_HEAT_ERRORS = 'settings.log_heat_errors';
+  public static LOG_HEAT_ALL = 'settings.log_heat_all';
+  public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
+  public static HEAT_HOST = 'settings.heat_host';
+  public static HEAT_PORT = 'settings.heat_port';
 
   constructor() {
     this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
@@ -77,11 +78,6 @@ class SettingsService {
     this.settings[SettingsService.LOG_API_ERRORS] = true;
     this.settings[SettingsService.LOG_API_ALL] = false;
     this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
-    this.settings[SettingsService.CLOUD_HOST] = "https://alpha.heatledger.com";
-    this.settings[SettingsService.CLOUD_PORT] = 8443;
-    this.settings[SettingsService.LOG_CLOUD_ERRORS] = true;
-    this.settings[SettingsService.LOG_CLOUD_ALL] = true;
-    this.settings[SettingsService.LOG_CLOUD_NOTIFY_ALL] = true;
 
     this.settings[SettingsService.DICE_WORD_FOLDER] = "dice-words";
     this.settings[SettingsService.DICE_WORD_SUPPORTED_LANG] = {
@@ -96,8 +92,15 @@ class SettingsService {
       "sv": ["sv.txt","87d1bf55193c95c03aa8e0d221dfaa94ccd8d6ea153b3d735eac235d592273fe"]
     };
 
-    this.settings[SettingsService.CLOUD_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "wss://alpha.heatledger.com:8443/socket";
+
+    this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
+    this.settings[SettingsService.HEAT_WEBSOCKET_URL] = "";
+    this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
+    this.settings[SettingsService.LOG_HEAT_ALL] = false;
+    this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
+    this.settings[SettingsService.HEAT_HOST] = "https://alpha.heatledger.com";
+    this.settings[SettingsService.HEAT_PORT] = "7734";
+
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
@@ -107,12 +110,6 @@ class SettingsService {
     var LOCAL_HEAT_LEDGER = false;
     if (LOCAL_HEAT_LEDGER) {
       this.settings[SettingsService.WEBSOCKET_URL] = 'ws://localhost:8884/ws/';
-    }
-    var LOCAL_HEAT_SERVER = false;
-    if (LOCAL_HEAT_SERVER) {
-      this.settings[SettingsService.CLOUD_HOST] = "http://localhost";
-      this.settings[SettingsService.CLOUD_PORT] = 9000;
-      this.settings[SettingsService.CLOUD_WEBSOCKET_URL] = "ws://localhost:9000/socket";
     }
   }
 
