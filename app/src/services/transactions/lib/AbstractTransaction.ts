@@ -20,11 +20,126 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+class TransactionVerificationError {
+  constructor(public name: string, public expected: any, public actual: any){}
+}
+
+class Appendix {
+  protected version: number;
+  constructor(bytes: IByteArrayWithPosition) {
+    this.version = bytes.byteArray[bytes.pos];
+    bytes.pos++;
+  }
+}
+class AppendixMessage extends Appendix {
+  public message: string;
+  public isText: boolean;
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes);
+    var length = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
+    this.isText = length < 0;
+    if (length < 0) {
+      length &= 2147483647;
+    }
+    if (this.isText) {
+      this.message = converters.byteArrayToString(bytes.byteArray, bytes.pos, length);
+    }
+    else {
+      var slice = bytes.byteArray.slice(bytes.pos, bytes.pos + length);
+      this.message = converters.byteArrayToHexString(slice);
+    }
+    bytes.pos += length;
+  }
+}
+class AbstractEncryptedMessage extends Appendix {
+  public encryptedMessageData: string;
+  public encryptedMessageNonce: string;
+  public isText: boolean;
+  constructor(bytes: IByteArrayWithPosition,data: IHeatCreateTransactionInput) {
+    super(bytes);
+    var length = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
+    this.isText = length < 0;
+    if (length < 0) {
+      length &= 2147483647;
+    }
+    this.encryptedMessageData = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + length));
+    bytes.pos += length;
+    this.encryptedMessageNonce = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + 32));
+    bytes.pos += 32;
+  }
+}
+class AppendixEncryptedMessage extends AbstractEncryptedMessage {
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes, null);
+  }
+}
+class AppendixPublicKeyAnnouncement extends Appendix {
+  public publicKey: string;
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes);
+    this.publicKey = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + 32));
+    bytes.pos += 32;
+  }
+}
+class AppendixEncryptToSelfMessage extends AbstractEncryptedMessage {
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes, null);
+  }
+}
+class AppendixPrivateNameAnnouncement extends Appendix {
+  public privateNameAnnouncement: string; // unsignedLong
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes);
+    this.privateNameAnnouncement = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
+    bytes.pos += 8;
+  }
+}
+class AppendixPrivateNameAssignment extends Appendix {
+  public privateNameAssignment: string;
+  public signature: string;
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes);
+    this.privateNameAssignment = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
+    bytes.pos += 8;
+    this.signature = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + 64));
+    bytes.pos += 64;
+  }
+}
+class AppendixPublicNameAnnouncement extends Appendix {
+  public publicNameAnnouncement: string;
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes);
+    var length = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
+    this.publicNameAnnouncement = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + length));
+    bytes.pos += length;
+  }
+}
+class AppendixPublicNameAssignment extends Appendix {
+  public publicNameAssignment: string;
+  public signature: string;
+  constructor(bytes: IByteArrayWithPosition) {
+    super(bytes);
+    var length = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
+    this.publicNameAssignment = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + length));
+    bytes.pos += length;
+    this.signature = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + 64));
+    bytes.pos += 64;
+  }
+}
+
 abstract class AbstractTransaction {
 
-  constructor(public requestType: string, public engine: EngineService) {}
-
   abstract verify(transaction: any, bytes: IByteArrayWithPosition, data?: any): boolean;
+
+  confirm(name: string, expected: any, actual: any) {
+    if (expected != actual) {
+      throw new TransactionVerificationError(name, expected, actual);
+    }
+  }
 
   /**
    * Verify and sign transaction bytes as returned from API createTransaction.
@@ -35,111 +150,46 @@ abstract class AbstractTransaction {
    *
    * @returns string or undefined in case of error
    */
-  verifyAndSignTransactionBytes(transactionBytes: string, signature, data: any): string {
+  verifyAndSignTransactionBytes(transactionBytes: string, signature, data: IHeatCreateTransactionInput): string {
     var transaction: any = {};
     var byteArray = converters.hexStringToByteArray(transactionBytes);
-    transaction.type = byteArray[0];
-
+    transaction.type = byteArray[0]; // 1
     transaction.version = (byteArray[1] & 0xF0) >> 4;
-    transaction.subtype = byteArray[1] & 0x0F;
+    transaction.subtype = byteArray[1] & 0x0F;  // 1
+    transaction.timestamp = converters.byteArrayToSignedInt32(byteArray, 2); // 4
 
-    transaction.timestamp = String(converters.byteArrayToSignedInt32(byteArray, 2));
-    transaction.deadline = String(converters.byteArrayToSignedShort(byteArray, 6));
-    if (this.engine.type == EngineType.FIMK) {
-      transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 8));
-      transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(16, 48));
-    }
-    else if (this.engine.type == EngineType.NXT) {
-      transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(8, 40));
-      transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 40));
-    }
-    else if (this.engine.type == EngineType.HEAT) {
-      transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 8));
-      transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(16, 48));
-    }
+    transaction.deadline = converters.byteArrayToSignedShort(byteArray, 6); // 2
+    this.confirm("deadline", data.deadline, transaction.deadline);
+
+    transaction.senderPublicKey = converters.byteArrayToHexString(byteArray.slice(8, 40)); // 32
+    this.confirm("senderPublicKey", data.publicKey, transaction.senderPublicKey);
+
+    transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 40)); // 8
+    if (data.recipient)
+      this.confirm("recipient", data.recipient, transaction.recipient);
     else {
-      throw new Error('Unsupported engine type');
+      if (data.recipientPublicKey)
+        this.confirm("recipientPublicKey", heat.crypto.getAccountIdFromPublicKey(data.recipientPublicKey), transaction.recipient);
+      else
+        this.confirm("recipient", "1739068987193023818", transaction.recipient);
     }
 
-    transaction.amountNQT = String(converters.byteArrayToBigInteger(byteArray, 48));
-    transaction.feeNQT = String(converters.byteArrayToBigInteger(byteArray, 56));
+    transaction.amount = String(converters.byteArrayToBigInteger(byteArray, 48)); // 8
+    if (data.OrdinaryPayment)
+      this.confirm("amount", data.OrdinaryPayment.amountHQT, transaction.amount);
+    else
+      this.confirm("amount", "0", transaction.amount);
 
-    var refHash = byteArray.slice(64, 96);
-    transaction.referencedTransactionFullHash = converters.byteArrayToHexString(refHash);
-    if (transaction.referencedTransactionFullHash == "0000000000000000000000000000000000000000000000000000000000000000") {
-      transaction.referencedTransactionFullHash = "";
-    }
-    //transaction.referencedTransactionId = converters.byteArrayToBigInteger([refHash[7], refHash[6], refHash[5], refHash[4], refHash[3], refHash[2], refHash[1], refHash[0]], 0);
+    transaction.fee = String(converters.byteArrayToBigInteger(byteArray, 56)); // 8
+    this.confirm("fee", data.fee, transaction.fee);
 
-    transaction.flags = 0;
-    if (transaction.version > 0) {
-      transaction.flags = converters.byteArrayToSignedInt32(byteArray, 160);
-      transaction.ecBlockHeight = String(converters.byteArrayToSignedInt32(byteArray, 164));
-      transaction.ecBlockId = String(converters.byteArrayToBigInteger(byteArray, 168));
-    }
-    if (!("amountNQT" in data)) {
-      data.amountNQT = "0";
-    }
-    if (!("recipient" in data)) {
-      if (this.engine.type == EngineType.FIMK) {
-        data.recipient = "1739068987193023818";
-        data.recipientRS = "FIM-MRCC-2YLS-8M54-3CMAJ";
-      }
-      else if (this.engine.type == EngineType.NXT) {
-        data.recipient = "1739068987193023818";
-        data.recipientRS = "NXT-MRCC-2YLS-8M54-3CMAJ";
-      }
-      else if (this.engine.type == EngineType.HEAT) {
-        data.recipient = "1739068987193023818";
-        data.recipientRS = "HEAT-MRCC-2YLS-8M54-3CMAJ";
-      }
-      else {
-        throw new Error('Unsupported engine type');
-      }
-    }
-    if (transaction.publicKey != data.publicKey) {
-      console.log('verifyAndSignTransactionBytes.failed | transaction.publicKey != data.publicKey', transaction, data);
-      return;
-    }
-    if (transaction.deadline !== data.deadline) {
-      console.log('verifyAndSignTransactionBytes.failed | transaction.deadline !== data.deadline', transaction, data);
-      return;
-    }
-    if (transaction.recipient !== data.recipient) {
-      if (data.recipient == "1739068987193023818") {
-        //ok
-      } else {
-        console.log('verifyAndSignTransactionBytes.failed | transaction.recipient !== data.recipient', transaction, data);
-        return;
-      }
-    }
-    if (transaction.amountNQT !== data.amountNQT || transaction.feeNQT !== data.feeNQT) {
-      console.log('verifyAndSignTransactionBytes.failed | transaction.amountNQT !== data.amountNQT || transaction.feeNQT !== data.feeNQT', transaction, data);
-      return;
-    }
-    if ("referencedTransactionFullHash" in data) {
-      if (transaction.referencedTransactionFullHash !== data.referencedTransactionFullHash) {
-        console.log('verifyAndSignTransactionBytes.failed | transaction.referencedTransactionFullHash !== data.referencedTransactionFullHash', transaction, data);
-        return;
-      }
-    }
-    else if (transaction.referencedTransactionFullHash !== "") {
-      console.log('verifyAndSignTransactionBytes.failed | transaction.referencedTransactionFullHash !== ""', transaction, data);
-      return;
-    }
+    transaction.signature = converters.byteArrayToHexString(byteArray.slice(64, 128)); // 64
+    transaction.flags = converters.byteArrayToSignedInt32(byteArray, 128); // 4
+    transaction.ecBlockHeight = converters.byteArrayToSignedInt32(byteArray, 132); // 4
+    transaction.ecBlockId = String(converters.byteArrayToBigInteger(byteArray, 136)); // 8
 
-    var pos: number;
-    if (transaction.version > 0) {
-      if (this.requestType == "sendMoney" || this.requestType == "sendMessage") { // has empty attachment, so no attachmentVersion byte...
-        pos = 176;
-      }
-      else {
-        pos = 177;
-      }
-    }
-    else {
-      pos = 160;
-    }
+    var pos: number = 144;
+    pos++; // skip the attachmentVersion byte
 
     var bytes: IByteArrayWithPosition = {
       byteArray: byteArray,
@@ -148,103 +198,58 @@ abstract class AbstractTransaction {
     if (!this.verify(transaction, bytes, data)) {
       return;
     }
-    pos = bytes.pos;
 
     var position = 1;
-    // non-encrypted message
-    if ((transaction.flags & position) != 0 || (this.requestType == "sendMessage" && data.message)) {
-      var attachmentVersion = byteArray[pos];
-      pos++;
-      var messageLength = converters.byteArrayToSignedInt32(byteArray, pos);
-      transaction.messageIsText = messageLength < 0; // ugly hack??
-      if (messageLength < 0) {
-        messageLength &= 2147483647;
-      }
-      pos += 4;
-      if (transaction.messageIsText) {
-        transaction.message = converters.byteArrayToString(byteArray, pos, messageLength);
-      }
-      else {
-        var slice = byteArray.slice(pos, pos + messageLength);
-        transaction.message = converters.byteArrayToHexString(slice);
-      }
-      pos += messageLength;
-      var messageIsText = (transaction.messageIsText ? "true" : "false");
-      if (messageIsText != data.messageIsText) {
-        return;
-      }
-      if (transaction.message !== data.message) {
-        return;
-      }
-    }
-    else if (data.message) {
-      return;
-    }
-    position <<= 1;
-    //encrypted note
     if ((transaction.flags & position) != 0) {
-      var attachmentVersion = byteArray[pos];
-      pos++;
-      var encryptedMessageLength = converters.byteArrayToSignedInt32(byteArray, pos);
-      transaction.messageToEncryptIsText = encryptedMessageLength < 0;
-      if (encryptedMessageLength < 0) {
-        encryptedMessageLength &= 2147483647; // http://en.wikipedia.org/wiki/2147483647
-      }
-      pos += 4;
-      transaction.encryptedMessageData = converters.byteArrayToHexString(byteArray.slice(pos, pos + encryptedMessageLength));
-      pos += encryptedMessageLength;
-      transaction.encryptedMessageNonce = converters.byteArrayToHexString(byteArray.slice(pos, pos + 32));
-      pos += 32;
-      var messageToEncryptIsText = (transaction.messageToEncryptIsText ? "true" : "false");
-      if (messageToEncryptIsText != data.messageToEncryptIsText) {
-        return;
-      }
-      if (transaction.encryptedMessageData !== data.encryptedMessageData || transaction.encryptedMessageNonce !== data.encryptedMessageNonce) {
-        return;
-      }
-    }
-    else if (data.encryptedMessageData) {
-      return;
+      let appendix = new AppendixMessage(bytes);
+      this.confirm("Message.message", data.message, appendix.message);
+      this.confirm("Message.messageIsText", data.messageIsText, appendix.isText);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      var attachmentVersion = byteArray[pos];
-      pos++;
-      var recipientPublicKey = converters.byteArrayToHexString(byteArray.slice(pos, pos + 32));
-      if (recipientPublicKey != data.recipientPublicKey) {
-        return;
-      }
-      pos += 32;
-    }
-    else if (data.recipientPublicKey) {
-      return;
+      let appendix = new AppendixEncryptedMessage(bytes);
+      this.confirm("EncryptedMessage.encryptedMessageData",data.encryptedMessageData, appendix.encryptedMessageData);
+      this.confirm("EncryptedMessage.encryptedMessageNonce",data.encryptedMessageNonce, appendix.encryptedMessageNonce);
+      this.confirm("EncryptedMessage.messageToEncryptIsText",data.messageToEncryptIsText, appendix.isText);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      var attachmentVersion = byteArray[pos];
-      pos++;
-      var encryptedToSelfMessageLength = converters.byteArrayToSignedInt32(byteArray, pos);
-      transaction.messageToEncryptToSelfIsText = encryptedToSelfMessageLength < 0;
-      if (encryptedToSelfMessageLength < 0) {
-        encryptedToSelfMessageLength &= 2147483647;
-      }
-      pos += 4;
-      transaction.encryptToSelfMessageData = converters.byteArrayToHexString(byteArray.slice(pos, pos + encryptedToSelfMessageLength));
-      pos += encryptedToSelfMessageLength;
-      transaction.encryptToSelfMessageNonce = converters.byteArrayToHexString(byteArray.slice(pos, pos + 32));
-      pos += 32;
-      var messageToEncryptToSelfIsText = (transaction.messageToEncryptToSelfIsText ? "true" : "false");
-      if (messageToEncryptToSelfIsText != data.messageToEncryptToSelfIsText) {
-        return;
-      }
-      if (transaction.encryptToSelfMessageData !== data.encryptToSelfMessageData ||
-        transaction.encryptToSelfMessageNonce !== data.encryptToSelfMessageNonce) {
-        return;
-      }
+      let appendix = new AppendixPublicKeyAnnouncement(bytes);
+      this.confirm("PublicKeyAnnouncement.recipientPublicKey",data.recipientPublicKey, appendix.publicKey);
     }
-    else if (data.encryptToSelfMessageData) {
-      return;
+    position <<= 1;
+    if ((transaction.flags & position) != 0) {
+      let appendix = new AppendixEncryptToSelfMessage(bytes);
+      this.confirm("EncryptToSelfMessage.encryptedMessageData",data.encryptToSelfMessageData, appendix.encryptedMessageData);
+      this.confirm("EncryptToSelfMessage.encryptedMessageNonce",data.encryptToSelfMessageNonce, appendix.encryptedMessageNonce);
+      this.confirm("EncryptToSelfMessage.messageToEncryptIsText",data.messageToEncryptToSelfIsText, appendix.isText);
     }
-    return transactionBytes.substr(0, 192) + signature + transactionBytes.substr(320);
+    position <<= 1;
+    if ((transaction.flags & position) != 0) {
+      let appendix = new AppendixPrivateNameAnnouncement(bytes);
+      this.confirm("PrivateNameAnnouncement.privateNameAnnouncement",data.privateNameAnnouncement, appendix.privateNameAnnouncement);
+    }
+    position <<= 1;
+    if ((transaction.flags & position) != 0) {
+      let appendix = new AppendixPrivateNameAssignment(bytes);
+      this.confirm("PrivateNameAssignment.privateNameAssignment",data.privateNameAssignment, appendix.privateNameAssignment);
+      this.confirm("PrivateNameAssignment.privateNameAssignmentSignature",data.privateNameAssignmentSignature, appendix.signature);
+    }
+    position <<= 1;
+    if ((transaction.flags & position) != 0) {
+      let appendix = new AppendixPublicNameAnnouncement(bytes);
+      this.confirm("PublicNameAnnouncement.privateNameAssignment",data.publicNameAnnouncement, appendix.publicNameAnnouncement);
+    }
+    position <<= 1;
+    if ((transaction.flags & position) != 0) {
+      let appendix = new AppendixPublicNameAssignment(bytes);
+      this.confirm("PublicNameAssignment.publicNameAssignment",data.publicNameAssignment, appendix.publicNameAssignment);
+      this.confirm("PublicNameAssignment.publicNameAssignmentSignature",data.publicNameAssignmentSignature, appendix.signature);
+    }
+
+    var tmp1 = converters.hexStringToByteArray(transactionBytes);
+    var tmp2 = converters.hexStringToByteArray(signature);
+    Array.prototype.splice.apply(tmp1, [64,64].concat(tmp2));
+    return converters.byteArrayToHexString(tmp1);
   }
 }
