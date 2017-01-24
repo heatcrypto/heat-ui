@@ -26,8 +26,12 @@
     user-balance {
       max-width:350px;
     }
-    user-balance .balance {
+    user-balance .balance  {
       white-space: nowrap;
+      font-size: 20px !important;
+    }
+    user-balance .fraction {
+      font-size: 12px !important;
     }
     user-balance .error .md-button {
       cursor: default;
@@ -35,12 +39,12 @@
   `],
   template: `
     <div layout="column">
-      <span class="balance" ng-show="vm.formattedBalance && !vm.showError">
-        {{vm.formattedBalance}} {{vm.currencyName}}
+      <span ng-show="vm.formattedBalance && !vm.showError">
+        <span class="balance">{{vm.formattedBalance}}</span><span class="fraction">{{vm.formattedFraction}}</span>&nbsp;<span class="balance">{{vm.currencyName}}</span>
       </span>
       <md-progress-linear md-mode="indeterminate" ng-if="vm.loading"></md-progress-linear>
       <span class="balance error" ng-show="vm.showError">
-        <elipses-loading></elipses-loading><md-button class="md-icon-button">
+        <elipses-loading></elipses-loading><md-button class="md-icon-button" aria-label="Error">
           <md-tooltip md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
           <md-icon md-font-library="material-icons">error</md-icon>
         </md-button>
@@ -48,11 +52,11 @@
     </div>
   `
 })
-@Inject('$scope','user','engine','$q','$timeout')
+@Inject('$scope','user','heat','$q','$timeout', 'HTTPNotify')
 class UserBalanceComponent {
 
-  private balanceHQT: string = "0";
   private formattedBalance: string = "0";
+  private formattedFraction: string = ".00";
   private currencyName: string = "HEAT";
   private loading: boolean = true;
   private showError: boolean = false;
@@ -60,23 +64,16 @@ class UserBalanceComponent {
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
-              private engine: EngineService,
+              private heat: HeatService,
               private $q: angular.IQService,
-              private $timeout: angular.ITimeoutService) {
-
-    var refresh = () => { this.refresh() };
-
-    var topic = new TransactionTopicBuilder().account(this.user.accountRS);
-    var observer = engine.socket().observe<TransactionObserver>(topic).
-      add(refresh).
-      remove(refresh).
-      confirm(refresh);
-
+              private $timeout: angular.ITimeoutService,
+              private HTTPNotify: HTTPNotifyService) {
+    this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
     this.refresh();
   }
 
-  getUserBalance() : angular.IPromise<IAccountBalance> {
-    return this.engine.socket().api.getAccount(this.user.accountRS);
+  getUserBalance() : angular.IPromise<IHeatAccountBalance> {
+    return this.heat.api.getAccountBalance(this.user.account, "0");
   }
 
   refresh() {
@@ -85,8 +82,9 @@ class UserBalanceComponent {
     });
     this.getUserBalance().then((balance) => {
       this.$scope.$evalAsync(() => {
-        this.balanceHQT = balance.balanceNQT;
-        this.formattedBalance = utils.commaFormat(utils.convertNQT(this.balanceHQT));
+        var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
+        this.formattedBalance = formatted[0];
+        this.formattedFraction = "." + (formatted[1]||"00");
         this.showError = false;
         this.loading = false;
       });
