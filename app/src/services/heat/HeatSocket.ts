@@ -147,7 +147,7 @@ class HeatSocket {
 
   private getAuthenticatedURL(url): string {
     var timestamp = String(Date.now());
-    var baseMessage = this.user.accountRS + timestamp;
+    var baseMessage = this.user.account + timestamp;
     var message = converters.stringToHexString(baseMessage);
     var secret = converters.stringToHexString(this.user.secretPhrase)
     var signature = heat.crypto.signBytes(message, secret);
