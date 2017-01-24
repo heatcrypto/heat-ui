@@ -43,6 +43,12 @@ module heat {
 
         function isUnlocked() {
           if (!user.unlocked) {
+
+            // DEVELOPMENT HELPER STATEMENT
+            // REMOVE FOR PRODUCTION - ASSISTS IN AUTO USER SIGNIN FOR QUICK REFRESH
+            //user.unlock("user1", false);
+            //if ((1+1) == 2) return;
+
             if (!/\/login\/\w+/.test($location.path())) {
               $location.path('login');
             }
@@ -74,6 +80,10 @@ module heat {
         user.on(UserService.EVENT_LOCKED, () => {
           $scope.$evalAsync(() => { $scope['userUnlocked'] = false })
         });
+
+        // DEBUG
+        //user.unlock("suspend heaven under close explore breath perhaps some ourselves push probably glory", false);
+        //user.unlock("user1", false);
       }]);
 
       this.init('heatApp', [
