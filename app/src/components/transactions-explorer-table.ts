@@ -101,14 +101,14 @@
     `
   )
 })
-@Inject('$scope','$q','$timeout','user','engine','$interval')
+@Inject('$scope','$q','$timeout','user','heat','$interval')
 class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
               private user: UserService,
-              private engine: EngineService,
+              private heat: HeatService,
               private $interval: angular.IIntervalService) {
     super($scope, $q, $timeout, "-timestamp");
     this.query =  {
@@ -118,25 +118,28 @@ class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
     };
 
     var topic = new TransactionTopicBuilder();
-    var observer = engine.socket().observe<TransactionObserver>(topic).
-      add(this.refresh).
-      remove(this.refresh).
-      confirm(this.refresh);
+    // var observer = engine.socket().observe<TransactionObserver>(topic).
+    //   add(this.refresh).
+    //   remove(this.refresh).
+    //   confirm(this.refresh);
 
-    $scope.$on("$destroy",() => { observer.destroy() });
+    //$scope.$on("$destroy",() => { observer.destroy() });
     this.refresh();
   }
 
   getCount() : angular.IPromise<number> {
     var deferred = this.$q.defer();
+    /*
     this.engine.socket().api.getBlockchainStatus().then((status) => {
       deferred.resolve(40000);
     },deferred.reject);
+    */
     return deferred.promise;
   }
 
   getPageItems(forceSort?: string, forcePage?: number, forceLimit?: number): angular.IPromise<Array<any>> {
     var deferred = this.$q.defer();
+    /*
     var request = this.createGetBlockchainTransactionsRequest(forceSort, forcePage, forceLimit);
     this.engine.socket().api.getBlockchainTransactions("", request).then(
       (transactions) => {
@@ -150,10 +153,12 @@ class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
       },
       deferred.reject
     );
+    */
     return deferred.promise;
   }
 
-  createGetBlockchainTransactionsRequest(forceSort?: string, forcePage?: number, forceLimit?: number): IGetBlockchainTransactionsRequest {
+  /*
+  createGetBlockchainTransactionsRequest(forceSort?: string, forcePage?: number, forceLimit?: number): any {
     var page = forcePage || this.query.page;
     var limit = forceLimit || this.query.limit;
 
@@ -165,7 +170,9 @@ class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
       lastIndex: to
     }
   }
+  */
 
+  /*
   getTransactionType(transaction: ITransaction) {
     if (transaction.type == 0 && transaction.subtype == 0)
       return "payment";
@@ -173,4 +180,5 @@ class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
       return "message";
     return "other";
   }
+  */
 }
