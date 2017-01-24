@@ -20,11 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explorer')
-@Component({
-  selector: 'explorer',
-  template: `
-    <div layout="column" flex layout-padding>
+/*
+      <!--
       <div layout="column" flex>
         <md-tabs md-border-bottom flex layout="column">
           <md-tab label="BLOCKS" flex layout="column">
@@ -39,6 +36,14 @@
           </md-tab>
         </md-tabs>
       </div>
+      -->
+*/
+@RouteConfig('/explorer')
+@Component({
+  selector: 'explorer',
+  template: `
+    <div layout="column" flex layout-padding layout-fill>
+      <blocks-explorer-table flex layout-fill></blocks-explorer-table>
     </div>
   `
 })
@@ -46,6 +51,5 @@
 class ExplorerComponent {
   constructor(private $scope: angular.IScope,
               public user: UserService) {
-    user.requireLogin();
   }
 }
