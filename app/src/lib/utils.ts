@@ -23,6 +23,13 @@
 declare var BigInteger;
 module utils {
 
+  /**
+   * Remove commas notation from a float number
+   */
+  export function unformat(commaFormatted: string): string {
+    return commaFormatted ? commaFormatted.replace(/,/g,"") : "0";
+  }
+
   export function convertNQT(amountNQT: string, decimals?: number) {
     if (typeof amountNQT == 'undefined')  return '0';
 
@@ -122,9 +129,11 @@ module utils {
    */
   export function hasToManyDecimals(value: string, decimals: number) {
     var num = String(value).replace(/,/g,'');
-    var parts = num.split(".");
-    if (parts[1] && parts[1].length > decimals) {
-      return true;
+    var parts: Array<string> = num.split(".");
+    if (parts[1]) {
+      var fractional = parts[1].replace(/[\s0]*$/g,"");
+      if (fractional.length > decimals)
+        return true;
     }
     return false;
   }
@@ -168,7 +177,21 @@ module utils {
     return deferred.promise;
   }
 
-  export function convertToQNTf(quantity: string, decimals: number): string {
+  export function formatQNT(quantity: string, decimals: number, returnNullZero?: boolean): string {
+    var asfloat = utils.convertToQNTf(quantity, 8);
+    var cf = utils.commaFormat(asfloat);
+    var parts = cf.split('.');
+    var ret;
+    if (!parts[1])
+      ret = parts[0] + "." + "0".repeat(decimals);
+    else if (parts[1].length > decimals)
+      ret = parts[0] + "." + parts[1].substr(0, decimals);
+    else
+      ret = parts[0] + "." + parts[1] + "0".repeat(decimals-parts[1].length);
+    return returnNullZero && !ret.match(/[^0\.]/) ? null : ret;
+  }
+
+  export function convertToQNTf(quantity: string, decimals: number = 8): string {
     if (typeof quantity == 'undefined') {
       return '0';
     }
@@ -190,6 +213,10 @@ module utils {
       }
     }
     return quantity + afterComma;
+  }
+
+  export function calculateTotalOrderPriceQNT(quantityQNT: string, priceQNT: string): string {
+    return new Big(quantityQNT).times(new Big(priceQNT).div(new Big(100000000))).round().toString();
   }
 
   export function calculateOrderPricePerWholeQNT(price: string, decimals: number): string {
@@ -214,7 +241,7 @@ module utils {
    *
    * @throws utils.ConvertToQNTError
    */
-  export function convertToQNT(quantity: string, decimals: number): string {
+  export function convertToQNT(quantity: string, decimals: number = 8): string {
     var parts = quantity.split(".");
     var qnt   = parts[0];
     if (parts.length == 1) {
@@ -245,17 +272,6 @@ module utils {
     }
     //remove leading zeroes
     return qnt.replace(/^0+/, "");
-  }
-
-  export function calculatePricePerWholeQNT(price: string, decimals: number): string {
-    if (decimals) {
-      var toRemove = price.slice(-decimals);
-      if (!/^[0]+$/.test(toRemove)) {
-        throw "Invalid input";
-      }
-      return price.slice(0, -decimals);
-    }
-    return price;
   }
 
   /**
@@ -297,6 +313,15 @@ module utils {
       if (callNow) func.apply(context, args);
     };
   };
+
+  export function repeatWhile(delay: number, cb: ()=>boolean) {
+    var fn = () => {
+      if (cb()) {
+        clearInterval(interval);
+      }
+    }
+    var interval = setInterval(fn, delay);
+  }
 
   export function emptyToNull(input: string): string {
     return (angular.isString(input) && input.trim().length == 0) ? null : input;
