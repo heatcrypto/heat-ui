@@ -88,9 +88,9 @@ module dialogs {
           </md-dialog-content>
           <md-dialog-actions layout="row">
             <span flex></span>
-            <md-button ng-if="vm.cancelButton" ng-click="vm.cancelButtonClick ? vm.cancelButtonClick() : vm.$mdDialog.cancel()">Cancel</md-button>
+            <md-button ng-if="vm.cancelButton" ng-click="vm.cancelButtonClick ? vm.cancelButtonClick() : vm.$mdDialog.cancel()" aria-label="Cancel">Cancel</md-button>
             <md-button ng-disabled="dialogForm.$invalid" ng-if="vm.okButton"
-              ng-click="vm.okButtonClick ? vm.okButtonClick() : vm.$mdDialog.hide()">{{vm.okButtonLabel?vm.okButtonLabel:'OK'}}</md-button>
+              ng-click="vm.okButtonClick ? vm.okButtonClick() : vm.$mdDialog.hide()" aria-label="OK">{{vm.okButtonLabel?vm.okButtonLabel:'OK'}}</md-button>
           </md-dialog-actions>
         </form>
       </md-dialog>
@@ -149,16 +149,16 @@ module dialogs {
           </md-dialog-content>
           <md-dialog-actions layout="row">
             <md-button ng-show="!vm.hideCancelBtn"
-                ng-click="vm.cancelButtonClick ? vm.cancelButtonClick() : vm.$mdDialog.cancel()">Cancel</md-button>
+                ng-click="vm.cancelButtonClick ? vm.cancelButtonClick() : vm.$mdDialog.cancel()" aria-label="Cancel">Cancel</md-button>
             <span flex></span>
             <md-button ng-click="vm.goToPreviousPage()"
-                ng-show="vm.wizardIndex>0 && !vm.hideBackBtn">Back</md-button>
+                ng-show="vm.wizardIndex>0 && !vm.hideBackBtn" aria-label="Back">Back</md-button>
             <md-button ng-disabled="dialogForm.$invalid"
                 ng-show="vm.wizardIndex < (vm.pages.length-1)"
-                ng-click="vm.goToNextPage()">{{vm.pages[vm.wizardIndex].continueBtnLabel||'Continue'}}</md-button>
+                ng-click="vm.goToNextPage()" aria-label="Continue">{{vm.pages[vm.wizardIndex].continueBtnLabel||'Continue'}}</md-button>
             <md-button ng-disabled="dialogForm.$invalid"
                 ng-show="vm.wizardIndex == (vm.pages.length-1) && !vm.hideOkBtn"
-                ng-click="vm.okButtonClick ? vm.okButtonClick() : vm.$mdDialog.hide()">{{vm.pages[vm.wizardIndex].okBtnLabel||'Ok'}}</md-button>
+                ng-click="vm.okButtonClick ? vm.okButtonClick() : vm.$mdDialog.hide()" aria-label="Ok">{{vm.pages[vm.wizardIndex].okBtnLabel||'Ok'}}</md-button>
           </md-dialog-actions>
         </form>
       </md-dialog>
