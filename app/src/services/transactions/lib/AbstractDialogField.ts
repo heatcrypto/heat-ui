@@ -26,6 +26,7 @@ class DialogFieldBuilder {
 
   money(name: string, _default?: any): DialogFieldMoney { return new DialogFieldMoney(this.$scope, name, _default) }
   account(name: string, _default?: any): DialogFieldAccount { return new DialogFieldAccount(this.$scope, name, _default) }
+  asset(name: string, _default?: any): DialogFieldAsset { return new DialogFieldAsset(this.$scope, name, _default) }
   text(name: string, _default?: any): DialogFieldText { return new DialogFieldText(this.$scope, name, _default) }
   hidden(name: string, _default?: any): DialogFieldHidden { return new DialogFieldHidden(this.$scope, name, _default) }
 }
