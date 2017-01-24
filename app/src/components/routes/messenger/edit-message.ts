@@ -42,7 +42,7 @@
     </div>
   `
 })
-@Inject('$scope','sendmessage','address','storage','$timeout')
+@Inject('$scope','sendmessage','storage','$timeout')
 class EditMessageComponent {
 
   publickey: string; // @inputs
@@ -52,7 +52,6 @@ class EditMessageComponent {
 
   constructor(private $scope: angular.IScope,
               private sendmessage: SendmessageService,
-              private address: AddressService,
               storage: StorageService,
               private $timeout: angular.ITimeoutService) {
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
