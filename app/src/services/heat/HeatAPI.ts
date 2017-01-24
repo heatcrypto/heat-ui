@@ -1,0 +1,199 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+class HeatAPI implements IHeatAPI {
+
+  /* transaction fees used in transaction dialogs and other places */
+  static fee = {
+    standard: utils.convertToQNT('0.01'),
+    assetIssue: utils.convertToQNT('10.00'),
+    assetIssueMore: utils.convertToQNT('0.01')
+  };
+
+  constructor(private heat: HeatService,
+              private user: UserService,
+              private $q: angular.IQService) {}
+
+  getBlockchainStatus():angular.IPromise<IHeatBlockchainStatus> {
+    return this.heat.get('/blockchain/status');
+  }
+
+  getBlocks(from: number, to: number, includeTransactions:boolean = false):angular.IPromise<Array<IHeatBlock>> {
+    return this.heat.get(`/blockchain/blocks/${from}/${to}/${includeTransactions}`);
+  }
+
+  getPublicKey(account: string): angular.IPromise<string> {
+    var deferred = this.$q.defer();
+    this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
+      var test = heat.crypto.getAccountIdFromPublicKey(publicKey);
+      if (test != account) {
+        console.log("Public key returned from server does not match account");
+        deferred.reject();
+      }
+      else {
+        deferred.resolve(publicKey);
+      }
+    },deferred.reject);
+    return deferred.promise;
+  }
+
+  createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionInput> {
+    console.log("CreateTransaction",input);
+    var arg = { value: JSON.stringify(input) };
+    return this.heat.post('/tx/create', arg);
+  }
+
+  broadcast(param: IHeatBroadcastInput):angular.IPromise<IHeatBroadcastOutput> {
+    var arg = {};
+    if (angular.isDefined(param.transactionJSON)) {
+      arg['transactionJSON'] = JSON.stringify(param.transactionJSON);
+    }
+    if (angular.isDefined(param.transactionBytes)) {
+      arg['transactionBytes'] = param.transactionBytes;
+    }
+    return this.heat.post('/tx/broadcast', arg);
+  }
+
+  getAsset(asset:string):angular.IPromise<IHeatAsset> {
+    return this.heat.get(`/exchange/asset/${asset}`);
+  }
+
+  getAssetProperties(asset: string, propertiesAccount: string, propertiesProtocol: number):angular.IPromise<IHeatAssetProperties> {
+    return this.heat.get(`/exchange/asset/properties/${asset}/${propertiesAccount}/${propertiesProtocol}`);
+  }
+
+  getAccountPairOrders(account: string, currency: string, asset: string, from: number, to: number):angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/account/pair/${account}/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getAccountPairOrdersCount(account: string, currency: string, asset: string):angular.IPromise<number> {
+    return this.heat.get(`/order/account/pair/count/${account}/${currency}/${asset}`, "count");
+  }
+
+  getAccountAllOrders(account: string, from: number, to: number):angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/account/all/${account}/${from}/${to}`);
+  }
+
+  getAccountAllOrdersCount(account: string):angular.IPromise<number> {
+    return this.heat.get(`/order/account/all/count/${account}`, "count");
+  }
+
+  getAskOrders(currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/pair/asks/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getAskOrdersCount(currency:string, asset:string): angular.IPromise<number> {
+    return this.heat.get(`/order/pair/asks/count/${currency}/${asset}`, "count");
+  }
+
+  getBidOrders(currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/pair/bids/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getBidOrdersCount(currency:string, asset:string): angular.IPromise<number> {
+    return this.heat.get(`/order/pair/bids/count/${currency}/${asset}`, "count");
+  }
+
+  getAllAskOrders(from: number, to: number): angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/asks/${from}/${to}`);
+  }
+
+  getAllBidOrders(from: number, to: number): angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/bids/${from}/${to}`);
+  }
+
+  getAccountAskOrders(account: string,currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/account/pair/asks/${account}/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getAccountBidOrders(account: string,currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatOrder>> {
+    return this.heat.get(`/order/account/pair/bids/${account}/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getTrades(currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatTrade>> {
+    return this.heat.get(`/trade/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getTradesCount(currency:string, asset:string): angular.IPromise<number> {
+    return this.heat.get(`/trade/count/${currency}/${asset}`, "count");
+  }
+
+  getAllTrades(from: number, to: number): angular.IPromise<Array<IHeatTrade>> {
+    return this.heat.get(`/trade/all/${from}/${to}`);
+  }
+
+  getAllAccountTrades(account: string, propertiesAccount: string, propertiesProtocol: number, from: number, to: number): angular.IPromise<Array<IHeatTrade>> {
+    return this.heat.get(`/trade/account/${account}/${propertiesAccount}/${propertiesProtocol}/${from}/${to}`);
+  }
+
+  getAccountTrades(account:string, currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatTrade>> {
+    return this.heat.get(`/trade/account/pair/${account}/${currency}/${asset}/${from}/${to}`);
+  }
+
+  getAccountTradesCount(account:string, currency:string, asset:string): angular.IPromise<number> {
+    return this.heat.get(`/trade/account/pair/count/${account}/${currency}/${asset}`, "count");
+  }
+
+  getAccountBalance(account: string, asset: string): angular.IPromise<IHeatAccountBalance> {
+    return this.heat.get(`/account/balance/${account}/${asset}`);
+  }
+
+  getAccountBalanceVirtual(account: string, asset: string, propertiesAccount: string, propertiesProtocol: number): angular.IPromise<IHeatAccountBalance> {
+    return this.heat.get(`/account/balance/virtual/${account}/${asset}/${propertiesAccount}/${propertiesProtocol}`);
+  }
+
+  getMarketsAll(sort: string, asc:boolean, propertiesAccountId: string, propertiesProtocol: number, from: number, to: number):angular.IPromise<Array<IHeatMarket>> {
+    return this.heat.get(`/exchange/markets/all/${sort}/${asc}/${propertiesAccountId}/${propertiesProtocol}/${from}/${to}`);
+  }
+
+  getMarkets(currency: string, sort: string, asc:boolean, propertiesAccountId: string, propertiesProtocol: number, from: number, to: number):angular.IPromise<Array<IHeatMarket>> {
+    return this.heat.get(`/exchange/markets/${currency}/${sort}/${asc}/${propertiesAccountId}/${propertiesProtocol}/${from}/${to}`);
+  }
+
+  getMarket(currency: string, asset: string, propertiesAccountId: string, propertiesProtocol: number):angular.IPromise<IHeatMarket> {
+    return this.heat.get(`/exchange/market/${currency}/${asset}/${propertiesAccountId}/${propertiesProtocol}`);
+  }
+
+  getAccountBalances(account: string, propertiesAccount: string, propertiesProtocol: number, from: number, to: number): angular.IPromise<Array<IHeatAccountBalance>> {
+    return this.heat.get(`/account/balances/${account}/${propertiesAccount}/${propertiesProtocol}/${from}/${to}`);
+  }
+
+  getPayments(account: string, currency: string, sort: string, asc: boolean, from: number, to: number): angular.IPromise<Array<IHeatPayment>> {
+    return this.heat.get(`/account/payments/${account}/${currency}/${sort}/${asc}/${from}/${to}`);
+  }
+
+  getPaymentsCount(account: string, currency: string): angular.IPromise<number> {
+    return this.heat.get(`/account/payments/count/${account}/${currency}`,"count");
+  }
+
+  getMessagingContactMessagesCount(accountA:string, accountB:string): angular.IPromise<number> {
+    return this.heat.get(`/messages/contact/count/${accountA}/${accountB}`,"count");
+  }
+
+  getMessagingContactMessages(accountA:string, accountB:string, from:number, to:number):angular.IPromise<Array<IHeatMessage>> {
+    return this.heat.get(`/messages/contact/${accountA}/${accountB}/${from}/${to}`);
+  }
+
+  getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>> {
+    return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
+  }
+}
