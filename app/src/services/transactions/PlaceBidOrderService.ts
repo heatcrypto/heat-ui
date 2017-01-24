@@ -23,33 +23,40 @@
  * SOFTWARE.
  * */
 @Service('placeBidOrder')
-@Inject('$q','engine','user')
+@Inject('$q','user')
 class PlaceBidOrderService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
-              engine: EngineService,
               private user: UserService) {
-    super('placeBidOrder', engine)
+    super();
   }
 
-  dialog(asset: IAsset, price?: string, quantity?: string, readonly?: boolean, $event?): IGenericDialog {
-    return new PlaceBidOrderDialog($event, this, this.$q, this.user, asset, price, quantity, readonly);
+  dialog(currency: string, asset: string, price?: string, quantity?: string, expiration?: number,
+            readonly?: boolean, $event?): IGenericDialog {
+    return new PlaceBidOrderDialog($event, this, this.$q, this.user,
+                    currency, asset, price, quantity, expiration, readonly);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: any): boolean {
+  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
-    else if (this.requestType == "placeAskOrder" && transaction.subtype !== 2) return false;
-    else if (this.requestType == "placeBidOrder" && transaction.subtype !== 3) return false;
+    if (transaction.subtype !== 4) return false;
+
+    transaction.currency = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
+    bytes.pos += 8;
     transaction.asset = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
     bytes.pos += 8;
-    transaction.quantityQNT = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
+    transaction.quantity = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
     bytes.pos += 8;
-    transaction.priceNQT = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
+    transaction.price = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
     bytes.pos += 8;
+    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
 
-    return transaction.asset === data.asset &&
-           transaction.quantityQNT === data.quantityQNT &&
-           transaction.priceNQT === data.priceNQT;
+    return transaction.currency === data.BidOrderPlacement.currencyId &&
+           transaction.asset === data.BidOrderPlacement.assetId &&
+           transaction.quantity === data.BidOrderPlacement.quantity &&
+           transaction.price === data.BidOrderPlacement.price &&
+           transaction.expiration === data.BidOrderPlacement.expiration;
   }
 }
 
@@ -59,9 +66,11 @@ class PlaceBidOrderDialog extends GenericDialog {
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
               private user: UserService,
-              private asset: IAsset,
+              private currency: string,
+              private asset: string,
               private price: string,
               private quantity: string,
+              private expiration: number,
               private readonly: boolean) {
     super($event);
     this.dialogTitle = 'Place bid order';
@@ -73,7 +82,11 @@ class PlaceBidOrderDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.text('asset', this.asset.asset).
+      builder.text('currency', this.currency).
+              label('Currency').
+              required().
+              readonly(this.readonly),
+      builder.text('asset', this.asset).
               label('Asset').
               required().
               readonly(this.readonly),
@@ -84,6 +97,10 @@ class PlaceBidOrderDialog extends GenericDialog {
       builder.text('quantity', this.quantity).
               label('Amount').
               required().
+              readonly(this.readonly),
+      builder.text('expiration', this.expiration).
+              label('Expiration').
+              required().
               readonly(this.readonly)
     ]
   }
@@ -91,13 +108,14 @@ class PlaceBidOrderDialog extends GenericDialog {
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
-    builder.deadline(1440).
-            feeNQT(this.transaction.engine.getBaseFeeNQT()).
-            secretPhrase(this.user.secretPhrase).
-            json({
-              priceNQT: utils.calculatePricePerWholeQNT(utils.convertToNQT(this.fields['price'].value), this.asset.decimals),
-              asset: this.fields['asset'].value,
-              quantityQNT: utils.convertToQNT(this.fields['quantity'].value, this.asset.decimals)
+    builder.secretPhrase(this.user.secretPhrase)
+           .feeNQT(HeatAPI.fee.standard)
+           .attachment('BidOrderPlacement', <IHeatCreateBidOrderPlacement>{
+              currencyId: this.fields['currency'].value,
+              assetId: this.fields['asset'].value,
+              price: utils.convertToQNT(this.fields['price'].value),
+              quantity: utils.convertToQNT(this.fields['quantity'].value),
+              expiration: this.fields['expiration'].value
             });
     return builder;
   }
