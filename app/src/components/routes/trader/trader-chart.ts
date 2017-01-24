@@ -81,6 +81,7 @@ declare var techan: any;
     setTimeout(loop, 50);
   },
 })
+@Inject('$scope','heat','$q','$window')
 class TraderChartComponent {
 
   public currency: string; // @input
@@ -96,7 +97,7 @@ class TraderChartComponent {
   private chartData: Array<IVirtualChartDataEntry>;
 
   constructor(private $scope: angular.IScope,
-              private engine: EngineService,
+              private heat: HeatService,
               private $q: angular.IQService,
               private $window: angular.IWindowService)
   {
