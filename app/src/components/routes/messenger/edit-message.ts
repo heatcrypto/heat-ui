@@ -33,7 +33,7 @@
     <div layout="column" flex="noshrink">
       <form hide-gt-xs name="editMessageForm" ng-submit="vm.sendMessage($event)" flex layout="row">
         <textarea ng-model="vm.messageText" flex rows="4"></textarea>
-        <md-button type="submit">
+        <md-button type="submit" aria-label="Submit">
           <md-icon md-font-library="material-icons">send</md-icon>
         </md-button>
       </form>
@@ -66,9 +66,8 @@ class EditMessageComponent {
 
   sendMessage($event) {
     var account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    var accountRS = this.address.numericToRS(account);
     this.sendmessage.
-         dialog($event, accountRS, this.publickey, this.messageText).
+         dialog($event, account, this.publickey, this.messageText).
          send().
          then(() => {
       this.$scope.$evalAsync(() => {
