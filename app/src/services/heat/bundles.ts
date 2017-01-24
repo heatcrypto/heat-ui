@@ -33,8 +33,9 @@ interface IHeatBundleAssetProperties {
 }
 
 module heat.bundle {
-  var KEY_STORE_SEED = 1;
-  var ASSET_PROPERTIES_SEED = 2;
+  var MAGIC = 2147483647;
+  var KEY_STORE_SEED = MAGIC - 1;
+  var ASSET_PROPERTIES_SEED = MAGIC - 2;
 
   /* Creates a keystore bundle */
   export function createKeyStore(bundle: IHeatBundleKeyStore): string {
