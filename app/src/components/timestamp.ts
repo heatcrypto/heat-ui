@@ -44,6 +44,6 @@ class Timestamp {
   update() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var date = utils.timestampToDate(parseInt(this.timestampValue));
-    this.timestampFormatted = dateFormat(date, format);
+    this.timestampFormatted = this.timestampValue != "0" ? dateFormat(date, format) : "GENESIS";
   }
 }
