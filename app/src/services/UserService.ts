@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 @Service('user')
-@Inject('$q','address','$window','engine','localKeyStore','settings','$location')
+@Inject('$q','$window','localKeyStore','settings','$location')
 class UserService extends EventEmitter {
 
   public static EVENT_UNLOCKED = 'unlocked';
@@ -35,9 +35,6 @@ class UserService extends EventEmitter {
   /* Public key as HEX string, obtained from secretphrase */
   public publicKey: string;
 
-  /* Account identifier in RS format, for API usage purpose */
-  public accountRS: string;
-
   /* Account in numeric format */
   public account: string;
 
@@ -48,9 +45,7 @@ class UserService extends EventEmitter {
   public accountColorId: string = "0";
 
   constructor(private $q,
-              private address: AddressService,
               private $window: angular.IWindowService,
-              private engine: EngineService,
               private localKeyStore: LocalKeyStoreService,
               private settings: SettingsService,
               private $location: angular.ILocationService) {
@@ -80,7 +75,6 @@ class UserService extends EventEmitter {
     this.secretPhrase = secretPhrase;
     this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
     this.account = heat.crypto.getAccountId(secretPhrase);
-    this.accountRS = this.address.numericToRS(this.account);
     this.unlocked = true;
 
     /* The other parts are on the blockchain */
@@ -93,7 +87,6 @@ class UserService extends EventEmitter {
 
   lock() {
     this.secretPhrase = null;
-    this.accountRS = null;
     this.unlocked = null;
     this.emit(UserService.EVENT_LOCKED);
     this.$window.location.reload();
