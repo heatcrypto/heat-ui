@@ -209,12 +209,13 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
 }
 
 function GenericDialogCreateController(dialog: GenericDialog) {
+
   return function ($scope: angular.IScope,
                    $mdDialog: angular.material.IDialogService,
                    settings: SettingsService) {
     this.fields = dialog.getFields($scope);
     this.fields.forEach((field: AbstractDialogField) => { dialog.fields[field.name] = field });
-    this.builder = null; /* TransactionBuilder */
+    this.builder = null; /* HeatTransactionBuilder */
 
     this.visualization_delay = settings.get(SettingsService.TRANSACTION_PROCESSING_VISUALIZATION);
 
@@ -330,6 +331,11 @@ function GenericDialogCreateController(dialog: GenericDialog) {
               /* Close by itself on instant send */
               else /* if (this.instantSend) */ {
                 setTimeout(() => { this.dialogHide() }, 666);
+
+                /* Temporary measure to update views while we dont have websocket push notifications yet */
+                var HTTPNotify = <HTTPNotifyService> heat.$inject.get('HTTPNotify');
+                HTTPNotify.notify();
+
               }
             });
           }
