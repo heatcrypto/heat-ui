@@ -31,7 +31,7 @@
   template: `
     <div layout="column" flex>
       <div class="scroll-up" layout="row" flex ng-hide="vm.getParentScope().loading || vm.batches[vm.batches.length-1].firstIndex == 0" layout-align="center">
-        <md-button ng-click="vm.scrollUp()">Go up</md-button>
+        <md-button ng-click="vm.scrollUp()" aria-label="Go up">Go up</md-button>
       </div>
       <div layout="column">
         <div layout="column" ng-repeat="batch in vm.batches | orderBy:'-'">
@@ -43,8 +43,8 @@
     </div>
   `
 })
-@Inject('$scope','$q','$timeout','$document','engine','user','cloud','settings',
-        'render','controlCharRender','storage')
+@Inject('$scope','$q','$timeout','$document','heat','user','settings',
+        'render','controlCharRender','storage','HTTPNotify')
 class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   private publickey: string; // @input
@@ -55,24 +55,31 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
               private $document: angular.IDocumentService,
-              private engine: EngineService,
+              private heat: HeatService,
               private user: UserService,
-              private cloud: CloudService,
               private settings: SettingsService,
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
-              storage: StorageService) {
+              storage: StorageService,
+              private HTTPNotify: HTTPNotifyService) {
     super($scope, $q, $timeout);
     this.store = storage.namespace('contacts.latestTimestamp',$scope);
+    HTTPNotify.on(()=> {
+      $timeout(200,false).then(()=>{
 
-    var topic = new TransactionTopicBuilder().account(this.user.account);
-    var observer = engine.socket().observe<TransactionObserver>(topic)
-        .add(angular.bind(this, this.onMessageAdded))
-        .remove(angular.bind(this, this.onMessageRemoved))
-        .confirm(angular.bind(this, this.onMessageConfirmed));
+        // for now use this ... until websocket is up
+        this.loadInitial();
 
-    $scope.$on("$destroy",() => { observer.destroy() });
+        // until Websocket push is up
+        // this.onMessageAdded()
+
+      })
+    }, $scope);
     this.loadInitial();
+
+    if (this.publickey == this.user.publicKey) {
+      throw Error("Same public key as logged in user");
+    }
   }
 
   loadInitial() {
@@ -126,55 +133,34 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   }
 
   getCount() : angular.IPromise<number> {
-    var deferred = this.$q.defer();
-    this.cloud.api.getMessageCount(
-        this.user.accountRS,
-        heat.crypto.getAccountIdFromPublicKey(this.publickey)
-      )
-      .then((total) => {
-        deferred.resolve(total.total)
-      },
-      deferred.reject);
-    return deferred.promise;
+    return this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey));
   }
 
   getItems(firstIndex: number, lastIndex: number) : angular.IPromise<Array<any>> {
     var deferred = this.$q.defer();
-    var request: ICloudGetMessagesRequest = {
-      accountRS: heat.crypto.getAccountIdFromPublicKey(this.publickey),
-      firstIndex: firstIndex,
-      lastIndex: lastIndex,
-      sortAsc: true,
-      sortColumn: 'timestamp'
-    }
-    this.cloud.api.getMessages(request).then((messages) => {
+    this.heat.api.getMessagingContactMessages(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey),
+                firstIndex, lastIndex).then((messages) => {
       var index = firstIndex;
       deferred.resolve(messages.map((message) => {
         var date = utils.timestampToDate(message.timestamp);
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         message['date'] = dateFormat(date, format);
-        message['outgoing'] = this.user.accountRS == message.senderRS;
+        message['outgoing'] = this.user.account == message.sender;
         message['contents'] = this.decryptMessage(message);
         message['index'] = index++;
         message['html'] = this.render.render(message['contents'], [this.controlCharRender]);
         this.updateLatestMessageReadTimestamp(message);
         return message;
       }));
-    })
+    });
     return deferred.promise;
   }
 
-  decryptMessage(message: ICloudMessage) {
-    if (message.recipientRS == this.user.accountRS) {
-      return heat.crypto.decryptMessage(message.data, message.nonce, message.senderPublicKey, this.user.secretPhrase);
-    }
-    else if (message.senderRS == this.user.accountRS) {
-      return heat.crypto.decryptMessage(message.data, message.nonce, message.recipientPublicKey, this.user.secretPhrase);
-    }
-    return "[Encrypted]";
+  decryptMessage(message: IHeatMessage) {
+    return this.heat.getHeatMessageContents(message);
   }
 
-  updateLatestMessageReadTimestamp(message: ICloudMessage) {
+  updateLatestMessageReadTimestamp(message: IHeatMessage) {
     var account = this.user.account == message.sender ? message.recipient : message.sender;
     var latestTimestamp = this.store.getNumber(account, 0);
     if (message.timestamp > latestTimestamp) {
