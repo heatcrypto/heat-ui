@@ -37,7 +37,7 @@ abstract class AbstractDataTableComponent {
      with the pagination control */
   public query : IAbstractDataTableQuery = {
     order: '-timestamp',
-    limit: 10,
+    limit: 30,
     page: 1
   };
 
