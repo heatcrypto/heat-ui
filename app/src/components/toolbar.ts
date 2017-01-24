@@ -22,7 +22,6 @@
  * */
 @Component({
   selector: 'toolbar',
-  inputs: ['@leftSidenavId', '@rightSidenavId'],
   styles: [`
   toolbar .admin-menu .md-button:not(.active) {
     background-color: #FFA726;
@@ -33,43 +32,128 @@
   }
   `],
   template: `
-    <md-toolbar>
+    <md-toolbar class="main-toolbar">
       <div class="md-toolbar-tools">
-        <md-button class="md-icon-button" ng-click="vm.leftSidenavToggle()" hide-gt-md ng-hide="!vm.user.unlocked" aria-label="Menu">
-          <md-icon md-font-library="material-icons">menu</md-icon>
+        <md-button aria-label="home" class="md-icon-button" href="#/home">
+          <md-tooltip md-direction="bottom">Home</md-tooltip>
+          <md-icon md-font-library="material-icons" ng-mouseover="alert('no')">home</md-icon>
         </md-button>
-        <application-title hide-gt-md></application-title>
-        <!--<user-balance ng-if="vm.user.unlocked && !vm.user.newAccount"></user-balance>-->
+        <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
+          <md-tooltip md-direction="bottom">Send Heat</md-tooltip>
+          <md-icon md-font-library="material-icons">toll</md-icon>
+        </md-button>
+        <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
+          <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
+          <md-icon md-font-library="material-icons">explore</md-icon>
+        </md-button>
+        <md-button aria-label="messages" class="md-icon-button" href="#/messenger/0" ng-if="vm.user.unlocked">
+          <md-tooltip md-direction="bottom">Messages</md-tooltip>
+          <md-icon md-font-library="material-icons">message</md-icon>
+        </md-button>
+        <md-button aria-label="trader" class="md-icon-button" href="#/trader/8709927280637656798/0">
+          <md-tooltip md-direction="bottom">Exchange</md-tooltip>
+          <md-icon md-font-library="material-icons">insert_chart</md-icon>
+        </md-button>
         <span flex></span>
-        <!--<application-system-time></application-system-time>-->
-        <md-button ng-if="vm.user.unlocked" aria-label="Sign off" ng-click="vm.user.lock()">Sign off</md-button>
-        <md-button class="md-icon-button" aria-label="Open Settings" ng-click="vm.rightSidenavToggle()">
-          <md-icon md-font-library="material-icons">more_vert</md-icon>
-        </md-button>
+        <h2 ng-if="vm.user.unlocked">
+          <user-balance ng-if="vm.user.unlocked"></user-balance>
+        </h2>
+        <md-menu md-position-mode="target-right target" md-offset="34px 0px">
+          <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+            <md-icon md-font-library="material-icons">menu</md-icon>
+          </md-button>
+          <md-menu-content width="4">
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="copy" ng-click="vm.copy('toolbar-account-id-target', 'Acount id copied')">
+                <md-icon md-font-library="material-icons">content_copy</md-icon>
+                <span id="toolbar-account-id-target">{{ vm.user.account }}</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="copy" ng-click="vm.showAssetTransferDialog($event)">
+                <md-icon md-font-library="material-icons">swap_horiz</md-icon>
+                <span id="toolbar-account-id-target">Transfer Asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="copy" ng-click="vm.showIssueAssetDialog($event)">
+                <md-icon md-font-library="material-icons">library_add</md-icon>
+                <span id="toolbar-account-id-target">Issue Asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item ng-show="vm.showDevTools">
+              <md-button aria-label="dev-tools" ng-click="vm.opendevTools($event)">
+                <md-icon md-font-library="material-icons">developer_board</md-icon>
+                Developer tools
+              </md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button aria-label="about" ng-click="vm.about($event)">
+                <md-icon md-font-library="material-icons">info_outline</md-icon>
+                About Heatledger
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="signout" ng-click="vm.signout()">
+                <md-icon md-font-library="material-icons">close</md-icon>
+                Sign out
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="!vm.user.unlocked">
+              <md-button aria-label="signin" href="#/login">
+                <md-icon md-font-library="material-icons">lock_open</md-icon>
+                Sign in
+              </md-button>
+            </md-menu-item>
+          </md-menu-content>
+        </md-menu>
       </div>
-    </md-toolbar>`
+    </md-toolbar>
+  `
 })
-@Inject('$scope','$mdSidenav','user','sendmoney')
+@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer','assetIssue')
 class ToolbarComponent {
+
+  showDevTools = false;
 
   constructor(private $scope: angular.IScope,
               private $mdSidenav,
               public user: UserService,
-              private sendmoney: SendmoneyService) {
-  }
-
-  leftSidenavId: string;
-  rightSidenavId: string;
-
-  leftSidenavToggle() {
-    this.$mdSidenav(this.leftSidenavId).toggle();
-  }
-
-  rightSidenavToggle() {
-    this.$mdSidenav(this.rightSidenavId).toggle();
+              private sendmoney: SendmoneyService,
+              private electron: ElectronService,
+              public env: EnvService,
+              $timeout: angular.ITimeoutService,
+              private clipboard: ClipboardService,
+              private assetTransfer: AssetTransferService,
+              private assetIssue: AssetIssueService) {
+    this.showDevTools=env.type==EnvType.NODEJS;
   }
 
   showSendmoneyDialog($event) {
     this.sendmoney.dialog($event).show();
+  }
+
+  showAssetTransferDialog($event) {
+    this.assetTransfer.dialog($event).show();
+  }
+
+  showIssueAssetDialog($event) {
+    this.assetIssue.dialog($event).show();
+  }
+
+  signout() {
+    this.user.lock();
+  }
+
+  about($event) {
+    dialogs.about($event);
+  }
+
+  opendevTools() {
+    this.electron.openDevTools(OpenDevToolsMode.detach);
+  }
+
+  copy(element: string, successMsg: string) {
+    this.clipboard.copyWithUI(document.getElementById(element), successMsg);
   }
 }
