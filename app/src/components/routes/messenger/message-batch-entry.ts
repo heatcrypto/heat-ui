@@ -34,6 +34,9 @@
     message-batch-entry .batch-entry {
       padding-left: 0px;
     }
+    message-batch-entry .message-content {
+      word-break: break-all;
+    }
   `],
   template: `
     <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
@@ -44,14 +47,17 @@
         <div layout="row" class="header">
           <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;</b>{{::vm.message.date}}
         </div>
-        <div layout="column" ng-bind-html="vm.message.html"></div>
+        <!-- look into allowing html messages later on
+        <div layout="column" class="message-content" ng-bind-html="vm.message.html"></div>
+        -->
+        <div layout="column" class="message-content"><pre>{{vm.message.contents}}</pre></div>
       </div>
     </div>
   `
 })
 //@Inject('$scope','$q','$timeout')
 class MessageBatchEntryComponent {
-  message: ICloudMessage; // @input
+  message: IHeatMessage; // @input
   icon: string;
   constructor() {
     this.icon = this.message['outgoing'] ? 'chat_bubble_outline' : 'comment';
