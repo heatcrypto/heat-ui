@@ -23,9 +23,10 @@
  * */
 class DialogFieldAccount extends AbstractDialogField {
 
-  private cloud = <CloudService> heat.$inject.get('cloud');
+  private heat = <HeatService> heat.$inject.get('heat');
   private settings = <SettingsService> heat.$inject.get('settings');
   private user = <UserService> heat.$inject.get('user');
+  private $q = <angular.IQService> heat.$inject.get('$q');
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -33,12 +34,17 @@ class DialogFieldAccount extends AbstractDialogField {
   }
 
   search(query: string) {
+    /*
     var prefix = this.settings.get(SettingsService.RS_ADDRESS_PREFIX);
     query = query.replace(new RegExp('^'+prefix+'-'),'');
     var request: ICloudSearchAccountIdentifiersRequest = {
       accountColorId: this.user.accountColorId
     };
     return this.cloud.api.searchAccountIdentifiers(query, request);
+    */
+    var deferred = this.$q.defer();
+    deferred.resolve([]);
+    return deferred;
   }
 }
 
