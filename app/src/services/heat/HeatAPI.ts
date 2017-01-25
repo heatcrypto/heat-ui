@@ -196,4 +196,8 @@ class HeatAPI implements IHeatAPI {
   getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>> {
     return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
   }
+
+  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>> {
+    return this.heat.get(`/exchange/chartdata/${currency}/${asset}/${window}`);
+  }
 }

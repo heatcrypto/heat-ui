@@ -157,6 +157,12 @@ interface IHeatAPI {
    * Lists latest message contacts (requires replicator)
    */
   getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>>;
+
+  /**
+   * Retrieves OHLC chart data for trading pair (requires replicator)
+   */
+  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>>;
+
 }
 
 interface IHeatCreateTransactionInput {
@@ -701,6 +707,21 @@ interface IHeatMarket {
    */
   assetDecimals: number;
 }
+interface IHeatChartData {
+  /**
+   * The number timestamp in HEAT epoch format
+   */
+  timestamp: number;
+  /**
+   * The string or number if < 9007199254740991
+   */
+  avg: string;
+  low: string;
+  high: string;
+  vol: string;
+  open: string;
+  close: string;
+}
 interface IHeatPayment {
   currency: string;
   quantity: string;
@@ -775,4 +796,11 @@ interface IHeatMessage {
   messageIsText: boolean;
   messageIsEncrypted: boolean;
   messageIsEncryptedToSelf: boolean;
+}
+interface IHeatChart {
+  currency: string;
+  asset: string;
+  window: string;
+  timestamp: string;
+  data: Array<string|IHeatChartData>;
 }
