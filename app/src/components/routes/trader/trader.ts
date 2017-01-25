@@ -127,6 +127,9 @@ declare var Big: any;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  trader .right-align, trader input {
+    text-align: right;
+  }
   `],
   template: `
     <div layout="row" flex layout-fill>

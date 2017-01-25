@@ -114,7 +114,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
             <div class="text-cell" layout="column" flex>
               Fees
             </div>
-            <div layout="column" flex>
+            <div layout="column" flex class="right-align">
               {{vm.fee}}
             </div>
             <div class="text-cell" layout="column" flex>

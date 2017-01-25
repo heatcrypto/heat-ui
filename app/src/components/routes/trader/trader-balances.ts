@@ -29,7 +29,6 @@
   }
   trader-balances .balance-col {
     width: 100px;
-    text-align:right;
   }
   trader-balances {
     height: 440px;
@@ -45,13 +44,13 @@
       <md-list flex layout-fill layout="column">
         <md-list-item>
           <div class="truncate-col symbol-col">Asset</div>
-          <div class="truncate-col balance-col" flex>Balance</div>
+          <div class="truncate-col balance-col right-align" flex>Balance</div>
         </md-list-item>
         <md-virtual-repeat-container flex layout-fill layout="column"
             virtual-repeat-flex-helper ng-if="vm.balances.length>0">
           <md-list-item md-virtual-repeat="item in vm.balances">
             <div class="truncate-col symbol-col">{{item.symbol}}</div>
-            <div class="truncate-col balance-col" flex>{{item.balance}}</div>
+            <div class="truncate-col balance-col right-align" flex>{{item.balance}}</div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>

@@ -41,7 +41,6 @@
       width: 80px;
     }
     trader-markets .vol-col {
-      text-align:right;
       width: 60px;
     }
   `],
@@ -67,7 +66,7 @@
             <div class="truncate-col market-col"><a href="#/trader/{{item.currency}}/{{item.asset}}">{{item.market}}</a></div>
             <div class="truncate-col change-col">{{item.change}}</div>
             <div class="truncate-col price-col">{{item.price}}</div>
-            <div class="truncate-col vol-col" flex>{{item.vol}}</div>
+            <div class="truncate-col vol-col right-align" flex>{{item.vol}}</div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
