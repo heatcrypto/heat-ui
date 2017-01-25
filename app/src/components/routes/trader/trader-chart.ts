@@ -147,6 +147,13 @@ class TraderChartComponent {
       var entries: Array<IVirtualChartDataEntry> = [];
       response.data.forEach((d) => {
         var timestamp = parseInt(String(d[0])), avg = d[1], low = d[2], high = d[3], vol = d[4], open = d[5], close = d[6];
+
+        /*
+          Legacy utils.calculateOrderPricePerWholeQNT SHOULD NOT! be used,
+          use utils.calculateTotalOrderPriceQNT() instead
+        */
+
+        /*
         entries.push({
           timestamp: timestamp,
           date: utils.timestampToDate(timestamp),
@@ -157,6 +164,7 @@ class TraderChartComponent {
           volume: parseFloat(this.unformat(utils.convertToQNTf(vol, decimals))),
           value: parseFloat(this.unformat(utils.calculateOrderPricePerWholeQNT(avg, decimals)))
         });
+        */
         entries.sort(function (a, b) { return a.timestamp - b.timestamp });
         deferred.resolve(entries);
       });
