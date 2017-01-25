@@ -42,12 +42,20 @@
     template: AbstractChartComponent.template(`
         Candlestick Chart
     `, `
+      <div>
+        <md-select ng-model="vm.windowIntervalData" ng-change="vm.changeWindowInterval()">
+          <md-option ng-repeat="key in vm.windowIntervalKeys" value="{{key}}">{{key}}</md-option>
+        </md-select>
+      </div>
       <div id="ohlcchart"></div>
     `
     )
 })
 @Inject('$scope', '$q', '$timeout', 'user', 'heat', 'HTTPNotify', 'assetInfo')
 class OHLCCartComponent extends AbstractChartComponent {
+
+    windowIntervalKeys: Array<string> = [];
+    windowIntervalData: string = "ONE_MINUTE";
 
     constructor($scope: angular.IScope,
                 $q: angular.IQService,
@@ -63,11 +71,12 @@ class OHLCCartComponent extends AbstractChartComponent {
         }, $scope);
 
         this.refresh();
+        this.windowIntervalKeys = ["ONE_MINUTE", "FIVE_MINUTES", "TEN_MINUTES", "HOUR", "DAY", "WEEK"];
     }
 
     getPageItems(): angular.IPromise<Array<IHeatChart>> {
         var deferred = this.$q.defer();
-        this.createGetChartsDataRequest('8709927280637656798', '0', 'HOUR').then(
+        this.createGetChartsDataRequest('8709927280637656798', '0', this.windowIntervalData).then(
             (chartData) => {
                 deferred.resolve(chartData);
             },
@@ -78,6 +87,11 @@ class OHLCCartComponent extends AbstractChartComponent {
 
     createGetChartsDataRequest(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>> {
         return this.heat.api.getOHLCChartData(currency, asset, window);
+    }
+
+    changeWindowInterval(){
+      this.getPageItems();
+      this.refresh();
     }
 
 }

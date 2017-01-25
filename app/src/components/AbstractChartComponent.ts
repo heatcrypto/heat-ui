@@ -22,136 +22,138 @@
  * */
 abstract class AbstractChartComponent {
 
-    public refresh: Function;
+  public refresh: Function;
 
-    /* When fetching data assign your active promises to this property so the
-     data table can display a loading animation */
-    private promise = null;
+  /* When fetching data assign your active promises to this property so the
+   data table can display a loading animation */
+  private promise = null;
 
-    /* Data object that holds the rows */
-    public data = null;
+  /* Data object that holds the rows */
+  public data = null;
 
-    constructor(public $scope: angular.IScope,
-                public $q: angular.IQService,
-                public $timeout: angular.ITimeoutService) {
-        this.refresh = utils.debounce(() => {
-            this.promise = [
-                this.getPage().then(() => {
-                    let margin = {top: 20, right: 20, bottom: 30, left: 50},
-                        width = 960 - margin.left - margin.right,
-                        height = 500 - margin.top - margin.bottom;
+  constructor(public $scope: angular.IScope,
+              public $q: angular.IQService,
+              public $timeout: angular.ITimeoutService) {
+    this.refresh = utils.debounce(() => {
+      this.promise = [
+        this.getPage().then(() => {
+          let margin = {top: 20, right: 20, bottom: 30, left: 50},
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
 
-                    let x = techan.scale.financetime()
-                        .range([0, width]);
+          let x = techan.scale.financetime()
+            .range([0, width]);
 
-                    let y = d3.scaleLinear()
-                        .range([height, 0]);
+          let y = d3.scaleLinear()
+            .range([height, 0]);
 
-                    let candlestick = techan.plot.candlestick()
-                        .xScale(x)
-                        .yScale(y);
+          let candlestick = techan.plot.candlestick()
+            .xScale(x)
+            .yScale(y);
 
-                    let xAxis = d3.axisBottom()
-                        .scale(x);
+          let xAxis = d3.axisBottom()
+            .scale(x);
 
-                    let yAxis = d3.axisLeft()
-                        .scale(y);
+          let yAxis = d3.axisLeft()
+            .scale(y);
 
-                    let svg = d3.select("#ohlcchart").append("svg")
-                        .attr("width", width + margin.left + margin.right)
-                        .attr("height", height + margin.top + margin.bottom)
-                        .append("g")
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          d3.selectAll('svg').remove();
 
-                    let parseDate = d3.timeParse("%d-%b-%y");
-                    let accessor = candlestick.accessor();
-                    let data = [];
+          let svg = d3.select("#ohlcchart").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-                    this.data.data.forEach(function (d) {
-                        /**
-                         *
-                         [0] timestamp, // number timestamp in HEAT epoch format
-                         [1] avg, // string or number if < 9007199254740991
-                         [2] low, // string or number if < 9007199254740991
-                         [3] high, // string or number if < 9007199254740991
-                         [4] vol, // string or number if < 9007199254740991
-                         [5] open, // string or number if < 9007199254740991
-                         [6] close // string or number if < 9007199254740991
-                         */
-                        data.push({
-                            date: parseDate(convertToDate(d[0])),
-                            open: +d[5],
-                            high: +d[3],
-                            low: +d[2],
-                            close: +d[6],
-                            volume: +d[4]
-                        });
-                    });
+          let parseDate = d3.timeParse("%d-%b-%y");
+          let accessor = candlestick.accessor();
+          let data = [];
 
-                    data.sort(function (a, b) {
-                        return d3.ascending(accessor.d(a), accessor.d(b));
-                    });
+          this.data.data.forEach(function (d) {
+            /**
+             *
+             [0] timestamp, // number timestamp in HEAT epoch format
+             [1] avg, // string or number if < 9007199254740991
+             [2] low, // string or number if < 9007199254740991
+             [3] high, // string or number if < 9007199254740991
+             [4] vol, // string or number if < 9007199254740991
+             [5] open, // string or number if < 9007199254740991
+             [6] close // string or number if < 9007199254740991
+             */
+            data.push({
+              date: parseDate(convertToDate(d[0])),
+              open: +d[5],
+              high: +d[3],
+              low: +d[2],
+              close: +d[6],
+              volume: +d[4]
+            });
+          });
 
-                    svg.append("g")
-                        .attr("class", "candlestick");
+          data.sort(function (a, b) {
+            return d3.ascending(accessor.d(a), accessor.d(b));
+          });
 
-                    svg.append("g")
-                        .attr("class", "x axis")
-                        .attr("transform", "translate(0," + height + ")");
+          svg.append("g")
+            .attr("class", "candlestick");
 
-                    svg.append("g")
-                        .attr("class", "y axis")
-                        .append("text")
-                        .attr("transform", "rotate(-90)")
-                        .attr("y", 6)
-                        .attr("dy", ".71em")
-                        .style("text-anchor", "end")
-                        .text("Price ($)");
+          svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")");
 
-                    draw(data);
+          svg.append("g")
+            .attr("class", "y axis")
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("Price ($)");
 
-                    function convertToDate(date) {
-                        let format = 'dd-mmm-yy';
-                        let dateFormated = utils.timestampToDate(parseInt(date));
-                        return dateFormat(dateFormated, format);
-                    }
+          draw(data);
 
-                    function draw(data) {
-                        x.domain(data.map(candlestick.accessor().d));
-                        y.domain(techan.scale.plot.ohlc(data, candlestick.accessor()).domain());
+          function convertToDate(date) {
+            let format = 'dd-mmm-yy';
+            let dateFormated = utils.timestampToDate(parseInt(date));
+            return dateFormat(dateFormated, format);
+          }
 
-                        svg.selectAll("g.candlestick").datum(data).call(candlestick);
-                        svg.selectAll("g.x.axis").call(xAxis);
-                        svg.selectAll("g.y.axis").call(yAxis);
-                    }
-                })
-            ];
-        }, 50, true);
-    }
+          function draw(data) {
+            x.domain(data.map(candlestick.accessor().d));
+            y.domain(techan.scale.plot.ohlc(data, candlestick.accessor()).domain());
 
-    abstract getPageItems(): angular.IPromise<Array<any>>;
+            svg.selectAll("g.candlestick").datum(data).call(candlestick);
+            svg.selectAll("g.x.axis").call(xAxis);
+            svg.selectAll("g.y.axis").call(yAxis);
+          }
+        })
+      ];
+    }, 50, true);
+  }
 
-    private getPage(): angular.IPromise<any> {
-        return this.getPageItems().then(
-            (items) => {
-                this.$scope.$evalAsync(() => {
-                    this.data = items;
-                })
-            },
-            (error) => {
-                this.$scope.$evalAsync(() => {
-                    this.data = {};
-                })
-            }
-        );
-    }
+  abstract getPageItems(): angular.IPromise<Array<any>>;
 
-    static template(headTemplate: string, bodyTemplate: string): string {
-        return `
+  private getPage(): angular.IPromise<any> {
+    return this.getPageItems().then(
+      (items) => {
+        this.$scope.$evalAsync(() => {
+          this.data = items;
+        })
+      },
+      (error) => {
+        this.$scope.$evalAsync(() => {
+          this.data = {};
+        })
+      }
+    );
+  }
+
+  static template(headTemplate: string, bodyTemplate: string): string {
+    return `
       <div layout="column" flex layout-fill>
         <h1>${headTemplate}</h1>
         ${bodyTemplate}
       </div>
     `
-    }
+  }
 }
