@@ -73,8 +73,20 @@ class HeatAPI implements IHeatAPI {
     return this.heat.post('/tx/broadcast', arg);
   }
 
+  getAllAssetProtocol1(from:number,to:number):angular.IPromise<Array<IHeatAssetProtocol1>> {
+    return this.heat.get(`/exchange/assets/protocol1/${from}/${to}`);
+  }
+
+  getAssetProtocol1(symbol: string):angular.IPromise<IHeatAssetProtocol1> {
+    return this.heat.get(`/exchange/asset/protocol1/${symbol}`);
+  }
+
   getAsset(asset:string):angular.IPromise<IHeatAsset> {
     return this.heat.get(`/exchange/asset/${asset}`);
+  }
+
+  getAssets(propertiesAccount:string,propertiesProtocol:number,from:number,to:number): angular.IPromise<Array<IHeatAsset>> {
+    return this.heat.get(`/assets/${propertiesAccount}/${propertiesProtocol}/${from}/${to}`);
   }
 
   getAssetProperties(asset: string, propertiesAccount: string, propertiesProtocol: number):angular.IPromise<IHeatAssetProperties> {

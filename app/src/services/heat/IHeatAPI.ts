@@ -43,9 +43,21 @@ interface IHeatAPI {
    */
   broadcast(param: IHeatBroadcastInput):angular.IPromise<IHeatBroadcastOutput>;
   /**
+   * Lists all protocol 1 assets (requires replicator
+   */
+  getAllAssetProtocol1(from:number,to:number):angular.IPromise<Array<IHeatAssetProtocol1>>;
+  /**
+   * Finds protocol 1 asset by symbol (requires replicator)
+   */
+  getAssetProtocol1(symbol: string):angular.IPromise<IHeatAssetProtocol1>;
+  /**
    * Find asset by numeric id
    */
   getAsset(asset:string):angular.IPromise<IHeatAsset>;
+  /**
+   * Lists all assets
+   */
+  getAssets(propertiesAccount:string,propertiesProtocol:number,from:number,to:number): angular.IPromise<Array<IHeatAsset>>;
   /**
    * Find asset properties by numeric id, properties account and protocol, pass
    * propertiesAccount=0 to return the asset issuers properties.
@@ -264,6 +276,7 @@ interface IHeatCreateTransactionInput {
   AssetTransfer?: IHeatCreateAssetTransfer;
   OrdinaryPayment?: IHeatCreateOrdinaryPayment;
   ArbitraryMessage?: IHeatCreateArbitraryMessage;
+  WhitelistMarket?: IHeatCreateWhitelistMarket;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -307,6 +320,10 @@ interface IHeatCreateOrdinaryPayment {
   amountHQT: string;
 }
 interface IHeatCreateArbitraryMessage {}
+interface IHeatCreateWhitelistMarket {
+  currencyId: string;
+  assetId: string;
+}
 
 interface IHeatCreateTransactionOutput {
   /**
@@ -466,7 +483,7 @@ interface IHeatAsset {
   /**
    * The number of decimal places used by the asset
    */
-  decimals: string;
+  decimals: number;
   /**
    * HTTP/HTTPS url pointing to the asset description file
    */
@@ -479,6 +496,15 @@ interface IHeatAsset {
    * True in case new assets can later be issued by the asset issuer
    */
   dillutable: boolean;
+
+  properties?: string;
+}
+
+interface IHeatAssetProtocol1 {
+  asset: string;
+  decimals: number;
+  name: string;
+  symbol: string;
 }
 
 interface IHeatAssetProperties extends IHeatAsset {
@@ -729,6 +755,14 @@ interface IHeatBlockchainStatus {
   lastBlockchainFeederHeight: number;
   time: number;
   lastBlockchainFeeder: string;
+  /**
+   * Amount of HEAT in genesis block (in HQT, 1 HQT is 0.00000001 HEAT)
+   * */
+  initialCoinSupply: string;
+  /**
+   * Current total amount of HEAT (in HQT, 1 HQT is 0.00000001 HEAT)
+   */
+  currentCoinSupply: string;
 }
 interface IHeatBlock {
   previousBlockHash: string;
