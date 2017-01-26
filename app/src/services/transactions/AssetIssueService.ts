@@ -23,17 +23,18 @@
  * SOFTWARE.
  * */
 @Service('assetIssue')
-@Inject('$q','user','assetInfo')
+@Inject('$q','user','assetInfo','heat')
 class AssetIssueService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
-              private assetInfo: AssetInfoService) {
+              private assetInfo: AssetInfoService,
+              private heat: HeatService) {
     super();
   }
 
   dialog(currency: string, readonly?: boolean, $event?): IGenericDialog {
-    return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, readonly);
+    return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, this.heat, readonly);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -73,6 +74,7 @@ class AssetIssueDialog extends GenericDialog {
               private $q: angular.IQService,
               private user: UserService,
               private assetInfo: AssetInfoService,
+              private heat: HeatService,
               private readonly: boolean) {
     super($event);
     this.dialogTitle = 'Issue asset';
@@ -89,6 +91,17 @@ class AssetIssueDialog extends GenericDialog {
               validate("Symbol must have 3 to 4 chars", (symbol:string) => {
                 var len = angular.isString(symbol) ? symbol.trim().length : 0;
                 return  len >= 3 && len <= 4;
+              }).
+              asyncValidate("Symbol name already in use",(symbol)=> {
+                var deferred = this.$q.defer();
+                this.heat.api.getAssetProtocol1(symbol).then((asset) => {
+                  console.log("Success response", asset);
+                  deferred.reject();
+                }, (response) => {
+                  console.log("Fail response", response);
+                  deferred.resolve();
+                });
+                return deferred.promise;
               }).
               required(),
       builder.text('name').
@@ -111,7 +124,7 @@ class AssetIssueDialog extends GenericDialog {
                 return num >= 0 && num <= 8;
               }),
       builder.text('dillutable', 'false').
-              label('Expiration').
+              label('Dillutable').
               required().
               validate("Either type true or false", (dillutable) => {
                 return dillutable == 'true' || dillutable == 'false';
