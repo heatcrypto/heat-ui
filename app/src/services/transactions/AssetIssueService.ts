@@ -95,11 +95,12 @@ class AssetIssueDialog extends GenericDialog {
               asyncValidate("Symbol name already in use",(symbol)=> {
                 var deferred = this.$q.defer();
                 this.heat.api.getAssetProtocol1(symbol).then((asset) => {
-                  console.log("Success response", asset);
                   deferred.reject();
                 }, (response) => {
-                  console.log("Fail response", response);
-                  deferred.resolve();
+                  if (response && response.code == 3 && response.description == "Unknown asset")
+                    deferred.resolve();
+                  else
+                    deferred.reject();
                 });
                 return deferred.promise;
               }).
