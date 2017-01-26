@@ -58,6 +58,10 @@ class SettingsService {
   public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
   public static HEAT_HOST = 'settings.heat_host';
   public static HEAT_PORT = 'settings.heat_port';
+  public static HEAT_HOST_REMOTE = 'settings.heat_host_remote';
+  public static HEAT_PORT_REMOTE = 'settings.heat_port_remote';
+  public static HEAT_HOST_LOCAL = 'settings.heat_host_local';
+  public static HEAT_PORT_LOCAL = 'settings.heat_port_local';
 
   constructor() {
     this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
@@ -98,8 +102,12 @@ class SettingsService {
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
-    this.settings[SettingsService.HEAT_HOST] = "https://heatwallet.com";
-    this.settings[SettingsService.HEAT_PORT] = "7734";
+    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com";
+    this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
+    this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
+    this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
+    this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
+    this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
 
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
@@ -117,5 +125,9 @@ class SettingsService {
 
   public get(id:string) {
     return this.settings[id];
+  }
+
+  public put(id:string,value:string) {
+    return this.settings[id]=value;
   }
 }
