@@ -98,7 +98,7 @@
             <md-menu-item>
               <md-button aria-label="about" ng-click="vm.about($event)">
                 <md-icon md-font-library="material-icons">info_outline</md-icon>
-                About Heatledger
+                About HEAT
               </md-button>
             </md-menu-item>
             <md-menu-item>
@@ -125,7 +125,8 @@
     </md-toolbar>
   `
 })
-@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer','assetIssue','whitelistMarket')
+@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer',
+  'assetIssue','whitelistMarket','storage','HTTPNotify')
 class ToolbarComponent {
 
   showDevTools = false;
@@ -140,7 +141,9 @@ class ToolbarComponent {
               private clipboard: ClipboardService,
               private assetTransfer: AssetTransferService,
               private assetIssue: AssetIssueService,
-              private whitelistMarket: WhitelistMarketferService) {
+              private whitelistMarket: WhitelistMarketService,
+              private storage: StorageService,
+              private HTTPNotify: HTTPNotifyService) {
     this.showDevTools=env.type==EnvType.NODEJS;
   }
 
@@ -157,7 +160,42 @@ class ToolbarComponent {
   }
 
   showWhitelistMarketDialog($event) {
-    this.whitelistMarket.dialog($event).show();
+    var dialog = <WhitelistMarketferDialog>this.whitelistMarket.dialog($event);
+    dialog.show().then(()=> {
+
+      /* PATCHUP IN AWAITING OF SERVER FUNCTIONALITY - also cleanup trader-markets.ts */
+
+      var currency = dialog.fields['currency'].value;
+      var asset = dialog.fields['asset'].value;
+      var currencyAvailableAssets = <Array<DialogFieldAssetAssetInfo>>dialog.fields['currency']['availableAssets'];
+      var assetAvailableAssets = <Array<DialogFieldAssetAssetInfo>>dialog.fields['asset']['availableAssets'];
+      var currencySymbol, assetSymbol;
+
+      for (var i=0;i<currencyAvailableAssets.length;i++) {
+        var available = currencyAvailableAssets[i];
+        if (available.id == currency) {
+          currencySymbol = available.symbol;
+          break;
+        }
+      }
+      for (var i=0;i<assetAvailableAssets.length;i++) {
+        var available = assetAvailableAssets[i];
+        if (available.id == asset) {
+          assetSymbol = available.symbol;
+          break;
+        }
+      }
+      var mymarkets = this.storage.namespace('trader').get('my-markets');
+      if (!mymarkets) {
+        mymarkets = [];
+      }
+      mymarkets.push({
+        currency:{id: currency,symbol: currencySymbol},
+        asset:{id:asset,symbol: assetSymbol}
+      });
+      this.storage.namespace('trader').put('my-markets', mymarkets);
+      this.HTTPNotify.notify();
+    });
   }
 
   signout() {

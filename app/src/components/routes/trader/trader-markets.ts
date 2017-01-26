@@ -73,7 +73,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo','HTTPNotify')
+@Inject('$scope','heat','assetInfo','HTTPNotify','storage')
 class TraderMarketsComponent {
 
   // change, volume, price, none
@@ -85,7 +85,8 @@ class TraderMarketsComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private assetInfo: AssetInfoService,
-              HTTPNotify: HTTPNotifyService) {
+              HTTPNotify: HTTPNotifyService,
+              private storage: StorageService) {
     HTTPNotify.on(()=>{this.loadMarkets()}, $scope);
     this.loadMarkets();
   }
@@ -108,7 +109,31 @@ class TraderMarketsComponent {
           market.price = utils.formatQNT(market.lastPrice, market.currencyDecimals);
           market.vol = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals);
         });
+
+        /* PATCHUP IN AWAITING OF SERVER FUNCTIONALITY - also cleanup toolbar.ts */
+
+        var mymarkets = this.storage.namespace('trader').get('my-markets');
+        if (angular.isArray(mymarkets)) {
+          mymarkets = mymarkets.filter((m)=>!this.markets.find((_m)=>_m.currency==m.currency&&_m.asset==m.asset));
+          this.storage.namespace('trader').put('my-markets', mymarkets);
+          /* {currency:{id: currency,symbol: currencySymbol},
+              asset:{id:asset,symbol: assetSymbol}} */
+          mymarkets.forEach((m) => {
+            this.markets.find((_m)=>_m.currency==m.currency&&_m.asset==m.asset)
+
+            if (m.currency && m.asset) {
+              this.markets.push(<any>{
+                market: m.currency.symbol+'/'+m.asset.symbol,
+                currency: m.currency.id,
+                asset: m.asset.id,
+                change: '*',
+                price: '*',
+                vol: '*'
+              })
+            }
+          });
+        }
       });
-    })
+    });
   }
 }
