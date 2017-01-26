@@ -24,7 +24,7 @@
  * */
 @Service('whitelistMarket')
 @Inject('$q','user','heat')
-class WhitelistMarketferService extends AbstractTransaction {
+class WhitelistMarketService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
@@ -98,4 +98,6 @@ class WhitelistMarketferDialog extends GenericDialog {
             });
     return builder;
   }
+
+
 }
