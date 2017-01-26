@@ -98,11 +98,11 @@ class SettingsService {
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
-    this.settings[SettingsService.HEAT_HOST] = "https://alpha.heatledger.com";
+    this.settings[SettingsService.HEAT_HOST] = "https://heatwallet.com";
     this.settings[SettingsService.HEAT_PORT] = "7734";
 
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
-    this.settings[SettingsService.NEWS_URL] = "https://alpha.heatledger.com/news.json";
+    this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
 
