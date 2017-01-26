@@ -102,12 +102,10 @@ class SettingsService {
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
-    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com";
+    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
     this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
     this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
     this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
-    this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
-    this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
 
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
@@ -115,10 +113,14 @@ class SettingsService {
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
 
     /* Override with test endpoints */
-    var LOCAL_HEAT_LEDGER = false;
-    if (LOCAL_HEAT_LEDGER) {
-      this.settings[SettingsService.WEBSOCKET_URL] = 'ws://localhost:8884/ws/';
+    var TEST_HEAT_LEDGER = false;
+    if (TEST_HEAT_LEDGER) {
+      this.settings[SettingsService.HEAT_HOST_REMOTE] = "http://37.139.25.98"; // testnet
+      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7733"; // testnet
     }
+
+    this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
+    this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
   }
 
   settings={};
