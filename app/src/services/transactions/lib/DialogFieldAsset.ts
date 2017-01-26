@@ -36,41 +36,81 @@ class DialogFieldAsset extends AbstractDialogField {
   private user = <UserService> heat.$inject.get('user');
   private assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
   private availableAssets: Array<DialogFieldAssetAssetInfo> = [];
+  private _searchAllAssets: boolean = false;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
     this.selector('field-asset');
-    this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
-      this.availableAssets = [];
-      balances.forEach((balance) => {
-        if (balance.id != "0") {
-          var info = this.assetInfo.parseProperties(balance.properties, {
-            name: balance.id,
-            symbol: balance.id
+  }
+
+  initAvailableAssets() {
+    var deferred = this.$q.defer();
+    if (this.availableAssets.length > 0) {
+      deferred.resolve();
+    }
+    else {
+      if (this._searchAllAssets) {
+        this.heat.api.getAllAssetProtocol1(0,100).then((assets) => {
+          this.availableAssets = [{
+              name: "HEAT Cryptocurrency",
+              symbol: "HEAT",
+              id: "0",
+              decimals: 8
+          }];
+          assets.forEach((asset)=>{
+            this.availableAssets.push({
+              name: asset.name,
+              symbol: asset.symbol,
+              id: asset.asset,
+              decimals: asset.decimals
+            });
           });
-          this.availableAssets.push({
-            name: info.name,
-            symbol: info.symbol,
-            id: balance.id,
-            decimals: balance.decimals
+          deferred.resolve();
+        }, deferred.reject)
+      }
+      else {
+        this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
+          this.availableAssets = [];
+          balances.forEach((balance) => {
+            if (balance.id != "0") {
+              var info = this.assetInfo.parseProperties(balance.properties, {
+                name: balance.id,
+                symbol: balance.id
+              });
+              this.availableAssets.push({
+                name: info.name,
+                symbol: info.symbol,
+                id: balance.id,
+                decimals: balance.decimals
+              });
+            }
           });
-        }
-      })
-    })
+          deferred.resolve();
+        }, deferred.reject)
+      }
+    }
+    return deferred.promise;
   }
 
   search(query: string) {
-    var matches = [];
-    var query = query.toLowerCase();
-    this.availableAssets.forEach((asset) => {
-      if ((asset.name && asset.name.toLowerCase().indexOf(query) != -1) ||
-          (asset.symbol && asset.symbol.toLowerCase().indexOf(query) != -1) ||
-          (asset.id && asset.id.toLowerCase().indexOf(query) != -1)) {
-        matches.push(asset);
-      }
-    });
     var deferred = this.$q.defer();
-    deferred.resolve(matches);
+    this.initAvailableAssets().then(() => {
+      if (!angular.isString(query)) {
+        deferred.resolve(this.availableAssets);
+        return;
+      }
+
+      var matches = [];
+      var query = query.toLowerCase();
+      this.availableAssets.forEach((asset) => {
+        if ((asset.name && asset.name.toLowerCase().indexOf(query) != -1) ||
+            (asset.symbol && asset.symbol.toLowerCase().indexOf(query) != -1) ||
+            (asset.id && asset.id.toLowerCase().indexOf(query) != -1)) {
+          matches.push(asset);
+        }
+      });
+      deferred.resolve(matches);
+    }, deferred.reject);
     return deferred.promise;
   }
 
@@ -81,6 +121,11 @@ class DialogFieldAsset extends AbstractDialogField {
       }
     }
     return null;
+  }
+
+  searchAllAssets(searchAllAssets: boolean) {
+    this._searchAllAssets = searchAllAssets;
+    return this;
   }
 }
 

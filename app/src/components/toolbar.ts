@@ -63,22 +63,30 @@
             <md-icon md-font-library="material-icons">menu</md-icon>
           </md-button>
           <md-menu-content width="4">
+            <!--
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="copy" ng-click="vm.copy('toolbar-account-id-target', 'Acount id copied')">
                 <md-icon md-font-library="material-icons">content_copy</md-icon>
                 <span id="toolbar-account-id-target">{{ vm.user.account }}</span>
               </md-button>
             </md-menu-item>
+            -->
             <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="copy" ng-click="vm.showAssetTransferDialog($event)">
+              <md-button aria-label="transfer asset" ng-click="vm.showAssetTransferDialog($event)">
                 <md-icon md-font-library="material-icons">swap_horiz</md-icon>
                 <span id="toolbar-account-id-target">Transfer Asset</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="copy" ng-click="vm.showIssueAssetDialog($event)">
+              <md-button aria-label="issue asset" ng-click="vm.showIssueAssetDialog($event)">
                 <md-icon md-font-library="material-icons">library_add</md-icon>
                 <span id="toolbar-account-id-target">Issue Asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="whitelits market" ng-click="vm.showWhitelistMarketDialog($event)">
+                <md-icon md-font-library="material-icons">insert_chart</md-icon>
+                <span id="toolbar-account-id-target">Create Market</span>
               </md-button>
             </md-menu-item>
             <md-menu-item ng-show="vm.showDevTools">
@@ -91,6 +99,12 @@
               <md-button aria-label="about" ng-click="vm.about($event)">
                 <md-icon md-font-library="material-icons">info_outline</md-icon>
                 About Heatledger
+              </md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button aria-label="about" href="https://heatwallet.com/api" target="_blank">
+                <md-icon md-font-library="material-icons">find_in_page</md-icon>
+                Heat API (external)
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
@@ -111,7 +125,7 @@
     </md-toolbar>
   `
 })
-@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer','assetIssue')
+@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer','assetIssue','whitelistMarket')
 class ToolbarComponent {
 
   showDevTools = false;
@@ -125,7 +139,8 @@ class ToolbarComponent {
               $timeout: angular.ITimeoutService,
               private clipboard: ClipboardService,
               private assetTransfer: AssetTransferService,
-              private assetIssue: AssetIssueService) {
+              private assetIssue: AssetIssueService,
+              private whitelistMarket: WhitelistMarketferService) {
     this.showDevTools=env.type==EnvType.NODEJS;
   }
 
@@ -139,6 +154,10 @@ class ToolbarComponent {
 
   showIssueAssetDialog($event) {
     this.assetIssue.dialog($event).show();
+  }
+
+  showWhitelistMarketDialog($event) {
+    this.whitelistMarket.dialog($event).show();
   }
 
   signout() {
