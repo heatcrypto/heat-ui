@@ -60,25 +60,11 @@
           </div>
         </div>
       </div>
-      <div layout="row" flex>
-      <!--
-        <div layout="column" flex>
-          Currency<br>
-          id={{vm.currencyInfo.id}}<br>
-          symbol={{vm.currencyInfo.symbol}}<br>
-          name={{vm.currencyInfo.name}}<br>
-          decimals={{vm.currencyInfo.decimals}}<br>
-          description={{vm.currencyInfo.description}}
-        </div>
-        <div layout="column" flex>
-          Asset<br>
-          id={{vm.assetInfo.id}}<br>
-          symbol={{vm.assetInfo.symbol}}<br>
-          name={{vm.assetInfo.name}}<br>
-          decimals={{vm.assetInfo.decimals}}<br>
-          description={{vm.assetInfo.description}}
-        </div>
-        -->
+      <div>
+        <div>{{vm.currencyInfo.symbol}} {{vm.currencyInfo.name}} ({{vm.currencyInfo.id}})
+        <a ng-href="{{vm.currencyInfo.descriptionUrl}}" target="_blank">{{vm.currencyInfo.descriptionUrl}}</a></div>
+        <div>{{vm.assetInfo.symbol}} {{vm.assetInfo.name}} ({{vm.assetInfo.id}})
+        <a ng-href="{{vm.assetInfo.descriptionUrl}}" target="_blank">{{vm.assetInfo.descriptionUrl}}</a></div>
       </div>
     </div>
   `
@@ -116,11 +102,11 @@ class TraderInfoComponent {
       this.$scope.$evalAsync(() => {
         var currencyInfo = this.assetInfoService.parseProperties(market.currencyProperties, {
           name: "",
-          symbol: market.currency == "0" ? "HEAT" : market.currency
+          symbol: market.currency == "0" ? "HEAT" : market.currency.substring(0,4)
         });
         var assetInfo = this.assetInfoService.parseProperties(market.assetProperties, {
           name: "",
-          symbol: market.asset == "0" ? "HEAT" : market.asset
+          symbol: market.asset == "0" ? "HEAT" : market.asset.substring(0,4)
         });
         this.hr24Change = `${market.hr24Change}%`
         this.hr24High = utils.formatQNT(market.hr24High, market.currencyDecimals);
