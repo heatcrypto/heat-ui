@@ -42,7 +42,7 @@
       <span ng-show="vm.formattedBalance && !vm.showError">
         <span class="balance">{{vm.formattedBalance}}</span><span class="fraction">{{vm.formattedFraction}}</span>&nbsp;<span class="balance">{{vm.currencyName}}</span>
       </span>
-      <md-progress-linear md-mode="indeterminate" ng-if="vm.loading"></md-progress-linear>
+      <!--<md-progress-linear md-mode="indeterminate" ng-if="vm.loading"></md-progress-linear>-->
       <span class="balance error" ng-show="vm.showError">
         <elipses-loading></elipses-loading><md-button class="md-icon-button" aria-label="Error">
           <md-tooltip md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
