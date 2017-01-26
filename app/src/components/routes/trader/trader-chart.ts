@@ -63,7 +63,7 @@ declare var techan: any;
   `],
   template: `
     <div flex layout="column" class="chart-container">
-      price chart under development
+      market history too short, unable to generate chart data
     </div>
   `,
   link: function (scope, element, attrs, controller: TraderChartComponent) {
