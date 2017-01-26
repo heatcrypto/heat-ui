@@ -151,7 +151,7 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
               payment['messageText'] = this.parseMessage(payment);
               payment['account'] = this.user.account == payment.sender ? payment.recipient : payment.sender;
               if (payment.timestamp == 0) {
-                payment['messageText'] = 'Hello this is your <b>GENESIS</b> payment. Thank you.'
+                payment['messageText'] = 'Welcome to HEAT, Stakeholder! This is your HEAT initial stake.'
               }
               if (payment.currency != "0") {
                 payment['symbol'] = payment.currency;
