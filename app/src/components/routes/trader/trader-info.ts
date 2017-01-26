@@ -56,11 +56,12 @@
         </div>
         <div layout="column" flex>
           <div layout="column">24h vol</div>
-          <div layout="column">{{vm.hr24CurrencyVolume}}<br>{{vm.hr24AssetVolume}} HEAT
+          <div layout="column">{{vm.hr24CurrencyVolume}}<br>{{vm.hr24AssetVolume}}
           </div>
         </div>
       </div>
       <div layout="row" flex>
+      <!--
         <div layout="column" flex>
           Currency<br>
           id={{vm.currencyInfo.id}}<br>
@@ -77,6 +78,7 @@
           decimals={{vm.assetInfo.decimals}}<br>
           description={{vm.assetInfo.description}}
         </div>
+        -->
       </div>
     </div>
   `
