@@ -61,8 +61,16 @@
               <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
             </md-input-container>
           </div>
-          <div layout="row">
-            <md-button class="md-primary md-raised" ng-click="vm.loginSecretPhrase()" ng-disabled="!vm.secretPhrase" flex aria-label="Sign in">Sign in</md-button>
+          <div layout="row" layout-align="center center">
+            <md-button class="md-primary md-raised" ng-click="vm.loginSecretPhrase()" ng-disabled="!vm.secretPhrase" aria-label="Sign in">Sign in</md-button>
+          </div>
+          <div layout="row" layout-align="center center" ng-if="vm.env.type==EnvType.NODEJS">
+            <md-input-container>
+              <label>Switch API server</label>
+              <md-select ng-model="vm.apiServer" ng-change="vm.apiServerChanged()">
+                <md-option ng-value="server" ng-repeat="server in vm.availableAPIServers">{{server}}</md-option>
+              </md-select>
+            </md-input-container>
           </div>
         </div>
       </div>
@@ -159,7 +167,7 @@
   `
 })
 @Inject('$scope','$q','user','$location','heat','localKeyStore',
-        'secretGenerator','clipboard','$mdToast','env')
+        'secretGenerator','clipboard','$mdToast','env','settings')
 class LoginComponent {
 
   page: number = 0;
@@ -172,6 +180,11 @@ class LoginComponent {
   key: ILocalKey = null;
   loading: boolean = false;
 
+  apiServer: string;
+  availableAPIServers = [];
+
+
+
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
               private user: UserService,
@@ -181,12 +194,25 @@ class LoginComponent {
               private secretGenerator: SecretGeneratorService,
               private clipboard: ClipboardService,
               private $mdToast: angular.material.IToastService,
-              private env: EnvService) {
+              private env: EnvService,
+              private settings: SettingsService) {
     this.localKeys = localKeyStore.list();
     this.isNewInstall = this.localKeys.length == 0;
     if (!this.isNewInstall) {
       this.account = this.localKeys[0];
     }
+
+    this.apiServer = this.settings[SettingsService.HEAT_HOST]+":"+this.settings[SettingsService.HEAT_PORT];
+    this.availableAPIServers.push(
+      this.settings.get(SettingsService.HEAT_HOST_REMOTE)+":"+this.settings.get(SettingsService.HEAT_PORT_REMOTE),
+      this.settings.get(SettingsService.HEAT_HOST_LOCAL)+":"+this.settings.get(SettingsService.HEAT_PORT_LOCAL)
+    );
+  }
+
+  apiServerChanged() {
+    var parts = this.apiServer.split(":");
+    this.settings.put(SettingsService.HEAT_PORT,parts.splice(-1,1)[0]);
+    this.settings.put(SettingsService.HEAT_HOST, parts.join(''));
   }
 
   setLoading(loading: boolean) {
