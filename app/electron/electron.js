@@ -39,7 +39,6 @@ function createWindow () {
     icon:`${APP_DIR}/electron/icon.png`
   })
   mainWindow.loadURL(`file://${APP_DIR}/index.html`)
-  // mainWindow.webContents.openDevTools()
 
   mainWindow.on('closed', function () {
     mainWindow = null
