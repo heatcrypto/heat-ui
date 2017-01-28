@@ -54,6 +54,10 @@
           <md-tooltip md-direction="bottom">Exchange</md-tooltip>
           <md-icon md-font-library="material-icons">insert_chart</md-icon>
         </md-button>
+        <md-button aria-label="server" class="md-icon-button" href="#/server">
+          <md-tooltip md-direction="bottom">App Server</md-tooltip>
+          <md-icon md-font-library="material-icons">settings_applications</md-icon>
+        </md-button>
         <span flex></span>
         <h2 ng-if="vm.user.unlocked">
           <user-balance ng-if="vm.user.unlocked"></user-balance>
