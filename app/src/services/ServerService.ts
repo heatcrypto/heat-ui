@@ -46,6 +46,9 @@ class ServerService extends EventEmitter {
         $timeout(() => {
           this.stopServer();
         }, 2000);
+        $timeout(() => {
+          window.close();
+        }, 8000);
         return "dont close";
       }
     };
@@ -75,9 +78,11 @@ class ServerService extends EventEmitter {
     this.initOsDepends();
     var spawn = require('child-process-promise').spawn;
     this.isRunning = true;
+    this.log("[SERVER] command >> "+this.command);
+    this.log("[SERVER] cwd     >> "+this.cwd);
     var promise = spawn(this.command,[],{cwd:this.cwd});
     this.childProcess = promise.childProcess;
-    console.log('[spawn] childProcess.pid: ', this.childProcess.pid);
+    this.log("[SERVER] pid     >> "+this.childProcess.pid);
     this.childProcess.stdout.on('data', (data) => {
       this.log(data.toString());
     });
@@ -93,7 +98,7 @@ class ServerService extends EventEmitter {
       })
     })
     .catch((err) => {
-      this.log("[ERROR] ERROR err", err);
+      this.log("[ERROR] ERROR ", err);
       this.$rootScope.$evalAsync(()=>{
         this.isRunning = false;
         this.isReady = false;
