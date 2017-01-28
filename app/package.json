@@ -14,10 +14,13 @@
     "url": "https://github.com/Heat-Ledger-Ltd/heat-ui/issues"
   },
   "author": {
-    "name":"Dennis de Klerk",
+    "name": "Dennis de Klerk",
     "email": "dennis@heatledger.com",
     "url": "http://heatledger.com"
   },
   "license": "MIT",
-  "homepage": "http://heatledger.com"
+  "homepage": "http://heatledger.com",
+  "dependencies": {
+    "child-process-promise": "^2.2.0"
+  }
 }
