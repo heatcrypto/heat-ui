@@ -54,7 +54,7 @@
           <md-tooltip md-direction="bottom">Exchange</md-tooltip>
           <md-icon md-font-library="material-icons">insert_chart</md-icon>
         </md-button>
-        <md-button aria-label="server" class="md-icon-button" href="#/server">
+        <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
           <md-tooltip md-direction="bottom">App Server</md-tooltip>
           <md-icon md-font-library="material-icons">settings_applications</md-icon>
         </md-button>
@@ -93,7 +93,7 @@
                 <span id="toolbar-account-id-target">Create Market</span>
               </md-button>
             </md-menu-item>
-            <md-menu-item ng-show="vm.showDevTools">
+            <md-menu-item ng-show="vm.isNodeEnv">
               <md-button aria-label="dev-tools" ng-click="vm.opendevTools($event)">
                 <md-icon md-font-library="material-icons">developer_board</md-icon>
                 Developer tools
@@ -133,7 +133,7 @@
   'assetIssue','whitelistMarket','storage','HTTPNotify')
 class ToolbarComponent {
 
-  showDevTools = false;
+  isNodeEnv = false;
 
   constructor(private $scope: angular.IScope,
               private $mdSidenav,
@@ -148,7 +148,7 @@ class ToolbarComponent {
               private whitelistMarket: WhitelistMarketService,
               private storage: StorageService,
               private HTTPNotify: HTTPNotifyService) {
-    this.showDevTools=env.type==EnvType.NODEJS;
+    this.isNodeEnv=env.type==EnvType.NODEJS;
   }
 
   showSendmoneyDialog($event) {
