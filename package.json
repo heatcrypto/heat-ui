@@ -1,6 +1,6 @@
 {
-  "name": "heat",
-  "version": "0.1.0",
+  "name": "heatwallet",
+  "version": "1.0.1",
   "description": "Heat Ledger Generic Client Framework",
   "author": "Heat Ledger Ltd",
   "homepage": "http://heatledger.com",
@@ -64,13 +64,26 @@
     "appId": "com.heatledger.heat-ui",
     "copyright": "Copyright © 2016 Heat Ledger Ltd",
     "productName": "Heatwallet",
-    "compression": "maximum",
+    "compression": "normal",
+    "extraResources": [{
+      "from": "../heatledger/build/install/heatledger",
+      "to": "heatledger"
+    }],
     "win": {
-      "extraFiles": "/home/dirk/git/heatledger/build/install/heatledger",
-      "extraResources": "/home/dirk/git/heatledger/build/install/heatledger",
       "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/master/build/icon.ico",
       "target": [
         "squirrel"
+      ]
+    },
+    "linux": {
+      "target": [
+        "zip"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [
+        "zip"
       ]
     },
     "directories": {
