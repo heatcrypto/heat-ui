@@ -208,4 +208,16 @@ class HeatAPI implements IHeatAPI {
   getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>> {
     return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
   }
+
+  getMiningInfo(secretPhrase: string): angular.IPromise<Array<IHeatMiningInfo>> {
+    return this.heat.post('/mining/info?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
+  }
+
+  startMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo> {
+    return this.heat.post('/mining/start?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
+  }
+
+  stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo> {
+    return this.heat.post('/mining/stop?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
+  }
 }

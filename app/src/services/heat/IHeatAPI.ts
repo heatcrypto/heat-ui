@@ -20,8 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-
-
 interface IHeatAPI {
   /**
    * Get the state of the server node and network
@@ -169,8 +167,30 @@ interface IHeatAPI {
    * Lists latest message contacts (requires replicator)
    */
   getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>>;
-}
 
+  /**
+   * Get current mining info for all miners (if secret phrase ommitted) or for a single miner
+   */
+  getMiningInfo(secretPhrase: string): angular.IPromise<Array<IHeatMiningInfo>>;
+
+  /**
+   * Start mining blocks with an account
+   */
+  startMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
+
+  /**
+   * Stop mining blocks with account
+   */
+  stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
+}
+interface IHeatMiningInfo {
+  deadline: number; // start & info
+  hitTime: number;  // start & info
+  foundAndStopped: boolean; // stop
+  stopped: boolean; // stop
+  remaining: number; // info
+  account: string; // info
+}
 interface IHeatCreateTransactionInput {
   /**
    * Transaction fee in HQT (1 HQT equals 0.00000001 HEAT) default fee is 1 HEAT
