@@ -80,8 +80,9 @@
           <span>Hittime : </span>
           <span class="mining-stats-val">{{vm.miningHittime}}</span>
         </div>
-        <md-button ng-disabled="!vm.user.unlocked || !vm.server.isReady" class="start-stop md-raised" ng-show="!vm.isMining" ng-click="vm.startMining()">Start Mining</md-button>
-        <md-button ng-disabled="!vm.user.unlocked || !vm.server.isReady" class="start-stop md-raised md-primary" ng-show="vm.isMining" ng-click="vm.stopMining()">Stop Mining</md-button>
+        <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-raised" ng-click="vm.startMining()">Start Mining</md-button>
+        <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-raised md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
+        <md-button ng-show="!vm.user.unlocked" class="start-stop md-raised md-primary" href="#/login">Sign in to start mining</md-button>
       </div>
       <div layout="column" flex class="console" layout-fill>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column"
