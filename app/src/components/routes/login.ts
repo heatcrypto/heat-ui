@@ -47,6 +47,9 @@
       width: 100%;
       max-width: 380px;
     }
+    login .account-preview {
+      color: #BDBDBD;
+    }
   `],
   template: `
     <div layout="column" flex layout-align="start center">
@@ -57,12 +60,15 @@
         <div layout="column" flex>
           <md-input-container flex>
             <label>Secret phrase</label>
-            <textarea rows="2" flex ng-model="vm.secretPhrase" id="create-new-textarea" ng-trim="false"></textarea>
+            <textarea rows="2" flex ng-model="vm.secretPhrase" id="create-new-textarea" ng-trim="false" ng-change="vm.secretPhraseChanged()"></textarea>
             <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
           </md-input-container>
         </div>
         <div layout="row" layout-align="center center">
           <md-button class="md-primary md-raised" ng-click="vm.loginSecretPhrase()" ng-disabled="!vm.secretPhrase" aria-label="Sign in">Sign in</md-button>
+        </div>
+        <div layout="row" layout-align="center center">
+          <span class="account-preview">{{vm.calculatedAccountId}}</span>
         </div>
         <div layout="row" layout-align="center center" ng-if="vm.env.type==EnvType.NODEJS">
           <md-input-container>
@@ -178,6 +184,7 @@ class LoginComponent {
   localKeys: Array<string> = [];
   key: ILocalKey = null;
   loading: boolean = false;
+  calculatedAccountId: string = 'Enter secret phrase to see account id';
 
   apiServer: string;
   availableAPIServers = [];
@@ -273,6 +280,9 @@ class LoginComponent {
   secretPhraseChanged() {
     this.publicKey = heat.crypto.secretPhraseToPublicKey(this.secretPhrase);
     this.account = heat.crypto.getAccountIdFromPublicKey(this.publicKey);
+    this.$scope.$evalAsync(() => {
+      this.calculatedAccountId = this.account;
+    });
   }
 
   loginSecretPhrase() {
