@@ -145,8 +145,10 @@ gulp.task('build', ['clean','ts2js','usemin','copy:dist'], function () {
 });
 
 gulp.task('electron', function () {
-  return gulp.src('app/electron/*')
+  gulp.src('app/electron/*')
     .pipe(gulp.dest('dist/electron'));
+  gulp.src(['app/node_modules/**/*'])
+    .pipe(gulp.dest('dist/node_modules'));
 });
 
 gulp.task('default', ['play']);
