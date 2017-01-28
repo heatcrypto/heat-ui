@@ -38,7 +38,8 @@ class ServerService extends EventEmitter {
               private $interval: angular.IIntervalService,
               private $timeout: angular.ITimeoutService) {
     super();
-    window.onbeforeunload = () => {
+    var onbeforeunload = () => {
+      onbeforeunload = null;
       if (this.isRunning) {
         this.applicationShutdown().then(() => {
           window.close();
@@ -52,6 +53,7 @@ class ServerService extends EventEmitter {
         return "dont close";
       }
     };
+    window.onbeforeunload = onbeforeunload;
   }
 
   initOsDepends() {
