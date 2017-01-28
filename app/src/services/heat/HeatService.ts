@@ -151,7 +151,7 @@ class HeatService {
     req.end();
   }
 
-  post(route: string, request: any, withAuth?: boolean, returns?: string): angular.IPromise<any> {
+  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     var req = request||{};
@@ -159,10 +159,18 @@ class HeatService {
       req = angular.extend(req, this.getAuthData());
     }
     if (this.env.type == EnvType.BROWSER) {
-      this.browserHttpPost(
-        [this.settings.get(SettingsService.HEAT_HOST),':',
-         this.settings.get(SettingsService.HEAT_PORT),'/',route].join(''),
-        req,
+      let address = localHostOnly ?
+        [this.settings.get(SettingsService.HEAT_HOST_LOCAL),':',this.settings.get(SettingsService.HEAT_PORT_LOCAL),'/',route].join('') :
+        [this.settings.get(SettingsService.HEAT_HOST),':',this.settings.get(SettingsService.HEAT_PORT),'/',route].join('');
+      if (localHostOnly) {
+        if (address.indexOf('http://localhost')!=0) {
+          deferred.reject(new ServerEngineError({
+            errorDescription: `Operation allowed to localhost only! ${address} is not allowed`,
+            errorCode: 10
+          }));
+        }
+      }
+      this.browserHttpPost(address, req,
         (response)=>{
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
@@ -174,14 +182,21 @@ class HeatService {
       );
     }
     else if (this.env.type == EnvType.NODEJS) {
-      var host = this.settings.get(SettingsService.HEAT_HOST);
+      var host = localHostOnly ?
+        this.settings.get(SettingsService.HEAT_HOST_LOCAL) :
+        this.settings.get(SettingsService.HEAT_HOST);
       var isHttps = host.indexOf('https://') == 0;
       this.node = this.node || { http: require(isHttps ? 'https':'http'), querystring: require('querystring') };
-      this.nodeHttpPost(
-        host.replace(/^(\w+:\/\/)/,''),
-        this.settings.get(SettingsService.HEAT_PORT),
-        '/' + route,
-        req,
+      let address = host.replace(/^(\w+:\/\/)/,'');
+      if (localHostOnly) {
+        if (address.indexOf('localhost')!=0) {
+          deferred.reject(new ServerEngineError({
+            errorDescription: `Operation allowed to localhost only ${address} is not allowed`,
+            errorCode: 10
+          }));
+        }
+      }
+      this.nodeHttpPost(address, this.settings.get(SettingsService.HEAT_PORT), '/' + route, req,
         (response)=>{
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
