@@ -70,7 +70,7 @@
       "to": "heatledger"
     }],
     "win": {
-      "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/master/build/icon.ico",
+      "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/e03bf2ba200afacf37007bf7569dc51011e67815/build/icon.ico",
       "target": [
         "squirrel"
       ]
