@@ -67,8 +67,11 @@
         <div layout="row" layout-align="center center">
           <md-button class="md-primary md-raised" ng-click="vm.loginSecretPhrase()" ng-disabled="!vm.secretPhrase" aria-label="Sign in">Sign in</md-button>
         </div>
-        <div layout="row" layout-align="center center">
+        <div layout="column" layout-align="center center">
           <span class="account-preview">{{vm.calculatedAccountId}}</span>
+          <span ng-show="vm.secretPhraseHasHiddenChars" class="account-preview">
+            Secret phrase has hidden characters!&nbsp;<a href="#" ng-click="vm.removeSecretPhraseHiddenChars()">remove</a>
+          </span>
         </div>
         <div layout="row" layout-align="center center" ng-if="vm.env.type==EnvType.NODEJS">
           <md-input-container>
@@ -185,6 +188,8 @@ class LoginComponent {
   key: ILocalKey = null;
   loading: boolean = false;
   calculatedAccountId: string = 'Enter secret phrase to see account id';
+  hasWhitespace = /^\s+|\s+$/gm;
+  secretPhraseHasHiddenChars = false;
 
   apiServer: string;
   availableAPIServers = [];
@@ -280,8 +285,16 @@ class LoginComponent {
   secretPhraseChanged() {
     this.publicKey = heat.crypto.secretPhraseToPublicKey(this.secretPhrase);
     this.account = heat.crypto.getAccountIdFromPublicKey(this.publicKey);
+    this.secretPhraseHasHiddenChars = this.hasWhitespace.test(this.secretPhrase);
     this.$scope.$evalAsync(() => {
       this.calculatedAccountId = this.account;
+    });
+  }
+
+  removeSecretPhraseHiddenChars() {
+    this.$scope.$evalAsync(() => {
+      this.secretPhrase = this.secretPhrase.replace(/^\s+/, "").replace(/\s+$/, "");
+      this.secretPhraseHasHiddenChars = this.hasWhitespace.test(this.secretPhrase);
     });
   }
 
