@@ -294,7 +294,7 @@ class LoginComponent {
   removeSecretPhraseHiddenChars() {
     this.$scope.$evalAsync(() => {
       this.secretPhrase = this.secretPhrase.replace(/^\s+/, "").replace(/\s+$/, "");
-      this.secretPhraseHasHiddenChars = this.hasWhitespace.test(this.secretPhrase);
+      this.secretPhraseChanged();
     });
   }
 
