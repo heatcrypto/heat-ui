@@ -50,9 +50,6 @@ class HeatService {
   public socket = new HeatSocket(this.user, this.$q, this.$timeout, this.settings);
   public events = new HeatEvents(this);
 
-  /* Private lazy collection of loaded nodejs requires */
-  private node: any;
-
   constructor(public $q: angular.IQService,
               private $http: angular.IHttpService,
               private settings: SettingsService,
@@ -97,8 +94,8 @@ class HeatService {
     else if (this.env.type == EnvType.NODEJS) {
       var host = this.settings.get(SettingsService.HEAT_HOST);
       var isHttps = host.indexOf('https://') == 0;
-      this.node = this.node || { http: require(isHttps ? 'https':'http'), querystring: require('querystring') };
       this.nodeHttpGet(
+        isHttps,
         host.replace(/^(\w+:\/\/)/,''),
         this.settings.get(SettingsService.HEAT_PORT),
         '/' + route,
@@ -127,15 +124,15 @@ class HeatService {
     )
   }
 
-  private nodeHttpGet(hostname: string, port: number, path: string, onSuccess: Function, onFailure: Function) {
-
+  private nodeHttpGet(isHttps: boolean, hostname: string, port: number, path: string, onSuccess: Function, onFailure: Function) {
     var options = {
       hostname: hostname, port: port, path: path, method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       }
     };
-    var req = this.node.http.request(options, (res) => {
+    var http = require(isHttps ? 'https':'http');
+    var req = http.request(options, (res) => {
       res.setEncoding('utf8');
       var body = [];
       res.on('data', (chunk) => { body.push(chunk) });
@@ -184,9 +181,7 @@ class HeatService {
     else if (this.env.type == EnvType.NODEJS) {
       var host = localHostOnly ?
         this.settings.get(SettingsService.HEAT_HOST_LOCAL) :
-        this.settings.get(SettingsService.HEAT_PORT_LOCAL);
-      var isHttps = host.indexOf('https://') == 0;
-      this.node = this.node || { http: require(isHttps ? 'https':'http'), querystring: require('querystring') };
+        this.settings.get(SettingsService.HEAT_HOST_LOCAL);
       let address = host.replace(/^(\w+:\/\/)/,'');
       if (localHostOnly) {
         if (address.indexOf('localhost')!=0) {
@@ -196,7 +191,9 @@ class HeatService {
           }));
         }
       }
-      this.nodeHttpPost(address, this.settings.get(SettingsService.HEAT_PORT), '/' + route, req,
+      var isHttps = host.indexOf('https://') == 0;
+      this.nodeHttpPost(isHttps, address, localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) :
+                                                 this.settings.get(SettingsService.HEAT_PORT), '/' + route, req,
         (response)=>{
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
@@ -233,8 +230,9 @@ class HeatService {
     );
   }
 
-  private nodeHttpPost(hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
-    var body = this.node.querystring.stringify(request);
+  private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
+    var querystring = require('querystring');
+    var body = querystring.stringify(request);
     var options = {
       hostname: hostname, port: port, path: path, method: 'POST',
       headers: {
@@ -242,7 +240,8 @@ class HeatService {
         "Content-Length": body.length
       }
     };
-    var req = this.node.http.request(options, (res) => {
+    var http = require(isHttps ? 'https':'http');
+    var req = http.request(options, (res) => {
       res.setEncoding('utf8');
       var body = [];
       res.on('data', (chunk) => { body.push(chunk) });
