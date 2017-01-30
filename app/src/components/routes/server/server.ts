@@ -87,7 +87,12 @@
       <div layout="column" flex class="console" layout-fill>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column"
             virtual-repeat-flex-helper id="server-console-container">
-          <pre md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" ng-bind-html="item"></pre>
+          <pre md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
+            <span ng-if="!item.timestamp">{{item.message}}</span>
+            <span ng-if="item.timestamp">
+              <span class="date">{{item.timestamp}}&nbsp;<span class="severity {{item.severity}}">{{item.severity}}</span>&nbsp;<span class="message">{{item.message}}</span>
+            </span>
+          </pre>
         </md-virtual-repeat-container>
       </div>
     </div>
@@ -167,7 +172,11 @@ class ServerComponent {
 
   render(msg) {
     var match = this.msgRegExp.exec(msg);
-    return match ? `<span class="date">${match[1]}&nbsp;<span class="severity ${match[2]}">${match[2]}</span>&nbsp;<span class="message">${match[3]}</span>` : msg;
+    return {
+      timestamp: match[1]||null,
+      severity: match[2]||null,
+      message: match[3]||msg,
+    }
   }
 
   startMining() {
