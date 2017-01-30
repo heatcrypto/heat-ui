@@ -24,7 +24,7 @@ declare var __dirname: any;
 @Service('server')
 @Inject('$rootScope','$q','$interval','$timeout')
 class ServerService extends EventEmitter {
-  private MAX_CONSOLE_LINE_LENGTH = 10000;
+  private MAX_CONSOLE_LINE_LENGTH = 20000;
   public isRunning: boolean = false;
   public isReady: boolean = false;
   public pid: string;
@@ -39,7 +39,7 @@ class ServerService extends EventEmitter {
               private $timeout: angular.ITimeoutService) {
     super();
     var onbeforeunload = () => {
-      onbeforeunload = null;
+      window.onbeforeunload = null;
       if (this.isRunning) {
         this.applicationShutdown().then(() => {
           window.close();
@@ -93,18 +93,29 @@ class ServerService extends EventEmitter {
     });
 
     promise.then(() => {
-      this.log("[SPAWN] done!");
+      this.log("[SPAWN] DONE!");
       this.$rootScope.$evalAsync(()=>{
         this.isRunning = false;
         this.isReady = false;
+        if (this.needsRecoveryRestart()) {
+          this.$timeout(()=> {
+            this.startServer();
+          },2000,true);
+        }
       })
     })
     .catch((err) => {
-      this.log("[ERROR] ERROR ", err);
+      var message = angular.isObject(err) ? (err.message||''):'';
+      this.log(`[SPAWN EXIT] ${message}`, err);
       this.$rootScope.$evalAsync(()=>{
         this.isRunning = false;
         this.isReady = false;
-      })
+        if (this.needsRecoveryRestart()) {
+          this.$timeout(()=> {
+            this.startServer();
+          },2000,true);
+        }
+      });
     });
   }
 
@@ -121,9 +132,14 @@ class ServerService extends EventEmitter {
         });
       }
     }
-    this.buffer.splice(this.buffer.length-1, 0, msg); // must add at index 1 before last to keep last line for proper console display
-    if (this.buffer.length > this.MAX_CONSOLE_LINE_LENGTH) {
-      this.buffer.splice(0, this.buffer.length - this.MAX_CONSOLE_LINE_LENGTH);
+    var lines = msg.split(/(\r?\n)/g);
+    for (var i=0; i<lines.length; i++) {
+      if (lines[i].match(/\S/)) {
+        this.buffer.splice(this.buffer.length-1, 0, lines[i]); // must add at index 1 before last to keep last line for proper console display
+        if (this.buffer.length > this.MAX_CONSOLE_LINE_LENGTH) {
+          this.buffer.splice(0, this.buffer.length - this.MAX_CONSOLE_LINE_LENGTH);
+        }
+      }
     }
     this.emit('output');
   }
@@ -132,7 +148,8 @@ class ServerService extends EventEmitter {
     if (!this.isRunning) {
       throw new Error('Server already stopped, check server.isRunning before calling this method');
     }
-    this.childProcess.kill();
+    var kill = require('tree-kill'); // have to kill all processes or shutdown fails on windows.
+    kill(this.childProcess.pid, 'SIGTERM');
   }
 
   private getOS() {
@@ -152,5 +169,17 @@ class ServerService extends EventEmitter {
       }
     }, 2000);
     return deferred.promise;
+  }
+
+  needsRecoveryRestart() {
+    var end = this.buffer.length-30;
+    for (var i=this.buffer.length; i>end; --i) {
+      if (angular.isString(this.buffer[i])) {
+        if (this.buffer[i].indexOf("To complete storage recovery process please restart")!=-1) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
