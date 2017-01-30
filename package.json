@@ -2,7 +2,7 @@
   "name": "heatwallet",
   "version": "1.0.1",
   "description": "Heat Ledger Generic Client Framework",
-  "author": "Heat Ledger Ltd",
+  "author": "Heat Ledger Ltd.",
   "homepage": "http://heatledger.com",
   "license": "MIT",
   "main": "gulpfile.js",
@@ -61,8 +61,8 @@
     "zeroclipboard": "2.2.0"
   },
   "build": {
-    "appId": "com.heatledger.heat-ui",
-    "copyright": "Copyright © 2016 Heat Ledger Ltd",
+    "appId": "com.heatledger.heatwallet",
+    "copyright": "Copyright © 2016 Heat Ledger Ltd.",
     "productName": "Heatwallet",
     "compression": "normal",
     "extraResources": [{
