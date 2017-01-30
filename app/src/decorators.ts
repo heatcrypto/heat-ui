@@ -74,6 +74,9 @@ function Component(options) {
     if (angular.isDefined(options.transclude)) {
       d['transclude'] = !!options.transclude;
     }
+    if (angular.isDefined(options.replace)) {
+      d['replace'] = !!options.replace;
+    }
     heat.Loader.directive(options.selector, () => (d));
   };
 }
