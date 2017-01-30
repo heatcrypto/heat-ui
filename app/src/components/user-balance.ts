@@ -30,24 +30,21 @@
       white-space: nowrap;
       font-size: 20px !important;
     }
-    user-balance .fraction {
+    user-balance .smaller {
       font-size: 12px !important;
     }
-    user-balance .error .md-button {
+    user-balance md-icon {
+      vertical-align: bottom;
       cursor: default;
     }
   `],
   template: `
     <div layout="column">
-      <span ng-show="vm.formattedBalance && !vm.showError">
-        <span class="balance">{{vm.formattedBalance}}</span><span class="fraction">{{vm.formattedFraction}}</span>&nbsp;<span class="balance">{{vm.currencyName}}</span>
-      </span>
-      <!--<md-progress-linear md-mode="indeterminate" ng-if="vm.loading"></md-progress-linear>-->
-      <span class="balance error" ng-show="vm.showError">
-        <elipses-loading></elipses-loading><md-button class="md-icon-button" aria-label="Error">
-          <md-tooltip md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
-          <md-icon md-font-library="material-icons">error</md-icon>
-        </md-button>
+      <span>
+        <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
+        <span class="smaller">#{{vm.user.account}}</span>&nbsp;&nbsp;
+        <span class="balance">{{vm.formattedBalance}}</span><span class="smaller">{{vm.formattedFraction}}</span>&nbsp;<span class="balance">{{vm.currencyName}}</span>
+        <md-icon ng-if="vm.showError" md-font-library="material-icons">error</md-icon>
       </span>
     </div>
   `
@@ -90,6 +87,8 @@ class UserBalanceComponent {
       });
     }, (error: ServerEngineError) => {
       this.$scope.$evalAsync(() => {
+        this.formattedBalance = "0";
+        this.formattedFraction = ".00000000";
         this.showError = true;
         this.errorDescription = error.description;
         this.loading = false;
