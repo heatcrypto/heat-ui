@@ -172,11 +172,7 @@ class ServerComponent {
 
   render(msg) {
     var match = this.msgRegExp.exec(msg);
-    return {
-      timestamp: match[1]||null,
-      severity: match[2]||null,
-      message: match[3]||msg,
-    }
+    return match ? { timestamp: match[1], severity: match[2], message: match[3] } : { message: msg };
   }
 
   startMining() {
