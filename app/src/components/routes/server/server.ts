@@ -130,10 +130,11 @@ class ServerComponent {
     $scope.$on('$destroy',()=>{
       server.removeListener('output',this.onOutput);
     });
-    if (this.determineRowCount() < this.getLength()) {
-      this.onOutput();
-    }
     this.updateMiningInfo();
+    window.setTimeout(()=>{
+      this.topIndex = this.determineTopIndex();
+      this.onOutput();
+    },3000);
   }
 
   /* md-virtual-repeat */
@@ -190,7 +191,14 @@ class ServerComponent {
           this.miningDeadline = info[0].deadline;
           this.miningHittime = info[0].hitTime;
         }
+        else {
+          this.isMining = false;
+        }
       })
+    }, () => {
+      this.$scope.$evalAsync(() => {
+        this.isMining = false;
+      });
     });
   }
 }
