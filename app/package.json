@@ -14,13 +14,14 @@
     "url": "https://github.com/Heat-Ledger-Ltd/heatwallet/issues"
   },
   "author": {
-    "name": "Dennis de Klerk",
-    "email": "dennis@heatledger.com",
+    "name": "Heat Ledger Ltd.",
+    "email": "info@heatledger.com",
     "url": "http://heatledger.com"
   },
   "license": "MIT",
   "homepage": "http://heatledger.com",
   "dependencies": {
-    "child-process-promise": "^2.2.0"
+    "child-process-promise": "^2.2.0",
+    "tree-kill": "^1.1.0"
   }
 }
