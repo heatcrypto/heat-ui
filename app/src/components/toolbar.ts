@@ -60,7 +60,7 @@
         </md-button>
         <span flex></span>
         <h2 ng-if="vm.user.unlocked">
-          <user-balance ng-if="vm.user.unlocked"></user-balance>
+          <user-balance></user-balance>
         </h2>
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
           <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
