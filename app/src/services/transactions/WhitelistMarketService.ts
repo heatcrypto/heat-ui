@@ -74,7 +74,9 @@ class WhitelistMarketferDialog extends GenericDialog {
     return [
       builder.asset('asset').
               label('Your asset').
-              validate("You dont own this asset", () => {
+              validate("You dont own this asset", (value) => {
+                if (value == "0")
+                  return true;
                 var assetField = <DialogFieldAsset> this.fields['asset'];
                 var assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
                 return !!assetInfo;
