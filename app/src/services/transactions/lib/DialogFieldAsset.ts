@@ -26,6 +26,7 @@ interface DialogFieldAssetAssetInfo {
   name: string;
   id: string;
   decimals: number;
+  certified: boolean;
 }
 
 class DialogFieldAsset extends AbstractDialogField {
@@ -37,6 +38,7 @@ class DialogFieldAsset extends AbstractDialogField {
   private assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
   private availableAssets: Array<DialogFieldAssetAssetInfo> = [];
   private _searchAllAssets: boolean = false;
+  private availableAssetsPromise: angular.IPromise<DialogFieldAssetAssetInfo>;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -44,73 +46,84 @@ class DialogFieldAsset extends AbstractDialogField {
   }
 
   initAvailableAssets() {
+    if (this.availableAssetsPromise) {
+      return this.availableAssetsPromise;
+    }
     var deferred = this.$q.defer();
-    if (this.availableAssets.length > 0) {
-      deferred.resolve();
+    if (this._searchAllAssets) {
+      this.heat.api.getAllAssetProtocol1(0,100).then((assets) => {
+        assets.unshift({
+          name: "HEAT Cryptocurrency",
+          symbol: "HEAT",
+          asset: "0",
+          decimals: 8
+        });
+        var promises=[];
+        assets.forEach((asset)=>{
+          promises.push(
+            this.assetInfo.getInfo(asset.asset).then((info2)=> {
+              let info = {
+                name: asset.name,
+                symbol: asset.symbol,
+                id: asset.asset,
+                decimals: asset.decimals,
+                certified: false
+              };
+              info.symbol = info2.symbol;
+              info.name = info2.name;
+              info.certified = info2.certified;
+              this.availableAssets.push(info);
+            })
+          );
+        });
+        this.$q.all(promises).then(deferred.resolve, deferred.reject);
+      }, deferred.reject)
     }
     else {
-      if (this._searchAllAssets) {
-        this.heat.api.getAllAssetProtocol1(0,100).then((assets) => {
-          this.availableAssets = [{
-              name: "HEAT Cryptocurrency",
-              symbol: "HEAT",
-              id: "0",
-              decimals: 8
-          }];
-          assets.forEach((asset)=>{
-            this.availableAssets.push({
-              name: asset.name,
-              symbol: asset.symbol,
-              id: asset.asset,
-              decimals: asset.decimals
-            });
-          });
-          deferred.resolve();
-        }, deferred.reject)
-      }
-      else {
-        this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
-          this.availableAssets = [];
-          balances.forEach((balance) => {
-            if (balance.id != "0") {
-              var info = this.assetInfo.parseProperties(balance.properties, {
-                name: balance.id,
-                symbol: balance.id
-              });
-              this.availableAssets.push({
-                name: info.name,
-                symbol: info.symbol,
+      this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
+        var promises=[];
+        balances.forEach((balance) => {
+          promises.push(
+            this.assetInfo.getInfo(balance.id).then((info2)=> {
+              let info = {
+                name: '*',
+                symbol: '*',
                 id: balance.id,
-                decimals: balance.decimals
-              });
-            }
-          });
-          deferred.resolve();
-        }, deferred.reject)
-      }
+                decimals: balance.decimals,
+                certified: false
+              };
+              info.symbol = info2.symbol;
+              info.name = info2.name;
+              info.certified = info2.certified;
+              this.availableAssets.push(info);
+            })
+          );
+        });
+        this.$q.all(promises).then(deferred.resolve, deferred.reject);
+      }, deferred.reject)
     }
-    return deferred.promise;
+    return this.availableAssetsPromise = deferred.promise;
   }
 
-  search(query: string) {
+  search(_query: string) {
     var deferred = this.$q.defer();
-    this.initAvailableAssets().then(() => {
-      if (!angular.isString(query)) {
-        deferred.resolve(this.availableAssets);
-        return;
-      }
-
-      var matches = [];
-      var query = query.toLowerCase();
-      this.availableAssets.forEach((asset) => {
-        if ((asset.name && asset.name.toLowerCase().indexOf(query) != -1) ||
-            (asset.symbol && asset.symbol.toLowerCase().indexOf(query) != -1) ||
-            (asset.id && asset.id.toLowerCase().indexOf(query) != -1)) {
-          matches.push(asset);
-        }
-      });
-      deferred.resolve(matches);
-    }, deferred.reject);
+    var query = _query.toLowerCase();
+    if (!angular.isString(query)) {
+      deferred.resolve(this.availableAssets);
+    }
+    else {
+      this.initAvailableAssets().then(() => {
+        var matches = [];
+        this.availableAssets.forEach((asset) => {
+          if ((asset.name && asset.name.toLowerCase().indexOf(query) != -1) ||
+              (asset.symbol && asset.symbol.toLowerCase().indexOf(query) != -1) ||
+              (asset.id && asset.id.toLowerCase().indexOf(query) != -1)) {
+            matches.push(asset);
+          }
+        });
+        deferred.resolve(matches);
+      }, deferred.reject);
+    }
     return deferred.promise;
   }
 
