@@ -53,6 +53,10 @@ interface IHeatAPI {
    */
   getAsset(asset:string):angular.IPromise<IHeatAsset>;
   /**
+   * Find heat asset certification information
+   */
+  getAssetCertification(asset: string, certifierAccount:string):angular.IPromise<IHeatAssetCertification>;
+  /**
    * Lists all assets
    */
   getAssets(propertiesAccount:string,propertiesProtocol:number,from:number,to:number): angular.IPromise<Array<IHeatAsset>>;
@@ -184,12 +188,30 @@ interface IHeatAPI {
   stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
 }
 interface IHeatMiningInfo {
-  deadline: number; // start & info
-  hitTime: number;  // start & info
-  foundAndStopped: boolean; // stop
-  stopped: boolean; // stop
-  remaining: number; // info
-  account: string; // info
+  /**
+   * Returned from startMining and getMiningInfo
+   */
+  deadline: number;
+  /**
+   * Returned from startMining and getMiningInfo
+   */
+  hitTime: number;
+  /**
+   * Returned from stopMining
+   */
+  foundAndStopped: boolean;
+  /**
+   * Returned from stopMining
+   */
+  stopped: boolean;
+  /**
+   * Returned from getMiningInfo
+   */
+  remaining: number;
+  /**
+   * Returned from getMiningInfo
+   */
+  account: string;
 }
 interface IHeatCreateTransactionInput {
   /**
@@ -486,7 +508,6 @@ interface IHeatBroadcastOutput {
    */
   transaction: string;
 }
-
 interface IHeatAsset {
   /**
    * The number of the account that issued the asset
@@ -518,6 +539,28 @@ interface IHeatAsset {
   dillutable: boolean;
 
   properties?: string;
+}
+interface IHeatAssetCertification {
+  /**
+   * Asset id
+   */
+  asset: string;
+  /**
+   * Certification status [true,false]
+   */
+  certified: boolean;
+  /**
+   * Certified asset assigned symbol
+   */
+  symbol: string;
+  /**
+   * Certified asset assigned name
+   */
+  name: string;
+  /**
+   * Certifier account id
+   */
+  certifierAccount: string;
 }
 
 interface IHeatAssetProtocol1 {
