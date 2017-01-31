@@ -85,6 +85,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/exchange/asset/${asset}`);
   }
 
+  getAssetCertification(asset: string, certifierAccount:string):angular.IPromise<IHeatAssetCertification> {
+    return this.heat.get(`/exchange/asset/certification/${asset}/${certifierAccount}`);
+  }
+
   getAssets(propertiesAccount:string,propertiesProtocol:number,from:number,to:number): angular.IPromise<Array<IHeatAsset>> {
     return this.heat.get(`/assets/${propertiesAccount}/${propertiesProtocol}/${from}/${to}`);
   }
