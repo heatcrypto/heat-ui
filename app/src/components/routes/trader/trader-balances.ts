@@ -49,15 +49,15 @@
         <md-virtual-repeat-container flex layout-fill layout="column"
             virtual-repeat-flex-helper ng-if="vm.balances.length>0">
           <md-list-item md-virtual-repeat="item in vm.balances">
-            <div class="truncate-col symbol-col">{{item.symbol}}</div>
-            <div class="truncate-col balance-col right-align" flex>{{item.balance}}</div>
+            <div class="truncate-col symbol-col" ng-class="{certified:item.certified}">{{item.symbol}}</div>
+            <div class="truncate-col balance-col right-align" ng-class="{certified:item.certified}" flex>{{item.balance}}</div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
     </div>
   `
 })
-@Inject('$scope','heat','user','assetInfo','HTTPNotify')
+@Inject('$scope','heat','user','assetInfo','HTTPNotify','$q')
 class TraderBalancesComponent {
 
   /* @inputs */
@@ -70,7 +70,8 @@ class TraderBalancesComponent {
               private heat: HeatService,
               private user: UserService,
               private assetInfoService: AssetInfoService,
-              HTTPNotify: HTTPNotifyService) {
+              HTTPNotify: HTTPNotifyService,
+              private $q: angular.IQService) {
     HTTPNotify.on(()=>{this.loadBalances()}, $scope);
     this.loadBalances();
   }
@@ -78,20 +79,32 @@ class TraderBalancesComponent {
   loadBalances() {
     this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
       this.$scope.$evalAsync(() => {
+        var promises = []; // collects all balance lookup promises
         this.balances = balances;
         balances.forEach((balance: IHeatAccountBalance|any) => {
-          var assetInfo = this.assetInfoService.parseProperties(balance.properties, {
-            name: "",
-            symbol: balance.id == "0" ? "HEAT" : balance.id
-          });
-          balance.symbol = assetInfo.symbol;
-          balance.name = assetInfo.name;
+          promises.push(
+            this.assetInfoService.getInfo(balance.id).then((info)=>{
+              this.$scope.$evalAsync(() => {
+                balance.symbol = info.symbol;
+                balance.name = info.name;
+                balance.certified = info.certified;
+              });
+            })
+          );
+          balance.symbol = '*';
+          balance.name = '*';
           balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
         });
-        balances.sort((a:any,b:any)=> {
-          if (a.symbol < b.symbol) return -1;
-          if (a.symbol > b.symbol) return 1;
-          return 0;
+        this.$q.all(promises).then(()=>{
+          this.$scope.$evalAsync(() => {
+            balances.sort((a:any,b:any)=> {
+              if (a.certified < b.certified) return 1;
+              if (a.certified > b.certified) return -1;
+              if (a.symbol < b.symbol) return 1;
+              if (a.symbol > b.symbol) return -1;
+              return 0;
+            });
+          });
         });
       })
     });
