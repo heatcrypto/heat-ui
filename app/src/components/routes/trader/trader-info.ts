@@ -26,7 +26,7 @@
   styles: [`
   trader-info .market-title {
   }
-  trader-info .market-title-text {
+  trader-info .market-title-text * {
     font-size: 32px !important;
   }
   `],
@@ -39,7 +39,7 @@
           </md-tooltip>
           <md-icon md-font-library="material-icons">{{vm.marketsSidenavOpen?'remove_circle_outline':'add_circle_outline'}}</md-icon>
         </md-button>
-        <span class="market-title-text">{{vm.currencyInfo.symbol}}/{{vm.assetInfo.symbol}}</span>
+        <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
       </div>
       <div layout="row">
         <div layout="column" flex>
@@ -100,19 +100,49 @@ class TraderInfoComponent {
   loadMarket() {
     this.heat.api.getMarket(this.currencyInfo.id, this.assetInfo.id, "0", 1).then((market) => {
       this.$scope.$evalAsync(() => {
-        var currencyInfo = this.assetInfoService.parseProperties(market.currencyProperties, {
-          name: "",
-          symbol: market.currency == "0" ? "HEAT" : market.currency.substring(0,4)
+        this.currencyInfo = {
+          id: market.currency,
+          symbol:'*',
+          name:'*',
+          decimals: market.currencyDecimals,
+          certified: false,
+          description: '',
+          descriptionUrl: ''
+        };
+        this.assetInfo = {
+          id: market.asset,
+          symbol:'*',
+          name:'*',
+          decimals: market.assetDecimals,
+          certified: false,
+          description: '',
+          descriptionUrl: ''
+        };
+        this.assetInfoService.getInfo(market.currency).then((info)=> {
+          this.$scope.$evalAsync(() => {
+            this.currencyInfo.symbol = info.symbol;
+            this.currencyInfo.name = info.name;
+            this.currencyInfo.certified = info.certified;
+            this.currencyInfo.description = info.description;
+            this.currencyInfo.descriptionUrl = info.descriptionUrl;
+            this.hr24CurrencyVolume = utils.formatQNT(market.hr24CurrencyVolume, market.currencyDecimals) +' '+this.currencyInfo.symbol;
+          });
         });
-        var assetInfo = this.assetInfoService.parseProperties(market.assetProperties, {
-          name: "",
-          symbol: market.asset == "0" ? "HEAT" : market.asset.substring(0,4)
+        this.assetInfoService.getInfo(market.asset).then((info)=> {
+          this.$scope.$evalAsync(() => {
+            this.assetInfo.symbol = info.symbol;
+            this.assetInfo.name = info.name;
+            this.assetInfo.certified = info.certified;
+            this.assetInfo.description = info.description;
+            this.assetInfo.descriptionUrl = info.descriptionUrl;
+            this.hr24AssetVolume = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals) +' '+this.assetInfo.symbol;
+          });
         });
         this.hr24Change = `${market.hr24Change}%`
         this.hr24High = utils.formatQNT(market.hr24High, market.currencyDecimals);
         this.hr24Low = utils.formatQNT(market.hr24Low, market.currencyDecimals);
-        this.hr24CurrencyVolume = utils.formatQNT(market.hr24CurrencyVolume, market.currencyDecimals) +' '+currencyInfo.symbol;
-        this.hr24AssetVolume = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals) +' '+assetInfo.symbol;
+        this.hr24CurrencyVolume = utils.formatQNT(market.hr24CurrencyVolume, market.currencyDecimals) +' '+this.currencyInfo.symbol;
+        this.hr24AssetVolume = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals) +' '+this.assetInfo.symbol;
       });
     });
   }
