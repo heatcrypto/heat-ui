@@ -130,6 +130,10 @@ declare var Big: any;
   trader .right-align, trader input {
     text-align: right;
   }
+  trader .certified {
+    font-weight: bold;
+    text-decoration: underline;
+  }
   `],
   template: `
     <div layout="row" flex layout-fill>
