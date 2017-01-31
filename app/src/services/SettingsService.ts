@@ -63,6 +63,7 @@ class SettingsService {
   public static HEAT_HOST_LOCAL = 'settings.heat_host_local';
   public static HEAT_PORT_LOCAL = 'settings.heat_port_local';
   public static HEATLEDGER_CERTIFIER_ACCOUNT = 'settings.heatledger_certifier_account';
+  public static HEATLEDGER_BTC_ASSET = 'settings.heatledger_btc_asset';
 
   constructor() {
     this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
@@ -106,7 +107,8 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
     this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
     this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
-    this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '9583431768758058558';
+    this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
+    this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '5592059897546023466';
 
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
@@ -114,17 +116,15 @@ class SettingsService {
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
 
     /* Override with test endpoints */
-    var TEST_HEAT_LEDGER = true;
-    if (TEST_HEAT_LEDGER) {
+    if (window.localStorage.getItem('testnet')=='true') {
       this.settings[SettingsService.HEAT_HOST_REMOTE] = "http://37.139.25.98"; // testnet
       this.settings[SettingsService.HEAT_PORT_REMOTE] = "7733"; // testnet
       this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
+      this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
     }
 
     this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
-
-
   }
 
   settings={};
