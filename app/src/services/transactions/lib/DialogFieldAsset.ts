@@ -151,7 +151,7 @@ class DialogFieldAsset extends AbstractDialogField {
   }
   `],
   template: `
-    <ng-form name="userForm">
+    <ng-form name="userForm" ng-show="vm.f._visible">
       <md-autocomplete
         ng-required="vm.f._required"
         ng-readonly="vm.f._readonly"
@@ -163,7 +163,8 @@ class DialogFieldAsset extends AbstractDialogField {
         md-search-text="vm.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
-        md-selected-item="vm.selectedItem">
+        md-selected-item="vm.selectedItem"
+        ng-disabled="vm.f._disabled">
         <md-item-template>
           <div layout="row" flex>
             <span>{{item.symbol}}</span>

@@ -40,14 +40,14 @@ class DialogFieldText extends AbstractDialogField {
   selector: 'fieldText',
   inputs: ['label','value','changed','f'],
   template: `
-    <ng-form name="userForm" layout="row">
+    <ng-form name="userForm" layout="row" ng-show="vm.f._visible">
       <md-input-container class="md-block" flex ng-class="{'async-validator-pending':userForm.userField.$pending}">
         <label>{{vm.label}}</label>
         <input ng-if="!vm.f._rows" field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
-            name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly" ng-trim="false">
+            name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly" ng-trim="false" ng-disabled="vm.f._disabled">
         <textarea ng-if="vm.f._rows" field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
             name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly"
-            ng-trim="false" rows="{{vm.f._rows}}"></textarea>
+            ng-trim="false" rows="{{vm.f._rows}}" ng-disabled="vm.f._disabled"></textarea>
         <md-progress-linear md-mode="indeterminate" ng-if="userForm.userField.$pending"></md-progress-linear>
         <div ng-messages="userForm.userField.$error" ng-if="userForm.userField.$dirty">
           <div ng-messages-include="error-messages"></div>
