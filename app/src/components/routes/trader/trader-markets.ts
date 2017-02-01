@@ -77,7 +77,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo','HTTPNotify','storage','$q')
+@Inject('$scope','heat','assetInfo','HTTPNotify','storage','$q','$mdToast')
 class TraderMarketsComponent {
 
   // change, volume, price, none
@@ -85,13 +85,15 @@ class TraderMarketsComponent {
   asc: boolean = true;
 
   markets: Array<IHeatMarket> = [];
+  showFakeMarketsWarning = true;
 
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private assetInfo: AssetInfoService,
               HTTPNotify: HTTPNotifyService,
               private storage: StorageService,
-              private $q: angular.IQService) {
+              private $q: angular.IQService,
+              private $mdToast: angular.material.IToastService) {
     HTTPNotify.on(()=>{this.loadMarkets()}, $scope);
     this.loadMarkets();
   }
@@ -150,10 +152,12 @@ class TraderMarketsComponent {
           this.storage.namespace('trader').put('my-markets', mymarkets);
           /* {currency:{id: currency,symbol: currencySymbol},
               asset:{id:asset,symbol: assetSymbol}} */
+          var showWarning = false;
           mymarkets.forEach((m) => {
             this.markets.find((_m)=>_m.currency==m.currency&&_m.asset==m.asset)
 
             if (m.currency && m.asset) {
+              showWarning = true;
               this.markets.push(<any>{
                 currency: m.currency.id,
                 asset: m.asset.id,
@@ -165,6 +169,14 @@ class TraderMarketsComponent {
               })
             }
           });
+          if (showWarning && this.showFakeMarketsWarning) {
+            this.showFakeMarketsWarning = false;
+            this.$mdToast.show(
+              this.$mdToast.simple()
+                .textContent("You must send at least one buy or sell order for the market to become visible in the HEAT network.")
+                .hideDelay(6000)
+            );
+          }
         }
       });
     });
