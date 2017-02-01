@@ -82,8 +82,6 @@ class TraderInfoAssetDescriptionComponent {
         this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
         this.description = "Loading description from issuer site ...";
 
-        //this.assetInfo.descriptionUrl = "http://localhost:9001/dist/ASSET_DESCRIPTION.txt";
-        //this.currencyInfo.descriptionUrl = "http://localhost:9001/dist/ASSET_DESCRIPTION.txt";
         this.loadDescription(this.isBtcAsset ? this.currencyInfo : this.assetInfo);
 
         this.assetId = this.isBtcAsset ? this.currencyInfo.id : this.assetInfo.id
