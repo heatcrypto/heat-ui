@@ -116,7 +116,7 @@ module utils {
   }
 
   export function formatQNT(quantity: string, decimals: number, returnNullZero?: boolean): string {
-    var asfloat = utils.convertToQNTf(quantity, 8);
+    var asfloat = utils.convertToQNTf(quantity, decimals);
     var cf = utils.commaFormat(asfloat);
     var parts = cf.split('.');
     var ret;
