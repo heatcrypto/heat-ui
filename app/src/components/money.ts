@@ -22,7 +22,7 @@
  * */
 @Component({
   selector: 'money',
-  inputs: ['@hideplusmin','@precision','amount','outgoing','@fraction','symbol'],
+  inputs: ['@hideplusmin','@precision','amount','outgoing','symbol'],
   template: `
     <b>
       <span ng-hide="vm.hideplusmin=='true'">{{vm.outgoing?'-':'+'}} </span>
@@ -38,13 +38,15 @@ class Money {
   amountFormatted: string;
   precision: string;
   outgoing: boolean;
-  fraction: string;
   symbol: string;
 
   constructor($scope: angular.IScope, public user: UserService) {
     $scope.$watch(() => this.amount, () => { this.render() });
     this.render();
     this.symbol = this.symbol || this.user.accountColorName;
+    $scope.$watch('vm.precision',()=>{
+      this.render();
+    })
   }
 
   render() {
