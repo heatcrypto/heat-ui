@@ -67,6 +67,8 @@ abstract class AbstractDialogField {
   public _selector: string;
   public _required: boolean = false;
   public _readonly: boolean = false;
+  public _disabled: boolean = false;
+  public _visible: boolean = true;
 
   constructor(private $scope: angular.IScope,
               public name: string,
@@ -158,6 +160,16 @@ abstract class AbstractDialogField {
 
   public label(label: string) {
     this._label = label;
+    return this;
+  }
+
+  public disabled(disabled: boolean) {
+    this._disabled = disabled;
+    return this;
+  }
+
+  public visible(visible: boolean) {
+    this._visible = visible;
     return this;
   }
 }
