@@ -141,15 +141,18 @@ declare var Big: any;
           md-is-locked-open="vm.marketsSidenavLockedOpen" md-is-open="vm.marketsSidenavOpen"
           md-disable-backdrop flex layout-fill>
         <div layout="column" flex layout-fill>
-          <trader-balances currency="vm.currency" asset="vm.asset" layout="column" ng-if="vm.user.unlocked"></trader-balances>
-          <trader-markets currency="vm.currency" asset="vm.asset" layout="column" flex layout-fill></trader-markets>
+          <trader-balances layout="column" ng-if="vm.user.unlocked"></trader-balances>
+          <trader-markets layout="column" flex layout-fill></trader-markets>
           <trader-trollbox layout="column"></trader-trollbox>
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div layout="column" layout-gt-sm="row" flex layout-fill>
-          <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
-          <trader-chart class="trader-component" currency="vm.currency" asset="vm.asset" flex layout="column" layout-fill></trader-chart>
+        <div layout="column" flex layout-fill>
+          <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
+          <div layout="column" layout-gt-sm="row" flex layout-fill>
+            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
+            <trader-chart class="trader-component" flex layout="column" layout-fill></trader-chart>
+          </div>
         </div>
         <div layout="column" layout-gt-sm="row" flex layout-fill>
           <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-orders-buy>
