@@ -50,7 +50,7 @@
           <md-tooltip md-direction="bottom">Messages</md-tooltip>
           <md-icon md-font-library="material-icons">message</md-icon>
         </md-button>
-        <md-button aria-label="trader" class="md-icon-button" href="#/trader/8709927280637656798/0">
+        <md-button aria-label="trader" class="md-icon-button" href="#/trader/5592059897546023466/0">
           <md-tooltip md-direction="bottom">Exchange</md-tooltip>
           <md-icon md-font-library="material-icons">insert_chart</md-icon>
         </md-button>
