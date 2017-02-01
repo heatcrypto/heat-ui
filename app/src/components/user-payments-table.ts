@@ -89,8 +89,8 @@
         <timestamp timestamp-value="item.timestamp"></timestamp>
       </td>
       <td md-cell md-numeric nowrap>
-        <money precision="8" amount="item.quantity" symbol="item.symbol"
-          outgoing="item.outgoing" fraction="2"></money>
+        <money precision="{{item.decimals}}" amount="item.quantity" symbol="item.symbol"
+          outgoing="item.outgoing"></money>
       </td>
       <td md-cell>
         <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
@@ -150,6 +150,7 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
               payment['outgoing'] = this.user.account == payment.sender;
               payment['messageText'] = this.parseMessage(payment);
               payment['account'] = this.user.account == payment.sender ? payment.recipient : payment.sender;
+              payment['decimals'] = 8;
               if (payment.timestamp == 0) {
                 payment['messageText'] = 'Welcome to HEAT, Stakeholder! This is your HEAT initial stake.'
               }
@@ -158,6 +159,7 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
                 this.assetInfo.getInfo(payment.currency).then((info) => {
                   this.$scope.$evalAsync(() => {
                     payment['symbol'] = info.symbol;
+                    payment['decimals'] = info.decimals;
                   });
                 })
               }
