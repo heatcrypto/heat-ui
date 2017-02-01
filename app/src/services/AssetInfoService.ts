@@ -37,14 +37,15 @@ interface AssetPropertiesProtocol1 {
 }
 
 @Service('assetInfo')
-@Inject('heat', '$q','assetCertification')
+@Inject('heat', '$q','assetCertification','http')
 class AssetInfoService {
 
   cache: IStringHashMap<AssetInfo> = {};
 
   constructor(private heat: HeatService,
               private $q: angular.IQService,
-              private assetCertification: AssetCertificationService) {
+              private assetCertification: AssetCertificationService,
+              private http: HttpService) {
     this.cache["0"] = {
       id: "0",
       description: "HEAT Cryptocurrency",
@@ -70,7 +71,7 @@ class AssetInfoService {
         });
         var info: AssetInfo = {
           id: asset,
-          description: "TO BE IMPLEMENTED - DESCRIPTION LOOKUP",
+          description: null,
           descriptionUrl: data.descriptionUrl,
           decimals: data.decimals,
           symbol: properties.symbol,
@@ -106,5 +107,19 @@ class AssetInfoService {
 
   public stringifyProperties(properties: AssetPropertiesProtocol1) {
     return JSON.stringify([properties.symbol, properties.name]);
+  }
+
+  public getAssetDescription(info: AssetInfo): angular.IPromise<string> {
+    var deferred = this.$q.defer();
+    if (angular.isString(info.description) || !info.descriptionUrl) {
+      deferred.resolve(info.description||"No description available ...");
+    }
+    else {
+      this.http.get(info.descriptionUrl).then((text)=>{
+        info.description = text;
+        deferred.resolve(text);
+      }, deferred.reject);
+    }
+    return deferred.promise;
   }
 }
