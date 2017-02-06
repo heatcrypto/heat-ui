@@ -63,10 +63,16 @@ class HttpService {
     var req = http.request(options, (res) => {
       res.setEncoding('utf8');
       var body = [];
-      res.on('data', (chunk) => { body.push(chunk) });
-      res.on('end', () => { onSuccess(body.join('')) });
+      res.on('data', (chunk) => {
+        body.push(chunk)
+      });
+      res.on('end', () => {
+        onSuccess(body.join(''))
+      });
     });
-    req.on('error', (e) => { onFailure(e) });
+    req.on('error', (e) => {
+      onFailure(e)
+    });
     req.end();
   }
 }
