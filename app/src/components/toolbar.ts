@@ -30,10 +30,21 @@
     margin-right: 18px;
     margin-left: 0px;
   }
+  toolbar .test-net {
+    font-size: 22px !important;
+    font-weight: bold !important;
+  }
+  toolbar .test-net-color {
+    background-color: #4CAF50 !important;
+  }
   `],
   template: `
-    <md-toolbar class="main-toolbar">
+    <md-toolbar class="main-toolbar" ng-class="{'test-net-color':vm.isTestnet}">
       <div class="md-toolbar-tools">
+        <h2 ng-if="vm.isTestnet" class="test-net">
+          <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
+          TEST-NET
+        </h2>
         <md-button aria-label="home" class="md-icon-button" href="#/home">
           <md-tooltip md-direction="bottom">Home</md-tooltip>
           <md-icon md-font-library="material-icons" ng-mouseover="alert('no')">home</md-icon>
@@ -134,6 +145,7 @@
 class ToolbarComponent {
 
   isNodeEnv = false;
+  isTestnet = heat.isTestnet;
 
   constructor(private $scope: angular.IScope,
               private $mdSidenav,
