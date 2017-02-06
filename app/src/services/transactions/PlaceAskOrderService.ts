@@ -31,10 +31,10 @@ class PlaceAskOrderService extends AbstractTransaction {
     super();
   }
 
-  dialog(currency: string, asset: string, price?: string, quantity?: string, expiration?: number,
+  dialog(currencyInfo: AssetInfo, assetInfo: AssetInfo, price?: string, quantity?: string, expiration?: number,
             readonly?: boolean, $event?): IGenericDialog {
     return new PlaceAskOrderDialog($event, this, this.$q, this.user,
-                    currency, asset, price, quantity, expiration, readonly);
+                    currencyInfo, assetInfo, price, quantity, expiration, readonly);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -66,8 +66,8 @@ class PlaceAskOrderDialog extends GenericDialog {
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
               private user: UserService,
-              private currency: string,
-              private asset: string,
+              private currencyInfo: AssetInfo,
+              private assetInfo: AssetInfo,
               private price: string,
               private quantity: string,
               private expiration: number,
@@ -82,11 +82,11 @@ class PlaceAskOrderDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.text('currency', this.currency).
+      builder.text('currency', this.currencyInfo.id).
               label('Currency').
               required().
               readonly(this.readonly),
-      builder.text('asset', this.asset).
+      builder.text('asset', this.assetInfo.id).
               label('Asset').
               required().
               readonly(this.readonly),
