@@ -148,14 +148,12 @@ class TraderMarketsComponent {
 
         var mymarkets = this.storage.namespace('trader').get('my-markets');
         if (angular.isArray(mymarkets)) {
-          mymarkets = mymarkets.filter((m)=>!this.markets.find((_m)=>_m.currency==m.currency&&_m.asset==m.asset));
+          mymarkets = mymarkets.filter((m)=>!this.markets.find((_m)=>_m.currency==m.currency.id&&_m.asset==m.asset.id));
           this.storage.namespace('trader').put('my-markets', mymarkets);
           /* {currency:{id: currency,symbol: currencySymbol},
               asset:{id:asset,symbol: assetSymbol}} */
           var showWarning = false;
           mymarkets.forEach((m) => {
-            this.markets.find((_m)=>_m.currency==m.currency&&_m.asset==m.asset)
-
             if (m.currency && m.asset) {
               showWarning = true;
               this.markets.push(<any>{
@@ -169,6 +167,7 @@ class TraderMarketsComponent {
               })
             }
           });
+
           if (showWarning && this.showFakeMarketsWarning) {
             this.showFakeMarketsWarning = false;
             this.$mdToast.show(
