@@ -202,7 +202,7 @@ class TraderQuickBuySellComponent {
   }
 
   quickAsk($event) {
-    var dialog = this.placeAskOrder.dialog(this.currencyInfo.id,this.assetInfo.id,utils.unformat(this.price),
+    var dialog = this.placeAskOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
                       utils.unformat(this.quantity),parseInt(this.expiry),true,$event);
     if (this.oneClickOrders)
       dialog.send()
@@ -211,7 +211,7 @@ class TraderQuickBuySellComponent {
   }
 
   quickBid($event) {
-    var dialog = this.placeBidOrder.dialog(this.currencyInfo.id,this.assetInfo.id,utils.unformat(this.price),
+    var dialog = this.placeBidOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
                       utils.unformat(this.quantity),parseInt(this.expiry),true,$event);
     if (this.oneClickOrders)
       dialog.send()
