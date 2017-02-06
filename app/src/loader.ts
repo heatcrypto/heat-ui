@@ -22,6 +22,8 @@
  * */
 module heat {
 
+  export var isTestnet = window.localStorage.getItem('testnet')=='true';
+
   export var $inject: angular.auto.IInjectorService;
 
   export class Loader {
