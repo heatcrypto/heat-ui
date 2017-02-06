@@ -116,7 +116,7 @@ class SettingsService {
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
 
     /* Override with test endpoints */
-    if (window.localStorage.getItem('testnet')=='true') {
+    if (heat.isTestnet) {
       this.settings[SettingsService.HEAT_HOST_REMOTE] = "http://37.139.25.98"; // testnet
       this.settings[SettingsService.HEAT_PORT_REMOTE] = "7733"; // testnet
       this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
