@@ -28,7 +28,7 @@ module dialogs {
       title: 'About',
       targetEvent: $event,
       template: `
-        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationVersion}}</p>
+        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationBuild}}</p>
       `,
       locals: {
         applicationName: settings.get(SettingsService.APPLICATION_NAME),

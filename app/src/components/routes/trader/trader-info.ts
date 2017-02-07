@@ -26,62 +26,50 @@
   styles: [`
   trader-info .market-title {
   }
-  trader-info .market-title-text {
+  trader-info .market-title-text * {
     font-size: 32px !important;
   }
+  trader-info .show-hide  {
+    margin-left: 0px !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+    width: 28px !important;
+  }
+  trader-info .show-hide md-icon {
+    margin-left: 0px !important;
+    padding-left: 0px !important;
+  }
+  trader-info .hr-24 {
+    width: 100%;
+    padding-left: 8px;
+  }
+  trader-info .hr-24 td > div {
+    width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   `],
   template: `
     <div layout="column" flex layout-fill layout-padding>
-      <div layout="row" class="market-title">
-        <md-button class="md-icon-button" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
-          <md-tooltip md-direction="bottom">
-            Show/Hide markets
-          </md-tooltip>
-          <md-icon md-font-library="material-icons">{{vm.marketsSidenavOpen?'remove_circle_outline':'add_circle_outline'}}</md-icon>
-        </md-button>
-        <span class="market-title-text">{{vm.currencyInfo.symbol}}/{{vm.assetInfo.symbol}}</span>
-      </div>
       <div layout="row">
-        <div layout="column" flex>
-          <div layout="column">24h change</div>
-          <div layout="column">{{vm.hr24Change}}</div>
+        <div layout="row" class="market-title">
+          <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
+            <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
+            <md-icon md-font-library="material-icons">{{vm.marketsSidenavOpen?'remove_circle_outline':'add_circle_outline'}}</md-icon>
+          </md-button>
+          <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
         </div>
-        <div layout="column" flex>
-          <div layout="column">24h high</div>
-          <div layout="column">{{vm.hr24High}}</div>
-        </div>
-        <div layout="column" flex>
-          <div layout="column">24h low</div>
-          <div layout="column">{{vm.hr24Low}}</div>
-        </div>
-        <div layout="column" flex>
-          <div layout="column">24h vol</div>
-          <div layout="column">{{vm.hr24CurrencyVolume}}<br>{{vm.hr24AssetVolume}} HEAT
-          </div>
+        <div layout="row" layout-align="end" flex ng-if="vm.isBtcAsset">
+          <md-button class="md-primary md-raised" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Load BTC</md-button>
         </div>
       </div>
-      <div layout="row" flex>
-        <div layout="column" flex>
-          Currency<br>
-          id={{vm.currencyInfo.id}}<br>
-          symbol={{vm.currencyInfo.symbol}}<br>
-          name={{vm.currencyInfo.name}}<br>
-          decimals={{vm.currencyInfo.decimals}}<br>
-          description={{vm.currencyInfo.description}}
-        </div>
-        <div layout="column" flex>
-          Asset<br>
-          id={{vm.assetInfo.id}}<br>
-          symbol={{vm.assetInfo.symbol}}<br>
-          name={{vm.assetInfo.name}}<br>
-          decimals={{vm.assetInfo.decimals}}<br>
-          description={{vm.assetInfo.description}}
-        </div>
-      </div>
+      <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info-asset-description>
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo')
+@Inject('$scope','heat','user','settings')
 class TraderInfoComponent {
 
   // inputs
@@ -91,41 +79,23 @@ class TraderInfoComponent {
   toggleMarkets: Function; // @input (controls the parent component markets sidenav)
   marketsSidenavOpen: boolean; // @input (bound to parent component markets sidenav md-is-open)
 
-  hr24Change: string;
-  hr24High: string;
-  hr24Low: string;
-  hr24CurrencyVolume: string;
-  hr24AssetVolume: string;
+  isBtcAsset=false;
 
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
-              private assetInfoService: AssetInfoService) {
+              private user: UserService,
+              private settings: SettingsService) {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
+        this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
         unregister.forEach(fn => fn());
-        this.loadMarket();
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
   }
 
-  loadMarket() {
-    this.heat.api.getMarket(this.currencyInfo.id, this.assetInfo.id, "0", 1).then((market) => {
-      this.$scope.$evalAsync(() => {
-        var currencyInfo = this.assetInfoService.parseProperties(market.currencyProperties, {
-          name: "",
-          symbol: market.currency == "0" ? "HEAT" : market.currency
-        });
-        var assetInfo = this.assetInfoService.parseProperties(market.assetProperties, {
-          name: "",
-          symbol: market.asset == "0" ? "HEAT" : market.asset
-        });
-        this.hr24Change = `${market.hr24Change}%`
-        this.hr24High = utils.formatQNT(market.hr24High, market.currencyDecimals);
-        this.hr24Low = utils.formatQNT(market.hr24Low, market.currencyDecimals);
-        this.hr24CurrencyVolume = utils.formatQNT(market.hr24CurrencyVolume, market.currencyDecimals) +' '+currencyInfo.symbol;
-        this.hr24AssetVolume = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals) +' '+assetInfo.symbol;
-      });
-    });
+  showBtcLoadPopup($event) {
+    dialogs.loadBtc($event);
   }
+
 }

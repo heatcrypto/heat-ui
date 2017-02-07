@@ -26,6 +26,7 @@ interface DialogFieldAssetAssetInfo {
   name: string;
   id: string;
   decimals: number;
+  certified: boolean;
 }
 
 class DialogFieldAsset extends AbstractDialogField {
@@ -36,41 +37,93 @@ class DialogFieldAsset extends AbstractDialogField {
   private user = <UserService> heat.$inject.get('user');
   private assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
   private availableAssets: Array<DialogFieldAssetAssetInfo> = [];
+  private _searchAllAssets: boolean = false;
+  private availableAssetsPromise: angular.IPromise<DialogFieldAssetAssetInfo>;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
     this.selector('field-asset');
-    this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
-      this.availableAssets = [];
-      balances.forEach((balance) => {
-        if (balance.id != "0") {
-          var info = this.assetInfo.parseProperties(balance.properties, {
-            name: balance.id,
-            symbol: balance.id
-          });
-          this.availableAssets.push({
-            name: info.name,
-            symbol: info.symbol,
-            id: balance.id,
-            decimals: balance.decimals
-          });
-        }
-      })
-    })
   }
 
-  search(query: string) {
-    var matches = [];
-    var query = query.toLowerCase();
-    this.availableAssets.forEach((asset) => {
-      if ((asset.name && asset.name.toLowerCase().indexOf(query) != -1) ||
-          (asset.symbol && asset.symbol.toLowerCase().indexOf(query) != -1) ||
-          (asset.id && asset.id.toLowerCase().indexOf(query) != -1)) {
-        matches.push(asset);
-      }
-    });
+  initAvailableAssets() {
+    if (this.availableAssetsPromise) {
+      return this.availableAssetsPromise;
+    }
     var deferred = this.$q.defer();
-    deferred.resolve(matches);
+    if (this._searchAllAssets) {
+      this.heat.api.getAllAssetProtocol1(0,100).then((assets) => {
+        assets.unshift({
+          name: "HEAT Cryptocurrency",
+          symbol: "HEAT",
+          asset: "0",
+          decimals: 8
+        });
+        var promises=[];
+        assets.forEach((asset)=>{
+          promises.push(
+            this.assetInfo.getInfo(asset.asset).then((info2)=> {
+              let info = {
+                name: asset.name,
+                symbol: asset.symbol,
+                id: asset.asset,
+                decimals: asset.decimals,
+                certified: false
+              };
+              info.symbol = info2.symbol;
+              info.name = info2.name;
+              info.certified = info2.certified;
+              this.availableAssets.push(info);
+            })
+          );
+        });
+        this.$q.all(promises).then(deferred.resolve, deferred.reject);
+      }, deferred.reject)
+    }
+    else {
+      this.heat.api.getAccountBalances(this.user.account, "0", 1, 0, 100).then((balances) => {
+        var promises=[];
+        balances.forEach((balance) => {
+          promises.push(
+            this.assetInfo.getInfo(balance.id).then((info2)=> {
+              let info = {
+                name: '*',
+                symbol: '*',
+                id: balance.id,
+                decimals: balance.decimals,
+                certified: false
+              };
+              info.symbol = info2.symbol;
+              info.name = info2.name;
+              info.certified = info2.certified;
+              this.availableAssets.push(info);
+            })
+          );
+        });
+        this.$q.all(promises).then(deferred.resolve, deferred.reject);
+      }, deferred.reject)
+    }
+    return this.availableAssetsPromise = deferred.promise;
+  }
+
+  search(_query: string) {
+    var deferred = this.$q.defer();
+    var query = _query.toLowerCase();
+    if (!angular.isString(query)) {
+      deferred.resolve(this.availableAssets);
+    }
+    else {
+      this.initAvailableAssets().then(() => {
+        var matches = [];
+        this.availableAssets.forEach((asset) => {
+          if ((asset.name && asset.name.toLowerCase().indexOf(query) != -1) ||
+              (asset.symbol && asset.symbol.toLowerCase().indexOf(query) != -1) ||
+              (asset.id && asset.id.toLowerCase().indexOf(query) != -1)) {
+            matches.push(asset);
+          }
+        });
+        deferred.resolve(matches);
+      }, deferred.reject);
+    }
     return deferred.promise;
   }
 
@@ -81,6 +134,11 @@ class DialogFieldAsset extends AbstractDialogField {
       }
     }
     return null;
+  }
+
+  searchAllAssets(searchAllAssets: boolean) {
+    this._searchAllAssets = searchAllAssets;
+    return this;
   }
 }
 
@@ -93,7 +151,7 @@ class DialogFieldAsset extends AbstractDialogField {
   }
   `],
   template: `
-    <ng-form name="userForm">
+    <ng-form name="userForm" ng-show="vm.f._visible">
       <md-autocomplete
         ng-required="vm.f._required"
         ng-readonly="vm.f._readonly"
@@ -105,7 +163,8 @@ class DialogFieldAsset extends AbstractDialogField {
         md-search-text="vm.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
-        md-selected-item="vm.selectedItem">
+        md-selected-item="vm.selectedItem"
+        ng-disabled="vm.f._disabled">
         <md-item-template>
           <div layout="row" flex>
             <span>{{item.symbol}}</span>

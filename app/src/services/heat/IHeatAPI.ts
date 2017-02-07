@@ -20,8 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-
-
 interface IHeatAPI {
   /**
    * Get the state of the server node and network
@@ -43,9 +41,25 @@ interface IHeatAPI {
    */
   broadcast(param: IHeatBroadcastInput):angular.IPromise<IHeatBroadcastOutput>;
   /**
+   * Lists all protocol 1 assets (requires replicator
+   */
+  getAllAssetProtocol1(from:number,to:number):angular.IPromise<Array<IHeatAssetProtocol1>>;
+  /**
+   * Finds protocol 1 asset by symbol (requires replicator)
+   */
+  getAssetProtocol1(symbol: string):angular.IPromise<IHeatAssetProtocol1>;
+  /**
    * Find asset by numeric id
    */
   getAsset(asset:string):angular.IPromise<IHeatAsset>;
+  /**
+   * Find heat asset certification information
+   */
+  getAssetCertification(asset: string, certifierAccount:string):angular.IPromise<IHeatAssetCertification>;
+  /**
+   * Lists all assets
+   */
+  getAssets(propertiesAccount:string,propertiesProtocol:number,from:number,to:number): angular.IPromise<Array<IHeatAsset>>;
   /**
    * Find asset properties by numeric id, properties account and protocol, pass
    * propertiesAccount=0 to return the asset issuers properties.
@@ -163,8 +177,47 @@ interface IHeatAPI {
    */
   getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>>;
 
-}
+  /**
+   * Get current mining info for all miners (if secret phrase ommitted) or for a single miner
+   */
+  getMiningInfo(secretPhrase: string): angular.IPromise<Array<IHeatMiningInfo>>;
 
+  /**
+   * Start mining blocks with an account
+   */
+  startMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
+
+  /**
+   * Stop mining blocks with account
+   */
+  stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
+}
+interface IHeatMiningInfo {
+  /**
+   * Returned from startMining and getMiningInfo
+   */
+  deadline: number;
+  /**
+   * Returned from startMining and getMiningInfo
+   */
+  hitTime: number;
+  /**
+   * Returned from stopMining
+   */
+  foundAndStopped: boolean;
+  /**
+   * Returned from stopMining
+   */
+  stopped: boolean;
+  /**
+   * Returned from getMiningInfo
+   */
+  remaining: number;
+  /**
+   * Returned from getMiningInfo
+   */
+  account: string;
+}
 interface IHeatCreateTransactionInput {
   /**
    * Transaction fee in HQT (1 HQT equals 0.00000001 HEAT) default fee is 1 HEAT
@@ -270,6 +323,7 @@ interface IHeatCreateTransactionInput {
   AssetTransfer?: IHeatCreateAssetTransfer;
   OrdinaryPayment?: IHeatCreateOrdinaryPayment;
   ArbitraryMessage?: IHeatCreateArbitraryMessage;
+  WhitelistMarket?: IHeatCreateWhitelistMarket;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -313,6 +367,10 @@ interface IHeatCreateOrdinaryPayment {
   amountHQT: string;
 }
 interface IHeatCreateArbitraryMessage {}
+interface IHeatCreateWhitelistMarket {
+  currencyId: string;
+  assetId: string;
+}
 
 interface IHeatCreateTransactionOutput {
   /**
@@ -455,7 +513,6 @@ interface IHeatBroadcastOutput {
    */
   transaction: string;
 }
-
 interface IHeatAsset {
   /**
    * The number of the account that issued the asset
@@ -472,7 +529,7 @@ interface IHeatAsset {
   /**
    * The number of decimal places used by the asset
    */
-  decimals: string;
+  decimals: number;
   /**
    * HTTP/HTTPS url pointing to the asset description file
    */
@@ -485,6 +542,37 @@ interface IHeatAsset {
    * True in case new assets can later be issued by the asset issuer
    */
   dillutable: boolean;
+
+  properties?: string;
+}
+interface IHeatAssetCertification {
+  /**
+   * Asset id
+   */
+  asset: string;
+  /**
+   * Certification status [true,false]
+   */
+  certified: boolean;
+  /**
+   * Certified asset assigned symbol
+   */
+  symbol: string;
+  /**
+   * Certified asset assigned name
+   */
+  name: string;
+  /**
+   * Certifier account id
+   */
+  certifierAccount: string;
+}
+
+interface IHeatAssetProtocol1 {
+  asset: string;
+  decimals: number;
+  name: string;
+  symbol: string;
 }
 
 interface IHeatAssetProperties extends IHeatAsset {
@@ -750,6 +838,14 @@ interface IHeatBlockchainStatus {
   lastBlockchainFeederHeight: number;
   time: number;
   lastBlockchainFeeder: string;
+  /**
+   * Amount of HEAT in genesis block (in HQT, 1 HQT is 0.00000001 HEAT)
+   * */
+  initialCoinSupply: string;
+  /**
+   * Current total amount of HEAT (in HQT, 1 HQT is 0.00000001 HEAT)
+   */
+  currentCoinSupply: string;
 }
 interface IHeatBlock {
   previousBlockHash: string;

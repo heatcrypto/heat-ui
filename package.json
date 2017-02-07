@@ -1,8 +1,8 @@
 {
-  "name": "heat",
-  "version": "0.1.0",
+  "name": "heatwallet",
+  "version": "1.0.1",
   "description": "Heat Ledger Generic Client Framework",
-  "author": "Heat Ledger Ltd",
+  "author": "Heat Ledger Ltd.",
   "homepage": "http://heatledger.com",
   "license": "MIT",
   "main": "gulpfile.js",
@@ -14,13 +14,15 @@
     "url": "https://github.com/Heat-Ledger-Ltd/heat-ui/issues"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "pack": "build --dir",
+    "dist": "build"
   },
   "devDependencies": {
     "connect": "3.4.1",
     "del": "2.2.2",
-    "electron-builder": "^7.26.0",
+    "electron-builder": "11.7.0",
+    "electron-builder-squirrel-windows": "^11.6.1",
+    "electron-packager": "^8.5.1",
     "electron-prebuilt": "1.3.3",
     "es6-promise": "3.2.1",
     "gulp": "3.9.1",
@@ -49,6 +51,7 @@
     "angular-scroll": "^1.0.0",
     "big.js": "^3.1.3",
     "bytebuffer": "5.0.1",
+    "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
     "filesaver.js": "0.2.0",
     "long": "3.2.0",
@@ -58,29 +61,34 @@
     "zeroclipboard": "2.2.0"
   },
   "build": {
-    "appId": "com.heatledger.heat-ui",
-    "copyright": "Copyright © 2016 Heat Ledger Ltd",
-    "productName": "Heat",
-    "asar": false,
-    "compression": "maximum",
-    "mac": {
-      "category": "public.app-category.finance"
-    },
+    "appId": "com.heatledger.heatwallet",
+    "copyright": "Copyright © 2016 Heat Ledger Ltd.",
+    "productName": "Heatwallet",
+    "compression": "normal",
+    "extraResources": [{
+      "from": "../heatledger/build/install/heatledger",
+      "to": "heatledger"
+    }],
     "win": {
-      "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/master/build/icon.ico",
+      "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/e03bf2ba200afacf37007bf7569dc51011e67815/build/icon.ico",
       "target": [
         "squirrel"
       ]
     },
     "linux": {
-      "category": "Office",
-      "description": "Heat Ledger Wallet",
-      "synopsis": "Heat Ledger Wallet",
-      "desktop": ""
+      "target": [
+        "zip"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [
+        "zip"
+      ]
+    },
+    "directories": {
+      "output": "releases",
+      "app": "dist"
     }
-  },
-  "directories": {
-    "output": "releases",
-    "app": "dist"
   }
 }

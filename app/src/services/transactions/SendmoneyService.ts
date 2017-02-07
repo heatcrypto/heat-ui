@@ -74,6 +74,13 @@ class SendmoneyDialog extends GenericDialog {
                 this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
+                    $scope.$evalAsync(()=>{
+                      this.fields['message'].visible(true);
+                    });
+                  },()=>{
+                    $scope.$evalAsync(()=>{
+                      this.fields['message'].visible(false);
+                    });
                   }
                 );
               }).
@@ -104,6 +111,7 @@ class SendmoneyDialog extends GenericDialog {
               }),
       builder.text('message', this.userMessage).
               rows(2).
+              visible(false).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
                 if (String(message).trim().length == 0) {
@@ -143,30 +151,6 @@ class SendmoneyDialog extends GenericDialog {
     if (this.fields['message'].value) {
       builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
     }
-    // if (angular.isDefined(this.bundle)) {
-    //   builder.bundle(this.bundle);
-    // }
     return builder;
   }
-
-
-  // /* @override */
-  // getTransactionBuilder(): TransactionBuilder {
-  //   var builder = new TransactionBuilder(this.transaction);
-  //   builder.deadline(1440).
-  //           feeNQT(this.transaction.engine.getBaseFeeNQT()).
-  //           secretPhrase(this.user.secretPhrase).
-  //           json({
-  //             recipient: this.address.rsToNumeric(this.fields['recipient'].value),
-  //             amountNQT: this.fields['amount'].value,
-  //             recipientPublicKey: this.fields['recipientPublicKey'].value,
-  //           });
-  //   if (this.fields['message'].value) {
-  //     builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
-  //   }
-  //   if (angular.isDefined(this.bundle)) {
-  //     builder.bundle(this.bundle);
-  //   }
-  //   return builder;
-  // }
 }

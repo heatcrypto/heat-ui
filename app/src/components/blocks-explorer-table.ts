@@ -75,6 +75,9 @@
       <th md-column md-numeric>
         <span>POS Reward</span>
       </th>
+      <th md-column md-numeric>
+        <span>POP Reward</span>
+      </th>
     `,`
       <td md-cell md-numeric nowrap>
         <span>{{item.height}}</span>
@@ -99,6 +102,9 @@
       </td>
       <td md-cell md-numeric nowrap>
         <money precision="8" amount="item.posRewardHQT" symbol="'HEAT'" fraction="2"></money>
+      </td>
+      <td md-cell md-numeric nowrap>
+        <money precision="8" amount="item.popRewardHQT" symbol="'HEAT'" fraction="2"></money>
       </td>
     `
   )

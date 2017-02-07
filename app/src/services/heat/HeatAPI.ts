@@ -73,8 +73,24 @@ class HeatAPI implements IHeatAPI {
     return this.heat.post('/tx/broadcast', arg);
   }
 
+  getAllAssetProtocol1(from:number,to:number):angular.IPromise<Array<IHeatAssetProtocol1>> {
+    return this.heat.get(`/exchange/assets/protocol1/${from}/${to}`);
+  }
+
+  getAssetProtocol1(symbol: string):angular.IPromise<IHeatAssetProtocol1> {
+    return this.heat.get(`/exchange/asset/protocol1/${symbol}`);
+  }
+
   getAsset(asset:string):angular.IPromise<IHeatAsset> {
     return this.heat.get(`/exchange/asset/${asset}`);
+  }
+
+  getAssetCertification(asset: string, certifierAccount:string):angular.IPromise<IHeatAssetCertification> {
+    return this.heat.get(`/exchange/asset/certification/${asset}/${certifierAccount}`);
+  }
+
+  getAssets(propertiesAccount:string,propertiesProtocol:number,from:number,to:number): angular.IPromise<Array<IHeatAsset>> {
+    return this.heat.get(`/assets/${propertiesAccount}/${propertiesProtocol}/${from}/${to}`);
   }
 
   getAssetProperties(asset: string, propertiesAccount: string, propertiesProtocol: number):angular.IPromise<IHeatAssetProperties> {
@@ -199,5 +215,17 @@ class HeatAPI implements IHeatAPI {
 
   getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>> {
     return this.heat.get(`/exchange/chartdata/${currency}/${asset}/${window}`);
+  }
+
+  getMiningInfo(secretPhrase: string): angular.IPromise<Array<IHeatMiningInfo>> {
+    return this.heat.post('/mining/info?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
+  }
+
+  startMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo> {
+    return this.heat.post('/mining/start?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
+  }
+
+  stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo> {
+    return this.heat.post('/mining/stop?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
   }
 }

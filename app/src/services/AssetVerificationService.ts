@@ -20,44 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Component({
-  selector: 'money',
-  inputs: ['@hideplusmin','@precision','amount','outgoing','symbol'],
-  template: `
-    <b>
-      <span ng-hide="vm.hideplusmin=='true'">{{vm.outgoing?'-':'+'}} </span>
-      <span>{{ vm.amountFormatted }}</span>
-    </b>&nbsp;<small>{{ vm.symbol }}</small>
-  `
-})
-@Inject('$scope','user')
-class Money {
+@Service('assetCertification')
+@Inject('heat', '$q','settings')
+class AssetCertificationService {
 
-  amount: string;
-  amountNXT: string;
-  amountFormatted: string;
-  precision: string;
-  outgoing: boolean;
-  symbol: string;
+  cache: IStringHashMap<IHeatAssetCertification> = {};
 
-  constructor($scope: angular.IScope, public user: UserService) {
-    $scope.$watch(() => this.amount, () => { this.render() });
-    this.render();
-    this.symbol = this.symbol || this.user.accountColorName;
-    $scope.$watch('vm.precision',()=>{
-      this.render();
-    })
+  constructor(private heat: HeatService, private $q: angular.IQService, private settings: SettingsService) {
+    this.cache["0"] = {
+      asset: "0",
+      certified: true,
+      symbol: "HEAT",
+      name: "HEAT Currency",
+      certifierAccount: this.settings.get(SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT)
+    };
   }
 
-  render() {
-    /*
-    var precision = this.precision ? parseInt(this.precision) : 8;
-    this.amountNXT = utils.convertNQT(this.amount, precision);
-    var fraction = this.fraction ? parseInt(this.fraction) : 0;
-    if (fraction) {
-      this.amountNXT = utils.roundTo(this.amountNXT, fraction);
+  getInfo(asset: string): angular.IPromise<IHeatAssetCertification> {
+    var deferred = this.$q.defer();
+    if (angular.isDefined(this.cache[asset])) {
+      deferred.resolve(this.cache[asset]);
     }
-    */
-    this.amountFormatted = utils.formatQNT(this.amount,parseInt(this.precision));
+    else {
+      this.heat.api.getAssetCertification(asset, this.settings.get(SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT)).then((data) => {
+        this.cache[asset] = data;
+        deferred.resolve(this.cache[asset]);
+      }, deferred.reject);
+    }
+    return deferred.promise;
   }
 }
