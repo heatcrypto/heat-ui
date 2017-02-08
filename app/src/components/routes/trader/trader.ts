@@ -151,7 +151,7 @@ declare var Big: any;
           <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
           <div layout="column" layout-gt-sm="row" flex layout-fill>
             <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
-            <trader-chart class="trader-component" flex layout="column" layout-fill></trader-chart>
+            <trader-chart class="trader-component" flex layout="column" layout-fill currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
           </div>
         </div>
         <div layout="column" layout-gt-sm="row" flex layout-fill>
