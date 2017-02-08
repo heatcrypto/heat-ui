@@ -113,7 +113,7 @@ class SettingsService {
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
-    this.settings[SettingsService.CAPTCHA_POPUP] = "https://alpha.heatledger.com/captcha.html";
+    this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
 
     /* Override with test endpoints */
     if (heat.isTestnet) {
