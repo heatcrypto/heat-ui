@@ -35,6 +35,8 @@ module heat.crypto {
     getBytes: SHA256_finalize
   };
 
+  export var SHA256 = _hash;
+
   function simpleHash(message) {
     _hash.init();
     _hash.update(message);
@@ -95,8 +97,18 @@ module heat.crypto {
     _hash.update(unsignedTransactionBytes);
     _hash.update(signatureHash);
     var fullHash = _hash.getBytes();
-
     return converters.byteArrayToHexString(fullHash);
+  }
+
+  /**
+   * @param fullnameUTF8 UTF-8 user name
+   * @returns hex-string
+   */
+  export function fullNameToHash(fullNameUTF8: string): string {
+    _hash.init();
+    _hash.update(converters.stringToByteArray(fullNameUTF8));
+    var slice = (converters.hexStringToByteArray(converters.byteArrayToHexString(_hash.getBytes()))).slice(0, 8);
+    return byteArrayToBigInteger(slice).toString();
   }
 
   /**
