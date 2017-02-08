@@ -25,34 +25,8 @@ interface ILocalKey {
   account: string;
   pincode: string;
   secretPhrase: string;
+  name: string;
 }
-
-/* Find all entries that start with 'LOCAL_KEY_STORE_ENTRY:', move them
- * into the namespaced @store parameter. Replace each key which has the
- * form LOCAL_KEY_STORE_ENTRY:[account id]. With the new form which
- * is 'key.[account id]'. */
-function updateLegacyLocalKeyStoreData(store: Store) {
-
-  // collect all legacy keys
-  var keys = [];
-  for (var i=0; i<localStorage.length; i++) {
-    var key = localStorage.key(i);
-    if (key.indexOf('LOCAL_KEY_STORE_ENTRY:') == 0) {
-      keys.push(key);
-    }
-  }
-
-  // move all keys and their values into the new namespace
-  keys.forEach((keyName) => {
-    var newKey = keyName.replace('LOCAL_KEY_STORE_ENTRY:','key.');
-    var value = localStorage.getItem(keyName);
-    store.put(newKey, value);
-  });
-
-  // remove all deprecated keys [DONT DO THIS FOR NOW ... ]
-  // keys.forEach((keyName) => { localStorage.removeItem(keyName) });
-}
-
 
 @Service('localKeyStore')
 @Inject('storage')
@@ -60,28 +34,37 @@ class LocalKeyStoreService {
   private store: Store;
   constructor(storage: StorageService) {
     this.store = storage.namespace("keystore", null, true);
-    updateLegacyLocalKeyStoreData(this.store); // Need to do this to stay compatible with 0.1.0 release format.
+    //updateLegacyLocalKeyStoreData(this.store); // Need to do this to stay compatible with 0.1.0 release format.
   }
 
   add(key: ILocalKey) {
     this.store.put(`key.${key.account}`, this.encode(key));
+    this.store.put(`name.${key.account}`, key.name);
   }
 
+  /* lists all numeric account ids we have keys for */
   list(): Array<string> {
     return this.store.keys().
                       filter((keyName) => keyName.indexOf("key.") == 0).
                       map((keyName) => keyName.substring("key.".length));
   }
 
+  /* lookup and return the account key name - if there is any */
+  keyName(account: string) {
+    return this.store.get(`name.${account}`);
+  }
+
   remove(account: string) {
-    this.store.remove("key."+account);
+    this.store.remove(`key.${account}`);
+    this.store.remove(`name.${account}`);
   }
 
   encode(key: ILocalKey): string {
     var payload = JSON.stringify({
       account: key.account,
       secretPhrase: key.secretPhrase,
-      pincode: key.pincode
+      pincode: key.pincode,
+      name: key.name
     });
     var message = heat.crypto.passphraseEncrypt(payload, key.pincode);
     return message.encode();
@@ -94,7 +77,8 @@ class LocalKeyStoreService {
     return {
       account: json['account'],
       secretPhrase: json['secretPhrase'],
-      pincode: json['pincode']
+      pincode: json['pincode'],
+      name: json['name']
     }
   }
 
@@ -107,3 +91,29 @@ class LocalKeyStoreService {
     }
   }
 }
+
+/* Find all entries that start with 'LOCAL_KEY_STORE_ENTRY:', move them
+ * into the namespaced @store parameter. Replace each key which has the
+ * form LOCAL_KEY_STORE_ENTRY:[account id]. With the new form which
+ * is 'key.[account id]'. */
+// function updateLegacyLocalKeyStoreData(store: Store) {
+
+//   // collect all legacy keys
+//   var keys = [];
+//   for (var i=0; i<localStorage.length; i++) {
+//     var key = localStorage.key(i);
+//     if (key.indexOf('LOCAL_KEY_STORE_ENTRY:') == 0) {
+//       keys.push(key);
+//     }
+//   }
+
+//   // move all keys and their values into the new namespace
+//   keys.forEach((keyName) => {
+//     var newKey = keyName.replace('LOCAL_KEY_STORE_ENTRY:','key.');
+//     var value = localStorage.getItem(keyName);
+//     store.put(newKey, value);
+//   });
+
+//   // remove all deprecated keys [DONT DO THIS FOR NOW ... ]
+//   // keys.forEach((keyName) => { localStorage.removeItem(keyName) });
+// }
