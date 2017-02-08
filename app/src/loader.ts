@@ -88,7 +88,8 @@ module heat {
         'noCAPTCHA',
         'md.data.table',
         'ngSanitize',
-        'duScroll'
+        'duScroll',
+        'dc.inputAddOn'
       ]);
     }
 
