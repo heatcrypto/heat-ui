@@ -57,7 +57,7 @@
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
     "pako": "1.0.3",
-    "techan": "git://github.com/andredumas/techan.js",
+    "techan": "0.8.0",
     "zeroclipboard": "2.2.0"
   },
   "build": {
