@@ -26,7 +26,6 @@
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <user-payments-table flex layout-fill></user-payments-table>
-      <ohlc-chart flex layout-fill></ohlc-chart>
     </div>
   `
 })

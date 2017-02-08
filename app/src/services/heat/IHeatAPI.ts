@@ -181,7 +181,7 @@ interface IHeatAPI {
   /**
    * Retrieves OHLC chart data for trading pair (requires replicator)
    */
-  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>>;
+  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<IHeatChart>;
 
   /**
    * Get current mining info for all miners (if secret phrase ommitted) or for a single miner
@@ -801,6 +801,13 @@ interface IHeatMarket {
    */
   assetDecimals: number;
 }
+interface IHeatChart {
+  currency: string;
+  asset: string;
+  window: string;
+  timestamp: string;
+  data: Array<string|IHeatChartData>;
+}
 interface IHeatChartData {
   /**
    * The number timestamp in HEAT epoch format
@@ -898,11 +905,4 @@ interface IHeatMessage {
   messageIsText: boolean;
   messageIsEncrypted: boolean;
   messageIsEncryptedToSelf: boolean;
-}
-interface IHeatChart {
-  currency: string;
-  asset: string;
-  window: string;
-  timestamp: string;
-  data: Array<string|IHeatChartData>;
 }

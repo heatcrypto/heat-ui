@@ -217,7 +217,7 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
   }
 
-  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>> {
+  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<IHeatChart> {
     return this.heat.get(`/exchange/chartdata/${currency}/${asset}/${window}`);
   }
 
