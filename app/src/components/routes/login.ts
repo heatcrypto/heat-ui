@@ -20,10 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+declare var saveAs: any;
 @RouteConfig('/login')
 @Component({
   selector: 'login',
   styles: [`
+    login h2 {
+      font-size: 26px !important;
+    }
+    login .outer-container {
+      width: 100%;
+      max-width: 380px;
+    }
+    login .wallet {
+      width: 260px;
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
     login .smalller-font {
       font-size: 10px;
     }
@@ -38,15 +51,6 @@
       cursor: pointer;
       font-size: 18px;
     }
-    login .wallet {
-      width: 260px;
-      padding-top: 24px;
-      padding-bottom: 24px;
-    }
-    login .outer-container {
-      width: 100%;
-      max-width: 380px;
-    }
     login .account-preview {
       color: #BDBDBD;
     }
@@ -58,141 +62,252 @@
           <img src="assets/heatwallet.png" class="wallet">
         </div>
         <div layout="column" flex>
-          <md-input-container flex>
-            <label>Secret phrase</label>
-            <textarea rows="2" flex ng-model="vm.secretPhrase" id="create-new-textarea" ng-trim="false" ng-change="vm.secretPhraseChanged()"></textarea>
-            <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
-          </md-input-container>
-        </div>
-        <div layout="row" layout-align="center center">
-          <md-button class="md-primary md-raised" ng-click="vm.loginSecretPhrase()" ng-disabled="!vm.secretPhrase" aria-label="Sign in">Sign in</md-button>
-        </div>
-        <div layout="column" layout-align="center center">
-          <span class="account-preview">{{vm.calculatedAccountId}}</span>
-          <span ng-show="vm.secretPhraseHasHiddenChars" class="account-preview">
-            Secret phrase has hidden characters!&nbsp;<a href="#" ng-click="vm.removeSecretPhraseHiddenChars()">remove</a>
-          </span>
-        </div>
-        <div layout="row" layout-align="center center" ng-if="vm.env.type==EnvType.NODEJS">
-          <md-input-container>
-            <label>Switch API server</label>
-            <md-select ng-model="vm.apiServer" ng-change="vm.apiServerChanged()">
-              <md-option ng-value="server" ng-repeat="server in vm.availableAPIServers">{{server}}</md-option>
-            </md-select>
-          </md-input-container>
+
+          <!-- SIGNIN, CREATE & ADD buttons -->
+          <div layout="column" flex ng-if="!vm.page">
+            <div layout="row" layout-align="center center">
+              <md-button class="md-primary md-raised" ng-click="vm.page='signin'" aria-label="Sign in" ng-show="vm.localKeys.length">
+                <md-tooltip md-direction="bottom">Sign in with your pin</md-tooltip>
+                Sign in
+              </md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='create';vm.generateNewSecretPhrase()" aria-label="Create">
+                <md-tooltip md-direction="bottom">Create a new account</md-tooltip>
+                Create
+              </md-button>
+              <md-button class="md-raised" ng-click="vm.page='add'" aria-label="Add">
+                <md-tooltip md-direction="bottom">Add existing account</md-tooltip>
+                Add
+              </md-button>
+            </div>
+          </div>
+
+          <!-- SIGNIN page -->
+          <div layout="column" flex ng-if="vm.page=='signin'">
+            <div layout="column" flex>
+              <md-input-container>
+                <label>Account</label>
+                <md-select ng-model="vm.pageSigninAccount" ng-change="vm.pageSigninPincode=null;">
+                  <md-option ng-repeat="key in vm.localKeys" value="{{key.account}}">{{key.name||key.account}}</md-option>
+                </md-select>
+              </md-input-container>
+            </div>
+            <div layout="column" flex>
+              <md-input-container flex ng-show="vm.pageSigninAccount">
+                <label>Pin Code</label>
+                <input ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
+              </md-input-container>
+            </div>
+            <div layout="row" layout-align="center center" ng-show="vm.pageSigninWrongPincode">
+              <b>sorry, buts that the wrong pincode</b>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">Back</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.pageSinginLogin()"
+                ng-disabled="!vm.pageSigninPincode||!vm.pageSigninAccount" aria-label="Continue in">Sign in</md-button>
+            </div>
+          </div>
+
+          <!-- CREATE page (1) -->
+          <div layout="column" flex ng-if="vm.page=='create'">
+            <div layout="row" flex layout-align="center center">
+              <md-input-container flex>
+                <label>User name</label>
+                <input ng-model="vm.pageCreateUserName" required name="username" maxlength="100" input-append="@heatledger.com">
+              </md-input-container>
+              <md-input-container flex style="max-width:120px !important">
+                <md-icon md-font-set="regular-font">@heatledger.com</md-icon>
+                <input style="visibility: hidden;">
+              </md-input-container>
+            </div>
+            <div layout="column" flex>
+              <md-input-container flex>
+                <label>Secret phrase</label>
+                <textarea rows="2" flex ng-model="vm.pageCreateSecretPhrase" readonly ng-trim="false" id="create-new-textarea"></textarea>
+                <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">
+                  <md-tooltip md-direction="right">Copy to clipboard</md-tooltip>content_copy
+                </md-icon>
+              </md-input-container>
+            </div>
+            <div layout="column" flex>
+              <md-input-container flex>
+                <label>Pin Code (required, minumum 4 numbers)</label>
+                <input ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
+              </md-input-container>
+            </div>
+            <div layout="column" flex>
+              <md-radio-group ng-model="vm.pageCreateNameType">
+                <md-radio-button value="public" class="md-primary">
+                  Publicly searchable email account id
+                </md-radio-button>
+                <md-radio-button value="private" class="md-primary">
+                  Private email account id (sender must know it)
+                </md-radio-button>
+              </md-radio-group>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">Back</md-button>
+              <md-button class="md-raised" ng-click="vm.generateNewSecretPhrase()" aria-label="Other">
+                Renew pass
+              </md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='create1'"
+                ng-disabled="!vm.pageCreateUserName||!vm.pageCreateSecretPhrase||!vm.isValidPincode(vm.pageCreatePincode)"
+                aria-label="Continue">Continue</md-button>
+            </div>
+            <div layout="column" layout-align="center center">
+              <br>
+              <span class="account-preview">{{vm.pageCreateAccount}}</span>
+            </div>
+          </div>
+
+          <!-- CREATE page (2) -->
+          <div layout="column" flex ng-if="vm.page.indexOf('create')!=-1" ng-show="vm.page=='create1'" layout-padding>
+            <div layout="column" flex>
+              <p>Although we have absolutely nothing against robots, we still would like to know if you are one.</p>
+            </div>
+            <div layout="row" flex layout-align="center center">
+              <no-captcha ng-if="!vm.useExternalCaptcha" g-recaptcha-response="vm.pageCreateRecaptchaResponse" expired-callback="vm.recaptchaExpired()"></no-captcha>
+              <md-button ng-if="vm.useExternalCaptcha" ng-click="vm.doChallenge()" class="md-raised md-primary" ng-disabled="vm.pageCreateRecaptchaResponse">Click here</md-button>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-button class="md-raised" ng-click="vm.page='create'" aria-label="Back">Back</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.createAccount();vm.page='create2'" ng-disabled="!vm.pageCreateRecaptchaResponse"
+                aria-label="Continue">Create Account</md-button>
+            </div>
+          </div>
+
+          <!-- CREATE page (3) -->
+          <div layout="column" flex ng-if="vm.page.indexOf('create')!=-1" ng-show="vm.page=='create2'">
+            <div layout="column" flex layout-padding ng-show="vm.pageCreateLoading">
+              <div layout="row" layout-align="space-around">
+                <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+              </div>
+              <span>Creating your account, making it extra special for you.</span>
+            </div>
+            <div layout="column" layout-align="center center" ng-show="vm.pageCreateError">
+              <span>Something went wrong it seems</span>
+              <span>This is what we got back from our blockchain minions:</span>
+              <span><b>{{vm.pageCreateError}}</b></span>
+              <md-button class="md-raised md-primary" ng-click="vm.page='create'" aria-label="Back">Try again</md-button>
+            </div>
+          </div>
+
+          <!-- CREATE page (5) -->
+          <div layout="column" flex ng-show="vm.pageCreateSuccess">
+            <div layout="column" flex layout-align="start center">
+              <h2>Congratulations, it worked!</h2>
+              <div>We advise you print or write down your HEAT secret passprase, if lost you will loose access to your HEAT.<br>
+              Please pick one or more methods to back up your passphrase listed below.</div>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-button ng-click="vm.printPassphrase()">
+                <md-icon md-font-library="material-icons">print</md-icon>
+                &nbsp;&nbsp;Print
+              </md-button>
+              <md-button ng-click="vm.savePassphrase()" ng-if="vm.isFileSaverSupported">
+                <md-icon md-font-library="material-icons">save</md-icon>
+                &nbsp;&nbsp;Save
+              </md-button>
+              <md-button ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')">
+                <md-icon md-font-library="material-icons">content_copy</md-icon>
+                &nbsp;&nbsp;Copy
+              </md-button>
+              <md-button ng-click="vm.showPassphrase=!vm.showPassphrase">
+                <md-icon md-font-library="material-icons">arrow_drop_down_circle</md-icon>
+                &nbsp;&nbsp;{{vm.showPassphrase?'Hide':'Reveal'}}
+              </md-button>
+            </div>
+            <div layout="column" layout-align="center center" ng-show="vm.showPassphrase">
+              <p>Passphrase for {{vm.pageCreateUserName}} ({{vm.pageCreateAccount}}):</p>
+              <p><code id="claim2-passphrase">{{vm.pageCreateSecretPhrase}}</code></p>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-checkbox ng-model="vm.passphraseBackedUp" aria-label="I have backed up my passphrase">
+              I have safely backed up my passphrase
+              </md-checkbox>
+              <md-button class="md-raised md-primary" ng-click="vm.createLocalAccount($event)" ng-disabled="!vm.passphraseBackedUp">Continue</md-button>
+            </div>
+          </div>
+
+          <!-- ADD page -->
+          <div layout="column" flex ng-show="vm.page=='add'">
+            <div layout="column" flex>
+              <md-input-container flex>
+                <label>Secret phrase</label>
+                <textarea rows="2" flex ng-model="vm.pageAddSecretPhrase" ng-trim="false" ng-change="vm.pageAddSecretPhraseChanged()"></textarea>
+              </md-input-container>
+            </div>
+            <div layout="column" flex>
+              <md-input-container flex>
+                <label>Pin Code (required 5 numbers)</label>
+                <input ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
+              </md-input-container>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">
+                <md-tooltip md-direction="bottom">Go back one page</md-tooltip>
+                Back
+              </md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.pageAddAddSecretPhrase()" ng-disabled="!vm.pageAddSecretPhrase||!vm.pageAddPincode" aria-label="Add">
+                <md-tooltip md-direction="bottom">Add and encrypt this secretphrase to your device</md-tooltip>
+                Add
+              </md-button>
+              <md-button class="md-raised" ng-click="vm.pageAddLogin()" ng-disabled="!vm.pageAddSecretPhrase" aria-label="Sign in">
+                <md-tooltip md-direction="bottom">Sign in without storing your secretphrase</md-tooltip>
+                Sign in
+              </md-button>
+            </div>
+            <div layout="column" layout-align="center center">
+              <br>
+              <span class="account-preview">{{vm.pageAddCalculatedAccountId}}</span>
+              <span ng-show="vm.pageAddSecretPhraseHasHiddenChars" class="account-preview">
+                Secret phrase has hidden characters!&nbsp;<a href="#" ng-click="vm.pageAddRemoveSecretPhraseHiddenChars()">remove</a>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     <div layout="row">
       <news-button layout="column"></news-button>
     </div>
-
-  <!--
-    <div layout="column" layout-padding class="outer-container">
-      <div layout="column" flex ng-if="vm.page == 0">
-        <div layout="column" layout-align="start center" layout-padding>
-          <img src="assets/heatwallet.png" class="wallet">
-        </div>
-        <div layout="column" ng-show="vm.isNewInstall">
-          <md-button class="md-raised md-primary" ng-click="vm.gotoPage(1)" flex aria-label="Create">Create New Account</md-button>
-          <md-button class="md-raised" ng-click="vm.gotoPage(2)" flex aria-label="Add">Add Existing Account</md-button>
-        </div>
-        <div layout="column" flex ng-hide="vm.isNewInstall">
-          <md-input-container>
-            <label>Account</label>
-            <md-select ng-model="vm.account" ng-change="vm.pincode=null;vm.secretPhrase=null;vm.publicKey=null;">
-              <md-option ng-repeat="key in vm.localKeys" value="{{key}}">{{key}}</md-option>
-            </md-select>
-          </md-input-container>
-          <md-input-container flex ng-show="vm.account">
-            <label>Pin Code</label>
-            <input ng-model="vm.pincode" required name="pincode" ng-change="vm.pincodeChanged()" maxlength="5">
-          </md-input-container>
-          <div layout="row">
-            <md-button class="md-primary md-raised" ng-click="vm.login()" ng-disabled="!vm.secretPhrase" flex aria-label="Sign in">Sign in</md-button>
-          </div>
-          <div layout="row" layout-align="center" class="smalller-font">
-            <md-button ng-click="vm.gotoPage(1)" flex aria-label="Create">create account</md-button>
-            <md-button ng-click="vm.gotoPage(2)" flex aria-label="Add">add account</md-button>
-          </div>
-        </div>
-      </div>
-      <div layout="column" flex ng-if="vm.page == 1" ng-init="vm.generateNewSecretPhrase()" class="compressed-input-container">
-        <center>
-          <p class="md-title">Create New Account</p>
-        </center>
-        <div layout="column" flex>
-          <md-input-container flex>
-            <label>Secret phrase</label>
-            <textarea rows="2" flex ng-model="vm.secretPhrase" readonly id="create-new-textarea" ng-trim="false"></textarea>
-            <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
-          </md-input-container>
-          <md-input-container flex>
-            <label>Account</label>
-            <input ng-model="vm.account" readonly name="account" id="create-new-input">
-            <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-input', 'Account id copied')" class="clickable-icon">content_copy</md-icon>
-          </md-input-container>
-          <md-input-container flex>
-            <label>Pin Code (required 5 numbers)</label>
-            <input ng-model="vm.pincode" required name="pincode" maxlength="5">
-          </md-input-container>
-          <div layout="row">
-            <md-button ng-click="vm.back($event)" flex aria-label="Back">Back</md-button>
-            <md-button class="md-primary" ng-click="vm.addAccount($event)"
-              ng-disabled="!vm.secretPhrase || !vm.isValidPincode(vm.pincode)" flex aria-label="Add">Add</md-button>
-          </div>
-        </div>
-      </div>
-      <div layout="column" flex ng-if="vm.page == 2" ng-init="vm.resetAll()" class="compressed-input-container">
-        <center>
-          <p class="md-title">Add Existing Account</p>
-        </center>
-        <div layout="column" flex>
-          <md-input-container flex>
-            <label>Secret phrase</label>
-            <textarea rows="2" flex ng-model="vm.secretPhrase" id="add-existing-textarea" ng-change="vm.secretPhraseChanged()" ng-trim="false"></textarea>
-            <md-icon md-font-library="material-icons" ng-click="vm.copy('add-existing-textarea', 'Secret phrase copied')" class="clickable-icon">content_copy</md-icon>
-          </md-input-container>
-          <md-input-container flex>
-            <label>Account</label>
-            <input ng-model="vm.account" readonly name="account" id="add-existing-input">
-            <md-icon md-font-library="material-icons" ng-click="vm.copy('add-existing-input', 'Account id copied')" class="clickable-icon">content_copy</md-icon>
-          </md-input-container>
-          <md-input-container flex>
-            <label>Pin Code (required 5 numbers)</label>
-            <input ng-model="vm.pincode" required name="pincode" maxlength="5">
-          </md-input-container>
-          <div layout="row">
-            <md-button ng-click="vm.back($event)" flex aria-label="Back">Back</md-button>
-            <md-button class="md-primary" ng-click="vm.addAccount($event)"
-              ng-disabled="!vm.secretPhrase || !vm.isValidPincode(vm.pincode)" flex aria-label="Add">Add</md-button>
-          </div>
-        </div>
-      </div>
-    </div>
-  -->
-
   `
 })
 @Inject('$scope','$q','user','$location','heat','localKeyStore',
         'secretGenerator','clipboard','$mdToast','env','settings')
 class LoginComponent {
 
-  page: number = 0;
-  isNewInstall: boolean;
-  pincode: string;
-  secretPhrase: string;
-  publicKey: string;
-  account: string;
-  localKeys: Array<string> = [];
+  page: string = '';
+  isFileSaverSupported: boolean;
+  useExternalCaptcha: boolean;
+  localKeys: Array<{account:string, name:string}> = [];
   key: ILocalKey = null;
-  loading: boolean = false;
-  calculatedAccountId: string = 'Enter secret phrase to see account id';
   hasWhitespace = /^\s+|\s+$/gm;
-  secretPhraseHasHiddenChars = false;
-
   apiServer: string;
   availableAPIServers = [];
+
+  pageAddSecretPhrase: string;
+  pageAddPublicKey: string;
+  pageAddAccount: string;
+  pageAddPincode: string;
+  pageAddSecretPhraseHasHiddenChars: boolean;
+  pageAddCalculatedAccountId: string = 'Enter secret phrase to see account id';
+
+  pageSigninPincode: string;
+  pageSigninAccount: string;
+  pageSigninWrongPincode: boolean = false;
+
+  pageCreateNameType: string = 'public';
+  pageCreateUserName: string = '';
+  pageCreateSecretPhrase: string;
+  pageCreatePublicKey: string;
+  pageCreateAccount: string;
+  pageCreatePincode: string;
+  pageCreateRecaptchaResponse: string;
+  pageCreateRecaptchaWindow: Window;
+  pageCreateLoading: boolean = false;
+  pageCreateSuccess: boolean = false;
+  pageCreateError: string;
+  pageCreateTransaction: string;
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
@@ -205,17 +320,31 @@ class LoginComponent {
               private $mdToast: angular.material.IToastService,
               private env: EnvService,
               private settings: SettingsService) {
-    this.localKeys = localKeyStore.list();
-    this.isNewInstall = this.localKeys.length == 0;
-    if (!this.isNewInstall) {
-      this.account = this.localKeys[0];
+
+    try {
+      this.isFileSaverSupported = !!new Blob;
+    } catch (e) {}
+    this.useExternalCaptcha = env.type!=EnvType.BROWSER;
+
+    this.localKeys = localKeyStore.list().map((account:string) => {
+      return {
+        name: localKeyStore.keyName(account),
+        account: account
+      }
+    });
+    if (this.localKeys.length != 0) {
+      this.pageSigninAccount = this.localKeys[0].account;
+      this.page='signin';
+    }
+    else {
+      this.page='create';
     }
 
-    this.apiServer = this.settings[SettingsService.HEAT_HOST]+":"+this.settings[SettingsService.HEAT_PORT];
-    this.availableAPIServers.push(
-      this.settings.get(SettingsService.HEAT_HOST_REMOTE)+":"+this.settings.get(SettingsService.HEAT_PORT_REMOTE),
-      this.settings.get(SettingsService.HEAT_HOST_LOCAL)+":"+this.settings.get(SettingsService.HEAT_PORT_LOCAL)
-    );
+    // this.apiServer = this.settings[SettingsService.HEAT_HOST]+":"+this.settings[SettingsService.HEAT_PORT];
+    // this.availableAPIServers.push(
+    //   this.settings.get(SettingsService.HEAT_HOST_REMOTE)+":"+this.settings.get(SettingsService.HEAT_PORT_REMOTE),
+    //   this.settings.get(SettingsService.HEAT_HOST_LOCAL)+":"+this.settings.get(SettingsService.HEAT_PORT_LOCAL)
+    // );
   }
 
   apiServerChanged() {
@@ -224,124 +353,219 @@ class LoginComponent {
     this.settings.put(SettingsService.HEAT_HOST, parts.join(''));
   }
 
-  setLoading(loading: boolean) {
+  pageAddRemoveSecretPhraseHiddenChars() {
     this.$scope.$evalAsync(() => {
-      this.loading = loading;
+      this.pageAddSecretPhrase = this.pageAddSecretPhrase.replace(/^\s+/, "").replace(/\s+$/, "");
+      this.pageAddSecretPhraseChanged();
     });
   }
 
-  resetAll() {
-    this.pincode = null;
-    this.secretPhrase = null;
-    this.publicKey = null;
-    this.account = null;
+  pageAddLogin() {
+    this.user.unlock(this.pageAddSecretPhrase, false).then(() => {
+      this.$location.path('home');
+    });
   }
 
-  gotoPage(pageNum: number) {
-    this.page = pageNum;
-    this.resetAll();
+  pageAddSecretPhraseChanged() {
+    this.pageAddPublicKey = heat.crypto.secretPhraseToPublicKey(this.pageAddSecretPhrase);
+    this.pageAddAccount = heat.crypto.getAccountIdFromPublicKey(this.pageAddPublicKey);
+    this.pageAddSecretPhraseHasHiddenChars = this.hasWhitespace.test(this.pageAddSecretPhrase);
+    this.$scope.$evalAsync(() => {
+      this.pageAddCalculatedAccountId = this.pageAddAccount;
+    });
   }
 
-  back($event) {
-    this.page = 0;
-    this.resetAll();
+  pageAddAddSecretPhrase() {
+    this.localKeyStore.add({
+      account: this.pageAddAccount,
+      secretPhrase: this.pageAddSecretPhrase,
+      pincode: this.pageAddPincode,
+      name: ''
+    });
+    this.user.unlock(this.pageAddSecretPhrase, true).then(() => {
+      this.$location.path('home');
+    });
+  }
+
+  pageSinginLogin() {
+    this.$scope.$evalAsync(()=>{
+      this.pageSigninWrongPincode = false;
+      var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
+      if (key) {
+        this.user.unlock(key.secretPhrase, false).then(() => {
+          this.$location.path('home');
+        });
+      }
+      else {
+        this.pageSigninWrongPincode = true;
+      }
+    })
+  }
+
+  createAccount() {
+    this.$scope.$evalAsync(()=>{
+      this.pageCreateLoading = true;
+      this.pageCreateError = null;
+    });
+    var isprivate = this.pageCreateNameType != 'public';
+    var signatureArg: string;
+    var fullNameUTF8 = this.pageCreateUserName.trim();            // UTF-8
+    var nameHashStr  = heat.crypto.fullNameToHash(fullNameUTF8);  // UTF-8 0-9+
+    var publicKey    = this.pageCreatePublicKey;                  // HEX str
+
+    if (isprivate) {
+      var input        = converters.stringToHexString(nameHashStr + this.pageCreateAccount);
+      heat.crypto.SHA256.init();
+      heat.crypto.SHA256.update(converters.hexStringToByteArray(input));
+      var message      = converters.byteArrayToHexString(heat.crypto.SHA256.getBytes());
+      signatureArg     = heat.crypto.signBytes(message, converters.stringToHexString(this.pageCreateSecretPhrase));
+      if (!heat.crypto.verifyBytes(signatureArg, message, publicKey)) {
+        throw new Error("Cant verify own signature");
+      }
+    }
+    else {
+      var input        = converters.stringToHexString(fullNameUTF8 + nameHashStr + this.pageCreateAccount);
+      heat.crypto.SHA256.init();
+      heat.crypto.SHA256.update(converters.hexStringToByteArray(input));
+      var message      = converters.byteArrayToHexString(heat.crypto.SHA256.getBytes());
+      signatureArg     = heat.crypto.signBytes(message, converters.stringToHexString(this.pageCreateSecretPhrase));
+      if (!heat.crypto.verifyBytes(signatureArg, message, publicKey)) {
+        throw new Error("Cant verify own signature");
+      }
+    }
+    this.heat.api.registerAccountName(this.pageCreatePublicKey, this.pageCreateRecaptchaResponse, fullNameUTF8, isprivate, signatureArg).then(
+      (transaction: string) => {
+        this.$scope.$evalAsync(()=>{
+          this.pageCreateLoading = false;
+          this.pageCreateSuccess = true;
+        });
+      },
+      (error: ServerEngineError) => {
+        this.$scope.$evalAsync(()=>{
+          this.pageCreateLoading = false;
+          this.pageCreateError = error.description;
+        });
+      }
+    );
+  }
+
+  isValidPincode(pincode) {
+    return /^\d{4,15}$/.test(pincode);
   }
 
   generateNewSecretPhrase() {
     this.secretGenerator.generate('en').then((secretPhrase) => {
       this.$scope.$evalAsync(() => {
-        this.secretPhrase = secretPhrase;
-        this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
-        this.account = heat.crypto.getAccountIdFromPublicKey(this.publicKey);
+        this.pageCreateSecretPhrase = secretPhrase;
+        this.pageCreatePublicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
+        this.pageCreateAccount = heat.crypto.getAccountIdFromPublicKey(this.pageCreatePublicKey);
       });
     });
   }
 
-  isValidPincode(pincode) {
-    return /^\d{5}$/.test(pincode);
+  printPassphrase() {
+    var html = '<html><head>' +
+      '<style type="text/css">html{font-family:GillSans,Calibri,Trebuchet,sans-serif;}</style>' +
+      '</head><body>'+this.templateHTML()+'</body></html>';
+    var popup = window.open(`data:text/html;base64,${btoa(html)}`,
+      '_blank', 'toolbar=0,location=0,menubar=0');
+    popup.print();
+    popup.close();
   }
 
-  pincodeChanged() {
-    this.key = this.localKeyStore.load(this.account, this.pincode);
-    this.secretPhrase = null;
-    if (this.key != null) {
-      this.secretPhrase = this.key.secretPhrase;
-    }
+  savePassphrase() {
+    var blob = new Blob([this.templateText()], {type: "text/plain;charset=utf-8"});
+    saveAs(blob, `heatledger-${this.pageCreateUserName}-${this.pageCreateAccount}.txt`);
+  }
+
+  templateText() {
+    return [
+      'When stored the passphrase in this document will forever give you access to your HEAT funds.',
+      '',
+      `Account: ${this.pageCreateUserName} (${this.pageCreateAccount})`,
+      '',
+      'Passphrase:',
+      this.pageCreateSecretPhrase,
+      '',
+      `Publickey:`,
+      this.pageCreatePublicKey,
+      '',
+      'https://heatwallet.com'].join('\r\n');
+  }
+
+  templateHTML() {
+    return [
+      '<h1>HEAT Paper Wallet</h1>',
+      '',
+      'When stored the passphrase in this document will forever give you access to your HEAT funds.',
+      '',
+      `Paper wallet for <b>${this.pageCreateUserName}</b> (${this.pageCreateAccount})`,
+      '',
+      'Passphrase:',
+      `<u>${this.pageCreateSecretPhrase}</u>`,
+      '',
+      `Publickey:`,
+      this.pageCreatePublicKey,
+      '',
+      '<a href="https://heatwallet.com" target="_blank">https://heatwallet.com</a>'].join('<br>');
+  }
+
+  createLocalAccount() {
+    this.localKeyStore.add({
+      account: this.pageCreateAccount,
+      secretPhrase: this.pageCreateSecretPhrase,
+      pincode: this.pageCreatePincode,
+      name: this.pageCreateUserName
+    });
+    this.user.unlock(this.pageCreateSecretPhrase, true).then(() => {
+      this.$location.path('new');
+    });
   }
 
   copy(element: string, successMsg: string) {
     this.clipboard.copyWithUI(document.getElementById(element), successMsg);
   }
 
-  addAccount($event) {
-    this.localKeyStore.add({
-      account: this.account,
-      secretPhrase: this.secretPhrase,
-      pincode: this.pincode
-    });
-    this.login();
+  doChallenge() {
+    this.showChallenge().then((response : string) => {
+      this.$scope.$evalAsync(() => {
+        this.pageCreateRecaptchaResponse = response;
+      });
+    })
   }
 
-  secretPhraseChanged() {
-    this.publicKey = heat.crypto.secretPhraseToPublicKey(this.secretPhrase);
-    this.account = heat.crypto.getAccountIdFromPublicKey(this.publicKey);
-    this.secretPhraseHasHiddenChars = this.hasWhitespace.test(this.secretPhrase);
-    this.$scope.$evalAsync(() => {
-      this.calculatedAccountId = this.account;
-    });
-  }
-
-  removeSecretPhraseHiddenChars() {
-    this.$scope.$evalAsync(() => {
-      this.secretPhrase = this.secretPhrase.replace(/^\s+/, "").replace(/\s+$/, "");
-      this.secretPhraseChanged();
-    });
-  }
-
-  loginSecretPhrase() {
-    this.user.unlock(this.secretPhrase, false).then(() => {
-      this.$location.path('home');
-    });
-  }
-
-  login() {
-    this.setLoading(true);
-    this.isExistingAccount().then((exists) => {
-      this.setLoading(false);
-      if (exists) {
-        this.user.unlock(this.secretPhrase, false).then(() => {
-          this.$location.path('home');
-        });
-      }
-      else {
-        this.user.unlock(this.secretPhrase, true).then(() => {
-          this.$location.path('new');
-        });
-      }
-    }).catch((error) => {
-      this.setLoading(false);
-      this.$mdToast.show(
-        this.$mdToast.simple()
-            .textContent("Error: " + error.description)
-            .hideDelay(6000)
-      );
-    });
-  }
-
-  isExistingAccount(): angular.IPromise<boolean> {
+  showChallenge() : angular.IPromise<string> {
     var deferred = this.$q.defer();
-    /*
-    this.heat.api.getAccountBalance(this.account, "0").then(() => {
-      deferred.resolve(true);
-    }).catch((error: ServerEngineError) => {
-      if (error.code == 5 && error.description == "Unknown account") {
-        deferred.resolve(false);
+    if (angular.isDefined(this.pageCreateRecaptchaWindow)) {
+      this.pageCreateRecaptchaWindow.close();
+      this.pageCreateRecaptchaWindow = null;
+    }
+    var url = this.settings.get(SettingsService.CAPTCHA_POPUP);
+    this.pageCreateRecaptchaWindow = <Window> window.open(url,"New Window", "width=600,height=600,resizable=1,modal=1");
+    var resolved = false;
+    window.addEventListener("message", (event) => {
+      try {
+        var data = JSON.parse(event.data);
+        switch (data.messageType) {
+          case "token": {
+            if (angular.isString(data.message.response)) {
+              resolved = true;
+              deferred.resolve(data.message.response);
+              this.pageCreateRecaptchaWindow.close();
+            }
+            break;
+          }
+          case "beforeunload": {
+            if (!resolved) {
+              resolved = true;
+              deferred.resolve(null);
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Postmessage parse error', e);
       }
-      else {
-        deferred.reject(error);
-      }
-    });
-    */
+    }, false);
     return deferred.promise;
   }
 }
