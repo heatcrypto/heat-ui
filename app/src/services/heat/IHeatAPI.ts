@@ -21,6 +21,12 @@
  * SOFTWARE.
  * */
 interface IHeatAPI {
+
+  /**
+   * Registers account name through heatledger
+   */
+  registerAccountName(publicKey: string, captcha: string, name: string, isprivate: boolean, signature: string): angular.IPromise<string>;
+
   /**
    * Get the state of the server node and network
    */
