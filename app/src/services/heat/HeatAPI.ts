@@ -33,6 +33,10 @@ class HeatAPI implements IHeatAPI {
               private user: UserService,
               private $q: angular.IQService) {}
 
+  registerAccountName(publicKey: string, captcha: string, name: string, isprivate: boolean, signature: string): angular.IPromise<string> {
+    return this.heat.get(`/register/now/${publicKey}/${captcha}/${name}/${isprivate}/${signature}`, 'value');
+  }
+
   getBlockchainStatus():angular.IPromise<IHeatBlockchainStatus> {
     return this.heat.get('/blockchain/status');
   }
