@@ -213,6 +213,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
   }
 
+  getOHLCChartData(currency: string, asset: string, window: string): angular.IPromise<Array<IHeatChart>> {
+    return this.heat.get(`/exchange/chartdata/${currency}/${asset}/${window}`);
+  }
+
   getMiningInfo(secretPhrase: string): angular.IPromise<Array<IHeatMiningInfo>> {
     return this.heat.post('/mining/info?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
   }
