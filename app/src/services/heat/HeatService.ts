@@ -181,7 +181,7 @@ class HeatService {
     else if (this.env.type == EnvType.NODEJS) {
       var host = localHostOnly ?
         this.settings.get(SettingsService.HEAT_HOST_LOCAL) :
-        this.settings.get(SettingsService.HEAT_HOST_LOCAL);
+        this.settings.get(SettingsService.HEAT_HOST);
       let address = host.replace(/^(\w+:\/\/)/,'');
       if (localHostOnly) {
         if (address.indexOf('localhost')!=0) {
