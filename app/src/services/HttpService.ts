@@ -51,15 +51,15 @@ class HttpService {
   }
 
   private nodeHttpGet(url: string, onSuccess: Function, onFailure: Function) {
-    var parsed = require('url').parse(url);
-    var isHttps = url.indexOf('https://') == 0;
+    var _url = require('url').parse(url);
     var options = {
-      hostname: parsed.hostname, port: parsed.port, path: parsed.path, method: 'GET',
+      hostname: _url.hostname, port: _url.port, path: _url.path, method: 'GET',
       headers: {
-        'Content-Type': 'application/text'
+      'Content-Type': 'application/text'
       }
     };
-    var http = require(isHttps ? 'https':'http');
+
+    var http = require(_url.protocol.indexOf('https')==0 ? 'https':'http');
     var req = http.request(options, (res) => {
       res.setEncoding('utf8');
       var body = [];
