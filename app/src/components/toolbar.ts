@@ -49,6 +49,10 @@
           <md-tooltip md-direction="bottom">Home</md-tooltip>
           <md-icon md-font-library="material-icons" ng-mouseover="alert('no')">home</md-icon>
         </md-button>
+        <md-button aria-label="zoomchart" class="md-icon-button" href="#/zoomchart">
+          <md-tooltip md-direction="bottom">zoomchart</md-tooltip>
+          <md-icon md-font-library="material-icons">bubble_chart</md-icon>
+        </md-button>
         <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
           <md-tooltip md-direction="bottom">Send Heat</md-tooltip>
           <md-icon md-font-library="material-icons">toll</md-icon>
