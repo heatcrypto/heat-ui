@@ -55,7 +55,15 @@ class HeatService {
               private settings: SettingsService,
               private user: UserService,
               private $timeout: angular.ITimeoutService,
-              private env: EnvService) {}
+              private env: EnvService) {
+    if (env.type==EnvType.NODEJS) {
+      try {
+        require('ssl-root-cas').inject();
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
 
   getAuthData(): Object {
     var timestamp = Date.now();

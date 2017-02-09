@@ -26,7 +26,15 @@ class HttpService {
 
   constructor(private $http: angular.IHttpService,
               private env: EnvService,
-              private $q: angular.IQService) {}
+              private $q: angular.IQService) {
+    if (env.type==EnvType.NODEJS) {
+      try {
+        require('ssl-root-cas').inject();
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
 
   public get(url:string): angular.IPromise<string> {
     var deferred = this.$q.defer();
