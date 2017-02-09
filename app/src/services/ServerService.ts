@@ -135,6 +135,7 @@ class ServerService extends EventEmitter {
     var lines = msg.split(/(\r?\n)/g);
     for (var i=0; i<lines.length; i++) {
       if (lines[i].match(/\S/)) {
+        lines[i] = new String(lines[i]);
         this.buffer.splice(this.buffer.length-1, 0, lines[i]); // must add at index 1 before last to keep last line for proper console display
         if (this.buffer.length > this.MAX_CONSOLE_LINE_LENGTH) {
           this.buffer.splice(0, this.buffer.length - this.MAX_CONSOLE_LINE_LENGTH);
