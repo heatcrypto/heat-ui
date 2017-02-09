@@ -73,15 +73,19 @@ class SendmessageDialog extends GenericDialog {
                     this.fields['recipientPublicKey'].value = publicKey;
                     $scope.$evalAsync(()=>{
                       this.fields['message'].visible(true);
+                      this.fields['messagWarning'].visible(false);
                     });
                   },()=>{
                     $scope.$evalAsync(()=>{
                       this.fields['message'].visible(false);
+                      this.fields['messagWarning'].visible(true);
                     });
                   }
                 );
               }).
               required(),
+      builder.staticText('messagWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
+             .visible(true),
       builder.text('message', this.userMessage).
               rows(2).
               visible(false).
