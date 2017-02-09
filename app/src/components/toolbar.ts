@@ -134,6 +134,12 @@
                 Sign in
               </md-button>
             </md-menu-item>
+            <md-menu-item ng-if="vm.isNodeEnv">
+              <md-button aria-label="exit" ng-click="vm.exit()">
+                <md-icon md-font-library="material-icons">exit_to_app</md-icon>
+                Exit
+              </md-button>
+            </md-menu-item>
           </md-menu-content>
         </md-menu>
       </div>
@@ -141,7 +147,7 @@
   `
 })
 @Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer',
-  'assetIssue','whitelistMarket','storage','HTTPNotify')
+  'assetIssue','whitelistMarket','storage','HTTPNotify','$window')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -159,7 +165,8 @@ class ToolbarComponent {
               private assetIssue: AssetIssueService,
               private whitelistMarket: WhitelistMarketService,
               private storage: StorageService,
-              private HTTPNotify: HTTPNotifyService) {
+              private HTTPNotify: HTTPNotifyService,
+              private $window: angular.IWindowService) {
     this.isNodeEnv=env.type==EnvType.NODEJS;
   }
 
@@ -216,6 +223,10 @@ class ToolbarComponent {
 
   signout() {
     this.user.lock();
+  }
+
+  exit() {
+    this.$window.close();
   }
 
   about($event) {
