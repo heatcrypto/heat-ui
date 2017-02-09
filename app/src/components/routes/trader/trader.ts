@@ -130,6 +130,10 @@ declare var Big: any;
   trader .right-align, trader input {
     text-align: right;
   }
+  trader .certified {
+    font-weight: bold;
+    text-decoration: underline;
+  }
   `],
   template: `
     <div layout="row" flex layout-fill>
@@ -137,15 +141,18 @@ declare var Big: any;
           md-is-locked-open="vm.marketsSidenavLockedOpen" md-is-open="vm.marketsSidenavOpen"
           md-disable-backdrop flex layout-fill>
         <div layout="column" flex layout-fill>
-          <trader-balances currency="vm.currency" asset="vm.asset" layout="column" ng-if="vm.user.unlocked"></trader-balances>
-          <trader-markets currency="vm.currency" asset="vm.asset" layout="column" flex layout-fill></trader-markets>
+          <trader-balances layout="column" ng-if="vm.user.unlocked"></trader-balances>
+          <trader-markets layout="column" flex layout-fill></trader-markets>
           <trader-trollbox layout="column"></trader-trollbox>
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div layout="column" layout-gt-sm="row" flex layout-fill>
-          <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
-          <trader-chart class="trader-component" currency="vm.currency" asset="vm.asset" flex layout="column" layout-fill></trader-chart>
+        <div layout="column" flex layout-fill>
+          <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
+          <div layout="column" layout-gt-sm="row" flex layout-fill>
+            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
+            <trader-chart class="trader-component" flex layout="column" layout-fill currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
+          </div>
         </div>
         <div layout="column" layout-gt-sm="row" flex layout-fill>
           <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-orders-buy>
@@ -158,20 +165,6 @@ declare var Big: any;
         </div>
       </div>
     </div>
-
-        <!--
-        <trader-markets currency="vm.marketCurrency" sort="vm.marketSort" asc="vm.marketAsc" flex layout="column" layout-fill></trader-markets>
-        <trader-trollbox currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-trollbox>
-        <trader-chart currency="vm.currency" asset="vm.asset" flex layout="column" layout-fill style="min-height:200px"></trader-chart>
-        <trader-market-label currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-market-label>
-        <trader-market-volume-price currency="vm.currency" asset="vm.asset" flex layout="column" layout-fill></trader-market-volume-price>
-        <trader-markets currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-markets>
-        <trader-orders-buy currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-orders-buy>
-        <trader-orders-sell currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-orders-sell>
-        <trader-orders-my currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-orders-my>
-        <trader-quick-buy currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-quick-buy>
-        <trader-quick-sell currency="vm.currency" asset="vm.asset" account="vm.user.account" flex layout="column" layout-fill></trader-quick-sell>
-        -->
   `
 })
 @Inject('$scope','user','$timeout','assetInfo','$mdSidenav')

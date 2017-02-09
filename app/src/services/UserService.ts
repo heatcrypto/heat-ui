@@ -88,8 +88,9 @@ class UserService extends EventEmitter {
   lock() {
     this.secretPhrase = null;
     this.unlocked = null;
+    this.account = null;
     this.emit(UserService.EVENT_LOCKED);
-    this.$window.location.reload();
+    this.$location.path('login');
   }
 
   requireLogin() {

@@ -116,20 +116,31 @@ module utils {
   }
 
   export function formatQNT(quantity: string, decimals: number, returnNullZero?: boolean): string {
-    var asfloat = utils.convertToQNTf(quantity, 8);
+    var asfloat = utils.convertToQNTf(quantity);
     var cf = utils.commaFormat(asfloat);
     var parts = cf.split('.');
     var ret;
     if (!parts[1])
       ret = parts[0] + "." + "0".repeat(decimals);
-    else if (parts[1].length > decimals)
-      ret = parts[0] + "." + parts[1].substr(0, decimals);
+    else if (parts[1].length > decimals) {
+      var i=parts[1].length-1;
+      while (parts[1].length > decimals) {
+        if (parts[1][i]=="0") {
+          parts[1] = parts[i].slice(0,-1);
+          i--;
+          continue;
+        }
+        break;
+      }
+      ret = parts[0] + "." + parts[1];
+    }
     else
       ret = parts[0] + "." + parts[1] + "0".repeat(decimals-parts[1].length);
     return returnNullZero && !ret.match(/[^0\.]/) ? null : ret;
   }
 
-  export function convertToQNTf(quantity: string, decimals: number = 8): string {
+  export function convertToQNTf(quantity: string): string {
+    var decimals = 8
     if (typeof quantity == 'undefined') {
       return '0';
     }
@@ -169,7 +180,8 @@ module utils {
    *
    * @throws utils.ConvertToQNTError
    */
-  export function convertToQNT(quantity: string, decimals: number = 8): string {
+  export function convertToQNT(quantity: string /*, decimals: number = 8 */): string {
+    var decimals = 8; // qnts all have 8 decimals.
     var parts = quantity.split(".");
     var qnt   = parts[0];
     if (parts.length == 1) {

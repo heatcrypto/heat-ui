@@ -171,7 +171,7 @@ abstract class AbstractTransaction {
       if (data.recipientPublicKey)
         this.confirm("recipientPublicKey", heat.crypto.getAccountIdFromPublicKey(data.recipientPublicKey), transaction.recipient);
       else
-        this.confirm("recipient", "1739068987193023818", transaction.recipient);
+        this.confirm("recipient", "8150091319858025343", transaction.recipient);
     }
 
     transaction.amount = String(converters.byteArrayToBigInteger(byteArray, 48)); // 8

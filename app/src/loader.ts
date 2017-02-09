@@ -22,6 +22,8 @@
  * */
 module heat {
 
+  export var isTestnet = window.localStorage.getItem('testnet')=='true';
+
   export var $inject: angular.auto.IInjectorService;
 
   export class Loader {
@@ -43,22 +45,24 @@ module heat {
 
         function isUnlocked() {
           if (!user.unlocked) {
-            if (!/\/login\/\w+/.test($location.path())) {
-              $location.path('login');
+            if (!(/\/trader\/\w+/.test($location.path()) || /\/explorer\/\w+/.test($location.path()))) {
+              if (!/\/login\/\w+/.test($location.path())) {
+                $location.path('login');
+              }
             }
           }
           // Live agent show-hide contact button.
-          var el = angular.element(document.documentElement);
-          if (/\/claim/.test($location.path()) || /\/claim2\/\w+/.test($location.path())) {
-            if (el.hasClass('hide-live-agent')) {
-              el.removeClass('hide-live-agent');
-            }
-          }
-          else {
-            if (!el.hasClass('hide-live-agent')) {
-              el.addClass('hide-live-agent');
-            }
-          }
+          // var el = angular.element(document.documentElement);
+          // if (/\/claim/.test($location.path()) || /\/claim2\/\w+/.test($location.path())) {
+          //   if (el.hasClass('hide-live-agent')) {
+          //     el.removeClass('hide-live-agent');
+          //   }
+          // }
+          // else {
+          //   if (!el.hasClass('hide-live-agent')) {
+          //     el.addClass('hide-live-agent');
+          //   }
+          // }
         }
 
         isUnlocked();
@@ -84,7 +88,8 @@ module heat {
         'noCAPTCHA',
         'md.data.table',
         'ngSanitize',
-        'duScroll'
+        'duScroll',
+        'dc.inputAddOn'
       ]);
     }
 

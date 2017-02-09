@@ -20,44 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Component({
-  selector: 'money',
-  inputs: ['@hideplusmin','@precision','amount','outgoing','symbol'],
-  template: `
-    <b>
-      <span ng-hide="vm.hideplusmin=='true'">{{vm.outgoing?'-':'+'}} </span>
-      <span>{{ vm.amountFormatted }}</span>
-    </b>&nbsp;<small>{{ vm.symbol }}</small>
-  `
-})
-@Inject('$scope','user')
-class Money {
-
-  amount: string;
-  amountNXT: string;
-  amountFormatted: string;
-  precision: string;
-  outgoing: boolean;
-  symbol: string;
-
-  constructor($scope: angular.IScope, public user: UserService) {
-    $scope.$watch(() => this.amount, () => { this.render() });
-    this.render();
-    this.symbol = this.symbol || this.user.accountColorName;
-    $scope.$watch('vm.precision',()=>{
-      this.render();
+module dialogs {
+  export function shutdown($event) {
+    dialogs.dialog({
+      id: 'shutdown',
+      title: 'Shutting down',
+      targetEvent: $event,
+      okButton: false,
+      template: `
+        <div layout="row" layout-padding layout-align=center center" flex>
+          <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+        </div>
+      `
     })
-  }
-
-  render() {
-    /*
-    var precision = this.precision ? parseInt(this.precision) : 8;
-    this.amountNXT = utils.convertNQT(this.amount, precision);
-    var fraction = this.fraction ? parseInt(this.fraction) : 0;
-    if (fraction) {
-      this.amountNXT = utils.roundTo(this.amountNXT, fraction);
-    }
-    */
-    this.amountFormatted = utils.formatQNT(this.amount,parseInt(this.precision));
   }
 }

@@ -4,28 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
     <title>HEAT</title>
-    <style>html, body { height: 100%; }
-           md-input-container .md-errors-spacer { min-height: 0; }
-           *:not(md-icon) {
-             font-size: 12px !important;
-           }
-           md-sidenav {
-              max-width: 280px !important;
-           }
-           md-toolbar.main-toolbar {
-              min-height: 34px !important;
-           }
-           md-toolbar.main-toolbar .md-toolbar-tools {
-              height: inherit !important;
-           }
-           md-input-container {
-             margin-top: 0px !important;
-             margin-bottom: 8px !important;
-           }
-           md-dialog h2 {
-             font-weight: bold !important;
-             font-size: 14px !important;
-           }</style>
+    <style>
+      html, body { height: 100%; }
+      md-input-container .md-errors-spacer { min-height: 0; }
+      *:not(md-icon) { font-size: 12px !important; }
+      md-sidenav { max-width: 280px !important; }
+      md-toolbar.main-toolbar { min-height: 34px !important; }
+      md-toolbar.main-toolbar .md-toolbar-tools { height: inherit !important; }
+      md-input-container { margin-top: 0px !important; margin-bottom: 8px !important; }
+      md-dialog h2 { font-weight: bold !important; font-size: 14px !important; }
+    </style>
     <!-- build:inlinecss -->
     <link rel='stylesheet' href='loading/loading.css'>
     <!-- endbuild -->
@@ -52,9 +40,6 @@
     <!-- endbuild -->
 
     <div layout="column" flex layout-fill class="application-content">
-      <div layout="row" style="background-color:yellow" flex>
-        <center><b>TEST VERSION - DUMMY HEAT TOKENS - ALL DATA WILL BE DISCARDED</b></center>
-      </div>
       <div layout="row" flex  layout-fill>
         <div flex layout-fill layout="column">
           <toolbar></toolbar>
@@ -96,9 +81,10 @@
   <script src="../app/node_helpers/make-dcodeIO-bytebuffer-global.js" defer></script>
   <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <!-- endbuild -->
+
   <!-- build:chart charting.js -->
   <script src="../app/node_helpers/make-nodejs-hidden.js" defer></script>
-  <script src="../node_modules/techan/node_modules/d3/d3.js" defer></script>
+  <script src="../node_modules/d3/build/d3.js" defer></script>
   <script src="../node_modules/techan/dist/techan.js" defer></script>
   <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <!-- endbuild -->
@@ -112,6 +98,7 @@
     });
   </script>
   <script type="text/javascript" defer>
+    /*
     document.addEventListener("DOMContentLoaded", function() {
       (function(d, src, c) { var t=d.scripts[d.scripts.length - 1],s=d.createElement('script');s.id='la_x2s6df8d';s.async=true;s.src=src;s.onload=s.onreadystatechange=function(){var rs=this.readyState;if(rs&&(rs!='complete')&&(rs!='loaded')){return;}c(this);};t.parentElement.insertBefore(s,t.nextSibling);})(document,
       'https://heatledger.ladesk.com/scripts/track.js',
@@ -126,5 +113,6 @@
         `);
       });
     });
+    */
   </script>
 </html>

@@ -27,79 +27,67 @@ interface AssetInfo {
   decimals: number;
   symbol: string;
   name: string;
+  certified: boolean;
 }
 
 interface AssetPropertiesProtocol1 {
   symbol: string;
   name: string;
+  certified?: boolean;
 }
 
 @Service('assetInfo')
-@Inject('heat', '$q')
+@Inject('heat', '$q','assetCertification','http')
 class AssetInfoService {
 
   cache: IStringHashMap<AssetInfo> = {};
 
-  constructor(private heat: HeatService, private $q: angular.IQService) {
+  constructor(private heat: HeatService,
+              private $q: angular.IQService,
+              private assetCertification: AssetCertificationService,
+              private http: HttpService) {
     this.cache["0"] = {
       id: "0",
       description: "HEAT Cryptocurrency",
       descriptionUrl: "",
       decimals: 8,
       symbol: "HEAT",
-      name: "HEAT"
+      name: "HEAT Cryptocurrency",
+      certified: true
     };
-  }
-
-  hasInfo(asset: string): boolean {
-    return angular.isDefined(this.cache[asset]);
-  }
-
-  getInfoSync(asset: string): AssetInfo {
-    return this.cache[asset];
   }
 
   getInfo(asset: string): angular.IPromise<AssetInfo> {
     var deferred = this.$q.defer();
-    if (this.hasInfo(asset)) {
-      deferred.resolve(this.getInfoSync(asset));
-    }
-    else {
-      this.lookupInfo(asset).then(deferred.resolve, deferred.reject);
-    }
-    return deferred.promise;
-  }
-
-  lookupInfo(asset: string): angular.IPromise<AssetInfo> {
-    var deferred = this.$q.defer();
-    if (asset == "0") {
-      deferred.resolve({
-        id: asset,
-        description: "HEAT",
-        descriptionUrl: "",
-        decimals: 8,
-        symbol: "HEAT",
-        name: "HEAT"
-      });
+    if (angular.isDefined(this.cache[asset])) {
+      deferred.resolve(this.cache[asset]);
     }
     else {
       this.heat.api.getAssetProperties(asset, "0", 1).then((data) => {
         var properties = this.parseProperties(data.properties, {
           symbol: asset.substring(0, 4),
-          name: asset
-        })
-        deferred.resolve({
+          name: asset,
+          certified: false
+        });
+        var info: AssetInfo = {
           id: asset,
-          description: "should hold description",
+          description: null,
           descriptionUrl: data.descriptionUrl,
           decimals: data.decimals,
           symbol: properties.symbol,
-          name: properties.name
-        });
+          name: properties.name,
+          certified: false
+        };
+        this.assetCertification.getInfo(asset).then((certificationData)=> {
+          if (certificationData.certified) {
+            info.symbol = certificationData.symbol;
+            info.name = certificationData.name;
+            info.certified = certificationData.certified;
+          }
+          deferred.resolve(info);
+        }, deferred.reject);
       }, deferred.reject);
     }
-    //this.cache[asset] = ret;
-    //deferred.resolve(ret);
     return deferred.promise;
   }
 
@@ -108,7 +96,8 @@ class AssetInfoService {
       var json = JSON.parse(properties);
       return {
         symbol: json[0],
-        name: json[1]
+        name: json[1],
+        certified: false
       };
     } catch (e) {
       //console.error(e);
@@ -118,5 +107,19 @@ class AssetInfoService {
 
   public stringifyProperties(properties: AssetPropertiesProtocol1) {
     return JSON.stringify([properties.symbol, properties.name]);
+  }
+
+  public getAssetDescription(info: AssetInfo): angular.IPromise<string> {
+    var deferred = this.$q.defer();
+    if (angular.isString(info.description) || !info.descriptionUrl) {
+      deferred.resolve(info.description||"No description available ...");
+    }
+    else {
+      this.http.get(info.descriptionUrl).then((text)=>{
+        info.description = text;
+        deferred.resolve(text);
+      }, deferred.reject);
+    }
+    return deferred.promise;
   }
 }

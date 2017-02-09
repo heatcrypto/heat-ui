@@ -1,3 +1,4 @@
+///<reference path='AbstractDialogField.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.
@@ -20,44 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Component({
-  selector: 'money',
-  inputs: ['@hideplusmin','@precision','amount','outgoing','symbol'],
-  template: `
-    <b>
-      <span ng-hide="vm.hideplusmin=='true'">{{vm.outgoing?'-':'+'}} </span>
-      <span>{{ vm.amountFormatted }}</span>
-    </b>&nbsp;<small>{{ vm.symbol }}</small>
-  `
-})
-@Inject('$scope','user')
-class Money {
-
-  amount: string;
-  amountNXT: string;
-  amountFormatted: string;
-  precision: string;
-  outgoing: boolean;
-  symbol: string;
-
-  constructor($scope: angular.IScope, public user: UserService) {
-    $scope.$watch(() => this.amount, () => { this.render() });
-    this.render();
-    this.symbol = this.symbol || this.user.accountColorName;
-    $scope.$watch('vm.precision',()=>{
-      this.render();
-    })
-  }
-
-  render() {
-    /*
-    var precision = this.precision ? parseInt(this.precision) : 8;
-    this.amountNXT = utils.convertNQT(this.amount, precision);
-    var fraction = this.fraction ? parseInt(this.fraction) : 0;
-    if (fraction) {
-      this.amountNXT = utils.roundTo(this.amountNXT, fraction);
-    }
-    */
-    this.amountFormatted = utils.formatQNT(this.amount,parseInt(this.precision));
+class DialogFieldStatic extends AbstractDialogField {
+  constructor($scope, name: string, _default?: any) {
+    super($scope, name, _default || '');
+    this.selector('field-static');
   }
 }
+
+@Component({
+  selector: 'fieldStatic',
+  inputs: ['label','value','changed','f'],
+  template: `
+    <ng-form name="userForm" layout="row" ng-show="vm.f._visible">
+      <md-input-container class="md-block" flex ng-class="{'async-validator-pending':userForm.userField.$pending}">
+        <label ng-if="vm.label">{{vm.label}}</label>
+        <p>{{vm.value}}</p>
+      </md-input-container>
+    </ng-form>
+  `
+})
+class DialogFieldStaticComponent {}

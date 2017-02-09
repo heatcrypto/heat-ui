@@ -28,12 +28,19 @@ module dialogs {
       title: 'About',
       targetEvent: $event,
       template: `
-        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationVersion}}</p>
+        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationBuild}}</p>
+        <p><a href="#" ng-click="vm.toggleTestnet()">Go to {{vm.isTestnet?'main':'test'}} net</a></p>
       `,
       locals: {
         applicationName: settings.get(SettingsService.APPLICATION_NAME),
         applicationVersion: settings.get(SettingsService.APPLICATION_VERSION),
         applicationBuild: settings.get(SettingsService.APPLICATION_BUILD),
+        isTestnet: window.localStorage.getItem('testnet')=='true',
+        toggleTestnet: () => {
+          let toggle = (window.localStorage.getItem('testnet')=='true') ? 'false':'true';
+          window.localStorage.setItem('testnet',toggle);
+          window.location.reload();
+        }
       }
     })
   }

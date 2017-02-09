@@ -71,12 +71,24 @@ class SendmessageDialog extends GenericDialog {
                 this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
+                    $scope.$evalAsync(()=>{
+                      this.fields['message'].visible(true);
+                      this.fields['messagWarning'].visible(false);
+                    });
+                  },()=>{
+                    $scope.$evalAsync(()=>{
+                      this.fields['message'].visible(false);
+                      this.fields['messagWarning'].visible(true);
+                    });
                   }
                 );
               }).
               required(),
+      builder.staticText('messagWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
+             .visible(true),
       builder.text('message', this.userMessage).
               rows(2).
+              visible(false).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
                 if (String(message).trim().length == 0) {

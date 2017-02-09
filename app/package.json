@@ -1,6 +1,6 @@
 {
-  "name": "heat",
-  "version": "0.1.0",
+  "name": "Heatwallet",
+  "version": "1.0.1",
   "description": "Heat Ledger Desktop Wallet",
   "main": "electron/electron.js",
   "scripts": {
@@ -8,16 +8,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Heat-Ledger-Ltd/heat-ui.git"
+    "url": "git+https://github.com/Heat-Ledger-Ltd/heatwallet.git"
   },
   "bugs": {
-    "url": "https://github.com/Heat-Ledger-Ltd/heat-ui/issues"
+    "url": "https://github.com/Heat-Ledger-Ltd/heatwallet/issues"
   },
   "author": {
-    "name":"Dennis de Klerk",
-    "email": "dennis@heatledger.com",
+    "name": "Heat Ledger Ltd.",
+    "email": "info@heatledger.com",
     "url": "http://heatledger.com"
   },
   "license": "MIT",
-  "homepage": "http://heatledger.com"
+  "homepage": "http://heatledger.com",
+  "dependencies": {
+    "child-process-promise": "^2.2.0",
+    "tree-kill": "^1.1.0"
+  }
 }

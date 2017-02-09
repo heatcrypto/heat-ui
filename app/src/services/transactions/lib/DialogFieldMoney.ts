@@ -24,7 +24,7 @@
 class DialogFieldMoney extends AbstractDialogField {
 
   private _precision: number = 8;
-  private _symbol: string = 'FIM';
+  private _symbol: string = 'HEAT';
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default);
@@ -32,7 +32,7 @@ class DialogFieldMoney extends AbstractDialogField {
     this.parse((value) => {
       if (value == '') return '';
       if (!utils.isNumber(value)) return undefined;
-      return utils.convertToQNT(value, this._precision);
+      return utils.convertToQNT(utils.unformat(value));
     });
     this.formatter((value) => {
       if (value === undefined || value == '') return undefined;
@@ -59,11 +59,11 @@ class DialogFieldMoney extends AbstractDialogField {
   selector: 'fieldMoney',
   inputs: ['label','value','changed','f'],
   template: `
-    <ng-form name="userForm">
+    <ng-form name="userForm" ng-show="vm.f._visible">
       <md-input-container class="md-block" ng-class="{'async-validator-pending':userForm.userField.$pending}">
         <label>{{vm.label}}<span ng-if="vm.f._symbol"> ({{vm.f._symbol}})</span></label>
         <input field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
-            name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly">
+            name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly" ng-disabled="vm.f._disabled">
         <md-progress-linear md-mode="indeterminate" ng-if="userForm.userField.$pending"></md-progress-linear>
         <div ng-messages="userForm.userField.$error" ng-if="userForm.userField.$dirty">
           <div ng-messages-include="error-messages"></div>

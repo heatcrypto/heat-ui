@@ -85,6 +85,13 @@ class AssetTransferDialog extends GenericDialog {
                 this.heat.api.getPublicKey(this.fields['recipient'].value).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
+                    $scope.$evalAsync(()=>{
+                      this.fields['message'].visible(true);
+                    });
+                  },()=>{
+                    $scope.$evalAsync(()=>{
+                      this.fields['message'].visible(false);
+                    });
                   }
                 );
               }).
@@ -120,7 +127,7 @@ class AssetTransferDialog extends GenericDialog {
                     (balance: IHeatAccountBalance) => {
                       try {
                         var avail = new Big(balance.unconfirmedBalance);
-                        var total = new Big(this.fields['amount'].value);
+                        var total = new Big(amount);
                         if (avail.gte(total) > 0) {
                           deferred.resolve();
                         }
@@ -139,6 +146,7 @@ class AssetTransferDialog extends GenericDialog {
               }),
       builder.text('message', this.userMessage).
               rows(2).
+              visible(false).
               asyncValidate("No recipient public key", (message) => {
                 var deferred = this.$q.defer();
                 if (String(message).trim().length == 0) {
