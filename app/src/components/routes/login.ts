@@ -101,7 +101,7 @@ declare var saveAs: any;
               <b>sorry, buts that the wrong pincode</b>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">Back</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page=''" aria-label="Back">Options</md-button>
               <md-button class="md-primary md-raised" ng-click="vm.pageSinginLogin()"
                 ng-disabled="!vm.pageSigninPincode||!vm.pageSigninAccount" aria-label="Continue in">Sign in</md-button>
             </div>
@@ -112,10 +112,10 @@ declare var saveAs: any;
             <div layout="row" flex layout-align="center center">
               <md-input-container flex>
                 <label>User name</label>
-                <input ng-model="vm.pageCreateUserName" required name="username" maxlength="100" input-append="@heatledger.com">
+                <input ng-model="vm.pageCreateUserName" required name="username" maxlength="100" input-append="@heatwallet.com">
               </md-input-container>
               <md-input-container flex style="max-width:120px !important">
-                <md-icon md-font-set="regular-font">@heatledger.com</md-icon>
+                <md-icon md-font-set="regular-font">@heatwallet.com</md-icon>
                 <input style="visibility: hidden;">
               </md-input-container>
             </div>
@@ -145,7 +145,7 @@ declare var saveAs: any;
               </md-radio-group>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">Back</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page=''" aria-label="Back">Options</md-button>
               <md-button class="md-raised" ng-click="vm.generateNewSecretPhrase()" aria-label="Other">
                 Renew pass
               </md-button>
@@ -169,7 +169,7 @@ declare var saveAs: any;
               <md-button ng-if="vm.useExternalCaptcha" ng-click="vm.doChallenge()" class="md-raised md-primary" ng-disabled="vm.pageCreateRecaptchaResponse">Click here</md-button>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-raised" ng-click="vm.page='create'" aria-label="Back">Back</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='create'" aria-label="Back">Options</md-button>
               <md-button class="md-primary md-raised" ng-click="vm.createAccount();vm.page='create2'" ng-disabled="!vm.pageCreateRecaptchaResponse"
                 aria-label="Continue">Create Account</md-button>
             </div>
@@ -325,6 +325,7 @@ class LoginComponent {
       this.isFileSaverSupported = !!new Blob;
     } catch (e) {}
     this.useExternalCaptcha = env.type!=EnvType.BROWSER;
+    this.generateNewSecretPhrase();
 
     this.localKeys = localKeyStore.list().map((account:string) => {
       return {
@@ -339,12 +340,6 @@ class LoginComponent {
     else {
       this.page='create';
     }
-
-    // this.apiServer = this.settings[SettingsService.HEAT_HOST]+":"+this.settings[SettingsService.HEAT_PORT];
-    // this.availableAPIServers.push(
-    //   this.settings.get(SettingsService.HEAT_HOST_REMOTE)+":"+this.settings.get(SettingsService.HEAT_PORT_REMOTE),
-    //   this.settings.get(SettingsService.HEAT_HOST_LOCAL)+":"+this.settings.get(SettingsService.HEAT_PORT_LOCAL)
-    // );
   }
 
   apiServerChanged() {
@@ -407,31 +402,19 @@ class LoginComponent {
       this.pageCreateLoading = true;
       this.pageCreateError = null;
     });
-    var isprivate = this.pageCreateNameType != 'public';
-    var signatureArg: string;
+    var isprivate    = this.pageCreateNameType != 'public';
     var fullNameUTF8 = this.pageCreateUserName.trim();            // UTF-8
     var nameHashStr  = heat.crypto.fullNameToHash(fullNameUTF8);  // UTF-8 0-9+
     var publicKey    = this.pageCreatePublicKey;                  // HEX str
-
-    if (isprivate) {
-      var input        = converters.stringToHexString(nameHashStr + this.pageCreateAccount);
-      heat.crypto.SHA256.init();
-      heat.crypto.SHA256.update(converters.hexStringToByteArray(input));
-      var message      = converters.byteArrayToHexString(heat.crypto.SHA256.getBytes());
-      signatureArg     = heat.crypto.signBytes(message, converters.stringToHexString(this.pageCreateSecretPhrase));
-      if (!heat.crypto.verifyBytes(signatureArg, message, publicKey)) {
-        throw new Error("Cant verify own signature");
-      }
-    }
-    else {
-      var input        = converters.stringToHexString(fullNameUTF8 + nameHashStr + this.pageCreateAccount);
-      heat.crypto.SHA256.init();
-      heat.crypto.SHA256.update(converters.hexStringToByteArray(input));
-      var message      = converters.byteArrayToHexString(heat.crypto.SHA256.getBytes());
-      signatureArg     = heat.crypto.signBytes(message, converters.stringToHexString(this.pageCreateSecretPhrase));
-      if (!heat.crypto.verifyBytes(signatureArg, message, publicKey)) {
-        throw new Error("Cant verify own signature");
-      }
+    var input        = isprivate ?
+      converters.stringToHexString(nameHashStr + this.pageCreateAccount) :
+      converters.stringToHexString(fullNameUTF8 + nameHashStr + this.pageCreateAccount);
+    heat.crypto.SHA256.init();
+    heat.crypto.SHA256.update(converters.hexStringToByteArray(input));
+    var message      = converters.byteArrayToHexString(heat.crypto.SHA256.getBytes());
+    var signatureArg = heat.crypto.signBytes(message, converters.stringToHexString(this.pageCreateSecretPhrase));
+    if (!heat.crypto.verifyBytes(signatureArg, message, publicKey)) {
+      throw new Error("Cant verify own signature");
     }
     this.heat.api.registerAccountName(this.pageCreatePublicKey, this.pageCreateRecaptchaResponse, fullNameUTF8, isprivate, signatureArg).then(
       (transaction: string) => {
