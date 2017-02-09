@@ -56,6 +56,7 @@ class SettingsService {
   public static LOG_HEAT_ERRORS = 'settings.log_heat_errors';
   public static LOG_HEAT_ALL = 'settings.log_heat_all';
   public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
+  public static LOG_HEAT_SERVER_ALL = 'settings.log_heat_server_all';
   public static HEAT_HOST = 'settings.heat_host';
   public static HEAT_PORT = 'settings.heat_port';
   public static HEAT_HOST_REMOTE = 'settings.heat_host_remote';
@@ -103,6 +104,7 @@ class SettingsService {
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
+    this.settings[SettingsService.LOG_HEAT_SERVER_ALL] = false;
     this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
     this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
     this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";

@@ -22,7 +22,7 @@
  * */
 declare var __dirname: any;
 @Service('server')
-@Inject('$rootScope','$q','$interval','$timeout')
+@Inject('$rootScope','$q','$interval','$timeout','settings')
 class ServerService extends EventEmitter {
   private MAX_CONSOLE_LINE_LENGTH = 20000;
   public isRunning: boolean = false;
@@ -36,7 +36,8 @@ class ServerService extends EventEmitter {
   constructor(private $rootScope: angular.IRootScopeService,
               private $q: angular.IQService,
               private $interval: angular.IIntervalService,
-              private $timeout: angular.ITimeoutService) {
+              private $timeout: angular.ITimeoutService,
+              private settings: SettingsService) {
     super();
     var onbeforeunload = () => {
       window.onbeforeunload = null;
@@ -123,7 +124,7 @@ class ServerService extends EventEmitter {
     if ((!msg || msg.trim().length == 0) && !error) return;
     if (error)
       console.log(msg,error);
-    else
+    else if (this.settings.get(SettingsService.LOG_HEAT_SERVER_ALL))
       console.log(msg);
     if (!this.isReady) {
       if (msg.indexOf('** HEATLEDGER SERVER READY **')!=-1) {
