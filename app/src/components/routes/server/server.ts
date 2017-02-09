@@ -32,6 +32,9 @@
       margin-left: 0px;
       margin-right: 0px;
     }
+    server md-switch {
+      padding-left: 8px !important;
+    }
     server .console {
       background-color: #424242;
       border: 1px solid #BDBDBD;
@@ -71,6 +74,12 @@
       <div layout="row" class="button-row">
         <md-button class="start-stop md-raised" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
         <md-button class="start-stop md-raised md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
+        <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
+          <md-tooltip md-direction="top">
+            Connect client API to remotehost or to your local machine
+          </md-tooltip>
+          Connect to {{ vm.connectedToLocalhost ? 'localhost' : 'remotehost' }}
+        </md-switch>
         <span flex></span>
         <div layout="row" layout-align="center center" class="mining-stats" ng-show="vm.isMining">
           <span>Remaining : </span>
@@ -98,7 +107,7 @@
     </div>
   `
 })
-@Inject('$scope','server','heat','user','HTTPNotify')
+@Inject('$scope','server','heat','user','HTTPNotify','settings')
 class ServerComponent {
   private ROW_HEIGHT = 12; // must match the `server .console pre { height: 12px }` style rule above
 
@@ -111,6 +120,11 @@ class ServerComponent {
   private miningRemaining: any = '*';
   private miningDeadline: any = '*';
   private miningHittime: any = '*';
+  private hostLocal: string;
+  private hostRemote: string;
+  private portLocal: string;
+  private portRemote: string;
+  private connectedToLocalhost: boolean;
 
   /* 2017-01-27 23:22:30 INFO: Pushed block 13300804393767116009 with height 2925 */
   private msgRegExp = /^([\d-]+\s[\d:]+)\s(\w+):\s(.*)/;
@@ -119,10 +133,16 @@ class ServerComponent {
               public server: ServerService,
               private heat: HeatService,
               private user: UserService,
-              HTTPNotify: HTTPNotifyService) {
+              HTTPNotify: HTTPNotifyService,
+              private settings: SettingsService) {
     HTTPNotify.on(()=> {
       this.updateMiningInfo();
-    }, $scope)
+    }, $scope);
+    this.hostLocal  = this.settings.get(SettingsService.HEAT_HOST_LOCAL);
+    this.hostRemote = this.settings.get(SettingsService.HEAT_HOST_REMOTE);
+    this.portLocal  = this.settings.get(SettingsService.HEAT_PORT_LOCAL);
+    this.portRemote = this.settings.get(SettingsService.HEAT_PORT_REMOTE);
+    this.connectedToLocalhost = this.isConnectedToLocalhost();
     this.onOutput = () => {
       $scope.$evalAsync(()=> {
         this.calculatedTopIndex = this.determineTopIndex();
@@ -152,6 +172,22 @@ class ServerComponent {
     return this.server.buffer.length;
   }
 
+  connectToLocalhostChanged() {
+    this.toggleConnectToLocalhost();
+  }
+
+  isConnectedToLocalhost(): boolean {
+    return this.settings.get(SettingsService.HEAT_HOST) == this.hostLocal &&
+           this.settings.get(SettingsService.HEAT_PORT) == this.portLocal;
+  }
+
+  toggleConnectToLocalhost() {
+    var host = this.isConnectedToLocalhost() ? this.hostRemote : this.hostLocal;
+    var port = this.isConnectedToLocalhost() ? this.portRemote : this.portLocal;
+    this.settings.put(SettingsService.HEAT_HOST, host);
+    this.settings.put(SettingsService.HEAT_PORT, port);
+  }
+
   startServer() {
     this.server.startServer()
   }
@@ -170,9 +206,15 @@ class ServerComponent {
     return Math.max(0, this.getLength()-this.consoleRowCount+2);
   }
 
+  /* msg is a string object from server service buffer. when asked for again we return the same instance */
   render(msg) {
-    var match = this.msgRegExp.exec(msg);
-    return match ? { timestamp: match[1], severity: match[2], message: match[3] } : { message: msg };
+    if (angular.isUndefined(msg))
+      return msg;
+    if (angular.isUndefined(msg.rendered)) {
+      var match = this.msgRegExp.exec(msg);
+      msg.rendered = match ? { timestamp: match[1], severity: match[2], message: match[3] } : { message: msg };
+    }
+    return msg.rendered;
   }
 
   startMining() {
