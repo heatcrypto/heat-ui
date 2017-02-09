@@ -42,14 +42,6 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
         }
         return valid ? value : undefined;
       });
-
-      //For model -> DOM validation
-      /*ngModel.$formatters.unshift(function(value) {
-        decimals = parseInt(attr.maxDecimals);
-        var valid = !utils.hasToManyDecimals(value, decimals);
-        ngModel.$setValidity('decimals', valid);
-        return value;
-      });*/
     }
   }
 }]);
@@ -79,6 +71,10 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
     }
     trader-quick-buy-sell input.ng-dirty.ng-invalid {
       color: red
+    }
+    trader-quick-buy-sell md-switch {
+      margin-top: 0px !important;
+      margin-bottom: 0px !important;
     }
   `],
   template: `
@@ -155,9 +151,10 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
                 BUY
               </md-button>
             </div>
-            <div layout="column" flex>
+            <div layout="column" flex layout-align="center center">
+              <div layout="row">1-click orders</div>
               <md-switch ng-model="vm.oneClickOrders" aria-label="1-click orders" class="md-primary" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-                1-click orders <span ng-show="vm.oneClickOrders"><b>enabled</b></span><span ng-hide="vm.oneClickOrders">disabled</span>
+                <span ng-show="vm.oneClickOrders"><b>on</b></span><span ng-hide="vm.oneClickOrders">off</span>
               </md-switch>
             </div>
             <div layout="column">
