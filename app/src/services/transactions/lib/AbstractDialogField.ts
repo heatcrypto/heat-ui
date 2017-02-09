@@ -29,6 +29,7 @@ class DialogFieldBuilder {
   asset(name: string, _default?: any): DialogFieldAsset { return new DialogFieldAsset(this.$scope, name, _default) }
   text(name: string, _default?: any): DialogFieldText { return new DialogFieldText(this.$scope, name, _default) }
   hidden(name: string, _default?: any): DialogFieldHidden { return new DialogFieldHidden(this.$scope, name, _default) }
+  staticText(name: string, _default: any): DialogFieldStatic { return new DialogFieldStatic(this.$scope, name, _default) }
 }
 
 interface IGenericFieldParserFunction {
