@@ -30,6 +30,7 @@ class EnvService {
   constructor() {
     try {
       if (typeof window['require'] == 'function' && window['require']('child_process')) {
+        require('ssl-root-cas').inject();
         this.type = EnvType.NODEJS;
       }
       else {
