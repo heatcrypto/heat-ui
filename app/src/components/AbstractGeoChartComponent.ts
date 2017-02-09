@@ -37,6 +37,14 @@ abstract class AbstractGeoChartComponent {
     this.refresh = utils.debounce(() => {
       this.promise = [
         this.getPage().then(() => {
+          var http = <HttpService> heat.$inject.get('http');
+
+          http.get("http://ipinfo.io/84.104.2.136").then((response)=>{
+            let lats = response['loc'].split(',')[0];
+            let lngs = response['loc'].split(',')[1];
+            console.log(lats, lngs);
+          });
+
           var hasProp = {}.hasOwnProperty;
           var sliceColors = ["#2fc32f", "#b0dc0b", "#eab404", "#de672c"];
           var enableAggregation = true;
