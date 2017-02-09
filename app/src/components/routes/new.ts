@@ -42,8 +42,9 @@ declare var __dirname: any;
         </div>
         <div layout="column" flex layout-align="start center" ng-show="!vm.activated">
           <p>Your account gets activated (and messages become visible) once your account is registered on the blockchain,
-  this will happen in the next which is to be expected in the next 30 seconds.</p>
+  this will happen in the next block which is to be expected in the next 30 seconds.</p>
           <md-progress-circular md-mode="indeterminate"></md-progress-circular>
+          <p><b>Registering account on blockchain, please wait</b></p>
         </div>
         <div layout="column" layout-align="space-around" ng-show="vm.activated">
           <p><b>Your account is activated.</b></p>
