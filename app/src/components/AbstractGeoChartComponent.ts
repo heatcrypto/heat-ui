@@ -45,6 +45,9 @@ abstract class AbstractGeoChartComponent {
             console.log(lats, lngs);
           });
 
+          console.log(this.data);
+
+
           var hasProp = {}.hasOwnProperty;
           var sliceColors = ["#2fc32f", "#b0dc0b", "#eab404", "#de672c"];
           var enableAggregation = true;

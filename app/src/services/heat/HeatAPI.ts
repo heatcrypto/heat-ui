@@ -232,4 +232,8 @@ class HeatAPI implements IHeatAPI {
   stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo> {
     return this.heat.post('/mining/stop?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
   }
+
+  getAllPeers(state: string): angular.IPromise<Array<IHeatPeersInfo>> {
+    return this.heat.get(`/peer/all/${state}?api_key=moonlanding`);
+  }
 }

@@ -197,6 +197,28 @@ interface IHeatAPI {
    * Stop mining blocks with account
    */
   stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
+
+  /**
+   * Get all peers data by state
+   * @param state If provided filters on peer state, 0 for NON_CONNECTED, 1 for CONNECTED, 2 for DISCONNECTED or 3 for ALL
+   */
+  getAllPeers(state: string): angular.IPromise<Array<IHeatPeersInfo>>;
+}
+interface IHeatPeersInfo{
+  hallmark: string,
+  downloadedVolume: number,
+  address: string,
+  weight: number,
+  uploadedVolume: number,
+  version: string,
+  platform: string,
+  lastUpdated: number,
+  blacklisted: boolean,
+  blacklistingCause: string,
+  announcedAddress: string,
+  application: string,
+  state: number,
+  shareAddress: boolean
 }
 interface IHeatMiningInfo {
   /**

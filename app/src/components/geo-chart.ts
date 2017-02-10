@@ -55,23 +55,19 @@ class GeoChartComponent extends AbstractGeoChartComponent {
     this.refresh();
   }
 
-  getCount(): angular.IPromise<number> {
-    return this.heat.api.getPaymentsCount(this.user.account, 'all');
-  }
-
   getPageItems(forceSort?: string, forcePage?: number, forceLimit?: number): angular.IPromise<Array<IHeatPayment>> {
     var deferred = this.$q.defer();
-    this.createGetChartsDataRequest('8709927280637656798', '0', "DAY").then(
-      (chartData) => {
-        deferred.resolve(chartData);
+    this.createGetPeersDataRequest('3').then(
+      (peersData) => {
+        deferred.resolve(peersData);
       },
       deferred.reject
     );
     return deferred.promise;
   }
 
-  createGetChartsDataRequest(currency: string, asset: string, window: string): angular.IPromise<IHeatChart> {
-    return this.heat.api.getOHLCChartData(currency, asset, window);
+  createGetPeersDataRequest(state: string): angular.IPromise<Array<IHeatPeersInfo>> {
+    return this.heat.api.getAllPeers(state);
   }
 
 }
