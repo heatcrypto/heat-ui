@@ -26,14 +26,7 @@
   styles: [``],
   template: AbstractGeoChartComponent.template(
     `GEO CHART`,
-    `<div id="demo-aggr">
-        <div class="aggregation-toggle">
-            <input type="checkbox" checked="checked" id="enableAggr" value="1" /><label for="enableAggr">Enable aggregation</label>
-        </div>
-
-    </div>
-
-    <div id="demo"></div>`
+    `<div id="geo-chart"></div>`
   )
 })
 @Inject('$scope', '$q', '$timeout', 'user', 'heat', 'HTTPNotify', 'assetInfo')
