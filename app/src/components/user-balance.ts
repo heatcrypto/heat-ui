@@ -79,7 +79,8 @@ class UserBalanceComponent {
     });
     this.getUserBalance().then((balance) => {
       this.$scope.$evalAsync(() => {
-        var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
+        //var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
+        var formatted = utils.formatQNT(balance.balance, 8).split(".");
         this.formattedBalance = formatted[0];
         this.formattedFraction = "." + (formatted[1]||"00");
         this.showError = false;

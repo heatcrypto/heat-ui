@@ -93,7 +93,8 @@ class TraderBalancesComponent {
           );
           balance.symbol = '*';
           balance.name = '*';
-          balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
+          //balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
+          balance.balance = utils.formatQNT(balance.balance, balance.decimals);
         });
         this.$q.all(promises).then(()=>{
           this.$scope.$evalAsync(() => {
