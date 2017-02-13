@@ -21,23 +21,23 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function paymentDetails($event, payment: IHeatPayment) {
+  export function transactionDetails($event, transaction: IHeatTransaction) {
 
-    var settings: SettingsService = <SettingsService> heat.$inject.get('settings');
-    /*
+    let settings: SettingsService = <SettingsService> heat.$inject.get('settings');
+    let assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
+
     dialogs.dialog({
-      id: 'paymentDetails',
-      title: 'Payment details',
+      id: 'transactionDetails',
+      title: 'Transaction details',
       targetEvent: $event,
       cancelButton: false,
       locals: {
-        date: dateFormat(utils.timestampToDate(payment.timestamp),
-          settings.get(SettingsService.DATEFORMAT_DEFAULT)),
-        amount: utils.commaFormat(utils.convertNQT(payment.amount)) + ' EUR',
-        source: payment.senderIdentifier || payment.senderRS,
-        destination: payment.recipientIdentifier || payment.recipientRS,
-        transactionId: payment.transactionId,
-        confirmed: 'YES'
+        date: dateFormat(utils.timestampToDate(transaction.timestamp), settings.get(SettingsService.DATEFORMAT_DEFAULT)),
+        amount: utils.commaFormat(utils.convertToQNTf(transaction.amount.toString())) + ' ' + assetInfo.cache[0].symbol,
+        source: transaction.sender,
+        destination: transaction.recipient,
+        transactionId: transaction.transaction,
+        confirmed: transaction.confirmations ? 'YES' : 'NO'
       },
       style: `
         .dialog-transaction-details td {
@@ -57,6 +57,5 @@ module dialogs {
         </div>
       `
     })
-    */
   }
 }

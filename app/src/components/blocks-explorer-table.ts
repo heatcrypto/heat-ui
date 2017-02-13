@@ -49,6 +49,11 @@
     blocks-explorer-table .message-text {
       margin-bottom: 18px;
     }
+    blocks-explorer-table .link-block {
+      cursor: pointer;
+      color: #3b5998;
+      text-decoration: underline;
+    }
   `],
   template: AbstractDataTableComponent.template(`
       <th md-column md-numeric>
@@ -83,7 +88,7 @@
         <span>{{item.height}}</span>
       </td>
       <td md-cell nowrap>
-        <span>{{item.block}}</span>
+        <span ng-click="vm.showBlockInfoDialog($event, item.block)" class="link-block">{{item.block}}</span>
       </td>
       <td md-cell nowrap>
         <timestamp timestamp-value="item.timestamp"></timestamp>
@@ -164,5 +169,9 @@ class BlockExplorerTableComponent extends AbstractDataTableComponent {
     var to = from + limit;
 
     return this.heat.api.getBlocks(from, to);
+  }
+
+  showBlockInfoDialog($event, blockId){
+    dialogs.blockDetails($event, blockId);
   }
 }
