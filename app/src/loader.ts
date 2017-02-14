@@ -45,7 +45,7 @@ module heat {
 
         function isUnlocked() {
           if (!user.unlocked) {
-            if (!(/\/trader\/\w+/.test($location.path()) || /\/explorer\/\w+/.test($location.path()))) {
+            if (!/\/trader.*/.test($location.path()) && !/\/explorer.*/.test($location.path())) {
               if (!/\/login\/\w+/.test($location.path())) {
                 $location.path('login');
               }
