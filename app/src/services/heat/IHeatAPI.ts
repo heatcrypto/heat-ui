@@ -32,6 +32,7 @@ interface IHeatAPI {
    */
   getBlockchainStatus():angular.IPromise<IHeatBlockchainStatus>;
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlock>>;
+  getBlock(numericId: string, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
 
   /**
    * Returns account public key
@@ -865,6 +866,7 @@ interface IHeatBlock {
   payloadLength: number;
   totalAmountHQT: string;
   posRewardHQT: string;
+  popRewardHQT: string,
   generationSignature: string;
   generator: string;
   generatorPublicKey: string;

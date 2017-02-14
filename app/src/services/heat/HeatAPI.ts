@@ -45,6 +45,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/blocks/${from}/${to}/${includeTransactions}`);
   }
 
+  getBlock(numericId: string, includeTransactions:boolean = true):angular.IPromise<IHeatBlock> {
+    return this.heat.get(`/blockchain/block/${numericId}/${includeTransactions}`);
+  }
+
   getPublicKey(account: string): angular.IPromise<string> {
     var deferred = this.$q.defer();
     this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
