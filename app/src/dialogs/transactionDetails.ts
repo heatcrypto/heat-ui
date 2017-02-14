@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Krypto Fin ry and the FIMK Developers
+ * Copyright (c) 2016 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,7 +24,6 @@ module dialogs {
   export function transactionDetails($event, transaction: IHeatTransaction) {
 
     let settings: SettingsService = <SettingsService> heat.$inject.get('settings');
-    let assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
 
     dialogs.dialog({
       id: 'transactionDetails',
@@ -33,7 +32,7 @@ module dialogs {
       cancelButton: false,
       locals: {
         date: dateFormat(utils.timestampToDate(transaction.timestamp), settings.get(SettingsService.DATEFORMAT_DEFAULT)),
-        amount: utils.commaFormat(utils.convertToQNTf(transaction.amount.toString())) + ' ' + assetInfo.cache[0].symbol,
+        amount: utils.commaFormat(utils.convertToQNTf(transaction.amount.toString())) + ' HEAT',
         source: transaction.sender,
         destination: transaction.recipient,
         transactionId: transaction.transaction,
