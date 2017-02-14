@@ -135,8 +135,8 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
   updateCurrencyBalance() {
     this.heat.api.getAccountBalanceVirtual(this.user.account, this.currencyInfo.id, "0",1).then((balance)=>{
       this.$scope.$evalAsync(()=> {
-        //this.currencyBalance = utils.formatQNT(balance.virtualBalance, this.currencyInfo.decimals);
-        this.currencyBalance = utils.formatQNT(balance.balance, this.currencyInfo.decimals);
+        this.currencyBalance = utils.formatQNT(balance.virtualBalance, this.currencyInfo.decimals);
+        //this.currencyBalance = utils.formatQNT(balance.balance, this.currencyInfo.decimals);
       });
     },()=>{
       this.$scope.$evalAsync(()=> {
