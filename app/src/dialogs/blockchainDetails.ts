@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Krypto Fin ry and the FIMK Developers
+ * Copyright (c) 2016 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,17 +23,14 @@
 module dialogs {
   export function blockDetails($event, blockId) {
 
-    let settings: SettingsService = <SettingsService> heat.$inject.get('settings');
     let $q = <angular.IQService> heat.$inject.get('$q');
     let heatApi = <HeatService> heat.$inject.get('heat');
-    let assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
     let deferred = $q.defer();
 
     heatApi.api.getBlock(blockId, true).then((response) => {
-      let sumofamounts = 0;
-
-      response.transactions.forEach(function (data) {
-        sumofamounts += parseFloat(data.amount);
+      let sumofamounts = new Big("0");
+      response.transactions.forEach(function (transaction) {
+        sumofamounts = sumofamounts.add(new Big((<IHeatTransaction>transaction).amount));
       });
 
       dialogs.dialog({
@@ -49,7 +46,7 @@ module dialogs {
           generator: response.generator,
           posRewardHQT: response.posRewardHQT,
           popRewardHQT: response.popRewardHQT,
-          sumofamounts: utils.commaFormat(utils.convertToQNTf(sumofamounts.toString())) + ' ' + assetInfo.cache[0].symbol,
+          sumofamounts: utils.commaFormat(utils.formatQNT(sumofamounts.toString(),8))+' HEAT',
           transactions: response.transactions,
           showTransactionDetails: ($event, transaction) => {
             dialogs.transactionDetails($event, transaction);
