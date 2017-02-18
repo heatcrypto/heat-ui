@@ -94,7 +94,7 @@
         <timestamp timestamp-value="item.timestamp"></timestamp>
       </td>
       <td md-cell nowrap>
-        <span>{{item.generator}}</span>
+        <span ng-click="vm.showGeneratorInfoDialog($event, item.generator)" class="link-block">{{item.generator}}</span>
       </td>
       <td md-cell md-numeric nowrap>
         <span>{{item.numberOfTransactions}}</span>
@@ -173,5 +173,9 @@ class BlockExplorerTableComponent extends AbstractDataTableComponent {
 
   showBlockInfoDialog($event, blockId){
     dialogs.blockDetails($event, blockId);
+  }
+
+  showGeneratorInfoDialog($event, generatorId){
+    dialogs.generatorDetails($event, generatorId);
   }
 }

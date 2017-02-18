@@ -236,4 +236,8 @@ class HeatAPI implements IHeatAPI {
   stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo> {
     return this.heat.post('/mining/stop?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
   }
+
+  getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount> {
+    return this.heat.get(`/account/find/${numericId}`);
+  }
 }

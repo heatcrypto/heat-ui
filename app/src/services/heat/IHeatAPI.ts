@@ -198,6 +198,37 @@ interface IHeatAPI {
    * Stop mining blocks with account
    */
   stopMining(secretPhrase: string): angular.IPromise<IHeatMiningInfo>;
+
+  /**
+   * Find account by numeric id
+   */
+  getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount>;
+}
+interface IHeatAccount {
+  id: string;
+  keyHeight: number;
+  publicKey: string;
+  balance: string;
+  unconfirmedBalance: string;
+  effectiveBalance: string;
+  guaranteedBalance: string;
+  currentLessee: string;
+  currentLeasingHeightFrom: number;
+  currentLeasingHeightTo: number;
+  nextLessee: string;
+  nextLeasingHeightFrom: number,
+  nextLeasingHeightTo: number;
+  lessors: Array<string|IHeatLessors>;
+}
+interface IHeatLessors {
+  id: string;
+  currentLessee: string;
+  currentHeightFrom: number;
+  currentHeightTo: number;
+  nextLessee: string;
+  nextHeightFrom: number;
+  nextHeightTo: number;
+  effectiveBalance: string;
 }
 interface IHeatMiningInfo {
   /**
