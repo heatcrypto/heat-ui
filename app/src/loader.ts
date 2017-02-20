@@ -89,7 +89,8 @@ module heat {
         'md.data.table',
         'ngSanitize',
         'duScroll',
-        'dc.inputAddOn'
+        'dc.inputAddOn',
+        'jsonFormatter'
       ]);
     }
 

@@ -30,9 +30,9 @@ module dialogs {
     let deferred = $q.defer();
 
     $q.all({
-      account: heatApi.api.getAccountByNumericId(user.account),
-      accountBalance: heatApi.api.getAccountBalanceVirtual(user.account, "0", "0", 1),
-      payments: heatApi.api.getPayments(user.account, 'all', 'amount', true, 0, 100)
+      account: heatApi.api.getAccountByNumericId(generatorId),
+      accountBalance: heatApi.api.getAccountBalanceVirtual(generatorId, "0", "0", 1),
+      payments: heatApi.api.getPayments(generatorId, 'all', 'amount', true, 0, 100)
     }).then((values) => {
       dialogs.dialog({
         id: 'generatorDetails',
@@ -49,12 +49,14 @@ module dialogs {
         `,
         template: `
         <div layout="column" class="dialog-generator-details">
-          <table>
-            <tr><td>Generator</td><td>{{vm.generatorId}}</td></tr>
-            <tr><td>Account</td><td>{{vm.accountDetails | json}}</td></tr>
-            <tr><td>Account Balance</td><td>{{vm.accountBalanceDetails | json}}</td></tr>
-            <tr><td>Payments </td><td>{{vm.paymentsDetails | json}}</td></tr>
-          </table>
+          <b>Generator {{generatorId}}</b>
+          <json-formatter json="vm.accountDetails" open="1"></json-formatter>
+          <b>Account</b>
+          <json-formatter json="vm.accountBalanceDetails" open="1"></json-formatter>
+          <b>Account Balance</b>
+          <json-formatter json="vm.accountBalanceDetails" open="1"></json-formatter>
+          <b>Payments</b>
+          <json-formatter json="vm.paymentsDetails" open="0"></json-formatter>
         </div>
       `
       }).then(deferred.resolve, deferred.reject);
