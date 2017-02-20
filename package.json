@@ -54,6 +54,7 @@
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
     "filesaver.js": "0.2.0",
+    "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
     "pako": "1.0.3",
@@ -65,10 +66,12 @@
     "copyright": "Copyright © 2016 Heat Ledger Ltd.",
     "productName": "Heatwallet",
     "compression": "normal",
-    "extraResources": [{
-      "from": "../heatledger/build/install/heatledger",
-      "to": "heatledger"
-    }],
+    "extraResources": [
+      {
+        "from": "../heatledger/build/install/heatledger",
+        "to": "heatledger"
+      }
+    ],
     "win": {
       "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/e03bf2ba200afacf37007bf7569dc51011e67815/build/icon.ico",
       "target": [

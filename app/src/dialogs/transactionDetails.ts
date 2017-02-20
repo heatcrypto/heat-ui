@@ -31,12 +31,13 @@ module dialogs {
       targetEvent: $event,
       cancelButton: false,
       locals: {
-        date: dateFormat(utils.timestampToDate(transaction.timestamp), settings.get(SettingsService.DATEFORMAT_DEFAULT)),
+        transactions: transaction
+        /*date: dateFormat(utils.timestampToDate(transaction.timestamp), settings.get(SettingsService.DATEFORMAT_DEFAULT)),
         amount: utils.commaFormat(utils.convertToQNTf(transaction.amount.toString())) + ' HEAT',
         source: transaction.sender,
         destination: transaction.recipient,
         transactionId: transaction.transaction,
-        confirmed: transaction.confirmations ? 'YES' : 'NO'
+        confirmed: transaction.confirmations ? 'YES' : 'NO'*/
       },
       style: `
         .dialog-transaction-details td {
@@ -45,14 +46,16 @@ module dialogs {
       `,
       template: `
         <div layout="column" class="dialog-transaction-details">
-          <table>
+          <b>Transactions</b>
+          <json-formatter json="vm.transactions" open="1"></json-formatter>
+          <!--<table>
             <tr><td>Time</td><td>{{vm.date}}</td></tr>
             <tr><td>Amount</td><td>{{vm.amount}}</td></tr>
             <tr><td>Source</td><td>{{vm.source}}</td></tr>
             <tr><td>Destination</td><td>{{vm.destination}}</td></tr>
             <tr><td>Transaction ID</td><td>{{vm.transactionId}}</td></tr>
             <tr><td>Confirmed</td><td>{{vm.confirmed}}</td></tr>
-          </table>
+          </table>-->
         </div>
       `
     })
