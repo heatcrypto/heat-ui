@@ -124,7 +124,7 @@ gulp.task('copy:dist', ['tshelpers','libjs'], function () {
 });
 
 gulp.task('less', function () {
-    return gulp.src('./app/styles/**/*.less')
+    return gulp.src('./app/styles/index.less')
     .pipe(plumber())
       .pipe(less({
           paths: [path.join(__dirname, 'less', 'includes')]
