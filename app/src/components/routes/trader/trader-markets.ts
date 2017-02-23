@@ -22,28 +22,6 @@
  * */
 @Component({
   selector: 'traderMarkets',
-  styles: [`
-    trader-markets input {
-      width: 100%;
-      padding: 4px;
-      margin: 8px;
-    }
-    trader-markets .market-col {
-      text-align:left;
-      width: 80px;
-    }
-    trader-markets .change-col {
-      text-align:left;
-      width: 40px;
-    }
-    trader-markets .price-col {
-      text-align:left;
-      width: 80px;
-    }
-    trader-markets .vol-col {
-      width: 60px;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Markets&nbsp;

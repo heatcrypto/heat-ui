@@ -24,27 +24,6 @@
 @Component({
   selector: 'traderTradeHistory',
   inputs: ['currencyInfo','assetInfo','oneClickOrders'],
-  styles: [`
-    trader-trade-history label {
-      cursor: pointer;
-    }
-    trader-trade-history .type-col {
-      width: 45px;
-    }
-    trader-trade-history .time-col {
-      width: 60px;
-    }
-    trader-trade-history .price-col {
-      width: 100px;
-    }
-    trader-trade-history .quantity-col {
-      width: 100px;
-    }
-    trader-trade-history .total-col {
-      width: 100px;
-      text-align: right;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Past trades&nbsp;

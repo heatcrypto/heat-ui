@@ -23,17 +23,6 @@
 @Component({
   selector: 'traderBalances',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-  trader-balances .symbol-col {
-    text-align:left;
-  }
-  trader-balances .balance-col {
-    width: 100px;
-  }
-  trader-balances {
-    height: 440px;
-  }
-  `],
   template: `
     <div layout="column" layout-fill>
       <div layout="row" class="trader-component-title">Account balance&nbsp;

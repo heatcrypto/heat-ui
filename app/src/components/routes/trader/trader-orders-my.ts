@@ -24,25 +24,6 @@
 @Component({
   selector: 'traderOrdersMy',
   inputs: ['currencyInfo','assetInfo','oneClickOrders'],
-  styles: [`
-    trader-orders-my .type-col {
-      width: 45px;
-    }
-    trader-orders-my .market-col {
-      width: 120px;
-    }
-    trader-orders-my .quantity-col, trader-orders-my .price-col, trader-orders-my .total-col {
-      width: 100px;
-    }
-    trader-orders-my .expires-col {}
-    trader-orders-my .cancel-col {
-      width: 60px;
-    }
-    trader-orders-my .cancel-col a {
-      text-decoration: underline;
-      cursor:pointer;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">{{vm.user.unlocked?'My':'All'}} pending orders&nbsp;

@@ -24,37 +24,6 @@ declare var techan: any, d3: any;
 @Component({
   selector: 'traderChart',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-    trader-chart .intervals {
-      padding-right: 8px;
-      padding-top: 4px;
-    }
-    trader-chart .intervals > div {
-      padding-left: 8px;
-      color: #424242;
-      cursor:pointer !important;
-    }
-    trader-chart .intervals > div.selected {
-      font-weight: bold !important;
-    }
-    trader-chart .intervals > div:focus {
-      outline: none;
-    }
-    trader-chart path.candle {
-      stroke: #000000;
-    }
-    trader-chart path.candle.body {
-      stroke-width: 0;
-    }
-    trader-chart path.candle.up {
-      fill: #00AA00;
-      stroke: #00AA00;
-    }
-    trader-chart path.candle.down {
-      fill: #FF0000;
-      stroke: #FF0000;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" layout-align="end" class="intervals">

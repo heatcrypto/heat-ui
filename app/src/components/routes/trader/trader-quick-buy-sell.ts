@@ -49,34 +49,6 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
 @Component({
   selector: 'traderQuickBuySell',
   inputs: ['currencyInfo','assetInfo','selectedOrder','oneClickOrders'],
-  styles: [`
-    trader-quick-buy-sell .trader-component-title {
-      padding-left: 8px;
-    }
-    trader-quick-buy-sell .text-cell {
-      padding-left: 8px;
-      padding-top: 3px;
-    }
-    trader-quick-buy-sell .text-cell:last-child {
-      padding-left: 24px;
-    }
-    trader-quick-buy-sell .row-element {
-      padding-top: 6px;
-    }
-    trader-quick-buy-sell .sell {
-      background-color: #f44336 !important;
-    }
-    trader-quick-buy-sell .buy {
-      background-color: #8BC34A !important;
-    }
-    trader-quick-buy-sell input.ng-dirty.ng-invalid {
-      color: red
-    }
-    trader-quick-buy-sell md-switch {
-      margin-top: 0px !important;
-      margin-bottom: 0px !important;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" layout-align="center center" class="trader-component-title" flex>Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>

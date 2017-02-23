@@ -23,34 +23,6 @@
 @Component({
   selector: 'traderInfo',
   inputs: ['currencyInfo','assetInfo','toggleMarkets','marketsSidenavOpen'],
-  styles: [`
-  trader-info .market-title {
-  }
-  trader-info .market-title-text * {
-    font-size: 32px !important;
-  }
-  trader-info .show-hide  {
-    margin-left: 0px !important;
-    padding-left: 0px !important;
-    padding-right: 0px !important;
-    width: 28px !important;
-  }
-  trader-info .show-hide md-icon {
-    margin-left: 0px !important;
-    padding-left: 0px !important;
-  }
-  trader-info .hr-24 {
-    width: 100%;
-    padding-left: 8px;
-  }
-  trader-info .hr-24 td > div {
-    width: 70px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  `],
   template: `
     <div layout="column" flex layout-fill layout-padding>
       <div layout="row">

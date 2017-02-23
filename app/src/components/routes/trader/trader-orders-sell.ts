@@ -24,16 +24,6 @@
 @Component({
   selector: 'traderOrdersSell',
   inputs: ['currencyInfo','assetInfo','selectedOrder'],
-  styles: [`
-    trader-orders-sell .price-col, trader-orders-sell .quantity-col, trader-orders-sell .total-col {
-      width: 80px;
-    }
-    trader-orders-sell .sum-col {
-      text-align: right;
-      width: 80px;
-      min-width: 80px;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Sell {{vm.assetInfo.symbol}}&nbsp;

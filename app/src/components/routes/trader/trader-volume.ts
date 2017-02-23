@@ -23,14 +23,6 @@
 @Component({
   selector: 'traderVolume',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-    trader-volume .label, trader-volume .value {
-      padding-right:8px;
-    }
-    trader-volume .value {
-      font-weight: bold;
-    }
-  `],
   template: `
     <div layout="row" flex layout-fill layout-align="end">
       <div class="label">24h change</div>

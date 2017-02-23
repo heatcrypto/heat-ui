@@ -22,16 +22,6 @@
  * */
 @Component({
   selector: 'traderTrollbox',
-  styles: [`
-    trader-trollbox {
-      height: 200px;
-    }
-    trader-trollbox textarea {
-      width: 100%;
-      padding: 4px;
-      margin: 8px;
-    }
-  `],
   template: `
     <div layout="column" layout-fill>
       <div layout="row" class="trader-component-title">Trollbox&nbsp;

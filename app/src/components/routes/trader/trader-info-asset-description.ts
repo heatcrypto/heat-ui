@@ -23,37 +23,20 @@
 @Component({
   selector: 'traderInfoAssetDescription',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-  trader-info-asset-description {
-    padding-bottom: 0px !important;
-    padding-right: 0px !important;
-  }
-  trader-info-asset-description .description {
-    overflow: auto;
-    margin-bottom: 0px !important;
-    margin-top: 0px !important;
-  }
-  trader-info-asset-description > div > div:first-child {
-    margin-right: 16px !important;
-  }
-  trader-info-asset-description .seperator {
-    padding-bottom: 8px;
-  }
-  `],
   template: `
     <div layout="row" flex layout-fill>
       <div layout="column">
-        <pre class="description" flex>Issued by:
+        <div class="description" flex>Issued by:
 {{vm.issuedBy}}
 {{vm.launched}}
 Id:
 {{vm.assetId}}
 # of assets:
-{{vm.numberOfAssets}}</pre>
+{{vm.numberOfAssets}}</div>
       </div>
       <div layout="column" flex>
-        <pre class="description" flex>Description:
-{{vm.description}}</pre>
+        <div class="description" flex>Description:
+{{vm.description}}</div>
       </div>
     </div>
   `
