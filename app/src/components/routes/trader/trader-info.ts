@@ -29,12 +29,12 @@
         <div layout="row" class="market-title">
           <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
             <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
-            <md-icon md-font-library="material-icons">{{vm.marketsSidenavOpen?'remove_circle_outline':'add_circle_outline'}}</md-icon>
+            <i><img src="assets/{{vm.marketsSidenavOpen?'minusIcon':'plusIcon'}}.png"</i>
           </md-button>
           <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
         </div>
         <div layout="row" layout-align="end" flex ng-if="vm.isBtcAsset">
-          <md-button class="md-primary md-raised" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Load BTC</md-button>
+          <md-button class="md-primary" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Load BTC</md-button>
         </div>
       </div>
       <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info-asset-description>
