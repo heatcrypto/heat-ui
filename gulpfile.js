@@ -23,12 +23,16 @@
 
 require('es6-promise').polyfill(); /* usemin requires this */
 var gulp = require('gulp');
+var less = require('gulp-less');
+var path = require('path');
+var plumber = require('gulp-plumber');
 
 var PATHS = {
   src: [
     'app/src/loader.ts',
     'app/src/**/*.ts',
-    'tools/typings/**/*.ts'
+    'tools/typings/**/*.ts',
+    'app/styles/**/*.less'
   ],
   assets: [
     'app/assets/**/*.*'
@@ -119,7 +123,16 @@ gulp.task('copy:dist', ['tshelpers','libjs'], function () {
     .pipe(gulp.dest('dist'));
 });
 
-gulp.task('play', ['ts2js','copy:dist'], function () {
+gulp.task('less', function () {
+    return gulp.src('./app/styles/**/*.less')
+    .pipe(plumber())
+      .pipe(less({
+          paths: [path.join(__dirname, 'less', 'includes')]
+      }))
+      .pipe(gulp.dest('./dist/styles/'));
+});
+
+gulp.task('play', ['ts2js','copy:dist', 'less'], function () {
   var http = require('http');
   var connect = require('connect');
   var serveStatic = require('serve-static');
@@ -128,7 +141,7 @@ gulp.task('play', ['ts2js','copy:dist'], function () {
 
   var port = 9001, app;
 
-  gulp.watch(PATHS.src.concat(PATHS.html), ['ts2js', 'copy:dist']);
+  gulp.watch(PATHS.src.concat(PATHS.html), ['ts2js', 'copy:dist', 'less']);
 
   app = connect().use(serveStatic(__dirname));
   http.createServer(app).listen(port, function () {
