@@ -22,28 +22,14 @@
  * */
 @Component({
   selector: 'userBalance',
-  styles: [`
-    user-balance {
-      max-width:350px;
-    }
-    user-balance .balance  {
-      white-space: nowrap;
-      font-size: 20px !important;
-    }
-    user-balance .smaller {
-      font-size: 12px !important;
-    }
-    user-balance md-icon {
-      vertical-align: bottom;
-      cursor: default;
-    }
-  `],
   template: `
     <div layout="column">
       <span>
         <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
-        <span class="smaller">#{{vm.user.account}}</span>&nbsp;&nbsp;
-        <span class="balance">{{vm.formattedBalance}}</span><span class="smaller">{{vm.formattedFraction}}</span>&nbsp;<span class="balance">{{vm.currencyName}}</span>
+        <span class="account">#{{vm.user.account}}</span>&nbsp;&nbsp;
+        <span class="balance">{{vm.formattedBalance}}</span>
+        <span class="fraction">{{vm.formattedFraction}}</span>&nbsp;
+        <span class="currencyName">{{vm.currencyName}}</span>
         <md-icon ng-if="vm.showError" md-font-library="material-icons">error</md-icon>
       </span>
     </div>

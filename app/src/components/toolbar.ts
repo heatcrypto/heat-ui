@@ -45,25 +45,37 @@
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           TEST-NET
         </h2>
+        <div class="user">
+          <div class="small-logo">
+          </div>
+          <div class="user-detail" ng-if="vm.user.unlocked">
+            <div class="user-id">
+              User ID
+            </div>
+            <div class="email">
+              user@heatledger.com
+            </div>
+          </div>
+        </div>
         <md-button aria-label="home" class="md-icon-button" href="#/home">
           <md-tooltip md-direction="bottom">Home</md-tooltip>
-          <md-icon md-font-library="material-icons" ng-mouseover="alert('no')">home</md-icon>
+          <i><img src="assets/homeIcon.png"></i>
         </md-button>
         <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
           <md-tooltip md-direction="bottom">Send Heat</md-tooltip>
-          <md-icon md-font-library="material-icons">toll</md-icon>
+          <i><img src="assets/sendHeatIcon.png"></i>
         </md-button>
         <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
           <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
-          <md-icon md-font-library="material-icons">explore</md-icon>
+          <i><img src="assets/exploreIcon.png"></i>
         </md-button>
         <md-button aria-label="messages" class="md-icon-button" href="#/messenger/0" ng-if="vm.user.unlocked">
           <md-tooltip md-direction="bottom">Messages</md-tooltip>
-          <md-icon md-font-library="material-icons">message</md-icon>
+          <i><img src="assets/messageIcon.png"></i>
         </md-button>
         <md-button aria-label="trader" class="md-icon-button" href="#/trader/5592059897546023466/0">
           <md-tooltip md-direction="bottom">Exchange</md-tooltip>
-          <md-icon md-font-library="material-icons">insert_chart</md-icon>
+          <i><img src="assets/exchangeIcon.png"></i>
         </md-button>
         <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
           <md-tooltip md-direction="bottom">App Server</md-tooltip>
@@ -75,7 +87,7 @@
         </h2>
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
           <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
-            <md-icon md-font-library="material-icons">menu</md-icon>
+            <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content width="4">
             <!--

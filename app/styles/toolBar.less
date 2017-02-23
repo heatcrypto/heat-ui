@@ -1,3 +1,51 @@
+@import './colors';
+
 md-toolbar {
   background-color: transparent !important;
+  font-family:Roboto;
+  padding: 39px 32px 32px 32px;
+  color: @white;
+  .user {
+    display: flex;
+    margin-right: 70px;
+    .small-logo {
+      background: url("../assets/logo-small.png") no-repeat center;
+      height: 43px;
+      width: 39px;
+      margin-right: 23px;
+    }
+    .user-detail {
+      .user-id {
+        font-size:16px !important;
+        text-align:left;
+        margin-bottom: 4px;
+        line-height: 21px;
+      }
+      .email {
+        opacity:0.6;
+        font-size:13px !important;
+        text-align:left;
+        line-height: 18px;
+      }
+    }
+  }
+  user-balance {
+    .account {
+      font-size: 16px !important;
+      margin-right: 12px;
+    }
+    .balance {
+      font-size: 29px !important;
+      font-weight: bold;
+    }
+    .fraction {
+      font-size: 16px !important;
+      margin-right: 12px;
+    }
+    .currencyName {
+      font-size: 21px !important;
+      font-weight: bold;
+      margin-right: 40px;
+    }
+  }
 }
