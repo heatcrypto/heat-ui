@@ -23,7 +23,7 @@
 @Component({
   selector: 'traderTrollbox',
   template: `
-    <div layout="column" layout-fill>
+    <div layout="column">
       <div layout="row" class="trader-component-title">Trollbox&nbsp;
         <span flex></span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>

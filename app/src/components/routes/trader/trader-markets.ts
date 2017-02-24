@@ -23,7 +23,7 @@
 @Component({
   selector: 'traderMarkets',
   template: `
-    <div layout="column" flex layout-fill>
+    <div layout="column" flex>
       <div layout="row" class="trader-component-title">Markets&nbsp;
         <span flex></span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>

@@ -5,6 +5,11 @@ trader-markets {
   padding: 20px;
   font-family: Roboto;
   color: @white;
+  margin-top: 12px;
+  height: 100%;
+  &.layout-fill {
+    margin-top: 12px;
+  }
   input[type="text"] {
     background-color: @dark-blue2;
     width: 100%;
@@ -41,6 +46,7 @@ trader-markets {
     md-list-item {
       &.md-no-proxy {
         padding: 14px 9px;
+        flex-grow: 0;
         &:first-child {
         padding: 8px 9px;
       }
