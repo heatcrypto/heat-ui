@@ -22,8 +22,9 @@ body {
 md-list-item, md-list-item .md-list-item-inner {
   min-height: 10px;
 }
-md-list-item::before {
-  min-height: 10px;
+md-list-item::before,
+.md-list-item-inner::before {
+  min-height: 10px !important;
 }
 
 .md-button {
@@ -32,7 +33,7 @@ md-list-item::before {
   line-height: 20px;
   color: @white !important;
   text-align: center;
-  padding: 7px 20px;
+  padding: 7px 7px;
   font-style: normal;
   margin: 0 4px;
   &.md-primary {
@@ -41,4 +42,16 @@ md-list-item::before {
   &.md-warn {
     background-color: @orange;
   }
+}
+
+::-webkit-scrollbar {
+    width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: @gray2;
 }
