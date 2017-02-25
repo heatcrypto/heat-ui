@@ -24,17 +24,18 @@
   selector: 'traderInfo',
   inputs: ['currencyInfo','assetInfo','toggleMarkets','marketsSidenavOpen'],
   template: `
-    <div layout="column" flex layout-fill layout-padding>
-      <div layout="row">
-        <div layout="row" class="market-title">
+    <div layout="column" flex layout-fill>
+      <div layout="row" class="top-row">
+        <div class="market-title">
           <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
             <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
             <i><img src="assets/{{vm.marketsSidenavOpen?'minusIcon':'plusIcon'}}.png"</i>
           </md-button>
           <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
         </div>
-        <div layout="row" layout-align="end" flex ng-if="vm.isBtcAsset">
-          <md-button class="md-primary" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Load BTC</md-button>
+        <div layout-align="end" ng-if="vm.isBtcAsset">
+          <md-button class="md-primary" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Deposit BTC</md-button>
+          <md-button class="md-warn" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw BTC</md-button>
         </div>
       </div>
       <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info-asset-description>

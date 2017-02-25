@@ -1,0 +1,31 @@
+@import '../../colors';
+
+trader-balances {
+  height: 100%;
+  background-color: @dark-blue2;
+  padding: 20px;
+  font-family: Roboto;
+  color: @white;
+  md-list-item {
+    border-bottom: 1px solid @gray;
+    &.header .symbol-col,
+    &.header .balance-col {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    &.header {
+      border-bottom: none;
+      opacity: 0.6;
+    }
+    .symbol-col {
+      width: 80px;
+      font-size:26px;
+      letter-spacing:-1.08px;
+    }
+    .balance-col {
+      text-align: right;
+      font-size: 16px;
+      opacity: 0.6;
+    }
+  }
+}

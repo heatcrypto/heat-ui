@@ -25,13 +25,8 @@
   inputs: ['currencyInfo','assetInfo'],
   template: `
     <div layout="column" layout-fill>
-      <div layout="row" class="trader-component-title">Account balance&nbsp;
-        <span flex></span>
-        {{vm.user.account}}
-        <elipses-loading ng-show="vm.loading"></elipses-loading>
-      </div>
       <md-list flex layout-fill layout="column">
-        <md-list-item>
+        <md-list-item class="header">
           <div class="truncate-col symbol-col">Asset</div>
           <div class="truncate-col balance-col right-align" flex>Balance</div>
         </md-list-item>

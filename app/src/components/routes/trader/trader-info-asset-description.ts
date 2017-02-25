@@ -24,19 +24,50 @@
   selector: 'traderInfoAssetDescription',
   inputs: ['currencyInfo','assetInfo'],
   template: `
-    <div layout="row" flex layout-fill>
-      <div layout="column">
-        <div class="description" flex>Issued by:
-{{vm.issuedBy}}
-{{vm.launched}}
-Id:
-{{vm.assetId}}
-# of assets:
-{{vm.numberOfAssets}}</div>
+    <div class="asset-description">
+      <div class="col">
+        <div class="col-item issued-by">
+          <div class="value">
+            {{vm.issuedBy}}
+          </div>
+          <div class="title">
+            Issued by
+          </div>
+        </div>
+        <div class="col-item launched">
+          <div class="value">
+            {{vm.launched}}
+          </div>
+          <div class="title">
+            Date and time
+          </div>
+        </div>
+        <div class="col-item id">
+          <div class="value">
+            {{vm.assetId}}
+          </div>
+          <div class="title">
+            Id
+          </div>
+        </div>
+        <div class="col-item number-of-assets">
+          <div class="value">
+            {{vm.numberOfAssets}}
+          </div>
+          <div class="title">
+            # of assets
+          </div>
+        </div>
       </div>
-      <div layout="column" flex>
-        <div class="description" flex>Description:
-{{vm.description}}</div>
+      <div class="col">
+        <div class="col-item description">
+          <div class="title">
+            Description
+          </div>
+          <div class="value">
+            {{vm.description}}
+          </div>
+        </div>
       </div>
     </div>
   `

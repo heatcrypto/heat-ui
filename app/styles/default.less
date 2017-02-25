@@ -26,6 +26,19 @@ md-list-item::before {
   min-height: 10px;
 }
 
-.md-button.md-primary {
-  background-color: @blue;
+.md-button {
+  font-family: Roboto;
+  font-size: 17px;
+  line-height: 20px;
+  color: @white !important;
+  text-align: center;
+  padding: 7px 20px;
+  font-style: normal;
+  margin: 0 4px;
+  &.md-primary {
+    background-color: @blue;
+  }
+  &.md-warn {
+    background-color: @orange;
+  }
 }
