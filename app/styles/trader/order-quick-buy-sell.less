@@ -1,0 +1,36 @@
+@import '../colors';
+
+trader-quick-buy-sell {
+  font-family: Roboto;
+  padding: 20px;
+  background-color: @dark-blue2;
+  margin: 9px !important;
+  border-radius: 4px;
+  .trader-component-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  form {
+    font-size: 12px;
+    line-height: 40px;
+    .text-cell {
+      font-weight: bold;
+      margin-left: 13px;
+    }
+    input[type="text"]  {
+      height: 30px;
+      background-color: @white005;
+      color: @white;
+      border: none;
+      padding: 0px 4px;
+      text-align: right;
+      margin-top: 5px;
+      &:focus {
+        border: solid 1px #707070;
+      }
+    }
+    .fee {
+      text-align: right;
+    }
+  }
+}
