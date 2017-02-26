@@ -43,6 +43,15 @@ md-list-item::before,
     background-color: @orange;
   }
 }
+md-dialog {
+  md-toolbar {
+    h2 {
+      color: @gray3;
+      font-weight: bold !important;
+      font-size: 14px !important;
+    }
+  }
+}
 
 ::-webkit-scrollbar {
     width: 7px;
@@ -57,3 +66,84 @@ md-list-item::before,
 }
 
 textarea, input, button { outline: none; }
+
+.widget {
+  font-family: Roboto;
+  padding: 20px;
+  background-color: @dark-blue015;
+  box-shadow:0 0 2px 0 rgba(0,0,0, 0.2);
+  .trader-component-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+    .balance {
+      font-weight: bold;
+    }
+  }
+}
+
+.list {
+  md-list {
+    padding: 0px;
+  }
+  md-list-item, md-list-item .md-list-item-inner {
+    height: 20px !important;
+    line-height: 20px;
+    overflow: hidden;
+  }
+  .content {
+    opacity: 0.6;
+    font-size: 12px;
+    text-align: right;
+  }
+  .header {
+    font-size: 12px;
+    font-weight: bold;
+  }
+  md-list-item:nth-child(even) {
+    background-color: @dark-blue2;
+  }
+  .md-button.md-no-style {
+    padding: 0px 3px 0px 0px !important;
+  }
+  md-list-item.md-no-proxy {
+    padding: 0px 10px 0px 0px !important;
+  }
+  .truncate-col {
+      text-align: right;
+      margin-right: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      min-width: 70px;
+      max-width: 120px;
+      flex-grow: 1;
+      &.sum-col {
+        margin-right: 0px;
+      }
+    }
+}
+
+input[type="radio"] {
+    background-color: @gray4;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-block;
+    height: 15px;
+    margin: 0px;
+    position: relative;
+    width: 15px;
+    -webkit-appearance: none;
+}
+input[type="radio"]:after {
+    background-color: @gray4;
+    border-radius: 25px;
+    content: '';
+    display: block;
+    height: 7px;
+    left: 4px;
+    position: relative;
+    top: 4px;
+    width: 7px;
+}
+input[type="radio"]:checked:after {
+    background-color: @white;
+}

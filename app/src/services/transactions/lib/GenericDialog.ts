@@ -182,25 +182,25 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
 
           <!-- EDIT -->
           <div ng-switch-when="0">
-            <md-button ng-click="vm.cancelBtn()">Cancel</md-button>
-            <md-button ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid">{{vm.okBtnTitle}}</md-button>
+            <md-button class="md-primary" ng-click="vm.cancelBtn()">Cancel</md-button>
+            <md-button class="md-primary" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid">{{vm.okBtnTitle}}</md-button>
           </div>
 
           <!-- CREATE -->
           <div ng-switch-when="1" ng-show="vm.busy">
-            <md-button ng-click="vm.cancelBtn()">Cancel</md-button>
+            <md-button class="md-primary" ng-click="vm.cancelBtn()">Cancel</md-button>
           </div>
 
           <!-- SIGN -->
           <div ng-switch-when="2">
-            <md-button ng-click="vm.cancelBtn()" ng-show="vm.busy">Cancel</md-button>
-            <md-button ng-click="vm.cancelBtn()" ng-show="vm.error">Close</md-button>
+            <md-button class="md-primary" ng-click="vm.cancelBtn()" ng-show="vm.busy">Cancel</md-button>
+            <md-button class="md-primary" ng-click="vm.cancelBtn()" ng-show="vm.error">Close</md-button>
           </div>
 
           <!-- BROADCAST -->
           <div ng-switch-when="3">
-            <md-button ng-click="vm.cancelBtn()" ng-show="vm.broadcastState==1 || vm.broadcastState==2">Cancel</md-button>
-            <!-- <md-button ng-click="vm.reset()" ng-show="!vm.broadcastState && !vm.error && !vm.busy">More</md-button> -->
+            <md-button class="md-primary" ng-click="vm.cancelBtn()" ng-show="vm.broadcastState==1 || vm.broadcastState==2">Cancel</md-button>
+            <!-- <md-button class="md-primary" ng-click="vm.reset()" ng-show="!vm.broadcastState && !vm.error && !vm.busy">More</md-button> -->
           </div>
         </md-dialog-actions>
       </form>

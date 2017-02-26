@@ -63,7 +63,7 @@ class AssetTransferDialog extends GenericDialog {
               private amount: string,
               private userMessage: string) {
     super($event);
-    this.dialogTitle = 'Asset Trasfer';
+    this.dialogTitle = 'Asset Transfer';
     this.dialogDescription = 'Description on how to transfer asset';
     this.okBtnTitle = 'SEND';
 

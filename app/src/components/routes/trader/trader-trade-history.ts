@@ -28,7 +28,7 @@
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Past trades&nbsp;
         <span flex></span>
-        <span layout="row" ng-if="vm.user.unlocked">
+        <span layout="row" ng-if="vm.user.unlocked" class="selector">
           <label>
             <input type="radio" name="trader-show-trades" value="all" ng-model="vm.showTheseTrades" ng-change="vm.updateView()">
             <i>Show all trades</i>

@@ -123,10 +123,9 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
                 BUY
               </md-button>
             </div>
-            <div layout="column" flex layout-align="center center">
-              <div layout="row">1-click orders</div>
+            <div layout="row" flex layout-align="center center">
               <md-switch ng-model="vm.oneClickOrders" aria-label="1-click orders" class="md-primary" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-                <span ng-show="vm.oneClickOrders"><b>on</b></span><span ng-hide="vm.oneClickOrders">off</span>
+                <span ng-show="vm.oneClickOrders"><b>1-click orders enabled</b></span><span ng-hide="vm.oneClickOrders">1-click orders disabled</span>
               </md-switch>
             </div>
             <div layout="column">

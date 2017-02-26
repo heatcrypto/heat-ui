@@ -1,15 +1,9 @@
 @import '../colors';
+@import '../default';
 
 trader-quick-buy-sell {
-  font-family: Roboto;
-  padding: 20px;
-  background-color: @dark-blue2;
-  margin: 9px !important;
+  .widget();
   border-radius: 4px;
-  .trader-component-title {
-    font-size: 16px;
-    margin-bottom: 12px;
-  }
   form {
     font-size: 12px;
     line-height: 40px;
@@ -22,7 +16,7 @@ trader-quick-buy-sell {
       background-color: @white005;
       color: @white;
       border: none;
-      padding: 0px 4px;
+      padding: 8px;
       text-align: right;
       margin-top: 5px;
       &:focus {
@@ -31,6 +25,13 @@ trader-quick-buy-sell {
     }
     .fee {
       text-align: right;
+    }
+    [layout=column] > div .md-button {
+      position: relative;
+      top: 20px;
+    }
+    md-switch {
+      margin: 24px 0 0 0;
     }
   }
 }
