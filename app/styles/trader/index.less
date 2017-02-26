@@ -1,18 +1,17 @@
 @import './info';
 @import './orders';
 @import './order-quick-buy-sell';
+@import './volume';
 @import './sidenav/index';
 
 trader {
   md-sidenav {
     margin-right: 14px !important;
   }
-  & > div [layout=column] {
-    [layout=column] {
-      margin-bottom: 9px;
-      .trader-component {
-        margin-right: 9px;
-      }
+  .layout-row {
+    margin-bottom: 9px;
+    .trader-component {
+      margin-right: 9px;
     }
   }
 }
