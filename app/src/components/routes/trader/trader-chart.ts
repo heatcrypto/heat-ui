@@ -103,15 +103,17 @@ class TraderChartComponent {
       let y = d3.scaleLinear()
         .range([height, 0]);
 
-      let candlestick = techan.plot.candlestick()
-        .xScale(x)
-        .yScale(y);
+      var close = techan.plot.close()
+          .xScale(x)
+          .yScale(y);
 
       let xAxis = d3.axisBottom()
-        .scale(x);
+        .scale(x)
+        .ticks(6)
 
       let yAxis = d3.axisLeft()
-        .scale(y);
+        .scale(y)
+        .ticks(6)
 
       d3.selectAll('svg').remove();
 
@@ -122,7 +124,7 @@ class TraderChartComponent {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
       let parseDate = d3.timeParse("%d-%b-%y");
-      let accessor = candlestick.accessor();
+      let accessor = close.accessor();
       let data = [];
       heatChart.data.forEach(function (d) {
         /**
@@ -150,36 +152,114 @@ class TraderChartComponent {
       });
 
       svg.append("g")
-        .attr("class", "candlestick");
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")");
 
       svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")");
+              .attr("class", "y axis")
 
-      svg.append("g")
-        .attr("class", "y axis")
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("Price ($)");
+      x.domain(data.map(close.accessor().d));
+      y.domain(techan.scale.plot.ohlc(data, close.accessor()).domain());
 
-      draw(data);
+      var defs = svg.append("defs");
+
+      // Create the "volume" graph.
+      var volumeArea = d3.area()
+        .x(function(d) { return x(d.date); })
+        .y0(height)
+        .y1(function(d) { return y(d.volume / 1000000000); })
+        .curve(d3.curveBasis)
+
+      var volumeGradient = defs.append("linearGradient")
+        .attr("id", "svgVolumeGradient")
+        .attr("x1", "0%")
+        .attr("x2", "0%")
+        .attr("y1", "100%")
+        .attr("y2", "40%");
+
+      volumeGradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        .attr("stop-color", "#223141")
+        .attr("stop-opacity", 0.1);
+
+      volumeGradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        .attr("stop-color", "#4e5fd3")
+        .attr("stop-opacity", 0.2);
+
+      svg.append("path")
+        .datum(data)
+        .attr("class", "area")
+        .attr("fill","url(#svgVolumeGradient)")
+        .attr("d", volumeArea);
+
+      let volumeLine = d3.line()
+      .x(function(d) { return x(d.date); })
+      .y(function(d) { return y(d.volume / 1000000000); })
+      .curve(d3.curveBasis)
+
+      svg.append("path")
+        .datum(data)
+        .attr("class", "volume")
+        .attr("fill","none")
+        .attr("stroke", "#4e5fd3")
+        .attr("stroke-width", "1px")
+        .attr("d", volumeLine)
+
+      // Create the "close" graph.
+      var closeArea = d3.area()
+        .x(function(d) { return x(d.date); })
+        .y0(height)
+        .y1(function(d) { return y(d.close); })
+        .curve(d3.curveBasis)
+
+      var closeGradient = defs.append("linearGradient")
+        .attr("id", "svgCloseGradient")
+        .attr("x1", "0%")
+        .attr("x2", "0%")
+        .attr("y1", "100%")
+        .attr("y2", "40%");
+
+      closeGradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        .attr("stop-color", "#223141")
+        .attr("stop-opacity", 0.1);
+
+      closeGradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        .attr("stop-color", "#ea543d")
+        .attr("stop-opacity", 0.2);
+
+      svg.append("path")
+        .datum(data)
+        .attr("class", "area")
+        .attr("fill","url(#svgCloseGradient)")
+        .attr("d", closeArea);
+
+      let closeLine = d3.line()
+      .x(function(d) { return x(d.date); })
+      .y(function(d) { return y(d.close); })
+      .curve(d3.curveBasis)
+
+      svg.append("path")
+        .datum(data)
+        .attr("class", "close")
+        .attr("fill","none")
+        .attr("stroke", "#ea543d")
+        .attr("stroke-width", "1px")
+        .attr("d", closeLine)
+
+      svg.selectAll("g.x.axis").call(xAxis);
+      svg.selectAll("g.y.axis").call(yAxis);
 
       function convertToDate(date) {
         let format = 'dd-mmm-yy';
         let dateFormated = utils.timestampToDate(parseInt(date));
         return dateFormat(dateFormated, format);
-      }
-
-      function draw(data) {
-        x.domain(data.map(candlestick.accessor().d));
-        y.domain(techan.scale.plot.ohlc(data, candlestick.accessor()).domain());
-
-        svg.selectAll("g.candlestick").datum(data).call(candlestick);
-        svg.selectAll("g.x.axis").call(xAxis);
-        svg.selectAll("g.y.axis").call(yAxis);
       }
     });
   }
