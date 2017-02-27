@@ -3,6 +3,14 @@
 
 trader-chart {
   .widget();
+  .intervals > div {
+    margin-right: 10px;
+    &:focus {
+      outline: none;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  }
   g.axis {
     line {
       visibility: hidden;

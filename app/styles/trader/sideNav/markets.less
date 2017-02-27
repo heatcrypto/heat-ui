@@ -5,36 +5,35 @@ trader-markets {
   .widget();
   margin-top: 12px;
   height: 100%;
-  &.layout-fill {
-    margin-top: 12px;
-  }
   input[type="text"] {
     background-color: @dark-blue2;
     width: 100%;
     height: 27px;
     border: none;
     box-shadow: none;
-    font-size: 21px;
-    margin-bottom: 12px;
+    font-size: 16px;
+    line-height: 16px;
+    margin-bottom: 0px;
+    padding: 2px 6px;
     &::-webkit-input-placeholder { /* Chrome/Opera/Safari */
       opacity:0.14;
       color: @white;
-      font-size: 21px;
+      font-size: 16px;
     }
     &::-moz-placeholder { /* Firefox 19+ */
       opacity:0.14;
       color: @white;
-      font-size: 21px;
+      font-size: 16px;
     }
     &:-ms-input-placeholder { /* IE 10+ */
       opacity:0.14;
       color: @white;
-      font-size: 21px;
+      font-size: 16px;
     }
     &:-moz-placeholder { /* Firefox 18- */
       opacity:0.14;
       color: @white;
-      font-size: 21px;
+      font-size: 16px;
     }
   }
   input[type="text"]:focus {
@@ -43,10 +42,10 @@ trader-markets {
   md-list {
     md-list-item {
       &.md-no-proxy {
-        padding: 14px 9px;
+        padding: 2px 9px;
         flex-grow: 0;
         &:first-child {
-        padding: 8px 9px;
+        padding: 2px 9px;
         opacity: 0.6;
       }
       }
