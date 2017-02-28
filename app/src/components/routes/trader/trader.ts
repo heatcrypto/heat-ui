@@ -33,27 +33,25 @@ declare var Big: any;
       <md-sidenav class="md-sidenav-left" md-component-id="trader-markets-sidenav"
           md-is-locked-open="vm.marketsSidenavLockedOpen" md-is-open="vm.marketsSidenavOpen"
           md-disable-backdrop flex layout-fill>
-        <div layout="column" flex layout-fill>
-          <trader-balances layout="column" ng-if="vm.user.unlocked"></trader-balances>
-          <trader-markets layout="column" flex layout-fill></trader-markets>
-          <trader-trollbox layout="column"></trader-trollbox>
+        <div class="sidenav-container">
+          <trader-balances ng-if="vm.user.unlocked"></trader-balances>
+          <trader-markets></trader-markets>
+          <trader-trollbox></trader-trollbox>
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div layout="column" flex layout-fill class="layout-row">
-          <div layout="column" layout-gt-sm="row" flex layout-fill>
-            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
-            <trader-chart class="trader-component" flex layout="column" layout-fill currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
-          </div>
+        <div class="trader-row top">
+            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>
+            <trader-chart class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
         </div>
-        <div layout="column" layout-gt-sm="row" flex layout-fill class="layout-row">
-          <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-orders-buy>
-          <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-quick-buy-sell>
-          <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-orders-sell>
+        <div class="trader-row middle">
+          <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-buy>
+          <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-quick-buy-sell>
+          <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"l></trader-orders-sell>
         </div>
-        <div layout="column" layout-gt-sm="row" flex layout-fill class="layout-row">
-          <trader-trade-history class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex="40" layout="column" layout-fill></trader-trade-history>
-          <trader-orders-my ng-if="vm.user.unlocked" class="trader-component" one-click-orders="vm.oneClickOrders" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex="60" layout="column" layout-fill></trader-orders-my>
+        <div class="trader-row bottom">
+          <trader-trade-history class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-trade-history>
+          <trader-orders-my ng-if="vm.user.unlocked" class="trader-component" one-click-orders="vm.oneClickOrders" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-my>
         </div>
       </div>
     </div>

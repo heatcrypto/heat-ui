@@ -2,9 +2,12 @@
 @import '../../default';
 
 trader-balances {
-  height: 100%;
   .widget();
   padding: 12px;
+  margin-bottom: 12px;
+  .md-virtual-repeat-container .md-virtual-repeat-scroller {
+    position: inherit;
+  }
   md-list-item {
     border-bottom: 1px solid @gray;
     &.header .symbol-col,

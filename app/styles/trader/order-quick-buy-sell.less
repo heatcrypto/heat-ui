@@ -3,6 +3,7 @@
 
 trader-quick-buy-sell {
   .widget();
+  max-width: 300px;
   border-radius: 4px;
   & > div {
     display: flex;
@@ -17,46 +18,55 @@ trader-quick-buy-sell {
       margin-left: auto;
       margin-right: auto;
       .row {
-        display: inline-block;
-        position: relative;
-        & > span {
-          display: inline-block;
-        }
+        display: flex;;
+        flex-grow: 1;
+        max-height: 25px;
+        margin-bottom: 2px;
         .label {
           font-weight: bold;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
           &:first-child {
             width: 80px;
           }
           &:last-child {
             width: 80px;
+            margin-left: 12px;
           }
         }
-        input[type="text"]  {
-          background-color: @white005;
-          color: @white;
-          border: none;
-          padding: 4px;
-          text-align: right;
-          width: 100px;
-          margin-right: 10px;
-          margin-bottom: 1px;
-          &:focus {
-            border: solid 1px #707070;
+        .input {
+          position: relative;
+          width: 108px;
+          input[type="text"]  {
+            background-color: @white005;
+            color: @white;
+            border: none;
+            padding: 4px;
+            text-align: right;
+            width: 100px;
+            position: absolute;
+            top: 0px;
+            bottom: 0px;
+            &:focus {
+              border: solid 1px #707070;
+            }
           }
         }
         .fee {
           text-align: right;
-          width: 100px;
-          margin-right: 10px;
-          height: 14px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
         .md-button {
           margin-top: 5px;
         }
         &.bottom-row {
           display: flex;
+          max-height: 35px;
           md-switch {
-            margin: 0px 8px;
+            margin: 5px 8px 0px;
             .md-label {
               width: 40px;
               display: inline-block;

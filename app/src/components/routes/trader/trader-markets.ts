@@ -23,36 +23,32 @@
 @Component({
   selector: 'traderMarkets',
   template: `
-    <div layout="column" flex>
-      <div layout="row" class="trader-component-title">Markets&nbsp;
-        <span flex></span>
-        <elipses-loading ng-show="vm.loading"></elipses-loading>
-      </div>
-      <div layout="row">
-        <input type="text" disabled placeholder="Search markets"></input>
-      </div>
-      <md-list flex layout-fill layout="column">
-        <md-list-item>
-          <div class="truncate-col market-col">Market</div>
-          <div class="truncate-col change-col">Change</div>
-          <div class="truncate-col price-col">Price</div>
-          <div class="truncate-col vol-col" flex>Vol</div>
-        </md-list-item>
-        <md-virtual-repeat-container flex layout-fill layout="column"
-            virtual-repeat-flex-helper ng-if="vm.markets.length>0">
-          <md-list-item md-virtual-repeat="item in vm.markets">
-            <div class="truncate-col market-col">
-              <a href="#/trader/{{item.currency}}/{{item.asset}}">
-                <span ng-class="{certified:item.currencyInfo.certified}">{{item.currencyInfo.symbol}}</span>/<span ng-class="{certified:item.assetInfo.certified}">{{item.assetInfo.symbol}}</span>
-              </a>
-            </div>
-            <div class="truncate-col change-col">{{item.change}}</div>
-            <div class="truncate-col price-col">{{item.price}}</div>
-            <div class="truncate-col vol-col right-align" flex>{{item.vol}}</div>
-          </md-list-item>
-        </md-virtual-repeat-container>
-      </md-list>
+    <div class="trader-component-title">Markets&nbsp;
+      <span flex></span>
+      <elipses-loading ng-show="vm.loading"></elipses-loading>
     </div>
+    <input type="text" disabled placeholder="Search markets"></input>
+    <md-list flex layout-fill layout="column">
+      <md-list-item>
+        <div class="truncate-col market-col">Market</div>
+        <div class="truncate-col change-col">Change</div>
+        <div class="truncate-col price-col">Price</div>
+        <div class="truncate-col vol-col" flex>Vol</div>
+      </md-list-item>
+      <md-virtual-repeat-container flex layout-fill layout="column"
+          virtual-repeat-flex-helper ng-if="vm.markets.length>0">
+        <md-list-item md-virtual-repeat="item in vm.markets">
+          <div class="truncate-col market-col">
+            <a href="#/trader/{{item.currency}}/{{item.asset}}">
+              <span ng-class="{certified:item.currencyInfo.certified}">{{item.currencyInfo.symbol}}</span>/<span ng-class="{certified:item.assetInfo.certified}">{{item.assetInfo.symbol}}</span>
+            </a>
+          </div>
+          <div class="truncate-col change-col">{{item.change}}</div>
+          <div class="truncate-col price-col">{{item.price}}</div>
+          <div class="truncate-col vol-col right-align" flex>{{item.vol}}</div>
+        </md-list-item>
+      </md-virtual-repeat-container>
+    </md-list>
   `
 })
 @Inject('$scope','heat','assetInfo','HTTPNotify','storage','$q','$mdToast')

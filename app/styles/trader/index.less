@@ -9,10 +9,26 @@ trader {
   md-sidenav {
     margin-right: 14px !important;
   }
+  .trader-row {
+    display: flex;
+    margin-bottom: 8px;
+    &.top {
+      flex-grow:1;
+      max-height: 280px;
+    }
+    &.middle {
+      flex-grow:1;
+      max-height: 280px;
+    }
+    &.bottom {
+      flex-grow:1;
+    }
+  }
   .layout-row {
     margin-bottom: 9px;
     .trader-component {
       margin-right: 9px;
+      flex-grow: 1;
     }
     &:last-child {
       margin-bottom: 0px;

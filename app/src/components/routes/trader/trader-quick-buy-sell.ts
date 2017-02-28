@@ -54,64 +54,64 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
       <div class="trader-component-title">Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
       <form name="quickBuySellForm">
         <div class="row">
-          <span class="label">
+          <div class="label">
             Unit price
-          </span>
-          <span>
+          </div>
+          <div class="input">
             <input id="trader-quick-buy-sell-price-input" type="text" ng-model="vm.price" required max-decimals="{{vm.currencyInfo.decimals}}"
               ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-          </span>
-          <span class="label">
+          </div>
+          <div class="label">
             {{vm.currencyInfo.symbol}} / {{vm.assetInfo.symbol}}
-          </span>
+          </div>
         </div>
         <div class="row">
-          <span class="label">
+          <div class="label">
             Amount
-          </span>
-          <span>
+          </div>
+          <div class="input">
             <input id="trader-quick-buy-sell-quantity-input" type="text" ng-model="vm.quantity" required max-decimals="{{vm.assetInfo.decimals}}"
               ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-          </span>
-          <span class="label">
+          </div>
+          <div class="label">
             {{vm.assetInfo.symbol}}
-          </span>
+          </div>
         </div>
         <div class="row">
-          <span class="label">
+          <div class="label">
             Fees
-          </span>
-          <span class="fee">
+          </div>
+          <div class="fee input">
             {{vm.fee}}
-          </span>
-          <span class="label">
+          </div>
+          <div class="label">
             HEAT
-          </span>
+          </div>
         </div>
         <div class="row">
-          <span class="label">
+          <div class="label">
             Expiry in
-          </span>
-          <span>
+          </div>
+          <div class="input">
             <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-          </span>
-          <span class="label">
+          </div>
+          <div class="label">
             Minutes
-          </span>
+          </div>
         </div>
         <div class="row">
-          <span class="label">
+          <div class="label">
             Total
-          </span>
-          <span>
+          </div>
+          <div class="input">
             <input type="text" id="trader-quick-buy-sell-total-input" ng-model="vm.total" required max-decimals="{{vm.currencyInfo.decimals}}"
               ng-change="vm.recalculateTotal()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-          </span>
-          <span class="label">
+          </div>
+          <div class="label">
             {{vm.currencyInfo.symbol}}
-          </span>
+          </div>
         </div>
-        <div ng-hide="vm.user.unlocked">
+        <div ng-hide="vm.user.unlocked" class="row bottom-row">
           <md-button class="md-primary" aria-label="Sign in" href="#/login">
             Sign in to trade
           </md-button>
