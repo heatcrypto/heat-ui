@@ -50,89 +50,87 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
   selector: 'traderQuickBuySell',
   inputs: ['currencyInfo','assetInfo','selectedOrder','oneClickOrders'],
   template: `
-    <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" flex>Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
-      <form name="quickBuySellForm" layout-fill flex layout="column">
-        <div layout="column" flex>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Unit price
-            </div>
-            <div layout="column" flex>
-              <input id="trader-quick-buy-sell-price-input" type="text" ng-model="vm.price" required max-decimals="{{vm.currencyInfo.decimals}}"
-                ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              {{vm.currencyInfo.symbol}} / {{vm.assetInfo.symbol}}
-            </div>
-          </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Amount
-            </div>
-            <div layout="column" flex>
-              <input id="trader-quick-buy-sell-quantity-input" type="text" ng-model="vm.quantity" required max-decimals="{{vm.assetInfo.decimals}}"
-                ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              {{vm.assetInfo.symbol}}
-            </div>
-          </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Fees
-            </div>
-            <div layout="column" flex class="right-align fee">
-              {{vm.fee}}
-            </div>
-            <div class="text-cell" layout="column" flex>
-              HEAT
-            </div>
-          </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Expiry in
-            </div>
-            <div layout="column" flex>
-              <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              Minutes
-            </div>
-          </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Total
-            </div>
-            <div layout="column" flex>
-              <input type="text" id="trader-quick-buy-sell-total-input" ng-model="vm.total" required max-decimals="{{vm.currencyInfo.decimals}}"
-                ng-change="vm.recalculateTotal()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              {{vm.currencyInfo.symbol}}
-            </div>
-          </div>
-          <div layout="row" class="row-element" ng-hide="vm.user.unlocked" layout-align="center center" flex>
-            <md-button class="md-primary" aria-label="Sign in" href="#/login">
-              Sign in to trade
+    <div>
+      <div class="trader-component-title">Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
+      <form name="quickBuySellForm">
+        <div class="row">
+          <span class="label">
+            Unit price
+          </span>
+          <span>
+            <input id="trader-quick-buy-sell-price-input" type="text" ng-model="vm.price" required max-decimals="{{vm.currencyInfo.decimals}}"
+              ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+          </span>
+          <span class="label">
+            {{vm.currencyInfo.symbol}} / {{vm.assetInfo.symbol}}
+          </span>
+        </div>
+        <div class="row">
+          <span class="label">
+            Amount
+          </span>
+          <span>
+            <input id="trader-quick-buy-sell-quantity-input" type="text" ng-model="vm.quantity" required max-decimals="{{vm.assetInfo.decimals}}"
+              ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+          </span>
+          <span class="label">
+            {{vm.assetInfo.symbol}}
+          </span>
+        </div>
+        <div class="row">
+          <span class="label">
+            Fees
+          </span>
+          <span class="fee">
+            {{vm.fee}}
+          </span>
+          <span class="label">
+            HEAT
+          </span>
+        </div>
+        <div class="row">
+          <span class="label">
+            Expiry in
+          </span>
+          <span>
+            <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+          </span>
+          <span class="label">
+            Minutes
+          </span>
+        </div>
+        <div class="row">
+          <span class="label">
+            Total
+          </span>
+          <span>
+            <input type="text" id="trader-quick-buy-sell-total-input" ng-model="vm.total" required max-decimals="{{vm.currencyInfo.decimals}}"
+              ng-change="vm.recalculateTotal()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+          </span>
+          <span class="label">
+            {{vm.currencyInfo.symbol}}
+          </span>
+        </div>
+        <div ng-hide="vm.user.unlocked">
+          <md-button class="md-primary" aria-label="Sign in" href="#/login">
+            Sign in to trade
+          </md-button>
+        </div>
+        <div ng-show="vm.user.unlocked" class="row bottom-row">
+          <div>
+            <md-button class="md-primary" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid">
+              BUY
             </md-button>
           </div>
-          <div layout="row" class="row-element" ng-show="vm.user.unlocked" layout-align="center center" flex>
-            <div layout="column">
-              <md-button class="md-primary" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid">
-                BUY
-              </md-button>
-            </div>
-            <div layout="row" flex layout-align="center center">
-              <md-switch ng-model="vm.oneClickOrders" aria-label="1-click orders" class="md-primary" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-                <span ng-show="vm.oneClickOrders"><b>1-click orders enabled</b></span><span ng-hide="vm.oneClickOrders">1-click orders disabled</span>
-              </md-switch>
-            </div>
-            <div layout="column">
-              <md-button class="md-warn" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid">
-                SELL
-              </md-button>
-            </div>
+          <div>
+            <md-switch ng-model="vm.oneClickOrders" aria-label="1-click orders" class="md-primary" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+              <span ng-show="vm.oneClickOrders"><b>1-click orders enabled</b></span><span ng-hide="vm.oneClickOrders">1-click orders disabled</span>
+            </md-switch>
+          </div>
+          <div>
+            <md-button class="md-warn" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid">
+              SELL
+            </md-button>
           </div>
         </div>
       </form>

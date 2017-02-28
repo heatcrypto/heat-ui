@@ -4,34 +4,78 @@
 trader-quick-buy-sell {
   .widget();
   border-radius: 4px;
-  form {
-    font-size: 12px;
-    line-height: 40px;
-    .text-cell {
-      font-weight: bold;
-      margin-left: 13px;
-    }
-    input[type="text"]  {
-      height: 30px;
-      background-color: @white005;
-      color: @white;
-      border: none;
-      padding: 8px;
-      text-align: right;
-      margin-top: 5px;
-      &:focus {
-        border: solid 1px #707070;
+  & > div {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    form {
+      font-size: 12px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-left: auto;
+      margin-right: auto;
+      .row {
+        display: inline-block;
+        position: relative;
+        & > span {
+          display: inline-block;
+        }
+        .label {
+          font-weight: bold;
+          &:first-child {
+            width: 80px;
+          }
+          &:last-child {
+            width: 80px;
+          }
+        }
+        input[type="text"]  {
+          background-color: @white005;
+          color: @white;
+          border: none;
+          padding: 4px;
+          text-align: right;
+          width: 100px;
+          margin-right: 10px;
+          margin-bottom: 1px;
+          &:focus {
+            border: solid 1px #707070;
+          }
+        }
+        .fee {
+          text-align: right;
+          width: 100px;
+          margin-right: 10px;
+          height: 14px;
+        }
+        .md-button {
+          margin-top: 5px;
+        }
+        &.bottom-row {
+          display: flex;
+          md-switch {
+            margin: 0px 8px;
+            .md-label {
+              width: 40px;
+              display: inline-block;
+              white-space: initial;
+              line-height: 12px;
+            }
+            .md-bar {
+              top: 8px;
+              height: 8px;
+              width: 24px;
+            }
+            .md-thumb {
+              top: 6px;
+              height: 8px;
+              width: 8px;
+            }
+          }
+        }
       }
-    }
-    .fee {
-      text-align: right;
-    }
-    [layout=column] > div .md-button {
-      position: relative;
-      top: 20px;
-    }
-    md-switch {
-      margin: 24px 0 0 0;
     }
   }
 }
