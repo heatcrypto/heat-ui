@@ -67,30 +67,6 @@ class OrdersProvider implements IPaginatedDataProvider {
 
   public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
   public removeObserver(observer: IPaginatedDataProviderObserver) { }
-
-  __sample(firstIndex:number, lastIndex:number): Array<IHeatOrder> {
-    var i = firstIndex;
-    var s = () => 'str'+(i++);
-    var ret: Array<IHeatOrder> = [];
-    for (var j=firstIndex; j<=lastIndex; j++) {
-      ret.push({
-        expiration: i++,
-        order: s(),
-        currency: s(),
-        asset: s(),
-        account: s(),
-        quantity: s(),
-        unconfirmedQuantity: s(),
-        price: s(),
-        height: i++,
-        transactionIndex: i++,
-        type: j % 2 == 0 ? 'ask':'bid',
-        cancelled: false,
-        unconfirmed: false
-      })
-    }
-    return ret;
-  }
 }
 
 
