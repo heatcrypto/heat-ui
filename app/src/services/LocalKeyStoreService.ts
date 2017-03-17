@@ -37,26 +37,31 @@ class LocalKeyStoreService {
     //updateLegacyLocalKeyStoreData(this.store); // Need to do this to stay compatible with 0.1.0 release format.
   }
 
+  testnet() {
+    return heat.isTestnet ? '.testnet' : '';
+  }
+
   add(key: ILocalKey) {
-    this.store.put(`key.${key.account}`, this.encode(key));
-    this.store.put(`name.${key.account}`, key.name);
+    this.store.put(`key.${key.account}${this.testnet()}`, this.encode(key));
+    this.store.put(`name.${key.account}${this.testnet()}`, key.name);
   }
 
   /* lists all numeric account ids we have keys for */
   list(): Array<string> {
+    var test = heat.isTestnet ? /key\.\d+\.testnet/ : /key\.\d+/;
     return this.store.keys().
-                      filter((keyName) => keyName.indexOf("key.") == 0).
-                      map((keyName) => keyName.substring("key.".length));
+                      filter((keyName) => test.test(keyName)).
+                      map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));
   }
 
   /* lookup and return the account key name - if there is any */
   keyName(account: string) {
-    return this.store.get(`name.${account}`);
+    return this.store.get(`name.${account}${this.testnet()}`);
   }
 
   remove(account: string) {
-    this.store.remove(`key.${account}`);
-    this.store.remove(`name.${account}`);
+    this.store.remove(`key.${account}${this.testnet()}`);
+    this.store.remove(`name.${account}${this.testnet()}`);
   }
 
   encode(key: ILocalKey): string {
@@ -83,7 +88,7 @@ class LocalKeyStoreService {
   }
 
   load(account: string, passphrase: string): ILocalKey {
-    var contents = this.store.get("key."+account);
+    var contents = this.store.get(`key.${account}${this.testnet()}`);
     try {
       return this.decode(contents, passphrase);
     } catch (e) {
