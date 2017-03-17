@@ -1,6 +1,6 @@
 {
   "name": "heatwallet",
-  "version": "1.0.1",
+  "version": "1.0.11",
   "description": "Heat Ledger Generic Client Framework",
   "author": "Heat Ledger Ltd.",
   "homepage": "http://heatledger.com",
@@ -21,7 +21,7 @@
     "connect": "3.4.1",
     "del": "2.2.2",
     "electron": "1.4.15",
-    "electron-builder": "^13.8.2",
+    "electron-builder": "14.5.2",
     "electron-builder-squirrel-windows": "13.6.1",
     "electron-packager": "^8.5.1",
     "es6-promise": "3.2.1",
@@ -73,9 +73,8 @@
       }
     ],
     "win": {
-      "iconUrl": "https://raw.githubusercontent.com/Heat-Ledger-Ltd/heat-ui/e03bf2ba200afacf37007bf7569dc51011e67815/build/icon.ico",
       "target": [
-        "squirrel"
+        "nsis"
       ]
     },
     "linux": {
