@@ -39,22 +39,56 @@
   trader-info-asset-description .seperator {
     padding-bottom: 8px;
   }
+  trader-info-asset-description table {
+    width: 100%;
+  }
+  trader-info-asset-description table td .stretched {
+    width: 100%;
+  }
+  trader-info-asset-description table td md-icon {
+    font-weight: bold;
+    color: red;
+  }
+  trader-info-asset-description table td md-icon.iscertified {
+    color: green !important;
+  }
   `],
   template: `
     <div layout="row" flex layout-fill>
-      <div layout="column">
-        <pre class="description" flex>Issued by:
-{{vm.issuedBy}}
-{{vm.launched}}
-Id:
-{{vm.assetId}}
-# of assets:
-{{vm.numberOfAssets}}</pre>
-      </div>
-      <div layout="column" flex>
-        <pre class="description" flex>Description:
-{{vm.description}}</pre>
-      </div>
+      <table>
+        <tr>
+          <td ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</td>
+          <td class="stretch" ng-class="{certified:vm.currencyInfo.certified}"><i>{{vm.currencyInfo.name}}</i></td>
+          <td ng-class="{certified:vm.currencyInfo.certified}">{{vm.assetInfo.symbol}}</td>
+          <td class="stretch" ng-class="{certified:vm.currencyInfo.certified}"><i>{{vm.assetInfo.name}}</i></td>
+        </tr>
+        <tr>
+          <td>Issuer</td>
+          <td class="stretch">{{vm.currencyIssuer}}</td>
+          <td>Issuer</td>
+          <td class="stretch">{{vm.assetIssuer}}</td>
+        </tr>
+        <tr>
+          <td>Certified</td>
+          <td class="stretch">
+            <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
+          </td>
+          <td>Certified</td>
+          <td class="stretch">
+            <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
+          </td>
+        </tr>
+        <tr>
+          <td>Launched</td>
+          <td class="stretch">{{vm.currencyLaunched}}</td>
+          <td>Launched</td>
+          <td class="stretch">{{vm.assetLaunched}}</td>
+        </tr>
+        <tr>
+          <td colspan="2"><button ng-click="vm.showDescription($event, vm.currencyInfo)">More info</button></td>
+          <td colspan="2"><button ng-click="vm.showDescription($event, vm.assetInfo)">More info</button></td>
+        </tr>
+      </table>
     </div>
   `
 })
@@ -66,11 +100,10 @@ class TraderInfoAssetDescriptionComponent {
   assetInfo: AssetInfo; // @input
 
   isBtcAsset=false;
-  issuedBy: string;
-  numberOfAssets: string;
-  launched: string;
-  description: string;
-  assetId: string;
+  currencyIssuer: string;
+  assetIssuer: string;
+  currencyLaunched: string;
+  assetLaunched: string;
 
   constructor(private $scope: angular.IScope,
               private settings: SettingsService,
@@ -80,43 +113,51 @@ class TraderInfoAssetDescriptionComponent {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
-        this.description = "Loading description from issuer site ...";
-
-        this.loadDescription(this.isBtcAsset ? this.currencyInfo : this.assetInfo);
-
-        this.assetId = this.isBtcAsset ? this.currencyInfo.id : this.assetInfo.id
-        this.loadInfo(this.assetId);
+        this.loadCurrencyInfo(this.currencyInfo.id);
+        this.loadAssetInfo(this.assetInfo.id);
         unregister.forEach(fn => fn());
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
   }
 
-  loadDescription(info: AssetInfo) {
-    this.assetInfoService.getAssetDescription(info).then((description)=>{
-      this.$scope.$evalAsync(()=> {
-        this.description = description;
-      })
-    })
-  }
-
-  loadInfo(id: string) {
+  loadCurrencyInfo(id: string) {
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     if (id=="0") {
       this.$scope.$evalAsync(()=> {
-        this.issuedBy = "heatledger.com"
-        this.numberOfAssets = "25,000,000";
+        this.currencyIssuer = "Heat Ledger Ltd.";
+        this.currencyLaunched = dateFormat(utils.timestampToDate(100149557), format);
       });
     }
     else {
-      this.heat.api.getAsset(id).then((asset)=> {
+      this.heat.api.getAsset(id, "0", 1).then((asset)=> {
         this.$scope.$evalAsync(()=> {
-          this.issuedBy = asset.account;
-          this.numberOfAssets = utils.formatQNT(asset.quantityQNT, asset.decimals);
-          var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-          var date = utils.timestampToDate(parseInt("10000" /*asset.timestamp*/));
-          this.launched = dateFormat(date, format);
+          this.currencyIssuer = asset.account == "9583431768758058558" ? "Heat Ledger Ltd." : asset.account;
+          this.currencyLaunched = "";//dateFormat(utils.timestampToDate(asset.timestamp), format);
         });
       })
     }
+  }
+
+  loadAssetInfo(id: string) {
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    if (id=="0") {
+      this.$scope.$evalAsync(()=> {
+        this.assetIssuer = "Heat Ledger Ltd.";
+        this.assetLaunched = dateFormat(utils.timestampToDate(100149557), format);
+      });
+    }
+    else {
+      this.heat.api.getAsset(id, "0", 1).then((asset)=> {
+        this.$scope.$evalAsync(()=> {
+          this.assetIssuer = asset.account == "9583431768758058558" ? "Heat Ledger Ltd." : asset.account;
+          this.assetLaunched = "";//dateFormat(utils.timestampToDate(asset.timestamp), format);
+        });
+      })
+    }
+  }
+
+  showDescription($event, info: AssetInfo) {
+    dialogs.assetInfo($event, info);
   }
 }
