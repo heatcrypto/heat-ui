@@ -70,7 +70,7 @@
           <div class="truncate-col total-col" flex>Total ({{vm.currencyInfo.symbol}})</div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" ng-class="{'virtual': item.virtual}">
             <div class="truncate-col type-col">{{item.type}}</div>
             <div class="truncate-col time-col" flex>{{item.time}}</div>
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
@@ -130,7 +130,8 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
         trade.priceDisplay = utils.formatQNT(trade.price, this.currencyInfo.decimals);
         trade.quantityDisplay = utils.formatQNT(trade.quantity, this.assetInfo.decimals);
         var totalQNT = utils.calculateTotalOrderPriceQNT(trade.quantity, trade.price);
-        trade.total = utils.formatQNT(totalQNT,this.currencyInfo.decimals)
+        trade.total = utils.formatQNT(totalQNT,this.currencyInfo.decimals);
+        trade.virtual = trade.block == "0";
       }
     );
   }
