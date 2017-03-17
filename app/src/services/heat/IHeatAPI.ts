@@ -58,7 +58,7 @@ interface IHeatAPI {
   /**
    * Find asset by numeric id
    */
-  getAsset(asset:string):angular.IPromise<IHeatAsset>;
+  getAsset(asset:string, propertiesAccount:string, propertiesProtocol:number):angular.IPromise<IHeatAsset>;
   /**
    * Find heat asset certification information
    */
@@ -580,6 +580,10 @@ interface IHeatAsset {
    * True in case new assets can later be issued by the asset issuer
    */
   dillutable: boolean;
+  /**
+   * Launch timestamp
+   */
+  timestamp: number;
 
   properties?: string;
 }
@@ -681,6 +685,10 @@ interface IHeatOrder {
    * This is an unconfirmed or pending order
    */
   unconfirmed: boolean;
+  /**
+   * Order is currently not valid, but might become valid in the future.
+   */
+  currentlyNotValid: boolean;
 }
 interface IHeatTrade {
   /**
