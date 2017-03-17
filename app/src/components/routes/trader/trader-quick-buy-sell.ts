@@ -125,7 +125,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
               <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
             </div>
             <div class="text-cell" layout="column" flex>
-              Minutes
+              Seconds
             </div>
           </div>
           <div layout="row" class="row-element">
@@ -147,7 +147,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
           </div>
           <div layout="row" class="row-element" ng-show="vm.user.unlocked" layout-align="center center" flex>
             <div layout="column">
-              <md-button class="md-raised buy" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid">
+              <md-button class="md-raised buy" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid" ng-show="vm.isTestnet">
                 BUY
               </md-button>
             </div>
@@ -158,7 +158,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
               </md-switch>
             </div>
             <div layout="column">
-              <md-button class="md-raised sell" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid">
+              <md-button class="md-raised sell" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid" ng-show="vm.isTestnet">
                 SELL
               </md-button>
             </div>
@@ -182,6 +182,7 @@ class TraderQuickBuySellComponent {
   expiry: string = '360000'
   total: string = null;
   fee: string = utils.formatQNT(HeatAPI.fee.standard,8); // fee in HEAT
+  isTestnet: boolean;
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
@@ -196,6 +197,7 @@ class TraderQuickBuySellComponent {
         this.total = this.selectedOrder['sum'];
       }
     });
+    this.isTestnet = heat.isTestnet;
   }
 
   quickAsk($event) {
