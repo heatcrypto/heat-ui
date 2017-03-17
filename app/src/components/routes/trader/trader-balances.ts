@@ -44,7 +44,7 @@
       <md-list flex layout-fill layout="column">
         <md-list-item>
           <div class="truncate-col symbol-col">Asset</div>
-          <div class="truncate-col balance-col right-align" flex>Balance</div>
+          <div class="truncate-col balance-col right-align" flex></div>
         </md-list-item>
         <md-virtual-repeat-container flex layout-fill layout="column"
             virtual-repeat-flex-helper ng-if="vm.balances.length>0">
