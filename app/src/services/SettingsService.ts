@@ -119,14 +119,20 @@ class SettingsService {
 
     /* Override with test endpoints */
     if (heat.isTestnet) {
-      this.settings[SettingsService.HEAT_HOST_REMOTE] = "http://37.139.25.98"; // testnet
-      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7733"; // testnet
+      this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://alpha.heatledger.com"; // testnet
+      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
       this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
       this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
     }
 
     this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
+
+    // if (true) {
+    //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
+    //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
+    // }
+
   }
 
   settings={};
