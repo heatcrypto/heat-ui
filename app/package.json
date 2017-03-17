@@ -1,6 +1,6 @@
 {
-  "name": "Heatwallet",
-  "version": "1.0.1",
+  "name": "heatwallet",
+  "version": "1.0.11",
   "description": "Heat Ledger Desktop Wallet",
   "main": "electron/electron.js",
   "scripts": {
