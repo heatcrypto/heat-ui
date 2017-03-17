@@ -29,6 +29,12 @@ declare var Big: any;
   trader {
     font-size: 12px !important;
   }
+  trader .currentlyNotValid {
+    text-decoration: line-through !important;
+  }
+  trader .virtual {
+    background-color: #FFE082 !important;
+  }
   trader md-list-item {
     border-bottom: 1px solid #ddd;
   }
@@ -134,6 +140,11 @@ declare var Big: any;
     font-weight: bold;
     text-decoration: underline;
   }
+  trader .warning {
+    background-color: yellow;
+    font-weight: bold;
+    font-size: 16px !important;
+  }
   `],
   template: `
     <div layout="row" flex layout-fill>
@@ -147,6 +158,8 @@ declare var Big: any;
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
+        <div class="warning">For technical reasons Asset Exchange is currently DISABLED for some days.</div>
+
         <div layout="column" flex layout-fill>
           <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
           <div layout="column" layout-gt-sm="row" flex layout-fill>
