@@ -101,6 +101,12 @@ The initial installation of all dependencies could take a while, several minutes
 The nice thing with TypeScript is of course its strong typing, which gets even better when we can include type definitions for non-TypeScript libraries.
 Through type definitions you get full code completion and inspection for all external libraries we use (Angular, Angular Material, etc..)
 
+Install tsd
+
+```
+sudo npm install tsd -g
+```
+
 To install the required type definitions
 
 ```
