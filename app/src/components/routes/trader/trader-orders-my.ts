@@ -59,14 +59,17 @@
           <div class="truncate-col cancel-col" layout="row" layout-align="end" ng-if="vm.user.unlocked"></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry"
+              ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid||item.cancelled}">
             <div class="truncate-col type-col">{{item.typeDisplay}}</div>
             <div class="truncate-col market-col">{{item.market}}</div>
             <div class="truncate-col quantity-col">{{item.quantityDisplay}}</div>
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
             <div class="truncate-col total-col">{{item.total}}</div>
             <div class="truncate-col expires-col" flex tooltip="{{item.expires}}">{{item.expires}}</div>
-            <div class="truncate-col cancel-col" layout="row" layout-align="end" ng-if="vm.user.unlocked"><a ng-click="vm.cancelOrder(item)">Cancel</a></div>
+            <div class="truncate-col cancel-col" layout="row" layout-align="end" ng-if="vm.user.unlocked">
+              <a ng-if="!item.cancelled && !item.unconfirmed" ng-click="vm.cancelOrder(item)">Cancel</a>
+            </div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
