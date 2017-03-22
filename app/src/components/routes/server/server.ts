@@ -36,15 +36,15 @@
       padding-left: 8px !important;
     }
     server .console {
-      background-color: #424242;
+      background-color: #202020;
       border: 1px solid #BDBDBD;
       padding-right: 0px !important;
       padding-top: 0px !important;
       padding-bottom: 0px !important;
     }
     server .console pre {
-      color: #FF3D00;
-      height: 12px;
+      color: #FF8866;
+      height: 14px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
