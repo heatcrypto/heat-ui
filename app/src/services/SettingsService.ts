@@ -28,12 +28,12 @@ class SettingsService {
   private VERSION = "%BUILD_OVERRIDE_VERSION%";
   private BUILD = "%BUILD_OVERRIDE_BUILD%";
 
-  public static WEBSOCKET_URL = 'settings.websocket_url';
+  /*public static WEBSOCKET_URL = 'settings.websocket_url';
   public static WEBSOCKET_URL_FALLBACK = 'settings.websocket_url_fallback';
   public static WEBSOCKET_URL_LOCALHOST = 'settings.websocket_url_localhost';
   public static RS_ADDRESS_PREFIX = 'settings.rs_address_prefix';
   public static ENGINE_TYPE = 'settings.engine_type';
-  public static BASE_FEE = 'settings.base_fee';
+  public static BASE_FEE = 'settings.base_fee';*/
   public static DATEFORMAT_DEFAULT = 'settings.dateformat_default';
   public static APPLICATION_NAME = 'settings.application_name';
   public static APPLICATION_VERSION = 'settings.application_version';
@@ -52,7 +52,9 @@ class SettingsService {
 
   /* We are dropping the old CLOUD* and SOCKET* server api endpoints in favor of HEAT* server api */
   public static HEAT_RPC_TIMEOUT = 'settings.heat_rpc_timeout';
-  public static HEAT_WEBSOCKET_URL = 'settings.heat_websocket_url';
+  public static HEAT_WEBSOCKET_REMOTE = 'settings.heat_websocket_remote';
+  public static HEAT_WEBSOCKET_LOCAL = 'settings.heat_websocket_local';
+  public static HEAT_WEBSOCKET = 'settings.heat_websocket';
   public static LOG_HEAT_ERRORS = 'settings.log_heat_errors';
   public static LOG_HEAT_ALL = 'settings.log_heat_all';
   public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
@@ -67,12 +69,12 @@ class SettingsService {
   public static HEATLEDGER_BTC_ASSET = 'settings.heatledger_btc_asset';
 
   constructor() {
-    this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
+    /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
     this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
     this.settings[SettingsService.RS_ADDRESS_PREFIX] = 'HEAT';
     this.settings[SettingsService.ENGINE_TYPE] = 'heat';
-    this.settings[SettingsService.BASE_FEE] = '0.1';
+    this.settings[SettingsService.BASE_FEE] = '0.1';*/
 
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
@@ -100,7 +102,8 @@ class SettingsService {
     };
 
     this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.HEAT_WEBSOCKET_URL] = "";
+    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
+    this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
@@ -127,12 +130,13 @@ class SettingsService {
 
     this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
+    this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    // if (true) {
-    //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
-    //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
-    // }
-
+    if (true) {
+      this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
+      this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
+      this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
+    }
   }
 
   settings={};
