@@ -65,7 +65,19 @@ class UserBalanceComponent {
               private $q: angular.IQService,
               private $timeout: angular.ITimeoutService,
               private HTTPNotify: HTTPNotifyService) {
+
+    /* subscribe to websocket balance changed events */
+    var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
+    heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
+      if ("0" == balanceChange.currency) {
+        refresh();
+      }
+    }, $scope);
+
+    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
     this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
+    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
+
     this.refresh();
   }
 
