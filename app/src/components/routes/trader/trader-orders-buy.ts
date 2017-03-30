@@ -49,7 +49,7 @@
           <div class="truncate-col sum-col" flex>Sum ({{vm.currencyInfo.symbol}})</div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm" md-on-demand id="xx1"
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand
                ng-click="vm.select(item)" aria-label="Entry"
                ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid}">
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
