@@ -21,7 +21,7 @@
     "connect": "3.4.1",
     "del": "2.2.2",
     "electron": "1.4.15",
-    "electron-builder": "14.5.2",
+    "electron-builder": "^14.5.2",
     "electron-builder-squirrel-windows": "13.6.1",
     "electron-packager": "^8.5.1",
     "es6-promise": "3.2.1",
