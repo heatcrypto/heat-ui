@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 /* Wraps all API returned server errors */
 class ServerEngineError {
   public description: string;
@@ -47,8 +48,7 @@ declare var require : any;
 class HeatService {
 
   public api = new HeatAPI(this, this.user, this.$q);
-  public socket = new HeatSocket(this.user, this.$q, this.$timeout, this.settings);
-  public events = new HeatEvents(this);
+  public subscriber = new HeatSubscriber(this.settings.get(SettingsService.HEAT_WEBSOCKET), this.$q, this.$timeout);
 
   constructor(public $q: angular.IQService,
               private $http: angular.IHttpService,
