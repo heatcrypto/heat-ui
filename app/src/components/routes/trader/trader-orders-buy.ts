@@ -49,7 +49,7 @@
           <div class="truncate-col sum-col" flex>Sum ({{vm.currencyInfo.symbol}})</div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm" md-on-demand
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand id="xx1"
                ng-click="vm.select(item)" aria-label="Entry"
                ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid}">
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
@@ -62,7 +62,7 @@
     </div>
   `
 })
-@Inject('$scope','ordersProviderFactory','$q','heat','user','HTTPNotify')
+@Inject('$scope','ordersProviderFactory','$q','heat','user')
 class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
 
   /* @inputs */
@@ -72,22 +72,20 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
 
   currencyBalance: string = "*"; // formatted currency balance
 
-  PAGE_SIZE = 250; /* VirtualRepeatComponent */
+  PAGE_SIZE = 250; /* VirtualRepeatComponent @override */
 
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
               $q: angular.IQService,
               private heat: HeatService,
-              private user: UserService,
-              HTTPNotify: HTTPNotifyService)
+              private user: UserService)
   {
     super($scope, $q);
-    HTTPNotify.on(()=>{
-      this.determineLength();
-      this.updateCurrencyBalance();
-    }, $scope);
+
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
+
+        /* initialize virtual repeat component */
         this.initializeVirtualRepeat(
           this.ordersProviderFactory.createProvider(this.currencyInfo.id, this.assetInfo.id, null, false),
 
@@ -114,9 +112,17 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
             }
           }
         );
+
+        /* stop watching the currenyInfo and assetInfo */
         unregister.forEach(fn => fn());
+
+        /* listen to order events */
+        this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
+
         if (this.user.unlocked) {
           this.updateCurrencyBalance();
+          /* listen to balance events */
+          this.subscribeToBalanceEvents(this.user.account, this.currencyInfo.id);
         }
       }
     };
@@ -129,6 +135,20 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
     });
   }
 
+  private subscribeToOrderEvents(currency: string, asset: string) {
+    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
+      if (order.type == 'bid') {
+        refreshGrid();
+      }
+    }, this.$scope);
+  }
+
+  private subscribeToBalanceEvents(account:string, currency: string) {
+    var refreshBalance = utils.debounce(angular.bind(this, this.updateCurrencyBalance), 500, false);
+    this.heat.subscriber.balanceChanged({account:account, currency:currency}, refreshBalance, this.$scope);
+  }
+
   onSelect(selectedOrder) {
     this.selectedOrder = selectedOrder;
   }
@@ -137,7 +157,6 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
     this.heat.api.getAccountBalanceVirtual(this.user.account, this.currencyInfo.id, "0",1).then((balance)=>{
       this.$scope.$evalAsync(()=> {
         this.currencyBalance = utils.formatQNT(balance.virtualBalance, this.currencyInfo.decimals);
-        //this.currencyBalance = utils.formatQNT(balance.balance, this.currencyInfo.decimals);
       });
     },()=>{
       this.$scope.$evalAsync(()=> {
