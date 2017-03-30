@@ -145,6 +145,10 @@ class HeatSubscriber {
   }
 
   private syncTopicSubscriptions() {
+    if (!heat.isTestnet) {
+      console.log("DISABLED ON MAINNET");
+      return;
+    }
     this.getConnectedSocket().then(
       (websocket)=>{
         this.unsubscribeTopics.forEach(topic => {
