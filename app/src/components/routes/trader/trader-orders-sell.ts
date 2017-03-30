@@ -62,7 +62,7 @@
     </div>
   `
 })
-@Inject('$scope','ordersProviderFactory','$q','heat','user','HTTPNotify')
+@Inject('$scope','ordersProviderFactory','$q','heat','user')
 class TraderOrdersSellComponent extends VirtualRepeatComponent  {
 
   /* @inputs */
@@ -78,16 +78,14 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
               private ordersProviderFactory: OrdersProviderFactory,
               $q: angular.IQService,
               private heat: HeatService,
-              private user: UserService,
-              HTTPNotify: HTTPNotifyService)
+              private user: UserService)
   {
     super($scope, $q);
-    HTTPNotify.on(()=>{
-      this.determineLength();
-      this.updateAssetBalance();
-    }, $scope);
+
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
+
+        /* initialize virtual repeat component */
         this.initializeVirtualRepeat(
           this.ordersProviderFactory.createProvider(this.currencyInfo.id, this.assetInfo.id, null, true),
 
@@ -114,9 +112,15 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
             }
           }
         );
+
+        /* listen to order events */
+        this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
+
         unregister.forEach(fn => fn());
         if (this.user.unlocked) {
           this.updateAssetBalance();
+          /* listen to balance events */
+          this.subscribeToBalanceEvents(this.user.account, this.assetInfo.id);
         }
       }
     };
@@ -129,6 +133,20 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
     });
   }
 
+  private subscribeToOrderEvents(currency: string, asset: string) {
+    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
+      if (order.type == 'bid') {
+        refreshGrid();
+      }
+    }, this.$scope);
+  }
+
+  private subscribeToBalanceEvents(account:string, currency: string) {
+    var refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 500, false);
+    this.heat.subscriber.balanceChanged({account:account, currency:currency}, refreshBalance, this.$scope);
+  }
+
   onSelect(selectedOrder) {
     this.selectedOrder = selectedOrder;
   }
@@ -137,7 +155,6 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
     this.heat.api.getAccountBalanceVirtual(this.user.account, this.assetInfo.id,"0",1).then((balance)=>{
       this.$scope.$evalAsync(()=> {
         this.assetBalance = utils.formatQNT(balance.virtualBalance, this.assetInfo.decimals);
-        //this.assetBalance = utils.formatQNT(balance.balance, this.assetInfo.decimals);
       });
     },()=>{
       this.$scope.$evalAsync(()=> {
