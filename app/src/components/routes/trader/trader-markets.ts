@@ -77,7 +77,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo','HTTPNotify','storage','$q','$mdToast')
+@Inject('$scope','heat','assetInfo','storage','$q','$mdToast')
 class TraderMarketsComponent {
 
   // change, volume, price, none
@@ -90,11 +90,12 @@ class TraderMarketsComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private assetInfo: AssetInfoService,
-              HTTPNotify: HTTPNotifyService,
               private storage: StorageService,
               private $q: angular.IQService,
               private $mdToast: angular.material.IToastService) {
-    HTTPNotify.on(()=>{this.loadMarkets()}, $scope);
+
+    var refresh = utils.debounce(angular.bind(this, this.loadMarkets), 5*1000, false);
+    heat.subscriber.trade({}, (trade)=> refresh, $scope);
     this.loadMarkets();
   }
 
