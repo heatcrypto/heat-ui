@@ -73,20 +73,8 @@ class TraderBalancesComponent {
               private $q: angular.IQService) {
 
     /* subscribe to websocket balance changed events */
-    heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
-      for (var i=0; i<this.balances.length; i++) {
-        var balance = this.balances[i];
-        if (balance.id == balanceChange.currency) {
-          this.$scope.$evalAsync(() => {
-            balance.virtualBalance = balanceChange.quantity;
-            balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
-          });
-          return;
-        }
-      }
-      /* non existing balance do a reload */
-      this.loadBalances();
-    }, $scope);
+    var refresh = utils.debounce((angular.bind(this, this.loadBalances)), 1*1000, false);
+    heat.subscriber.balanceChanged({account: user.account}, refresh, $scope);
 
     this.loadBalances();
   }
