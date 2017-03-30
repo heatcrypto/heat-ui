@@ -158,7 +158,7 @@ declare var Big: any;
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div class="warning">For technical reasons Asset Exchange is currently DISABLED for some days.</div>
+        <div class="warning" ng-hide="vm.isTestnet">For technical reasons Asset Exchange is currently DISABLED for some days.</div>
 
         <div layout="column" flex layout-fill>
           <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
@@ -200,6 +200,7 @@ class TraderComponent {
   marketsSidenavLockedOpen: boolean = true;
 
   selectedOrder: IHeatOrder; // the order currently selected in either buy-orders or sell-orders lists.
+  isTestnet: boolean;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -233,5 +234,6 @@ class TraderComponent {
     });
 
     this.user.account = user.account || "";
+    this.isTestnet = heat.isTestnet;
   }
 }
