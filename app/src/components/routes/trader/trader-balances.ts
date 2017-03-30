@@ -57,7 +57,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','user','assetInfo','HTTPNotify','$q')
+@Inject('$scope','heat','user','assetInfo','$q')
 class TraderBalancesComponent {
 
   /* @inputs */
@@ -70,9 +70,24 @@ class TraderBalancesComponent {
               private heat: HeatService,
               private user: UserService,
               private assetInfoService: AssetInfoService,
-              HTTPNotify: HTTPNotifyService,
               private $q: angular.IQService) {
-    HTTPNotify.on(()=>{this.loadBalances()}, $scope);
+
+    /* subscribe to websocket balance changed events */
+    heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
+      for (var i=0; i<this.balances.length; i++) {
+        var balance = this.balances[i];
+        if (balance.id == balanceChange.currency) {
+          this.$scope.$evalAsync(() => {
+            balance.virtualBalance = balanceChange.quantity;
+            balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
+          });
+          return;
+        }
+      }
+      /* non existing balance do a reload */
+      this.loadBalances();
+    }, $scope);
+
     this.loadBalances();
   }
 
