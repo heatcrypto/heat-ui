@@ -136,7 +136,7 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
   private subscribeToOrderEvents(currency: string, asset: string) {
     var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
-      if (order.type == 'bid') {
+      if (order.type == 'ask') {
         refreshGrid();
       }
     }, this.$scope);
