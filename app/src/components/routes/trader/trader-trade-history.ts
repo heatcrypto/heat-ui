@@ -82,7 +82,7 @@
     </div>
   `
 })
-@Inject('$scope','tradesProviderFactory','$q','user','settings','HTTPNotify')
+@Inject('$scope','tradesProviderFactory','$q','user','settings','heat')
 class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
   /* @inputs */
@@ -97,14 +97,31 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
               $q: angular.IQService,
               private user: UserService,
               private settings: SettingsService,
-              HTTPNotify: HTTPNotifyService)
+              private heat: HeatService)
   {
     super($scope, $q);
-    HTTPNotify.on(()=>{this.determineLength()}, $scope);
+
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         this.createProvider();
         unregister.forEach(fn => fn());
+
+        /* reload on new trade */
+        var refresh = utils.debounce((angular.bind(this, this.determineLength)), 1*1000, false);
+        heat.subscriber.trade({}, (trade: IHeatTrade)=> {
+          if (trade.currency == this.currencyInfo.id && trade.asset == this.assetInfo.id) {
+            var account = this.showTheseTrades == 'all' ? null : this.user.account;
+            if (account) {
+              if (trade.seller != account && trade.buyer != account) {
+                return;
+              }
+            }
+            refresh();
+          }
+        }, $scope);
+
+        /* reload on block popped */
+        heat.subscriber.blockPopped({}, refresh, $scope);
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
