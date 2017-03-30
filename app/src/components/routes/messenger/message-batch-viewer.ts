@@ -44,7 +44,7 @@
   `
 })
 @Inject('$scope','$q','$timeout','$document','heat','user','settings',
-        'render','controlCharRender','storage','HTTPNotify')
+        'render','controlCharRender','storage')
 class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   private publickey: string; // @input
@@ -60,21 +60,14 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
               private settings: SettingsService,
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
-              storage: StorageService,
-              private HTTPNotify: HTTPNotifyService) {
+              storage: StorageService) {
     super($scope, $q, $timeout);
     this.store = storage.namespace('contacts.latestTimestamp',$scope);
-    HTTPNotify.on(()=> {
-      $timeout(200,false).then(()=>{
 
-        // for now use this ... until websocket is up
-        this.loadInitial();
+    var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
+    heat.subscriber.message({sender:this.user.account}, refresh, $scope);
+    heat.subscriber.message({recipient:this.user.account}, refresh, $scope);
 
-        // until Websocket push is up
-        // this.onMessageAdded()
-
-      })
-    }, $scope);
     this.loadInitial();
 
     if (this.publickey == this.user.publicKey) {
