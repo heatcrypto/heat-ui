@@ -48,7 +48,10 @@ interface IHeatSubscriberOrderFilter {
 }
 
 interface IHeatSubscriberTradeFilter {
-
+  seller?: string;
+  buyer?: string;
+  currency?: string;
+  asset?: string;
 }
 
 interface IHeatSubscriberMessageFilter {
