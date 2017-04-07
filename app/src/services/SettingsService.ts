@@ -102,7 +102,7 @@ class SettingsService {
     };
 
     this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
+    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
     this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
@@ -126,17 +126,18 @@ class SettingsService {
       this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
       this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
       this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
+      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
     }
 
     this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    if (true) {
-      this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
-      this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
-      this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
-    }
+    // if (true) {
+    //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
+    //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
+    //   this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
+    // }
   }
 
   settings={};
