@@ -158,8 +158,6 @@ declare var Big: any;
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div class="warning" ng-hide="vm.isTestnet">For technical reasons Asset Exchange is currently DISABLED for some days.</div>
-
         <div layout="column" flex layout-fill>
           <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
           <div layout="column" layout-gt-sm="row" flex layout-fill>
