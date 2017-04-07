@@ -147,7 +147,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
           </div>
           <div layout="row" class="row-element" ng-show="vm.user.unlocked" layout-align="center center" flex>
             <div layout="column">
-              <md-button class="md-raised buy" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid" ng-show="vm.isTestnet">
+              <md-button class="md-raised buy" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid">
                 BUY
               </md-button>
             </div>
@@ -158,7 +158,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
               </md-switch>
             </div>
             <div layout="column">
-              <md-button class="md-raised sell" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid" ng-show="vm.isTestnet">
+              <md-button class="md-raised sell" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid">
                 SELL
               </md-button>
             </div>
