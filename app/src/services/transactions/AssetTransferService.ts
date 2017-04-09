@@ -66,7 +66,7 @@ class AssetTransferDialog extends GenericDialog {
     this.dialogTitle = 'Asset Trasfer';
     this.dialogDescription = 'Description on how to transfer asset';
     this.okBtnTitle = 'SEND';
-
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
     this.recipient = this.recipient || '';
     this.asset = this.asset || '';
     this.amount = this.amount || '0';
