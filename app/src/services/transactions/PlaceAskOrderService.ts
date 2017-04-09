@@ -76,6 +76,7 @@ class PlaceAskOrderDialog extends GenericDialog {
     this.dialogTitle = 'Place ask order';
     this.dialogDescription = 'Description on how to place ask order';
     this.okBtnTitle = 'SEND';
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
   }
 
   /* @override */
