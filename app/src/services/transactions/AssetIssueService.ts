@@ -79,6 +79,7 @@ class AssetIssueDialog extends GenericDialog {
     super($event);
     this.dialogTitle = 'Issue asset';
     this.dialogDescription = 'Description on how to issue an asset';
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.assetIssue, 8).replace(/000000$/,'');
     this.okBtnTitle = 'SEND';
   }
 
