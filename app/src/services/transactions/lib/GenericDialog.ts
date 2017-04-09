@@ -56,6 +56,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
 
   /* Providedd by extending classs */
   protected dialogTitle: string;
+  protected feeFormatted: string;
   protected dialogDescription: string;
   protected okBtnTitle: string = 'OK';
 
@@ -178,6 +179,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           </div>
         </md-dialog-content>
         <md-dialog-actions layout="row" ng-switch="vm.state">
+          <md-button ng-click="0" ng-disabled="true" style="margin-left:0px !important">Fee {{vm.feeFormatted}} HEAT</md-button>
           <span flex></span>
 
           <!-- EDIT -->
