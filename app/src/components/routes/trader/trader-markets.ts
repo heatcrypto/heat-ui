@@ -108,22 +108,14 @@ class TraderMarketsComponent {
           promises.push(
             this.assetInfo.getInfo(market.currency).then((info)=>{
               this.$scope.$evalAsync(() => {
-                market.currencyInfo = {
-                  symbol:info.symbol,
-                  name:info.name,
-                  certified:info.certified
-                };
+                market.currencyInfo = info;
               });
             })
           );
           promises.push(
             this.assetInfo.getInfo(market.asset).then((info)=>{
               this.$scope.$evalAsync(() => {
-                market.assetInfo = {
-                  symbol:info.symbol,
-                  name:info.name,
-                  certified:info.certified
-                };
+                market.assetInfo = info;
               });
             })
           );
@@ -136,11 +128,12 @@ class TraderMarketsComponent {
         this.$q.all(promises).then(()=>{
           this.$scope.$evalAsync(() => {
             this.markets.sort((a:any,b:any)=> {
-              if (a.certified < b.certified) return 1;
-              if (a.certified > b.certified) return -1;
-              if (a.symbol < b.symbol) return 1;
-              if (a.symbol > b.symbol) return -1;
-              return 0;
+              return this.compareMarket(a,b);
+              // if (a.certified < b.certified) return 1;
+              // if (a.certified > b.certified) return -1;
+              // if (a.symbol < b.symbol) return 1;
+              // if (a.symbol > b.symbol) return -1;
+              // return 0;
             });
           })
         });
@@ -180,5 +173,53 @@ class TraderMarketsComponent {
         }
       });
     });
+  }
+
+  /**
+   * ON TOP: Markets where both assets are CERTIFIED, in alphabetical order (only one market BTC/HEAT for now)
+   * BELOW THAT: Markets where one asset is certified, in alphabetical order (BTC/FIMK on top)
+   * BELOW THAT: The rest of markets in alphabetical order
+   */
+  compareMarket(a: IHeatMarket, b: IHeatMarket): number {
+    let currencyA = <AssetInfo>a['currencyInfo'];
+    let assetA = <AssetInfo>a['assetInfo'];
+    let currencyB = <AssetInfo>b['currencyInfo'];
+    let assetB = <AssetInfo>b['assetInfo'];
+
+    let bothCertifiedA = currencyA.certified && assetA.certified;
+    let bothCertifiedB = currencyB.certified && assetB.certified;
+    if (bothCertifiedA && bothCertifiedB) {
+      return this.compareMarketAlphabetical(a, b);
+    }
+    if (bothCertifiedA != bothCertifiedB) {
+      return bothCertifiedA ? -1 : 1;
+    }
+
+    let oneCertifiedA = currencyA.certified || assetA.certified;
+    let oneCertifiedB = currencyB.certified || assetB.certified;
+    if (oneCertifiedA && oneCertifiedB) {
+      return this.compareMarketAlphabetical(a, b);
+    }
+    if (oneCertifiedA != oneCertifiedB) {
+      return oneCertifiedA ? -1 : 1;
+    }
+    return this.compareMarketAlphabetical(a, b);
+  }
+
+  compareMarketAlphabetical(a: IHeatMarket, b: IHeatMarket): number {
+    let currencyA = <AssetInfo>a['currencyInfo'];
+    let assetA = <AssetInfo>a['assetInfo'];
+    let currencyB = <AssetInfo>b['currencyInfo'];
+    let assetB = <AssetInfo>b['assetInfo'];
+
+    if (currencyA.symbol < currencyB.symbol)
+      return -1;
+    if (currencyA.symbol > currencyB.symbol)
+      return 1;
+    if (assetA.symbol < assetB.symbol)
+      return -1;
+    if (assetA.symbol > assetB.symbol)
+      return 1;
+    return 0;
   }
 }
