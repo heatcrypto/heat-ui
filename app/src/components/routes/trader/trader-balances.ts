@@ -36,7 +36,7 @@
   `],
   template: `
     <div layout="column" layout-fill>
-      <div layout="row" class="trader-component-title">Account balance&nbsp;
+      <div layout="row" class="trader-component-title">Account&nbsp;
         <span flex></span>
         {{vm.user.account}}
         <elipses-loading ng-show="vm.loading"></elipses-loading>
