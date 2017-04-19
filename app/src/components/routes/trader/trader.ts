@@ -159,6 +159,7 @@ declare var Big: any;
       </md-sidenav>
       <div layout="column" flex layout-fill>
         <div layout="column" flex layout-fill>
+          <div class="warning" layout="row" ng-if="!vm.currencyInfo.certified||!vm.assetInfo.certified">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
           <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
           <div layout="column" layout-gt-sm="row" flex layout-fill>
             <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
