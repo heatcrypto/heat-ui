@@ -61,7 +61,7 @@
           <md-tooltip md-direction="bottom">Messages</md-tooltip>
           <md-icon md-font-library="material-icons">message</md-icon>
         </md-button>
-        <md-button aria-label="trader" class="md-icon-button" href="#/trader/5592059897546023466/0">
+        <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/0/17964448319299609527':'#/trader/5592059897546023466/0'}}">
           <md-tooltip md-direction="bottom">Exchange</md-tooltip>
           <md-icon md-font-library="material-icons">insert_chart</md-icon>
         </md-button>
