@@ -119,7 +119,7 @@ class TraderMarketsComponent {
               });
             })
           );
-          market.change = `${market.hr24Change}%`;
+          market.change = `${(parseFloat(market.hr24Change)>0?'+':'')}${market.hr24Change}%`;
           market.price = utils.formatQNT(market.lastPrice, market.currencyDecimals);
           market.vol = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals);
           market.currencyInfo = {symbol:'*'};
