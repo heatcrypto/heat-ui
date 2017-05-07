@@ -59,6 +59,11 @@ interface IHeatSubscriberMessageFilter {
   recipient?: string;
 }
 
+interface IHeatSubscriberUnconfirmedTransactionFilter {
+  sender?: string;
+  recipient?: string;
+}
+
 class HeatSubscriber {
 
   private RETRY_SYNC_DELAY = 2.5 * 1000; // 2.5 seconds in milliseconds
@@ -70,6 +75,7 @@ class HeatSubscriber {
   private ORDER = "4";
   private TRADE = "5";
   private MESSAGE = "6";
+  private UNCONFIRMED_TRANSACTION = "7";
 
   private connectedSocketPromise: angular.IPromise<WebSocket> = null;
   private subscribeTopics: Array<HeatSubscriberTopic> = [];
@@ -104,6 +110,10 @@ class HeatSubscriber {
 
   public message(filter: IHeatSubscriberMessageFilter, callback: (IHeatMessage)=>void, $scope?: angular.IScope): () => void {
     return this.subscribe(new HeatSubscriberTopic(this.MESSAGE, filter), callback, $scope);
+  }
+
+  public unconfirmedTransaction(filter: IHeatSubscriberUnconfirmedTransactionFilter, callback: (IHeatTransaction)=>void, $scope?: angular.IScope): () => void {
+    return this.subscribe(new HeatSubscriberTopic(this.UNCONFIRMED_TRANSACTION, filter), callback, $scope);
   }
 
   /* End subscriber options, start of general implementation code */
