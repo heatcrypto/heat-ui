@@ -38,7 +38,7 @@
     <div layout="column" layout-fill>
       <div layout="row" class="trader-component-title">Account&nbsp;
         <span flex></span>
-        {{vm.user.account}}
+        #{{vm.user.account}}
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column">
