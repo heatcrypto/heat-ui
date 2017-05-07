@@ -241,4 +241,28 @@ class HeatAPI implements IHeatAPI {
   getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount> {
     return this.heat.get(`/account/find/${numericId}`);
   }
+
+  getTransactionsForAccount(account: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/account/${account}/${from}/${to}`);
+  }
+
+  getTransactionsForAccountCount(account: string): angular.IPromise<number> {
+    return this.heat.get(`/blockchain/transactions/account/count/${account}`,"count");
+  }
+
+  getTransactionsForBlock(block: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/block/${block}/${from}/${to}`);
+  }
+
+  getTransactionsForBlockCount(block: string): angular.IPromise<number> {
+    return this.heat.get(`/blockchain/transactions/block/count/${block}`,"count");
+  }
+
+  getTransactionsForAll(from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/all/${from}/${to}`);
+  }
+
+  getTransactionsForAllCount(): angular.IPromise<number> {
+    return this.heat.get("/blockchain/transactions/all/count","count");
+  }
 }
