@@ -203,6 +203,36 @@ interface IHeatAPI {
    * Find account by numeric id
    */
   getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount>;
+
+  /**
+   * Lists all transactions for account
+   */
+  getTransactionsForAccount(account: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>>;
+
+  /**
+   * Count all transactions for account
+   */
+  getTransactionsForAccountCount(account: string): angular.IPromise<number>;
+
+  /**
+   * Lists all transactions for block
+   */
+  getTransactionsForBlock(block: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>>;
+
+  /**
+   * Count all transactions for block
+   */
+  getTransactionsForBlockCount(block: string): angular.IPromise<number>;
+
+  /**
+   * Lists all transactions
+   */
+  getTransactionsForAll(from: number, to: number): angular.IPromise<Array<IHeatTransaction>>;
+
+  /**
+   * Count all transactions
+   */
+  getTransactionsForAllCount(): angular.IPromise<number>;
 }
 interface IHeatAccount {
   id: string;
