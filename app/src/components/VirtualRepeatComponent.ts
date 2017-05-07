@@ -59,7 +59,7 @@ abstract class VirtualRepeatComponent {
   public loading: boolean = true;
 
   constructor(protected $scope: angular.IScope,
-               private $q: angular.IQService) {}
+              protected $q: angular.IQService) {}
 
   /* Extending classes call this from their constructor */
   protected initializeVirtualRepeat(provider: IPaginatedDataProvider,
