@@ -75,10 +75,6 @@
     explorer md-list-item.active {
       background-color: #B2DFDB;
     }
-    explorer md-list-item {
-      min-height: 25px;
-      height: 25px;
-    }
     explorer .wallet {
       height: 32px;
     }
