@@ -41,15 +41,57 @@
 @RouteConfig('/explorer')
 @Component({
   selector: 'explorer',
+  styles: [`
+    explorer h3 {
+      font-size: 24px !important;
+      font-weight: bold;
+      padding-bottom: 0px;
+      margin-bottom: 0px;
+    }
+    explorer h3.below {
+      padding-top: 0px;
+      margin-top: 6px;
+    }
+    explorer .header {
+      font-weight: bold !important;
+      color: #616161 !important;
+    }
+    explorer .truncate-col {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    explorer md-list-item {
+      min-height: 25px;
+      height: 25px;
+      border-bottom: 1px solid #ddd;
+    }
+    explorer md-list-item .md-button {
+      min-height: 24px;
+    }
+    explorer .right-align {
+      text-align: right;
+    }
+    explorer md-list-item.active {
+      background-color: #B2DFDB;
+    }
+    explorer .wallet {
+      height: 32px;
+    }
+  `],
   template: `
     <div layout="column" flex layout-padding layout-fill>
-      <blocks-explorer-table flex layout-fill></blocks-explorer-table>
+      <h3 class="below">Search&nbsp;&nbsp;&nbsp;<img src="assets/heatwallet.png" class="wallet"></h3>
+      <explorer-search layout="column"></explorer-search>
+      <h3 class="below">Latest Blocks</h3>
+      <explorer-latest-blocks layout="column" flex="30"></explorer-latest-blocks>
+      <h3 class="below">Latest Transactions</h3>
+      <explorer-transactions layout="column" flex="60"></explorer-transactions>
     </div>
   `
 })
-@Inject('$scope','user')
+@Inject('$scope')
 class ExplorerComponent {
-  constructor(private $scope: angular.IScope,
-              public user: UserService) {
+  constructor(private $scope: angular.IScope) {
   }
 }

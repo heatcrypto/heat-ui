@@ -29,7 +29,7 @@ class HTTPNotifyService {
   constructor($interval: angular.IIntervalService) {
     $interval(() => {
       this.notify();
-    }, 30 * 1000, 0, false);
+    }, 60 * 1000, 0, false);
   }
 
   public notify() {

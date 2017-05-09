@@ -139,6 +139,17 @@ module utils {
     return returnNullZero && !ret.match(/[^0\.]/) ? null : ret;
   }
 
+  export function trimDecimals(formatted: string, decimals: number): string {
+    var parts = formatted.split(".");
+    if (!parts[1])
+      parts[1] = "0".repeat(decimals);
+    else
+      parts[1] = parts[1].substr(0, decimals);
+    if (parts[1].length < decimals)
+      parts[1] += "0".repeat(decimals-parts[1].length);
+    return parts[0]+"."+parts[1];
+  }
+
   export function convertToQNTf(quantity: string): string {
     var decimals = 8
     if (typeof quantity == 'undefined') {

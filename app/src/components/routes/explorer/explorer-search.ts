@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2017 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,46 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-class HeatSocketTopic {
-
-  public listeners: Array<Function> = [];
-
-  constructor(public topic: string,
-              public params: IStringHashMap<string>) {}
-
-  public subscribe() {
-    return {
-      op: "subscribe",
-      data: {
-        topic: this.topic,
-        params: this.params
-      }
-    }
-  }
-
-  public unsubscribe() {
-    return {
-      op: "unsubscribe",
-      data: {
-        topic: this.topic,
-        params: this.params
-      }
-    }
-  }
-
-  public equals(other: HeatSocketTopic): boolean {
-    if (other.topic == this.topic) {
-      var names = Object.getOwnPropertyNames(this.params);
-      var otherNames = Object.getOwnPropertyNames(other.params);
-      if (names.length == otherNames.length) {
-        for (var i=0; i<names.length; i++) {
-          if (this.params[names[i]] != other.params[names[i]]) {
-            return false;
-          }
-        }
-        return true;
-      }
-    }
-    return false;
+@Component({
+  selector: 'explorerSearch',
+  template: `
+    <div layout="row" flex layout-fill>
+      <md-input-container class="md-block" flex>
+        <label>Search for account id, block id, block height and transaction id [UNDER CONSTRUCTION]</label>
+        <input name="search-text" ng-model="vm.searchText" disabled>
+      </md-input-container>
+    </div>
+  `
+})
+@Inject('$scope','heat')
+class ExplorerSearchComponent {
+  constructor(private $scope: angular.IScope,
+              private heat: HeatService) {
   }
 }

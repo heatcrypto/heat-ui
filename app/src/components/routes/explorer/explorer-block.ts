@@ -20,19 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-class HeatEvents implements IHeatEvents {
-
-  constructor(private heat: HeatService) {}
-
-  onMessage(callback: (message: IHeatMessage) => void, $scope?: angular.IScope): () => void {
-    var unsubscribe = this.heat.socket.subscribe("message",{}, callback);
-    if (angular.isDefined($scope)) $scope.$on('$destroy',unsubscribe);
-    return unsubscribe;
-  }
-
-  onMessageUpdate(callback: (message: IHeatMessage) => void, $scope?: angular.IScope): () => void {
-    var unsubscribe = this.heat.socket.subscribe("message-update",{}, callback);
-    if (angular.isDefined($scope)) $scope.$on('$destroy',unsubscribe);
-    return unsubscribe;
+@RouteConfig('/explore-block/:block')
+@Component({
+  selector: 'exploreBlock',
+  inputs: ['block'],
+  styles: [`
+    explore-block h3 {
+      font-size: 24px !important;
+      font-weight: bold;
+      padding-bottom: 0px;
+      margin-bottom: 0px;
+    }
+  `],
+  template: `
+    <div layout="column" flex layout-padding layout-fill>
+      <explorer-search layout="column"></explorer-search>
+      <h3>Block {{vm.block}}</h3>
+      <code>Under construction</code>
+    </div>
+  `
+})
+@Inject('$scope','user')
+class ExploreBlockComponent {
+  block: string;//@input
+  constructor(private $scope: angular.IScope,
+              public user: UserService) {
   }
 }

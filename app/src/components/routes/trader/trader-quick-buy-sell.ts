@@ -96,7 +96,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
             <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
           </div>
           <div class="label">
-            Minutes
+            Seconds
           </div>
         </div>
         <div class="row">
@@ -151,6 +151,7 @@ class TraderQuickBuySellComponent {
   expiry: string = '360000'
   total: string = null;
   fee: string = utils.formatQNT(HeatAPI.fee.standard,8); // fee in HEAT
+  isTestnet: boolean;
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
@@ -165,6 +166,7 @@ class TraderQuickBuySellComponent {
         this.total = this.selectedOrder['sum'];
       }
     });
+    this.isTestnet = heat.isTestnet;
   }
 
   quickAsk($event) {

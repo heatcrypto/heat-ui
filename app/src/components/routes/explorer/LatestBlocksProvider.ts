@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2017 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -21,23 +21,18 @@
  * SOFTWARE.
  * */
 
-@Service('ordersProviderFactory')
+@Service('latestBlocksProviderFactory')
 @Inject('heat','$q')
-class OrdersProviderFactory  {
+class LatestBlocksProviderFactory  {
   constructor(private heat: HeatService, private $q: angular.IQService) {}
 
-  public createProvider(currency: string, asset: string, account?: string, isAsk?: boolean): IPaginatedDataProvider {
-    return new OrdersProvider(currency, asset, account, isAsk, this.heat, this.$q);
+  public createProvider(): IPaginatedDataProvider {
+    return new LatestBlocksProvider(this.heat, this.$q);
   }
 }
 
-class OrdersProvider implements IPaginatedDataProvider {
-
-  constructor(private currency: string,
-              private asset: string,
-              private account: string,
-              private isAsk: boolean,
-              private heat: HeatService,
+class LatestBlocksProvider implements IPaginatedDataProvider {
+  constructor(private heat: HeatService,
               private $q: angular.IQService) {}
 
   /* Be notified this provider got destroyed */
@@ -45,29 +40,18 @@ class OrdersProvider implements IPaginatedDataProvider {
 
   /* The number of items available */
   public getLength(): angular.IPromise<number> {
-    if (this.account) {
-      return this.heat.api.getAccountPairOrdersCount(this.account,this.currency,this.asset);
-    }
-    else if (this.isAsk) {
-      return this.heat.api.getAskOrdersCount(this.currency,this.asset);
-    }
-    return this.heat.api.getBidOrdersCount(this.currency,this.asset);
+    var deferred = this.$q.defer();
+    this.heat.api.getBlockchainStatus().then((status) => {
+      deferred.resolve(status.numberOfBlocks);
+    },deferred.reject);
+    return deferred.promise;
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatOrder>> {
-    if (this.account) {
-      return this.heat.api.getAccountPairOrders(this.account,this.currency,this.asset,firstIndex,lastIndex);
-    }
-    else if (this.isAsk) {
-      return this.heat.api.getAskOrders(this.currency,this.asset,firstIndex,lastIndex);
-    }
-    return this.heat.api.getBidOrders(this.currency,this.asset,firstIndex,lastIndex);
+  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatBlock>> {
+    return this.heat.api.getBlocks(firstIndex, lastIndex);
   }
 
   public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
   public removeObserver(observer: IPaginatedDataProviderObserver) { }
 }
-
-
-

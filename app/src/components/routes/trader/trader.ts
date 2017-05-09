@@ -41,6 +41,7 @@ declare var Big: any;
       </md-sidenav>
       <div layout="column" flex layout-fill>
         <div class="trader-row top">
+            <div class="warning" layout="row" ng-if="!vm.currencyInfo.certified||!vm.assetInfo.certified">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
             <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>
             <trader-chart class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
         </div>
@@ -77,6 +78,7 @@ class TraderComponent {
   marketsSidenavLockedOpen: boolean = true;
 
   selectedOrder: IHeatOrder; // the order currently selected in either buy-orders or sell-orders lists.
+  isTestnet: boolean;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -110,5 +112,6 @@ class TraderComponent {
     });
 
     this.user.account = user.account || "";
+    this.isTestnet = heat.isTestnet;
   }
 }

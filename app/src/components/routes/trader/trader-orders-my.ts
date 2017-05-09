@@ -40,21 +40,24 @@
           <div class="truncate-col cancel-col" layout="row" layout-align="end" ng-if="vm.user.unlocked"></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry"
+              ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid||item.cancelled}">
             <div class="truncate-col type-col">{{item.typeDisplay}}</div>
             <div class="truncate-col market-col">{{item.market}}</div>
             <div class="truncate-col quantity-col">{{item.quantityDisplay}}</div>
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
             <div class="truncate-col total-col">{{item.total}}</div>
             <div class="truncate-col expires-col" flex tooltip="{{item.expires}}">{{item.expires}}</div>
-            <div class="truncate-col cancel-col" layout="row" layout-align="end" ng-if="vm.user.unlocked"><a ng-click="vm.cancelOrder(item)">Cancel</a></div>
+            <div class="truncate-col cancel-col" layout="row" layout-align="end" ng-if="vm.user.unlocked">
+              <a ng-if="!item.cancelled && !item.unconfirmed" ng-click="vm.cancelOrder(item)">Cancel</a>
+            </div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
     </div>
   `
 })
-@Inject('$scope','ordersProviderFactory','$q','user','settings','cancelBidOrder','cancelAskOrder','HTTPNotify')
+@Inject('$scope','ordersProviderFactory','$q','user','settings','cancelBidOrder','cancelAskOrder','heat')
 class TraderOrdersMyComponent extends VirtualRepeatComponent  {
 
   /* @inputs */
@@ -69,13 +72,15 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
               settings: SettingsService,
               private cancelBidOrder: CancelBidOrderService,
               private cancelAskOrder: CancelAskOrderService,
-              HTTPNotify: HTTPNotifyService)
+              private heat: HeatService)
   {
     super($scope, $q);
-    HTTPNotify.on(()=>{this.determineLength()}, $scope);
+
     var format = settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
+
+        /* initialize virtual repeat component */
         this.initializeVirtualRepeat(
           this.ordersProviderFactory.createProvider(this.currencyInfo.id, this.assetInfo.id, user.account),
 
@@ -91,7 +96,12 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
             order.expires = dateFormat(date, format);
           }
         );
+
+        /* stop watching the currenyInfo and assetInfo */
         unregister.forEach(fn => fn());
+
+        /* listen to order events */
+        this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
@@ -101,6 +111,14 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
         this.provider.destroy();
       }
     });
+  }
+
+  private subscribeToOrderEvents(currency: string, asset: string) {
+    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    var filter = {currency: currency, asset: asset, account: this.user.account};
+    this.heat.subscriber.order(filter, (order: IHeatOrder) => {
+      refreshGrid();
+    }, this.$scope);
   }
 
   onSelect(item) {}

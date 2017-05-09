@@ -129,13 +129,20 @@ class BlockExplorerTableComponent extends AbstractDataTableComponent {
       limit: 50,
       page: 1
     };
+
+    var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
+    heat.subscriber.blockPopped({}, refresh, $scope);
+    heat.subscriber.blockPushed({}, refresh, $scope);
+
     this.refresh();
 
+    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
     HTTPNotify.on(()=>{
       if (this.query.page == 1) {
         this.refresh();
       }
     },$scope);
+    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
   }
 
   getCount() : angular.IPromise<number> {

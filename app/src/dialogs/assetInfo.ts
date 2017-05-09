@@ -20,49 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-class HeatSocketRPC {
-
-  static call_id: number = 0;
-  public callId: string;
-  public timedout: boolean = false;
-  private start: number;
-  private timeout: any;
-  private $timeout: angular.ITimeoutService;
-
-  constructor(public method: string,
-              public params: Object,
-              public deferred: angular.IDeferred<Object>,
-              public returns?: string) {
-
-    this.callId = String(HeatSocketRPC.call_id++);
-    this.start = Date.now();
-
-    var settings = <SettingsService> heat.$inject.get('settings');
-    this.$timeout = <angular.ITimeoutService> heat.$inject.get('$timeout');
-    var max = settings.get(SettingsService.HEAT_RPC_TIMEOUT);
-
-    this.timeout = this.$timeout(() => {
-      this.timedout = true;
-      deferred.reject(new HeatInternalServerTimeoutError());
-    }, max, false);
-
-    deferred.promise.then(() => {
-      this.$timeout.cancel(this.timeout);
+module dialogs {
+  export function assetInfo($event, info: AssetInfo) {
+    let assetInfoService = <AssetInfoService> heat.$inject.get('assetInfo');
+    assetInfoService.getAssetDescription(info).then((description)=>{
+      dialogs.dialog({
+        id: 'assetInfo',
+        title: 'Asset Info',
+        targetEvent: $event,
+        cancelButton: false,
+        locals: {
+          description: description,
+          info: info
+        },
+        template: `
+          <div layout="column">
+            <span><b>{{vm.info.symbol}}</b> {{vm.info.name}}</span>
+            <pre>{{vm.description}}</pre>
+          </div>
+        `
+      })
     });
-  }
-
-  public call() {
-    return {
-      op: "call",
-      data: {
-        method: this.method,
-        callId: this.callId,
-        params: this.params
-      }
-    }
-  }
-
-  public done() {
-    this.$timeout.cancel(this.timeout);
   }
 }

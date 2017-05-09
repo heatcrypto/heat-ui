@@ -36,15 +36,15 @@
       padding-left: 8px !important;
     }
     server .console {
-      background-color: #424242;
+      background-color: #202020;
       border: 1px solid #BDBDBD;
       padding-right: 0px !important;
       padding-top: 0px !important;
       padding-bottom: 0px !important;
     }
     server .console pre {
-      color: #FF3D00;
-      height: 12px;
+      color: #FF8866;
+      height: 14px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -127,7 +127,10 @@ class ServerComponent {
   private connectedToLocalhost: boolean;
 
   /* 2017-01-27 23:22:30 INFO: Pushed block 13300804393767116009 with height 2925 */
-  private msgRegExp = /^([\d-]+\s[\d:]+)\s(\w+):\s(.*)/;
+  //private msgRegExp = /^([\d-]+\s[\d:]+)\s(\w+):\s(.*)/;
+
+  /* 2017-04-01 19:00:17 [pool-5-thread-3] INFO c.heatledger.BlockchainProcessorImpl - Pushed block 4762652772805132303 at height 659 received 2017-03-18 06:27:42 from 37.139.25.98 */
+  private msgRegExp = /^([\d-]+\s[\d:]+)\s(.+)\s-\s(.*)/;
 
   constructor(private $scope:angular.IScope,
               public server: ServerService,

@@ -54,7 +54,7 @@ class SendmessageDialog extends GenericDialog {
     this.dialogTitle = 'Send Message';
     this.dialogDescription = 'Description on how to send message';
     this.okBtnTitle = 'SEND';
-
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
     this.recipient = this.recipient || '';
     this.recipientPublicKey = this.recipientPublicKey || null;
   }

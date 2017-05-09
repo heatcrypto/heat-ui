@@ -25,8 +25,9 @@ class HeatAPI implements IHeatAPI {
   /* transaction fees used in transaction dialogs and other places */
   static fee = {
     standard: utils.convertToQNT('0.01'),
-    assetIssue: utils.convertToQNT('10.00'),
-    assetIssueMore: utils.convertToQNT('0.01')
+    assetIssue: utils.convertToQNT('500.00'),
+    assetIssueMore: utils.convertToQNT('0.01'),
+    whitelistMarket: utils.convertToQNT('10.00'),
   };
 
   constructor(private heat: HeatService,
@@ -89,8 +90,8 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/exchange/asset/protocol1/${symbol}`);
   }
 
-  getAsset(asset:string):angular.IPromise<IHeatAsset> {
-    return this.heat.get(`/exchange/asset/${asset}`);
+  getAsset(asset:string, propertiesAccount:string, propertiesProtocol:number):angular.IPromise<IHeatAsset> {
+    return this.heat.get(`/exchange/asset/properties/${asset}/${propertiesAccount}/${propertiesProtocol}`);
   }
 
   getAssetCertification(asset: string, certifierAccount:string):angular.IPromise<IHeatAssetCertification> {
@@ -239,5 +240,29 @@ class HeatAPI implements IHeatAPI {
 
   getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount> {
     return this.heat.get(`/account/find/${numericId}`);
+  }
+
+  getTransactionsForAccount(account: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/account/${account}/${from}/${to}`);
+  }
+
+  getTransactionsForAccountCount(account: string): angular.IPromise<number> {
+    return this.heat.get(`/blockchain/transactions/account/count/${account}`,"count");
+  }
+
+  getTransactionsForBlock(block: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/block/${block}/${from}/${to}`);
+  }
+
+  getTransactionsForBlockCount(block: string): angular.IPromise<number> {
+    return this.heat.get(`/blockchain/transactions/block/count/${block}`,"count");
+  }
+
+  getTransactionsForAll(from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/all/${from}/${to}`);
+  }
+
+  getTransactionsForAllCount(): angular.IPromise<number> {
+    return this.heat.get("/blockchain/transactions/all/count","count");
   }
 }

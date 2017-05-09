@@ -24,6 +24,11 @@
   selector: 'traderBalances',
   inputs: ['currencyInfo','assetInfo'],
   template: `
+    <div layout="row" class="trader-component-title">Account&nbsp;
+      <span flex></span>
+      #{{vm.user.account}}
+      <elipses-loading ng-show="vm.loading"></elipses-loading>
+    </div>
     <md-list>
       <md-list-item class="header">
         <div class="truncate-col symbol-col">Asset</div>
@@ -38,7 +43,7 @@
     </md-list>
   `
 })
-@Inject('$scope','heat','user','assetInfo','HTTPNotify','$q')
+@Inject('$scope','heat','user','assetInfo','$q')
 class TraderBalancesComponent {
 
   /* @inputs */
@@ -51,9 +56,12 @@ class TraderBalancesComponent {
               private heat: HeatService,
               private user: UserService,
               private assetInfoService: AssetInfoService,
-              HTTPNotify: HTTPNotifyService,
               private $q: angular.IQService) {
-    HTTPNotify.on(()=>{this.loadBalances()}, $scope);
+
+    /* subscribe to websocket balance changed events */
+    var refresh = utils.debounce((angular.bind(this, this.loadBalances)), 1*1000, false);
+    heat.subscriber.balanceChanged({account: user.account}, refresh, $scope);
+
     this.loadBalances();
   }
 

@@ -63,7 +63,7 @@ class WhitelistMarketferDialog extends GenericDialog {
     this.dialogTitle = 'Whitelist Market';
     this.dialogDescription = 'Description on how to whitelist a market';
     this.okBtnTitle = 'SEND';
-
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.whitelistMarket, 8).replace(/000000$/,'');
     this.recipient = this.recipient || '';
     this.recipientPublicKey = this.recipientPublicKey || null;
   }
@@ -93,7 +93,7 @@ class WhitelistMarketferDialog extends GenericDialog {
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.assetIssue)
+           .feeNQT(HeatAPI.fee.whitelistMarket)
            .attachment('WhitelistMarket', <IHeatCreateWhitelistMarket>{
               assetId: this.fields['asset'].value,
               currencyId: this.fields['currency'].value

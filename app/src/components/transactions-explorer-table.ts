@@ -117,7 +117,7 @@ class TransactionsExplorerTableComponent extends AbstractDataTableComponent {
       page: 1
     };
 
-    var topic = new TransactionTopicBuilder();
+    //var topic = new TransactionTopicBuilder();
     // var observer = engine.socket().observe<TransactionObserver>(topic).
     //   add(this.refresh).
     //   remove(this.refresh).

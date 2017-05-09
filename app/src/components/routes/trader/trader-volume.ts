@@ -64,7 +64,7 @@ class TraderVolumeComponent {
   loadMarket() {
     this.heat.api.getMarket(this.currencyInfo.id, this.assetInfo.id, "0", 1).then((market) => {
       this.$scope.$evalAsync(() => {
-        this.hr24Change = `${market.hr24Change}%`
+        this.hr24Change = `${(parseFloat(market.hr24Change)>0?'+':'')}${market.hr24Change}%`
         this.hr24High = utils.formatQNT(market.hr24High, market.currencyDecimals);
         this.hr24Low = utils.formatQNT(market.hr24Low, market.currencyDecimals);
         this.hr24CurrencyVolume = utils.formatQNT(market.hr24CurrencyVolume, market.currencyDecimals) +' '+this.currencyInfo.symbol;

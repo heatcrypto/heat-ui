@@ -58,6 +58,7 @@ class CancelBidOrderDialog extends GenericDialog {
     this.dialogTitle = 'Cancel bid order';
     this.dialogDescription = 'Description on how to cancel bid order';
     this.okBtnTitle = 'SEND';
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
   }
 
   /* @override */

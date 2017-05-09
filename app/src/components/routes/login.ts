@@ -54,6 +54,10 @@ declare var saveAs: any;
     login .account-preview {
       color: #BDBDBD;
     }
+    login textarea {
+      height: 60px !important;
+      min-height: 60px !important;
+    }
   `],
   template: `
     <div layout="column" flex layout-align="start center">

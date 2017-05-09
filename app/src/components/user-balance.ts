@@ -51,7 +51,19 @@ class UserBalanceComponent {
               private $q: angular.IQService,
               private $timeout: angular.ITimeoutService,
               private HTTPNotify: HTTPNotifyService) {
+
+    /* subscribe to websocket balance changed events */
+    var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
+    heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
+      if ("0" == balanceChange.currency) {
+        refresh();
+      }
+    }, $scope);
+
+    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
     this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
+    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
+
     this.refresh();
   }
 
@@ -66,7 +78,7 @@ class UserBalanceComponent {
     this.getUserBalance().then((balance) => {
       this.$scope.$evalAsync(() => {
         //var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
-        var formatted = utils.formatQNT(balance.balance, 8).split(".");
+        var formatted = utils.formatQNT(balance.virtualBalance, 8).split(".");
         this.formattedBalance = formatted[0];
         this.formattedFraction = "." + (formatted[1]||"00");
         this.showError = false;
