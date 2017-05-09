@@ -44,7 +44,6 @@
     }
     user-payments-table td {
       vertical-align: top !important;
-      padding-top: 18px !important;
     }
     user-payments-table .message-text {
       margin-bottom: 18px;
