@@ -39,18 +39,13 @@ md-list-item::before,
   margin: 0 4px;
   &.md-primary {
     background-color: @blue;
+    &[disabled] {
+      background-color: @light-blue;
+      color: @gray !important;
+    }
   }
   &.md-warn {
     background-color: @orange;
-  }
-}
-md-dialog {
-  md-toolbar {
-    h2 {
-      color: @gray3;
-      font-weight: bold !important;
-      font-size: 14px !important;
-    }
   }
 }
 

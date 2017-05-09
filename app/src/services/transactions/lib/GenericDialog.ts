@@ -179,29 +179,29 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           </div>
         </md-dialog-content>
         <md-dialog-actions layout="row" ng-switch="vm.state">
-          <md-button ng-click="0" ng-disabled="true" style="margin-left:0px !important">Fee {{vm.feeFormatted}} HEAT</md-button>
+          <md-button ng-click="0" ng-disabled="true" class="fee">Fee {{vm.feeFormatted}} HEAT</md-button>
           <span flex></span>
 
           <!-- EDIT -->
           <div ng-switch-when="0">
-            <md-button class="md-primary" ng-click="vm.cancelBtn()">Cancel</md-button>
+            <md-button class="md-warn" ng-click="vm.cancelBtn()">Cancel</md-button>
             <md-button class="md-primary" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid">{{vm.okBtnTitle}}</md-button>
           </div>
 
           <!-- CREATE -->
           <div ng-switch-when="1" ng-show="vm.busy">
-            <md-button class="md-primary" ng-click="vm.cancelBtn()">Cancel</md-button>
+            <md-button class="md-warn" ng-click="vm.cancelBtn()">Cancel</md-button>
           </div>
 
           <!-- SIGN -->
           <div ng-switch-when="2">
-            <md-button class="md-primary" ng-click="vm.cancelBtn()" ng-show="vm.busy">Cancel</md-button>
+            <md-button class="md-warn" ng-click="vm.cancelBtn()" ng-show="vm.busy">Cancel</md-button>
             <md-button class="md-primary" ng-click="vm.cancelBtn()" ng-show="vm.error">Close</md-button>
           </div>
 
           <!-- BROADCAST -->
           <div ng-switch-when="3">
-            <md-button class="md-primary" ng-click="vm.cancelBtn()" ng-show="vm.broadcastState==1 || vm.broadcastState==2">Cancel</md-button>
+            <md-button class="md-warn" ng-click="vm.cancelBtn()" ng-show="vm.broadcastState==1 || vm.broadcastState==2">Cancel</md-button>
             <!-- <md-button class="md-primary" ng-click="vm.reset()" ng-show="!vm.broadcastState && !vm.error && !vm.busy">More</md-button> -->
           </div>
         </md-dialog-actions>
