@@ -1,0 +1,27 @@
+@import '../colors';
+@import '../default';
+
+explorer-latest-blocks,
+explorer-transactions {
+  .widget();
+  .list();
+  .truncate-col {
+    padding-right: 30px;
+    &.left {
+      text-align: left;
+    }
+    &.block {
+      max-width: 160px;
+    }
+    &.render-col {
+      max-width: inherit;
+    }
+    &.height-col {
+      max-width: 40px;
+      padding-right: 0px;
+    }
+    &.generator-col {
+      padding-right: 0px;
+    }
+  }
+}

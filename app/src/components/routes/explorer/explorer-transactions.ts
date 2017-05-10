@@ -23,33 +23,24 @@
 @Component({
   selector: 'explorerTransactions',
   inputs: ['account','block'],
-  styles: [`
-    explorer-transactions .height-col {
-      width: 80px;
-    }
-    explorer-transactions .date-col {
-      width: 140px;
-    }
-    explorer-transactions .render-col {
-      width: 180px;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
+      <div layout="row" class="trader-component-title">Latest Transactions
+      </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <div class="header truncate-col height-col">Height</div>
-          <div class="header truncate-col date-col">Date</div>
-          <div class="header truncate-col render-col" flex></div>
+          <div class="header truncate-col height-col left">Height</div>
+          <div class="header truncate-col date-col left">Date</div>
+          <div class="header truncate-col render-col left" flex></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
-            <div class="truncate-col height-col">
+            <div class="truncate-col height-col left">
               <elipses-loading ng-show="item.height==2147483647"></elipses-loading>
               <span ng-show="item.height!=2147483647">{{item.height}}</span>
             </div>
-            <div class="truncate-col date-col">{{item.time}}</div>
-            <div class="truncate-col render-col" flex ng-bind-html="item.rendered"></div>
+            <div class="truncate-col date-col left">{{item.time}}</div>
+            <div class="truncate-col render-col left" flex ng-bind-html="item.rendered"></div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -284,4 +275,3 @@ class TransactionRenderer {
     return asset;
   }
 }
-
