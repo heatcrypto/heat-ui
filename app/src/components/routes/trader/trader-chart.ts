@@ -93,7 +93,7 @@ class TraderChartComponent {
 
   public refresh() {
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
-      let margin = {top: 20, right: 20, bottom: 30, left: 50},
+      let margin = {top: 20, right: 20, bottom: 60, left: 50},
         width = this.fullWidth - margin.left - margin.right,
         height = this.fullHeight - margin.top - margin.bottom;
 
@@ -107,9 +107,12 @@ class TraderChartComponent {
           .xScale(x)
           .yScale(y);
 
+      let timeFormat = "%H:%M:%S"
+      if (this.interval === "WEEK") timeFormat = "%Y-%m-%d"
+
       let xAxis = d3.axisBottom()
         .scale(x)
-        .ticks(6)
+        .tickFormat(d3.timeFormat("%Y-%m-%d %H:%M:%S"))
 
       let yAxis = d3.axisLeft()
         .scale(y)
@@ -123,7 +126,7 @@ class TraderChartComponent {
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      let parseDate = d3.timeParse("%d-%b-%y");
+      let parseDate = d3.timeParse("%d-%b-%y %H:%M:%S");
       let accessor = close.accessor();
       let data = [];
       heatChart.data.forEach(function (d) {
@@ -253,11 +256,16 @@ class TraderChartComponent {
         .attr("stroke-width", "1px")
         .attr("d", closeLine)
 
-      svg.selectAll("g.x.axis").call(xAxis);
+      svg.selectAll("g.x.axis").call(xAxis)
+        .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-2em")
+        .attr("dy", ".15em")
+        .attr("transform", "rotate(-25)");
       svg.selectAll("g.y.axis").call(yAxis);
 
       function convertToDate(date) {
-        let format = 'dd-mmm-yy';
+        let format = 'dd-mmm-yy HH:mm:ss';
         let dateFormated = utils.timestampToDate(parseInt(date));
         return dateFormat(dateFormated, format);
       }
