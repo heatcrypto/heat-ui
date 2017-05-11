@@ -133,7 +133,7 @@ declare var Big: any;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  trader .right-align, trader input {
+  trader .right-align {
     text-align: right;
   }
   trader .certified {
