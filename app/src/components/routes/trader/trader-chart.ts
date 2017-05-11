@@ -56,7 +56,7 @@ class TraderChartComponent {
   currencyInfo: AssetInfo; // @input
   assetInfo: AssetInfo; // @input
 
-  interval: string = "DAY"; // "ONE_MINUTE", "FIVE_MINUTES", "TEN_MINUTES", "HOUR", "DAY", "WEEK"
+  interval: string = "HOUR"; // "ONE_MINUTE", "FIVE_MINUTES", "TEN_MINUTES", "HOUR", "DAY", "WEEK"
   filter: string = 'ALL'; // 'ONE_MONTH', 'ONE_WEEK', 'ONE_DAY', 'ONE_HOUR', 'FIVE_MINUTES', 'ONE_MINUTE'
 
   // we need these in order to know how big our svg should be
@@ -114,19 +114,52 @@ class TraderChartComponent {
           .xScale(x)
           .yScale(y);
 
-      let tickFormat = "%Y-%m-%d"
-      'ONE_DAY', 'ONE_HOUR', 'FIVE_MINUTES', 'ONE_MINUTE'
+      let tickFormat
       if (this.filter === 'ONE_DAY' ||
           this.filter === 'ONE_HOUR' ||
           this.filter === 'FIVE_MINUTES' ||
-          this.filter === 'ONE_MINUTE') tickFormat = '%H:%M:%S'
+          this.filter === 'ONE_MINUTE') {
+            this.interval = 'ONE_MINUTE'
+            tickFormat = '%H:%M:%S'
+      } else {
+            this.interval = 'HOUR'
+            tickFormat = "%Y-%m-%d"
+      }
+
+      let ticks
+      switch (this.filter) {
+        case 'ONE_MONTH':
+          ticks = 20
+          break;
+        case 'ONE_WEEK':
+          ticks = 6
+          break;
+        case 'ONE_DAY':
+          ticks = 24
+          break;
+        case 'ONE_HOUR':
+          ticks = 20
+          break;
+        case 'FIVE_MINUTES':
+          ticks = 5
+          break;
+        case 'ONE_MINUTE':
+          ticks = 20
+          break;
+        default:
+          ticks = 30
+          break;
+      }
 
       let xAxis = d3.axisBottom()
         .scale(x)
+        .ticks(ticks)
+        .tickSize(-height)
         .tickFormat(d3.timeFormat(tickFormat))
 
       let yAxis = d3.axisLeft()
         .scale(y)
+        .tickSize(-width)
         .ticks(6)
 
       d3.selectAll('svg').remove();
@@ -154,7 +187,6 @@ class TraderChartComponent {
 
         let itemDate = utils.timestampToDate(parseInt(d[0]));
         let filterDate = getFilterDateTime(this.filter)
-        console.log(filterDate, ' : ', itemDate, ' ; ', itemDate >= filterDate)
         if (itemDate >= filterDate) {
           data.push({
             date: parseDate(convertToDate(d[0])),
@@ -277,9 +309,20 @@ class TraderChartComponent {
         .selectAll("text")
         .style("text-anchor", "end")
         .attr("dx", "-2em")
-        .attr("dy", ".15em")
-        .attr("transform", "rotate(-25)");
-      svg.selectAll("g.y.axis").call(yAxis);
+        .attr("dy", "-0.05em")
+        .attr("transform", "rotate(-90)");
+
+      svg.selectAll("g.x.axis")
+        .selectAll("line")
+        .style("stroke-opacity", "0.4")
+        .style('stroke-width', '0.5px')
+
+      svg.selectAll("g.y.axis").call(yAxis)
+
+      svg.selectAll("g.y.axis")
+        .selectAll("line")
+        .style("stroke-opacity", "0.4")
+        .style('stroke-width', '0.5px')
 
       function getFilterDateTime(filter) {
         let filterDate = new Date()
@@ -291,7 +334,6 @@ class TraderChartComponent {
             filterDate.setDate(filterDate.getDate() - 7)
             break;
           case 'ONE_DAY':
-            console.log()
             filterDate.setDate(filterDate.getDate() - 1)
             break;
           case 'ONE_HOUR':
