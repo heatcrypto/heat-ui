@@ -27,12 +27,13 @@ declare var techan: any, d3: any;
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" layout-align="end" class="intervals">
-        <div ng-class="{'selected':vm.interval=='ONE_MINUTE'}" ng-click="vm.setInterval('ONE_MINUTE')">1 Minute</div>
-        <div ng-class="{'selected':vm.interval=='FIVE_MINUTES'}" ng-click="vm.setInterval('FIVE_MINUTES')">5 Minutes</div>
-        <div ng-class="{'selected':vm.interval=='TEN_MINUTES'}" ng-click="vm.setInterval('TEN_MINUTES')">10 Minutes</div>
-        <div ng-class="{'selected':vm.interval=='HOUR'}" ng-click="vm.setInterval('HOUR')">1 Hour</div>
-        <div ng-class="{'selected':vm.interval=='DAY'}" ng-click="vm.setInterval('DAY')">1 Day</div>
-        <div ng-class="{'selected':vm.interval=='WEEK'}" ng-click="vm.setInterval('WEEK')">1 Week</div>
+        <div ng-class="{'selected':vm.filter=='ALL'}" ng-click="vm.setFilter('ALL')">All</div>
+        <div ng-class="{'selected':vm.filter=='ONE_MONTH'}" ng-click="vm.setFilter('ONE_MONTH')">1 Month</div>
+        <div ng-class="{'selected':vm.filter=='ONE_WEEK'}" ng-click="vm.setFilter('ONE_WEEK')">1 Week</div>
+        <div ng-class="{'selected':vm.filter=='ONE_DAY'}" ng-click="vm.setFilter('ONE_DAY')">1 Day</div>
+        <div ng-class="{'selected':vm.filter=='ONE_HOUR'}" ng-click="vm.setFilter('ONE_HOUR')">1 Hour</div>
+        <div ng-class="{'selected':vm.filter=='FIVE_MINUTES'}" ng-click="vm.setFilter('FIVE_MINUTES')">5 Minutes</div>
+        <div ng-class="{'selected':vm.filter=='ONE_MINUTE'}" ng-click="vm.setFilter('ONE_MINUTE')">1 Minutes</div>
       </div>
       <div layout="column" flex layout-fill>
         <div id="ohlcchart" flex ng-if="vm.currencyInfo&&vm.assetInfo"></div>
@@ -56,6 +57,7 @@ class TraderChartComponent {
   assetInfo: AssetInfo; // @input
 
   interval: string = "DAY"; // "ONE_MINUTE", "FIVE_MINUTES", "TEN_MINUTES", "HOUR", "DAY", "WEEK"
+  filter: string = 'ALL'; // 'ONE_MONTH', 'ONE_WEEK', 'ONE_DAY', 'ONE_HOUR', 'FIVE_MINUTES', 'ONE_MINUTE'
 
   // we need these in order to know how big our svg should be
   fullWidth: number;
@@ -91,6 +93,11 @@ class TraderChartComponent {
     this.refresh();
   }
 
+  public setFilter(filter) {
+    this.filter = filter;
+    this.refresh();
+  }
+
   public refresh() {
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
       let margin = {top: 20, right: 20, bottom: 60, left: 50},
@@ -107,12 +114,16 @@ class TraderChartComponent {
           .xScale(x)
           .yScale(y);
 
-      let timeFormat = "%H:%M:%S"
-      if (this.interval === "WEEK") timeFormat = "%Y-%m-%d"
+      let tickFormat = "%Y-%m-%d"
+      'ONE_DAY', 'ONE_HOUR', 'FIVE_MINUTES', 'ONE_MINUTE'
+      if (this.filter === 'ONE_DAY' ||
+          this.filter === 'ONE_HOUR' ||
+          this.filter === 'FIVE_MINUTES' ||
+          this.filter === 'ONE_MINUTE') tickFormat = '%H:%M:%S'
 
       let xAxis = d3.axisBottom()
         .scale(x)
-        .tickFormat(d3.timeFormat("%Y-%m-%d %H:%M:%S"))
+        .tickFormat(d3.timeFormat(tickFormat))
 
       let yAxis = d3.axisLeft()
         .scale(y)
@@ -129,7 +140,7 @@ class TraderChartComponent {
       let parseDate = d3.timeParse("%d-%b-%y %H:%M:%S");
       let accessor = close.accessor();
       let data = [];
-      heatChart.data.forEach(function (d) {
+      heatChart.data.forEach((d) => {
         /**
          *
          [0] timestamp, // number timestamp in HEAT epoch format
@@ -140,14 +151,20 @@ class TraderChartComponent {
           [5] open, // string or number if < 9007199254740991
           [6] close // string or number if < 9007199254740991
           */
-        data.push({
-          date: parseDate(convertToDate(d[0])),
-          open: +d[5],
-          high: +d[3],
-          low: +d[2],
-          close: +d[6],
-          volume: +d[4]
-        });
+
+        let itemDate = utils.timestampToDate(parseInt(d[0]));
+        let filterDate = getFilterDateTime(this.filter)
+        console.log(filterDate, ' : ', itemDate, ' ; ', itemDate >= filterDate)
+        if (itemDate >= filterDate) {
+          data.push({
+            date: parseDate(convertToDate(d[0])),
+            open: +d[5],
+            high: +d[3],
+            low: +d[2],
+            close: +d[6],
+            volume: +d[4]
+          });
+        }
       });
 
       data.sort(function (a, b) {
@@ -263,6 +280,35 @@ class TraderChartComponent {
         .attr("dy", ".15em")
         .attr("transform", "rotate(-25)");
       svg.selectAll("g.y.axis").call(yAxis);
+
+      function getFilterDateTime(filter) {
+        let filterDate = new Date()
+        switch (filter) {
+          case 'ONE_MONTH':
+            filterDate.setMonth(filterDate.getMonth() - 1)
+            break;
+          case 'ONE_WEEK':
+            filterDate.setDate(filterDate.getDate() - 7)
+            break;
+          case 'ONE_DAY':
+            console.log()
+            filterDate.setDate(filterDate.getDate() - 1)
+            break;
+          case 'ONE_HOUR':
+            filterDate.setHours(filterDate.getHours() - 1)
+            break;
+          case 'FIVE_MINUTES':
+            filterDate.setMinutes(filterDate.getMinutes() - 5)
+            break;
+          case 'ONE_MINUTE':
+            filterDate.setMinutes(filterDate.getMinutes() - 1)
+            break;
+          default:
+            filterDate.setFullYear(filterDate.getFullYear() - 100)
+            break;
+        }
+        return filterDate
+      }
 
       function convertToDate(date) {
         let format = 'dd-mmm-yy HH:mm:ss';
