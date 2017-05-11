@@ -76,6 +76,9 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
       margin-top: 0px !important;
       margin-bottom: 0px !important;
     }
+    trader-quick-buy-sell input {
+      text-align: right;
+    }
   `],
   template: `
     <div layout="column" flex layout-fill>
