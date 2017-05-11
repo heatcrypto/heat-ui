@@ -23,13 +23,43 @@
 @Component({
   selector: 'traderTrollbox',
   styles: [`
-    trader-trollbox {
-      height: 200px;
+    trader-trollbox .trader-component-title {
+      height: 45px;
+      padding-bottom: 8px;
     }
     trader-trollbox textarea {
       width: 100%;
       padding: 4px;
       margin: 8px;
+    }
+    trader-trollbox .bottom-control {
+      min-height: 60px !important;
+    }
+    trader-trollbox .bottom-control .join-area input {
+      width: 100%;
+      text-align: initial;
+    }
+    trader-trollbox ul {
+      padding-left: 8px;
+    }
+    /* These styles are taken from the demo on https://github.com/Luegg/angularjs-scroll-glue */
+    trader-trollbox [scroll-glue-top],
+    trader-trollbox [scroll-glue-bottom],
+    trader-trollbox [scroll-glue]{
+      height: 400px;
+      overflow-y: scroll;
+      border: 1px solid gray;
+    }
+    trader-trollbox [scroll-glue-left],
+    trader-trollbox [scroll-glue-right]{
+      width: 100px;
+      overflow-x: scroll;
+      border: 1px solid gray;
+      padding: 10px;
+    }
+    trader-trollbox [scroll-glue-left] span,
+    trader-trollbox [scroll-glue-right] span{
+      border: 1px solid black;
     }
   `],
   template: `
@@ -38,21 +68,52 @@
         <span flex></span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
-      <md-list flex layout-fill layout="column">
-        <md-virtual-repeat-container flex layout-fill layout="column"
-            virtual-repeat-flex-helper ng-if="vm.balances.length>0">
-          <md-list-item md-virtual-repeat="item in vm.balances">
-            <div class="truncate-col symbol-col">{{item.symbol}}</div>
-            <div class="truncate-col balance-col" flex>{{item.balance}}</div>
-          </md-list-item>
-        </md-virtual-repeat-container>
-      </md-list>
-      <div layout="row">
-        <textarea rows="6" disabled placeholder="Troll"></textarea>
+      <div scroll-glue>
+        <ul>
+          <li ng-repeat="item in vm.messages">
+            <span><b>{{item.username}}</b>: {{item.text}}</span>
+          </li>
+        </ul>
+      </div>
+      <div layout="row" class="bottom-control">
+        <div layout="column" flex ng-if="vm.trollbox.name" class="chat-area">
+          <textarea rows="2" placeholder="Troll" ng-keypress="vm.onTextAreaKeyPress($event)"
+            placeholder="Hit ENTER key to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
+        </div>
+        <div layout="row" flex ng-if="!vm.trollbox.name" class="join-area">
+          <input type="text" placeholder="Name" ng-model="vm.name"></input>
+          <button ng-click="vm.joinChat()" ng-disabled="!vm.name">Join</button>
+        </div>
       </div>
     </div>
   `
 })
+@Inject('$scope', 'trollbox', '$timeout')
 class TraderTrollboxComponent {
-  constructor() {}
+  private name: string;
+  private messageText: string;
+  public messages: Array<TrollboxServiceMessage> = [];
+  constructor(private $scope: angular.IScope,
+              private trollbox: TrollboxService,
+              private $timeout: angular.ITimeoutService) {
+    trollbox.getMessages().then((messages) => {
+      $scope.$evalAsync(() => {
+        this.messages = messages;
+      });
+    })
+  }
+
+  joinChat() {
+    this.trollbox.join(this.name);
+  }
+
+  onTextAreaKeyPress($event: KeyboardEvent) {
+    if ($event.keyCode == 13 && !$event.shiftKey) {
+      this.trollbox.sendMessage(this.messageText).then(()=>{
+        this.$scope.$evalAsync(()=>{
+          this.messageText = "";
+        })
+      })
+    }
+  }
 }
