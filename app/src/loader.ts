@@ -92,7 +92,8 @@ module heat {
         'ngSanitize',
         'duScroll',
         'dc.inputAddOn',
-        'jsonFormatter'
+        'jsonFormatter',
+        'luegg.directives'
       ]);
     }
 
