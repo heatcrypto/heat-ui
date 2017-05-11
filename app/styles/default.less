@@ -71,6 +71,7 @@ textarea, input, button { outline: none; }
   .trader-component-title {
     font-size: 16px;
     margin-bottom: 6px;
+    color: @white;
     .balance {
       font-weight: bold;
     }
@@ -91,10 +92,6 @@ textarea, input, button { outline: none; }
     font-size: 12px;
     text-align: right;
   }
-  .header {
-    font-size: 12px;
-    font-weight: bold;
-  }
   md-list-item:nth-child(even) {
     background-color: @dark-blue2;
   }
@@ -104,6 +101,13 @@ textarea, input, button { outline: none; }
   md-list-item.md-no-proxy {
     padding: 0px 10px 0px 0px !important;
   }
+  .header {
+    .truncate-col {
+      font-size: 12px;
+      font-weight: bold;
+      color: @white !important;
+    }
+  }
   .truncate-col {
       text-align: right;
       margin-right: 6px;
@@ -112,11 +116,12 @@ textarea, input, button { outline: none; }
       min-width: 70px;
       max-width: 120px;
       flex-grow: 1;
+      color: @white07;
       &.sum-col {
         margin-right: 0px;
       }
       a {
-        color: @white;
+        color: @link-yellow;
       }
     }
 }
@@ -169,7 +174,7 @@ table {
             &.md-cell {
               padding: 4px 56px 4px 0;
               border-top: none !important;
-              color: @white !important;
+              color: @white07 !important;
             }
           }
         }
@@ -181,7 +186,10 @@ table {
 login, explorer, explore-account {
   md-input-container.md-default-theme:not(.md-input-invalid).md-input-has-value label, md-input-container:not(.md-input-invalid).md-input-has-value label,
   md-input-container.md-default-theme label, md-input-container label, md-input-container.md-default-theme .md-placeholder, md-input-container .md-placeholder,
-  md-select:not([disabled]):focus .md-select-value, md-input-container.md-default-theme .md-input, md-input-container .md-input {
-    color: @white;
+  md-select:not([disabled]):focus .md-select-value, md-input-container.md-default-theme .md-input, md-input-container .md-input, md-input-container > md-icon {
+    color: @white07;
+  }
+  md-radio-button.md-default-theme .md-off, md-radio-button .md-off {
+    border-color: @white04;
   }
 }

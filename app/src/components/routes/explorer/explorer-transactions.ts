@@ -29,9 +29,9 @@
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <div class="header truncate-col height-col left">Height</div>
-          <div class="header truncate-col date-col left">Date</div>
-          <div class="header truncate-col render-col left" flex></div>
+          <div class="truncate-col height-col left">Height</div>
+          <div class="truncate-col date-col left">Date</div>
+          <div class="truncate-col render-col left" flex></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">

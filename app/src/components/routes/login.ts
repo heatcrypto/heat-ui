@@ -78,7 +78,7 @@ declare var saveAs: any;
                 <md-tooltip md-direction="bottom">Create a new account</md-tooltip>
                 Create
               </md-button>
-              <md-button class="md-raised" ng-click="vm.page='add'" aria-label="Add">
+              <md-button class="md-warn md-raised" ng-click="vm.page='add'" aria-label="Add">
                 <md-tooltip md-direction="bottom">Add existing account</md-tooltip>
                 Add
               </md-button>
@@ -150,7 +150,7 @@ declare var saveAs: any;
             </div>
             <div layout="row" layout-align="center center">
               <md-button class="md-primary md-raised" ng-click="vm.page=''" aria-label="Back">Options</md-button>
-              <md-button class="md-raised" ng-click="vm.generateNewSecretPhrase()" aria-label="Other">
+              <md-button class="md-warn md-raised" ng-click="vm.generateNewSecretPhrase()" aria-label="Other">
                 Renew pass
               </md-button>
               <md-button class="md-primary md-raised" ng-click="vm.page='create1'"
@@ -247,7 +247,7 @@ declare var saveAs: any;
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">
+              <md-button class="md-warn md-raised" ng-click="vm.page=''" aria-label="Back">
                 <md-tooltip md-direction="bottom">Go back one page</md-tooltip>
                 Back
               </md-button>
@@ -255,7 +255,7 @@ declare var saveAs: any;
                 <md-tooltip md-direction="bottom">Add and encrypt this secretphrase to your device</md-tooltip>
                 Add
               </md-button>
-              <md-button class="md-raised" ng-click="vm.pageAddLogin()" ng-disabled="!vm.pageAddSecretPhrase" aria-label="Sign in">
+              <md-button class="md-primary md-raised" ng-click="vm.pageAddLogin()" ng-disabled="!vm.pageAddSecretPhrase" aria-label="Sign in">
                 <md-tooltip md-direction="bottom">Sign in without storing your secretphrase</md-tooltip>
                 Sign in
               </md-button>

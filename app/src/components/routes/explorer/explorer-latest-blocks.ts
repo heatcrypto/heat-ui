@@ -27,16 +27,16 @@
       <div layout="row" class="trader-component-title">Latest Blocks
       </div>
       <md-list flex layout-fill layout="column">
-        <md-list-item>
-          <div class="header truncate-col height-col left">Height</div>
-          <div class="header truncate-col block-col block left">Block</div>
-          <div class="header truncate-col date-col left">Date</div>
-          <div class="header truncate-col generator-col block left">Generator</div>
-          <div class="header truncate-col transactions-col">Transactions</div>
-          <div class="header truncate-col amount-col">Amount</div>
-          <div class="header truncate-col fee-col">Fee</div>
-          <div class="header truncate-col pos-col">POS Reward</div>
-          <div class="header truncate-col pop-col" flex>POP Reward</div>
+        <md-list-item class="header">
+          <div class="truncate-col height-col left">Height</div>
+          <div class="truncate-col block-col block left">Block</div>
+          <div class="truncate-col date-col left">Date</div>
+          <div class="truncate-col generator-col block left">Generator</div>
+          <div class="truncate-col transactions-col">Transactions</div>
+          <div class="truncate-col amount-col">Amount</div>
+          <div class="truncate-col fee-col">Fee</div>
+          <div class="truncate-col pos-col">POS Reward</div>
+          <div class="truncate-col pop-col" flex>POP Reward</div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">

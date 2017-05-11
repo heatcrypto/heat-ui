@@ -30,7 +30,7 @@
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
-        <md-list-item>
+        <md-list-item class="header">
           <div class="truncate-col type-col">Type</div>
           <div class="truncate-col market-col">Market</div>
           <div class="truncate-col quantity-col">Quantity</div>
