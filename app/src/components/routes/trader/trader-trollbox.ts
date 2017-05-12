@@ -113,7 +113,11 @@ class TraderTrollboxComponent {
     });
     trollbox.subscribe((event)=> {
       $scope.$evalAsync(() => {
-        this.messages.push(event);
+        if (angular.isObject(event) && angular.isString(event.username) && angular.isString(event.text)) {
+          if (event.username.length > 0 && event.text.length > 0) {
+            this.messages.push(event);
+          }
+        }
       });
     }, $scope);
   }
