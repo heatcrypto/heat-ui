@@ -24,12 +24,19 @@ interface TrollboxServiceMessage {
   username: string;
   text: string;
 }
+interface SlackMessageEvent {
+  type: string;   // "message",
+  user: string;   // "U4092L18X",
+  text: string;
+  ts: string;     // "1494455657.040443",
+  channel: string;// "C5C4GPU9M",
+}
+
 @Service('trollbox')
 @Inject('$rootScope','heat')
 class TrollboxService {
   public name: string;
-  constructor(private $rootScope: angular.IRootScopeService, private heat: HeatService) {
-  }
+  constructor(private $rootScope: angular.IRootScopeService, private heat: HeatService) {}
 
   public join(name: string) {
     this.name = name;
@@ -41,5 +48,9 @@ class TrollboxService {
 
   public sendMessage(message: string) {
     return this.heat.post('/microservice/trollbox/send', { username: this.name, message: message});
+  }
+
+  public subscribe(callback: (event:TrollboxServiceMessage)=>void, $scope:angular.IScope): ()=>void {
+    return this.heat.subscriber.microservice({'microservice':'trollbox.service'}, callback, $scope);
   }
 }
