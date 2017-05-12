@@ -33,24 +33,41 @@ interface SlackMessageEvent {
 }
 
 @Service('trollbox')
-@Inject('$rootScope','heat')
+@Inject('$rootScope','heat','user')
 class TrollboxService {
+
+  /* Trollbox backend is located on testnet server */
+  private host = "https://alpha.heatledger.com";
+  private port = 7734;
+  private wss  = "wss://alpha.heatledger.com:7755/ws/";
+  private subscriber: HeatSubscriber;
+
   public name: string;
-  constructor(private $rootScope: angular.IRootScopeService, private heat: HeatService) {}
+  constructor(private $rootScope: angular.IRootScopeService,
+              private heat: HeatService,
+              private user: UserService) {
+    /* Since using custom websocket endpoint we must manually create our subscriber */
+    this.subscriber = heat.createSubscriber(this.wss);
+  }
 
   public join(name: string) {
     this.name = name;
   }
 
   public getMessages(): angular.IPromise<Array<TrollboxServiceMessage>> {
-    return this.heat.get('/microservice/trollbox/messages');
+    return this.heat.getRaw(this.host, this.port, '/microservice/trollbox/messages');
   }
 
   public sendMessage(message: string) {
-    return this.heat.post('/microservice/trollbox/send', { username: this.name, message: message});
+    return this.heat.postRaw(this.host, this.port, '/microservice/trollbox/send', {
+      username: this.name,
+      message: message,
+      publicKey: this.user.publicKey,
+      signature: heat.crypto.signBytes(converters.stringToHexString(message), converters.stringToHexString(this.user.secretPhrase))
+    });
   }
 
   public subscribe(callback: (event:TrollboxServiceMessage)=>void, $scope:angular.IScope): ()=>void {
-    return this.heat.subscriber.microservice({'microservice':'trollbox.service'}, callback, $scope);
+    return this.subscriber.microservice({'microservice':'trollbox.service'}, callback, $scope);
   }
 }
