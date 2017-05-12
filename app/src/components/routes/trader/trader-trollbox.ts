@@ -100,7 +100,12 @@ class TraderTrollboxComponent {
       $scope.$evalAsync(() => {
         this.messages = messages;
       });
-    })
+    });
+    trollbox.subscribe((event)=> {
+      $scope.$evalAsync(() => {
+        this.messages.push(event);
+      });
+    }, $scope);
   }
 
   joinChat() {
