@@ -76,6 +76,7 @@ class HeatSubscriber {
   private TRADE = "5";
   private MESSAGE = "6";
   private UNCONFIRMED_TRANSACTION = "7";
+  private MICROSERVICE = "8";
 
   private connectedSocketPromise: angular.IPromise<WebSocket> = null;
   private subscribeTopics: Array<HeatSubscriberTopic> = [];
@@ -114,6 +115,10 @@ class HeatSubscriber {
 
   public unconfirmedTransaction(filter: IHeatSubscriberUnconfirmedTransactionFilter, callback: (IHeatTransaction)=>void, $scope?: angular.IScope): () => void {
     return this.subscribe(new HeatSubscriberTopic(this.UNCONFIRMED_TRANSACTION, filter), callback, $scope);
+  }
+
+  public microservice(filter: IStringHashMap<string>, callback: (any)=>void, $scope?: angular.IScope): () => void {
+    return this.subscribe(new HeatSubscriberTopic(this.MICROSERVICE, filter), callback, $scope);
   }
 
   /* End subscriber options, start of general implementation code */
