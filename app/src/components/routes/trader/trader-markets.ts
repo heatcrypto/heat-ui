@@ -27,7 +27,7 @@
       <span flex></span>
       <elipses-loading ng-show="vm.loading"></elipses-loading>
     </div>
-    <input type="text" disabled placeholder="Search markets"></input>
+    <input type="text" placeholder="Search markets" ng-model="vm.filter" ng-change="vm.onFilterChange()"></input>
     <md-list flex layout-fill layout="column">
       <md-list-item>
         <div class="truncate-col market-col">Market</div>
@@ -57,7 +57,9 @@ class TraderMarketsComponent {
   // change, volume, price, none
   sort: string = 'change';
   asc: boolean = true;
+  filter: string = '';
 
+  allMarkets: Array<IHeatMarket> = [];
   markets: Array<IHeatMarket> = [];
   showFakeMarketsWarning = true;
 
@@ -76,6 +78,7 @@ class TraderMarketsComponent {
   loadMarkets() {
     this.heat.api.getMarketsAll(this.sort, this.asc, "0", 1, 0, 100).then((markets) => {
       this.$scope.$evalAsync(() => {
+        this.allMarkets = markets
         this.markets = markets;
         var promises = []; // collects all balance lookup promises
         this.markets.forEach((market: IHeatMarket|any) => {
@@ -195,5 +198,22 @@ class TraderMarketsComponent {
     if (assetA.symbol > assetB.symbol)
       return 1;
     return 0;
+  }
+
+  public onFilterChange() {
+    if (this.filter === '') {
+      this.markets = this.allMarkets
+    } else {
+      this.markets = this.allMarkets.filter((market: IHeatMarket|any) => {
+        console.log(market)
+        if (market.assetInfo.symbol.toUpperCase().indexOf(this.filter.toUpperCase()) >= 0 ||
+            market.assetInfo.name.toUpperCase().indexOf(this.filter.toUpperCase()) >= 0 ||
+            (market.assetInfo.description !== null && market.assetInfo.description.toUpperCase().indexOf(this.filter.toUpperCase()) >= 0) ||
+            market.currencyInfo.symbol.toUpperCase().indexOf(this.filter.toUpperCase()) >= 0 ||
+            market.currencyInfo.name.toUpperCase().indexOf(this.filter.toUpperCase()) >= 0 ||
+            (market.currencyInfo.description !== null && market.currencyInfo.description.toUpperCase().indexOf(this.filter.toUpperCase()) >= 0))
+              return market;
+      })
+    }
   }
 }
