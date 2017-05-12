@@ -63,7 +63,7 @@ class TrollboxService {
       username: this.name,
       message: message,
       publicKey: this.user.publicKey,
-      signature: heat.crypto.signBytes(converters.stringToHexString(message), converters.stringToHexString(this.user.secretPhrase))
+      signature: heat.crypto.signBytes(converters.stringToHexString("hello"), converters.stringToHexString(this.user.secretPhrase))
     });
   }
 
