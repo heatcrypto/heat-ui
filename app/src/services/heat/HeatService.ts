@@ -48,7 +48,7 @@ declare var require : any;
 class HeatService {
 
   public api = new HeatAPI(this, this.user, this.$q);
-  public subscriber = new HeatSubscriber(this.settings.get(SettingsService.HEAT_WEBSOCKET), this.$q, this.$timeout);
+  public subscriber = this.createSubscriber(this.settings.get(SettingsService.HEAT_WEBSOCKET));
 
   constructor(public $q: angular.IQService,
               private $http: angular.IHttpService,
@@ -63,6 +63,10 @@ class HeatService {
         console.log(e);
       }
     }
+  }
+
+  public createSubscriber(url: string)  {
+    return new HeatSubscriber(url, this.$q, this.$timeout);
   }
 
   getAuthData(): Object {
@@ -82,12 +86,16 @@ class HeatService {
   }
 
   get(route: string, returns?: string): angular.IPromise<any> {
+    return this.getRaw(this.settings.get(SettingsService.HEAT_HOST),
+      this.settings.get(SettingsService.HEAT_PORT), route, returns);
+  }
+
+  getRaw(host: string, port: number, route: string, returns?: string): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     if (this.env.type == EnvType.BROWSER) {
       this.browserHttpGet(
-        [this.settings.get(SettingsService.HEAT_HOST),':',
-         this.settings.get(SettingsService.HEAT_PORT),'/',route].join(''),
+        [host,':',port,'/',route].join(''),
         {headers: {'Content-Type': 'application/json'} },
         (response)=>{
           this.logResponse(route, null, response);
@@ -100,12 +108,11 @@ class HeatService {
       );
     }
     else if (this.env.type == EnvType.NODEJS) {
-      var host = this.settings.get(SettingsService.HEAT_HOST);
       var isHttps = host.indexOf('https://') == 0;
       this.nodeHttpGet(
         isHttps,
         host.replace(/^(\w+:\/\/)/,''),
-        this.settings.get(SettingsService.HEAT_PORT),
+        port,
         '/' + route,
         (response)=>{
           this.logResponse(route, null, response);
@@ -157,6 +164,12 @@ class HeatService {
   }
 
   post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
+    let host = localHostOnly ? this.settings.get(SettingsService.HEAT_HOST_LOCAL) : this.settings.get(SettingsService.HEAT_HOST);
+    let port = localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) : this.settings.get(SettingsService.HEAT_PORT);
+    return this.postRaw(host, port, route, request, withAuth, returns, localHostOnly);
+  }
+
+  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     var req = request||{};
@@ -164,9 +177,7 @@ class HeatService {
       req = angular.extend(req, this.getAuthData());
     }
     if (this.env.type == EnvType.BROWSER) {
-      let address = localHostOnly ?
-        [this.settings.get(SettingsService.HEAT_HOST_LOCAL),':',this.settings.get(SettingsService.HEAT_PORT_LOCAL),'/',route].join('') :
-        [this.settings.get(SettingsService.HEAT_HOST),':',this.settings.get(SettingsService.HEAT_PORT),'/',route].join('');
+      let address = [host,':',port,'/',route].join('');
       if (localHostOnly) {
         if (address.indexOf('http://localhost')!=0) {
           deferred.reject(new ServerEngineError({
@@ -187,9 +198,6 @@ class HeatService {
       );
     }
     else if (this.env.type == EnvType.NODEJS) {
-      var host = localHostOnly ?
-        this.settings.get(SettingsService.HEAT_HOST_LOCAL) :
-        this.settings.get(SettingsService.HEAT_HOST);
       let address = host.replace(/^(\w+:\/\/)/,'');
       if (localHostOnly) {
         if (address.indexOf('localhost')!=0) {
@@ -200,8 +208,7 @@ class HeatService {
         }
       }
       var isHttps = host.indexOf('https://') == 0;
-      this.nodeHttpPost(isHttps, address, localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) :
-                                                 this.settings.get(SettingsService.HEAT_PORT), '/' + route, req,
+      this.nodeHttpPost(isHttps, address, port, '/' + route, req,
         (response)=>{
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
