@@ -28,7 +28,6 @@
       padding-bottom: 8px;
     }
     trader-trollbox textarea {
-      width: 100%;
       padding: 4px;
       margin: 8px;
     }
@@ -37,7 +36,14 @@
     }
     trader-trollbox .bottom-control .join-area input {
       width: 100%;
-      text-align: initial;
+      height: 20px;
+      margin: 8px;
+      padding-left: 4px;
+    }
+    trader-trollbox .bottom-control .join-area button {
+      height: 20px;
+      margin-top: 8px;
+      margin-right: 8px;
     }
     trader-trollbox ul {
       padding-left: 8px;
@@ -67,20 +73,23 @@
       <div layout="row" class="trader-component-title">Trollbox&nbsp;
         <span flex></span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>
+        <span><a href="https://heatslack.herokuapp.com/" target="_blank">Join Slack!
+        <md-tooltip md-direction="bottom">This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.</md-tooltip>
+        </a></span>
       </div>
-      <div scroll-glue>
+      <div scroll-glue flex>
         <ul>
           <li ng-repeat="item in vm.messages">
             <span><b>{{item.username}}</b>: {{item.text}}</span>
           </li>
         </ul>
       </div>
-      <div layout="row" class="bottom-control">
+      <div layout="row" class="bottom-control" ng-if="vm.user.unlocked">
         <div layout="column" flex ng-if="vm.trollbox.name" class="chat-area">
-          <textarea rows="2" placeholder="Troll" ng-keypress="vm.onTextAreaKeyPress($event)"
-            placeholder="Hit ENTER key to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
+          <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
+            placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
         </div>
-        <div layout="row" flex ng-if="!vm.trollbox.name" class="join-area">
+        <div layout="row" ng-if="!vm.trollbox.name" class="join-area" flex>
           <input type="text" placeholder="Name" ng-model="vm.name"></input>
           <button ng-click="vm.joinChat()" ng-disabled="!vm.name">Join</button>
         </div>
@@ -88,14 +97,15 @@
     </div>
   `
 })
-@Inject('$scope', 'trollbox', '$timeout')
+@Inject('$scope','trollbox','$timeout','user')
 class TraderTrollboxComponent {
   private name: string;
   private messageText: string;
   public messages: Array<TrollboxServiceMessage> = [];
   constructor(private $scope: angular.IScope,
               private trollbox: TrollboxService,
-              private $timeout: angular.ITimeoutService) {
+              private $timeout: angular.ITimeoutService,
+              private user: UserService) {
     trollbox.getMessages().then((messages) => {
       $scope.$evalAsync(() => {
         this.messages = messages;
