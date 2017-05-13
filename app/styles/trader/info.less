@@ -41,42 +41,50 @@ trader-info {
       }
     }
   }
-  .asset-description {
+  .asset-container {
     display: flex;
-    font-family: 'Noto Sans', Arial, sans-serif;
-    font-style: normal;
-    position: absolute;
-    top: 50px;
-    bottom: -35px;
-    overflow: scroll;
-    .col {
-      .col-item {
-        .value {
-          min-height: 23px;
-          font-size:16px;
-        }
-        .title {
-          opacity:0.4;
-          font-size:10px;
-          line-height:13px;
-          margin-bottom: 14px;
-        }
-        &.description .value {
-          font-size: 12px !important;
-          padding-right: 8px;
+    flex-direction: row;
+    padding-top: 9px;
+    .asset-description {
+      display: flex;
+      font-family: 'Noto Sans', Arial, sans-serif;
+      font-style: normal;
+      flex-grow: 1;
+      md-icon {
+        font-weight: bold;
+        color: red;
+        &.iscertified {
+          color: green !important;
         }
       }
-    }
-    .col:first-child {
-      margin-right: 96px;
-    }
-    .col:last-child {
-      .col-item {
-        .title {
-          margin-bottom: 0px;
+      .col {
+        .col-item {
+          .value {
+            min-height: 23px;
+            font-size:16px;
+          }
+          .title {
+            opacity:0.4;
+            font-size:10px;
+            line-height:13px;
+            margin-bottom: 14px;
+          }
+          button {
+            margin-top: 9px;
+          }
         }
-        .value {
-          font-size: 15px;
+      }
+      .col:first-child {
+        margin-right: 96px;
+      }
+      .col:last-child {
+        .col-item {
+          .title {
+            margin-bottom: 0px;
+          }
+          .value {
+            font-size: 15px;
+          }
         }
       }
     }

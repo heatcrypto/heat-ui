@@ -23,72 +23,86 @@
 @Component({
   selector: 'traderInfoAssetDescription',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-  trader-info-asset-description {
-    padding-bottom: 0px !important;
-    padding-right: 0px !important;
-  }
-  trader-info-asset-description .description {
-    overflow: auto;
-    margin-bottom: 0px !important;
-    margin-top: 0px !important;
-  }
-  trader-info-asset-description > div > div:first-child {
-    margin-right: 16px !important;
-  }
-  trader-info-asset-description .seperator {
-    padding-bottom: 8px;
-  }
-  trader-info-asset-description table {
-    width: 100%;
-  }
-  trader-info-asset-description table td .stretched {
-    width: 100%;
-  }
-  trader-info-asset-description table td md-icon {
-    font-weight: bold;
-    color: red;
-  }
-  trader-info-asset-description table td md-icon.iscertified {
-    color: green !important;
-  }
-  `],
   template: `
-    <div layout="row" flex layout-fill>
-      <table>
-        <tr>
-          <td ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</td>
-          <td class="stretch" ng-class="{certified:vm.currencyInfo.certified}"><i>{{vm.currencyInfo.name}}</i></td>
-          <td ng-class="{certified:vm.currencyInfo.certified}">{{vm.assetInfo.symbol}}</td>
-          <td class="stretch" ng-class="{certified:vm.currencyInfo.certified}"><i>{{vm.assetInfo.name}}</i></td>
-        </tr>
-        <tr>
-          <td>Issuer</td>
-          <td class="stretch">{{vm.currencyIssuer}}</td>
-          <td>Issuer</td>
-          <td class="stretch">{{vm.assetIssuer}}</td>
-        </tr>
-        <tr>
-          <td>Certified</td>
-          <td class="stretch">
-            <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
-          </td>
-          <td>Certified</td>
-          <td class="stretch">
-            <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
-          </td>
-        </tr>
-        <tr>
-          <td>Launched</td>
-          <td class="stretch">{{vm.currencyLaunched}}</td>
-          <td>Launched</td>
-          <td class="stretch">{{vm.assetLaunched}}</td>
-        </tr>
-        <tr>
-          <td colspan="2"><button ng-click="vm.showDescription($event, vm.currencyInfo)">More info</button></td>
-          <td colspan="2"><button ng-click="vm.showDescription($event, vm.assetInfo)">More info</button></td>
-        </tr>
-      </table>
+    <div class="asset-container">
+      <div class="asset-description">
+        <div class="col">
+          <div class="col-item">
+            <div class="title">
+              {{vm.currencyInfo.symbol}}
+            </div>
+            <div class="value">
+              {{vm.currencyInfo.name}}
+            </div>
+          </div>
+          <div class="col-item issued-by">
+            <div class="title">
+              Issuer
+            </div>
+            <div class="value">
+              {{vm.currencyIssuer}}
+            </div>
+          </div>
+          <div class="col-item launched">
+            <div class="title">
+              Certified
+            </div>
+            <div class="value">
+              <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
+            </div>
+          </div>
+          <div class="col-item id">
+            <div class="title">
+              Launched
+            </div>
+            <div class="value">
+              {{vm.currencyLaunched}}
+            </div>
+          </div>
+          <div class="col-item">
+            <button ng-click="vm.showDescription($event, vm.currencyInfo)">More info</button>
+          </div>
+        </div>
+      </div>
+      <div class="asset-description">
+        <div class="col">
+          <div class="col-item header">
+            <div class="title">
+              {{vm.assetInfo.symbol}}
+            </div>
+            <div class="value">
+              {{vm.assetInfo.name}}
+            </div>
+          </div>
+          <div class="col-item issued-by">
+            <div class="title">
+              Issuer
+            </div>
+            <div class="value">
+              {{vm.assetIssuer}}
+            </div>
+          </div>
+          <div class="col-item launched">
+            <div class="title">
+              Certified
+            </div>
+            <div class="value">
+              <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
+            </div>
+          </div>
+          <div class="col-item id">
+            <div class="title">
+              Launched
+            </div>
+            <div class="value">
+              {{vm.assetLaunched}}
+            </div>
+          </div>
+          <div class="col-item">
+            <button ng-click="vm.showDescription($event, vm.assetInfo)">More info</button>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
