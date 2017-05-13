@@ -100,19 +100,26 @@ class TraderChartComponent {
 
   public refresh() {
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
-      let margin = {top: 20, right: 20, bottom: 60, left: 50},
+      let margin = {top: 20, right: 80, bottom: 60, left: 50},
         width = this.fullWidth - margin.left - margin.right,
         height = this.fullHeight - margin.top - margin.bottom;
 
       let x = techan.scale.financetime()
         .range([0, width]);
 
-      let y = d3.scaleLinear()
+      let yClose = d3.scaleLinear()
         .range([height, 0]);
+      let yVolume = d3.scaleLinear()
+        .range([height, 0]);
+
+      var volume = techan.plot.volume()
+          .accessor(techan.accessor.ohlc())
+          .xScale(x)
+          .yScale(yVolume);
 
       var close = techan.plot.close()
           .xScale(x)
-          .yScale(y);
+          .yScale(yClose);
 
       let tickFormat
       if (this.filter === 'ONE_DAY' ||
@@ -157,9 +164,13 @@ class TraderChartComponent {
         .tickSize(-height)
         .tickFormat(d3.timeFormat(tickFormat))
 
-      let yAxis = d3.axisLeft()
-        .scale(y)
-        .tickSize(-width)
+      let yCloseAxis = d3.axisLeft()
+        .scale(yClose)
+        .ticks(6)
+
+      let yVolumeAxis = d3.axisRight()
+        .scale(yVolume)
+        .tickFormat(d3.formatPrefix(",.0", 1e6))
         .ticks(6)
 
       d3.selectAll('svg').remove();
@@ -208,10 +219,14 @@ class TraderChartComponent {
                 .attr("transform", "translate(0," + height + ")");
 
       svg.append("g")
-              .attr("class", "y axis")
+              .attr("class", "yClose axis")
+
+      svg.append("g")
+              .attr("class", "yVolume axis")
 
       x.domain(data.map(close.accessor().d));
-      y.domain(techan.scale.plot.ohlc(data, close.accessor()).domain());
+      yClose.domain(techan.scale.plot.ohlc(data, close.accessor()).domain());
+      yVolume.domain(techan.scale.plot.volume(data, close.accessor().v).domain());
 
       var defs = svg.append("defs");
 
@@ -219,7 +234,7 @@ class TraderChartComponent {
       var volumeArea = d3.area()
         .x(function(d) { return x(d.date); })
         .y0(height)
-        .y1(function(d) { return y(d.volume / 1000000000); })
+        .y1(function(d) { return yVolume(d.volume); })
         .curve(d3.curveBasis)
 
       var volumeGradient = defs.append("linearGradient")
@@ -249,7 +264,7 @@ class TraderChartComponent {
 
       let volumeLine = d3.line()
       .x(function(d) { return x(d.date); })
-      .y(function(d) { return y(d.volume / 1000000000); })
+      .y(function(d) { return yVolume(d.volume); })
       .curve(d3.curveBasis)
 
       svg.append("path")
@@ -264,7 +279,7 @@ class TraderChartComponent {
       var closeArea = d3.area()
         .x(function(d) { return x(d.date); })
         .y0(height)
-        .y1(function(d) { return y(d.close); })
+        .y1(function(d) { return yClose(d.close); })
         .curve(d3.curveBasis)
 
       var closeGradient = defs.append("linearGradient")
@@ -293,9 +308,9 @@ class TraderChartComponent {
         .attr("d", closeArea);
 
       let closeLine = d3.line()
-      .x(function(d) { return x(d.date); })
-      .y(function(d) { return y(d.close); })
-      .curve(d3.curveBasis)
+        .x(function(d) { return x(d.date); })
+        .y(function(d) { return yClose(d.close); })
+        .curve(d3.curveBasis)
 
       svg.append("path")
         .datum(data)
@@ -317,12 +332,11 @@ class TraderChartComponent {
         .style("stroke-opacity", "0.4")
         .style('stroke-width', '0.5px')
 
-      svg.selectAll("g.y.axis").call(yAxis)
+      svg.selectAll("g.yClose.axis").call(yCloseAxis)
 
-      svg.selectAll("g.y.axis")
-        .selectAll("line")
-        .style("stroke-opacity", "0.4")
-        .style('stroke-width', '0.5px')
+      svg.selectAll("g.yVolume.axis")
+        .attr("transform", "translate( " + width + ", 0 )")
+        .call(yVolumeAxis)
 
       function getFilterDateTime(filter) {
         let filterDate = new Date()
