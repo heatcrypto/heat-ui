@@ -16,17 +16,20 @@ trader-info {
     margin-right: 16px;
     margin-left: 0px;
   }
-  .market-title-text {
-    font-size: 24px !important;
-    line-height: 26px;
-    & > span {
+  .market-title {
+    flex-grow: 1;
+    .market-title-text {
       font-size: 24px !important;
-      font-style: normal;
-      &:first-child {
-        margin-right: 7px;
-      }
-      &:last-child {
-        margin-left: 7px;
+      line-height: 26px;
+      & > span {
+        font-size: 24px !important;
+        font-style: normal;
+        &:first-child {
+          margin-right: 7px;
+        }
+        &:last-child {
+          margin-left: 7px;
+        }
       }
     }
   }
