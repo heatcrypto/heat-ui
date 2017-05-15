@@ -49,6 +49,8 @@
             </div>
             <div class="value">
               <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
+              <span ng-if="vm.currencyInfo.certified == true">Yes</span>
+              <span ng-if="vm.currencyInfo.certified == false">No</span>
             </div>
           </div>
           <div class="col-item id">
@@ -88,6 +90,8 @@
             </div>
             <div class="value">
               <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
+              <span ng-if="vm.assetInfo.certified===true">Yes</span>
+              <span ng-if="vm.assetInfo.certified===false">No</span>
             </div>
           </div>
           <div class="col-item id">
