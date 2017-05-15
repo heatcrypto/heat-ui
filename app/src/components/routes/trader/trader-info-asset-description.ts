@@ -29,7 +29,7 @@
         <div class="col">
           <div class="col-item">
             <div class="title">
-              {{vm.currencyInfo.symbol}}
+              Asset name
             </div>
             <div class="value">
               {{vm.currencyInfo.name}}
@@ -68,7 +68,7 @@
         <div class="col">
           <div class="col-item header">
             <div class="title">
-              {{vm.assetInfo.symbol}}
+              Asset name
             </div>
             <div class="value">
               {{vm.assetInfo.name}}
