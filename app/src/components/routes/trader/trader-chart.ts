@@ -58,6 +58,16 @@ class TraderChartComponent {
 
   interval: string = "HOUR"; // "ONE_MINUTE", "FIVE_MINUTES", "TEN_MINUTES", "HOUR", "DAY", "WEEK"
   filter: string = 'ALL'; // 'ONE_MONTH', 'ONE_WEEK', 'ONE_DAY', 'ONE_HOUR', 'FIVE_MINUTES', 'ONE_MINUTE'
+  chart: {
+    closeLine: any,
+    close: any,
+    closeArea: any,
+    volumeLine: any,
+    volumeArea: any,
+    data: any,
+    x: any,
+    xAxis: any
+  } = {}
 
   // we need these in order to know how big our svg should be
   fullWidth: number;
@@ -85,7 +95,32 @@ class TraderChartComponent {
   }
 
   private getOHLCChartData(): angular.IPromise<IHeatChart> {
+    if (this.filter === 'ONE_DAY' ||
+        this.filter === 'ONE_HOUR' ||
+        this.filter === 'FIVE_MINUTES' ||
+        this.filter === 'ONE_MINUTE') {
+          this.interval = 'ONE_MINUTE'
+    } else {
+          this.interval = 'HOUR'
+    }
     return this.heat.api.getOHLCChartData(this.currencyInfo.id, this.assetInfo.id, this.interval);
+  }
+
+  private subscribeToOrderEvents(currency: string, asset: string) {
+    this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
+      if (order.unconfirmed === false) {
+        let price = parseInt(order.price)
+        let OHLCChartItemData = {
+          close: price,
+          date: new Date(),
+          high: price,
+          low: price,
+          open: price,
+          volume: parseInt(order.quantity)
+        }
+        this.update(OHLCChartItemData)
+      }
+    }, this.$scope);
   }
 
   public setInterval(interval) {
@@ -98,13 +133,48 @@ class TraderChartComponent {
     this.refresh();
   }
 
+  public update(OHLCChartItemData: any) {
+    this.chart.data.push(OHLCChartItemData)
+    d3.select(".close-line")
+      .attr("d", this.chart.closeLine)
+      .attr("transform", null)
+      .transition()
+
+    d3.select(".close-area")
+      .attr("d", this.chart.closeArea)
+      .attr("transform", null)
+      .transition()
+
+    d3.select(".volume-line")
+      .attr("d", this.chart.volumeLine)
+      .attr("transform", null)
+      .transition()
+
+    d3.select(".volume-area")
+      .attr("d", this.chart.volumeArea)
+      .attr("transform", null)
+      .transition()
+
+    this.chart.x.domain(this.chart.data.map(this.chart.close.accessor().d));
+
+    d3.selectAll("g.x.axis").call(this.chart.xAxis)
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "-2em")
+      .attr("dy", "-0.05em")
+      .attr("transform", "rotate(-90)");
+
+    this.chart.data.shift();
+  }
+
   public refresh() {
+    this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
       let margin = {top: 20, right: 80, bottom: 60, left: 50},
         width = this.fullWidth - margin.left - margin.right,
         height = this.fullHeight - margin.top - margin.bottom;
 
-      let x = techan.scale.financetime()
+      this.chart.x = techan.scale.financetime()
         .range([0, width]);
 
       let yClose = d3.scaleLinear()
@@ -114,11 +184,11 @@ class TraderChartComponent {
 
       var volume = techan.plot.volume()
           .accessor(techan.accessor.ohlc())
-          .xScale(x)
+          .xScale(this.chart.x)
           .yScale(yVolume);
 
-      var close = techan.plot.close()
-          .xScale(x)
+      this.chart.close = techan.plot.close()
+          .xScale(this.chart.x)
           .yScale(yClose);
 
       let tickFormat
@@ -126,10 +196,8 @@ class TraderChartComponent {
           this.filter === 'ONE_HOUR' ||
           this.filter === 'FIVE_MINUTES' ||
           this.filter === 'ONE_MINUTE') {
-            this.interval = 'ONE_MINUTE'
             tickFormat = '%H:%M:%S'
       } else {
-            this.interval = 'HOUR'
             tickFormat = "%Y-%m-%d"
       }
 
@@ -158,8 +226,8 @@ class TraderChartComponent {
           break;
       }
 
-      let xAxis = d3.axisBottom()
-        .scale(x)
+      this.chart.xAxis = d3.axisBottom()
+        .scale(this.chart.x)
         .ticks(ticks)
         .tickSize(-height)
         .tickFormat(d3.timeFormat(tickFormat))
@@ -182,8 +250,8 @@ class TraderChartComponent {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
       let parseDate = d3.timeParse("%d-%b-%y %H:%M:%S");
-      let accessor = close.accessor();
-      let data = [];
+      let accessor = this.chart.close.accessor();
+      this.chart.data = [];
       heatChart.data.forEach((d) => {
         /**
          *
@@ -199,7 +267,7 @@ class TraderChartComponent {
         let itemDate = utils.timestampToDate(parseInt(d[0]));
         let filterDate = getFilterDateTime(this.filter)
         if (itemDate >= filterDate) {
-          data.push({
+          this.chart.data.push({
             date: parseDate(convertToDate(d[0])),
             open: +d[5],
             high: +d[3],
@@ -210,7 +278,7 @@ class TraderChartComponent {
         }
       });
 
-      data.sort(function (a, b) {
+      this.chart.data.sort(function (a, b) {
         return d3.ascending(accessor.d(a), accessor.d(b));
       });
 
@@ -224,17 +292,17 @@ class TraderChartComponent {
       svg.append("g")
               .attr("class", "yVolume axis")
 
-      x.domain(data.map(close.accessor().d));
-      yClose.domain(techan.scale.plot.ohlc(data, close.accessor()).domain());
-      yVolume.domain(techan.scale.plot.volume(data, close.accessor().v).domain());
+      this.chart.x.domain(this.chart.data.map(this.chart.close.accessor().d));
+      yClose.domain(techan.scale.plot.ohlc(this.chart.data, this.chart.close.accessor()).domain());
+      yVolume.domain(techan.scale.plot.volume(this.chart.data, this.chart.close.accessor().v).domain());
 
       var defs = svg.append("defs");
 
       // Create the "volume" graph.
-      var volumeArea = d3.area()
-        .x(function(d) { return x(d.date); })
+      this.chart.volumeArea = d3.area()
+        .x((d) => { return this.chart.x(d.date); })
         .y0(height)
-        .y1(function(d) { return yVolume(d.volume); })
+        .y1((d) => { return yVolume(d.volume); })
         .curve(d3.curveBasis)
 
       var volumeGradient = defs.append("linearGradient")
@@ -257,29 +325,29 @@ class TraderChartComponent {
         .attr("stop-opacity", 0.2);
 
       svg.append("path")
-        .datum(data)
-        .attr("class", "area")
+        .datum(this.chart.data)
+        .attr("class", "volume-area")
         .attr("fill","url(#svgVolumeGradient)")
-        .attr("d", volumeArea);
+        .attr("d", this.chart.volumeArea);
 
-      let volumeLine = d3.line()
-      .x(function(d) { return x(d.date); })
-      .y(function(d) { return yVolume(d.volume); })
+      this.chart.volumeLine = d3.line()
+      .x((d) => { return this.chart.x(d.date); })
+      .y((d) => { return yVolume(d.volume); })
       .curve(d3.curveBasis)
 
       svg.append("path")
-        .datum(data)
-        .attr("class", "volume")
+        .datum(this.chart.data)
+        .attr("class", "volume-line")
         .attr("fill","none")
         .attr("stroke", "#4e5fd3")
         .attr("stroke-width", "1px")
-        .attr("d", volumeLine)
+        .attr("d", this.chart.volumeLine)
 
-      // Create the "close" graph.
-      var closeArea = d3.area()
-        .x(function(d) { return x(d.date); })
+      // // Create the "close" graph.
+      this.chart.closeArea = d3.area()
+        .x((d) => { return this.chart.x(d.date); })
         .y0(height)
-        .y1(function(d) { return yClose(d.close); })
+        .y1((d) => { return yClose(d.close); })
         .curve(d3.curveBasis)
 
       var closeGradient = defs.append("linearGradient")
@@ -302,25 +370,25 @@ class TraderChartComponent {
         .attr("stop-opacity", 0.2);
 
       svg.append("path")
-        .datum(data)
-        .attr("class", "area")
+        .datum(this.chart.data)
+        .attr("class", "close-area")
         .attr("fill","url(#svgCloseGradient)")
-        .attr("d", closeArea);
+        .attr("d", this.chart.closeArea);
 
-      let closeLine = d3.line()
-        .x(function(d) { return x(d.date); })
-        .y(function(d) { return yClose(d.close); })
+      this.chart.closeLine = d3.line()
+        .x((d) => { return this.chart.x(d.date); })
+        .y((d) => { return yClose(d.close); })
         .curve(d3.curveBasis)
 
       svg.append("path")
-        .datum(data)
-        .attr("class", "close")
+        .datum(this.chart.data)
+        .attr("class", "close-line")
         .attr("fill","none")
         .attr("stroke", "#ea543d")
         .attr("stroke-width", "1px")
-        .attr("d", closeLine)
+        .attr("d", this.chart.closeLine)
 
-      svg.selectAll("g.x.axis").call(xAxis)
+      svg.selectAll("g.x.axis").call(this.chart.xAxis)
         .selectAll("text")
         .style("text-anchor", "end")
         .attr("dx", "-2em")
