@@ -10,6 +10,17 @@ trader {
   md-sidenav {
     margin-right: 14px !important;
   }
+  .balances-row {
+    flex-direction: row;
+    display: flex;
+    & > div {
+      flex-grow: 1;
+      button {
+        padding: 4px;
+        height: inherit;
+      }
+    }
+  }
   .trader-row {
     display: flex;
     margin-bottom: 8px;

@@ -27,10 +27,6 @@
     <div>
       <div class="top-row">
         <div class="market-title">
-          <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
-            <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
-            <i><img src="assets/{{vm.marketsSidenavOpen?'minusIcon':'plusIcon'}}.png"</i>
-          </md-button>
           <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
         </div>
         <div ng-if="vm.isBtcAsset">
