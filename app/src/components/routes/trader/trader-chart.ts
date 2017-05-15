@@ -67,7 +67,7 @@ class TraderChartComponent {
     data: any,
     x: any,
     xAxis: any
-  } = {}
+  } = {closeLine: null, close: null, closeArea: null, volumeLine: null, volumeArea: null, data: null, x: null, xAxis: null};
 
   // we need these in order to know how big our svg should be
   fullWidth: number;

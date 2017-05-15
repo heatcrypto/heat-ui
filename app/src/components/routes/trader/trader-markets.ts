@@ -45,7 +45,7 @@
           </div>
           <div class="truncate-col change-col">{{item.change}}</div>
           <div class="truncate-col price-col">{{item.price}}</div>
-          <div class="truncate-col vol-col right-align" flex>{{item.vol}}</div>
+          <div class="truncate-col vol-col right-align" flex>{{ item.vol }}</div>
         </md-list-item>
       </md-virtual-repeat-container>
     </md-list>
@@ -98,7 +98,7 @@ class TraderMarketsComponent {
           );
           market.change = `${(parseFloat(market.hr24Change)>0?'+':'')}${market.hr24Change}%`;
           market.price = utils.formatQNT(market.lastPrice, market.currencyDecimals);
-          market.vol = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals);
+          market.vol = utils.commaFormat(Math.round(parseInt(utils.convertToQNTf(market.hr24AssetVolume))) + '');
           market.currencyInfo = {symbol:'*'};
           market.assetInfo = {symbol:'*'};
         });

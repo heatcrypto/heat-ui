@@ -43,9 +43,14 @@ trader-markets {
         padding: 2px 9px;
         flex-grow: 0;
         &:first-child {
-        padding: 2px 9px;
-        opacity: 0.6;
-      }
+          padding: 2px 9px;
+          opacity: 0.6;
+        }
+        .truncate-col {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
       .market-col {
         width: 65px;
@@ -56,16 +61,14 @@ trader-markets {
         text-align: right;
         padding-right: 3px;
         overflow: hidden;
+        width: 30px;
       }
       .change-col {
-        width: 30px;
+        width: 50px;
         overflow: inherit;
       }
       .price-col {
-        width: 50px;
-      }
-      .vol-col {
-        width: 50px;
+        width: 70px;
       }
     }
     md-virtual-repeat-container {
