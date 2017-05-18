@@ -19,7 +19,8 @@ trader-orders-sell {
   border-radius: 4px;
 }
 
-trader-trade-history {
+trader-trade-history,
+trader-orders-my {
   .selector {
     i {
       font-size: 12px;
@@ -31,9 +32,24 @@ trader-trade-history {
       top: -3px;
     }
   }
+  .expires-col {
+    max-width: inherit;
+    white-space: normal;
+  }
   .type-col {
     text-align: left;
     max-width: 30px;
+    min-width: inherit;
+  }
+  .market-col {
+    text-align: left;
+    max-width: 60px;
+    min-width: inherit;
+  }
+  .cancel-col {
+    text-align: left;
+    max-width: 50px;
+    width: 50px;
     min-width: inherit;
   }
 }
