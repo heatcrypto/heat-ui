@@ -5,6 +5,19 @@ md-toolbar {
   font-family:Roboto;
   padding: 12px 32px 6px 32px;
   color: @white;
+  .wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    flex-grow: 1;
+    & > div {
+      white-space: nowrap;
+      display: flex;
+      flex-grow: 1;
+      &:last-child {
+        justify-content: flex-end;
+      }
+    }
+  }
   .md-button {
     overflow: inherit;
   }
