@@ -155,12 +155,17 @@ class TraderChartComponent {
       .attr("transform", null)
       .transition()
 
-    this.chart.x.domain(this.chart.data.map(this.chart.close.accessor().d));
+    let filterDate = this.getFilterDateTime(this.filter)
+    let startDate = filterDate
+    if (this.filter == 'ALL') {
+      startDate = this.chart.data[0].date
+    }
+    this.chart.x.domain([startDate, new Date()]);
 
     d3.selectAll("g.x.axis").call(this.chart.xAxis)
       .selectAll("text")
       .style("text-anchor", "end")
-      .attr("dx", "-2em")
+      .attr("dx", "-0.5em")
       .attr("dy", "-0.05em")
       .attr("transform", "rotate(-90)");
 
@@ -174,22 +179,10 @@ class TraderChartComponent {
         width = this.fullWidth - margin.left - margin.right,
         height = this.fullHeight - margin.top - margin.bottom;
 
-      this.chart.x = techan.scale.financetime()
-        .range([0, width]);
-
       let yClose = d3.scaleLinear()
         .range([height, 0]);
       let yVolume = d3.scaleLinear()
         .range([height, 0]);
-
-      var volume = techan.plot.volume()
-          .accessor(techan.accessor.ohlc())
-          .xScale(this.chart.x)
-          .yScale(yVolume);
-
-      this.chart.close = techan.plot.close()
-          .xScale(this.chart.x)
-          .yScale(yClose);
 
       let tickFormat
       if (this.filter === 'ONE_DAY' ||
@@ -201,34 +194,20 @@ class TraderChartComponent {
             tickFormat = "%Y-%m-%d"
       }
 
-      let ticks
-      switch (this.filter) {
-        case 'ONE_MONTH':
-          ticks = 20
-          break;
-        case 'ONE_WEEK':
-          ticks = 6
-          break;
-        case 'ONE_DAY':
-          ticks = 24
-          break;
-        case 'ONE_HOUR':
-          ticks = 20
-          break;
-        case 'FIVE_MINUTES':
-          ticks = 5
-          break;
-        case 'ONE_MINUTE':
-          ticks = 20
-          break;
-        default:
-          ticks = 30
-          break;
-      }
+      this.chart.x = d3.scaleTime()
+        .range([0, width])
+
+      var volume = techan.plot.volume()
+          .accessor(techan.accessor.ohlc())
+          .xScale(this.chart.x)
+          .yScale(yVolume);
+
+      this.chart.close = techan.plot.close()
+          .xScale(this.chart.x)
+          .yScale(yClose);
 
       this.chart.xAxis = d3.axisBottom()
         .scale(this.chart.x)
-        .ticks(ticks)
         .tickSize(-height)
         .tickFormat(d3.timeFormat(tickFormat))
 
@@ -251,6 +230,7 @@ class TraderChartComponent {
 
       let parseDate = d3.timeParse("%d-%b-%y %H:%M:%S");
       let accessor = this.chart.close.accessor();
+      let filterDate = this.getFilterDateTime(this.filter)
       this.chart.data = [];
       heatChart.data.forEach((d) => {
         /**
@@ -265,7 +245,7 @@ class TraderChartComponent {
           */
 
         let itemDate = utils.timestampToDate(parseInt(d[0]));
-        let filterDate = getFilterDateTime(this.filter)
+
         if (itemDate >= filterDate) {
           this.chart.data.push({
             date: parseDate(convertToDate(d[0])),
@@ -292,7 +272,11 @@ class TraderChartComponent {
       svg.append("g")
               .attr("class", "yVolume axis")
 
-      this.chart.x.domain(this.chart.data.map(this.chart.close.accessor().d));
+      let startDate = filterDate
+      if (this.filter == 'ALL') {
+        startDate = this.chart.data[0].date
+      }
+      this.chart.x.domain([startDate, new Date()]);
       yClose.domain(techan.scale.plot.ohlc(this.chart.data, this.chart.close.accessor()).domain());
       yVolume.domain(techan.scale.plot.volume(this.chart.data, this.chart.close.accessor().v).domain());
 
@@ -391,7 +375,7 @@ class TraderChartComponent {
       svg.selectAll("g.x.axis").call(this.chart.xAxis)
         .selectAll("text")
         .style("text-anchor", "end")
-        .attr("dx", "-2em")
+        .attr("dx", "-0.5em")
         .attr("dy", "-0.05em")
         .attr("transform", "rotate(-90)");
 
@@ -406,39 +390,39 @@ class TraderChartComponent {
         .attr("transform", "translate( " + width + ", 0 )")
         .call(yVolumeAxis)
 
-      function getFilterDateTime(filter) {
-        let filterDate = new Date()
-        switch (filter) {
-          case 'ONE_MONTH':
-            filterDate.setMonth(filterDate.getMonth() - 1)
-            break;
-          case 'ONE_WEEK':
-            filterDate.setDate(filterDate.getDate() - 7)
-            break;
-          case 'ONE_DAY':
-            filterDate.setDate(filterDate.getDate() - 1)
-            break;
-          case 'ONE_HOUR':
-            filterDate.setHours(filterDate.getHours() - 1)
-            break;
-          case 'FIVE_MINUTES':
-            filterDate.setMinutes(filterDate.getMinutes() - 5)
-            break;
-          case 'ONE_MINUTE':
-            filterDate.setMinutes(filterDate.getMinutes() - 1)
-            break;
-          default:
-            filterDate.setFullYear(filterDate.getFullYear() - 100)
-            break;
-        }
-        return filterDate
-      }
-
       function convertToDate(date) {
         let format = 'dd-mmm-yy HH:mm:ss';
         let dateFormated = utils.timestampToDate(parseInt(date));
         return dateFormat(dateFormated, format);
       }
     });
+  }
+
+  public getFilterDateTime(filter) {
+    let filterDate = new Date()
+    switch (filter) {
+      case 'ONE_MONTH':
+        filterDate.setMonth(filterDate.getMonth() - 1)
+        break;
+      case 'ONE_WEEK':
+        filterDate.setDate(filterDate.getDate() - 7)
+        break;
+      case 'ONE_DAY':
+        filterDate.setDate(filterDate.getDate() - 1)
+        break;
+      case 'ONE_HOUR':
+        filterDate.setHours(filterDate.getHours() - 1)
+        break;
+      case 'FIVE_MINUTES':
+        filterDate.setMinutes(filterDate.getMinutes() - 5)
+        break;
+      case 'ONE_MINUTE':
+        filterDate.setMinutes(filterDate.getMinutes() - 1)
+        break;
+      default:
+        filterDate.setFullYear(filterDate.getFullYear() - 100)
+        break;
+    }
+    return filterDate
   }
 }
