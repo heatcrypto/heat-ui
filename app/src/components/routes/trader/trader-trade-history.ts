@@ -61,7 +61,7 @@
     </div>
   `
 })
-@Inject('$scope','tradesProviderFactory','$q','user','settings','heat')
+@Inject('$scope', '$window', 'tradesProviderFactory','$q','user','settings','heat')
 class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
   /* @inputs */
@@ -72,6 +72,7 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
   showTheseTrades: string = "all";
 
   constructor(protected $scope: angular.IScope,
+              private $window: ng.IWindowService,
               private tradesProviderFactory: TradesProviderFactory,
               $q: angular.IQService,
               private user: UserService,
@@ -101,6 +102,8 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
         /* reload on block popped */
         heat.subscriber.blockPopped({}, refresh, $scope);
+
+        angular.element($window).bind('resize', () => this.onResize());
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
@@ -113,7 +116,10 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
   }
 
   createProvider() {
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    if (this.$window.innerWidth < 870) {
+      format = this.settings.get(SettingsService.TIMEFORMAT_DEFAULT);
+    }
     var account = this.showTheseTrades == 'all' ? null : this.user.account;
     this.initializeVirtualRepeat(
       this.tradesProviderFactory.createProvider(this.currencyInfo.id, this.assetInfo.id, account),
@@ -139,5 +145,8 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
       console.log("update view");
       this.createProvider();
     }
+  }
+  onResize() {
+    this.updateView()
   }
 }

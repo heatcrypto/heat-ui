@@ -35,6 +35,7 @@ class SettingsService {
   public static ENGINE_TYPE = 'settings.engine_type';
   public static BASE_FEE = 'settings.base_fee';*/
   public static DATEFORMAT_DEFAULT = 'settings.dateformat_default';
+  public static TIMEFORMAT_DEFAULT = 'settings.timeformat_default';
   public static APPLICATION_NAME = 'settings.application_name';
   public static APPLICATION_VERSION = 'settings.application_version';
   public static APPLICATION_BUILD = 'settings.application_build';
@@ -78,6 +79,7 @@ class SettingsService {
 
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
+    this.settings[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
 
     this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
     this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
