@@ -1,0 +1,39 @@
+@import '../colors';
+@import '../default';
+
+messenger {
+  md-content {
+    background-color: inherit;
+    message-batch-entry {
+      .widget();
+      color: @white07;
+      md-icon {
+        color: @white07;
+      }
+    }
+  }
+  textarea {
+    background-color: @dark-blue2;
+    color: @white07;
+    width: 100%;
+    outline: inherit;
+    height: 50px !important;
+    padding: 6px;
+    &::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+      color: @white07;
+      font-size: 12px;
+    }
+    &::-moz-placeholder { /* Firefox 19+ */
+      color: @white07;
+      font-size: 12px;
+    }
+    &:-ms-input-placeholder { /* IE 10+ */
+      color: @white07;
+      font-size: 12px;
+    }
+    &:-moz-placeholder { /* Firefox 18- */
+      color: @white07;
+      font-size: 12px;
+    }
+  }
+}
