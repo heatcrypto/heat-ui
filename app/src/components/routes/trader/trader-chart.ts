@@ -78,6 +78,16 @@ class TraderChartComponent {
               private $q: angular.IQService,
               private $window: angular.IWindowService)
   {
+    // have to wrap in function since currencyInfo and assetInfo are set after construction
+    var ready = () => {
+      if (this.currencyInfo && this.assetInfo) {
+        // we need to only 1 time register the websocket listener
+        this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
+        unregister.forEach(fn => fn());
+      }
+    };
+    var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
+
     let onresize = utils.debounce(()=>{ this.determineElementSize() },50);
     angular.element($window).on('resize', onresize);
     $scope.$on('$destroy',()=>{ angular.element($window).off('resize', onresize) });
@@ -173,7 +183,6 @@ class TraderChartComponent {
   }
 
   public refresh() {
-    this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
       let margin = {top: 20, right: 80, bottom: 60, left: 50},
         width = this.fullWidth - margin.left - margin.right,
