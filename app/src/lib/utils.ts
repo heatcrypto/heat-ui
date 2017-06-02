@@ -34,7 +34,10 @@ module utils {
     if (typeof amount == 'undefined') {
       return '0';
     }
-    var neg    = amount.indexOf('-') == 0 && (amount.shift());
+    var neg    = amount.indexOf('-') == 0;
+    if (neg) {
+      amount   = amount.substr(1);
+    }
     amount     = amount.split('.'); // input is result of convertNQT
     var parts  = amount[0].split("").reverse().join("").split(/(\d{3})/).reverse();
     var format = [];
@@ -78,6 +81,10 @@ module utils {
 
   export function timestampToDate(timestamp: number) {
     return new Date(Date.UTC(2013, 10, 24, 12, 0, 0, 0) + timestamp * 1000);
+  }
+
+  export function epochTime() {
+    return (Date.now() - 1385294400000 + 500) / 1000;
   }
 
   export function roundTo(value: string, decimals: number): string {
