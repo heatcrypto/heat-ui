@@ -42,9 +42,6 @@
     user-payments-table .stretch {
       width: 99%;
     }
-    user-payments-table td {
-      vertical-align: top !important;
-    }
     user-payments-table .message-text {
       margin-bottom: 18px;
     }
