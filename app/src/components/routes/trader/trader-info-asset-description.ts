@@ -29,7 +29,7 @@
         <div class="col">
           <div class="col-item">
             <div class="title">
-              Asset name
+              Asset name:
             </div>
             <div class="value">
               {{vm.currencyInfo.name}}
@@ -37,7 +37,7 @@
           </div>
           <div class="col-item issued-by">
             <div class="title">
-              Issuer
+              Issuer:
             </div>
             <div class="value">
               {{vm.currencyIssuer}}
@@ -45,7 +45,7 @@
           </div>
           <div class="col-item launched">
             <div class="title">
-              Certified
+              Certified:
             </div>
             <div class="value">
               <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
@@ -55,7 +55,7 @@
           </div>
           <div class="col-item id">
             <div class="title">
-              Launched
+              Launched:
             </div>
             <div class="value">
               {{vm.currencyLaunched}}
@@ -70,7 +70,7 @@
         <div class="col">
           <div class="col-item header">
             <div class="title">
-              Asset name
+              Asset name:
             </div>
             <div class="value">
               {{vm.assetInfo.name}}
@@ -78,7 +78,7 @@
           </div>
           <div class="col-item issued-by">
             <div class="title">
-              Issuer
+              Issuer:
             </div>
             <div class="value">
               {{vm.assetIssuer}}
@@ -86,7 +86,7 @@
           </div>
           <div class="col-item launched">
             <div class="title">
-              Certified
+              Certified:
             </div>
             <div class="value">
               <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
@@ -96,7 +96,7 @@
           </div>
           <div class="col-item id">
             <div class="title">
-              Launched
+              Launched:
             </div>
             <div class="value">
               {{vm.assetLaunched}}
