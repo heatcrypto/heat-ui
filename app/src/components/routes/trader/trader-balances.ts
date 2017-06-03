@@ -82,7 +82,7 @@ class TraderBalancesComponent {
           );
           balance.symbol = '*';
           balance.name = '*';
-          balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
+          balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals).replace(/.00000000$/,'');;
           //balance.balance = utils.formatQNT(balance.balance, balance.decimals);
         });
         this.$q.all(promises).then(()=>{
