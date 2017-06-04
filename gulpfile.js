@@ -24,6 +24,7 @@
 require('es6-promise').polyfill(); /* usemin requires this */
 var gulp = require('gulp');
 var less = require('gulp-less');
+var lesshint = require('gulp-lesshint');
 var path = require('path');
 var plumber = require('gulp-plumber');
 
@@ -162,6 +163,15 @@ gulp.task('electron', function () {
     .pipe(gulp.dest('dist/electron'));
   gulp.src(['app/node_modules/**/*'])
     .pipe(gulp.dest('dist/node_modules'));
+});
+
+gulp.task('lint', function () {
+  return gulp.src('app/styles/**/*.less')
+    .pipe(lesshint({
+        // Options
+    }))
+    .pipe(lesshint.reporter())
+    .pipe(lesshint.failOnError());
 });
 
 gulp.task('default', ['play']);
