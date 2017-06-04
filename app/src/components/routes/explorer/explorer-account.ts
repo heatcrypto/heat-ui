@@ -20,9 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explore-account/:account')
+@RouteConfig('/explorer-account/:account')
 @Component({
-  selector: 'exploreAccount',
+  selector: 'explorerAccount',
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill layout-padding >
