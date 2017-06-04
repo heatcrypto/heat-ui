@@ -20,24 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-/*
-      <!--
-      <div layout="column" flex>
-        <md-tabs md-border-bottom flex layout="column">
-          <md-tab label="BLOCKS" flex layout="column">
-            <md-content class="md-padding" flex layout="column">
-              <blocks-explorer-table layout="column" flex></blocks-explorer-table>
-            </md-content>
-          </md-tab>
-          <md-tab label="TRANSACTIONS" flex layout="column">
-            <md-content class="md-padding" flex layout="column">
-              <transactions-explorer-table layout="column" flex></transactions-explorer-table>
-            </md-content>
-          </md-tab>
-        </md-tabs>
-      </div>
-      -->
-*/
 @RouteConfig('/explorer')
 @Component({
   selector: 'explorer',
