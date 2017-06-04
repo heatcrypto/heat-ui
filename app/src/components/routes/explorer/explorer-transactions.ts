@@ -260,7 +260,7 @@ class TransactionRenderer {
   }
 
   account(account: string): string {
-    return `<a href="#/explore-account/${account}">${account}</a>`;
+    return `<a href="#/explorer-account/${account}">${account}</a>`;
   }
 
   amount(amountHQT: string, decimals: number, symbol?: string) {

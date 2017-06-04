@@ -41,9 +41,9 @@
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
             <div class="truncate-col height-col left">{{item.height}}</div>
-            <div class="truncate-col block-col block left"><a href="#/explore-block/{{item.block}}">{{item.block}}</a></div>
+            <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
             <div class="truncate-col date-col left">{{item.time}}</div>
-            <div class="truncate-col generator-col block left"><a href="#/explore-account/{{item.generator}}">{{item.generator}}</a></div>
+            <div class="truncate-col generator-col block left"><a href="#/explorer-account/{{item.generator}}">{{item.generator}}</a></div>
             <div class="truncate-col transactions-col">{{item.numberOfTransactions}}</div>
             <div class="truncate-col amount-col">{{item.amount}}</div>
             <div class="truncate-col fee-col">{{item.fee}}</div>
