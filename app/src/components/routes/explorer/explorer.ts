@@ -57,7 +57,6 @@
   `],
   template: `
     <div layout="column" flex layout-padding layout-fill>
-      <h3 class="below">Search&nbsp;&nbsp;&nbsp;<img src="assets/heatwallet.png" class="wallet"></h3>
       <explorer-search layout="column"></explorer-search>
       <explorer-latest-blocks layout="column" flex="30"></explorer-latest-blocks>
       <explorer-transactions layout="column" flex="60"></explorer-transactions>
