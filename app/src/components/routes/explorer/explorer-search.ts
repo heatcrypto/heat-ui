@@ -24,9 +24,9 @@
   selector: 'explorerSearch',
   template: `
     <div layout="row" flex layout-fill>
-      <md-input-container class="md-block" flex>
-        <label>Search for account id, block id, block height and transaction id [UNDER CONSTRUCTION]</label>
-        <input name="search-text" ng-model="vm.searchText" disabled>
+      <md-input-container flex>
+        <label>Search for account id, block id, block height and transaction id</label>
+        <input name="search-text" ng-model="vm.searchText">
       </md-input-container>
     </div>
   `
