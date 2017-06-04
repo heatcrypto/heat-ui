@@ -110,7 +110,7 @@ gulp.task('ts2js', function () {
     .pipe(gulp.dest('dist'));
 });
 
-gulp.task('copy:dist', ['tshelpers','libjs'], function () {
+gulp.task('copy:dist', ['tshelpers','libjs','less'], function () {
   gulp.src(PATHS.assets)
     .pipe(gulp.dest('dist/assets'));
   gulp.src(PATHS.dice_words)
