@@ -20,12 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explore-block/:block')
+@RouteConfig('/explorer-block/:block')
 @Component({
-  selector: 'exploreBlock',
+  selector: 'explorerBlock',
   inputs: ['block'],
   styles: [`
-    explore-block h3 {
+    explorer-block h3 {
       font-size: 24px !important;
       font-weight: bold;
       padding-bottom: 0px;
@@ -41,7 +41,7 @@
   `
 })
 @Inject('$scope','user')
-class ExploreBlockComponent {
+class ExplorerBlockComponent {
   block: string;//@input
   constructor(private $scope: angular.IScope,
               public user: UserService) {
