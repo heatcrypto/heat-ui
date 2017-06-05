@@ -86,67 +86,6 @@ md-list-item::before,
 
 textarea, input, button { outline: none; }
 
-.widget {
-  font-family: Roboto;
-  padding: 12px;
-  background-color: @dark-blue015;
-  box-shadow:0 0 2px 0 rgba(0,0,0, 0.2);
-  .trader-component-title {
-    font-size: 16px;
-    margin-bottom: 6px;
-    color: @white;
-    .balance {
-      font-weight: bold;
-    }
-  }
-}
-
-.list {
-  md-list {
-    padding: 0px;
-  }
-  md-list-item, md-list-item .md-list-item-inner {
-    line-height: 20px;
-    overflow: hidden;
-  }
-  .content {
-    font-size: 12px;
-    text-align: right;
-  }
-  md-list-item:nth-child(even) {
-    background-color: @dark-blue2;
-  }
-  .md-button.md-no-style {
-    padding: 0px 3px 0px 0px !important;
-  }
-  md-list-item.md-no-proxy {
-    padding: 0px 10px 0px 0px !important;
-  }
-  .header {
-    .truncate-col {
-      font-size: 12px;
-      font-weight: bold;
-      color: @white !important;
-    }
-  }
-  .truncate-col {
-      text-align: right;
-      margin-right: 6px;
-      overflow: hidden;
-      white-space: nowrap;
-      min-width: 70px;
-      max-width: 120px;
-      flex-grow: 1;
-      color: @white07;
-      &.sum-col {
-        margin-right: 0px;
-      }
-      a {
-        color: @link-yellow;
-      }
-    }
-}
-
 input[type="radio"] {
     background-color: @gray4;
     border-radius: 10px;
@@ -173,37 +112,6 @@ input[type="radio"]:checked:after {
     background-color: @white;
 }
 
-table {
-  &.md-table {
-    thead {
-      &.md-head {
-        > tr.md-row {
-          height: 32px;
-          th {
-            &.md-column {
-              color: @white !important;
-            }
-          }
-        }
-      }
-    }
-    tbody {
-      &.md-body {
-        > tr.md-row {
-          height: inherit;
-          td {
-            &.md-cell {
-              padding: 4px 56px 4px 0;
-              border-top: none !important;
-              color: @white07 !important;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
 md-input-container.md-default-theme:not(.md-input-invalid).md-input-has-value label, md-input-container:not(.md-input-invalid).md-input-has-value label,
 md-input-container.md-default-theme label, md-input-container label, md-input-container.md-default-theme .md-placeholder, md-input-container .md-placeholder,
 md-select:not([disabled]):focus .md-select-value, md-input-container.md-default-theme .md-input, md-input-container .md-input, md-input-container > md-icon {
@@ -211,4 +119,8 @@ md-select:not([disabled]):focus .md-select-value, md-input-container.md-default-
 }
 md-radio-button.md-default-theme .md-off, md-radio-button .md-off {
   border-color: @white04;
+}
+
+md-menu-content .md-button {
+  color: @gray3 !important;
 }
