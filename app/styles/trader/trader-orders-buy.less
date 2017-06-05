@@ -24,55 +24,9 @@
 @import '../colors';
 @import '../default';
 
-trader-orders-buy,
-trader-orders-sell,
-trader-trade-history,
-trader-orders-my {
+trader-orders-buy {
   .widget();
   .list();
-}
-
-trader-orders-buy {
   border: 1px solid @blue;
   border-radius: 4px;
-}
-
-trader-orders-sell {
-  border: 1px solid @orange;
-  border-radius: 4px;
-}
-
-trader-trade-history,
-trader-orders-my {
-  .selector {
-    i {
-      font-size: 12px;
-      font-weight: bold;
-      font-style: normal;
-      margin-right: 22px;
-      margin-left: 6px;
-      position: relative;
-      top: -3px;
-    }
-  }
-  .expires-col {
-    max-width: inherit;
-    white-space: normal;
-  }
-  .type-col {
-    text-align: left;
-    max-width: 30px;
-    min-width: inherit;
-  }
-  .market-col {
-    text-align: left;
-    max-width: 60px;
-    min-width: inherit;
-  }
-  .cancel-col {
-    text-align: left;
-    max-width: 50px;
-    width: 50px;
-    min-width: inherit;
-  }
 }

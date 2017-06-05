@@ -21,38 +21,38 @@
  * SOFTWARE.
  * */
 
-@import '../../colors';
-@import '../../default';
-
-trader-balances {
+ trader-orders-my {
   .widget();
-  padding: 12px;
-  margin-bottom: 12px;
-  max-height: 40%;
-  .md-virtual-repeat-container .md-virtual-repeat-scroller {
-    position: inherit;
-  }
-  md-list-item {
-    border-bottom: 1px solid @gray;
-    &.header .symbol-col,
-    &.header .balance-col {
+  .list();
+  .selector {
+    i {
       font-size: 12px;
-      margin-bottom: 5px;
+      font-weight: bold;
+      font-style: normal;
+      margin-right: 22px;
+      margin-left: 6px;
+      position: relative;
+      top: -3px;
     }
-    &.header {
-      border-bottom: none;
-      opacity: 0.6;
-    }
-    .symbol-col {
-      width: 80px;
-      font-size:26px;
-      letter-spacing:-1.08px;
-    }
-    .balance-col {
-      text-align: right;
-      font-size: 16px;
-      opacity: 0.6;
-      padding-left: 6px;
-    }
+  }
+  .expires-col {
+    max-width: inherit;
+    white-space: normal;
+  }
+  .type-col {
+    text-align: left;
+    max-width: 30px;
+    min-width: inherit;
+  }
+  .market-col {
+    text-align: left;
+    max-width: 60px;
+    min-width: inherit;
+  }
+  .cancel-col {
+    text-align: left;
+    max-width: 50px;
+    width: 50px;
+    min-width: inherit;
   }
 }

@@ -22,15 +22,11 @@
  * */
 
 @import '../colors';
-@import './trader';
-@import './trader-balances';
-@import './trader-orders-my';
-@import './trader-orders-history';
-@import './trader-orders-buy';
-@import './trader-orders-sell';
-@import './trader-markets';
-@import './trader-trollbox';
-@import './trader-info';
-@import './trader-quick-buy-sell';
-@import './trader-volume';
-@import './trader-chart';
+@import '../default';
+
+trader-orders-sell {
+  .widget();
+  .list();
+  border: 1px solid @orange;
+  border-radius: 4px;
+}

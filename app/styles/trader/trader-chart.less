@@ -21,67 +21,37 @@
  * SOFTWARE.
  * */
 
-@import '../../colors';
-@import '../../default';
+@import '../default';
+@import '../colors';
 
-trader-trollbox {
+trader-chart {
   .widget();
-  padding: 12px;
-  margin-top: 12px;
-  height: 250px;
-  display: flex;
-  flex-direction: column;
-  md-list {
-    background-color: @dark-blue;
-  }
-  a {
-    float: right;
-    font-size: 12px;
-    color: @white07;
-  }
-  .display {
-    overflow-y: scroll;
-    overflow-x: hidden;
-    padding-left: 9px;
-    margin-top: 0;
-    b {
-      color: @white07;
+  .intervals > div {
+    margin-right: 10px;
+    cursor: pointer;
+    &:focus {
+      outline: none;
+      text-decoration: underline;
     }
   }
-  input[type="text"], textarea {
-    background-color: @dark-blue2;
-    height: 22px;
-    border: none;
-    box-shadow: none;
-    font-size: 14px;
-    line-height: 14px;
-    margin-bottom: 6px;
-    padding: 2px 6px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-  textarea {
-    width: 100%;
-    height: 50px !important;
-    padding: 6px;
-    &::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-      color: @white07;
-      font-size: 12px;
+  g.axis {
+    path.domain {
+      visibility: hidden;
     }
-    &::-moz-placeholder { /* Firefox 19+ */
-      color: @white07;
-      font-size: 12px;
-    }
-    &:-ms-input-placeholder { /* IE 10+ */
-      color: @white07;
-      font-size: 12px;
-    }
-    &:-moz-placeholder { /* Firefox 18- */
-      color: @white07;
-      font-size: 12px;
+    text {
+      fill: none;
+      stroke: @white;
+      opacity: 0.6;
+      font-weight: lighter;
     }
   }
-  button {
-    float: right;
-    height: 26px;
+  .grid line {
+    stroke: lightgrey;
+    stroke-opacity: 0.7;
+    shape-rendering: crispEdges;
+  }
+
+  .grid path {
+    stroke-width: 0;
   }
 }

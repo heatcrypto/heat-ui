@@ -21,19 +21,38 @@
  * SOFTWARE.
  * */
 
-@import './balances';
-@import './markets';
-@import './trollbox';
-
-md-sidenav {
-  background-color: transparent;
-  .sidenav-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+ trader-trade-history {
+  .widget();
+  .list();
+  .selector {
+    i {
+      font-size: 12px;
+      font-weight: bold;
+      font-style: normal;
+      margin-right: 22px;
+      margin-left: 6px;
+      position: relative;
+      top: -3px;
+    }
   }
-  .trader-component-title {
-    font-size: 16px !important;
-    margin-bottom: 12px;
+  .expires-col {
+    max-width: inherit;
+    white-space: normal;
+  }
+  .type-col {
+    text-align: left;
+    max-width: 30px;
+    min-width: inherit;
+  }
+  .market-col {
+    text-align: left;
+    max-width: 60px;
+    min-width: inherit;
+  }
+  .cancel-col {
+    text-align: left;
+    max-width: 50px;
+    width: 50px;
+    min-width: inherit;
   }
 }

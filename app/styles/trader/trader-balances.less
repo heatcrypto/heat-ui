@@ -22,15 +22,37 @@
  * */
 
 @import '../colors';
-@import './trader';
-@import './trader-balances';
-@import './trader-orders-my';
-@import './trader-orders-history';
-@import './trader-orders-buy';
-@import './trader-orders-sell';
-@import './trader-markets';
-@import './trader-trollbox';
-@import './trader-info';
-@import './trader-quick-buy-sell';
-@import './trader-volume';
-@import './trader-chart';
+@import '../default';
+
+trader-balances {
+  .widget();
+  padding: 12px;
+  margin-bottom: 12px;
+  max-height: 40%;
+  .md-virtual-repeat-container .md-virtual-repeat-scroller {
+    position: inherit;
+  }
+  md-list-item {
+    border-bottom: 1px solid @gray;
+    &.header .symbol-col,
+    &.header .balance-col {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    &.header {
+      border-bottom: none;
+      opacity: 0.6;
+    }
+    .symbol-col {
+      width: 80px;
+      font-size:26px;
+      letter-spacing:-1.08px;
+    }
+    .balance-col {
+      text-align: right;
+      font-size: 16px;
+      opacity: 0.6;
+      padding-left: 6px;
+    }
+  }
+}
