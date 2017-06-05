@@ -178,7 +178,7 @@ class UserPaymentsTableComponent extends AbstractDataTableComponent {
     var limit = forceLimit || this.query.limit;
 
     var from = (page-1) * limit;
-    var to = from + limit;
+    var to = from + limit - 1;
     var sortAsc = true;
 
     /* Must remove the - sign at start of order column */
