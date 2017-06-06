@@ -171,6 +171,9 @@ class TraderChartComponent {
   }
 
   public update(OHLCChartItemData: any) {
+    if (OHLCChartItemData.close !== this.lastTrade.close) {
+      yClose.domain(techan.scale.plot.ohlc(this.chart.data, this.chart.close.accessor()).domain());
+    }
     this.lastTrade = OHLCChartItemData
     this.chart.data.push(OHLCChartItemData)
     d3.select(".close-line")
@@ -325,7 +328,6 @@ class TraderChartComponent {
         itemDate = new Date(this.chart.data[this.chart.data.length - 1].date.valueOf())
       } else {
         itemDate = new Date(startDate.valueOf())
-        yClose.domain([this.lastTrade.close - 1000, this.lastTrade.close + 1000]);
       }
       if (this.filter === 'ONE_HOUR' ||
         this.filter === 'FIVE_MINUTES' ||
@@ -343,6 +345,7 @@ class TraderChartComponent {
             let interval
             itemDate.setSeconds(itemDate.getSeconds() + 2);
           }
+          yClose.domain([this.lastTrade.close - 5000, this.lastTrade.close + 5000]);
         }
 
       this.chart.x.domain([startDate, new Date()]);
