@@ -171,9 +171,6 @@ class TraderChartComponent {
   }
 
   public update(OHLCChartItemData: any) {
-    if (OHLCChartItemData.close !== this.lastTrade.close) {
-      yClose.domain(techan.scale.plot.ohlc(this.chart.data, this.chart.close.accessor()).domain());
-    }
     this.lastTrade = OHLCChartItemData
     this.chart.data.push(OHLCChartItemData)
     d3.select(".close-line")

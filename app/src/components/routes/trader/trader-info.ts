@@ -31,14 +31,14 @@
         </div>
         <div ng-if="vm.isBtcAsset">
           <md-button class="md-primary" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Deposit BTC</md-button>
-          <md-button class="md-warn" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw BTC</md-button>
+          <md-button class="md-warn" ng-click="vm.showBtcWithdrawPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw BTC</md-button>
         </div>
       </div>
       <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info-asset-description>
     </div>
   `
 })
-@Inject('$scope','heat','user','settings')
+@Inject('$scope','heat','user','settings', 'withdrawBTC')
 class TraderInfoComponent {
 
   // inputs
@@ -53,7 +53,8 @@ class TraderInfoComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private user: UserService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private withdrawBTC: WithdrawBTCService) {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
@@ -65,6 +66,10 @@ class TraderInfoComponent {
 
   showBtcLoadPopup($event) {
     dialogs.loadBtc($event);
+  }
+
+  showBtcWithdrawPopup($event) {
+    this.withdrawBTC.dialog($event).show();
   }
 
 }
