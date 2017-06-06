@@ -34,17 +34,7 @@ class DialogFieldAccount extends AbstractDialogField {
   }
 
   search(query: string) {
-    /*
-    var prefix = this.settings.get(SettingsService.RS_ADDRESS_PREFIX);
-    query = query.replace(new RegExp('^'+prefix+'-'),'');
-    var request: ICloudSearchAccountIdentifiersRequest = {
-      accountColorId: this.user.accountColorId
-    };
-    return this.cloud.api.searchAccountIdentifiers(query, request);
-    */
-    var deferred = this.$q.defer();
-    deferred.resolve([]);
-    return deferred;
+    return this.heat.api.searchPublicNames(query, 0, 100);
   }
 }
 
@@ -65,14 +55,14 @@ class DialogFieldAccount extends AbstractDialogField {
         md-floating-label="{{vm.label}}"
         md-min-length="1"
         md-items="item in vm.f.search(vm.searchText)"
-        md-item-text="item.accountEmail||item.account"
+        md-item-text="item.publicName||item.id"
         md-search-text="vm.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>
-          <span>{{item.accountEmail||item.account}}</span>
+          <span>{{item.publicName||item.id}}</span>
         </md-item-template>
         <md-not-found>
           No matches found.
@@ -96,7 +86,7 @@ class DialogFieldAccountComponent {
   }
 
   selectedItemChange() {
-    this.f.value = this.selectedItem ? this.selectedItem.account : '';
+    this.f.value = this.selectedItem ? this.selectedItem.id : '';
   }
 
   searchTextChange() {
