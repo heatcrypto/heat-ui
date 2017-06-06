@@ -39,7 +39,7 @@
   `],
   template: `
     <div layout="column" flex layout-padding layout-fill>
-      <explorer-search layout="column"></explorer-search>
+      <explorer-search layout="column" type="''" query="''"></explorer-search>
       <explorer-latest-blocks layout="column" flex="30"></explorer-latest-blocks>
       <explorer-transactions layout="column" flex="60"></explorer-transactions>
     </div>
