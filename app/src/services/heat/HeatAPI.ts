@@ -273,4 +273,8 @@ class HeatAPI implements IHeatAPI {
   searchAccountsCount(query: string): angular.IPromise<number> {
     return this.heat.get(`/search/accounts/count/${query}`, "count");
   }
+
+  searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.get(`/account/search/0/${query}/${from}/${to}`);
+  }
 }
