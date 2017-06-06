@@ -142,7 +142,6 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
   updateView() {
     if (this.currencyInfo && this.assetInfo) {
-      console.log("update view");
       this.createProvider();
     }
   }
