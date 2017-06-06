@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explorer-results/:type/:query')
+@RouteConfig('/explorer-results/:type/','/explorer-results/:type/:query')
 @Component({
   selector: 'explorerResults',
   inputs: ['type','query'],
@@ -38,7 +38,7 @@
           ng-disabled="vm.type=='transactions'"
           ng-href="#/explorer-results/transactions/{{vm.query}}">Transactions</md-button>
       </div>
-      <h3>Results</h3>
+      <explorer-results-accounts query="vm.query" flex layout="column"></explorer-results-accounts>
     </div>
   `
 })
