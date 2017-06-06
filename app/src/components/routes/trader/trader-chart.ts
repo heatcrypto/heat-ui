@@ -49,7 +49,7 @@ declare var techan: any, d3: any;
     setTimeout(loop, 50);
   }
 })
-@Inject('$scope','heat','$q','$window')
+@Inject('$scope','heat','$q', '$interval', '$window')
 class TraderChartComponent {
 
   // inputs
@@ -73,9 +73,12 @@ class TraderChartComponent {
   fullWidth: number;
   fullHeight: number;
 
+  lastTrade: any;
+
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private $q: angular.IQService,
+              private $interval: angular.IIntervalService,
               private $window: angular.IWindowService)
   {
     // have to wrap in function since currencyInfo and assetInfo are set after construction
@@ -90,7 +93,11 @@ class TraderChartComponent {
 
     let onresize = utils.debounce(()=>{ this.determineElementSize() },50);
     angular.element($window).on('resize', onresize);
-    $scope.$on('$destroy',()=>{ angular.element($window).off('resize', onresize) });
+    let interval = $interval(()=> { this.checkForFlatline() }, 2000);
+    $scope.$on('$destroy',()=>{
+      angular.element($window).off('resize', onresize);
+      $interval.cancel(interval);
+    });
   }
 
   private determineElementSize(): boolean {
@@ -133,6 +140,26 @@ class TraderChartComponent {
     }, this.$scope);
   }
 
+  private checkForFlatline() {
+    if (this.chart.data && this.chart.data.length > 0) {
+      let lastDate = this.chart.data[this.chart.data.length - 1].date.getTime()
+      let now = new Date().getTime()
+      let diff = (now - lastDate) / 1000
+      if (diff > 2) {
+        let lastPrice = this.chart.data[this.chart.data.length - 1].close
+        let OHLCChartItemData = {
+          close: lastPrice,
+          date: new Date(),
+          high: lastPrice,
+          low: lastPrice,
+          open: lastPrice,
+          volume: 0
+        }
+        this.update(OHLCChartItemData)
+      }
+    }
+  }
+
   public setInterval(interval) {
     this.interval = interval;
     this.refresh();
@@ -144,6 +171,7 @@ class TraderChartComponent {
   }
 
   public update(OHLCChartItemData: any) {
+    this.lastTrade = OHLCChartItemData
     this.chart.data.push(OHLCChartItemData)
     d3.select(".close-line")
       .attr("d", this.chart.closeLine)
@@ -166,7 +194,7 @@ class TraderChartComponent {
       .transition()
 
     let filterDate = this.getFilterDateTime(this.filter)
-    let startDate = filterDate
+    let startDate = new Date(filterDate.valueOf())
     if (this.filter == 'ALL') {
       startDate = this.chart.data[0].date
     }
@@ -179,7 +207,9 @@ class TraderChartComponent {
       .attr("dy", "-0.05em")
       .attr("transform", "rotate(-90)");
 
-    this.chart.data.shift();
+    if (this.chart.data[0].date < filterDate) {
+      this.chart.data.shift();
+    }
   }
 
   public refresh() {
@@ -281,13 +311,41 @@ class TraderChartComponent {
       svg.append("g")
               .attr("class", "yVolume axis")
 
-      let startDate = filterDate
+      let startDate = new Date(filterDate.valueOf())
       if (this.filter == 'ALL') {
-        startDate = this.chart.data[0].date
+        startDate = new Date(this.chart.data[0].date.valueOf())
       }
-      this.chart.x.domain([startDate, new Date()]);
+
       yClose.domain(techan.scale.plot.ohlc(this.chart.data, this.chart.close.accessor()).domain());
       yVolume.domain(techan.scale.plot.volume(this.chart.data, this.chart.close.accessor().v).domain());
+
+      let itemDate
+      if (this.chart.data.length > 0) {
+        this.lastTrade = this.chart.data[this.chart.data.length - 1]
+        itemDate = new Date(this.chart.data[this.chart.data.length - 1].date.valueOf())
+      } else {
+        itemDate = new Date(startDate.valueOf())
+        yClose.domain([this.lastTrade.close - 1000, this.lastTrade.close + 1000]);
+      }
+      if (this.filter === 'ONE_HOUR' ||
+        this.filter === 'FIVE_MINUTES' ||
+        this.filter === 'ONE_MINUTE') {
+          let now = new Date()
+          while (itemDate <= now) {
+            this.chart.data.push({
+              date: new Date(itemDate.valueOf()),
+              open: this.lastTrade.close,
+              high: this.lastTrade.close,
+              low: this.lastTrade.close,
+              close: this.lastTrade.close,
+              volume: 0
+            })
+            let interval
+            itemDate.setSeconds(itemDate.getSeconds() + 2);
+          }
+        }
+
+      this.chart.x.domain([startDate, new Date()]);
 
       var defs = svg.append("defs");
 
