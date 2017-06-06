@@ -265,4 +265,12 @@ class HeatAPI implements IHeatAPI {
   getTransactionsForAllCount(): angular.IPromise<number> {
     return this.heat.get("/blockchain/transactions/all/count","count");
   }
+
+  searchAccounts(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.get(`/search/accounts/${query}/${from}/${to}`);
+  }
+
+  searchAccountsCount(query: string): angular.IPromise<number> {
+    return this.heat.get(`/search/accounts/count/${query}`, "count");
+  }
 }

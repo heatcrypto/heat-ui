@@ -233,6 +233,12 @@ interface IHeatAPI {
    * Count all transactions
    */
   getTransactionsForAllCount(): angular.IPromise<number>;
+
+  /**
+   * Search account ids, public keys and email ids
+   */
+  searchAccounts(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>>;
+  searchAccountsCount(query: string): angular.IPromise<number>;
 }
 interface IHeatAccount {
   id: string;
@@ -249,6 +255,7 @@ interface IHeatAccount {
   nextLeasingHeightFrom: number,
   nextLeasingHeightTo: number;
   lessors: Array<string|IHeatLessors>;
+  publicName: string;
 }
 interface IHeatLessors {
   id: string;
