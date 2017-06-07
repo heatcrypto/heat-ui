@@ -67,7 +67,7 @@ class WithdrawBTCDialog extends GenericDialog {
     var builder = new DialogFieldBuilder($scope);
     return [
       builder.account('recipient', this.recipient).
-              label('Recipient').
+              label('Recipient Bitcoin address').
               onchange(() => {
                 this.fields['recipientPublicKey'].value = null;
                 this.fields['message'].changed();
@@ -86,7 +86,7 @@ class WithdrawBTCDialog extends GenericDialog {
               }).
               required(),
       builder.money('amount', this.amount).
-              label('Amount').
+              label('Amount (BTC)').
               required().
               precision(8).
               symbol(this.user.accountColorName).
