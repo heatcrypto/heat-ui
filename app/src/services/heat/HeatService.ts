@@ -297,7 +297,7 @@ class HeatService {
     return deferred.promise
   }
 
-  getHeatMessageContents(message: IHeatMessage|IHeatPayment) {
+  getHeatMessageContents(message: IHeatMessage|IHeatPayment|IHeatTransaction) {
     try {
       if (message.messageIsEncrypted || message.messageIsEncryptedToSelf) {
         var byteArray = converters.hexStringToByteArray(message.messageBytes);
