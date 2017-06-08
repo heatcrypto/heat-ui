@@ -21,12 +21,45 @@
  * SOFTWARE.
  * */
 
+@import './colors';
 @import './default';
-@import './trader/index';
-@import './home/index';
-@import './explorer/index';
-@import './messenger/index';
-@import './toolbar';
-@import './dialog';
-@import './user-balance';
-@import './virtual-repeat-transactions';
+@import './widget';
+
+virtual-repeat-transactions {
+  .widget();
+  .list();
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
+  .truncate-col {
+    padding-right: 30px;
+    &.left {
+      text-align: left;
+    }
+    &.block {
+      max-width: 160px;
+    }
+    &.render-col {
+      max-width: inherit;
+    }
+    &.height-col {
+      max-width: 40px;
+      padding-right: 0px;
+    }
+    &.generator-col {
+      padding-right: 0px;
+    }
+    &.inoutgoing-col {
+      min-width: 30px;
+      max-width: 30px;
+      font-size: 16px;
+      padding-right: 10px;
+      .outgoing {
+        color: #f44336 !important;
+      }
+      .incoming {
+        color: #8BC34A !important;
+      }
+    }
+  }
+}
