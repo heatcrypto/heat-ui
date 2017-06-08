@@ -68,7 +68,7 @@ class TraderInfoComponent {
   }
 
   showBtcLoadPopup($event) {
-    dialogs.loadBtc($event);
+    dialogs.loadBtc($event, this.currencyInfo.id);
   }
 
   showBtcWithdrawPopup($event) {
