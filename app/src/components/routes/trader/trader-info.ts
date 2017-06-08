@@ -31,14 +31,16 @@
         </div>
         <div ng-if="vm.isBtcAsset">
           <md-button class="md-primary" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Deposit BTC</md-button>
-          <md-button class="md-warn" ng-click="vm.showBtcWithdrawPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw BTC</md-button>
+        </div>
+        <div ng-if="vm.currencyInfo.certified">
+          <md-button class="md-warn" ng-click="vm.showBtcWithdrawPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw {{vm.currencyInfo.symbol}}</md-button>
         </div>
       </div>
       <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info-asset-description>
     </div>
   `
 })
-@Inject('$scope','heat','user','settings', 'withdrawBTC')
+@Inject('$scope','heat','user','settings', 'withdrawAsset')
 class TraderInfoComponent {
 
   // inputs
@@ -54,12 +56,13 @@ class TraderInfoComponent {
               private heat: HeatService,
               private user: UserService,
               private settings: SettingsService,
-              private withdrawBTC: WithdrawBTCService) {
+              private withdrawAsset: WithdrawAssetService) {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
         unregister.forEach(fn => fn());
       }
+      console.log(this.currencyInfo)
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
   }
@@ -69,7 +72,8 @@ class TraderInfoComponent {
   }
 
   showBtcWithdrawPopup($event) {
-    this.withdrawBTC.dialog($event).show();
+    if (this.currencyInfo.symbol != 'HEAT') {
+      this.withdrawAsset.dialog($event, this.currencyInfo).show();
+    }
   }
-
 }
