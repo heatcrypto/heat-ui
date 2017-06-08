@@ -22,9 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Service('withdrawBTC')
+@Service('withdrawAsset')
 @Inject('$q','user','heat')
-class WithdrawBTCService extends AbstractTransaction {
+class WithdrawAssetService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
@@ -32,8 +32,8 @@ class WithdrawBTCService extends AbstractTransaction {
     super();
   }
 
-  dialog($event?, recipient?: string, recipientPublicKey?: string, amount?: string, userMessage?: string): IGenericDialog {
-    return new WithdrawBTCDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, amount, userMessage);
+  dialog($event?, currencyInfo?: AssetInfo): IGenericDialog {
+    return new WithdrawAssetDialog($event, this, this.$q, this.user, this.heat, currencyInfo);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition): boolean {
@@ -41,55 +41,43 @@ class WithdrawBTCService extends AbstractTransaction {
   }
 }
 
-class WithdrawBTCDialog extends GenericDialog {
+class WithdrawAssetDialog extends GenericDialog {
 
   constructor($event,
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
               private user: UserService,
               private heat: HeatService,
-              private recipient: string,
-              private recipientPublicKey: string,
-              private amount: string,
-              private userMessage: string) {
+              private currencyInfo: AssetInfo) {
     super($event);
-    this.dialogTitle = 'Withdraw BTC';
-    this.dialogDescription = 'Description on how to withdraw BTC';
+    this.dialogClass = "withdraw-asset-service"
+    this.currencyInfo = currencyInfo
+    this.dialogTitle = 'Withdraw ' + this.currencyInfo.symbol;
+    this.dialogDescription = 'Description on how to withdraw ' + this.currencyInfo.symbol;
     this.okBtnTitle = 'WITHDRAW';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
-    this.recipient = this.recipient || '';
-    this.amount = this.amount || '0';
-    this.recipientPublicKey = this.recipientPublicKey || null;
   }
 
   /* @override */
   getFields($scope: angular.IScope) {
+    this.heat.api.getAccountBalance(this.user.account, this.currencyInfo.id).then(
+      (balance: IHeatAccountBalance) => {
+        this.fields['balance'].value = this.currencyInfo.symbol +
+          ' balance available on #' + this.user.account + ': ' +
+          utils.formatQNT(balance.balance, balance.decimals) + ' ' +
+          this.currencyInfo.symbol;
+      })
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.account('recipient', this.recipient).
+      builder.staticText('balance', ''),
+      builder.account('recipient', null).
               label('Recipient Bitcoin address').
-              onchange(() => {
-                this.fields['recipientPublicKey'].value = null;
-                this.fields['message'].changed();
-                this.heat.api.getPublicKey(this.fields['recipient'].value).then(
-                  (publicKey) => {
-                    this.fields['recipientPublicKey'].value = publicKey;
-                    $scope.$evalAsync(()=>{
-                      this.fields['message'].visible(true);
-                    });
-                  },()=>{
-                    $scope.$evalAsync(()=>{
-                      this.fields['message'].visible(false);
-                    });
-                  }
-                );
-              }).
               required(),
-      builder.money('amount', this.amount).
-              label('Amount (BTC)').
+      builder.money('amount', 0).
+              label('Amount').
               required().
               precision(8).
-              symbol(this.user.accountColorName).
+              symbol(this.currencyInfo.symbol).
               asyncValidate("Not enough funds", (amount) => {
                 var deferred = this.$q.defer();
                 this.heat.api.getAccountBalance(this.user.account, '0').then(
@@ -108,33 +96,19 @@ class WithdrawBTCDialog extends GenericDialog {
                     }
                   }, deferred.reject);
                 return deferred.promise;
-              }),
-      builder.text('message', this.userMessage).
-              rows(2).
-              visible(false).
-              asyncValidate("No recipient public key", (message) => {
-                var deferred = this.$q.defer();
-                if (String(message).trim().length == 0) {
-                  deferred.resolve();
-                }
-                else {
-                  if (this.fields['recipientPublicKey'].value) {
-                    deferred.resolve();
-                  }
-                  else {
-                    this.heat.api.getPublicKey(this.fields['recipient'].value).then(
-                      (publicKey) => {
-                        this.fields['recipientPublicKey'].value = publicKey;
-                        deferred.resolve();
-                      },
-                      deferred.reject
-                    );
-                  }
-                }
-                return deferred.promise;
               }).
-              label('Message'),
-      builder.hidden('recipientPublicKey', this.recipientPublicKey)
+              onchange(() => {
+                this.fields['youWillReceive'].value = parseFloat(this.fields['amount'].value) * 0.996;
+              }),
+        builder.staticText('feeText', 'Processing and network fee 0.40% (' + this.currencyInfo.symbol + ')'),
+        builder.money('youWillReceive', 0).
+                label('You will receive').
+                precision(8).
+                symbol(this.currencyInfo.symbol),
+      builder.staticText('withdrawalNotice1', this.currencyInfo.symbol + ' withdrawals are usually \
+        processed within 1-24 hours from requests.'),
+      builder.staticText('withdrawalNotice2', 'Occasionally longer delays on \
+        non-banking days are possible.')
     ]
   }
 
@@ -148,9 +122,6 @@ class WithdrawBTCDialog extends GenericDialog {
             });
     builder.recipient(this.fields['recipient'].value);
     builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
-    if (this.fields['message'].value) {
-      builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
-    }
     return builder;
   }
 }

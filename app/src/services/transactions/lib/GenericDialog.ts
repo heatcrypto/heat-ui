@@ -55,6 +55,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
   abstract getFields($scope: angular.IScope): Array<AbstractDialogField>;
 
   /* Providedd by extending classs */
+  protected dialogClass: string;
   protected dialogTitle: string;
   protected feeFormatted: string;
   protected dialogDescription: string;
@@ -108,7 +109,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
   }
 
   public template = `
-    <md-dialog>
+    <md-dialog class="{{ vm.dialogClass }}">
       <form name="dialogForm">
         <md-toolbar>
           <div class="md-toolbar-tools"><h2>{{ vm.dialogTitle }}</h2></div>
