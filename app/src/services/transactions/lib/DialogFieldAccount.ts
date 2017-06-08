@@ -62,7 +62,11 @@ class DialogFieldAccount extends AbstractDialogField {
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>
-          <span>{{item.publicName||item.id}}</span>
+          <div layout="row" flex>
+            <span>{{item.publicName}}</span>
+            <span flex></span>
+            <span>{{item.id}}</span>
+          </span>
         </md-item-template>
         <md-not-found>
           No matches found.
