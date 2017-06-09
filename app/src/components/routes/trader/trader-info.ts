@@ -30,10 +30,10 @@
           <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
         </div>
         <div ng-if="vm.isBtcAsset">
-          <md-button class="md-primary" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Deposit BTC</md-button>
+          <md-button class="md-primary" ng-click="vm.showAssetDepositPopup($event)" ng-disabled="!vm.user.unlocked">Deposit BTC</md-button>
         </div>
         <div ng-if="vm.currencyInfo.certified">
-          <md-button class="md-warn" ng-click="vm.showBtcWithdrawPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw {{vm.currencyInfo.symbol}}</md-button>
+          <md-button class="md-warn" ng-click="vm.showAssetWithdrawPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw {{vm.currencyInfo.symbol}}</md-button>
         </div>
       </div>
       <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info-asset-description>
@@ -66,13 +66,17 @@ class TraderInfoComponent {
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
   }
 
-  showBtcLoadPopup($event) {
+  showAssetDepositPopup($event) {
     dialogs.loadBtc($event, this.currencyInfo.id);
   }
 
-  showBtcWithdrawPopup($event) {
+  showAssetWithdrawPopup($event) {
     if (this.currencyInfo.symbol != 'HEAT') {
-      this.assetWithdraw.dialog($event, null, null, this.currencyInfo).show();
+      this.heat.api.getAsset(this.currencyInfo.id, "0", 1).then((asset) => {
+        this.heat.api.getPublicKey(asset.account).then((publicKey)=>{
+          this.assetWithdraw.dialog($event, asset.account, publicKey, this.currencyInfo).show();
+        });
+      });
     }
   }
 }
