@@ -40,7 +40,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','user','settings', 'withdrawAsset')
+@Inject('$scope','heat','user','settings', 'assetWithdraw')
 class TraderInfoComponent {
 
   // inputs
@@ -56,13 +56,12 @@ class TraderInfoComponent {
               private heat: HeatService,
               private user: UserService,
               private settings: SettingsService,
-              private withdrawAsset: WithdrawAssetService) {
+              private assetWithdraw: AssetWithdrawService) {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
         unregister.forEach(fn => fn());
       }
-      console.log(this.currencyInfo)
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
   }
@@ -73,7 +72,7 @@ class TraderInfoComponent {
 
   showBtcWithdrawPopup($event) {
     if (this.currencyInfo.symbol != 'HEAT') {
-      this.withdrawAsset.dialog($event, this.currencyInfo).show();
+      this.assetWithdraw.dialog($event, null, null, this.currencyInfo).show();
     }
   }
 }
