@@ -34,7 +34,10 @@ module utils {
     if (typeof amount == 'undefined') {
       return '0';
     }
-    var neg    = amount.indexOf('-') == 0 && (amount.shift());
+    var neg    = amount.indexOf('-') == 0;
+    if (neg) {
+      amount   = amount.substr(1);
+    }
     amount     = amount.split('.'); // input is result of convertNQT
     var parts  = amount[0].split("").reverse().join("").split(/(\d{3})/).reverse();
     var format = [];
