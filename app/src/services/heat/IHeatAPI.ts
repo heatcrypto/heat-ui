@@ -573,6 +573,14 @@ interface IHeatTransaction {
    * The timestamp (in seconds since 24 november 2013 00:00 UTC) of the block
    */
   blockTimestamp: number;
+
+  recipientPublicKey: string;
+  messageBytes: string;
+  messageIsText: boolean;
+  messageIsEncrypted: boolean;
+  messageIsEncryptedToSelf: boolean;
+  recipientPublicName: string;
+  senderPublicName: string;
 }
 interface IHeatBroadcastInput {
   /**

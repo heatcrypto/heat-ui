@@ -21,14 +21,14 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function loadBtc($event) {
+  export function loadBtc($event, asset: string) {
     var http = <HttpService> heat.$inject.get('http');
     var user = <UserService> heat.$inject.get('user');
     var $q = <angular.IQService> heat.$inject.get('$q');
     var env = <EnvService> heat.$inject.get('env');
     var url = env.type == EnvType.BROWSER ?
-      `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}` :
-      `http://heatledger.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}`;
+      `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${asset}` :
+      `http://heatledger.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${asset}`;
     var deferred = $q.defer();
     http.get(url).then((response)=>{
       var parsed = angular.isString(response) ? JSON.parse(response) : response;

@@ -21,16 +21,16 @@
  * SOFTWARE.
  * */
 
-@import '../colors';
-@import '../default';
-@import 'explorer-search';
-@import 'explorer-results';
-@import 'explorer-results-accounts';
+@import './colors';
+@import './default';
+@import './widget';
 
-explorer-latest-blocks,
-explorer-account {
+virtual-repeat-transactions {
   .widget();
   .list();
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
   .truncate-col {
     padding-right: 30px;
     &.left {
@@ -48,6 +48,18 @@ explorer-account {
     }
     &.generator-col {
       padding-right: 0px;
+    }
+    &.inoutgoing-col {
+      min-width: 30px;
+      max-width: 30px;
+      font-size: 16px;
+      padding-right: 10px;
+      .outgoing {
+        color: #f44336 !important;
+      }
+      .incoming {
+        color: #8BC34A !important;
+      }
     }
   }
 }

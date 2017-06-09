@@ -41,7 +41,7 @@ Balance (unconfirmed): {{vm.balanceUnconfirmed}} HEAT
 Balance (confirmed):   {{vm.balanceConfirmed}} HEAT
 Leased to:             {{vm.leasedTo}}
        </pre>
-      <explorer-transactions layout="column" flex layout-fill account="vm.account"></explorer-transactions>
+      <virtual-repeat-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
     </div>
   `
 })

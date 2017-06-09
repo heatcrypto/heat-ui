@@ -21,8 +21,8 @@
  * SOFTWARE.
  * */
 @Component({
-  selector: 'explorerTransactions',
-  inputs: ['account','block'],
+  selector: 'virtualRepeatTransactions',
+  inputs: ['account','block','personalize'],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Latest Transactions
@@ -31,7 +31,8 @@
         <md-list-item class="header">
           <div class="truncate-col height-col left">Height</div>
           <div class="truncate-col date-col left">Date</div>
-          <div class="truncate-col render-col left" flex></div>
+          <div class="truncate-col inoutgoing-col" ng-if="vm.personalize"></div>
+          <div class="truncate-col render-col left" flex>Transaction</div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
@@ -40,6 +41,11 @@
               <span ng-show="item.height!=2147483647">{{item.height}}</span>
             </div>
             <div class="truncate-col date-col left">{{item.time}}</div>
+            <div class="truncate-col inoutgoing-col" ng-if="vm.personalize">
+              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
+                {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
+              </md-icon>
+            </div>
             <div class="truncate-col render-col left" flex ng-bind-html="item.rendered"></div>
           </md-list-item>
         </md-virtual-repeat-container>
@@ -47,19 +53,21 @@
     </div>
   `
 })
-@Inject('$scope','$q','heat','transactionsProviderFactory','settings')
-class ExplorerTransactionsComponent extends VirtualRepeatComponent {
+@Inject('$scope','$q','heat','transactionsProviderFactory','settings','user')
+class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
   block: string; // @input
+  personalize: boolean; // @input
 
-  renderer: TransactionRenderer = new TransactionRenderer();
+  renderer: TransactionRenderer = new TransactionRenderer(this);
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
               private heat: HeatService,
               private transactionsProviderFactory: TransactionsProviderFactory,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private user: UserService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
@@ -69,6 +77,9 @@ class ExplorerTransactionsComponent extends VirtualRepeatComponent {
         var date = utils.timestampToDate(transaction.timestamp);
         transaction.time = dateFormat(date, format);
         transaction.heightDisplay = transaction.height==2147483647?'*':transaction.height;
+        if (this.personalize) {
+          transaction['outgoing'] = this.user.account == transaction.sender;
+        }
 
         var rendered = this.renderer.render(transaction);
         if (angular.isString(rendered)) {
@@ -103,9 +114,13 @@ class ExplorerTransactionsComponent extends VirtualRepeatComponent {
   onSelect(selectedTransaction) {}
 }
 
+interface TemplateFunction {
+  (transaction: IHeatTransaction):string;
+}
+
 class TransactionRenderHelper {
   private $q: angular.IQService;
-  constructor(private template: string,
+  constructor(private template: string|TemplateFunction,
               private extractor: (transaction: IHeatTransaction)=>Object) {
     this.$q = <angular.IQService> heat.$inject.get('$q');
   }
@@ -129,7 +144,8 @@ class TransactionRenderHelper {
         args[key]=val;
       }
     });
-    let text = (' ' + this.template).slice(1);
+    let template = angular.isFunction(this.template) ? (<(x)=>string>this.template).call(null, transaction) : this.template;
+    let text = (' ' + template).slice(1);
     if (promises.length>0) {
       var deferred = this.$q.defer();
       this.$q.all(promises).then(()=>{
@@ -148,6 +164,7 @@ class TransactionRenderHelper {
 }
 
 class TransactionRenderer {
+
   private TYPE_PAYMENT = 0;
   private TYPE_MESSAGING = 1;
   private TYPE_COLORED_COINS = 2;
@@ -166,25 +183,41 @@ class TransactionRenderer {
   private SUBTYPE_COLORED_COINS_WHITELIST_MARKET = 9;
   private SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
 
+  private heat: HeatService;
   private renderers: IStringHashMap<TransactionRenderHelper> = {};
 
-  constructor() {
+  constructor(private provider?: {account?: string, block?: string, personalize: boolean}) {
+    this.heat = <HeatService> heat.$inject.get('heat');
     this.renderers[this.TYPE_PAYMENT+":"+this.SUBTYPE_PAYMENT_ORDINARY_PAYMENT] = new TransactionRenderHelper(
-      `<b>TRANSFER HEAT</b> From $sender to $recipient amount $amount`,
+      (t) => {
+        return provider.personalize ? (
+          this.isOutgoing(t) ?
+            '<b>TRANSFERED</b> $amount to $recipient $message' :
+            '<b>RECEIVED</b> $amount from $sender $message'
+        ) : '<b>TRANSFER HEAT</b> From $sender to $recipient amount $amount $message'
+      },
       (t) => {
         return {
           sender: this.account(t.sender),
           amount: this.amount(t.amount, 8, "HEAT"),
-          recipient: this.account(t.recipient)
+          recipient: this.account(t.recipient),
+          message: this.message(t)
         }
       }
     );
     this.renderers[this.TYPE_MESSAGING+":"+this.SUBTYPE_MESSAGING_ARBITRARY_MESSAGE] = new TransactionRenderHelper(
-      "<b>SEND MESSAGE</b> From $sender to $recipient",
+      (t) => {
+        return provider.personalize ? (
+          this.isOutgoing(t) ?
+            '<b>SEND MESSAGE</b> to $recipient $message' :
+            '<b>RECEIVED MESSAGE</b> from $sender $message'
+        ) : '<b>SEND MESSAGE</b> From $sender to $recipient $message'
+      },
       (t) => {
         return {
           sender: this.account(t.sender),
-          recipient: this.account(t.recipient)
+          recipient: this.account(t.recipient),
+          message: this.message(t)
         }
       }
     );
@@ -252,6 +285,10 @@ class TransactionRenderer {
     );
   }
 
+  isOutgoing(transaction: IHeatTransaction): boolean {
+    return transaction.sender == this.provider.account;
+  }
+
   render(transaction: IHeatTransaction) {
     var renderer = this.renderers[transaction.type+":"+transaction.subtype];
     if (renderer)
@@ -273,5 +310,10 @@ class TransactionRenderer {
     if (asset=="0")
       return "<b>HEAT</b>";
     return asset;
+  }
+
+  message(transaction: IHeatTransaction): string {
+    let text = this.heat.getHeatMessageContents(transaction);
+    return text ? `<code>${text}</code>` : '';
   }
 }

@@ -25,7 +25,7 @@
   selector: 'home',
   template: `
     <div layout="column" flex layout-padding layout-fill>
-      <user-payments-table flex layout-fill></user-payments-table>
+      <virtual-repeat-transactions layout="column" flex account="vm.user.account" personalize="true"></virtual-repeat-transactions>
     </div>
   `
 })
