@@ -31,7 +31,7 @@ interface IHeatAPI {
    * Get the state of the server node and network
    */
   getBlockchainStatus():angular.IPromise<IHeatBlockchainStatus>;
-  getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlock>>;
+  getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>>;
   getBlock(numericId: string, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
 
   /**
@@ -950,6 +950,17 @@ interface IHeatBlockchainStatus {
    * Current total amount of HEAT (in HQT, 1 HQT is 0.00000001 HEAT)
    */
   currentCoinSupply: string;
+}
+interface IHeatBlockCondensed {
+  totalAmountHQT: string;
+  posRewardHQT: string;
+  popRewardHQT: string,
+  generator: string;
+  numberOfTransactions: number;
+  totalFeeHQT: string;
+  block: string;
+  height: number;
+  timestamp: number;
 }
 interface IHeatBlock {
   previousBlockHash: string;
