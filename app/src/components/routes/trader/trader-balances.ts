@@ -34,7 +34,7 @@
         <div class="truncate-col symbol-col">Asset</div>
         <div class="truncate-col balance-col right-align" flex>Balance</div>
       </md-list-item>
-      <md-virtual-repeat-container virtual-repeat-flex-helper ng-if="vm.balances.length>0">
+      <md-virtual-repeat-container  flex layout-fill layout="column" virtual-repeat-flex-helper  class="content">
         <md-list-item md-virtual-repeat="item in vm.balances">
           <div class="truncate-col symbol-col" ng-class="{certified:item.certified}">{{item.symbol}}</div>
           <div class="truncate-col balance-col right-align" ng-class="{certified:item.certified}" flex>{{item.balance}}</div>

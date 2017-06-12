@@ -28,9 +28,13 @@ trader-balances {
   .widget();
   padding: 12px;
   margin-bottom: 12px;
-  max-height: 40%;
-  .md-virtual-repeat-container .md-virtual-repeat-scroller {
-    position: inherit;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  md-list {
+    flex-grow: 1;
+    display:flex;
+    flex-direction: column;
   }
   md-list-item {
     border-bottom: 1px solid @gray;
@@ -42,10 +46,11 @@ trader-balances {
     &.header {
       border-bottom: none;
       opacity: 0.6;
+      flex: 0;
     }
     .symbol-col {
       width: 80px;
-      font-size:26px;
+      font-size: 18px;
       letter-spacing:-1.08px;
     }
     .balance-col {
