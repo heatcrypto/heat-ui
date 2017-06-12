@@ -42,8 +42,8 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get('/blockchain/status');
   }
 
-  getBlocks(from: number, to: number, includeTransactions:boolean = false):angular.IPromise<Array<IHeatBlock>> {
-    return this.heat.get(`/blockchain/blocks/${from}/${to}/${includeTransactions}`);
+  getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
+    return this.heat.get(`/blockchain/blocks/${from}/${to}`);
   }
 
   getBlock(numericId: string, includeTransactions:boolean = true):angular.IPromise<IHeatBlock> {
