@@ -149,6 +149,7 @@ class AssetWithdrawDialog extends GenericDialog {
 
     var builder = new DialogFieldBuilder($scope);
     return [
+      builder.staticText('balance', userBalanceText),
       builder.hidden('recipient', this.recipient)
              .required(),
       builder.text('message', '')
@@ -190,16 +191,24 @@ class AssetWithdrawDialog extends GenericDialog {
               }).
               onchange(() => {
                 let amountQNT = parseFloat(this.fields['amount'].value || '0');
-                let multiplier = 1.0 - (this.withdrawInfo.feePercentage / 100);
-                let youReceive = Math.round(amountQNT * multiplier)+'';
-                this.fields['youWillReceive'].value = utils.formatQNT(youReceive, 8);
+                if (amountQNT <= 0) {
+                  this.fields['youWillReceive'].value = '';
+                  this.fields['totalFeeText'].value = '';
+                }
+                else {
+                  let multiplier = 1.0 - (this.withdrawInfo.feePercentage / 100);
+                  let received = Math.round(amountQNT * multiplier);
+                  let totalFee = amountQNT - received;
+                  this.fields['youWillReceive'].value = utils.formatQNT(received+'', 8);
+                  this.fields['totalFeeText'].value = `Total fee ${utils.formatQNT(totalFee+'', 8)} ${this.assetInfo.symbol}`;
+                }
               }),
       builder.hidden('recipientPublicKey', this.recipientPublicKey),
+      builder.staticText('feeText', feeText),
       builder.text('youWillReceive', '0')
              .label('You will receive')
              .readonly(true),
-      builder.staticText('balance', userBalanceText),
-      builder.staticText('feeText', feeText),
+      builder.staticText('totalFeeText', ''),
       builder.staticText('withdrawalNotice1', this.withdrawInfo.notice1),
       builder.staticText('withdrawalNotice2', this.withdrawInfo.notice2)
     ]
