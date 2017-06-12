@@ -28,9 +28,9 @@ trader-trollbox {
   .widget();
   padding: 12px;
   margin-top: 12px;
-  height: 250px;
   display: flex;
   flex-direction: column;
+  flex-grow:1;
   md-list {
     background-color: @dark-blue;
   }
@@ -47,6 +47,9 @@ trader-trollbox {
     b {
       color: @white07;
     }
+  }
+  ul {
+    flex-grow:1;
   }
   input[type="text"], textarea {
     background-color: @dark-blue2;
