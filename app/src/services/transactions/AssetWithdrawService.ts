@@ -22,111 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-// @Service('withdrawAsset')
-// class WithdrawAssetService extends AssetTransferService {
-//   dialog($event?, recipient?: string, recipientPublicKey?, asset?: string, amount?: string, userMessage?: string, currencyInfo: AssetInfo): IGenericDialog {
-//     return new WithdrawAssetDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, asset, amount, userMessage);
-//   }
-// }
-// class WithdrawAssetDialog extends AssetTransferDialog {
-//   currencyInfo: any;
-//   constructor($event,
-//               public transaction: AbstractTransaction,
-//               public $q: angular.IQService,
-//               public user: UserService,
-//               public heatService: HeatService,
-//               public recipient: string,
-//               public recipientPublicKey: string,
-//               public asset: string,
-//               public amount: string,
-//               public userMessage: string) {
-//     super($event, transaction, $q, user, heatService, recipient, recipientPublicKey, asset, amount, userMessage);
-//     this.dialogClass = "withdraw-asset-service";
-//     this.dialogTitle = 'Withdraw ' + this.currencyInfo.symbol;
-//     this.dialogDescription = 'Description on how to withdraw ' + this.currencyInfo.symbol;
-//     this.okBtnTitle = 'WITHDRAW';
-//   }
-//
-//   /* @override */
-//   getFields($scope: angular.IScope) {
-//     // this.heat.api.getAccountBalance(this.user.account, this.currencyInfo.id).then(
-//     //   (balance: IHeatAccountBalance) => {
-//     //     this.fields['balance'].value = this.currencyInfo.symbol +
-//     //       ' balance available on #' + this.user.account + ': ' +
-//     //       utils.formatQNT(balance.balance, balance.decimals) + ' ' +
-//     //       this.currencyInfo.symbol;
-//     //   })
-//     var builder = new DialogFieldBuilder($scope);
-//     return [
-//       builder.staticText('balance', ''),
-//       builder.account('message', null).
-//               label('Recipient Bitcoin address').
-//               required(),
-//       builder.money('amount', 0).
-//               label('Amount').
-//               required().
-//               precision(8).
-//               symbol(this.asset).
-//               asyncValidate("Not enough funds", (amount) => {
-//                 var deferred = this.$q.defer();
-//                 this.heatService.api.getAccountBalance(this.user.account, '0').then(
-//                   (balance: IHeatAccountBalance) => {
-//                     try {
-//                       var avail = new Big(balance.unconfirmedBalance);
-//                       var total = new Big(amount).add(new Big(HeatAPI.fee.standard));
-//                       if (avail.gte(total) > 0) {
-//                         deferred.resolve();
-//                       }
-//                       else {
-//                         deferred.reject();
-//                       }
-//                     } catch (e) {
-//                       deferred.reject();
-//                     }
-//                   }, deferred.reject);
-//                 return deferred.promise;
-//               }).
-//               onchange(() => {
-//                 this.fields['youWillReceive'].value = parseFloat(this.fields['amount'].value) * 0.996;
-//               }),
-//         builder.staticText('feeText', 'Processing and network fee 0.40% (' + this.currencyInfo.symbol + ')'),
-//         builder.money('youWillReceive', 0).
-//                 label('You will receive').
-//                 precision(8).
-//                 symbol(this.asset),
-//       builder.staticText('withdrawalNotice1', this.currencyInfo.symbol + ' withdrawals are usually \
-//         processed within 1-24 hours from requests.'),
-//       builder.staticText('withdrawalNotice2', 'Occasionally longer delays on \
-//         non-banking days are possible.'),
-//       builder.hidden('asset', this.asset)
-//     ]
-//   }
-// }
-
-///<reference path='lib/AbstractTransaction.ts'/>
-///<reference path='lib/GenericDialog.ts'/>
-/*
- * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- * */
 @Service('assetWithdraw')
 @Inject('$q','user','heat')
 class AssetWithdrawService extends AbstractTransaction {
@@ -139,7 +34,7 @@ class AssetWithdrawService extends AbstractTransaction {
 
   // the assetInfo is the $scope.currencyInfo property in the parent component
   dialog($event?, recipient?: string, recipientPublicKey?, assetInfo?: AssetInfo, amount?: string, userMessage?: string): IGenericDialog {
-    return new SampleWithdrawDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, assetInfo, amount, userMessage);
+    return new AssetWithdrawDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, assetInfo, amount, userMessage);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -156,7 +51,7 @@ class AssetWithdrawService extends AbstractTransaction {
   }
 }
 
-class SampleWithdrawDialog extends GenericDialog {
+class AssetWithdrawDialog extends GenericDialog {
 
   constructor($event,
               private transaction: AbstractTransaction,
@@ -295,9 +190,6 @@ class SampleWithdrawDialog extends GenericDialog {
     if (this.fields['message'].value) {
       builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
     }
-    // if (angular.isDefined(this.bundle)) {
-    //   builder.bundle(this.bundle);
-    // }
     return builder;
   }
 }
