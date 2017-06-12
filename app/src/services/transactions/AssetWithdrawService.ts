@@ -149,7 +149,6 @@ class AssetWithdrawDialog extends GenericDialog {
 
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.staticText('balance', userBalanceText),
       builder.hidden('recipient', this.recipient)
              .required(),
       builder.text('message', '')
@@ -196,10 +195,11 @@ class AssetWithdrawDialog extends GenericDialog {
                 this.fields['youWillReceive'].value = utils.formatQNT(youReceive, 8);
               }),
       builder.hidden('recipientPublicKey', this.recipientPublicKey),
-      builder.staticText('feeText', feeText),
       builder.text('youWillReceive', '0')
              .label('You will receive')
              .readonly(true),
+      builder.staticText('balance', userBalanceText),
+      builder.staticText('feeText', feeText),
       builder.staticText('withdrawalNotice1', this.withdrawInfo.notice1),
       builder.staticText('withdrawalNotice2', this.withdrawInfo.notice2)
     ]
