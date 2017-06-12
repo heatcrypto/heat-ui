@@ -51,7 +51,7 @@ abstract class VirtualRepeatComponent {
   protected provider: IPaginatedDataProvider;
   protected decorator: (item:any,context:any)=>void;
   protected preprocessor: (firstIndex:number, lastIndex:number, items: Array<any>)=>void;
-  protected PAGE_SIZE = 60; // number of items per page
+  protected PAGE_SIZE = 20; // number of items per page
   protected loadedPages = {};
   protected numItems = -1;
   public topIndex = 0;
