@@ -72,10 +72,8 @@ class TraderInfoComponent {
 
   showAssetWithdrawPopup($event) {
     if (this.currencyInfo.symbol != 'HEAT') {
-      this.heat.api.getAsset(this.currencyInfo.id, "0", 1).then((asset) => {
-        this.heat.api.getPublicKey(asset.account).then((publicKey)=>{
-          this.assetWithdraw.dialog($event, asset.account, publicKey, this.currencyInfo).show();
-        });
+      this.assetWithdraw.dialog($event, this.currencyInfo).then((dialog)=> {
+        dialog.show();
       });
     }
   }

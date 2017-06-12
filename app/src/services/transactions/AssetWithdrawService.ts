@@ -22,6 +22,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+interface IHeatAssetWithdrawInfo {
+  /**
+   * Withdraw percentage, for instance 0.4 which means 0.4%
+   */
+  feePercentage: number;
+
+  /**
+   * Minimum quantity to withdraw, anything below this quantity will not be processed,
+   * quantity is expressed in asset QNT (sample 0.001 BTC is 100000 qnt)
+   */
+  minimumQuantity: string;
+
+  /**
+   * Free form extra info to be displayed at bottom of dialog
+   */
+  notice1: string;
+  notice2: string;
+}
+
 @Service('assetWithdraw')
 @Inject('$q','user','heat')
 class AssetWithdrawService extends AbstractTransaction {
@@ -32,9 +51,57 @@ class AssetWithdrawService extends AbstractTransaction {
     super();
   }
 
+  // use promise to later support fetching from server
+  getWithdrawFeeInfo(asset:string): angular.IPromise<IHeatAssetWithdrawInfo> {
+
+    // for now this will do.
+    let localCache = heat.isTestnet ? {} : {
+      "5592059897546023466": { // btc
+        feePercentage: 0.4,
+        minimumQuantity: "100000",
+        notice1: 'Bitcoin withdrawals are usually processed within 1-24 hours from requests.',
+        notice2: 'Occasionally longer delays on non-banking days are possible.'
+      }
+    }
+
+    var deferred = this.$q.defer();
+    if (angular.isDefined(localCache[asset]))
+      deferred.resolve(localCache[asset]);
+    else
+      deferred.reject();
+    return deferred.promise;
+  }
+
   // the assetInfo is the $scope.currencyInfo property in the parent component
-  dialog($event?, recipient?: string, recipientPublicKey?, assetInfo?: AssetInfo, amount?: string, userMessage?: string): IGenericDialog {
-    return new AssetWithdrawDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, assetInfo, amount, userMessage);
+  dialog($event?, assetInfo?: AssetInfo, amount?: string): angular.IPromise<IGenericDialog> {
+    var deferred = this.$q.defer();
+
+    // you can never withdraw HEAT (which has asset id 0)
+    if (assetInfo.id == "0")
+      deferred.reject();
+
+    // determine the asset issuer
+    this.heat.api.getAsset(assetInfo.id, "0", 1).then((asset) => {
+      let issuer = asset.account;
+
+      // look up the issuer public key
+      this.heat.api.getPublicKey(issuer).then((publicKey)=>{
+
+        // look up the user asset balance
+        this.heat.api.getAccountBalance(this.user.account, assetInfo.id).then((balance) => {
+
+          // look up asset withdraw info
+          this.getWithdrawFeeInfo(assetInfo.id).then((withdrawInfo) => {
+
+            // create the dialog, return through promise
+            deferred.resolve(new AssetWithdrawDialog($event, this, this.$q, this.user, this.heat, issuer, publicKey, assetInfo, withdrawInfo, amount, balance));
+
+          }, deferred.reject);
+        }, deferred.reject);
+      }, deferred.reject);
+    }, deferred.reject)
+
+    return deferred.promise;
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -61,68 +128,40 @@ class AssetWithdrawDialog extends GenericDialog {
               private recipient: string,
               private recipientPublicKey: string,
               private assetInfo: AssetInfo,
+              private withdrawInfo: IHeatAssetWithdrawInfo,
               private amount: string,
-              private userMessage: string) {
+              private userBalance: IHeatAccountBalance) {
     super($event);
     this.dialogClass = "withdraw-asset-service";
     this.dialogTitle = 'Withdraw ' + this.assetInfo.symbol;
     this.dialogDescription = 'Description on how to withdraw ' + this.assetInfo.symbol;
     this.okBtnTitle = 'WITHDRAW';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
-    this.recipient = this.recipient || '';
-    this.assetInfo = this.assetInfo || null;
     this.amount = this.amount || '0';
-    this.recipientPublicKey = this.recipientPublicKey || null;
   }
 
   /* @override */
   getFields($scope: angular.IScope) {
-    this.heat.api.getAccountBalance(this.user.account, this.assetInfo.id).then(
-      (balance: IHeatAccountBalance) => {
-        this.fields['balance'].value = this.assetInfo.symbol +
-          ' balance available on #' + this.user.account + ': ' +
-          utils.formatQNT(balance.balance, balance.decimals) + ' ' +
-          this.assetInfo.symbol;
-      })
+    let balance = utils.formatQNT(this.userBalance.balance, this.userBalance.decimals)
+    let userBalanceText = `${balance} ${this.assetInfo.symbol} available on account`;
+    let feeText = `Processing and network fee ${this.withdrawInfo.feePercentage.toFixed(2)}% (${this.assetInfo.symbol})`;
+    let minAmountFormatted = utils.formatQNT(this.withdrawInfo.minimumQuantity, 8);
+
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.staticText('balance', ''),
-      builder.hidden('recipient', this.recipient).required(),
-      // the btc address where we want to receive our bitcoins is gonna be send as an encrypted message.
-      // what we change is the label of the field only.
-      builder.text('message', this.userMessage).
-        rows(1).
-        visible(true).
-        asyncValidate("No recipient public key", (message) => {
-          var deferred = this.$q.defer();
-          if (String(message).trim().length == 0) {
-            deferred.resolve();
-          }
-          else {
-            if (this.fields['recipientPublicKey'].value) {
-              deferred.resolve();
-            }
-            else {
-              this.heat.api.getPublicKey(this.fields['recipient'].value).then(
-                (publicKey) => {
-                  this.fields['recipientPublicKey'].value = publicKey;
-                  deferred.resolve();
-                },
-                deferred.reject
-              );
-            }
-          }
-          return deferred.promise;
-        }).
-        label("Recipient Bitcoin address"),
-      builder.hidden('asset', this.assetInfo.id).required(),
-
-      // the amount plus handling can stay as is (mostly, added precission and symbol)
-      builder.money('amount', this.amount).
-              label('Amount').
-              required().
-              precision(this.assetInfo.decimals).
-              symbol(this.assetInfo.symbol).
+      builder.staticText('balance', userBalanceText),
+      builder.hidden('recipient', this.recipient)
+             .required(),
+      builder.text('message', '')
+             .visible(true)
+             .label(`Recipient ${this.assetInfo.symbol} address`),
+      builder.hidden('asset', this.assetInfo.id)
+             .required(),
+      builder.money('amount', this.amount)
+             .label('Amount')
+             .required()
+             .precision(this.assetInfo.decimals)
+             .symbol(this.assetInfo.symbol).
               asyncValidate("Not enough funds", (amount) => {
                 var deferred = this.$q.defer();
                 if (this.fields['asset'].value) {
@@ -147,32 +186,22 @@ class AssetWithdrawDialog extends GenericDialog {
                 }
                 return deferred.promise;
               }).
+              validate(`Minimum amount is ${minAmountFormatted} ${this.assetInfo.symbol}`, (amount) => {
+                return parseInt(amount) > parseInt(this.withdrawInfo.minimumQuantity);
+              }).
               onchange(() => {
-                console.log('************************')
-                console.log('youWillReceive', this.fields['youWillReceive'].value)
-                console.log('amount', this.fields['amount'].value)
-                console.log('------------------------')
-                //this.fields['youWillReceive'].value = parseFloat(this.fields['amount'].value) * 0.996;
-                if (this.fields['amount'].value !== undefined) {
-                  this.fields['youWillReceive'].value = (this.fields['amount'].value * 0.996) + ''
-                }
-                console.log('youWillReceive', this.fields['youWillReceive'].value)
-                console.log('amount', this.fields['amount'].value)
+                let amountQNT = parseFloat(this.fields['amount'].value || '0');
+                let multiplier = 1.0 - (this.withdrawInfo.feePercentage / 100);
+                let youReceive = Math.round(amountQNT * multiplier)+'';
+                this.fields['youWillReceive'].value = utils.formatQNT(youReceive, 8);
               }),
       builder.hidden('recipientPublicKey', this.recipientPublicKey),
-
-      // add the fields to show static text and the dynamic fee field
-      // the youWillReceive field is probably better done with a text field which is set to
-      // readonly and is updated from the amount onchange method
-      builder.staticText('feeText', 'Processing and network fee 0.40% (' + this.assetInfo.symbol + ')'),
-      builder.money('youWillReceive', undefined).
-                label('You will receive').
-                precision(this.assetInfo.decimals).
-                symbol(this.assetInfo.symbol),
-      builder.staticText('withdrawalNotice1', this.assetInfo.symbol + ' withdrawals are usually \
-        processed within 1-24 hours from requests.'),
-      builder.staticText('withdrawalNotice2', 'Occasionally longer delays on \
-        non-banking days are possible.')
+      builder.staticText('feeText', feeText),
+      builder.text('youWillReceive', '0')
+             .label('You will receive')
+             .readonly(true),
+      builder.staticText('withdrawalNotice1', this.withdrawInfo.notice1),
+      builder.staticText('withdrawalNotice2', this.withdrawInfo.notice2)
     ]
   }
 
