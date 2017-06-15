@@ -43,7 +43,7 @@ class HeatAPI implements IHeatAPI {
   }
 
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
-    return this.heat.get(`/blockchain/blocks/${from}/${to}`);
+    return this.heat.get(`/blockchain/blocks/${from}/${to}/null`); // @see api, null means no transaction data at all
   }
 
   getBlock(numericId: string, includeTransactions:boolean = true):angular.IPromise<IHeatBlock> {
