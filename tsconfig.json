@@ -1,5 +1,5 @@
 {
-  "version": "1.7.5",
+  "version": "2.2.2",
   "compilerOptions": {
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -8,8 +8,5 @@
     "removeComments": true,
     "sourceMap": true
   },
-  "exclude": [
-    "node_modules"
-  ],
   "compileOnSave": false
 }
