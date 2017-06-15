@@ -21,6 +21,56 @@
  * SOFTWARE.
  * */
 @Component({
+  selector: 'virtualRepeatTransactionsMessage',
+  inputs: ['messageText'], // open_in_new
+  template: `
+    <md-button href="http://google.com" class="md-icon-button" md-no-ink>
+      <md-icon md-font-library="material-icons">message</md-icon>
+    </md-button>
+    <code>{{vm.messagePreview}}</code>
+  `
+})
+@Inject('$scope','$mdPanel')
+class VirtualRepeatTransactionsMessage {
+  PREVIEW_LENGTH = 50;
+  messageText: string; // @input
+  messagePreview: string;
+  unregister: ()=>void;
+  constructor(private $scope: angular.IScope, private $mdPanel: angular.material.IPanelService) {
+    this.unregister = $scope.$watch('vm.messageText', this.ready.bind(this));
+  }
+  ready() {
+    if (angular.isString(this.messageText)) {
+      this.messagePreview = this.messageText.substr(0, this.PREVIEW_LENGTH);
+      if (this.messageText.length > this.PREVIEW_LENGTH) {
+        this.messagePreview += " ...";
+      }
+      this.unregister();
+    }
+  }
+  showPopup() {
+    // let position = this.$mdPanel.newPanelPosition().absolute().center();
+    // let config = {
+    //   attachTo: angular.element(document.body),
+    //   controller: {},
+    //   controllerAs: 'ctrl',
+    //   disableParentScroll: this.disableParentScroll,
+    //   templateUrl: 'panel.tmpl.html',
+    //   hasBackdrop: true,
+    //   panelClass: 'demo-dialog-example',
+    //   position: position,
+    //   trapFocus: true,
+    //   zIndex: 150,
+    //   clickOutsideToClose: true,
+    //   escapeToClose: true,
+    //   focusOnOpen: true
+    // };
+
+    // this._mdPanel.open(config);
+  }
+}
+
+@Component({
   selector: 'virtualRepeatTransactions',
   inputs: ['account','block','personalize'],
   template: `
@@ -46,7 +96,10 @@
                 {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
               </md-icon>
             </div>
-            <div class="truncate-col render-col left" flex ng-bind-html="item.rendered"></div>
+            <div class="truncate-col render-col left" flex>
+              <span ng-bind-html="item.rendered"></span>
+              <virtual-repeat-transactions-message ng-if="item.messageText" message-text="item.messageText" flex></virtual-repeat-transactions-message>
+            </div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -74,14 +127,14 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
       this.transactionsProviderFactory.createProvider(this.account, this.block),
       /* decorator function */
       (transaction: any|IHeatTransaction) => {
-        var date = utils.timestampToDate(transaction.timestamp);
+        let date = utils.timestampToDate(transaction.timestamp);
         transaction.time = dateFormat(date, format);
         transaction.heightDisplay = transaction.height==2147483647?'*':transaction.height;
         if (this.personalize) {
           transaction['outgoing'] = this.user.account == transaction.sender;
         }
 
-        var rendered = this.renderer.render(transaction);
+        let rendered = this.renderer.render(transaction);
         if (angular.isString(rendered)) {
           transaction.rendered = this.renderer.render(transaction);
         }
@@ -90,6 +143,12 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
             transaction.rendered = text;
           })
         }
+        let longText = `This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
+This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
+This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
+This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
+This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. `;
+        transaction.messageText = longText; //this.heat.getHeatMessageContents(transaction);
       }
     );
 
@@ -192,16 +251,15 @@ class TransactionRenderer {
       (t) => {
         return provider.personalize ? (
           this.isOutgoing(t) ?
-            '<b>TRANSFERED</b> $amount to $recipient $message' :
-            '<b>RECEIVED</b> $amount from $sender $message'
-        ) : '<b>TRANSFER HEAT</b> From $sender to $recipient amount $amount $message'
+            '<b>TRANSFERED</b> $amount to $recipient' :
+            '<b>RECEIVED</b> $amount from $sender'
+        ) : '<b>TRANSFER HEAT</b> From $sender to $recipient amount $amount'
       },
       (t) => {
         return {
           sender: this.account(t.sender),
           amount: this.amount(t.amount, 8, "HEAT"),
-          recipient: this.account(t.recipient),
-          message: this.message(t)
+          recipient: this.account(t.recipient)
         }
       }
     );
@@ -209,15 +267,14 @@ class TransactionRenderer {
       (t) => {
         return provider.personalize ? (
           this.isOutgoing(t) ?
-            '<b>SEND MESSAGE</b> to $recipient $message' :
-            '<b>RECEIVED MESSAGE</b> from $sender $message'
-        ) : '<b>SEND MESSAGE</b> From $sender to $recipient $message'
+            '<b>SEND MESSAGE</b> to $recipient' :
+            '<b>RECEIVED MESSAGE</b> from $sender'
+        ) : '<b>SEND MESSAGE</b> From $sender to $recipient'
       },
       (t) => {
         return {
           sender: this.account(t.sender),
-          recipient: this.account(t.recipient),
-          message: this.message(t)
+          recipient: this.account(t.recipient)
         }
       }
     );
@@ -310,10 +367,5 @@ class TransactionRenderer {
     if (asset=="0")
       return "<b>HEAT</b>";
     return asset;
-  }
-
-  message(transaction: IHeatTransaction): string {
-    let text = this.heat.getHeatMessageContents(transaction);
-    return text ? `<code>${text}</code>` : '';
   }
 }
