@@ -1,3 +1,5 @@
+/// <reference path='../services/transactions/AssetIssueService.ts'/>
+/// <reference path='../services/transactions/SendmoneyService.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.

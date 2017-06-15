@@ -1,5 +1,5 @@
-///<reference path='lib/AbstractTransaction.ts'/>
-///<reference path='lib/GenericDialog.ts'/>
+/// <reference path='lib/AbstractTransaction.ts'/>
+/// <reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.
@@ -58,11 +58,17 @@ class AssetWithdrawService extends AbstractTransaction {
     let localCache = heat.isTestnet ? {} : {
       "5592059897546023466": { // btc
         feePercentage: 0.4,
-        minimumQuantity: "100000",
+        minimumQuantity: "150000",
         notice1: 'Bitcoin withdrawals are usually processed within 1-24 hours from requests.',
         notice2: 'Occasionally longer delays on non-banking days are possible.'
+      },
+      "8593933499455210945": {
+        feePercentage: 0.4,
+        minimumQuantity: "500000000",
+        notice1: 'FIMK withdrawals are usually processed with 3-12 hours from requests.',
+        notice2: 'Occasionally longer delays due to network issues are possible.'
       }
-    }
+    };
 
     var deferred = this.$q.defer();
     if (angular.isDefined(localCache[asset]))
