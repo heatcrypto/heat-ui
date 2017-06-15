@@ -63,7 +63,7 @@ module dialogs {
         angular.element(document).find('head').append(`<style type="text/css" id="${styleId}">${options.style}</style>`);
       }
     }
-    return dialogs.$mdDialog().show({
+    return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
       controller: options.controller||function () {},
       locals: angular.extend({
         title: options.title,
@@ -105,7 +105,7 @@ module dialogs {
         angular.element(document).find('head').append(`<style type="text/css" id="${styleId}">${options.style}</style>`);
       }
     }
-    return dialogs.$mdDialog().show({
+    return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
       controller: options.controller||function () {},
       locals: angular.extend({
         title: options.title,
