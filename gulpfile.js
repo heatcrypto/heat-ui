@@ -31,9 +31,7 @@ var plumber = require('gulp-plumber');
 var PATHS = {
   src: [
     'app/src/loader.ts',
-    'app/src/**/*.ts',
-    'tools/typings/**/*.ts',
-    'app/styles/**/*.less'
+    'app/src/**/*.ts'
   ],
   assets: [
     'app/assets/**/*.*'
@@ -105,8 +103,8 @@ gulp.task('ts2js', function () {
 
   gulp.src(PATHS.src)
     .pipe(sourcemaps.init())
-    .pipe(typescript(extend(tscConfig.compilerOptions, { sortOutput: true })))
-    .pipe(concat('heat-ui.js'))
+    .pipe(typescript(extend(tscConfig.compilerOptions, { outFile: 'heat-ui.js' })))
+    // .pipe(concat('heat-ui.js'))
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
