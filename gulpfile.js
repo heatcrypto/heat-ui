@@ -140,7 +140,7 @@ gulp.task('play', ['ts2js','copy:dist', 'less'], function () {
 
   var port = 9001, app;
 
-  gulp.watch(PATHS.src.concat(PATHS.html), ['ts2js', 'copy:dist', 'less']);
+  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['ts2js', 'copy:dist', 'less']);
 
   app = connect().use(serveStatic(__dirname));
   http.createServer(app).listen(port, function () {
