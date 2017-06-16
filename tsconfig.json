@@ -5,6 +5,7 @@
     "experimentalDecorators": true,
     "noEmitHelpers": true,
     "target": "es5",
+    "lib" : ["es2015", "es2015.iterable", "dom"],
     "removeComments": true,
     "sourceMap": true
   },
