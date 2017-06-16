@@ -34,7 +34,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$timeout', 'HTTPNotify')
+@Inject('$scope','user','heat','$q','$timeout')
 class UserBalanceComponent {
 
   private formattedBalance: string = "0";
@@ -48,8 +48,7 @@ class UserBalanceComponent {
               public user: UserService,
               private heat: HeatService,
               private $q: angular.IQService,
-              private $timeout: angular.ITimeoutService,
-              private HTTPNotify: HTTPNotifyService) {
+              private $timeout: angular.ITimeoutService) {
 
     /* subscribe to websocket balance changed events */
     var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
@@ -58,11 +57,6 @@ class UserBalanceComponent {
         refresh();
       }
     }, $scope);
-
-    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
-    this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
-    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
-
     this.refresh();
   }
 
