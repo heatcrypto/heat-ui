@@ -166,7 +166,7 @@
   `
 })
 @Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer',
-  'assetIssue','whitelistMarket','storage','HTTPNotify','$window')
+  'assetIssue','whitelistMarket','storage','$window')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -184,7 +184,6 @@ class ToolbarComponent {
               private assetIssue: AssetIssueService,
               private whitelistMarket: WhitelistMarketService,
               private storage: StorageService,
-              private HTTPNotify: HTTPNotifyService,
               private $window: angular.IWindowService) {
     this.isNodeEnv=env.type==EnvType.NODEJS;
   }
@@ -236,7 +235,6 @@ class ToolbarComponent {
         asset:{id:asset,symbol: assetSymbol}
       });
       this.storage.namespace('trader').put('my-markets', mymarkets);
-      this.HTTPNotify.notify();
     });
   }
 
