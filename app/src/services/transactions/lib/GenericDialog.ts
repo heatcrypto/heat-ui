@@ -334,11 +334,6 @@ function GenericDialogCreateController(dialog: GenericDialog) {
               /* Close by itself on instant send */
               else /* if (this.instantSend) */ {
                 setTimeout(() => { this.dialogHide() }, 666);
-
-                /* Temporary measure to update views while we dont have websocket push notifications yet */
-                var HTTPNotify = <HTTPNotifyService> heat.$inject.get('HTTPNotify');
-                HTTPNotify.notify();
-
               }
             });
           }
