@@ -26,7 +26,6 @@
     <div layout="column">
       <span>
         <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
-        <span class="account">#{{vm.user.account}}</span>&nbsp;&nbsp;
         <span class="balance">{{vm.formattedBalance}}</span>
         <span class="fraction">{{vm.formattedFraction}}</span>&nbsp;
         <span class="currencyName">{{vm.currencyName}}</span>
