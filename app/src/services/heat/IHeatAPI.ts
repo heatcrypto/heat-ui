@@ -235,6 +235,11 @@ interface IHeatAPI {
   getTransactionsForAllCount(): angular.IPromise<number>;
 
   /**
+   * List transactions send from one account to another
+   */
+  getTransactionsFromTo(sender:string, recipient:string, from:number, to:number): angular.IPromise<Array<IHeatTransaction>>;
+
+  /**
    * Search account ids, public keys and email ids. If an exact match is found on public key,
    * account id, public name or private name. Only that one result is returned.
    */

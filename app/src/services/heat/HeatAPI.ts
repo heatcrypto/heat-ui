@@ -258,6 +258,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/transactions/block/count/${block}`,"count");
   }
 
+  getTransactionsFromTo(sender:string, recipient:string, from:number, to:number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/list/${sender}/${recipient}/${from}/${to}`);
+  }
+
   getTransactionsForAll(from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
     return this.heat.get(`/blockchain/transactions/all/${from}/${to}`);
   }
