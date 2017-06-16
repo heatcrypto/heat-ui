@@ -30,7 +30,7 @@ var plumber = require('gulp-plumber');
 
 var PATHS = {
   src: [
-    'app/src/loader.ts',
+    'app/src/*.ts',
     'app/src/**/*.ts'
   ],
   assets: [
