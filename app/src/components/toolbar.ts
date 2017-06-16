@@ -53,11 +53,11 @@
               <div class="small-logo">
               </div>
               <div class="user-detail" ng-if="vm.user.unlocked">
-                <div class="user-id">
-                  User ID
-                </div>
                 <div class="email">
-                  user@heatledger.com
+                  {{vm.user.accountName}}
+                </div>
+                <div class="account">
+                  {{vm.user.account}}
                 </div>
               </div>
             </div>
