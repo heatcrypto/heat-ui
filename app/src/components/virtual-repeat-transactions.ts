@@ -24,19 +24,22 @@
   selector: 'virtualRepeatTransactionsMessage',
   inputs: ['messageText'], // open_in_new
   template: `
-    <md-button href="http://google.com" class="md-icon-button" md-no-ink>
+    <md-button ng-click="vm.showPopup()" class="md-icon-button" md-no-ink>
       <md-icon md-font-library="material-icons">message</md-icon>
     </md-button>
     <code>{{vm.messagePreview}}</code>
   `
 })
-@Inject('$scope','$mdPanel')
+@Inject('$scope','$mdPanel','render','controlCharRender')
 class VirtualRepeatTransactionsMessage {
   PREVIEW_LENGTH = 50;
   messageText: string; // @input
   messagePreview: string;
   unregister: ()=>void;
-  constructor(private $scope: angular.IScope, private $mdPanel: angular.material.IPanelService) {
+  constructor(private $scope: angular.IScope,
+              private $mdPanel: angular.material.IPanelService,
+              private render: RenderService,
+              private controlCharRender: ControlCharRenderService,) {
     this.unregister = $scope.$watch('vm.messageText', this.ready.bind(this));
   }
   ready() {
@@ -49,24 +52,29 @@ class VirtualRepeatTransactionsMessage {
     }
   }
   showPopup() {
-    // let position = this.$mdPanel.newPanelPosition().absolute().center();
-    // let config = {
-    //   attachTo: angular.element(document.body),
-    //   controller: {},
-    //   controllerAs: 'ctrl',
-    //   disableParentScroll: this.disableParentScroll,
-    //   templateUrl: 'panel.tmpl.html',
-    //   hasBackdrop: true,
-    //   panelClass: 'demo-dialog-example',
-    //   position: position,
-    //   trapFocus: true,
-    //   zIndex: 150,
-    //   clickOutsideToClose: true,
-    //   escapeToClose: true,
-    //   focusOnOpen: true
-    // };
-
-    // this._mdPanel.open(config);
+    let renderedHTML = this.render.render(this.messageText, [this.controlCharRender]);
+    let position = this.$mdPanel.newPanelPosition().absolute().center();
+    let config :angular.material.IPanelConfig = {
+      attachTo: angular.element(document.body),
+      controller: function () {},
+      controllerAs: 'vm',
+      disableParentScroll: true,
+      template: `
+        <div class="virtual-repeat-transactions-message-contents" ng-bind-html="vm.renderedHTML"></div>
+      `,
+      hasBackdrop: true,
+      panelClass: 'demo-dialog-example',
+      position: position,
+      trapFocus: true,
+      zIndex: 150,
+      clickOutsideToClose: true,
+      escapeToClose: true,
+      focusOnOpen: true,
+      locals: {
+        renderedHTML: renderedHTML
+      }
+    };
+    this.$mdPanel.open(config);
   }
 }
 
@@ -143,12 +151,7 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
             transaction.rendered = text;
           })
         }
-        let longText = `This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
-This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
-This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
-This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines.
-This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. This is a very long text with multiple lines. `;
-        transaction.messageText = longText; //this.heat.getHeatMessageContents(transaction);
+        transaction.messageText = this.heat.getHeatMessageContents(transaction);
       }
     );
 
@@ -257,9 +260,9 @@ class TransactionRenderer {
       },
       (t) => {
         return {
-          sender: this.account(t.sender),
+          sender: this.account(t.sender, t.senderPublicName),
           amount: this.amount(t.amount, 8, "HEAT"),
-          recipient: this.account(t.recipient)
+          recipient: this.account(t.recipient, t.recipientPublicName)
         }
       }
     );
@@ -273,8 +276,8 @@ class TransactionRenderer {
       },
       (t) => {
         return {
-          sender: this.account(t.sender),
-          recipient: this.account(t.recipient)
+          sender: this.account(t.sender, t.senderPublicName),
+          recipient: this.account(t.recipient, t.recipientPublicName)
         }
       }
     );
@@ -282,7 +285,7 @@ class TransactionRenderer {
       "<b>ISSUE ASSET</b> Issuer $sender asset $asset",
       (t) => {
         return {
-          sender: this.account(t.sender),
+          sender: this.account(t.sender, t.senderPublicName),
           asset: t.transaction
         }
       }
@@ -291,8 +294,8 @@ class TransactionRenderer {
       "<b>TRANSFER ASSET</b> $asset from $sender to $recipient amount $amount",
       (t) => {
         return {
-          sender: this.account(t.sender),
-          recipient: this.account(t.recipient),
+          sender: this.account(t.sender, t.senderPublicName),
+          recipient: this.account(t.recipient, t.recipientPublicName),
           asset: this.asset(t.attachment['asset']),
           amount: this.amount(t.attachment['quantity'], 8),
         }
@@ -302,7 +305,7 @@ class TransactionRenderer {
       "<b>SELL ORDER</b> $sender placed sell order $currency/$asset amount $amount price $price",
       (t) => {
         return {
-          sender: this.account(t.sender),
+          sender: this.account(t.sender, t.senderPublicName),
           currency: this.asset(t.attachment['currency']),
           asset: this.asset(t.attachment['asset']),
           amount: this.amount(t.attachment['quantity'], 8),
@@ -314,7 +317,7 @@ class TransactionRenderer {
       "<b>BUY ORDER</b> $sender placed buy order $currency/$asset amount $amount price $price",
       (t) => {
         return {
-          sender: this.account(t.sender),
+          sender: this.account(t.sender, t.senderPublicName),
           currency: this.asset(t.attachment['currency']),
           asset: this.asset(t.attachment['asset']),
           amount: this.amount(t.attachment['quantity'], 8),
@@ -326,7 +329,7 @@ class TransactionRenderer {
       "<b>CANCEL SELL</b> $sender cancelled sell order $order",
       (t) => {
         return {
-          sender: this.account(t.sender),
+          sender: this.account(t.sender, t.senderPublicName),
           order: t.attachment['order']
         }
       }
@@ -335,7 +338,7 @@ class TransactionRenderer {
       "<b>CANCEL BUY</b> $sender cancelled buy order $order",
       (t) => {
         return {
-          sender: this.account(t.sender),
+          sender: this.account(t.sender, t.senderPublicName),
           order: t.attachment['order']
         }
       }
@@ -353,8 +356,8 @@ class TransactionRenderer {
     return `not supported type=${transaction.type} subtype=${transaction.subtype}`;
   }
 
-  account(account: string): string {
-    return `<a href="#/explorer-account/${account}">${account}</a>`;
+  account(account: string, publicName: string): string {
+    return `<a href="#/explorer-account/${account}">${publicName||account}</a>`;
   }
 
   amount(amountHQT: string, decimals: number, symbol?: string) {
