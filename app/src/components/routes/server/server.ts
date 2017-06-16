@@ -107,7 +107,7 @@
     </div>
   `
 })
-@Inject('$scope','server','heat','user','HTTPNotify','settings')
+@Inject('$scope','server','heat','user','settings')
 class ServerComponent {
   private ROW_HEIGHT = 12; // must match the `server .console pre { height: 12px }` style rule above
 
@@ -136,11 +136,11 @@ class ServerComponent {
               public server: ServerService,
               private heat: HeatService,
               private user: UserService,
-              HTTPNotify: HTTPNotifyService,
               private settings: SettingsService) {
-    HTTPNotify.on(()=> {
-      this.updateMiningInfo();
-    }, $scope);
+
+    heat.subscriber.blockPushed({generator:user.account}, ()=>{this.updateMiningInfo()});
+    heat.subscriber.blockPopped({generator:user.account}, ()=>{this.updateMiningInfo()});
+
     this.hostLocal  = this.settings.get(SettingsService.HEAT_HOST_LOCAL);
     this.hostRemote = this.settings.get(SettingsService.HEAT_HOST_REMOTE);
     this.portLocal  = this.settings.get(SettingsService.HEAT_PORT_LOCAL);
