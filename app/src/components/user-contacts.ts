@@ -63,7 +63,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$timeout','$location','$rootScope','storage','HTTPNotify')
+@Inject('$scope','user','heat','$q','$timeout','$location','$rootScope','storage')
 class UserContactsComponent {
 
   public contacts : Array<IHeatMessageContact> = [];
@@ -78,14 +78,15 @@ class UserContactsComponent {
               private $timeout: angular.ITimeoutService,
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
-              storage: StorageService,
-              private HTTPNotify: HTTPNotifyService) {
-    HTTPNotify.on(()=>{this.refresh()}, $scope);
+              storage: StorageService) {
+
     this.refresh = utils.debounce(
       () => {
         this.getContacts()
       },
     500, true);
+    heat.subscriber.unconfirmedTransaction({recipient:user.account}, ()=>{ this.refresh() })
+
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
 
