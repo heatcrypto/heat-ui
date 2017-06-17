@@ -85,7 +85,7 @@ declare var saveAs: any;
             </div>
           </div>
 
-          <!-- SIGNIN page -->
+          <!-- SIGNIN page (dropdown shows keys in wallet, must enter pin) -->
           <div layout="column" flex ng-if="vm.page=='signin'">
             <div layout="column" flex>
               <md-input-container>
@@ -195,7 +195,7 @@ declare var saveAs: any;
             </div>
           </div>
 
-          <!-- CREATE page (5) -->
+          <!-- CREATE page (4) -->
           <div layout="column" flex ng-show="vm.pageCreateSuccess">
             <div layout="column" flex layout-align="start center">
               <h2>Congratulations, it worked!</h2>
