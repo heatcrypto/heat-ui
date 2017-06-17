@@ -97,30 +97,22 @@
             <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content width="4">
-            <!--
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="copy" ng-click="vm.copy('toolbar-account-id-target', 'Acount id copied')">
-                <md-icon md-font-library="material-icons">content_copy</md-icon>
-                <span id="toolbar-account-id-target">{{ vm.user.account }}</span>
-              </md-button>
-            </md-menu-item>
-            -->
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="transfer asset" ng-click="vm.showAssetTransferDialog($event)">
                 <md-icon md-font-library="material-icons">swap_horiz</md-icon>
-                <span id="toolbar-account-id-target">Transfer Asset</span>
+                <span>Transfer Asset</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="issue asset" ng-click="vm.showIssueAssetDialog($event)">
                 <md-icon md-font-library="material-icons">library_add</md-icon>
-                <span id="toolbar-account-id-target">Issue Asset</span>
+                <span>Issue Asset</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="whitelits market" ng-click="vm.showWhitelistMarketDialog($event)">
                 <md-icon md-font-library="material-icons">insert_chart</md-icon>
-                <span id="toolbar-account-id-target">Create Market</span>
+                <span>Create Market</span>
               </md-button>
             </md-menu-item>
             <md-menu-item ng-show="vm.isNodeEnv">
@@ -139,6 +131,12 @@
               <md-button aria-label="about" href="https://heatwallet.com/api" target="_blank">
                 <md-icon md-font-library="material-icons">find_in_page</md-icon>
                 Heat API (external)
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="copy" ng-click="vm.copy(vm.user.secretPhrase, 'Secret phrase copied to clipboard')">
+                <md-icon md-font-library="material-icons">content_copy</md-icon>
+                <span>Export Key</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
@@ -165,8 +163,8 @@
     </md-toolbar>
   `
 })
-@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','$timeout','clipboard','assetTransfer',
-  'assetIssue','whitelistMarket','storage','$window')
+@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
+  'assetIssue','whitelistMarket','storage','$window','$mdToast')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -178,13 +176,12 @@ class ToolbarComponent {
               private sendmoney: SendmoneyService,
               private electron: ElectronService,
               public env: EnvService,
-              $timeout: angular.ITimeoutService,
-              private clipboard: ClipboardService,
               private assetTransfer: AssetTransferService,
               private assetIssue: AssetIssueService,
               private whitelistMarket: WhitelistMarketService,
               private storage: StorageService,
-              private $window: angular.IWindowService) {
+              private $window: angular.IWindowService,
+              private $mdToast: angular.material.IToastService) {
     this.isNodeEnv=env.type==EnvType.NODEJS;
   }
 
@@ -254,7 +251,14 @@ class ToolbarComponent {
     this.electron.openDevTools(OpenDevToolsMode.detach);
   }
 
-  copy(element: string, successMsg: string) {
-    this.clipboard.copyWithUI(document.getElementById(element), successMsg);
+  copy(text: string, successMsg: string) {
+    var tempInput = <any> document.createElement("input");
+    tempInput.style = "position: absolute; left: -1000px; top: -1000px";
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    this.$mdToast.show(this.$mdToast.simple().textContent(successMsg).hideDelay(5000));
   }
 }
