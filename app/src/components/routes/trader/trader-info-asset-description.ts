@@ -62,7 +62,7 @@
             </div>
           </div>
           <div class="col-item">
-            <button ng-click="vm.showDescription($event, vm.currencyInfo)">More info</button>
+            <button ng-click="vm.showDescription($event, vm.currencyInfo)">Asset info</button>
           </div>
         </div>
       </div>
@@ -103,7 +103,7 @@
             </div>
           </div>
           <div class="col-item">
-            <button ng-click="vm.showDescription($event, vm.assetInfo)">More info</button>
+            <button ng-click="vm.showDescription($event, vm.assetInfo)">Asset info</button>
           </div>
         </div>
       </div>
