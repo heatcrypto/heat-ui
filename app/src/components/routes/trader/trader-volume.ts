@@ -34,7 +34,7 @@
       <div class="label">24h vol</div>
       <div class="value">{{vm.hr24CurrencyVolume}}</div>
       <div class="label">24h vol</div>
-      <div class="value">{{vm.hr24AssetVolume}}</div>
+      <div>{{vm.hr24AssetVolume}}</div>
     </div>
   `
 })
