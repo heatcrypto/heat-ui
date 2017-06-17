@@ -612,6 +612,7 @@ interface IHeatAsset {
    * The number of the account that issued the asset
    */
   account: string;
+  accountPublicName: string;
   /**
    * The asset ID
    */
@@ -686,6 +687,10 @@ interface IHeatAssetProperties extends IHeatAsset {
    * Asset properties based on protocol and account id
    */
   properties: string;
+  /**
+   * Asset properties timestamp
+   */
+  timestamp: number;
 }
 
 interface IHeatOrder {
