@@ -36,16 +36,14 @@ class DialogFieldAccount extends AbstractDialogField {
 
   search(query: string) {
     let deferred = this.$q.defer();
-    if (this.numbersOnly.test(query)) {
-      this.heat.api.getAccountByNumericId(query).then((account)=>{
-        deferred.resolve([account]);
-      }, ()=>{
-        this.heat.api.searchPublicNames(query, 0, 100).then(deferred.resolve, deferred.reject);
+    this.heat.api.searchPublicNames(query, 0, 100).then(accounts => {
+      accounts.forEach(account => {
+        if (this.numbersOnly.test(account.publicName)) {
+          account.publicName = '';
+        }
       });
-    }
-    else {
-      this.heat.api.searchPublicNames(query, 0, 100).then(deferred.resolve, deferred.reject);
-    }
+      deferred.resolve(accounts);
+    }, deferred.reject);
     return deferred.promise;
   }
 }
@@ -75,7 +73,7 @@ class DialogFieldAccount extends AbstractDialogField {
         ng-disabled="vm.f._disabled">
         <md-item-template>
           <div layout="row" flex class="monospace-font">
-            <span>{{item.publicName||'anonymous'}}</span>
+            <span>{{item.publicName||''}}</span>
             <span flex></span>
             <span>{{item.id}}</span>
           </span>
