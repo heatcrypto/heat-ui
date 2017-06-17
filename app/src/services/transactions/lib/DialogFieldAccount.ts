@@ -27,6 +27,7 @@ class DialogFieldAccount extends AbstractDialogField {
   private settings = <SettingsService> heat.$inject.get('settings');
   private user = <UserService> heat.$inject.get('user');
   private $q = <angular.IQService> heat.$inject.get('$q');
+  private numbersOnly = /^[0-9]+$/;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -34,7 +35,18 @@ class DialogFieldAccount extends AbstractDialogField {
   }
 
   search(query: string) {
-    return this.heat.api.searchPublicNames(query, 0, 100);
+    let deferred = this.$q.defer();
+    if (this.numbersOnly.test(query)) {
+      this.heat.api.getAccountByNumericId(query).then((account)=>{
+        deferred.resolve([account]);
+      }, ()=>{
+        this.heat.api.searchPublicNames(query, 0, 100).then(deferred.resolve, deferred.reject);
+      });
+    }
+    else {
+      this.heat.api.searchPublicNames(query, 0, 100).then(deferred.resolve, deferred.reject);
+    }
+    return deferred.promise;
   }
 }
 
@@ -63,7 +75,7 @@ class DialogFieldAccount extends AbstractDialogField {
         ng-disabled="vm.f._disabled">
         <md-item-template>
           <div layout="row" flex class="monospace-font">
-            <span>{{item.publicName}}</span>
+            <span>{{item.publicName||'anonymous'}}</span>
             <span flex></span>
             <span>{{item.id}}</span>
           </span>
