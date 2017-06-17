@@ -26,13 +26,16 @@ declare var Big: any;
   selector: 'trader',
   inputs: ['currency','asset'],
   template: `
-    <div class="balances-row">
+    <div layout="row">
+      <!--
       <div>
         <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
           <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
           <i><img src="assets/{{vm.marketsSidenavOpen?'minusIcon':'plusIcon'}}.png"></i>
         </md-button>
       </div>
+      -->
+      <span flex></span>
       <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
     </div>
     <div layout="row" flex layout-fill>
