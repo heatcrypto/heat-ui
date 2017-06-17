@@ -69,13 +69,11 @@ class UserService extends EventEmitter {
         let rawText = heatService.getHeatMessageContents(transactions[i]);
         if (rawText) {
           if (this.tryParseRegistrationMessage(rawText)) {
-            deferred.resolve();
             return;
           }
         }
       }
-      deferred.resolve();
-    }, deferred.rejected);
+    }).finally(deferred.resolve);
     return deferred.promise;
   }
 
@@ -131,7 +129,7 @@ class UserService extends EventEmitter {
       this.accountName = match[2];
 
       // update local wallet name
-      if (this.key.name != this.accountName) {
+      if (this.key && this.key.name != this.accountName) {
         this.key.name = this.accountName;
         this.localKeyStore.add(this.key);
       }
