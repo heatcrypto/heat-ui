@@ -46,6 +46,9 @@ class UserService extends EventEmitter {
   /* New accounts don't yet exist on the blockchain */
   public newAccount: boolean;
 
+  /* Local key storage key */
+  public key: ILocalKey;
+
   public accountColorName: string = "HEAT";
   public accountColorId: string = "0";
 
@@ -83,11 +86,13 @@ class UserService extends EventEmitter {
    *
    * @param secretPhrase user secret phrase
    * @param newAccount boolean
+   * @param key ILocalKey
    * @returns Promise
    */
-  unlock(secretPhrase: string, newAccount: boolean): angular.IPromise<any> {
+  unlock(secretPhrase: string, newAccount: boolean, key?: ILocalKey): angular.IPromise<any> {
     var deferred = this.$q.defer();
     this.newAccount = newAccount;
+    this.key = key;
 
     /* Everything obtained from the secret phrase */
     this.secretPhrase = secretPhrase;
@@ -124,6 +129,12 @@ class UserService extends EventEmitter {
     if (match) {
       this.accountNameIsPrivate = match[1] == 'private';
       this.accountName = match[2];
+
+      // update local wallet name
+      if (this.key.name != this.accountName) {
+        this.key.name = this.accountName;
+        this.localKeyStore.add(this.key);
+      }
       return true;
     }
     return false;

@@ -375,13 +375,14 @@ class LoginComponent {
   }
 
   pageAddAddSecretPhrase() {
-    this.localKeyStore.add({
+    let key = {
       account: this.pageAddAccount,
       secretPhrase: this.pageAddSecretPhrase,
       pincode: this.pageAddPincode,
       name: ''
-    });
-    this.user.unlock(this.pageAddSecretPhrase, true).then(() => {
+    };
+    this.localKeyStore.add(key);
+    this.user.unlock(this.pageAddSecretPhrase, true, key).then(() => {
       this.$location.path('home');
     });
   }
@@ -391,7 +392,7 @@ class LoginComponent {
       this.pageSigninWrongPincode = false;
       var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
       if (key) {
-        this.user.unlock(key.secretPhrase, false).then(() => {
+        this.user.unlock(key.secretPhrase, false, key).then(() => {
           this.$location.path('home');
         });
       }
@@ -498,13 +499,14 @@ class LoginComponent {
   }
 
   createLocalAccount() {
-    this.localKeyStore.add({
+    let key = {
       account: this.pageCreateAccount,
       secretPhrase: this.pageCreateSecretPhrase,
       pincode: this.pageCreatePincode,
       name: this.pageCreateUserName
-    });
-    this.user.unlock(this.pageCreateSecretPhrase, true).then(() => {
+    };
+    this.localKeyStore.add(key);
+    this.user.unlock(this.pageCreateSecretPhrase, true, key).then(() => {
       this.$location.path('new');
     });
   }
