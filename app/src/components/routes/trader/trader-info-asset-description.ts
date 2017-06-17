@@ -40,7 +40,7 @@
               Issuer:
             </div>
             <div class="value">
-              {{vm.currencyIssuer}}
+              <a href="#/explorer-account/{{vm.currencyIssuer}}">{{vm.currencyIssuerPublicName||vm.currencyIssuer}}</a>
             </div>
           </div>
           <div class="col-item launched">
@@ -81,7 +81,7 @@
               Issuer:
             </div>
             <div class="value">
-              {{vm.assetIssuer}}
+              <a href="#/explorer-account/{{vm.assetIssuer}}">{{vm.assetIssuerPublicName||vm.assetIssuer}}</a>
             </div>
           </div>
           <div class="col-item launched">
@@ -119,7 +119,9 @@ class TraderInfoAssetDescriptionComponent {
 
   isBtcAsset=false;
   currencyIssuer: string;
+  currencyIssuerPublicName: string;
   assetIssuer: string;
+  assetIssuerPublicName: string;
   currencyLaunched: string;
   assetLaunched: string;
 
@@ -128,51 +130,22 @@ class TraderInfoAssetDescriptionComponent {
               private assetInfoService: AssetInfoService,
               private $q: angular.IQService,
               private heat: HeatService) {
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
-        this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
-        this.loadCurrencyInfo(this.currencyInfo.id);
-        this.loadAssetInfo(this.assetInfo.id);
+        this.$scope.$evalAsync(()=> {
+          this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
+          this.currencyIssuer = this.currencyInfo.issuer;
+          this.currencyIssuerPublicName = this.currencyInfo.issuerPublicName;
+          this.currencyLaunched = dateFormat(utils.timestampToDate(this.currencyInfo.timestamp), format);
+          this.assetIssuer = this.assetInfo.issuer;
+          this.assetIssuerPublicName = this.assetInfo.issuerPublicName;
+          this.assetLaunched = dateFormat(utils.timestampToDate(this.assetInfo.timestamp), format);
+        });
         unregister.forEach(fn => fn());
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
-  }
-
-  loadCurrencyInfo(id: string) {
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    if (id=="0") {
-      this.$scope.$evalAsync(()=> {
-        this.currencyIssuer = "Heat Ledger Ltd.";
-        this.currencyLaunched = dateFormat(utils.timestampToDate(100149557), format);
-      });
-    }
-    else {
-      this.heat.api.getAsset(id, "0", 1).then((asset)=> {
-        this.$scope.$evalAsync(()=> {
-          this.currencyIssuer = asset.account == "9583431768758058558" ? "Heat Ledger Ltd." : asset.account;
-          this.currencyLaunched = "";//dateFormat(utils.timestampToDate(asset.timestamp), format);
-        });
-      })
-    }
-  }
-
-  loadAssetInfo(id: string) {
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    if (id=="0") {
-      this.$scope.$evalAsync(()=> {
-        this.assetIssuer = "Heat Ledger Ltd.";
-        this.assetLaunched = dateFormat(utils.timestampToDate(100149557), format);
-      });
-    }
-    else {
-      this.heat.api.getAsset(id, "0", 1).then((asset)=> {
-        this.$scope.$evalAsync(()=> {
-          this.assetIssuer = asset.account == "9583431768758058558" ? "Heat Ledger Ltd." : asset.account;
-          this.assetLaunched = "";//dateFormat(utils.timestampToDate(asset.timestamp), format);
-        });
-      })
-    }
   }
 
   showDescription($event, info: AssetInfo) {
