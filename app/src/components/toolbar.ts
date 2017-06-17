@@ -261,4 +261,12 @@ class ToolbarComponent {
     document.body.removeChild(tempInput);
     this.$mdToast.show(this.$mdToast.simple().textContent(successMsg).hideDelay(5000));
   }
+
+  importWallet() {
+
+  }
+
+  exportWallet() {
+
+  }
 }
