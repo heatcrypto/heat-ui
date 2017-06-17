@@ -48,7 +48,7 @@ class LocalKeyStoreService {
 
   /* lists all numeric account ids we have keys for */
   list(): Array<string> {
-    var test = heat.isTestnet ? /key\.\d+\.testnet/ : /key\.\d+/;
+    var test = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/;
     return this.store.keys().
                       filter((keyName) => test.test(keyName)).
                       map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));
@@ -96,29 +96,3 @@ class LocalKeyStoreService {
     }
   }
 }
-
-/* Find all entries that start with 'LOCAL_KEY_STORE_ENTRY:', move them
- * into the namespaced @store parameter. Replace each key which has the
- * form LOCAL_KEY_STORE_ENTRY:[account id]. With the new form which
- * is 'key.[account id]'. */
-// function updateLegacyLocalKeyStoreData(store: Store) {
-
-//   // collect all legacy keys
-//   var keys = [];
-//   for (var i=0; i<localStorage.length; i++) {
-//     var key = localStorage.key(i);
-//     if (key.indexOf('LOCAL_KEY_STORE_ENTRY:') == 0) {
-//       keys.push(key);
-//     }
-//   }
-
-//   // move all keys and their values into the new namespace
-//   keys.forEach((keyName) => {
-//     var newKey = keyName.replace('LOCAL_KEY_STORE_ENTRY:','key.');
-//     var value = localStorage.getItem(keyName);
-//     store.put(newKey, value);
-//   });
-
-//   // remove all deprecated keys [DONT DO THIS FOR NOW ... ]
-//   // keys.forEach((keyName) => { localStorage.removeItem(keyName) });
-// }
