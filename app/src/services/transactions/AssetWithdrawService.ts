@@ -152,6 +152,7 @@ class AssetWithdrawDialog extends GenericDialog {
     let userBalanceText = `${balance} ${this.assetInfo.symbol} available on account`;
     let feeText = `Processing and network fee ${this.withdrawInfo.feePercentage.toFixed(2)}% (${this.assetInfo.symbol})`;
     let minAmountFormatted = utils.formatQNT(this.withdrawInfo.minimumQuantity, 8);
+    let minWithdrawText = `Minimum withdraw amount is ${minAmountFormatted} ${this.assetInfo.symbol}`;
 
     var builder = new DialogFieldBuilder($scope);
     return [
@@ -215,6 +216,7 @@ class AssetWithdrawDialog extends GenericDialog {
              .label('You will receive')
              .readonly(true),
       builder.staticText('totalFeeText', ''),
+      builder.staticText('minWithdrawText', minWithdrawText),
       builder.staticText('withdrawalNotice1', this.withdrawInfo.notice1),
       builder.staticText('withdrawalNotice2', this.withdrawInfo.notice2)
     ]
