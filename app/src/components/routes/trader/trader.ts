@@ -49,7 +49,7 @@ declare var Big: any;
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div ng-if="!vm.currencyInfo.certified||!vm.assetInfo.certified">
+        <div ng-if="vm.showMarketNotCertified">
           <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
         </div>
         <div class="trader-row top">
@@ -90,6 +90,7 @@ class TraderComponent {
 
   selectedOrder: IHeatOrder; // the order currently selected in either buy-orders or sell-orders lists.
   isTestnet: boolean;
+  showMarketNotCertified = undefined;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -124,5 +125,20 @@ class TraderComponent {
 
     this.user.account = user.account || "";
     this.isTestnet = heat.isTestnet;
+
+    let ready = () => {
+      if (this.currencyInfo && this.assetInfo) {
+        this.showMarketNotCertified = !this.currencyInfo.certified||!this.assetInfo.certified;
+        unregister.forEach((fn)=>{fn()});
+      }
+    }
+    let unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
+    setTimeout(()=>{
+      if (!angular.isDefined(this.showMarketNotCertified)) {
+        $scope.$evalAsync(()=>{
+          this.showMarketNotCertified = true;
+        })
+      }
+    }, 2000);
   }
 }
