@@ -40,6 +40,13 @@ interface AssetPropertiesProtocol1 {
 @Inject('heat', '$q','assetCertification','http')
 class AssetInfoService {
 
+  // Heat Ledger Ltd certified assets symbols.
+  certifiedSymbols = {
+    "btc": "5592059897546023466",
+    "fimk": "8593933499455210945",
+    "gnt": "12638687347417181640"
+  };
+
   cache: IStringHashMap<AssetInfo> = {};
 
   constructor(private heat: HeatService,
@@ -55,6 +62,16 @@ class AssetInfoService {
       name: "HEAT Cryptocurrency",
       certified: true
     };
+  }
+
+  getDisplaySymbol(asset: string, symbol: string) {
+    let lowerCaseSymbol = symbol.toLowerCase();
+    if (angular.isString(this.certifiedSymbols[lowerCaseSymbol])) {
+      if (this.certifiedSymbols[lowerCaseSymbol] != asset) {
+        return symbol.slice(0, -1) + '-';
+      }
+    }
+    return symbol;
   }
 
   getInfo(asset: string): angular.IPromise<AssetInfo> {
@@ -74,7 +91,7 @@ class AssetInfoService {
           description: null,
           descriptionUrl: data.descriptionUrl,
           decimals: data.decimals,
-          symbol: properties.symbol,
+          symbol: this.getDisplaySymbol(asset, properties.symbol||''),
           name: properties.name,
           certified: false
         };
