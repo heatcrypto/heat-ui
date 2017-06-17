@@ -28,6 +28,9 @@ interface AssetInfo {
   symbol: string;
   name: string;
   certified: boolean;
+  timestamp: number;
+  issuer: string;
+  issuerPublicName: string;
 }
 
 interface AssetPropertiesProtocol1 {
@@ -60,7 +63,10 @@ class AssetInfoService {
       decimals: 8,
       symbol: "HEAT",
       name: "HEAT Cryptocurrency",
-      certified: true
+      certified: true,
+      timestamp: 100149557,
+      issuer: "8150091319858025343",
+      issuerPublicName: "Heat Ledger Ltd."
     };
   }
 
@@ -93,7 +99,10 @@ class AssetInfoService {
           decimals: data.decimals,
           symbol: this.getDisplaySymbol(asset, properties.symbol||''),
           name: properties.name,
-          certified: false
+          certified: false,
+          timestamp: data.timestamp,
+          issuer: data.account,
+          issuerPublicName: data.accountPublicName
         };
         this.assetCertification.getInfo(asset).then((certificationData)=> {
           if (certificationData.certified) {
@@ -128,14 +137,17 @@ class AssetInfoService {
 
   public getAssetDescription(info: AssetInfo): angular.IPromise<string> {
     var deferred = this.$q.defer();
+    let noDescription = "No description available ...";
     if (angular.isString(info.description) || !info.descriptionUrl) {
-      deferred.resolve(info.description||"No description available ...");
+      deferred.resolve(info.description||noDescription);
     }
     else {
       this.http.get(info.descriptionUrl).then((text)=>{
         info.description = text;
         deferred.resolve(text);
-      }, deferred.reject);
+      }, () => {
+        deferred.resolve(noDescription);
+      });
     }
     return deferred.promise;
   }
