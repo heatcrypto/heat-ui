@@ -123,10 +123,10 @@ gulp.task('copy:dist', ['tshelpers','libjs'], function () {
 });
 
 gulp.task('less', function () {
-    return gulp.src('./app/styles/index.less')
+  return gulp.src('./app/styles/index.less')
     .pipe(plumber())
       .pipe(less({
-          paths: [path.join(__dirname, 'less', 'includes')]
+        paths: [path.join(__dirname, 'less', 'includes')]
       }))
       .pipe(gulp.dest('./dist/styles/'));
 });
