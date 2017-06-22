@@ -22,59 +22,21 @@
  * */
 @Component({
   selector: 'traderInfo',
-  inputs: ['currencyInfo','assetInfo','toggleMarkets','marketsSidenavOpen'],
+  inputs: ['currencyInfo','assetInfo'],
   template: `
     <div>
       <div class="top-row">
         <div class="market-title">
-          <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
-        </div>
-        <div ng-if="vm.isBtcAsset">
-          <md-button class="md-primary" ng-click="vm.showAssetDepositPopup($event)" ng-disabled="!vm.user.unlocked">Deposit BTC</md-button>
-        </div>
-        <div ng-if="vm.currencyInfo.certified">
-          <md-button class="md-warn" ng-click="vm.showAssetWithdrawPopup($event)" ng-disabled="!vm.user.unlocked">Withdraw {{vm.currencyInfo.symbol}}</md-button>
+          <span class="market-title-text">
+            <span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span>
+          </span>
         </div>
       </div>
       <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info-asset-description>
     </div>
   `
 })
-@Inject('$scope','heat','user','settings', 'assetWithdraw')
 class TraderInfoComponent {
-
-  // inputs
   currencyInfo: AssetInfo; // @input
   assetInfo: AssetInfo; // @input
-  account: string; // @input
-  toggleMarkets: Function; // @input (controls the parent component markets sidenav)
-  marketsSidenavOpen: boolean; // @input (bound to parent component markets sidenav md-is-open)
-
-  isBtcAsset=false;
-
-  constructor(private $scope: angular.IScope,
-              private heat: HeatService,
-              private user: UserService,
-              private settings: SettingsService,
-              private assetWithdraw: AssetWithdrawService) {
-    var ready = () => {
-      if (this.currencyInfo && this.assetInfo) {
-        this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
-        unregister.forEach(fn => fn());
-      }
-    };
-    var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
-  }
-
-  showAssetDepositPopup($event) {
-    dialogs.loadBtc($event, this.currencyInfo.id);
-  }
-
-  showAssetWithdrawPopup($event) {
-    if (this.currencyInfo.symbol != 'HEAT') {
-      this.assetWithdraw.dialog($event, this.currencyInfo).then((dialog)=> {
-        dialog.show();
-      });
-    }
-  }
 }
