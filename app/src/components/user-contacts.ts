@@ -22,44 +22,18 @@
  * */
 @Component({
   selector: 'userContacts',
-  styles: [`
-    user-contacts md-list-item {
-      height: 42px !important;
-      padding-top
-    }
-    user-contacts md-list-item .md-button {
-      padding-left: 0px !important;
-    }
-    user-contacts .md-list-item-inner md-icon {
-      margin-left: 0px !important;
-      margin-right: 16px !important;
-    }
-    user-contacts md-list-item .contact-name {
-      height: 45px !important;
-    }
-    user-contacts .md-secondary-container {
-      margin-top: 5px !important
-    }
-    user-contacts .md-secondary-container .has-unread-message {
-      font-size: 100%;
-      text-align: center;
-      line-height: 1.6;
-    }
-    user-contacts .active-contact {
-      font-weight: bold !important;
-    }
-  `],
   template: `
-    <div layout="column" flex>
-      <md-content layout="column">
-        <md-list flex>
-          <md-list-item ng-repeat="contact in vm.contacts" href="#/messenger/{{contact.publicKey}}">
-            <md-icon md-font-library="material-icons" class="md-avatar">contact_mail</md-icon>
-            <span class="contact-name" ng-class="{'active-contact':(contact.publicKey==vm.activePublicKey)}">{{contact.publicName || contact.account}}</span>
-            <md-icon md-font-library="material-icons" class="md-secondary has-unread-message md-primary" ng-show="contact.hasUnreadMessage">fiber_manual_record</md-icon>
-          </md-list-item>
-        </md-list>
-      </md-content>
+    <div layout="column" flex layout-fill>
+      <md-list flex layout="column">
+        <md-list-item ng-repeat="contact in vm.contacts" aria-label="Entry">
+          <div class="truncate-col unread-col left">
+            <md-icon md-font-library="material-icons" ng-class="{'has-unread-message': contact.hasUnreadMessage}">fiber_manual_record</md-icon>
+          </div>
+          <div class="truncate-col account-col left">
+            <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
+          </div>
+        </md-list-item>
+      </md-list>
     </div>
   `
 })
@@ -133,7 +107,7 @@ class UserContactsComponent {
         this.contacts = contacts.filter((contact)=> {
           return contact.account != this.user.account;
         }).map((contact) => {
-          contact['hasUnreadMessage'] = true;
+          contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
           return contact;
         });
         if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
