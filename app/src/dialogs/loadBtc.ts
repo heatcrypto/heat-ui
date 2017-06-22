@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function loadBtc($event, asset: string) {
+  export function depositAsset($event, asset: string) {
     var http = <HttpService> heat.$inject.get('http');
     var user = <UserService> heat.$inject.get('user');
     var $q = <angular.IQService> heat.$inject.get('$q');

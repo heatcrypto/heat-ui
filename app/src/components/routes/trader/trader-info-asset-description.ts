@@ -32,7 +32,7 @@
               Asset name:
             </div>
             <div class="value">
-              {{vm.currencyInfo.name}}
+              <a ng-click="vm.showDescription($event, vm.currencyInfo)">{{vm.currencyInfo.name}}</a>
             </div>
           </div>
           <div class="col-item issued-by">
@@ -61,8 +61,9 @@
               {{vm.currencyLaunched}}
             </div>
           </div>
-          <div class="col-item">
-            <button ng-click="vm.showDescription($event, vm.currencyInfo)">Asset info</button>
+          <div class="col-item" ng-if="vm.currencyInfo.id != '0' && vm.currencyInfo.certified && vm.user.unlocked">
+            <md-button class="md-primary" ng-click="">Deposit {{vm.currencyInfo.symbol}}</md-button>
+            <md-button class="md-warn" ng-click="">Withdraw {{vm.currencyInfo.symbol}}</md-button>
           </div>
         </div>
       </div>
@@ -73,7 +74,7 @@
               Asset name:
             </div>
             <div class="value">
-              {{vm.assetInfo.name}}
+              <a ng-click="vm.showDescription($event, vm.assetInfo)">{{vm.assetInfo.name}}</a>
             </div>
           </div>
           <div class="col-item issued-by">
@@ -102,15 +103,16 @@
               {{vm.assetLaunched}}
             </div>
           </div>
-          <div class="col-item">
-            <button ng-click="vm.showDescription($event, vm.assetInfo)">Asset info</button>
+          <div class="col-item" ng-if="vm.assetInfo.id != '0' && vm.assetInfo.certified && vm.user.unlocked">
+            <md-button class="md-primary" ng-click="vm.showDeposit(vm.assetInfo)">Deposit {{vm.assetInfo.symbol}}</md-button>
+            <md-button class="md-warn" ng-click="vm.showWithdraw(vm.assetInfo)">Withdraw {{vm.assetInfo.symbol}}</md-button>
           </div>
         </div>
       </div>
     </div>
   `
 })
-@Inject('$scope','settings','assetInfo','$q','heat')
+@Inject('$scope','settings','assetInfo','$q','heat','user','assetWithdraw')
 class TraderInfoAssetDescriptionComponent {
 
   // inputs
@@ -129,7 +131,9 @@ class TraderInfoAssetDescriptionComponent {
               private settings: SettingsService,
               private assetInfoService: AssetInfoService,
               private $q: angular.IQService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              public user: UserService,
+              private assetWithdraw: AssetWithdrawService) {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
@@ -150,5 +154,17 @@ class TraderInfoAssetDescriptionComponent {
 
   showDescription($event, info: AssetInfo) {
     dialogs.assetInfo($event, info);
+  }
+
+  showDeposit($event, info: AssetInfo) {
+    dialogs.depositAsset($event, info.id);
+  }
+
+  showWithdraw($event, info: AssetInfo) {
+    if (this.currencyInfo.id != '0') {
+      this.assetWithdraw.dialog($event, info).then((dialog)=> {
+        dialog.show();
+      });
+    }
   }
 }
