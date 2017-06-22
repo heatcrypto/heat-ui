@@ -40,7 +40,7 @@
   }
   .expires-col {
     max-width: inherit;
-    white-space: normal;
+    white-space: nowrap;
   }
   .type-col {
     text-align: left;
@@ -50,12 +50,17 @@
   .market-col {
     text-align: left;
     max-width: 60px;
-    min-width: inherit;
+    min-width: 40px;
   }
   .cancel-col {
     text-align: left;
     max-width: 50px;
     width: 50px;
+    min-width: inherit;
+  }
+  .quantity-col, .price-col, .total-col {
+    max-width: 100px;
+    width: 80px;
     min-width: inherit;
   }
 }
