@@ -130,13 +130,19 @@
             <md-menu-item>
               <md-button aria-label="about" href="https://heatwallet.com/api" target="_blank">
                 <md-icon md-font-library="material-icons">find_in_page</md-icon>
-                Heat API (external)
+                <span>Heat API (external)</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="copy" ng-click="vm.copy(vm.user.secretPhrase, 'Secret phrase copied to clipboard')">
+              <md-button aria-label="Show copy" ng-click="vm.showSecretPhrase()">
                 <md-icon md-font-library="material-icons">content_copy</md-icon>
                 <span>Export Key</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button aria-label="backup" ng-click="vm.backupWallet()">
+                <md-icon md-font-library="material-icons">save</md-icon>
+                <span>Backup Wallet</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
@@ -164,7 +170,7 @@
   `
 })
 @Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
-  'assetIssue','whitelistMarket','storage','$window','$mdToast')
+  'assetIssue','whitelistMarket','storage','$window','$mdToast','walletFile','localKeyStore','panel')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -181,7 +187,10 @@ class ToolbarComponent {
               private whitelistMarket: WhitelistMarketService,
               private storage: StorageService,
               private $window: angular.IWindowService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private walletFile: WalletFileService,
+              private localKeyStore: LocalKeyStoreService,
+              private panel: PanelService) {
     this.isNodeEnv=env.type==EnvType.NODEJS;
   }
 
@@ -251,22 +260,22 @@ class ToolbarComponent {
     this.electron.openDevTools(OpenDevToolsMode.detach);
   }
 
-  copy(text: string, successMsg: string) {
-    var tempInput = <any> document.createElement("input");
-    tempInput.style = "position: absolute; left: -1000px; top: -1000px";
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand("copy");
-    document.body.removeChild(tempInput);
-    this.$mdToast.show(this.$mdToast.simple().textContent(successMsg).hideDelay(5000));
+  showSecretPhrase() {
+    this.panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+        </md-input-container>
+      </div>
+    `, {
+      secretPhrase: this.user.secretPhrase
+    })
   }
 
-  importWallet() {
-
-  }
-
-  exportWallet() {
-
+  backupWallet() {
+    let exported = this.localKeyStore.export();
+    let encoded = this.walletFile.encode(exported);
+    var blob = new Blob([encoded], {type: "text/plain;charset=utf-8"});
+    saveAs(blob, 'heat.wallet');
   }
 }
