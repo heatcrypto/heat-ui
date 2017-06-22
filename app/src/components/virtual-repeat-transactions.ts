@@ -87,27 +87,68 @@ class VirtualRepeatTransactionsMessage {
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
+          <!-- HEIGHT -->
           <div class="truncate-col height-col left">Height</div>
+
+          <!-- DATE -->
           <div class="truncate-col date-col left">Date</div>
-          <div class="truncate-col inoutgoing-col" ng-if="vm.personalize"></div>
-          <div class="truncate-col render-col left" flex>Transaction</div>
+
+          <!-- INOUT -->
+          <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">In/Out</div>
+
+          <!-- TRANSACTION -->
+          <div class="truncate-col transaction-col left" ng-if="vm.personalize">Transaction</div>
+
+          <!-- AMOUNT -->
+          <div class="truncate-col amount-col left" ng-if="vm.personalize">Amount</div>
+
+          <!-- TOFROM -->
+          <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To/From</div>
+
+          <!-- INFO -->
+          <div class="truncate-col info-col left" flex>Info</div>
+
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
+
+            <!-- HEIGHT -->
             <div class="truncate-col height-col left">
               <elipses-loading ng-show="item.height==2147483647"></elipses-loading>
               <span ng-show="item.height!=2147483647">{{item.height}}</span>
             </div>
+
+            <!-- DATE -->
             <div class="truncate-col date-col left">{{item.time}}</div>
-            <div class="truncate-col inoutgoing-col" ng-if="vm.personalize">
+
+            <!-- INOUT -->
+            <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">
               <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
                 {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
               </md-icon>
             </div>
-            <div class="truncate-col render-col left" flex>
-              <span ng-bind-html="item.rendered"></span>
+
+            <!-- TRANSACTION -->
+            <div class="truncate-col transaction-col left" ng-if="vm.personalize">
+              <span ng-bind-html="item.renderedTransactionType"></span>
+            </div>
+
+            <!-- AMOUNT -->
+            <div class="truncate-col amount-col left" ng-if="vm.personalize">
+              <span ng-bind-html="item.renderedAmount"></span>
+            </div>
+
+            <!-- TOFROM -->
+            <div class="truncate-col tofrom-col left" ng-if="vm.personalize">
+              <span ng-bind-html="item.renderedToFrom"></span>
+            </div>
+
+            <!-- INFO -->
+            <div class="truncate-col info-col left" flex>
+              <span ng-bind-html="item.renderedInfo"></span>
               <virtual-repeat-transactions-message ng-if="item.messageText" message-text="item.messageText" flex></virtual-repeat-transactions-message>
             </div>
+
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -140,18 +181,29 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
         transaction.heightDisplay = transaction.height==2147483647?'*':transaction.height;
         if (this.personalize) {
           transaction['outgoing'] = this.user.account == transaction.sender;
+          transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
+          let amountVal = this.renderer.renderAmount(transaction);
+          if (angular.isString(amountVal)) {
+            transaction['renderedAmount'] = amountVal;
+          }
+          else if (angular.isObject(amountVal)) {
+            amountVal.then(val=>{
+              transaction['renderedAmount'] = val;
+            });
+          }
+          transaction['renderedToFrom'] = this.renderer.renderedToFrom(transaction);
         }
 
-        let rendered = this.renderer.render(transaction);
-        if (angular.isString(rendered)) {
-          transaction.rendered = this.renderer.render(transaction);
+        let renderedInfo = this.renderer.renderInfo(transaction);
+        if (angular.isString(renderedInfo)) {
+          transaction['renderedInfo'] = renderedInfo;
         }
-        else if (angular.isObject(rendered)) {
-          rendered.then((text)=>{
-            transaction.rendered = text;
+        else if (angular.isObject(renderedInfo)) {
+          renderedInfo.then((text)=>{
+            transaction['renderedInfo'] = text;
           })
         }
-        transaction.messageText = this.heat.getHeatMessageContents(transaction);
+        transaction['messageText'] = this.heat.getHeatMessageContents(transaction);
       }
     );
 
@@ -246,17 +298,21 @@ class TransactionRenderer {
   private SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
 
   private heat: HeatService;
+  private assetInfo: AssetInfoService;
+  private $q: angular.IQService;
   private renderers: IStringHashMap<TransactionRenderHelper> = {};
+  private transactionTypes: IStringHashMap<string> = {};
 
   constructor(private provider?: {account?: string, block?: string, personalize: boolean}) {
+    let key;
     this.heat = <HeatService> heat.$inject.get('heat');
-    this.renderers[this.TYPE_PAYMENT+":"+this.SUBTYPE_PAYMENT_ORDINARY_PAYMENT] = new TransactionRenderHelper(
+    this.assetInfo = <AssetInfoService> heat.$inject.get('assetInfo');
+    this.$q = <angular.IQService> heat.$inject.get('$q');
+    key = this.TYPE_PAYMENT+":"+this.SUBTYPE_PAYMENT_ORDINARY_PAYMENT;
+    this.transactionTypes[key] = 'TRANSFER HEAT';
+    this.renderers[key] = new TransactionRenderHelper(
       (t) => {
-        return provider.personalize ? (
-          this.isOutgoing(t) ?
-            '<b>TRANSFERED</b> $amount to $recipient' :
-            '<b>RECEIVED</b> $amount from $sender'
-        ) : '<b>TRANSFER HEAT</b> From $sender to $recipient amount $amount'
+        return provider.personalize ? '' : '<b>TRANSFER HEAT</b> From $sender to $recipient amount $amount'
       },
       (t) => {
         return {
@@ -266,13 +322,11 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_MESSAGING+":"+this.SUBTYPE_MESSAGING_ARBITRARY_MESSAGE] = new TransactionRenderHelper(
+    key = this.TYPE_MESSAGING+":"+this.SUBTYPE_MESSAGING_ARBITRARY_MESSAGE;
+    this.transactionTypes[key] = 'SEND MESSAGE';
+    this.renderers[key] = new TransactionRenderHelper(
       (t) => {
-        return provider.personalize ? (
-          this.isOutgoing(t) ?
-            '<b>SEND MESSAGE</b> to $recipient' :
-            '<b>RECEIVED MESSAGE</b> from $sender'
-        ) : '<b>SEND MESSAGE</b> From $sender to $recipient'
+        return provider.personalize ? '' : '<b>SEND MESSAGE</b> From $sender to $recipient'
       },
       (t) => {
         return {
@@ -281,8 +335,12 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASSET_ISSUANCE] = new TransactionRenderHelper(
-      "<b>ISSUE ASSET</b> Issuer $sender asset $asset",
+    key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASSET_ISSUANCE;
+    this.transactionTypes[key] = 'ISSUE ASSET';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? 'Asset $asset' : "<b>ISSUE ASSET</b> Issuer $sender asset $asset";
+      },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
@@ -290,8 +348,12 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASSET_TRANSFER] = new TransactionRenderHelper(
-      "<b>TRANSFER ASSET</b> $asset from $sender to $recipient amount $amount",
+    key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASSET_TRANSFER;
+    this.transactionTypes[key] = 'TRANSFER ASSET';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : "<b>TRANSFER ASSET</b> $asset from $sender to $recipient amount $amount";
+      },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
@@ -301,8 +363,14 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASK_ORDER_PLACEMENT] = new TransactionRenderHelper(
-      "<b>SELL ORDER</b> $sender placed sell order $currency/$asset amount $amount price $price",
+    key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASK_ORDER_PLACEMENT;
+    this.transactionTypes[key] = 'SELL ORDER';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ?
+          '$currency/$asset amount $amount price $price' :
+          "<b>SELL ORDER</b> $sender placed sell order $currency/$asset amount $amount price $price";
+      },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
@@ -313,8 +381,14 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_BID_ORDER_PLACEMENT] = new TransactionRenderHelper(
-      "<b>BUY ORDER</b> $sender placed buy order $currency/$asset amount $amount price $price",
+    key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_BID_ORDER_PLACEMENT;
+    this.transactionTypes[key] = 'BUY ORDER';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ?
+          '$currency/$asset amount $amount price $price' :
+          "<b>BUY ORDER</b> $sender placed buy order $currency/$asset amount $amount price $price";
+      },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
@@ -325,8 +399,12 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASK_ORDER_CANCELLATION] = new TransactionRenderHelper(
-      "<b>CANCEL SELL</b> $sender cancelled sell order $order",
+    key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASK_ORDER_CANCELLATION;
+    this.transactionTypes[key] = 'CANCEL SELL';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? 'Sell order $order':"<b>CANCEL SELL</b> $sender cancelled sell order $order";
+      },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
@@ -334,8 +412,12 @@ class TransactionRenderer {
         }
       }
     );
-    this.renderers[this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_BID_ORDER_CANCELLATION] = new TransactionRenderHelper(
-      "<b>CANCEL BUY</b> $sender cancelled buy order $order",
+    key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_BID_ORDER_CANCELLATION;
+    this.transactionTypes[key] = 'CANCEL BUY';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? 'Buy order $order':"<b>CANCEL BUY</b> $sender cancelled buy order $order";
+      },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
@@ -343,13 +425,84 @@ class TransactionRenderer {
         }
       }
     );
+  }
+
+  renderTransactionType(transaction: IHeatTransaction): string {
+    let key = `${transaction.type}:${transaction.subtype}`;
+    return this.transactionTypes[key] || key;
+  }
+
+  renderAmount(transaction: IHeatTransaction): string|angular.IPromise<string> {
+    if (transaction.type == this.TYPE_PAYMENT && transaction.subtype == this.SUBTYPE_PAYMENT_ORDINARY_PAYMENT) {
+      let amount:string = transaction.amount;
+      let symbol:string = 'HEAT';
+      let neg:boolean = transaction.sender == this.provider.account;
+      return this.formatAmount(amount, symbol, neg);
+    }
+    if (transaction.type == this.TYPE_COLORED_COINS) {
+      let amount: string = null;
+      let neg: boolean = null;
+      let currency: string = null;
+      switch (transaction.subtype) {
+        case this.SUBTYPE_COLORED_COINS_ASSET_ISSUANCE:
+        case this.SUBTYPE_COLORED_COINS_ASSET_ISSUE_MORE: {
+          amount = transaction.attachment['quantity'];
+          currency = transaction.transaction;
+          break;
+        }
+        case this.SUBTYPE_COLORED_COINS_ASSET_TRANSFER: {
+          amount = transaction.attachment['quantity'];
+          neg = transaction.sender == this.provider.account;
+          currency = transaction.attachment['asset'];
+          break;
+        }
+        case this.SUBTYPE_COLORED_COINS_ASK_ORDER_PLACEMENT: {
+          amount = transaction.attachment['quantity'];
+          currency = transaction.attachment['asset'];
+          neg = true;
+          break;
+        }
+        case this.SUBTYPE_COLORED_COINS_BID_ORDER_PLACEMENT: {
+          amount = utils.calculateTotalOrderPriceQNT(transaction.attachment['quantity'], transaction.attachment['price']);
+          currency = transaction.attachment['currency'];
+          neg = true;
+          break;
+        }
+      }
+      if (angular.isString(amount)) {
+        if (angular.isDefined(this.assetInfo.cache[currency])) {
+          let symbol = this.assetInfo.cache[currency].symbol;
+          if (angular.isString(symbol)) {
+            return this.formatAmount(amount, symbol, neg);
+          }
+        }
+        let deferred = this.$q.defer();
+        this.assetInfo.getInfo(currency).then(info=>{
+          deferred.resolve(this.formatAmount(amount, info.symbol, neg))
+        }, deferred.reject);
+        return deferred.promise;
+      }
+    }
+  }
+
+  /* Returns HTML */
+  renderedToFrom(transaction: IHeatTransaction): string {
+    if (transaction.sender == this.provider.account) {
+      return this.account(transaction.recipient, transaction.recipientPublicName);
+    }
+    return this.account(transaction.sender, transaction.senderPublicName);
+  }
+
+  formatAmount(amount: string, symbol: string, neg: boolean): string {
+    let returns = this.amount(amount, 8, symbol);
+    return (neg?'-':'+') + returns;
   }
 
   isOutgoing(transaction: IHeatTransaction): boolean {
     return transaction.sender == this.provider.account;
   }
 
-  render(transaction: IHeatTransaction) {
+  renderInfo(transaction: IHeatTransaction) {
     var renderer = this.renderers[transaction.type+":"+transaction.subtype];
     if (renderer)
       return renderer.render(transaction);
@@ -357,7 +510,7 @@ class TransactionRenderer {
   }
 
   account(account: string, publicName: string): string {
-    return `<a href="#/explorer-account/${account}">${publicName||account}</a>`;
+    return account == '0' ? '' : `<a href="#/explorer-account/${account}">${publicName||account}</a>`;
   }
 
   amount(amountHQT: string, decimals: number, symbol?: string) {

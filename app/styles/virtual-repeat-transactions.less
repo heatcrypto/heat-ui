@@ -40,6 +40,7 @@ virtual-repeat-transactions {
   virtual-repeat-transactions-message {
     .md-button {
       &.md-icon-button {
+        width: 26px !important;
         border-radius: initial;
         padding-right: 0px;
         margin-right: 0px;
@@ -49,7 +50,14 @@ virtual-repeat-transactions {
       md-icon {
         color: @white07;
         font-size: 18px !important;
+        margin-left: 0px !important;
+        margin-right: 0px !important;
       }
+    }
+  }
+  .row {
+    .inoutgoing-col {
+      font-size: 16px;
     }
   }
   .truncate-col {
@@ -70,10 +78,12 @@ virtual-repeat-transactions {
     &.generator-col {
       padding-right: 0px;
     }
+    &.info-col {
+      max-width: initial;
+    }
     &.inoutgoing-col {
       min-width: 30px;
       max-width: 30px;
-      font-size: 16px;
       padding-right: 10px;
       .outgoing {
         color: #f44336 !important;
