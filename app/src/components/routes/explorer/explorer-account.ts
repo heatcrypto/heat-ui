@@ -27,20 +27,87 @@
   template: `
     <div layout="column" flex layout-fill layout-padding >
       <explorer-search layout="column"></explorer-search>
-      <h3>Account {{vm.account}}</h3>
-      <pre>
-Account:               {{vm.account}}
-Account Name:          {{vm.accountName}}
-Email:                 {{vm.email}}
-First seen:            {{vm.firstSee}}
-Lease:                 {{vm.lease}}
-Lease blocks remain:   {{vm.leaseBlocksRemain}}
-Forged:	               {{vm.forged}}
-Effective bal:         {{vm.effectiveBalance}} HEAT
-Balance (unconfirmed): {{vm.balanceUnconfirmed}} HEAT
-Balance (confirmed):   {{vm.balanceConfirmed}} HEAT
-Leased to:             {{vm.leasedTo}}
-       </pre>
+      <div layout="row" class="explorer-detail">
+        <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              Account:
+            </div>
+            <div class="value">
+              <a href="#/explorer-account/{{vm.account}}">{{vm.accountName||vm.account}}</a>
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Leased to:
+            </div>
+            <div class="value">
+              <span ng-if="!vm.leasedToAccount">None</span>
+              <a ng-if="vm.leasedToAccount" href="#/explorer-account/{{vm.leasedToAccount}}">{{vm.leasedToAccountName||vm.leasedToAccount}}</a>
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Lease blocks remain:
+            </div>
+            <div class="value">
+              {{vm.leaseBlocksRemain}}
+            </div>
+          </div>
+        </div>
+        <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              Effective bal:
+            </div>
+            <div class="value">
+              {{vm.effectiveBalance}} HEAT
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Balance (unconfirmed):
+            </div>
+            <div class="value">
+              {{vm.balanceUnconfirmed}} HEAT
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Balance (confirmed):
+            </div>
+            <div class="value">
+              {{vm.balanceConfirmed}} HEAT
+            </div>
+          </div>
+        </div>
+        <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              First seen:
+            </div>
+            <div class="value">
+              {{vm.firstSee}}
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Forged:
+            </div>
+            <div class="value">
+              {{vm.forged}} HEAT
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+
+            </div>
+            <div class="value">
+
+            </div>
+          </div>
+        </div>
+      </div>
       <virtual-repeat-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
     </div>
   `
@@ -49,7 +116,6 @@ Leased to:             {{vm.leasedTo}}
 class ExploreAccountComponent {
   account: string; // @input
 
-  // displayed data - unclear if all make sense.
   accountName: string;
   email: string;
   publicKey: string;
@@ -91,12 +157,19 @@ class ExploreAccountComponent {
     });
 
     this.heat.api.getAccountByNumericId(this.account).then((account)=>{
-      console.log('Get acount '+this.account, account);
       this.$scope.$evalAsync(()=>{
+        this.accountName = account.publicName;
         this.balanceConfirmed = utils.formatQNT(account.balance, 8);
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
+        this.genesisAccountNameOverride();
       });
     });
+  }
+
+  genesisAccountNameOverride() {
+    if (this.account == "8150091319858025343") {
+      this.accountName = "HEAT blockchain Genesis account";
+    }
   }
 }
