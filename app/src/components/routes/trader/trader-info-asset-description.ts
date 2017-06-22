@@ -62,8 +62,8 @@
             </div>
           </div>
           <div class="col-item" ng-if="vm.currencyInfo.id != '0' && vm.currencyInfo.certified && vm.user.unlocked">
-            <md-button class="md-primary" ng-click="">Deposit {{vm.currencyInfo.symbol}}</md-button>
-            <md-button class="md-warn" ng-click="">Withdraw {{vm.currencyInfo.symbol}}</md-button>
+            <md-button class="md-primary" ng-click="vm.showDeposit($event, vm.currencyInfo)">Deposit {{vm.currencyInfo.symbol}}</md-button>
+            <md-button class="md-warn" ng-click="vm.showWithdraw($event, vm.currencyInfo)">Withdraw {{vm.currencyInfo.symbol}}</md-button>
           </div>
         </div>
       </div>
@@ -104,8 +104,8 @@
             </div>
           </div>
           <div class="col-item" ng-if="vm.assetInfo.id != '0' && vm.assetInfo.certified && vm.user.unlocked">
-            <md-button class="md-primary" ng-click="vm.showDeposit(vm.assetInfo)">Deposit {{vm.assetInfo.symbol}}</md-button>
-            <md-button class="md-warn" ng-click="vm.showWithdraw(vm.assetInfo)">Withdraw {{vm.assetInfo.symbol}}</md-button>
+            <md-button class="md-primary" ng-click="vm.showDeposit($event, vm.assetInfo)">Deposit {{vm.assetInfo.symbol}}</md-button>
+            <md-button class="md-warn" ng-click="vm.showWithdraw($event, vm.assetInfo)">Withdraw {{vm.assetInfo.symbol}}</md-button>
           </div>
         </div>
       </div>
@@ -119,7 +119,6 @@ class TraderInfoAssetDescriptionComponent {
   currencyInfo: AssetInfo; // @input
   assetInfo: AssetInfo; // @input
 
-  isBtcAsset=false;
   currencyIssuer: string;
   currencyIssuerPublicName: string;
   assetIssuer: string;
@@ -138,7 +137,6 @@ class TraderInfoAssetDescriptionComponent {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         this.$scope.$evalAsync(()=> {
-          this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
           this.currencyIssuer = this.currencyInfo.issuer;
           this.currencyIssuerPublicName = this.currencyInfo.issuerPublicName;
           this.currencyLaunched = dateFormat(utils.timestampToDate(this.currencyInfo.timestamp), format);
