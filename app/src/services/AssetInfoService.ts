@@ -66,7 +66,7 @@ class AssetInfoService {
       certified: true,
       timestamp: 100149557,
       issuer: "8150091319858025343",
-      issuerPublicName: "Heat Ledger Ltd."
+      issuerPublicName: "HEAT blockchain Genesis account"
     };
   }
 
