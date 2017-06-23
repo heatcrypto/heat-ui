@@ -31,6 +31,7 @@ interface AssetInfo {
   timestamp: number;
   issuer: string;
   issuerPublicName: string;
+  userBalance?: string;
 }
 
 interface AssetPropertiesProtocol1 {
