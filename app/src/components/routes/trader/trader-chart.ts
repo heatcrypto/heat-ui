@@ -75,6 +75,8 @@ class TraderChartComponent {
 
   lastTrade: any;
 
+  refreshChartDelayed: (order)=>void;
+
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private $q: angular.IQService,
@@ -98,6 +100,8 @@ class TraderChartComponent {
       angular.element($window).off('resize', onresize);
       $interval.cancel(interval);
     });
+
+    this.refreshChartDelayed = utils.debounce(order=> {this.refreshChart(order)}, 5*1000, false);
   }
 
   private determineElementSize(): boolean {
@@ -125,19 +129,23 @@ class TraderChartComponent {
 
   private subscribeToOrderEvents(currency: string, asset: string) {
     this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
-      if (order.unconfirmed === false) {
-        let price = parseInt(order.price)
-        let OHLCChartItemData = {
-          close: price,
-          date: new Date(),
-          high: price,
-          low: price,
-          open: price,
-          volume: parseInt(order.quantity)
-        }
-        this.update(OHLCChartItemData)
-      }
+      this.refreshChartDelayed(order);
     }, this.$scope);
+  }
+
+  private refreshChart(order) {
+    if (order.unconfirmed === false) {
+      let price = parseInt(order.price)
+      let OHLCChartItemData = {
+        close: price,
+        date: new Date(),
+        high: price,
+        low: price,
+        open: price,
+        volume: parseInt(order.quantity)
+      }
+      this.update(OHLCChartItemData)
+    }
   }
 
   private checkForFlatline() {
