@@ -41,7 +41,7 @@
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper class="content">
           <md-list-item md-virtual-repeat="item in vm" md-on-demand
                ng-click="vm.select(item)" aria-label="Entry"
-               ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid}">
+               ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid||item.cancelled}">
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
             <div class="truncate-col quantity-col">{{item.quantityDisplay}}</div>
             <div class="truncate-col total-col">{{item.total}}</div>
@@ -63,6 +63,9 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
   assetBalance: string = "*"; // formatted asset balance
 
   PAGE_SIZE = 250; /* VirtualRepeatComponent */
+
+  refreshGrid:()=>void;
+  refreshBalance:()=>void;
 
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
@@ -121,20 +124,21 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
         this.provider.destroy()
       }
     });
+
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
+    this.refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 1000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
       if (order.type == 'ask') {
-        refreshGrid();
+        this.refreshGrid();
       }
     }, this.$scope);
   }
 
   private subscribeToBalanceEvents(account:string, currency: string) {
-    var refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 500, false);
-    this.heat.subscriber.balanceChanged({account:account, currency:currency}, refreshBalance, this.$scope);
+    this.heat.subscriber.balanceChanged({account:account, currency:currency}, this.refreshBalance, this.$scope);
   }
 
   onSelect(selectedOrder) {
