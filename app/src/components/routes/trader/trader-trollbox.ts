@@ -23,27 +23,35 @@
 @Component({
   selector: 'traderTrollbox',
   template: `
-    <div class="trader-component-title">Trollbox&nbsp;
-      <elipses-loading ng-show="vm.loading"></elipses-loading>
-      <a href="https://heatslack.herokuapp.com/" target="_blank">Join Slack!
-        <md-tooltip md-direction="bottom">
-          This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.
-        </md-tooltip>
-      </a>
-    </div>
-    <ul scroll-glue class="display" [ngClass]="vm.user.unlocked === false ? 'notLoggedIn' : ''">
-      <li ng-repeat="item in vm.messages">
-        <span><b>{{item.username}}</b>: {{item.text}}</span>
-      </li>
-    </ul>
-    <div ng-if="vm.user.unlocked">
-      <div flex ng-if="vm.trollbox.name">
-        <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
-          placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
+    <div layout="column" flex layout-fill>
+      <div class="trader-component-title">Trollbox&nbsp;
+        <elipses-loading ng-show="vm.loading"></elipses-loading>
+        <a href="https://heatslack.herokuapp.com/" target="_blank">Join Slack!
+          <md-tooltip md-direction="bottom">
+            This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.
+          </md-tooltip>
+        </a>
       </div>
-      <div ng-if="!vm.trollbox.name" class="join-area">
-        <input type="text" placeholder="Name" ng-model="vm.name"></input>
-        <button class="md-primary md-button md-ink-ripple" ng-click="vm.joinChat()" ng-disabled="!vm.name">Join</button>
+      <div ng-if="!vm.trollbox.name && vm.user.unlocked" class="join-area" layout="row">
+        <div flex>
+          <input type="text" placeholder="Type your name here" ng-model="vm.name"></input>
+        </div>
+        <div>
+          <button class="md-primary md-button md-ink-ripple" ng-click="vm.joinChat()" ng-disabled="!vm.name">Join</button>
+        </div>
+      </div>
+      <div flex layout="column">
+        <ul scroll-glue class="display" ng-class="{'notLoggedIn':vm.user.unlocked === false}" flex>
+          <li ng-repeat="item in vm.messages">
+            <span><b>{{item.username}}</b>: {{item.text}}</span>
+          </li>
+        </ul>
+      </div>
+      <div ng-if="vm.user.unlocked" layout="row">
+        <div flex ng-if="vm.trollbox.name">
+          <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
+            placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
+        </div>
       </div>
     </div>
   `
