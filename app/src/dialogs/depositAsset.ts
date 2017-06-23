@@ -21,42 +21,29 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function depositAsset($event, asset: string) {
+  export function depositAsset($event, assetInfo: AssetInfo) {
     var http = <HttpService> heat.$inject.get('http');
     var user = <UserService> heat.$inject.get('user');
     var $q = <angular.IQService> heat.$inject.get('$q');
     var env = <EnvService> heat.$inject.get('env');
     var url = env.type == EnvType.BROWSER ?
-      `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${asset}` :
-      `http://heatledger.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${asset}`;
+      `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}` :
+      `http://heatledger.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}`;
     var deferred = $q.defer();
     http.get(url).then((response)=>{
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
-      if (parsed.deposit && angular.isString(parsed.deposit.address)) {
-        var btcAddress = parsed.deposit.address;
-        dialogs.dialog({
-          id: 'loadBtc',
-          title: 'Load BTC',
-          targetEvent: $event,
-          okButton: true,
-          template: `
-            <div flex>
-              Please transfer the desired amount of Bitcoins to <b>{{vm.address}}</b>. When the transfer has 1 confirmation in the Bitcoin network, your HEAT account will receive the BTC Assets (id: 5592059897546023466) shortly and you can trade them in any market they're accepted at.
-              <br><br>
-              BTC Load fee is 0%.
-              <br><br>
-              BTC redemption (cashout) fee is 0.25%, minimum 0.001 BTC. Processing time 0-24 hours.
-              <br><br>
-              To redeem your BTC asset for real Bitcoins, Click Transfer Asset from top right menu, choose Asset: BTC (5592059897546023466) Receiver: 9583431768758058558 and Amount: the desired cashout amount. Enter in payment message the desired Bitcoin address you want the Bitcoins to be sent. Do not enter anything else in the payment message.
-              <br><br>
-              For any questions please contact <a href="mailto:support@heatledger.com">support@heatledger.com</a>
-            </div>
-          `,
-          locals: {
-            address: btcAddress
-          }
-        }).then(deferred.resolve, deferred.reject);
-      }
+      dialogs.dialog({
+        id: 'depositAsset',
+        title: `Deposit ${assetInfo.symbol}`,
+        targetEvent: $event,
+        okButton: true,
+        template: `
+          <div flex ng-bind-html="vm.dialogue"></div>
+        `,
+        locals: {
+          dialogue: parsed.deposit.dialogue
+        }
+      }).then(deferred.resolve, deferred.reject);
     });
     return deferred.promise;
   }
