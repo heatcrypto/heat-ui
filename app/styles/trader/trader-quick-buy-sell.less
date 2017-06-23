@@ -28,6 +28,15 @@ trader-quick-buy-sell {
   .widget();
   max-width: 300px;
   border-radius: 4px;
+  a {
+    color: @link-yellow;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .expires-invalid {
+    font-weight: bold !important;
+    color: @heatOrange !important;
+  }
   & > div {
     display: flex;
     flex-direction: column;
