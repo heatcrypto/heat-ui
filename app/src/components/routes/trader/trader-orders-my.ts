@@ -65,6 +65,8 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
   assetInfo: AssetInfo; // @input
   oneClickOrders: boolean; // @input
 
+  refreshGrid: ()=>void;
+
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
               $q: angular.IQService,
@@ -86,7 +88,7 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
 
           /* decorator function */
           (order: any|IHeatOrder) => {
-            order.typeDisplay = order.type == 'ask' ? 'Ask' : 'Buy';
+            order.typeDisplay = order.type == 'ask' ? 'Sell' : 'Buy';
             order.market = this.currencyInfo.symbol + '/' + this.assetInfo.symbol;
             order.quantityDisplay = utils.formatQNT(order.quantity, this.assetInfo.decimals);
             order.priceDisplay = utils.formatQNT(order.price, this.currencyInfo.decimals);
@@ -111,13 +113,13 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
         this.provider.destroy();
       }
     });
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     var filter = {currency: currency, asset: asset, account: this.user.account};
     this.heat.subscriber.order(filter, (order: IHeatOrder) => {
-      refreshGrid();
+      this.refreshGrid();
     }, this.$scope);
   }
 
