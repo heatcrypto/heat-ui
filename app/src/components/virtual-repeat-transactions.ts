@@ -91,7 +91,7 @@ class VirtualRepeatTransactionsMessage {
           <div class="truncate-col height-col left">Height</div>
 
           <!-- DATE -->
-          <div class="truncate-col date-col left">Date</div>
+          <div class="truncate-col date-col left">Time</div>
 
           <!-- INOUT -->
           <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">In/Out</div>
@@ -180,7 +180,14 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
         transaction.time = dateFormat(date, format);
         transaction.heightDisplay = transaction.height==2147483647?'*':transaction.height;
         if (this.personalize) {
-          transaction['outgoing'] = this.user.account == transaction.sender;
+          // order cancellations display as incoming
+          if (transaction.type == 2 && (transaction.subtype == 5 || transaction.subtype == 6)) {
+            transaction['outgoing'] = false;
+          }
+          else {
+            transaction['outgoing'] = this.user.account == transaction.sender;
+          }
+
           transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
           let amountVal = this.renderer.renderAmount(transaction);
           if (angular.isString(amountVal)) {
