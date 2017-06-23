@@ -41,7 +41,7 @@
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper  class="content">
           <md-list-item md-virtual-repeat="item in vm" md-on-demand
                ng-click="vm.select(item)" aria-label="Entry"
-               ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid}">
+               ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid||item.cancelled}">
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
             <div class="truncate-col quantity-col">{{item.quantityDisplay}}</div>
             <div class="truncate-col total-col">{{item.total}}</div>
@@ -63,6 +63,8 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
   currencyBalance: string = "*"; // formatted currency balance
 
   PAGE_SIZE = 250; /* VirtualRepeatComponent @override */
+
+  refreshGrid: ()=>void;
 
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
@@ -123,13 +125,14 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
         this.provider.destroy();
       }
     });
+
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
       if (order.type == 'bid') {
-        refreshGrid();
+        this.refreshGrid();
       }
     }, this.$scope);
   }
