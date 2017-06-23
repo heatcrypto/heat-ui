@@ -89,14 +89,37 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
           </div>
         </div>
         <div class="row">
-          <div class="label">
-            Expiry in
+          <div class="label" ng-class="{'expires-invalid': !vm.expiryValid}">
+            Expires in
           </div>
           <div class="input">
-            <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+            <input type="number" ng-model="vm.expiryUnitsValue" required name="expiry"
+                      ng-change="vm.expiryUnitsValueChanged()"
+                      min="{{vm.expiryUnitsOptions[vm.expiryUnits].min}}"
+                      max="{{vm.expiryUnitsOptions[vm.expiryUnits].max}}"
+                      ng-disabled="!vm.currencyInfo||!vm.assetInfo">
           </div>
           <div class="label">
-            Seconds
+            <md-menu>
+              <a ng-click="$mdMenu.open($event)">
+                <md-tooltip>{{vm.expiresTooltip}}</md-tooltip>
+                {{vm.expiryUnitsOptions[vm.expiryUnits].label}}
+              </a>
+              <md-menu-content width="4">
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='minutes';vm.expiryUnitsValueChanged()">Minutes</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='hours';vm.expiryUnitsValueChanged()">Hours</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='days';vm.expiryUnitsValueChanged()">Days</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='weeks';vm.expiryUnitsValueChanged()">Weeks</md-button>
+                </md-menu-item>
+              </md-menu-content>
+            </md-menu>
           </div>
         </div>
         <div class="row">
@@ -118,7 +141,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
         </div>
         <div ng-show="vm.user.unlocked" class="row bottom-row">
           <div>
-            <md-button class="md-primary" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid">
+            <md-button class="md-primary" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid||!vm.expiryValid">
               BUY
             </md-button>
           </div>
@@ -128,7 +151,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
             </md-switch>
           </div>
           <div>
-            <md-button class="md-warn" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid">
+            <md-button class="md-warn" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid||!vm.expiryValid">
               SELL
             </md-button>
           </div>
@@ -137,7 +160,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
     </div>
   `
 })
-@Inject('$scope','$q','$mdToast','placeAskOrder','placeBidOrder','user')
+@Inject('$scope','$q','$mdToast','placeAskOrder','placeBidOrder','user','settings')
 class TraderQuickBuySellComponent {
 
   // inputs
@@ -148,30 +171,119 @@ class TraderQuickBuySellComponent {
 
   quantity: string = '0';
   price: string = '0';
-  expiry: string = '360000'
   total: string = null;
   fee: string = utils.formatQNT(HeatAPI.fee.standard,8); // fee in HEAT
   isTestnet: boolean;
+
+  EXPIRY_MIN = 3600;
+  EXPIRY_MAX = 3600 * 24 * 30;
+
+  expiryUnitsOptions = {
+    'minutes': {
+      label: 'Minutes',
+      min: Math.round(this.EXPIRY_MIN / 60),
+      max: Math.round(this.EXPIRY_MAX / 60),
+      delta: 60
+    },
+    'hours': {
+      label: 'Hours',
+      min: Math.round(this.EXPIRY_MIN / (60*60)),
+      max: Math.round(this.EXPIRY_MAX / (60*60)),
+      delta: 60*60
+    },
+    'days': {
+      label: 'Days',
+      min: 1,
+      max: 30,
+      delta: (60*60*24)
+    },
+    'weeks': {
+      label: 'Weeks',
+      min: 1,
+      max: 4,
+      delta: (60*60*24*7)
+    }
+  }
+  expiryUnits = 'days';
+  expiryUnitsValue = 30;
+  expiry: number;
+  expiryValid: boolean;
+  expiresTooltip: string = '';
+
+  // displays the toast in debounce wrapper
+  notifyUser: (text:string)=>void;
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
               private $mdToast: angular.material.IToastService,
               private placeAskOrder: PlaceAskOrderService,
               private placeBidOrder: PlaceBidOrderService,
-              public user: UserService) {
+              public user: UserService,
+              private settings: SettingsService) {
     $scope.$watch('vm.selectedOrder', () => {
       if (this.selectedOrder) {
         this.quantity = this.selectedOrder['runningTotal'];
         this.price = utils.formatQNT(this.selectedOrder.price, this.currencyInfo.decimals);
         this.total = this.selectedOrder['sum'];
+
+        if (this.selectedOrder.type == 'bid' && angular.isString(this.assetInfo.userBalance)) {
+          let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+          let balanceQNT = new Big(this.assetInfo.userBalance);
+          if (balanceQNT.lt(quantityQNT)) {
+            this.quantity = utils.formatQNT(this.assetInfo.userBalance, 8);
+            this.recalculate();
+          }
+        }
+        else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
+          let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+          let balanceQNT = new Big(this.currencyInfo.userBalance);
+          if (balanceQNT.lt(totalQNT)) {
+            this.total = utils.formatQNT(this.currencyInfo.userBalance, 8);
+            this.recalculateTotal();
+          }
+        }
       }
     });
     this.isTestnet = heat.isTestnet;
+
+    this.notifyUser = utils.debounce((text: string) => {
+      $mdToast.show($mdToast.simple().textContent(text).hideDelay(3000));
+    }, 500, true);
+    this.expiryUnitsValueChanged(true);
+  }
+
+  expiryUnitsValueChanged(suppressNotification?: boolean) {
+    this.expiry = parseInt(this.expiryUnitsValue+'') * this.expiryUnitsOptions[this.expiryUnits].delta;
+    this.expiryValid = false;
+    this.expiresTooltip = '';
+
+    if (this.expiry <= this.EXPIRY_MAX && this.expiry >= this.EXPIRY_MIN) {
+      this.expiryValid = true;
+      let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+      let date = new Date(Date.now() + (this.expiry*1000));
+      let dateFormatted = dateFormat(date, format);
+      this.expiresTooltip = `This order will expiry if (even partially) unfilled by ${dateFormatted}`;
+    }
+    else {
+      let min = this.expiryUnitsOptions[this.expiryUnits].min;
+      let max = this.expiryUnitsOptions[this.expiryUnits].max;
+      let units = this.expiryUnitsOptions[this.expiryUnits].label;
+      this.expiresTooltip = `Min expiry in ${units} is ${min}, max expiry in ${units} is ${max}`;
+      this.notifyUser(this.expiresTooltip);
+    }
   }
 
   quickAsk($event) {
+    if (angular.isString(this.assetInfo.userBalance)) {
+      let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+      let balanceQNT = new Big(this.assetInfo.userBalance);
+      if (balanceQNT.lt(quantityQNT)) {
+        this.notifyUser(`Insufficient ${this.assetInfo.symbol} balance`);
+        return;
+      }
+    }
     var dialog = this.placeAskOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
-                      utils.unformat(this.quantity),parseInt(this.expiry),true,$event);
+                      utils.unformat(this.quantity),parseInt(this.expiry+''),true,$event);
     if (this.oneClickOrders)
       dialog.send()
     else
@@ -179,8 +291,16 @@ class TraderQuickBuySellComponent {
   }
 
   quickBid($event) {
+    if (angular.isString(this.currencyInfo.userBalance)) {
+      let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+      let balanceQNT = new Big(this.currencyInfo.userBalance);
+      if (balanceQNT.lt(totalQNT)) {
+        this.notifyUser(`Insufficient ${this.currencyInfo.symbol} balance`);
+        return;
+      }
+    }
     var dialog = this.placeBidOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
-                      utils.unformat(this.quantity),parseInt(this.expiry),true,$event);
+                      utils.unformat(this.quantity),parseInt(this.expiry+''),true,$event);
     if (this.oneClickOrders)
       dialog.send()
     else
