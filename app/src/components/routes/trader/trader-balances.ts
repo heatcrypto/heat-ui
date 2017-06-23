@@ -26,7 +26,6 @@
   template: `
     <div layout="row" class="trader-component-title">Account&nbsp;
       <span flex></span>
-      <!--#{{vm.user.account}}-->
       <elipses-loading ng-show="vm.loading"></elipses-loading>
     </div>
     <md-list>
@@ -57,12 +56,17 @@ class TraderBalancesComponent {
               private user: UserService,
               private assetInfoService: AssetInfoService,
               private $q: angular.IQService) {
+    let ready = () => {
+      if (this.currencyInfo && this.assetInfo) {
+        /* subscribe to websocket balance changed events */
+        var refresh = utils.debounce((angular.bind(this, this.loadBalances)), 1*1000, false);
+        heat.subscriber.balanceChanged({account: user.account}, refresh, $scope);
 
-    /* subscribe to websocket balance changed events */
-    var refresh = utils.debounce((angular.bind(this, this.loadBalances)), 1*1000, false);
-    heat.subscriber.balanceChanged({account: user.account}, refresh, $scope);
-
-    this.loadBalances();
+        this.loadBalances();
+        unregister.forEach(fn=>{fn()});
+      }
+    }
+    let unregister = [$scope.$watch('vm.currencyInfo',ready),$scope.$watch('vm.assetInfo',ready)];
   }
 
   loadBalances() {
@@ -84,6 +88,11 @@ class TraderBalancesComponent {
           balance.name = '*';
           balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals).replace(/.00000000$/,'');;
           //balance.balance = utils.formatQNT(balance.balance, balance.decimals);
+
+          if (this.currencyInfo.id == balance.id)
+            this.currencyInfo.userBalance = balance.virtualBalance;
+          if (this.assetInfo.id == balance.id)
+            this.assetInfo.userBalance = balance.virtualBalance;
         });
         this.$q.all(promises).then(()=>{
           this.$scope.$evalAsync(() => {
