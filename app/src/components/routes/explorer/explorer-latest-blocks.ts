@@ -30,7 +30,7 @@
         <md-list-item class="header">
           <div class="truncate-col height-col left">Height</div>
           <div class="truncate-col block-col block left">Block</div>
-          <div class="truncate-col date-col left">Date</div>
+          <div class="truncate-col date-col left">Time</div>
           <div class="truncate-col generator-col block left">Generator</div>
           <div class="truncate-col transactions-col">Transactions</div>
           <div class="truncate-col amount-col">Amount</div>
