@@ -155,7 +155,7 @@ class TraderInfoAssetDescriptionComponent {
   }
 
   showDeposit($event, info: AssetInfo) {
-    dialogs.depositAsset($event, info.id);
+    dialogs.depositAsset($event, info);
   }
 
   showWithdraw($event, info: AssetInfo) {
