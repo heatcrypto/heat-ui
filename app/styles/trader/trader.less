@@ -21,8 +21,18 @@
  * SOFTWARE.
  * */
 
- trader {
-   md-sidenav {
+trader {
+  md-list-item {
+    &.currentlyNotValid * {
+      text-decoration: line-through;
+      color: @white04;
+    }
+    &.virtual * {
+      font-style: italic;
+      color: @white04;
+    }
+  }
+  md-sidenav {
      margin-right: 14px !important;
      background-color: transparent;
      .sidenav-container {
