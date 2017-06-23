@@ -43,7 +43,7 @@ declare var Big: any;
           md-is-locked-open="vm.marketsSidenavLockedOpen" md-is-open="vm.marketsSidenavOpen"
           md-disable-backdrop flex layout-fill>
         <div class="sidenav-container">
-          <trader-balances ng-if="vm.user.unlocked"></trader-balances>
+          <trader-balances currency-info="vm.currencyInfo" asset-info="vm.assetInfo" ng-if="vm.user.unlocked"></trader-balances>
           <trader-markets></trader-markets>
           <trader-trollbox></trader-trollbox>
         </div>
