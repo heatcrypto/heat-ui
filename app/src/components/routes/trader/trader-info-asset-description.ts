@@ -61,7 +61,7 @@
               {{vm.currencyLaunched}}
             </div>
           </div>
-          <div class="col-item" ng-if="vm.currencyInfo.id != '0' && vm.currencyInfo.certified && vm.user.unlocked">
+          <div class="col-item depositWithdraw" ng-if="vm.currencyInfo.id != '0' && vm.currencyInfo.certified && vm.user.unlocked">
             <md-button class="md-primary" ng-click="vm.showDeposit($event, vm.currencyInfo)">Deposit {{vm.currencyInfo.symbol}}</md-button>
             <md-button class="md-warn" ng-click="vm.showWithdraw($event, vm.currencyInfo)">Withdraw {{vm.currencyInfo.symbol}}</md-button>
           </div>
@@ -103,7 +103,7 @@
               {{vm.assetLaunched}}
             </div>
           </div>
-          <div class="col-item" ng-if="vm.assetInfo.id != '0' && vm.assetInfo.certified && vm.user.unlocked">
+          <div class="col-item depositWithdraw" ng-if="vm.assetInfo.id != '0' && vm.assetInfo.certified && vm.user.unlocked">
             <md-button class="md-primary" ng-click="vm.showDeposit($event, vm.assetInfo)">Deposit {{vm.assetInfo.symbol}}</md-button>
             <md-button class="md-warn" ng-click="vm.showWithdraw($event, vm.assetInfo)">Withdraw {{vm.assetInfo.symbol}}</md-button>
           </div>
