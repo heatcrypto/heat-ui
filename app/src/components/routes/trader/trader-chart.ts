@@ -238,7 +238,7 @@ class TraderChartComponent {
           this.filter === 'ONE_MINUTE') {
             tickFormat = '%H:%M:%S'
       } else {
-            tickFormat = "%Y-%m-%d"
+            tickFormat = "%m-%d"
       }
 
       this.chart.x = d3.scaleTime()
