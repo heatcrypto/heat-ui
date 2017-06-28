@@ -24,41 +24,6 @@ declare var saveAs: any;
 @RouteConfig('/login')
 @Component({
   selector: 'login',
-  styles: [`
-    login h2 {
-      font-size: 26px !important;
-    }
-    login .outer-container {
-      width: 100%;
-      max-width: 380px;
-    }
-    login .wallet {
-      width: 260px;
-      padding-top: 24px;
-      padding-bottom: 24px;
-    }
-    login .smalller-font {
-      font-size: 10px;
-    }
-    login a {
-      color: #9E9E9E !important;
-    }
-    login .compressed-input-container md-input-container {
-      margin-top: 5px;
-      margin-bottom: 5px;
-    }
-    login .clickable-icon {
-      cursor: pointer;
-      font-size: 18px;
-    }
-    login .account-preview {
-      color: #BDBDBD;
-    }
-    login textarea {
-      height: 60px !important;
-      min-height: 60px !important;
-    }
-  `],
   template: `
     <div layout="column" flex layout-align="start center">
       <div layout="column" layout-padding class="outer-container">
@@ -175,7 +140,7 @@ declare var saveAs: any;
               <md-button ng-if="vm.useExternalCaptcha" ng-click="vm.doChallenge()" class="md-raised md-primary" ng-disabled="vm.pageCreateRecaptchaResponse">Click here</md-button>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-primary md-raised" ng-click="vm.page='create'" aria-label="Back">Options</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='create'" aria-label="Back">Back</md-button>
               <md-button class="md-primary md-raised" ng-click="vm.createAccount();vm.page='create2'" ng-disabled="!vm.pageCreateRecaptchaResponse"
                 aria-label="Continue">Create Account</md-button>
             </div>
