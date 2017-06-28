@@ -38,7 +38,28 @@
           ng-disabled="vm.type=='transactions'"
           ng-href="#/explorer-results/transactions/{{vm.query}}">Transactions</md-button>
       </div>
-      <explorer-results-accounts query="vm.query" flex layout="column"></explorer-results-accounts>
+
+      <!-- ACCOUNTS -->
+      <div layout="column" flex ng-if="vm.type=='accounts'">
+        <explorer-results-accounts query="vm.query" flex layout="column"></explorer-results-accounts>
+      </div>
+
+      <!-- BLOCKS -->
+      <div layout="column" flex ng-if="vm.type=='blocks'">
+        <explorer-latest-blocks ng-if="vm.blockObject" layout="column" flex block-object="vm.blockObject"></explorer-latest-blocks>
+        <span ng-if="!vm.blockObject">
+          No blocks found with that height or id.
+        </span>
+      </div>
+
+      <!-- TRANSACTIONS -->
+      <div layout="column" flex ng-if="vm.type=='transactions'">
+        <virtual-repeat-transactions ng-if="vm.transactionObject" layout="column" flex transaction-object="vm.transactionObject"></virtual-repeat-transactions>
+        <span ng-if="!vm.transactionObject">
+          No transaction found with that id.
+        </span>
+      </div>
+
     </div>
   `
 })
@@ -47,7 +68,33 @@ class ExplorerResultsComponent {
   type: string; // @input
   query: string; // @input
 
+  blockObject: IHeatBlock;
+  transactionObject: IHeatTransaction;
+
   constructor(private $scope: angular.IScope,
               private heat: HeatService) {
+    if (this.type == 'blocks') {
+      heat.api.getBlock(this.query, true).then(block=>{
+        $scope.$evalAsync(()=>{
+          this.blockObject = block;
+        })
+      }, ()=>{
+        let height = parseInt(this.query);
+        if (!isNaN(height)) {
+          heat.api.getBlockAtHeight(height, true).then(block=>{
+            $scope.$evalAsync(()=>{
+              this.blockObject = block;
+            })
+          });
+        }
+      });
+    }
+    else if (this.type == 'transactions') {
+      heat.api.getTransaction(this.query).then(transaction=>{
+        $scope.$evalAsync(()=>{
+          this.transactionObject = transaction;
+        })
+      });
+    }
   }
 }
