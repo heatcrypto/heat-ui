@@ -23,62 +23,16 @@
 @RouteConfig('/server')
 @Component({
   selector: 'server',
-  styles: [`
-    server .button-row {
-      padding-left: 0px;
-      padding-right: 0px;
-    }
-    server .start-stop {
-      margin-left: 0px;
-      margin-right: 0px;
-    }
-    server md-switch {
-      padding-left: 8px !important;
-    }
-    server .console {
-      background-color: #202020;
-      border: 1px solid #BDBDBD;
-      padding-right: 0px !important;
-      padding-top: 0px !important;
-      padding-bottom: 0px !important;
-    }
-    server .console pre {
-      color: #FF8866;
-      height: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding-top: 0px;
-      padding-bottom: 0px;
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-    server .console pre .date {
-      color: #EEEEEE;
-    }
-    server .console pre .severity {
-      font-weight: bold;
-    }
-    server .console pre .message {
-      color: #FFF59D;
-    }
-    server .mining-stats * {
-      padding-right: 8px;
-    }
-    server .mining-stats .mining-stats-val {
-      font-weight: bold;
-    }
-  `],
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <div layout="row" class="button-row">
-        <md-button class="start-stop md-raised" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
-        <md-button class="start-stop md-raised md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
+        <md-button class="start-stop" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
+        <md-button class="start-stop md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
           <md-tooltip md-direction="top">
             Connect client API to remotehost or to your local machine
           </md-tooltip>
-          Connect to {{ vm.connectedToLocalhost ? 'localhost' : 'remotehost' }}
+          Client API connected to {{ vm.connectedToLocalhost ? 'localhost' : 'remotehost' }}
         </md-switch>
         <span flex></span>
         <div layout="row" layout-align="center center" class="mining-stats" ng-show="vm.isMining">
@@ -89,9 +43,9 @@
           <span>Hittime : </span>
           <span class="mining-stats-val">{{vm.miningHittime}}</span>
         </div>
-        <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-raised" ng-click="vm.startMining()">Start Mining</md-button>
-        <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-raised md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
-        <md-button ng-show="!vm.user.unlocked" class="start-stop md-raised md-primary" href="#/login">Sign in to start mining</md-button>
+        <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
+        <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
+        <a ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
       </div>
       <div layout="column" flex class="console" layout-fill>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column"
@@ -138,8 +92,15 @@ class ServerComponent {
               private user: UserService,
               private settings: SettingsService) {
 
-    heat.subscriber.blockPushed({generator:user.account}, ()=>{this.updateMiningInfo()});
-    heat.subscriber.blockPopped({generator:user.account}, ()=>{this.updateMiningInfo()});
+    if (user.unlocked) {
+      heat.subscriber.blockPushed({generator:user.account}, ()=>{this.updateMiningInfo()});
+      heat.subscriber.blockPopped({generator:user.account}, ()=>{this.updateMiningInfo()});
+    }
+    else {
+      let listener = () => { this.updateMiningInfo() };
+      user.on(UserService.EVENT_UNLOCKED, listener);
+      $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
+    }
 
     this.hostLocal  = this.settings.get(SettingsService.HEAT_HOST_LOCAL);
     this.hostRemote = this.settings.get(SettingsService.HEAT_HOST_REMOTE);
@@ -233,22 +194,24 @@ class ServerComponent {
   }
 
   updateMiningInfo() {
-    this.heat.api.getMiningInfo(this.user.secretPhrase).then((info)=> {
-      this.$scope.$evalAsync(() => {
-        if (info[0]) {
-          this.isMining = true;
-          this.miningRemaining = info[0].remaining;
-          this.miningDeadline = info[0].deadline;
-          this.miningHittime = info[0].hitTime;
-        }
-        else {
+    if (this.user.unlocked) {
+      this.heat.api.getMiningInfo(this.user.secretPhrase).then((info)=> {
+        this.$scope.$evalAsync(() => {
+          if (info[0]) {
+            this.isMining = true;
+            this.miningRemaining = info[0].remaining;
+            this.miningDeadline = info[0].deadline;
+            this.miningHittime = info[0].hitTime;
+          }
+          else {
+            this.isMining = false;
+          }
+        })
+      }, () => {
+        this.$scope.$evalAsync(() => {
           this.isMining = false;
-        }
-      })
-    }, () => {
-      this.$scope.$evalAsync(() => {
-        this.isMining = false;
+        });
       });
-    });
+    }
   }
 }
