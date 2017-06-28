@@ -1,4 +1,4 @@
-![Heat Ledger logo](http://i.imgur.com/vJbM2XS.png "Heat Ledger logo")
+![Heat Ledger logo](http://i.imgur.com/rvQ8XR4.png "Heat Ledger logo")
 
 # Heat Ledger Client Framework
 In this `README` you will find step by step instructions to get up and running developing **heat-ui** applications.
@@ -95,23 +95,6 @@ npm init
 ```
 
 The initial installation of all dependencies could take a while, several minutes.
-
-### Install Type Definitions
-
-The nice thing with TypeScript is of course its strong typing, which gets even better when we can include type definitions for non-TypeScript libraries.
-Through type definitions you get full code completion and inspection for all external libraries we use (Angular, Angular Material, etc..)
-
-To install the required type definitions
-
-```
-tsd install
-```
-
-To install new definitions use this command.
-
-```
-tsd install angular-scroll --save
-```
 
 ### Start the development server
 
