@@ -279,9 +279,6 @@ declare var saveAs: any;
         </div>
       </div>
     </div>
-    <div layout="row">
-      <news-button layout="column"></news-button>
-    </div>
   `
 })
 @Inject('$scope','$q','user','$location','heat','localKeyStore',

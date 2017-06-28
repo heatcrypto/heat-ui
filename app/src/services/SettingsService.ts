@@ -47,7 +47,6 @@ class SettingsService {
   public static DICE_WORD_FOLDER = 'settings.dice_word_folder';
   public static DICE_WORD_SUPPORTED_LANG = 'settings.dice_word_supported_lang';
   public static TRANSACTION_PROCESSING_VISUALIZATION = 'settings.transaction_processing_visualization';
-  public static NEWS_URL = 'settings.news_url';
   public static CAPTCHA_SITE_KEY = 'settings.captcha_site_key';
   public static CAPTCHA_POPUP = 'settings.captcha_popup';
 
@@ -120,7 +119,6 @@ class SettingsService {
     this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '14439304480879065693';
 
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
-    this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
 
