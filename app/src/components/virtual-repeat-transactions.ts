@@ -80,7 +80,7 @@ class VirtualRepeatTransactionsMessage {
 
 @Component({
   selector: 'virtualRepeatTransactions',
-  inputs: ['account','block','personalize'],
+  inputs: ['account','block','personalize','transactionObject'],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Latest Transactions
@@ -88,7 +88,10 @@ class VirtualRepeatTransactionsMessage {
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
           <!-- HEIGHT -->
-          <div class="truncate-col height-col left">Height</div>
+          <div class="truncate-col height-col left" ng-if="!vm.personalize">Height</div>
+
+          <!-- ID -->
+          <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">Id</div>
 
           <!-- DATE -->
           <div class="truncate-col date-col left">Time</div>
@@ -108,14 +111,22 @@ class VirtualRepeatTransactionsMessage {
           <!-- INFO -->
           <div class="truncate-col info-col left" flex>Info</div>
 
+          <!-- JSON -->
+          <div class="truncate-col json-col"></div>
+
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
 
             <!-- HEIGHT -->
-            <div class="truncate-col height-col left">
+            <div class="truncate-col height-col left" ng-if="!vm.personalize">
               <elipses-loading ng-show="item.height==2147483647"></elipses-loading>
               <span ng-show="item.height!=2147483647">{{item.height}}</span>
+            </div>
+
+            <!-- ID -->
+            <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
+              {{item.transaction}}
             </div>
 
             <!-- DATE -->
@@ -149,6 +160,13 @@ class VirtualRepeatTransactionsMessage {
               <virtual-repeat-transactions-message ng-if="item.messageText" message-text="item.messageText" flex></virtual-repeat-transactions-message>
             </div>
 
+            <!-- JSON -->
+            <div class="truncate-col json-col">
+              <a ng-click="vm.jsonDetails($event, item)">
+                <md-icon md-font-library="material-icons">code</md-icon>
+              </a>
+            </div>
+
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -161,6 +179,7 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
   account: string; // @input
   block: string; // @input
   personalize: boolean; // @input
+  transactionObject: IHeatTransaction; // @input
 
   renderer: TransactionRenderer = new TransactionRenderer(this);
 
@@ -173,7 +192,7 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
-      this.transactionsProviderFactory.createProvider(this.account, this.block),
+      this.transactionsProviderFactory.createProvider(this.account, this.block, this.transactionObject),
       /* decorator function */
       (transaction: any|IHeatTransaction) => {
         let date = utils.timestampToDate(transaction.timestamp);
@@ -230,6 +249,10 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
         this.provider.destroy();
       }
     });
+  }
+
+  jsonDetails($event, item) {
+    dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
   }
 
   onSelect(selectedTransaction) {}

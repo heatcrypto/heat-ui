@@ -26,8 +26,8 @@
 class TransactionsProviderFactory  {
   constructor(private heat: HeatService, private $q: angular.IQService) {}
 
-  public createProvider(account: string, block: string): IPaginatedDataProvider {
-    return new TransactionsProvider(this.heat, this.$q, account, block);
+  public createProvider(account: string, block: string, transactionObject: IHeatTransaction): IPaginatedDataProvider {
+    return new TransactionsProvider(this.heat, this.$q, account, block, transactionObject);
   }
 }
 
@@ -35,7 +35,8 @@ class TransactionsProvider implements IPaginatedDataProvider {
   constructor(private heat: HeatService,
               private $q: angular.IQService,
               private account: string,
-              private block: string) {}
+              private block: string,
+              private transactionObject: IHeatTransaction) {}
 
   /* Be notified this provider got destroyed */
   public destroy() {}
@@ -48,6 +49,11 @@ class TransactionsProvider implements IPaginatedDataProvider {
     else if (angular.isString(this.block)) {
       return this.heat.api.getTransactionsForBlockCount(this.block);
     }
+    else if (angular.isDefined(this.transactionObject)) {
+      let deferred = this.$q.defer();
+      deferred.resolve(1);
+      return deferred.promise;
+    }
     return this.heat.api.getTransactionsForAllCount();
   }
 
@@ -58,6 +64,11 @@ class TransactionsProvider implements IPaginatedDataProvider {
     }
     else if (angular.isString(this.block)) {
       return this.heat.api.getTransactionsForBlock(this.block, firstIndex, lastIndex);
+    }
+    else if (angular.isDefined(this.transactionObject)) {
+      let deferred = this.$q.defer();
+      deferred.resolve([this.transactionObject]);
+      return deferred.promise;
     }
     return this.heat.api.getTransactionsForAll(firstIndex, lastIndex);
   }
