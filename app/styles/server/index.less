@@ -1,0 +1,81 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2017 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+@import '../colors';
+
+server {
+  .button-row {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+  .start-stop {
+    margin-left: 0px;
+    margin-right: 0px;
+  }
+  md-switch {
+    padding-left: 8px !important;
+  }
+  .console {
+    background-color: #202020;
+    border: 1px solid #BDBDBD;
+    padding-right: 0px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    pre {
+      color: #FF8866;
+      height: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-top: 0px;
+      padding-bottom: 0px;
+      margin-top: 0px;
+      margin-bottom: 0px;
+      .date {
+        color: #EEEEEE;
+      }
+      .severity {
+        font-weight: bold;
+      }
+      .message {
+        color: #FFF59D;
+      }
+    }
+  }
+  .mining-stats {
+    * {
+      padding-right: 8px;
+    }
+    .mining-stats-val {
+      font-weight: bold;
+    }
+  }
+  a {
+    &.start-stop {
+      margin-top: 20px;
+      color: @link-yellow;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  }
+}

@@ -23,38 +23,23 @@
 @Component({
   selector: 'traderBalances',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-  trader-balances .symbol-col {
-    text-align:left;
-  }
-  trader-balances .balance-col {
-    width: 100px;
-  }
-  trader-balances {
-    height: 440px;
-  }
-  `],
   template: `
-    <div layout="column" layout-fill>
-      <div layout="row" class="trader-component-title">Account&nbsp;
-        <span flex></span>
-        #{{vm.user.account}}
-        <elipses-loading ng-show="vm.loading"></elipses-loading>
-      </div>
-      <md-list flex layout-fill layout="column">
-        <md-list-item>
-          <div class="truncate-col symbol-col">Asset</div>
-          <div class="truncate-col balance-col right-align" flex></div>
-        </md-list-item>
-        <md-virtual-repeat-container flex layout-fill layout="column"
-            virtual-repeat-flex-helper ng-if="vm.balances.length>0">
-          <md-list-item md-virtual-repeat="item in vm.balances">
-            <div class="truncate-col symbol-col" ng-class="{certified:item.certified}">{{item.symbol}}</div>
-            <div class="truncate-col balance-col right-align" ng-class="{certified:item.certified}" flex>{{item.balance}}</div>
-          </md-list-item>
-        </md-virtual-repeat-container>
-      </md-list>
+    <div layout="row" class="trader-component-title">Account&nbsp;
+      <span flex></span>
+      <elipses-loading ng-show="vm.loading"></elipses-loading>
     </div>
+    <md-list>
+      <md-list-item class="header">
+        <div class="truncate-col symbol-col">Asset</div>
+        <div class="truncate-col balance-col right-align" flex>Balance</div>
+      </md-list-item>
+      <md-virtual-repeat-container  flex layout-fill layout="column" virtual-repeat-flex-helper  class="content">
+        <md-list-item md-virtual-repeat="item in vm.balances">
+          <div class="truncate-col symbol-col" ng-class="{certified:item.certified}">{{item.symbol}}</div>
+          <div class="truncate-col balance-col right-align" ng-class="{certified:item.certified}" flex>{{item.balance}}</div>
+        </md-list-item>
+      </md-virtual-repeat-container>
+    </md-list>
   `
 })
 @Inject('$scope','heat','user','assetInfo','$q')
@@ -71,12 +56,17 @@ class TraderBalancesComponent {
               private user: UserService,
               private assetInfoService: AssetInfoService,
               private $q: angular.IQService) {
+    let ready = () => {
+      if (this.currencyInfo && this.assetInfo) {
+        /* subscribe to websocket balance changed events */
+        var refresh = utils.debounce((angular.bind(this, this.loadBalances)), 1*1000, false);
+        heat.subscriber.balanceChanged({account: user.account}, refresh, $scope);
 
-    /* subscribe to websocket balance changed events */
-    var refresh = utils.debounce((angular.bind(this, this.loadBalances)), 1*1000, false);
-    heat.subscriber.balanceChanged({account: user.account}, refresh, $scope);
-
-    this.loadBalances();
+        this.loadBalances();
+        unregister.forEach(fn=>{fn()});
+      }
+    }
+    let unregister = [$scope.$watch('vm.currencyInfo',ready),$scope.$watch('vm.assetInfo',ready)];
   }
 
   loadBalances() {
@@ -96,8 +86,13 @@ class TraderBalancesComponent {
           );
           balance.symbol = '*';
           balance.name = '*';
-          balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals);
+          balance.balance = utils.formatQNT(balance.virtualBalance, balance.decimals).replace(/.00000000$/,'');;
           //balance.balance = utils.formatQNT(balance.balance, balance.decimals);
+
+          if (this.currencyInfo.id == balance.id)
+            this.currencyInfo.userBalance = balance.virtualBalance;
+          if (this.assetInfo.id == balance.id)
+            this.assetInfo.userBalance = balance.virtualBalance;
         });
         this.$q.all(promises).then(()=>{
           this.$scope.$evalAsync(() => {

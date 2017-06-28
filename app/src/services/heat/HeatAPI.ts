@@ -42,12 +42,16 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get('/blockchain/status');
   }
 
-  getBlocks(from: number, to: number, includeTransactions:boolean = false):angular.IPromise<Array<IHeatBlock>> {
-    return this.heat.get(`/blockchain/blocks/${from}/${to}/${includeTransactions}`);
+  getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
+    return this.heat.get(`/blockchain/blocks/${from}/${to}/null`); // @see api, null means no transaction data at all
   }
 
   getBlock(numericId: string, includeTransactions:boolean = true):angular.IPromise<IHeatBlock> {
     return this.heat.get(`/blockchain/block/${numericId}/${includeTransactions}`);
+  }
+
+  getBlockAtHeight(height: number, includeTransactions:boolean ):angular.IPromise<IHeatBlock> {
+    return this.heat.get(`/blockchain/block/height/${height}/${includeTransactions}`);
   }
 
   getPublicKey(account: string): angular.IPromise<string> {
@@ -242,6 +246,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/account/find/${numericId}`);
   }
 
+  getTransaction(transaction: string): angular.IPromise<IHeatTransaction> {
+    return this.heat.get(`/blockchain/transaction/${transaction}`);
+  }
+
   getTransactionsForAccount(account: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
     return this.heat.get(`/blockchain/transactions/account/${account}/${from}/${to}`);
   }
@@ -258,11 +266,27 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/transactions/block/count/${block}`,"count");
   }
 
+  getTransactionsFromTo(sender:string, recipient:string, from:number, to:number): angular.IPromise<Array<IHeatTransaction>> {
+    return this.heat.get(`/blockchain/transactions/list/${sender}/${recipient}/${from}/${to}`);
+  }
+
   getTransactionsForAll(from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
     return this.heat.get(`/blockchain/transactions/all/${from}/${to}`);
   }
 
   getTransactionsForAllCount(): angular.IPromise<number> {
     return this.heat.get("/blockchain/transactions/all/count","count");
+  }
+
+  searchAccounts(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.get(`/search/accounts/${query}/${from}/${to}`);
+  }
+
+  searchAccountsCount(query: string): angular.IPromise<number> {
+    return this.heat.get(`/search/accounts/count/${query}`, "count");
+  }
+
+  searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.get(`/account/search/0/${query}/${from}/${to}`);
   }
 }

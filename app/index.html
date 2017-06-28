@@ -1,19 +1,15 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" ng-controller="AppController as app" class="loading hide-live-agent">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
     <meta http-equiv="Last-Modified" content="%BUILD_OVERRIDE_LAST_MODIFIED%">
-    <title>HEAT</title>
+    <title>HEAT %BUILD_OVERRIDE_VERSION%</title>
     <style>
       html, body { height: 100%; }
       md-input-container .md-errors-spacer { min-height: 0; }
-      *:not(md-icon) { font-size: 12px !important; }
       md-sidenav { max-width: 280px !important; }
-      md-toolbar.main-toolbar { min-height: 34px !important; }
       md-toolbar.main-toolbar .md-toolbar-tools { height: inherit !important; }
-      md-input-container { margin-top: 0px !important; margin-bottom: 8px !important; }
-      md-dialog h2 { font-weight: bold !important; font-size: 14px !important; }
     </style>
     <!-- build:inlinecss -->
     <link rel='stylesheet' href='loading/loading.css'>
@@ -30,16 +26,17 @@
           <circle class="path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
         </svg>
       </div>
-      <div id="application-loading-text-container">HEAT</div>
+      <div id="application-loading-text-container">Loading Heat Wallet&nbsp;<elipses-loading></elipses-loading></div>
     </div>
 
-    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto:400,500,700,400italic'>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans:400,500,700">
+    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto'>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <!-- build:css material.css -->
     <link rel="stylesheet" href="../node_modules/angular-material/angular-material.css">
-    <link rel="stylesheet" href="../node_modules/angular-material-data-table/dist/md-data-table.css">
-    <link rel="stylesheet" href="../node_modules/jsonformatter/dist/json-formatter.min.css">
     <!-- endbuild -->
+    <!-- custom css -->
+    <link rel="stylesheet" href="styles/index.css">
 
     <div layout="column" flex layout-fill class="application-content">
       <div layout="row" flex  layout-fill>
@@ -76,7 +73,6 @@
   <script src="../node_modules/pako/dist/pako.min.js" defer></script>
   <script src="../node_modules/dateformat/lib/dateformat.js" defer></script>
   <script src="../node_modules/filesaver.js/FileSaver.js" defer></script>
-  <script src="../node_modules/angular-material-data-table/dist/md-data-table.js" defer></script>
   <script src="../node_modules/long/dist/long.js" defer></script>
   <script src="../node_modules/bytebuffer/dist/bytebuffer.js" defer></script>
   <script src="../node_modules/big.js/big.min.js" defer></script>

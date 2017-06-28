@@ -1,3 +1,4 @@
+/// <reference path='loader.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.
@@ -20,15 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider',
-                      ($mdThemingProvider, noCAPTCHAProvider) => {
+heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider', /*'$locationProvider',*/
+                      ($mdThemingProvider, noCAPTCHAProvider /*, $locationProvider*/) => {
 
   $mdThemingProvider.theme('default')
-                    .primaryPalette('deep-orange')
-                    .accentPalette('grey');
 
   noCAPTCHAProvider.setSiteKey("6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc");
   noCAPTCHAProvider.setTheme('light');
+
+  // $locationProvider.hashPrefix('');
+
 }]);
 
 /*

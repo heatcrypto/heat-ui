@@ -22,18 +22,28 @@
  * */
 @Component({
   selector: 'explorerSearch',
+  inputs: ['type','query'],
   template: `
     <div layout="row" flex layout-fill>
-      <md-input-container class="md-block" flex>
-        <label>Search for account id, block id, block height and transaction id [UNDER CONSTRUCTION]</label>
-        <input name="search-text" ng-model="vm.searchText" disabled>
+      <md-input-container flex>
+        <label>Search for account id, account public names, transaction id, block id or block height</label>
+        <input name="search-text" ng-model="vm.query" ng-keypress="vm.onKeyPress($event)">
       </md-input-container>
     </div>
   `
 })
-@Inject('$scope','heat')
+@Inject('$scope','$location')
 class ExplorerSearchComponent {
-  constructor(private $scope: angular.IScope,
-              private heat: HeatService) {
+  type: string; // @input
+  query: string; // @input
+
+  constructor(private $scope: angular.IScope, private $location: angular.ILocationService) {}
+
+  onKeyPress($event) {
+    if ($event.keyCode == 13) {
+      let type = this.type || 'accounts';
+      let query = this.query || '';
+      this.$location.path(`/explorer-results/${type}/${query}`);
+    }
   }
 }

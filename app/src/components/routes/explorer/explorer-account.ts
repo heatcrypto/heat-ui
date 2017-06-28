@@ -20,74 +20,94 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explore-account/:account')
+@RouteConfig('/explorer-account/:account')
 @Component({
-  selector: 'exploreAccount',
+  selector: 'explorerAccount',
   inputs: ['account'],
   styles: [`
-    explore-account h3 {
-      font-size: 24px !important;
-      font-weight: bold;
-      padding-bottom: 0px;
-      margin-bottom: 0px;
-    }
-    explore-account h3.below {
-      padding-top: 0px;
-      margin-top: 6px;
-    }
-    explore-account .header {
-      font-weight: bold !important;
-      color: #616161 !important;
-    }
-    explore-account .truncate-col {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    explore-account md-list-item {
-      min-height: 25px;
-      height: 25px;
-      border-bottom: 1px solid #ddd;
-    }
-    explore-account md-list-item .md-button {
-      min-height: 24px;
-    }
-    explore-account .right-align {
-      text-align: right;
-    }
-    explore-account md-list-item.active {
-      background-color: #B2DFDB;
+    explorer-account .scrollable {
+      overflow-y: scroll;
+      height: 90px;
     }
   `],
   template: `
-    <div layout="column" flex layout-padding layout-fill>
-      <explorer-search layout="column"></explorer-search>
-      <h3>Account {{vm.account}}</h3>
-      <div layout="column" flex="30">
-        <pre>
-Account:               {{vm.account}}
-Account Name:          {{vm.accountName}}
-Email:                 {{vm.email}}
-First seen:            {{vm.firstSee}}
-Lease:                 {{vm.lease}}
-Lease blocks remain:   {{vm.leaseBlocksRemain}}
-Forged:	               {{vm.forged}}
-Effective bal:         {{vm.effectiveBalance}} HEAT
-Balance (unconfirmed): {{vm.balanceUnconfirmed}} HEAT
-Balance (confirmed):   {{vm.balanceConfirmed}} HEAT
-Leased to:             {{vm.leasedTo}}
-        </pre>
+    <div layout="column" flex layout-fill layout-padding >
+      <explorer-search layout="column" type="''" query="''"></explorer-search>
+      <div layout="row" class="explorer-detail">
+        <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              Account:
+            </div>
+            <div class="value">
+              <a href="#/explorer-account/{{vm.account}}">{{vm.accountName||vm.account}}</a>
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Numeric account id:
+            </div>
+            <div class="value">
+              {{vm.account}}
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Balance:
+            </div>
+            <div class="value">
+              {{vm.balanceUnconfirmed}} HEAT
+            </div>
+          </div>
+        </div>
+        <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              Effective bal:
+            </div>
+            <div class="value">
+              {{vm.effectiveBalance}} HEAT
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Leased to:
+            </div>
+            <div class="value">
+              <span ng-if="!vm.leasedToAccount">None</span>
+              <a ng-if="vm.leasedToAccount" href="#/explorer-account/{{vm.leasedToAccount}}">{{vm.leasedToAccountName||vm.leasedToAccount}}</a>
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Lease blocks remain:
+            </div>
+            <div class="value">
+              {{vm.leaseBlocksRemain}}
+            </div>
+          </div>
+        </div>
+        <div layout="column" flex>
+          <div class="col-item" flex layout-fill>
+            <div class="title">
+              Assets:
+            </div>
+            <div class="scrollable">
+              <div class="value" ng-repeat="(key,value) in vm.assetBalances">
+                {{value.balance}} {{value.symbol}} <i>{{value.name}}</i>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <h3 class="below">Latest Transactions</h3>
-      <explorer-transactions layout="column" flex="60" account="vm.account"></explorer-transactions>
+      <virtual-repeat-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
     </div>
   `
 })
-@Inject('$scope','heat')
+@Inject('$scope','heat','assetInfo')
 class ExploreAccountComponent {
   account: string; // @input
 
-  // displayed data - unclear if all make sense.
   accountName: string;
   email: string;
   publicKey: string;
@@ -99,11 +119,12 @@ class ExploreAccountComponent {
   balanceUnconfirmed: string;
   balanceConfirmed: string;
   leasedTo: string;
+  accountBalances: IStringHashMap<{balance:string, symbol:string, name:string}> = {};
 
   constructor(private $scope: angular.IScope,
-              public heat: HeatService) {
+              private heat: HeatService,
+              private assetInfo: AssetInfoService) {
     this.refresh();
-
     heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
       this.refresh();
     }, $scope);
@@ -129,12 +150,40 @@ class ExploreAccountComponent {
     });
 
     this.heat.api.getAccountByNumericId(this.account).then((account)=>{
-      console.log('Get acount '+this.account, account);
       this.$scope.$evalAsync(()=>{
+        this.accountName = account.publicName;
         this.balanceConfirmed = utils.formatQNT(account.balance, 8);
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
+        this.genesisAccountNameOverride();
       });
     });
+
+    this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
+      this.$scope.$evalAsync(()=>{
+        this.accountBalances = {};
+        balances.forEach(balance=>{
+          if (balance.id != "0") {
+            this.accountBalances[balance.id] = {
+              balance: utils.formatQNT(balance.virtualBalance, 8),
+              symbol: '*',
+              name: '*'
+            };
+            this.assetInfo.getInfo(balance.id).then(info=>{
+              this.$scope.$evalAsync(()=>{
+                this.accountBalances[balance.id].symbol = info.symbol;
+                this.accountBalances[balance.id].name = info.name;
+              })
+            })
+          }
+        });
+      });
+    });
+  }
+
+  genesisAccountNameOverride() {
+    if (this.account == "8150091319858025343") {
+      this.accountName = "HEAT blockchain Genesis account";
+    }
   }
 }

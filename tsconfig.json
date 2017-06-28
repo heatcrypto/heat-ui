@@ -1,15 +1,13 @@
 {
-  "version": "1.7.5",
+  "version": "2.2.2",
   "compilerOptions": {
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "noEmitHelpers": true,
     "target": "es5",
+    "lib" : ["es2015", "es2015.iterable", "dom"],
     "removeComments": true,
     "sourceMap": true
   },
-  "exclude": [
-    "node_modules"
-  ],
   "compileOnSave": false
 }

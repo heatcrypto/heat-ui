@@ -129,7 +129,7 @@ class SecretGeneratorService {
     this.$http({
       url: this.resolveURL(file),
       method: 'GET'
-    }).success((data: string) => {
+    }).then((data: string) => {
 
       /* Make sure the file contents match the expected hash */
       var hash = heat.crypto.calculateStringHash(data);
@@ -156,7 +156,7 @@ class SecretGeneratorService {
       }
 
       deferred.resolve(words);
-    }).error(deferred.reject);
+    }, deferred.reject);
     return deferred.promise;
   }
 

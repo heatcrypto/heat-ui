@@ -24,32 +24,11 @@
 @Component({
   selector: 'traderTradeHistory',
   inputs: ['currencyInfo','assetInfo','oneClickOrders'],
-  styles: [`
-    trader-trade-history label {
-      cursor: pointer;
-    }
-    trader-trade-history .type-col {
-      width: 45px;
-    }
-    trader-trade-history .time-col {
-      width: 60px;
-    }
-    trader-trade-history .price-col {
-      width: 100px;
-    }
-    trader-trade-history .quantity-col {
-      width: 100px;
-    }
-    trader-trade-history .total-col {
-      width: 100px;
-      text-align: right;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Past trades&nbsp;
         <span flex></span>
-        <span layout="row" ng-if="vm.user.unlocked">
+        <span layout="row" ng-if="vm.user.unlocked" class="selector">
           <label>
             <input type="radio" name="trader-show-trades" value="all" ng-model="vm.showTheseTrades" ng-change="vm.updateView()">
             <i>Show all trades</i>
@@ -62,7 +41,7 @@
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
-        <md-list-item>
+        <md-list-item class="header">
           <div class="truncate-col type-col">Type</div>
           <div class="truncate-col time-col" flex>Time</div>
           <div class="truncate-col price-col">Price</div>
@@ -82,7 +61,7 @@
     </div>
   `
 })
-@Inject('$scope','tradesProviderFactory','$q','user','settings','heat')
+@Inject('$scope', '$window', 'tradesProviderFactory','$q','user','settings','heat')
 class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
   /* @inputs */
@@ -93,6 +72,7 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
   showTheseTrades: string = "all";
 
   constructor(protected $scope: angular.IScope,
+              private $window: ng.IWindowService,
               private tradesProviderFactory: TradesProviderFactory,
               $q: angular.IQService,
               private user: UserService,
@@ -122,6 +102,8 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
         /* reload on block popped */
         heat.subscriber.blockPopped({}, refresh, $scope);
+
+        angular.element($window).bind('resize', () => this.onResize());
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
@@ -134,7 +116,10 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
   }
 
   createProvider() {
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    if (this.$window.innerWidth < 870) {
+      format = this.settings.get(SettingsService.TIMEFORMAT_DEFAULT);
+    }
     var account = this.showTheseTrades == 'all' ? null : this.user.account;
     this.initializeVirtualRepeat(
       this.tradesProviderFactory.createProvider(this.currencyInfo.id, this.assetInfo.id, account),
@@ -143,7 +128,7 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
       (trade: IHeatTrade|any) => {
         var date = utils.timestampToDate(trade.timestamp);
         trade.time = dateFormat(date, format);
-        trade.type = trade.isBuy ? 'Buy' : 'Ask';
+        trade.type = trade.isBuy ? 'Buy' : 'Sell';
         trade.priceDisplay = utils.formatQNT(trade.price, this.currencyInfo.decimals);
         trade.quantityDisplay = utils.formatQNT(trade.quantity, this.assetInfo.decimals);
         var totalQNT = utils.calculateTotalOrderPriceQNT(trade.quantity, trade.price);
@@ -157,8 +142,10 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
   updateView() {
     if (this.currencyInfo && this.assetInfo) {
-      console.log("update view");
       this.createProvider();
     }
+  }
+  onResize() {
+    this.updateView()
   }
 }

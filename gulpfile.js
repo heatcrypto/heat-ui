@@ -23,12 +23,15 @@
 
 require('es6-promise').polyfill(); /* usemin requires this */
 var gulp = require('gulp');
+var less = require('gulp-less');
+var lesshint = require('gulp-lesshint');
+var path = require('path');
+var plumber = require('gulp-plumber');
 
 var PATHS = {
   src: [
-    'app/src/loader.ts',
-    'app/src/**/*.ts',
-    'tools/typings/**/*.ts'
+    'app/src/*.ts',
+    'app/src/**/*.ts'
   ],
   assets: [
     'app/assets/**/*.*'
@@ -100,8 +103,8 @@ gulp.task('ts2js', function () {
 
   gulp.src(PATHS.src)
     .pipe(sourcemaps.init())
-    .pipe(typescript(extend(tscConfig.compilerOptions, { sortOutput: true })))
-    .pipe(concat('heat-ui.js'))
+    .pipe(typescript(extend(tscConfig.compilerOptions, { outFile: 'heat-ui.js' })))
+    // .pipe(concat('heat-ui.js'))
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
@@ -119,7 +122,16 @@ gulp.task('copy:dist', ['tshelpers','libjs'], function () {
     .pipe(gulp.dest('dist'));
 });
 
-gulp.task('play', ['ts2js','copy:dist'], function () {
+gulp.task('less', function () {
+  return gulp.src('./app/styles/index.less')
+    .pipe(plumber())
+      .pipe(less({
+        paths: [path.join(__dirname, 'less', 'includes')]
+      }))
+      .pipe(gulp.dest('./dist/styles/'));
+});
+
+gulp.task('play', ['ts2js','copy:dist', 'less'], function () {
   var http = require('http');
   var connect = require('connect');
   var serveStatic = require('serve-static');
@@ -128,7 +140,7 @@ gulp.task('play', ['ts2js','copy:dist'], function () {
 
   var port = 9001, app;
 
-  gulp.watch(PATHS.src.concat(PATHS.html), ['ts2js', 'copy:dist']);
+  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['ts2js', 'copy:dist', 'less']);
 
   app = connect().use(serveStatic(__dirname));
   http.createServer(app).listen(port, function () {
@@ -136,7 +148,7 @@ gulp.task('play', ['ts2js','copy:dist'], function () {
   });
 });
 
-gulp.task('build', ['clean','ts2js','usemin','copy:dist'], function () {
+gulp.task('build', ['clean','ts2js','usemin','copy:dist','less'], function () {
   var replace = require('gulp-replace');
   return gulp.src('dist/index.html')
     .pipe(replace('<script src="node_modules-', '<script defer src="node_modules-'))
@@ -149,6 +161,15 @@ gulp.task('electron', function () {
     .pipe(gulp.dest('dist/electron'));
   gulp.src(['app/node_modules/**/*'])
     .pipe(gulp.dest('dist/node_modules'));
+});
+
+gulp.task('lint', function () {
+  return gulp.src('app/styles/**/*.less')
+    .pipe(lesshint({
+        // Options
+    }))
+    .pipe(lesshint.reporter())
+    .pipe(lesshint.failOnError());
 });
 
 gulp.task('default', ['play']);

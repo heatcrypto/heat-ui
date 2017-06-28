@@ -1,0 +1,122 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+@import '../colors';
+@import '../widget';
+
+trader-quick-buy-sell {
+  .widget();
+  max-width: 300px;
+  border-radius: 4px;
+  a {
+    color: @link-yellow;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .expires-invalid {
+    font-weight: bold !important;
+    color: @heatOrange !important;
+  }
+  & > div {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    form {
+      font-size: 12px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-left: auto;
+      margin-right: auto;
+      .row {
+        display: flex;;
+        flex-grow: 1;
+        max-height: 25px;
+        margin-bottom: 2px;
+        .label {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          &:first-child {
+            width: 80px;
+          }
+          &:last-child {
+            width: 80px;
+            margin-left: 12px;
+          }
+        }
+        .input {
+          position: relative;
+          width: 108px;
+          input[type="text"], input[type="number"]  {
+            background-color: @white005;
+            color: @white07;
+            border: none;
+            padding: 4px;
+            text-align: right;
+            width: 100px;
+            position: absolute;
+            top: 0px;
+            bottom: 0px;
+            &:focus {
+              border: solid 1px #707070;
+            }
+          }
+        }
+        .fee {
+          text-align: right;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .md-button {
+          margin-top: 5px;
+        }
+        &.bottom-row {
+          display: flex;
+          max-height: 35px;
+          md-switch {
+            margin: 5px 8px 0px;
+            .md-label {
+              width: 40px;
+              display: inline-block;
+              white-space: initial;
+              line-height: 12px;
+            }
+            .md-bar {
+              top: 8px;
+              height: 8px;
+              width: 24px;
+            }
+            .md-thumb {
+              top: 6px;
+              height: 8px;
+              width: 8px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

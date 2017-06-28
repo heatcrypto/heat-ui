@@ -49,129 +49,118 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
 @Component({
   selector: 'traderQuickBuySell',
   inputs: ['currencyInfo','assetInfo','selectedOrder','oneClickOrders'],
-  styles: [`
-    trader-quick-buy-sell .trader-component-title {
-      padding-left: 8px;
-    }
-    trader-quick-buy-sell .text-cell {
-      padding-left: 8px;
-      padding-top: 3px;
-    }
-    trader-quick-buy-sell .text-cell:last-child {
-      padding-left: 24px;
-    }
-    trader-quick-buy-sell .row-element {
-      padding-top: 6px;
-    }
-    trader-quick-buy-sell .sell {
-      background-color: #f44336 !important;
-    }
-    trader-quick-buy-sell .buy {
-      background-color: #8BC34A !important;
-    }
-    trader-quick-buy-sell input.ng-dirty.ng-invalid {
-      color: red
-    }
-    trader-quick-buy-sell md-switch {
-      margin-top: 0px !important;
-      margin-bottom: 0px !important;
-    }
-    trader-quick-buy-sell input {
-      text-align: right;
-    }
-  `],
   template: `
-    <div layout="column" flex layout-fill>
-      <div layout="row" layout-align="center center" class="trader-component-title" flex>Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
-      <form name="quickBuySellForm" layout-fill flex layout="column">
-        <div layout="column" flex>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Unit price
-            </div>
-            <div layout="column" flex>
-              <input id="trader-quick-buy-sell-price-input" type="text" ng-model="vm.price" required max-decimals="{{vm.currencyInfo.decimals}}"
-                ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              {{vm.currencyInfo.symbol}} / {{vm.assetInfo.symbol}}
-            </div>
+    <div>
+      <div class="trader-component-title">Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
+      <form name="quickBuySellForm">
+        <div class="row">
+          <div class="label">
+            Unit price
           </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Amount
-            </div>
-            <div layout="column" flex>
-              <input id="trader-quick-buy-sell-quantity-input" type="text" ng-model="vm.quantity" required max-decimals="{{vm.assetInfo.decimals}}"
-                ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              {{vm.assetInfo.symbol}}
-            </div>
+          <div class="input">
+            <input id="trader-quick-buy-sell-price-input" type="text" ng-model="vm.price" required max-decimals="{{vm.currencyInfo.decimals}}"
+              ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
           </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Fees
-            </div>
-            <div layout="column" flex class="right-align">
-              {{vm.fee}}
-            </div>
-            <div class="text-cell" layout="column" flex>
-              HEAT
-            </div>
+          <div class="label">
+            {{vm.currencyInfo.symbol}} / {{vm.assetInfo.symbol}}
           </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Expiry in
-            </div>
-            <div layout="column" flex>
-              <input type="text" ng-model="vm.expiry" required ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              Seconds
-            </div>
+        </div>
+        <div class="row">
+          <div class="label">
+            Amount
           </div>
-          <div layout="row" class="row-element">
-            <div class="text-cell" layout="column" flex>
-              Total
-            </div>
-            <div layout="column" flex>
-              <input type="text" id="trader-quick-buy-sell-total-input" ng-model="vm.total" required max-decimals="{{vm.currencyInfo.decimals}}"
-                ng-change="vm.recalculateTotal()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-            </div>
-            <div class="text-cell" layout="column" flex>
-              {{vm.currencyInfo.symbol}}
-            </div>
+          <div class="input">
+            <input id="trader-quick-buy-sell-quantity-input" type="text" ng-model="vm.quantity" required max-decimals="{{vm.assetInfo.decimals}}"
+              ng-change="vm.recalculate()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
           </div>
-          <div layout="row" class="row-element" ng-hide="vm.user.unlocked" layout-align="center center" flex>
-            <md-button class="md-raised md-primary" aria-label="Sign in" href="#/login">
-              Sign in to trade
+          <div class="label">
+            {{vm.assetInfo.symbol}}
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">
+            Fees
+          </div>
+          <div class="fee input">
+            {{vm.fee}}
+          </div>
+          <div class="label">
+            HEAT
+          </div>
+        </div>
+        <div class="row">
+          <div class="label" ng-class="{'expires-invalid': !vm.expiryValid}">
+            Expires in
+          </div>
+          <div class="input">
+            <input type="number" ng-model="vm.expiryUnitsValue" required name="expiry"
+                      ng-change="vm.expiryUnitsValueChanged()"
+                      min="{{vm.expiryUnitsOptions[vm.expiryUnits].min}}"
+                      max="{{vm.expiryUnitsOptions[vm.expiryUnits].max}}"
+                      ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+          </div>
+          <div class="label">
+            <md-menu>
+              <a ng-click="$mdMenu.open($event)">
+                <md-tooltip>{{vm.expiresTooltip}}</md-tooltip>
+                {{vm.expiryUnitsOptions[vm.expiryUnits].label}}
+              </a>
+              <md-menu-content width="4">
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='minutes';vm.expiryUnitsValueChanged()">Minutes</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='hours';vm.expiryUnitsValueChanged()">Hours</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='days';vm.expiryUnitsValueChanged()">Days</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="vm.expiryUnits='weeks';vm.expiryUnitsValueChanged()">Weeks</md-button>
+                </md-menu-item>
+              </md-menu-content>
+            </md-menu>
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">
+            Total
+          </div>
+          <div class="input">
+            <input type="text" id="trader-quick-buy-sell-total-input" ng-model="vm.total" required max-decimals="{{vm.currencyInfo.decimals}}"
+              ng-change="vm.recalculateTotal()" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+          </div>
+          <div class="label">
+            {{vm.currencyInfo.symbol}}
+          </div>
+        </div>
+        <div ng-hide="vm.user.unlocked" class="row bottom-row">
+          <md-button class="md-primary" aria-label="Sign in" href="#/login">
+            Sign in to trade
+          </md-button>
+        </div>
+        <div ng-show="vm.user.unlocked" class="row bottom-row">
+          <div>
+            <md-button class="md-primary" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid||!vm.expiryValid">
+              BUY
             </md-button>
           </div>
-          <div layout="row" class="row-element" ng-show="vm.user.unlocked" layout-align="center center" flex>
-            <div layout="column">
-              <md-button class="md-raised buy" aria-label="Buy" ng-click="vm.quickBid($event)" ng-disabled="quickBuySellForm.$invalid">
-                BUY
-              </md-button>
-            </div>
-            <div layout="column" flex layout-align="center center">
-              <div layout="row">1-click orders</div>
-              <md-switch ng-model="vm.oneClickOrders" aria-label="1-click orders" class="md-primary" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
-                <span ng-show="vm.oneClickOrders"><b>on</b></span><span ng-hide="vm.oneClickOrders">off</span>
-              </md-switch>
-            </div>
-            <div layout="column">
-              <md-button class="md-raised sell" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid">
-                SELL
-              </md-button>
-            </div>
+          <div>
+            <md-switch ng-model="vm.oneClickOrders" aria-label="1-click orders" class="md-primary" ng-disabled="!vm.currencyInfo||!vm.assetInfo">
+              <span ng-show="vm.oneClickOrders"><b>1-click orders enabled</b></span><span ng-hide="vm.oneClickOrders">1-click orders disabled</span>
+            </md-switch>
+          </div>
+          <div>
+            <md-button class="md-warn" aria-label="Sell" ng-click="vm.quickAsk($event)" ng-disabled="quickBuySellForm.$invalid||!vm.expiryValid">
+              SELL
+            </md-button>
           </div>
         </div>
       </form>
     </div>
   `
 })
-@Inject('$scope','$q','$mdToast','placeAskOrder','placeBidOrder','user')
+@Inject('$scope','$q','$mdToast','placeAskOrder','placeBidOrder','user','settings')
 class TraderQuickBuySellComponent {
 
   // inputs
@@ -182,30 +171,119 @@ class TraderQuickBuySellComponent {
 
   quantity: string = '0';
   price: string = '0';
-  expiry: string = '360000'
   total: string = null;
   fee: string = utils.formatQNT(HeatAPI.fee.standard,8); // fee in HEAT
   isTestnet: boolean;
+
+  EXPIRY_MIN = 3600;
+  EXPIRY_MAX = 3600 * 24 * 30;
+
+  expiryUnitsOptions = {
+    'minutes': {
+      label: 'Minutes',
+      min: Math.round(this.EXPIRY_MIN / 60),
+      max: Math.round(this.EXPIRY_MAX / 60),
+      delta: 60
+    },
+    'hours': {
+      label: 'Hours',
+      min: Math.round(this.EXPIRY_MIN / (60*60)),
+      max: Math.round(this.EXPIRY_MAX / (60*60)),
+      delta: 60*60
+    },
+    'days': {
+      label: 'Days',
+      min: 1,
+      max: 30,
+      delta: (60*60*24)
+    },
+    'weeks': {
+      label: 'Weeks',
+      min: 1,
+      max: 4,
+      delta: (60*60*24*7)
+    }
+  }
+  expiryUnits = 'days';
+  expiryUnitsValue = 30;
+  expiry: number;
+  expiryValid: boolean;
+  expiresTooltip: string = '';
+
+  // displays the toast in debounce wrapper
+  notifyUser: (text:string)=>void;
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
               private $mdToast: angular.material.IToastService,
               private placeAskOrder: PlaceAskOrderService,
               private placeBidOrder: PlaceBidOrderService,
-              public user: UserService) {
+              public user: UserService,
+              private settings: SettingsService) {
     $scope.$watch('vm.selectedOrder', () => {
       if (this.selectedOrder) {
         this.quantity = this.selectedOrder['runningTotal'];
         this.price = utils.formatQNT(this.selectedOrder.price, this.currencyInfo.decimals);
         this.total = this.selectedOrder['sum'];
+
+        if (this.selectedOrder.type == 'bid' && angular.isString(this.assetInfo.userBalance)) {
+          let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+          let balanceQNT = new Big(this.assetInfo.userBalance);
+          if (balanceQNT.lt(quantityQNT)) {
+            this.quantity = utils.formatQNT(this.assetInfo.userBalance, 8);
+            this.recalculate();
+          }
+        }
+        else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
+          let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+          let balanceQNT = new Big(this.currencyInfo.userBalance);
+          if (balanceQNT.lt(totalQNT)) {
+            this.total = utils.formatQNT(this.currencyInfo.userBalance, 8);
+            this.recalculateTotal();
+          }
+        }
       }
     });
     this.isTestnet = heat.isTestnet;
+
+    this.notifyUser = utils.debounce((text: string) => {
+      $mdToast.show($mdToast.simple().textContent(text).hideDelay(3000));
+    }, 500, true);
+    this.expiryUnitsValueChanged(true);
+  }
+
+  expiryUnitsValueChanged(suppressNotification?: boolean) {
+    this.expiry = parseInt(this.expiryUnitsValue+'') * this.expiryUnitsOptions[this.expiryUnits].delta;
+    this.expiryValid = false;
+    this.expiresTooltip = '';
+
+    if (this.expiry <= this.EXPIRY_MAX && this.expiry >= this.EXPIRY_MIN) {
+      this.expiryValid = true;
+      let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+      let date = new Date(Date.now() + (this.expiry*1000));
+      let dateFormatted = dateFormat(date, format);
+      this.expiresTooltip = `This order will expiry if (even partially) unfilled by ${dateFormatted}`;
+    }
+    else {
+      let min = this.expiryUnitsOptions[this.expiryUnits].min;
+      let max = this.expiryUnitsOptions[this.expiryUnits].max;
+      let units = this.expiryUnitsOptions[this.expiryUnits].label;
+      this.expiresTooltip = `Min expiry in ${units} is ${min}, max expiry in ${units} is ${max}`;
+      this.notifyUser(this.expiresTooltip);
+    }
   }
 
   quickAsk($event) {
+    if (angular.isString(this.assetInfo.userBalance)) {
+      let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+      let balanceQNT = new Big(this.assetInfo.userBalance);
+      if (balanceQNT.lt(quantityQNT)) {
+        this.notifyUser(`Insufficient ${this.assetInfo.symbol} balance`);
+        return;
+      }
+    }
     var dialog = this.placeAskOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
-                      utils.unformat(this.quantity),parseInt(this.expiry),true,$event);
+                      utils.unformat(this.quantity),parseInt(this.expiry+''),true,$event);
     if (this.oneClickOrders)
       dialog.send()
     else
@@ -213,8 +291,16 @@ class TraderQuickBuySellComponent {
   }
 
   quickBid($event) {
+    if (angular.isString(this.currencyInfo.userBalance)) {
+      let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+      let balanceQNT = new Big(this.currencyInfo.userBalance);
+      if (balanceQNT.lt(totalQNT)) {
+        this.notifyUser(`Insufficient ${this.currencyInfo.symbol} balance`);
+        return;
+      }
+    }
     var dialog = this.placeBidOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
-                      utils.unformat(this.quantity),parseInt(this.expiry),true,$event);
+                      utils.unformat(this.quantity),parseInt(this.expiry+''),true,$event);
     if (this.oneClickOrders)
       dialog.send()
     else

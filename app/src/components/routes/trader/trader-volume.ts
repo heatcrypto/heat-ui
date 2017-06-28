@@ -23,14 +23,6 @@
 @Component({
   selector: 'traderVolume',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-    trader-volume .label, trader-volume .value {
-      padding-right:8px;
-    }
-    trader-volume .value {
-      font-weight: bold;
-    }
-  `],
   template: `
     <div layout="row" flex layout-fill layout-align="end">
       <div class="label">24h change</div>
@@ -42,11 +34,11 @@
       <div class="label">24h vol</div>
       <div class="value">{{vm.hr24CurrencyVolume}}</div>
       <div class="label">24h vol</div>
-      <div class="value">{{vm.hr24AssetVolume}}</div>
+      <div>{{vm.hr24AssetVolume}}</div>
     </div>
   `
 })
-@Inject('$scope','heat')
+@Inject('$scope','heat','$interval')
 class TraderVolumeComponent {
 
   // inputs
@@ -59,7 +51,7 @@ class TraderVolumeComponent {
   hr24CurrencyVolume: string;
   hr24AssetVolume: string;
 
-  constructor(private $scope: angular.IScope, private heat: HeatService) {
+  constructor(private $scope: angular.IScope, private heat: HeatService, private $interval: angular.IIntervalService) {
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
         unregister.forEach(fn => fn());
@@ -67,6 +59,10 @@ class TraderVolumeComponent {
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
+    let interval = $interval(()=>{
+      this.loadMarket();
+    }, 10*1000, 0, false);
+    $scope.$on('$destroy',()=>{$interval.cancel(interval)});
   }
 
   loadMarket() {

@@ -28,13 +28,19 @@ interface ILocalKey {
   name: string;
 }
 
+interface ILocalKeyEntry {
+  account: string;
+  name: string;
+  contents: string;
+  isTestnet: boolean;
+}
+
 @Service('localKeyStore')
-@Inject('storage')
+@Inject('storage','walletFile')
 class LocalKeyStoreService {
   private store: Store;
-  constructor(storage: StorageService) {
+  constructor(storage: StorageService, private walletFile: WalletFileService) {
     this.store = storage.namespace("keystore", null, true);
-    //updateLegacyLocalKeyStoreData(this.store); // Need to do this to stay compatible with 0.1.0 release format.
   }
 
   testnet() {
@@ -46,9 +52,21 @@ class LocalKeyStoreService {
     this.store.put(`name.${key.account}${this.testnet()}`, key.name);
   }
 
+  /* Adds a raw key entry, returns true iff entry did not exist, returns false iff already present */
+  addRaw(key: ILocalKeyEntry): boolean {
+    let key1 = `key.${key.account}${key.isTestnet?'.testnet':''}`;
+    let key2 = `name.${key.account}${key.isTestnet?'.testnet':''}`;
+    if (this.store.get(key1))
+      return false;
+
+    this.store.put(key1, key.contents);
+    this.store.put(key2, key.name||'');
+    return true;
+  }
+
   /* lists all numeric account ids we have keys for */
   list(): Array<string> {
-    var test = heat.isTestnet ? /key\.\d+\.testnet/ : /key\.\d+/;
+    var test = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/;
     return this.store.keys().
                       filter((keyName) => test.test(keyName)).
                       map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));
@@ -95,30 +113,57 @@ class LocalKeyStoreService {
       console.log(e);
     }
   }
+
+  private listLocalKeyEntries(): Array<ILocalKeyEntry> {
+    let entries: Array<ILocalKeyEntry> = [];
+    this.store.keys().forEach(keyName => {
+      let match = keyName.match(/key\.(\d+)(\.testnet)?/);
+      if (match) {
+        let isTestnet = match[2]=='.testnet';
+        let account = match[1];
+        let name = this.store.get(`name.${account}${isTestnet?'.testnet':''}`);
+        let contents = this.store.get(keyName);
+        entries.push({
+          account:account,
+          contents:contents,
+          name:name,
+          isTestnet:isTestnet
+        });
+      }
+    });
+    return entries;
+  }
+
+  public export(): IHeatWalletFile {
+    let wallet : IHeatWalletFile = {
+      version: 1,
+      entries: []
+    };
+    this.listLocalKeyEntries().forEach(entry => {
+      wallet.entries.push({
+        account: entry.account,
+        contents: entry.contents,
+        isTestnet: entry.isTestnet,
+        name: entry.name
+      })
+    });
+    return wallet;
+  }
+
+  /* Returns array of wallet entries added */
+  public import(wallet: IHeatWalletFile) : Array<ILocalKeyEntry> {
+    let added : Array<ILocalKeyEntry> = [];
+    wallet.entries.forEach(entry => {
+      let localKeyEntry: ILocalKeyEntry = {
+        account: entry.account,
+        contents: entry.contents,
+        isTestnet: entry.isTestnet,
+        name: entry.name
+      };
+      if (this.addRaw(localKeyEntry)) {
+        added.push(localKeyEntry);
+      }
+    });
+    return added;
+  }
 }
-
-/* Find all entries that start with 'LOCAL_KEY_STORE_ENTRY:', move them
- * into the namespaced @store parameter. Replace each key which has the
- * form LOCAL_KEY_STORE_ENTRY:[account id]. With the new form which
- * is 'key.[account id]'. */
-// function updateLegacyLocalKeyStoreData(store: Store) {
-
-//   // collect all legacy keys
-//   var keys = [];
-//   for (var i=0; i<localStorage.length; i++) {
-//     var key = localStorage.key(i);
-//     if (key.indexOf('LOCAL_KEY_STORE_ENTRY:') == 0) {
-//       keys.push(key);
-//     }
-//   }
-
-//   // move all keys and their values into the new namespace
-//   keys.forEach((keyName) => {
-//     var newKey = keyName.replace('LOCAL_KEY_STORE_ENTRY:','key.');
-//     var value = localStorage.getItem(keyName);
-//     store.put(newKey, value);
-//   });
-
-//   // remove all deprecated keys [DONT DO THIS FOR NOW ... ]
-//   // keys.forEach((keyName) => { localStorage.removeItem(keyName) });
-// }

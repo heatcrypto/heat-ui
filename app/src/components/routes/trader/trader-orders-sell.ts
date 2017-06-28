@@ -24,38 +24,28 @@
 @Component({
   selector: 'traderOrdersSell',
   inputs: ['currencyInfo','assetInfo','selectedOrder'],
-  styles: [`
-    trader-orders-sell .price-col, trader-orders-sell .quantity-col, trader-orders-sell .total-col {
-      width: 80px;
-    }
-    trader-orders-sell .sum-col {
-      text-align: right;
-      width: 80px;
-      min-width: 80px;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Sell {{vm.assetInfo.symbol}}&nbsp;
         <span flex></span>
-        <span ng-if="vm.user.unlocked">BALANCE: {{vm.assetBalance}}&nbsp;{{vm.assetInfo.symbol}}</span>
+        <span class="balance" ng-if="vm.user.unlocked">BALANCE: {{vm.assetBalance}}&nbsp;{{vm.assetInfo.symbol}}</span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
-        <md-list-item>
+        <md-list-item  class="header">
           <div class="truncate-col price-col">Price</div>
           <div class="truncate-col quantity-col">Quantity</div>
           <div class="truncate-col total-col">Total</div>
-          <div class="truncate-col sum-col" flex>Sum ({{vm.currencyInfo.symbol}})</div>
+          <div class="truncate-col sum-col">Sum ({{vm.currencyInfo.symbol}})</div>
         </md-list-item>
-        <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
+        <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper class="content">
           <md-list-item md-virtual-repeat="item in vm" md-on-demand
                ng-click="vm.select(item)" aria-label="Entry"
-               ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid}">
+               ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid||item.cancelled}">
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
             <div class="truncate-col quantity-col">{{item.quantityDisplay}}</div>
             <div class="truncate-col total-col">{{item.total}}</div>
-            <div class="truncate-col sum-col" flex>{{item.sum}}</div>
+            <div class="truncate-col sum-col">{{item.sum}}</div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -73,6 +63,9 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
   assetBalance: string = "*"; // formatted asset balance
 
   PAGE_SIZE = 250; /* VirtualRepeatComponent */
+
+  refreshGrid:()=>void;
+  refreshBalance:()=>void;
 
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
@@ -131,20 +124,21 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
         this.provider.destroy()
       }
     });
+
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
+    this.refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 1000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
       if (order.type == 'ask') {
-        refreshGrid();
+        this.refreshGrid();
       }
     }, this.$scope);
   }
 
   private subscribeToBalanceEvents(account:string, currency: string) {
-    var refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 500, false);
-    this.heat.subscriber.balanceChanged({account:account, currency:currency}, refreshBalance, this.$scope);
+    this.heat.subscriber.balanceChanged({account:account, currency:currency}, this.refreshBalance, this.$scope);
   }
 
   onSelect(selectedOrder) {

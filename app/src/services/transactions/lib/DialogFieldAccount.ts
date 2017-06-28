@@ -27,6 +27,7 @@ class DialogFieldAccount extends AbstractDialogField {
   private settings = <SettingsService> heat.$inject.get('settings');
   private user = <UserService> heat.$inject.get('user');
   private $q = <angular.IQService> heat.$inject.get('$q');
+  private numbersOnly = /^[0-9]+$/;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -34,17 +35,23 @@ class DialogFieldAccount extends AbstractDialogField {
   }
 
   search(query: string) {
-    /*
-    var prefix = this.settings.get(SettingsService.RS_ADDRESS_PREFIX);
-    query = query.replace(new RegExp('^'+prefix+'-'),'');
-    var request: ICloudSearchAccountIdentifiersRequest = {
-      accountColorId: this.user.accountColorId
-    };
-    return this.cloud.api.searchAccountIdentifiers(query, request);
-    */
-    var deferred = this.$q.defer();
-    deferred.resolve([]);
-    return deferred;
+    let deferred = this.$q.defer();
+    this.heat.api.searchPublicNames(query, 0, 100).then(accounts => {
+      accounts.forEach(account => {
+        if (this.numbersOnly.test(account.publicName)) {
+          account.publicName = '';
+        }
+      });
+      if (accounts.length > 0) {
+        deferred.resolve(accounts);
+      }
+      else if (this.numbersOnly.test(query)) {
+        this.heat.api.getAccountByNumericId(query).then(account=>{
+          deferred.resolve([account]);
+        }, deferred.reject);
+      }
+    }, deferred.reject);
+    return deferred.promise;
   }
 }
 
@@ -65,14 +72,18 @@ class DialogFieldAccount extends AbstractDialogField {
         md-floating-label="{{vm.label}}"
         md-min-length="1"
         md-items="item in vm.f.search(vm.searchText)"
-        md-item-text="item.accountEmail||item.account"
+        md-item-text="item.publicName||item.id"
         md-search-text="vm.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>
-          <span>{{item.accountEmail||item.account}}</span>
+          <div layout="row" flex class="monospace-font">
+            <span>{{item.publicName||''}}</span>
+            <span flex></span>
+            <span>{{item.id}}</span>
+          </span>
         </md-item-template>
         <md-not-found>
           No matches found.
@@ -96,7 +107,7 @@ class DialogFieldAccountComponent {
   }
 
   selectedItemChange() {
-    this.f.value = this.selectedItem ? this.selectedItem.account : '';
+    this.f.value = this.selectedItem ? this.selectedItem.id : '';
   }
 
   searchTextChange() {

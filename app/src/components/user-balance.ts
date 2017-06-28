@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Krypto Fin ry and the FIMK Developers
+ * Copyright (c) 2017 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,34 +22,19 @@
  * */
 @Component({
   selector: 'userBalance',
-  styles: [`
-    user-balance {
-      max-width:350px;
-    }
-    user-balance .balance  {
-      white-space: nowrap;
-      font-size: 20px !important;
-    }
-    user-balance .smaller {
-      font-size: 12px !important;
-    }
-    user-balance md-icon {
-      vertical-align: bottom;
-      cursor: default;
-    }
-  `],
   template: `
     <div layout="column">
       <span>
         <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
-        <span class="smaller">#{{vm.user.account}}</span>&nbsp;&nbsp;
-        <span class="balance">{{vm.formattedBalance}}</span><span class="smaller">{{vm.formattedFraction}}</span>&nbsp;<span class="balance">{{vm.currencyName}}</span>
+        <span class="balance">{{vm.formattedBalance}}</span>
+        <span class="fraction">{{vm.formattedFraction}}</span>&nbsp;
+        <span class="currencyName">{{vm.currencyName}}</span>
         <md-icon ng-if="vm.showError" md-font-library="material-icons">error</md-icon>
       </span>
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$timeout', 'HTTPNotify')
+@Inject('$scope','user','heat','$q','$timeout')
 class UserBalanceComponent {
 
   private formattedBalance: string = "0";
@@ -63,26 +48,19 @@ class UserBalanceComponent {
               public user: UserService,
               private heat: HeatService,
               private $q: angular.IQService,
-              private $timeout: angular.ITimeoutService,
-              private HTTPNotify: HTTPNotifyService) {
+              private $timeout: angular.ITimeoutService) {
 
     /* subscribe to websocket balance changed events */
     var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
     heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
-      if ("0" == balanceChange.currency) {
-        refresh();
-      }
+      refresh();
     }, $scope);
-
-    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
-    this.HTTPNotify.on(()=>{ this.refresh() }, $scope);
-    /* LEAVE THIS IN UNTIL MAINNET WEBSOCKET RELEASE */
 
     this.refresh();
   }
 
   getUserBalance() : angular.IPromise<IHeatAccountBalance> {
-    return this.heat.api.getAccountBalance(this.user.account, "0");
+    return this.heat.api.getAccountBalanceVirtual(this.user.account, "0", "0", 1);
   }
 
   refresh() {

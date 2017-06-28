@@ -22,60 +22,42 @@
  * */
 @Component({
   selector: 'explorerLatestBlocks',
-  styles: [`
-    explorer-latest-blocks .height-col {
-      width: 80px;
-    }
-    explorer-latest-blocks .block-col {
-      width: 180px;
-    }
-    explorer-latest-blocks .date-col {
-      width: 140px;
-    }
-    explorer-latest-blocks .generator-col {
-      width: 180px;
-    }
-    explorer-latest-blocks .transactions-col {
-      width: 100px;
-    }
-    explorer-latest-blocks .amount-col {
-      width: 140px;
-    }
-    explorer-latest-blocks .fee-col {
-      width: 100px;
-    }
-    explorer-latest-blocks .pos-col {
-      width: 100px;
-    }
-    explorer-latest-blocks .pop-col {
-      width: 100px;
-    }
-  `],
+  inputs: ['blockObject'],
   template: `
     <div layout="column" flex layout-fill>
+      <div layout="row" class="trader-component-title">Latest Blocks
+      </div>
       <md-list flex layout-fill layout="column">
-        <md-list-item>
-          <div class="header truncate-col height-col">Height</div>
-          <div class="header truncate-col block-col">Block</div>
-          <div class="header truncate-col date-col">Date</div>
-          <div class="header truncate-col generator-col">Generator</div>
-          <div class="header truncate-col transactions-col">Transactions</div>
-          <div class="header truncate-col amount-col">Amount</div>
-          <div class="header truncate-col fee-col">Fee</div>
-          <div class="header truncate-col pos-col">POS Reward</div>
-          <div class="header truncate-col pop-col" flex>POP Reward</div>
+        <md-list-item class="header">
+          <div class="truncate-col height-col left">Height</div>
+          <div class="truncate-col block-col block left">Block</div>
+          <div class="truncate-col date-col left">Time</div>
+          <div class="truncate-col generator-col block left">Generator</div>
+          <div class="truncate-col transactions-col">Transactions</div>
+          <div class="truncate-col amount-col">Amount</div>
+          <div class="truncate-col fee-col">Fee</div>
+          <div class="truncate-col pos-col left">POS Reward</div>
+          <div class="truncate-col pop-col left" flex>POP Reward</div>
+          <!-- JSON -->
+          <div class="truncate-col json-col"></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
-            <div class="truncate-col height-col">{{item.height}}</div>
-            <div class="truncate-col block-col"><a href="#/explore-block/{{item.block}}">{{item.block}}</a></div>
-            <div class="truncate-col date-col">{{item.time}}</div>
-            <div class="truncate-col generator-col"><a href="#/explore-account/{{item.generator}}">{{item.generator}}</a></div>
+            <div class="truncate-col height-col left">{{item.height}}</div>
+            <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
+            <div class="truncate-col date-col left">{{item.time}}</div>
+            <div class="truncate-col generator-col block left"><a href="#/explorer-account/{{item.generator}}">{{item.generatorPublicName||item.generator}}</a></div>
             <div class="truncate-col transactions-col">{{item.numberOfTransactions}}</div>
             <div class="truncate-col amount-col">{{item.amount}}</div>
             <div class="truncate-col fee-col">{{item.fee}}</div>
-            <div class="truncate-col pos-col">{{item.pos}}</div>
-            <div class="truncate-col pop-col" flex>{{item.pop}}</div>
+            <div class="truncate-col pos-col left">{{item.pos}}</div>
+            <div class="truncate-col pop-col left" flex>{{item.pop}}</div>
+            <!-- JSON -->
+            <div class="truncate-col json-col">
+              <a ng-click="vm.jsonDetails($event, item)">
+                <md-icon md-font-library="material-icons">code</md-icon>
+              </a>
+            </div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -85,15 +67,18 @@
 @Inject('$scope','$q','heat','latestBlocksProviderFactory','settings')
 class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
+  blockObject: IHeatBlock; // @input
+
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
               private heat: HeatService,
               private latestBlocksProviderFactory: LatestBlocksProviderFactory,
               private settings: SettingsService) {
     super($scope, $q);
+
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
-      this.latestBlocksProviderFactory.createProvider(),
+      this.latestBlocksProviderFactory.createProvider(this.blockObject),
       /* decorator function */
       (block: any|IHeatBlock) => {
         var date = utils.timestampToDate(block.timestamp);
@@ -114,6 +99,10 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
         this.provider.destroy();
       }
     });
+  }
+
+  jsonDetails($event, item) {
+    dialogs.jsonDetails($event, item, 'Block: '+item.block);
   }
 
   onSelect(selectedBlock) {}

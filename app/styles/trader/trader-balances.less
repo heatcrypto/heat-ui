@@ -1,0 +1,64 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+@import '../colors';
+@import '../widget';
+
+trader-balances {
+  .widget();
+  padding: 12px;
+  margin-bottom: 12px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  md-list {
+    flex-grow: 1;
+    display:flex;
+    flex-direction: column;
+  }
+  md-list-item {
+    border-bottom: 1px solid @gray;
+    &.header .symbol-col,
+    &.header .balance-col {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    &.header {
+      border-bottom: none;
+      opacity: 0.6;
+      flex: 0;
+    }
+    .symbol-col {
+      width: 80px;
+      font-size: 18px;
+      letter-spacing:-1.08px;
+    }
+    .balance-col {
+      text-align: right;
+      font-size: 16px;
+      opacity: 0.6;
+      padding-left: 6px;
+    }
+  }
+}

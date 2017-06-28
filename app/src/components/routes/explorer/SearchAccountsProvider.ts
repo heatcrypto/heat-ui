@@ -21,35 +21,32 @@
  * SOFTWARE.
  * */
 
-@Service('latestBlocksProviderFactory')
+@Service('searchAccountsProviderFactory')
 @Inject('heat','$q')
-class LatestBlocksProviderFactory  {
+class SearchAccountsProviderFactory  {
   constructor(private heat: HeatService, private $q: angular.IQService) {}
 
-  public createProvider(): IPaginatedDataProvider {
-    return new LatestBlocksProvider(this.heat, this.$q);
+  public createProvider(query: string): IPaginatedDataProvider {
+    return new SearchAccountsProvider(this.heat, this.$q, query);
   }
 }
 
-class LatestBlocksProvider implements IPaginatedDataProvider {
+class SearchAccountsProvider implements IPaginatedDataProvider {
   constructor(private heat: HeatService,
-              private $q: angular.IQService) {}
+              private $q: angular.IQService,
+              private query: string) {}
 
   /* Be notified this provider got destroyed */
   public destroy() {}
 
   /* The number of items available */
   public getLength(): angular.IPromise<number> {
-    var deferred = this.$q.defer();
-    this.heat.api.getBlockchainStatus().then((status) => {
-      deferred.resolve(status.numberOfBlocks);
-    },deferred.reject);
-    return deferred.promise;
+    return this.heat.api.searchAccountsCount(this.query);
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatBlock>> {
-    return this.heat.api.getBlocks(firstIndex, lastIndex);
+  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.api.searchAccounts(this.query, firstIndex, lastIndex);
   }
 
   public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }

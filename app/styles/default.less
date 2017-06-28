@@ -1,0 +1,139 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+@import './colors';
+
+html.md-default-theme,
+html,
+body.md-default-theme,
+body {
+  -webkit-font-smoothing: antialiased;
+  background-image:radial-gradient(50% 102%, #233050 50%, #0d0e14 100%);
+  //background-color: @dark-blue2;
+  border-radius:4px;
+  box-sizing: border-box;
+  color: @white;
+  font-family: 'Noto Sans', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 200;
+  line-height: 20 / 14;
+}
+
+.md-button.md-icon-button {
+  width: 50px;
+}
+md-list-item {
+  height: 21px;
+  min-height: 21px;
+  max-height: 21px;
+}
+md-list-item, md-list-item .md-list-item-inner {
+  min-height: 10px;
+}
+md-list-item::before,
+.md-list-item-inner::before {
+  min-height: 10px !important;
+}
+
+.md-button {
+  font-family: Roboto;
+  font-size: 14px;
+  line-height: 14px;
+  color: @white !important;
+  text-align: center;
+  padding: 7px 10px;
+  min-height: 12px;
+  font-style: normal;
+  margin: 0 4px;
+  &.md-primary {
+    background-color: @blue;
+    &[disabled] {
+      background-color: @light-blue;
+      color: @gray !important;
+    }
+  }
+  &.md-warn {
+    background-color: @orange;
+  }
+}
+
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: @gray2;
+}
+
+textarea, input, button { outline: none; }
+
+input[type="radio"] {
+    background-color: @gray4;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-block;
+    height: 15px;
+    margin: 0px;
+    position: relative;
+    width: 15px;
+    -webkit-appearance: none;
+}
+input[type="radio"]:after {
+    background-color: @gray4;
+    border-radius: 25px;
+    content: '';
+    display: block;
+    height: 7px;
+    left: 4px;
+    position: relative;
+    top: 4px;
+    width: 7px;
+}
+input[type="radio"]:checked:after {
+    background-color: @white;
+}
+
+md-input-container.md-default-theme:not(.md-input-invalid).md-input-has-value label, md-input-container:not(.md-input-invalid).md-input-has-value label,
+md-input-container.md-default-theme label, md-input-container label, md-input-container.md-default-theme .md-placeholder, md-input-container .md-placeholder,
+md-select:not([disabled]):focus .md-select-value, md-input-container.md-default-theme .md-input, md-input-container .md-input, md-input-container > md-icon {
+  color: @white07;
+}
+md-radio-button.md-default-theme .md-off, md-radio-button .md-off {
+  border-color: @white04;
+}
+
+md-menu-content .md-button {
+  color: @gray3 !important;
+}
+.monospace-font {
+  font-family: "Lucida Console", Monaco, monospace;
+}
+
+md-menu-content {
+  max-height: 400px !important;
+}

@@ -1,3 +1,4 @@
+/// <reference path='../lib/EventEmitter.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.
@@ -38,8 +39,15 @@ class UserService extends EventEmitter {
   /* Account in numeric format */
   public account: string;
 
+  /* Public or private email identifier */
+  public accountName: string;
+  public accountNameIsPrivate: boolean;
+
   /* New accounts don't yet exist on the blockchain */
   public newAccount: boolean;
+
+  /* Local key storage key */
+  public key: ILocalKey;
 
   public accountColorName: string = "HEAT";
   public accountColorId: string = "0";
@@ -54,7 +62,18 @@ class UserService extends EventEmitter {
 
   refresh() {
     var deferred = this.$q.defer();
-    deferred.resolve();
+    let assigner = this.settings.get(SettingsService.HEATLEDGER_NAME_ASSIGNER);
+    let heatService = <HeatService> heat.$inject.get('heat');
+    heatService.api.getTransactionsFromTo(assigner, this.account, 0, 10).then((transactions) => {
+      for (let i=0; i<transactions.length; i++) {
+        let rawText = heatService.getHeatMessageContents(transactions[i]);
+        if (rawText) {
+          if (this.tryParseRegistrationMessage(rawText)) {
+            return;
+          }
+        }
+      }
+    }).finally(deferred.resolve);
     return deferred.promise;
   }
 
@@ -65,17 +84,20 @@ class UserService extends EventEmitter {
    *
    * @param secretPhrase user secret phrase
    * @param newAccount boolean
+   * @param key ILocalKey
    * @returns Promise
    */
-  unlock(secretPhrase: string, newAccount: boolean): angular.IPromise<any> {
+  unlock(secretPhrase: string, newAccount: boolean, key?: ILocalKey): angular.IPromise<any> {
     var deferred = this.$q.defer();
     this.newAccount = newAccount;
+    this.key = key;
 
     /* Everything obtained from the secret phrase */
     this.secretPhrase = secretPhrase;
     this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
     this.account = heat.crypto.getAccountId(secretPhrase);
     this.unlocked = true;
+    this.accountName = '[no name]';
 
     /* The other parts are on the blockchain */
     this.refresh().then(() => {
@@ -97,5 +119,22 @@ class UserService extends EventEmitter {
     if (!this.unlocked) {
       this.$location.path('login');
     }
+  }
+
+  tryParseRegistrationMessage(rawText: string): boolean {
+    let regexp = /You have chosen the (public|private) user name `(.*)`/m;
+    let match = rawText.match(regexp);
+    if (match) {
+      this.accountNameIsPrivate = match[1] == 'private';
+      this.accountName = match[2];
+
+      // update local wallet name
+      if (this.key && this.key.name != this.accountName) {
+        this.key.name = this.accountName;
+        this.localKeyStore.add(this.key);
+      }
+      return true;
+    }
+    return false;
   }
 }

@@ -35,6 +35,7 @@ class SettingsService {
   public static ENGINE_TYPE = 'settings.engine_type';
   public static BASE_FEE = 'settings.base_fee';*/
   public static DATEFORMAT_DEFAULT = 'settings.dateformat_default';
+  public static TIMEFORMAT_DEFAULT = 'settings.timeformat_default';
   public static APPLICATION_NAME = 'settings.application_name';
   public static APPLICATION_VERSION = 'settings.application_version';
   public static APPLICATION_BUILD = 'settings.application_build';
@@ -67,6 +68,7 @@ class SettingsService {
   public static HEAT_PORT_LOCAL = 'settings.heat_port_local';
   public static HEATLEDGER_CERTIFIER_ACCOUNT = 'settings.heatledger_certifier_account';
   public static HEATLEDGER_BTC_ASSET = 'settings.heatledger_btc_asset';
+  public static HEATLEDGER_NAME_ASSIGNER = 'settings.heatledger_name_assigner';
 
   constructor() {
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
@@ -78,6 +80,7 @@ class SettingsService {
 
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
+    this.settings[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
 
     this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
     this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
@@ -114,6 +117,7 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
     this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
     this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '5592059897546023466';
+    this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '14439304480879065693';
 
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.NEWS_URL] = "https://heatwallet.com/news.json";
@@ -126,6 +130,7 @@ class SettingsService {
       this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
       this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
       this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
+      this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
       this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
     }
 

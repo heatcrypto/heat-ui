@@ -58,6 +58,16 @@ class ClipboardService {
     return deferred.promise;
   }
 
+  copyText(text: string) {
+    var tempInput = <any> document.createElement("input");
+    tempInput.style = "position: absolute; left: -1000px; top: -1000px";
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+  }
+
   /**
    * Copies the text contents of the element and displays a TOAST upon
    * success, in case the text could not be copied but an instruction is

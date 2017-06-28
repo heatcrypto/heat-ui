@@ -22,59 +22,34 @@
  * */
 @Component({
   selector: 'traderMarkets',
-  styles: [`
-    trader-markets input {
-      width: 100%;
-      padding: 4px;
-      margin: 8px;
-    }
-    trader-markets .market-col {
-      text-align:left;
-      width: 80px;
-    }
-    trader-markets .change-col {
-      text-align:left;
-      width: 40px;
-    }
-    trader-markets .price-col {
-      text-align:left;
-      width: 80px;
-    }
-    trader-markets .vol-col {
-      width: 60px;
-    }
-  `],
   template: `
-    <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title">Markets&nbsp;
-        <span flex></span>
-        <elipses-loading ng-show="vm.loading"></elipses-loading>
-      </div>
-      <div layout="row">
-        <input type="text" disabled placeholder="Search markets"></input>
-      </div>
-      <md-list flex layout-fill layout="column">
-        <md-list-item>
-          <div class="truncate-col market-col">Market</div>
-          <div class="truncate-col change-col">Change</div>
-          <div class="truncate-col price-col">Price</div>
-          <div class="truncate-col vol-col" flex>Vol</div>
-        </md-list-item>
-        <md-virtual-repeat-container flex layout-fill layout="column"
-            virtual-repeat-flex-helper ng-if="vm.markets.length>0">
-          <md-list-item md-virtual-repeat="item in vm.markets">
-            <div class="truncate-col market-col">
-              <a href="#/trader/{{item.currency}}/{{item.asset}}">
-                <span ng-class="{certified:item.currencyInfo.certified}">{{item.currencyInfo.symbol}}</span>/<span ng-class="{certified:item.assetInfo.certified}">{{item.assetInfo.symbol}}</span>
-              </a>
-            </div>
-            <div class="truncate-col change-col">{{item.change}}</div>
-            <div class="truncate-col price-col">{{item.price}}</div>
-            <div class="truncate-col vol-col right-align" flex>{{item.vol}}</div>
-          </md-list-item>
-        </md-virtual-repeat-container>
-      </md-list>
+    <div class="trader-component-title" layout="row">Markets&nbsp;
+      <span flex></span>
+      <elipses-loading ng-show="vm.loading"></elipses-loading>
+      <a ng-click="vm.toggleShowCertified()" class="configure">Show {{vm.showCertified?'uncertified':'certified only'}}</a>
     </div>
+    <input type="text" placeholder="Search markets" ng-model="vm.filter" ng-change="vm.onFilterChange()"></input>
+    <md-list flex layout-fill layout="column">
+      <md-list-item>
+        <div class="truncate-col market-col">Market</div>
+        <div class="truncate-col change-col">Change</div>
+        <div class="truncate-col price-col">Price</div>
+        <div class="truncate-col vol-col" flex>Vol</div>
+      </md-list-item>
+      <md-virtual-repeat-container flex layout-fill layout="column"
+          virtual-repeat-flex-helper ng-if="vm.markets.length>0">
+        <md-list-item md-virtual-repeat="item in vm.markets | filter: vm.filterFunc">
+          <div class="truncate-col market-col">
+            <a href="#/trader/{{item.currency}}/{{item.asset}}">
+              <span ng-class="{certified:item.currencyInfo.certified}">{{item.currencyInfo.symbol}}</span>/<span ng-class="{certified:item.assetInfo.certified}">{{item.assetInfo.symbol}}</span>
+            </a>
+          </div>
+          <div class="truncate-col change-col">{{item.change}}</div>
+          <div class="truncate-col price-col">{{item.price}}</div>
+          <div class="truncate-col vol-col right-align" flex>{{ item.vol }}</div>
+        </md-list-item>
+      </md-virtual-repeat-container>
+    </md-list>
   `
 })
 @Inject('$scope','heat','assetInfo','storage','$q','$mdToast')
@@ -83,7 +58,10 @@ class TraderMarketsComponent {
   // change, volume, price, none
   sort: string = 'change';
   asc: boolean = true;
+  filter: string = '';
+  filterFunc: Function;
 
+  showCertified = sessionStorage.getItem('trader.markets.showUncertified')!='true';
   markets: Array<IHeatMarket> = [];
   showFakeMarketsWarning = true;
 
@@ -93,7 +71,7 @@ class TraderMarketsComponent {
               private storage: StorageService,
               private $q: angular.IQService,
               private $mdToast: angular.material.IToastService) {
-
+    this.filterFunc = (item) => this.filterFuncImpl(item);
     var refresh = utils.debounce(angular.bind(this, this.loadMarkets), 5*1000, false);
     heat.subscriber.trade({}, (trade)=> refresh, $scope);
     this.loadMarkets();
@@ -102,7 +80,7 @@ class TraderMarketsComponent {
   loadMarkets() {
     this.heat.api.getMarketsAll(this.sort, this.asc, "0", 1, 0, 100).then((markets) => {
       this.$scope.$evalAsync(() => {
-        this.markets = markets;
+        this.markets = markets
         var promises = []; // collects all balance lookup promises
         this.markets.forEach((market: IHeatMarket|any) => {
           promises.push(
@@ -121,7 +99,7 @@ class TraderMarketsComponent {
           );
           market.change = `${(parseFloat(market.hr24Change)>0?'+':'')}${market.hr24Change}%`;
           market.price = utils.formatQNT(market.lastPrice, market.currencyDecimals);
-          market.vol = utils.formatQNT(market.hr24AssetVolume, market.assetDecimals);
+          market.vol = utils.commaFormat(Math.round(parseInt(utils.convertToQNTf(market.hr24AssetVolume))) + '');
           market.currencyInfo = {symbol:'*'};
           market.assetInfo = {symbol:'*'};
         });
@@ -129,11 +107,6 @@ class TraderMarketsComponent {
           this.$scope.$evalAsync(() => {
             this.markets.sort((a:any,b:any)=> {
               return this.compareMarket(a,b);
-              // if (a.certified < b.certified) return 1;
-              // if (a.certified > b.certified) return -1;
-              // if (a.symbol < b.symbol) return 1;
-              // if (a.symbol > b.symbol) return -1;
-              // return 0;
             });
           })
         });
@@ -175,6 +148,10 @@ class TraderMarketsComponent {
     });
   }
 
+  isSpecialMarket(market: IHeatMarket) {
+    return market.currency == '5592059897546023466' && market.asset == '0';
+  }
+
   /**
    * ON TOP: Markets where both assets are CERTIFIED, in alphabetical order (only one market BTC/HEAT for now)
    * BELOW THAT: Markets where one asset is certified, in alphabetical order (BTC/FIMK on top)
@@ -185,6 +162,10 @@ class TraderMarketsComponent {
     let assetA = <AssetInfo>a['assetInfo'];
     let currencyB = <AssetInfo>b['currencyInfo'];
     let assetB = <AssetInfo>b['assetInfo'];
+
+    // special case btc/heat always at top.
+    if (this.isSpecialMarket(a) && !this.isSpecialMarket(b)) return -1;
+    if (!this.isSpecialMarket(a) && this.isSpecialMarket(b)) return 1;
 
     let bothCertifiedA = currencyA.certified && assetA.certified;
     let bothCertifiedB = currencyB.certified && assetB.certified;
@@ -221,5 +202,50 @@ class TraderMarketsComponent {
     if (assetA.symbol > assetB.symbol)
       return 1;
     return 0;
+  }
+
+  public onFilterChange() {
+    this.$scope.$evalAsync(() => {
+      this.markets = [].concat(this.markets);
+    });
+  }
+
+  toggleShowCertified() {
+    this.showCertified = !this.showCertified;
+    sessionStorage.setItem('trader.markets.showUncertified', this.showCertified?'false':'true');
+    this.$scope.$evalAsync(() => {
+      this.markets = [].concat(this.markets);
+    });
+  }
+
+  // filter function used in ng-repeat
+  private filterFuncImpl(market: IHeatMarket|any) {
+    if (this.filter) {
+      let mask = this.filter.toUpperCase();
+      if (!
+            (market.assetInfo.symbol.toUpperCase().indexOf(mask) >= 0 ||
+             market.assetInfo.name.toUpperCase().indexOf(mask) >= 0 ||
+            (market.assetInfo.description !== null && market.assetInfo.description.toUpperCase().indexOf(mask) >= 0) ||
+             market.currencyInfo.symbol.toUpperCase().indexOf(mask) >= 0 ||
+             market.currencyInfo.name.toUpperCase().indexOf(mask) >= 0 ||
+            (market.currencyInfo.description !== null && market.currencyInfo.description.toUpperCase().indexOf(mask) >= 0))
+         )
+      {
+        return false;
+      }
+    }
+    if (this.showCertified) {
+      if (market.currency != "0") {
+        if (!market.currencyInfo || !market.currencyInfo.certified) {
+          return false;
+        }
+      }
+      if (market.asset != "0") {
+        if (!market.assetInfo || !market.assetInfo.certified) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 }

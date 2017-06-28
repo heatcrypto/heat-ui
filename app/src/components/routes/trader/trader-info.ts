@@ -22,80 +22,21 @@
  * */
 @Component({
   selector: 'traderInfo',
-  inputs: ['currencyInfo','assetInfo','toggleMarkets','marketsSidenavOpen'],
-  styles: [`
-  trader-info .market-title {
-  }
-  trader-info .market-title-text * {
-    font-size: 32px !important;
-  }
-  trader-info .show-hide  {
-    margin-left: 0px !important;
-    padding-left: 0px !important;
-    padding-right: 0px !important;
-    width: 28px !important;
-  }
-  trader-info .show-hide md-icon {
-    margin-left: 0px !important;
-    padding-left: 0px !important;
-  }
-  trader-info .hr-24 {
-    width: 100%;
-    padding-left: 8px;
-  }
-  trader-info .hr-24 td > div {
-    width: 70px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  `],
+  inputs: ['currencyInfo','assetInfo'],
   template: `
-    <div layout="column" flex layout-fill layout-padding>
-      <div layout="row">
-        <div layout="row" class="market-title">
-          <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
-            <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
-            <md-icon md-font-library="material-icons">{{vm.marketsSidenavOpen?'remove_circle_outline':'add_circle_outline'}}</md-icon>
-          </md-button>
-          <span class="market-title-text"><span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span></span>
-        </div>
-        <div layout="row" layout-align="end" flex ng-if="vm.isBtcAsset">
-          <md-button class="md-primary md-raised" ng-click="vm.showBtcLoadPopup($event)" ng-disabled="!vm.user.unlocked">Load BTC</md-button>
+    <div>
+      <div class="top-row">
+        <div class="market-title">
+          <span class="market-title-text">
+            <span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span>
+          </span>
         </div>
       </div>
-      <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info-asset-description>
+      <trader-info-asset-description currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info-asset-description>
     </div>
   `
 })
-@Inject('$scope','heat','user','settings')
 class TraderInfoComponent {
-
-  // inputs
   currencyInfo: AssetInfo; // @input
   assetInfo: AssetInfo; // @input
-  account: string; // @input
-  toggleMarkets: Function; // @input (controls the parent component markets sidenav)
-  marketsSidenavOpen: boolean; // @input (bound to parent component markets sidenav md-is-open)
-
-  isBtcAsset=false;
-
-  constructor(private $scope: angular.IScope,
-              private heat: HeatService,
-              private user: UserService,
-              private settings: SettingsService) {
-    var ready = () => {
-      if (this.currencyInfo && this.assetInfo) {
-        this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
-        unregister.forEach(fn => fn());
-      }
-    };
-    var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
-  }
-
-  showBtcLoadPopup($event) {
-    dialogs.loadBtc($event);
-  }
-
 }

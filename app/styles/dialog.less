@@ -1,0 +1,58 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+@import './colors';
+
+md-dialog {
+  -webkit-font-smoothing: antialiased;
+  //background-image:radial-gradient(50% 102%, #233050 50%, #0d0e14 100%);
+  background-color: @less-dark-blue;
+  border-radius:4px;
+  box-sizing: border-box;
+  color: @white;
+  font-family: 'Noto Sans', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 200;
+  line-height: 20 / 14;
+  md-toolbar {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    height: 20px;
+    background: initial !important;
+    //background-color: @dark-blue2 !important;
+    //background-image:radial-gradient(50% 102%, #233050 50%, #0d0e14 100%);
+  }
+  .fee {
+    color: @gray3 !important;
+    margin-left: 0px !important
+  }
+  a {
+    color: @link-yellow;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  md-input-container {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+}

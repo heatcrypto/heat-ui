@@ -1,3 +1,4 @@
+/// <reference path='../lib/EventEmitter.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.

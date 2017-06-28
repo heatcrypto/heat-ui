@@ -24,32 +24,13 @@
 @Component({
   selector: 'traderOrdersMy',
   inputs: ['currencyInfo','assetInfo','oneClickOrders'],
-  styles: [`
-    trader-orders-my .type-col {
-      width: 45px;
-    }
-    trader-orders-my .market-col {
-      width: 120px;
-    }
-    trader-orders-my .quantity-col, trader-orders-my .price-col, trader-orders-my .total-col {
-      width: 100px;
-    }
-    trader-orders-my .expires-col {}
-    trader-orders-my .cancel-col {
-      width: 60px;
-    }
-    trader-orders-my .cancel-col a {
-      text-decoration: underline;
-      cursor:pointer;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">{{vm.user.unlocked?'My':'All'}} pending orders&nbsp;
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
-        <md-list-item>
+        <md-list-item class="header">
           <div class="truncate-col type-col">Type</div>
           <div class="truncate-col market-col">Market</div>
           <div class="truncate-col quantity-col">Quantity</div>
@@ -84,6 +65,8 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
   assetInfo: AssetInfo; // @input
   oneClickOrders: boolean; // @input
 
+  refreshGrid: ()=>void;
+
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
               $q: angular.IQService,
@@ -105,7 +88,7 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
 
           /* decorator function */
           (order: any|IHeatOrder) => {
-            order.typeDisplay = order.type == 'ask' ? 'Ask' : 'Buy';
+            order.typeDisplay = order.type == 'ask' ? 'Sell' : 'Buy';
             order.market = this.currencyInfo.symbol + '/' + this.assetInfo.symbol;
             order.quantityDisplay = utils.formatQNT(order.quantity, this.assetInfo.decimals);
             order.priceDisplay = utils.formatQNT(order.price, this.currencyInfo.decimals);
@@ -130,13 +113,13 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
         this.provider.destroy();
       }
     });
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    var refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     var filter = {currency: currency, asset: asset, account: this.user.account};
     this.heat.subscriber.order(filter, (order: IHeatOrder) => {
-      refreshGrid();
+      this.refreshGrid();
     }, this.$scope);
   }
 

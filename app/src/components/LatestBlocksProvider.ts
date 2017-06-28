@@ -21,45 +21,49 @@
  * SOFTWARE.
  * */
 
-@Service('transactionsProviderFactory')
+@Service('latestBlocksProviderFactory')
 @Inject('heat','$q')
-class TransactionsProviderFactory  {
+class LatestBlocksProviderFactory  {
   constructor(private heat: HeatService, private $q: angular.IQService) {}
 
-  public createProvider(account: string, block: string): IPaginatedDataProvider {
-    return new TransactionsProvider(this.heat, this.$q, account, block);
+  /* Optionally pass a single block object which will be displayed as its single result */
+  public createProvider(blockObject?: IHeatBlock): IPaginatedDataProvider {
+    return new LatestBlocksProvider(this.heat, this.$q, blockObject);
   }
 }
 
-class TransactionsProvider implements IPaginatedDataProvider {
+class LatestBlocksProvider implements IPaginatedDataProvider {
   constructor(private heat: HeatService,
               private $q: angular.IQService,
-              private account: string,
-              private block: string) {}
+              private blockObject: IHeatBlock) {}
 
   /* Be notified this provider got destroyed */
   public destroy() {}
 
   /* The number of items available */
   public getLength(): angular.IPromise<number> {
-    if (angular.isString(this.account)) {
-      return this.heat.api.getTransactionsForAccountCount(this.account);
+    var deferred = this.$q.defer();
+    if (angular.isDefined(this.blockObject)) {
+      deferred.resolve(1);
     }
-    else if (angular.isString(this.block)) {
-      return this.heat.api.getTransactionsForBlockCount(this.block);
+    else {
+      this.heat.api.getBlockchainStatus().then((status) => {
+        deferred.resolve(status.numberOfBlocks);
+      },deferred.reject);
     }
-    return this.heat.api.getTransactionsForAllCount();
+    return deferred.promise;
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTransaction>> {
-    if (angular.isString(this.account)) {
-      return this.heat.api.getTransactionsForAccount(this.account, firstIndex, lastIndex);
+  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatBlock>> {
+    if (angular.isDefined(this.blockObject)) {
+      var deferred = this.$q.defer();
+      deferred.resolve([this.blockObject]);
+      return deferred.promise;
     }
-    else if (angular.isString(this.block)) {
-      return this.heat.api.getTransactionsForBlock(this.block, firstIndex, lastIndex);
+    else {
+      return this.heat.api.getBlocks(firstIndex, lastIndex);
     }
-    return this.heat.api.getTransactionsForAll(firstIndex, lastIndex);
   }
 
   public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }

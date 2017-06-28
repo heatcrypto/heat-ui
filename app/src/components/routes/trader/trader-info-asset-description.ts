@@ -23,85 +23,106 @@
 @Component({
   selector: 'traderInfoAssetDescription',
   inputs: ['currencyInfo','assetInfo'],
-  styles: [`
-  trader-info-asset-description {
-    padding-bottom: 0px !important;
-    padding-right: 0px !important;
-  }
-  trader-info-asset-description .description {
-    overflow: auto;
-    margin-bottom: 0px !important;
-    margin-top: 0px !important;
-  }
-  trader-info-asset-description > div > div:first-child {
-    margin-right: 16px !important;
-  }
-  trader-info-asset-description .seperator {
-    padding-bottom: 8px;
-  }
-  trader-info-asset-description table {
-    width: 100%;
-  }
-  trader-info-asset-description table td .stretched {
-    width: 100%;
-  }
-  trader-info-asset-description table td md-icon {
-    font-weight: bold;
-    color: red;
-  }
-  trader-info-asset-description table td md-icon.iscertified {
-    color: green !important;
-  }
-  `],
   template: `
-    <div layout="row" flex layout-fill>
-      <table>
-        <tr>
-          <td ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</td>
-          <td class="stretch" ng-class="{certified:vm.currencyInfo.certified}"><i>{{vm.currencyInfo.name}}</i></td>
-          <td ng-class="{certified:vm.currencyInfo.certified}">{{vm.assetInfo.symbol}}</td>
-          <td class="stretch" ng-class="{certified:vm.currencyInfo.certified}"><i>{{vm.assetInfo.name}}</i></td>
-        </tr>
-        <tr>
-          <td>Issuer</td>
-          <td class="stretch">{{vm.currencyIssuer}}</td>
-          <td>Issuer</td>
-          <td class="stretch">{{vm.assetIssuer}}</td>
-        </tr>
-        <tr>
-          <td>Certified</td>
-          <td class="stretch">
-            <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
-          </td>
-          <td>Certified</td>
-          <td class="stretch">
-            <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
-          </td>
-        </tr>
-        <tr>
-          <td>Launched</td>
-          <td class="stretch">{{vm.currencyLaunched}}</td>
-          <td>Launched</td>
-          <td class="stretch">{{vm.assetLaunched}}</td>
-        </tr>
-        <tr>
-          <td colspan="2"><button ng-click="vm.showDescription($event, vm.currencyInfo)">More info</button></td>
-          <td colspan="2"><button ng-click="vm.showDescription($event, vm.assetInfo)">More info</button></td>
-        </tr>
-      </table>
+    <div class="asset-container">
+      <div class="asset-description">
+        <div class="col">
+          <div class="col-item">
+            <div class="title">
+              Asset name:
+            </div>
+            <div class="value">
+              <a ng-click="vm.showDescription($event, vm.currencyInfo)">{{vm.currencyInfo.name}}</a>
+            </div>
+          </div>
+          <div class="col-item issued-by">
+            <div class="title">
+              Issuer:
+            </div>
+            <div class="value">
+              <a href="#/explorer-account/{{vm.currencyIssuer}}">{{vm.currencyIssuerPublicName||vm.currencyIssuer}}</a>
+            </div>
+          </div>
+          <div class="col-item launched">
+            <div class="title">
+              Certified:
+            </div>
+            <div class="value">
+              <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
+              <span ng-if="vm.currencyInfo.certified == true">Yes</span>
+              <span ng-if="vm.currencyInfo.certified == false">No</span>
+            </div>
+          </div>
+          <div class="col-item id">
+            <div class="title">
+              Launched:
+            </div>
+            <div class="value">
+              {{vm.currencyLaunched}}
+            </div>
+          </div>
+          <div class="col-item" ng-if="vm.currencyInfo.id != '0' && vm.currencyInfo.certified && vm.user.unlocked">
+            <md-button class="md-primary" ng-click="vm.showDeposit($event, vm.currencyInfo)">Deposit {{vm.currencyInfo.symbol}}</md-button>
+            <md-button class="md-warn" ng-click="vm.showWithdraw($event, vm.currencyInfo)">Withdraw {{vm.currencyInfo.symbol}}</md-button>
+          </div>
+        </div>
+      </div>
+      <div class="asset-description">
+        <div class="col">
+          <div class="col-item header">
+            <div class="title">
+              Asset name:
+            </div>
+            <div class="value">
+              <a ng-click="vm.showDescription($event, vm.assetInfo)">{{vm.assetInfo.name}}</a>
+            </div>
+          </div>
+          <div class="col-item issued-by">
+            <div class="title">
+              Issuer:
+            </div>
+            <div class="value">
+              <a href="#/explorer-account/{{vm.assetIssuer}}">{{vm.assetIssuerPublicName||vm.assetIssuer}}</a>
+            </div>
+          </div>
+          <div class="col-item launched">
+            <div class="title">
+              Certified:
+            </div>
+            <div class="value">
+              <md-icon ng-class="{iscertified:vm.assetInfo.certified}" md-font-library="material-icons">{{vm.assetInfo.certified?'check':'not_interested'}}</md-icon>
+              <span ng-if="vm.assetInfo.certified===true">Yes</span>
+              <span ng-if="vm.assetInfo.certified===false">No</span>
+            </div>
+          </div>
+          <div class="col-item id">
+            <div class="title">
+              Launched:
+            </div>
+            <div class="value">
+              {{vm.assetLaunched}}
+            </div>
+          </div>
+          <div class="col-item" ng-if="vm.assetInfo.id != '0' && vm.assetInfo.certified && vm.user.unlocked">
+            <md-button class="md-primary" ng-click="vm.showDeposit($event, vm.assetInfo)">Deposit {{vm.assetInfo.symbol}}</md-button>
+            <md-button class="md-warn" ng-click="vm.showWithdraw($event, vm.assetInfo)">Withdraw {{vm.assetInfo.symbol}}</md-button>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
-@Inject('$scope','settings','assetInfo','$q','heat')
+@Inject('$scope','settings','assetInfo','$q','heat','user','assetWithdraw')
 class TraderInfoAssetDescriptionComponent {
 
   // inputs
   currencyInfo: AssetInfo; // @input
   assetInfo: AssetInfo; // @input
 
-  isBtcAsset=false;
   currencyIssuer: string;
+  currencyIssuerPublicName: string;
   assetIssuer: string;
+  assetIssuerPublicName: string;
   currencyLaunched: string;
   assetLaunched: string;
 
@@ -109,55 +130,39 @@ class TraderInfoAssetDescriptionComponent {
               private settings: SettingsService,
               private assetInfoService: AssetInfoService,
               private $q: angular.IQService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              public user: UserService,
+              private assetWithdraw: AssetWithdrawService) {
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
-        this.isBtcAsset = this.currencyInfo.id==this.settings.get(SettingsService.HEATLEDGER_BTC_ASSET);
-        this.loadCurrencyInfo(this.currencyInfo.id);
-        this.loadAssetInfo(this.assetInfo.id);
+        this.$scope.$evalAsync(()=> {
+          this.currencyIssuer = this.currencyInfo.issuer;
+          this.currencyIssuerPublicName = this.currencyInfo.issuerPublicName;
+          this.currencyLaunched = dateFormat(utils.timestampToDate(this.currencyInfo.timestamp), format);
+          this.assetIssuer = this.assetInfo.issuer;
+          this.assetIssuerPublicName = this.assetInfo.issuerPublicName;
+          this.assetLaunched = dateFormat(utils.timestampToDate(this.assetInfo.timestamp), format);
+        });
         unregister.forEach(fn => fn());
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
   }
 
-  loadCurrencyInfo(id: string) {
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    if (id=="0") {
-      this.$scope.$evalAsync(()=> {
-        this.currencyIssuer = "Heat Ledger Ltd.";
-        this.currencyLaunched = dateFormat(utils.timestampToDate(100149557), format);
-      });
-    }
-    else {
-      this.heat.api.getAsset(id, "0", 1).then((asset)=> {
-        this.$scope.$evalAsync(()=> {
-          this.currencyIssuer = asset.account == "9583431768758058558" ? "Heat Ledger Ltd." : asset.account;
-          this.currencyLaunched = "";//dateFormat(utils.timestampToDate(asset.timestamp), format);
-        });
-      })
-    }
-  }
-
-  loadAssetInfo(id: string) {
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    if (id=="0") {
-      this.$scope.$evalAsync(()=> {
-        this.assetIssuer = "Heat Ledger Ltd.";
-        this.assetLaunched = dateFormat(utils.timestampToDate(100149557), format);
-      });
-    }
-    else {
-      this.heat.api.getAsset(id, "0", 1).then((asset)=> {
-        this.$scope.$evalAsync(()=> {
-          this.assetIssuer = asset.account == "9583431768758058558" ? "Heat Ledger Ltd." : asset.account;
-          this.assetLaunched = "";//dateFormat(utils.timestampToDate(asset.timestamp), format);
-        });
-      })
-    }
-  }
-
   showDescription($event, info: AssetInfo) {
     dialogs.assetInfo($event, info);
+  }
+
+  showDeposit($event, info: AssetInfo) {
+    dialogs.depositAsset($event, info);
+  }
+
+  showWithdraw($event, info: AssetInfo) {
+    if (this.currencyInfo.id != '0') {
+      this.assetWithdraw.dialog($event, info).then((dialog)=> {
+        dialog.show();
+      });
+    }
   }
 }

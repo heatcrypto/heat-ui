@@ -24,41 +24,6 @@ declare var saveAs: any;
 @RouteConfig('/login')
 @Component({
   selector: 'login',
-  styles: [`
-    login h2 {
-      font-size: 26px !important;
-    }
-    login .outer-container {
-      width: 100%;
-      max-width: 380px;
-    }
-    login .wallet {
-      width: 260px;
-      padding-top: 24px;
-      padding-bottom: 24px;
-    }
-    login .smalller-font {
-      font-size: 10px;
-    }
-    login a {
-      color: #9E9E9E !important;
-    }
-    login .compressed-input-container md-input-container {
-      margin-top: 5px;
-      margin-bottom: 5px;
-    }
-    login .clickable-icon {
-      cursor: pointer;
-      font-size: 18px;
-    }
-    login .account-preview {
-      color: #BDBDBD;
-    }
-    login textarea {
-      height: 60px !important;
-      min-height: 60px !important;
-    }
-  `],
   template: `
     <div layout="column" flex layout-align="start center">
       <div layout="column" layout-padding class="outer-container">
@@ -78,14 +43,14 @@ declare var saveAs: any;
                 <md-tooltip md-direction="bottom">Create a new account</md-tooltip>
                 Create
               </md-button>
-              <md-button class="md-raised" ng-click="vm.page='add'" aria-label="Add">
+              <md-button class="md-warn md-raised" ng-click="vm.page='add'" aria-label="Add">
                 <md-tooltip md-direction="bottom">Add existing account</md-tooltip>
                 Add
               </md-button>
             </div>
           </div>
 
-          <!-- SIGNIN page -->
+          <!-- SIGNIN page (dropdown shows keys in wallet, must enter pin) -->
           <div layout="column" flex ng-if="vm.page=='signin'">
             <div layout="column" flex>
               <md-input-container>
@@ -111,7 +76,7 @@ declare var saveAs: any;
             </div>
           </div>
 
-          <!-- CREATE page (1) -->
+          <!-- CREATE page (0) -->
           <div layout="column" flex ng-if="vm.page=='create'">
             <div layout="row" flex layout-align="center center">
               <md-input-container flex>
@@ -127,9 +92,11 @@ declare var saveAs: any;
               <md-input-container flex>
                 <label>Secret phrase</label>
                 <textarea rows="2" flex ng-model="vm.pageCreateSecretPhrase" readonly ng-trim="false" id="create-new-textarea"></textarea>
+                <!--
                 <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">
                   <md-tooltip md-direction="right">Copy to clipboard</md-tooltip>content_copy
                 </md-icon>
+                -->
               </md-input-container>
             </div>
             <div layout="column" flex>
@@ -150,7 +117,7 @@ declare var saveAs: any;
             </div>
             <div layout="row" layout-align="center center">
               <md-button class="md-primary md-raised" ng-click="vm.page=''" aria-label="Back">Options</md-button>
-              <md-button class="md-raised" ng-click="vm.generateNewSecretPhrase()" aria-label="Other">
+              <md-button class="md-warn md-raised" ng-click="vm.generateNewSecretPhrase()" aria-label="Other">
                 Renew pass
               </md-button>
               <md-button class="md-primary md-raised" ng-click="vm.page='create1'"
@@ -163,7 +130,7 @@ declare var saveAs: any;
             </div>
           </div>
 
-          <!-- CREATE page (2) -->
+          <!-- CREATE page (1) -->
           <div layout="column" flex ng-if="vm.page.indexOf('create')!=-1" ng-show="vm.page=='create1'" layout-padding>
             <div layout="column" flex>
               <p>Although we have absolutely nothing against robots, we still would like to know if you are one.</p>
@@ -173,13 +140,13 @@ declare var saveAs: any;
               <md-button ng-if="vm.useExternalCaptcha" ng-click="vm.doChallenge()" class="md-raised md-primary" ng-disabled="vm.pageCreateRecaptchaResponse">Click here</md-button>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-primary md-raised" ng-click="vm.page='create'" aria-label="Back">Options</md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='create'" aria-label="Back">Back</md-button>
               <md-button class="md-primary md-raised" ng-click="vm.createAccount();vm.page='create2'" ng-disabled="!vm.pageCreateRecaptchaResponse"
                 aria-label="Continue">Create Account</md-button>
             </div>
           </div>
 
-          <!-- CREATE page (3) -->
+          <!-- CREATE page (2) -->
           <div layout="column" flex ng-if="vm.page.indexOf('create')!=-1" ng-show="vm.page=='create2'">
             <div layout="column" flex layout-padding ng-show="vm.pageCreateLoading">
               <div layout="row" layout-align="space-around">
@@ -195,7 +162,7 @@ declare var saveAs: any;
             </div>
           </div>
 
-          <!-- CREATE page (5) -->
+          <!-- CREATE page (3 - success page) -->
           <div layout="column" flex ng-show="vm.pageCreateSuccess">
             <div layout="column" flex layout-align="start center">
               <h2>Congratulations, it worked!</h2>
@@ -211,7 +178,7 @@ declare var saveAs: any;
                 <md-icon md-font-library="material-icons">save</md-icon>
                 &nbsp;&nbsp;Save
               </md-button>
-              <md-button ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')">
+              <md-button ng-click="vm.showPassphrase()">
                 <md-icon md-font-library="material-icons">content_copy</md-icon>
                 &nbsp;&nbsp;Copy
               </md-button>
@@ -232,8 +199,26 @@ declare var saveAs: any;
             </div>
           </div>
 
-          <!-- ADD page -->
+          <!-- ADD page (choose add secret phrase or open wallet file) -->
           <div layout="column" flex ng-show="vm.page=='add'">
+            <div layout="row" layout-align="center center">
+              <md-button class="md-warn md-raised" ng-click="vm.page=''" aria-label="Back">
+                <md-tooltip md-direction="bottom">Go back one page</md-tooltip>
+                Back
+              </md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='addSecret'" aria-label="Add secret phrase">
+                <md-tooltip md-direction="bottom">Add single key through secret phrase</md-tooltip>
+                Secret Phrase
+              </md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.page='addWallet'" aria-label="Open wallet file">
+                <md-tooltip md-direction="bottom">Load wallet file</md-tooltip>
+                Wallet File
+              </md-button>
+            </div>
+          </div>
+
+          <!-- ADD page (adds single secret phrase) -->
+          <div layout="column" flex ng-show="vm.page=='addSecret'">
             <div layout="column" flex>
               <md-input-container flex>
                 <label>Secret phrase</label>
@@ -247,7 +232,7 @@ declare var saveAs: any;
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center">
-              <md-button class="md-raised" ng-click="vm.page=''" aria-label="Back">
+              <md-button class="md-warn md-raised" ng-click="vm.page='add'" aria-label="Back">
                 <md-tooltip md-direction="bottom">Go back one page</md-tooltip>
                 Back
               </md-button>
@@ -255,7 +240,7 @@ declare var saveAs: any;
                 <md-tooltip md-direction="bottom">Add and encrypt this secretphrase to your device</md-tooltip>
                 Add
               </md-button>
-              <md-button class="md-raised" ng-click="vm.pageAddLogin()" ng-disabled="!vm.pageAddSecretPhrase" aria-label="Sign in">
+              <md-button class="md-primary md-raised" ng-click="vm.pageAddLogin()" ng-disabled="!vm.pageAddSecretPhrase" aria-label="Sign in">
                 <md-tooltip md-direction="bottom">Sign in without storing your secretphrase</md-tooltip>
                 Sign in
               </md-button>
@@ -268,6 +253,29 @@ declare var saveAs: any;
               </span>
             </div>
           </div>
+
+          <!-- ADD page (opens wallet file) -->
+          <div layout="column" flex ng-show="vm.page=='addWallet'">
+            <div layout="column" flex>
+              <md-input-container flex>
+                <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files)">
+              </md-input-container>
+            </div>
+            <div layout="column" layout-align="center center" ng-show="vm.pageAddWalletInvalid">
+              <p><b>Invalid wallet file</b></p>
+            </div>
+            <div layout="row" layout-align="center center">
+              <md-button class="md-warn md-raised" ng-click="vm.page='add'" aria-label="Back">
+                <md-tooltip md-direction="bottom">Go back one page</md-tooltip>
+                Back
+              </md-button>
+              <md-button class="md-primary md-raised" ng-click="vm.pageAddWalletImportContinue()" ng-disabled="!vm.pageAddWallet" aria-label="Continue">
+                <md-tooltip md-direction="bottom">Click to open wallet explorer</md-tooltip>
+                Continue
+              </md-button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -277,7 +285,7 @@ declare var saveAs: any;
   `
 })
 @Inject('$scope','$q','user','$location','heat','localKeyStore',
-        'secretGenerator','clipboard','$mdToast','env','settings')
+        'secretGenerator','clipboard','$mdToast','env','settings','walletFile','panel')
 class LoginComponent {
 
   page: string = '';
@@ -295,6 +303,8 @@ class LoginComponent {
   pageAddPincode: string;
   pageAddSecretPhraseHasHiddenChars: boolean;
   pageAddCalculatedAccountId: string = 'Enter secret phrase to see account id';
+  pageAddWallet: IHeatWalletFile;
+  pageAddWalletInvalid: boolean = false;
 
   pageSigninPincode: string;
   pageSigninAccount: string;
@@ -323,20 +333,17 @@ class LoginComponent {
               private clipboard: ClipboardService,
               private $mdToast: angular.material.IToastService,
               private env: EnvService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private walletFile: WalletFileService,
+              private panel: PanelService) {
 
     try {
       this.isFileSaverSupported = !!new Blob;
     } catch (e) {}
     this.useExternalCaptcha = env.type!=EnvType.BROWSER;
     this.generateNewSecretPhrase();
+    this.initLocalKeys();
 
-    this.localKeys = localKeyStore.list().map((account:string) => {
-      return {
-        name: localKeyStore.keyName(account),
-        account: account
-      }
-    });
     if (this.localKeys.length != 0) {
       this.pageSigninAccount = this.localKeys[0].account;
       this.page='signin';
@@ -344,6 +351,15 @@ class LoginComponent {
     else {
       this.page='create';
     }
+  }
+
+  initLocalKeys() {
+    this.localKeys = this.localKeyStore.list().map((account:string) => {
+      return {
+        name: this.localKeyStore.keyName(account),
+        account: account
+      }
+    });
   }
 
   apiServerChanged() {
@@ -375,14 +391,42 @@ class LoginComponent {
   }
 
   pageAddAddSecretPhrase() {
-    this.localKeyStore.add({
+    let key = {
       account: this.pageAddAccount,
       secretPhrase: this.pageAddSecretPhrase,
       pincode: this.pageAddPincode,
       name: ''
-    });
-    this.user.unlock(this.pageAddSecretPhrase, true).then(() => {
+    };
+    this.localKeyStore.add(key);
+    this.user.unlock(this.pageAddSecretPhrase, true, key).then(() => {
       this.$location.path('home');
+    });
+  }
+
+  pageAddFileInputChange(files: FileList) {
+    if (files && files[0]) {
+      let reader = new FileReader();
+      reader.onload = () => {
+        this.$scope.$evalAsync(() => {
+          this.pageAddWalletInvalid = true;
+          let fileContents = reader.result;
+          this.pageAddWallet = this.walletFile.createFromText(fileContents);
+          if (this.pageAddWallet) {
+            this.pageAddWalletInvalid = false;
+          }
+        })
+      };
+      reader.readAsText(files[0]);
+    }
+  }
+
+  pageAddWalletImportContinue() {
+    let addedKeys = this.localKeyStore.import(this.pageAddWallet);
+    this.initLocalKeys();
+    let message = `Imported ${addedKeys.length} keys into this device`;
+    this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
+    this.$scope.$evalAsync(()=>{
+      this.page = '';
     });
   }
 
@@ -391,7 +435,7 @@ class LoginComponent {
       this.pageSigninWrongPincode = false;
       var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
       if (key) {
-        this.user.unlock(key.secretPhrase, false).then(() => {
+        this.user.unlock(key.secretPhrase, false, key).then(() => {
           this.$location.path('home');
         });
       }
@@ -465,6 +509,18 @@ class LoginComponent {
     saveAs(blob, `heatledger-${this.pageCreateUserName}-${this.pageCreateAccount}.txt`);
   }
 
+  showPassphrase() {
+    this.panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+        </md-input-container>
+      </div>
+    `, {
+      secretPhrase: this.pageCreateSecretPhrase
+    })
+  }
+
   templateText() {
     return [
       'When stored the passphrase in this document will forever give you access to your HEAT funds.',
@@ -498,13 +554,14 @@ class LoginComponent {
   }
 
   createLocalAccount() {
-    this.localKeyStore.add({
+    let key = {
       account: this.pageCreateAccount,
       secretPhrase: this.pageCreateSecretPhrase,
       pincode: this.pageCreatePincode,
       name: this.pageCreateUserName
-    });
-    this.user.unlock(this.pageCreateSecretPhrase, true).then(() => {
+    };
+    this.localKeyStore.add(key);
+    this.user.unlock(this.pageCreateSecretPhrase, true, key).then(() => {
       this.$location.path('new');
     });
   }

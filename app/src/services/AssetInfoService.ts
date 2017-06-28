@@ -28,6 +28,10 @@ interface AssetInfo {
   symbol: string;
   name: string;
   certified: boolean;
+  timestamp: number;
+  issuer: string;
+  issuerPublicName: string;
+  userBalance?: string;
 }
 
 interface AssetPropertiesProtocol1 {
@@ -39,6 +43,13 @@ interface AssetPropertiesProtocol1 {
 @Service('assetInfo')
 @Inject('heat', '$q','assetCertification','http')
 class AssetInfoService {
+
+  // Heat Ledger Ltd certified assets symbols.
+  certifiedSymbols = {
+    "btc": "5592059897546023466",
+    "fimk": "8593933499455210945",
+    "gnt": "12638687347417181640"
+  };
 
   cache: IStringHashMap<AssetInfo> = {};
 
@@ -53,8 +64,21 @@ class AssetInfoService {
       decimals: 8,
       symbol: "HEAT",
       name: "HEAT Cryptocurrency",
-      certified: true
+      certified: true,
+      timestamp: 100149557,
+      issuer: "8150091319858025343",
+      issuerPublicName: "HEAT blockchain Genesis account"
     };
+  }
+
+  getDisplaySymbol(asset: string, symbol: string) {
+    let lowerCaseSymbol = symbol.toLowerCase();
+    if (angular.isString(this.certifiedSymbols[lowerCaseSymbol])) {
+      if (this.certifiedSymbols[lowerCaseSymbol] != asset) {
+        return symbol.slice(0, -1) + '-';
+      }
+    }
+    return symbol;
   }
 
   getInfo(asset: string): angular.IPromise<AssetInfo> {
@@ -74,9 +98,12 @@ class AssetInfoService {
           description: null,
           descriptionUrl: data.descriptionUrl,
           decimals: data.decimals,
-          symbol: properties.symbol,
+          symbol: this.getDisplaySymbol(asset, properties.symbol||''),
           name: properties.name,
-          certified: false
+          certified: false,
+          timestamp: data.timestamp,
+          issuer: data.account,
+          issuerPublicName: data.accountPublicName
         };
         this.assetCertification.getInfo(asset).then((certificationData)=> {
           if (certificationData.certified) {
@@ -111,14 +138,17 @@ class AssetInfoService {
 
   public getAssetDescription(info: AssetInfo): angular.IPromise<string> {
     var deferred = this.$q.defer();
+    let noDescription = "No description available ...";
     if (angular.isString(info.description) || !info.descriptionUrl) {
-      deferred.resolve(info.description||"No description available ...");
+      deferred.resolve(info.description||noDescription);
     }
     else {
       this.http.get(info.descriptionUrl).then((text)=>{
         info.description = text;
         deferred.resolve(text);
-      }, deferred.reject);
+      }, () => {
+        deferred.resolve(noDescription);
+      });
     }
     return deferred.promise;
   }

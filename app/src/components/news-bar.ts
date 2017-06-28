@@ -78,8 +78,7 @@ heat.Loader.run(['$mdBottomSheet',
             </div>
           </md-bottom-sheet>
         `,
-        controller: function () {},
-        targetEvent: $event
+        controller: function () {}
       })
     }
   }

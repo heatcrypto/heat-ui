@@ -1,5 +1,5 @@
-///<reference path='lib/AbstractTransaction.ts'/>
-///<reference path='lib/GenericDialog.ts'/>
+/// <reference path='lib/AbstractTransaction.ts'/>
+/// <reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2016 Heat Ledger Ltd.
@@ -26,9 +26,9 @@
 @Inject('$q','user','heat')
 class AssetTransferService extends AbstractTransaction {
 
-  constructor(private $q: angular.IQService,
-              private user: UserService,
-              private heat: HeatService) {
+  constructor(public $q: angular.IQService,
+              public user: UserService,
+              public heat: HeatService) {
     super();
   }
 
@@ -53,17 +53,17 @@ class AssetTransferService extends AbstractTransaction {
 class AssetTransferDialog extends GenericDialog {
 
   constructor($event,
-              private transaction: AbstractTransaction,
-              private $q: angular.IQService,
-              private user: UserService,
-              private heat: HeatService,
-              private recipient: string,
-              private recipientPublicKey: string,
-              private asset: string,
-              private amount: string,
-              private userMessage: string) {
+              public transaction: AbstractTransaction,
+              public $q: angular.IQService,
+              public user: UserService,
+              public heat: HeatService,
+              public recipient: string,
+              public recipientPublicKey: string,
+              public asset: string,
+              public amount: string,
+              public userMessage: string) {
     super($event);
-    this.dialogTitle = 'Asset Trasfer';
+    this.dialogTitle = 'Asset Transfer';
     this.dialogDescription = 'Description on how to transfer asset';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');

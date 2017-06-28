@@ -88,7 +88,6 @@ module heat {
         'ngMaterial',
         'ngMessages',
         'noCAPTCHA',
-        'md.data.table',
         'ngSanitize',
         'duScroll',
         'dc.inputAddOn',

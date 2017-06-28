@@ -31,8 +31,9 @@ interface IHeatAPI {
    * Get the state of the server node and network
    */
   getBlockchainStatus():angular.IPromise<IHeatBlockchainStatus>;
-  getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlock>>;
+  getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>>;
   getBlock(numericId: string, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
+  getBlockAtHeight(height: number, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
 
   /**
    * Returns account public key
@@ -233,6 +234,24 @@ interface IHeatAPI {
    * Count all transactions
    */
   getTransactionsForAllCount(): angular.IPromise<number>;
+
+  /**
+   * List transactions send from one account to another
+   */
+  getTransactionsFromTo(sender:string, recipient:string, from:number, to:number): angular.IPromise<Array<IHeatTransaction>>;
+  getTransaction(transaction: string): angular.IPromise<IHeatTransaction>;
+
+  /**
+   * Search account ids, public keys and email ids. If an exact match is found on public key,
+   * account id, public name or private name. Only that one result is returned.
+   */
+  searchAccounts(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>>;
+  searchAccountsCount(query: string): angular.IPromise<number>;
+
+  /**
+   * Search public names only.
+   */
+  searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>>;
 }
 interface IHeatAccount {
   id: string;
@@ -249,6 +268,7 @@ interface IHeatAccount {
   nextLeasingHeightFrom: number,
   nextLeasingHeightTo: number;
   lessors: Array<string|IHeatLessors>;
+  publicName: string;
 }
 interface IHeatLessors {
   id: string;
@@ -560,6 +580,14 @@ interface IHeatTransaction {
    * The timestamp (in seconds since 24 november 2013 00:00 UTC) of the block
    */
   blockTimestamp: number;
+
+  recipientPublicKey: string;
+  messageBytes: string;
+  messageIsText: boolean;
+  messageIsEncrypted: boolean;
+  messageIsEncryptedToSelf: boolean;
+  recipientPublicName: string;
+  senderPublicName: string;
 }
 interface IHeatBroadcastInput {
   /**
@@ -586,6 +614,7 @@ interface IHeatAsset {
    * The number of the account that issued the asset
    */
   account: string;
+  accountPublicName: string;
   /**
    * The asset ID
    */
@@ -610,10 +639,6 @@ interface IHeatAsset {
    * True in case new assets can later be issued by the asset issuer
    */
   dillutable: boolean;
-  /**
-   * Launch timestamp
-   */
-  timestamp: number;
 
   properties?: string;
 }
@@ -660,6 +685,10 @@ interface IHeatAssetProperties extends IHeatAsset {
    * Asset properties based on protocol and account id
    */
   properties: string;
+  /**
+   * Asset properties timestamp
+   */
+  timestamp: number;
 }
 
 interface IHeatOrder {
@@ -930,6 +959,17 @@ interface IHeatBlockchainStatus {
    */
   currentCoinSupply: string;
 }
+interface IHeatBlockCondensed {
+  totalAmountHQT: string;
+  posRewardHQT: string;
+  popRewardHQT: string,
+  generator: string;
+  numberOfTransactions: number;
+  totalFeeHQT: string;
+  block: string;
+  height: number;
+  timestamp: number;
+}
 interface IHeatBlock {
   previousBlockHash: string;
   payloadLength: number;
@@ -938,6 +978,7 @@ interface IHeatBlock {
   popRewardHQT: string,
   generationSignature: string;
   generator: string;
+  generatorPublicName: string;
   generatorPublicKey: string;
   baseTarget: string;
   payloadHash: string;

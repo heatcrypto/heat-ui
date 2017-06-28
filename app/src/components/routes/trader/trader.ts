@@ -25,155 +25,45 @@ declare var Big: any;
 @Component({
   selector: 'trader',
   inputs: ['currency','asset'],
-  styles: [`
-  trader {
-    font-size: 12px !important;
-  }
-  trader .currentlyNotValid {
-    text-decoration: line-through !important;
-  }
-  trader .virtual {
-    background-color: #FFE082 !important;
-  }
-  trader md-list-item {
-    border-bottom: 1px solid #ddd;
-  }
-  trader md-list-item .md-button {
-    min-height: 24px;
-  }
-  trader .trader-component {
-    border-color: #ddd;
-    margin-bottom: 4px;
-  }
-  trader .trader-component-title {
-    font-weight: bold;
-    padding-right: 16px;
-    padding-left: 16px;
-    padding-top: 4px;
-    color: #424242;
-  }
-  trader trader-info {
-    border-style: solid;
-    border-width: 1px;
-    margin-right: 2px;
-  }
-  trader trader-chart {
-    border-style: solid;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-right-width: 1px;
-    border-left-width: 0px;
-  }
-  trader trader-orders-buy {
-    margin-right: 2px;
-    border-style: solid;
-    border-top-width: 0px;
-    border-bottom-width: 1px;
-    border-right-width: 1px;
-    border-left-width: 1px;
-  }
-  trader trader-quick-buy-sell {
-    margin-right: 2px;
-    border-style: solid;
-    border-top-width: 0px;
-    border-bottom-width: 1px;
-    border-right-width: 1px;
-    border-left-width: 0px;
-  }
-  trader trader-orders-sell {
-    border-style: solid;
-    border-top-width: 0px;
-    border-bottom-width: 1px;
-    border-right-width: 1px;
-    border-left-width: 0px;
-  }
-  trader trader-trade-history {
-    border-style: solid;
-    border-top-width: 0px;
-    border-bottom-width: 1px;
-    border-right-width: 1px;
-    border-left-width: 1px;
-  }
-  trader trader-orders-my {
-    border-style: solid;
-    border-top-width: 0px;
-    border-bottom-width: 1px;
-    border-right-width: 0px;
-    border-left-width: 0px;
-  }
-  trader trader-balances {
-    border-color: #9E9E9E;
-    border-style: solid;
-    border-top-width: 1px;
-    border-left-width: 1px;
-    border-bottom-width: 0px;
-    border-right-width: 0px;
-    min-height: 100px;
-  }
-  trader trader-markets {
-    border-color: #9E9E9E;
-    border-style: solid;
-    border-top-width: 0px;
-    border-left-width: 1px;
-    border-bottom-width: 0px;
-    border-right-width: 0px;
-  }
-  /* trader md-list-item._md-button-wrap > div.md-button:first-child {
-    padding-left: 0px;
-  } */
-  trader md-list-item.active {
-    background-color: #B2DFDB;
-  }
-  trader md-list-item {
-    min-height: 25px;
-    height: 25px;
-  }
-  trader .truncate-col {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  trader .right-align {
-    text-align: right;
-  }
-  trader .certified {
-    font-weight: bold;
-    text-decoration: underline;
-  }
-  trader .warning {
-    background-color: yellow;
-    font-weight: bold;
-    font-size: 16px !important;
-  }
-  `],
   template: `
+    <div layout="row">
+      <!--
+      <div>
+        <md-button class="md-icon-button show-hide" aria-label="Show/hide markets" ng-click="vm.toggleMarkets()">
+          <md-tooltip md-direction="bottom">Show/Hide markets</md-tooltip>
+          <i><img src="assets/{{vm.marketsSidenavOpen?'minusIcon':'plusIcon'}}.png"></i>
+        </md-button>
+      </div>
+      -->
+      <span flex></span>
+      <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
+    </div>
     <div layout="row" flex layout-fill>
-      <md-sidenav class="md-sidenav-left md-whiteframe-z1" md-component-id="trader-markets-sidenav"
+      <md-sidenav class="md-sidenav-left" md-component-id="trader-markets-sidenav"
           md-is-locked-open="vm.marketsSidenavLockedOpen" md-is-open="vm.marketsSidenavOpen"
           md-disable-backdrop flex layout-fill>
-        <div layout="column" flex layout-fill>
-          <trader-balances layout="column" ng-if="vm.user.unlocked"></trader-balances>
-          <trader-markets layout="column" flex layout-fill></trader-markets>
-          <trader-trollbox layout="column"></trader-trollbox>
+        <div class="sidenav-container">
+          <trader-balances currency-info="vm.currencyInfo" asset-info="vm.assetInfo" ng-if="vm.user.unlocked"></trader-balances>
+          <trader-markets></trader-markets>
+          <trader-trollbox></trader-trollbox>
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill>
-        <div layout="column" flex layout-fill>
-          <div class="warning" layout="row" ng-if="!vm.currencyInfo.certified||!vm.assetInfo.certified">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
-          <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
-          <div layout="column" layout-gt-sm="row" flex layout-fill>
-            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-info>
-            <trader-chart class="trader-component" flex layout="column" layout-fill currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
-          </div>
+        <div ng-if="vm.showMarketNotCertified">
+          <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
         </div>
-        <div layout="column" layout-gt-sm="row" flex layout-fill>
-          <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-orders-buy>
-          <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-quick-buy-sell>
-          <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex layout="column" layout-fill></trader-orders-sell>
+        <div class="trader-row top">
+            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>
+            <trader-chart class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
         </div>
-        <div layout="column" layout-gt-sm="row" flex layout-fill>
-          <trader-trade-history class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex="40" layout="column" layout-fill></trader-trade-history>
-          <trader-orders-my ng-if="vm.user.unlocked" class="trader-component" one-click-orders="vm.oneClickOrders" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" flex="60" layout="column" layout-fill></trader-orders-my>
+        <div class="trader-row middle">
+          <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-buy>
+          <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-quick-buy-sell>
+          <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"l></trader-orders-sell>
+        </div>
+        <div class="trader-row bottom">
+          <trader-trade-history class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-trade-history>
+          <trader-orders-my ng-if="vm.user.unlocked" class="trader-component" one-click-orders="vm.oneClickOrders" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-my>
         </div>
       </div>
     </div>
@@ -200,6 +90,7 @@ class TraderComponent {
 
   selectedOrder: IHeatOrder; // the order currently selected in either buy-orders or sell-orders lists.
   isTestnet: boolean;
+  showMarketNotCertified = undefined;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -234,5 +125,20 @@ class TraderComponent {
 
     this.user.account = user.account || "";
     this.isTestnet = heat.isTestnet;
+
+    let ready = () => {
+      if (this.currencyInfo && this.assetInfo) {
+        this.showMarketNotCertified = !this.currencyInfo.certified||!this.assetInfo.certified;
+        unregister.forEach((fn)=>{fn()});
+      }
+    }
+    let unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
+    setTimeout(()=>{
+      if (!angular.isDefined(this.showMarketNotCertified)) {
+        $scope.$evalAsync(()=>{
+          this.showMarketNotCertified = true;
+        })
+      }
+    }, 2000);
   }
 }

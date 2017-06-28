@@ -20,32 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Service('HTTPNotify')
-@Inject('$interval')
-class HTTPNotifyService {
-
-  private listeners: Array<()=>void> = [];
-
-  constructor($interval: angular.IIntervalService) {
-    $interval(() => {
-      this.notify();
-    }, 60 * 1000, 0, false);
-  }
-
-  public notify() {
-    this.listeners.forEach((fn) => { fn() });
-  }
-
-  public on(fn: ()=>void, $scope: angular.IScope) {
-    this.listeners.push(fn);
-    $scope.$on('$destroy', () => {
-      this.remove(fn);
-    })
-  }
-
-  private remove(fn: ()=>void): boolean {
-    var oldLength = this.listeners.length;
-    this.listeners = this.listeners.filter((_fn) => _fn !== fn);
-    return this.listeners.length != oldLength;
+module dialogs {
+  export function jsonDetails($event, jsonObject: any, title: string) {
+    return dialogs.dialog({
+      id: 'jsonDetails',
+      title: title,
+      targetEvent: $event,
+      cancelButton: false,
+      locals: {
+        jsonObject: jsonObject,
+      },
+      template: `
+        <div layout="column" flex>
+          <json-formatter json="vm.jsonObject" open="1" class="json-formatter-dark"></json-formatter>
+        </div>
+      `
+    });
   }
 }

@@ -22,77 +22,36 @@
  * */
 @Component({
   selector: 'traderTrollbox',
-  styles: [`
-    trader-trollbox .trader-component-title {
-      height: 45px;
-      padding-bottom: 8px;
-    }
-    trader-trollbox textarea {
-      padding: 4px;
-      margin: 8px;
-    }
-    trader-trollbox .bottom-control {
-      min-height: 60px !important;
-    }
-    trader-trollbox .bottom-control .join-area input {
-      width: 100%;
-      height: 20px;
-      margin: 8px;
-      padding-left: 4px;
-    }
-    trader-trollbox .bottom-control .join-area button {
-      height: 20px;
-      margin-top: 8px;
-      margin-right: 8px;
-    }
-    trader-trollbox ul {
-      padding-left: 8px;
-    }
-    /* These styles are taken from the demo on https://github.com/Luegg/angularjs-scroll-glue */
-    trader-trollbox [scroll-glue-top],
-    trader-trollbox [scroll-glue-bottom],
-    trader-trollbox [scroll-glue]{
-      height: 400px;
-      overflow-y: scroll;
-      border: 1px solid gray;
-    }
-    trader-trollbox [scroll-glue-left],
-    trader-trollbox [scroll-glue-right]{
-      width: 100px;
-      overflow-x: scroll;
-      border: 1px solid gray;
-      padding: 10px;
-    }
-    trader-trollbox [scroll-glue-left] span,
-    trader-trollbox [scroll-glue-right] span{
-      border: 1px solid black;
-    }
-  `],
   template: `
-    <div layout="column" layout-fill>
-      <div layout="row" class="trader-component-title">Trollbox&nbsp;
-        <span flex></span>
+    <div layout="column" flex layout-fill>
+      <div class="trader-component-title">Trollbox&nbsp;
         <elipses-loading ng-show="vm.loading"></elipses-loading>
-        <span><a href="https://heatslack.herokuapp.com/" target="_blank">Join Slack!
-        <md-tooltip md-direction="bottom">This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.</md-tooltip>
-        </a></span>
+        <a href="https://heatslack.herokuapp.com/" target="_blank">Join Slack!
+          <md-tooltip md-direction="bottom">
+            This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.
+          </md-tooltip>
+        </a>
       </div>
-      <div scroll-glue flex>
-        <ul>
+      <div layout="row">
+        <div flex>
+          <input type="text" placeholder="Type your name here" ng-model="vm.name"
+                  ng-disabled="!vm.user.unlocked"></input>
+        </div>
+        <div>
+          <button class="md-primary md-button md-ink-ripple" ng-click="vm.joinChat()" ng-disabled="!vm.name || vm.trollbox.name">Join</button>
+        </div>
+      </div>
+      <div layout="column" flex>
+        <ul class="display" scroll-glue>
           <li ng-repeat="item in vm.messages">
             <span><b>{{item.username}}</b>: {{item.text}}</span>
           </li>
         </ul>
       </div>
-      <div layout="row" class="bottom-control" ng-if="vm.user.unlocked">
-        <div layout="column" flex ng-if="vm.trollbox.name" class="chat-area">
-          <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
-            placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
-        </div>
-        <div layout="row" ng-if="!vm.trollbox.name" class="join-area" flex>
-          <input type="text" placeholder="Name" ng-model="vm.name"></input>
-          <button ng-click="vm.joinChat()" ng-disabled="!vm.name">Join</button>
-        </div>
+      <div layout="row">
+        <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
+          ng-disabled="!vm.user.unlocked || !vm.trollbox.name"
+          placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
       </div>
     </div>
   `
@@ -106,11 +65,13 @@ class TraderTrollboxComponent {
               private trollbox: TrollboxService,
               private $timeout: angular.ITimeoutService,
               private user: UserService) {
+
     trollbox.getMessages().then((messages) => {
       $scope.$evalAsync(() => {
         this.messages = messages;
       });
     });
+
     trollbox.subscribe((event)=> {
       $scope.$evalAsync(() => {
         if (angular.isObject(event) && angular.isString(event.username) && angular.isString(event.text)) {
@@ -120,6 +81,10 @@ class TraderTrollboxComponent {
         }
       });
     }, $scope);
+
+    if (angular.isString(user.accountName)) {
+      this.name = user.accountName.replace(/@heatwallet.com$/,"");
+    }
   }
 
   joinChat() {
@@ -127,11 +92,10 @@ class TraderTrollboxComponent {
   }
 
   onTextAreaKeyPress($event: KeyboardEvent) {
-    if ($event.keyCode == 13 && !$event.shiftKey) {
-      this.trollbox.sendMessage(this.messageText).then(()=>{
-        this.$scope.$evalAsync(()=>{
-          this.messageText = "";
-        })
+    if ($event.keyCode == 13 && !$event.shiftKey && utils.emptyToNull(this.messageText)) {
+      this.trollbox.sendMessage(this.messageText);
+      this.$scope.$evalAsync(()=>{
+        this.messageText = null;
       })
     }
   }
