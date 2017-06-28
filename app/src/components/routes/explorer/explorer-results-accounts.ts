@@ -27,13 +27,15 @@
     <div layout="column" flex layout-fill>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <div class="truncate-col id-col">Account</div>
-          <div class="truncate-col name-col">Name</div>
+          <div class="truncate-col id-col left">Account</div>
+          <div class="truncate-col balance-col">Balance</div>
+          <div class="truncate-col name-col left" flex>Name</div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
-            <div class="truncate-col id-col"><a href="#/explorer-account/{{item.id}}">{{item.id}}</a></div>
-            <div class="truncate-col name-col">{{item.publicName}}</div>
+            <div class="truncate-col id-col left"><a href="#/explorer-account/{{item.id}}">{{item.id}}</a></div>
+            <div class="truncate-col balance-col">{{item.balanceFormatted}}</div>
+            <div class="truncate-col name-col left" flex>{{item.publicName}}</div>
           </md-list-item>
         </md-virtual-repeat-container>
       </md-list>
@@ -47,23 +49,20 @@ class ExplorerResultsAccountsComponent extends VirtualRepeatComponent {
               protected $q: angular.IQService,
               private searchAccountsProviderFactory: SearchAccountsProviderFactory) {
     super($scope, $q);
-    var ready = () => {
-      if (this.query) {
-        this.initializeVirtualRepeat(
-          this.searchAccountsProviderFactory.createProvider(this.query),
-          (account: any|IHeatAccount) => {
-
-          }
-        );
-        $scope.$on("$destroy",() => {
-          if (this.provider) {
-            this.provider.destroy();
-          }
-        });
-        unregister();
+    this.initializeVirtualRepeat(
+      this.searchAccountsProviderFactory.createProvider(this.query),
+      (account: any|IHeatAccount) => {
+        account.balanceFormatted = utils.formatQNT(account.unconfirmedBalance, 8);
+        if (account.publicName == account.id) {
+          account.publicName = '[private]';
+        }
       }
-    };
-    var unregister = $scope.$watch('vm.query', ready);
+    );
+    $scope.$on("$destroy",() => {
+      if (this.provider) {
+        this.provider.destroy();
+      }
+    });
   }
 
   onSelect(selectedAccount) {}
