@@ -53,6 +53,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
   /* Implemented by extending class */
   abstract getTransactionBuilder(): TransactionBuilder;
   abstract getFields($scope: angular.IScope): Array<AbstractDialogField>;
+  public fieldsReady($scope: angular.IScope): void {}
 
   /* Providedd by extending classs */
   protected dialogClass: string;
@@ -218,6 +219,7 @@ function GenericDialogCreateController(dialog: GenericDialog) {
                    settings: SettingsService) {
     this.fields = dialog.getFields($scope);
     this.fields.forEach((field: AbstractDialogField) => { dialog.fields[field.name] = field });
+    dialog.fieldsReady($scope);
     this.builder = null; /* HeatTransactionBuilder */
 
     this.visualization_delay = settings.get(SettingsService.TRANSACTION_PROCESSING_VISUALIZATION);
