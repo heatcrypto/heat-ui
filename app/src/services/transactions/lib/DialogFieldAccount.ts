@@ -42,7 +42,14 @@ class DialogFieldAccount extends AbstractDialogField {
           account.publicName = '';
         }
       });
-      deferred.resolve(accounts);
+      if (accounts.length > 0) {
+        deferred.resolve(accounts);
+      }
+      else if (this.numbersOnly.test(query)) {
+        this.heat.api.getAccountByNumericId(query).then(account=>{
+          deferred.resolve([account]);
+        }, deferred.reject);
+      }
     }, deferred.reject);
     return deferred.promise;
   }
