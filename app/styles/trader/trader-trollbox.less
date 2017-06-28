@@ -27,11 +27,7 @@
 trader-trollbox {
   .widget();
   padding: 12px;
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  flex-grow:1;
-  max-height:300px;
+  margin-top: 6px;
   md-list {
     background-color: @dark-blue;
   }
@@ -45,13 +41,15 @@ trader-trollbox {
     overflow-y: scroll;
     overflow-x: hidden;
     padding-left: 9px;
-    margin-top: 0;
+    margin-top: 0px;
+    max-height: 100px;
     b {
       color: @white07;
     }
   }
   ul {
     flex-grow:1;
+    padding-left: 0px !important;
   }
   input[type="text"], textarea {
     background-color: @dark-blue2;
@@ -84,9 +82,5 @@ trader-trollbox {
       color: @white07;
       font-size: 12px;
     }
-  }
-  button {
-    float: right;
-    height: 26px;
   }
 }

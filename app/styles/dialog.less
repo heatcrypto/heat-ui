@@ -24,15 +24,26 @@
 @import './colors';
 
 md-dialog {
+  -webkit-font-smoothing: antialiased;
+  //background-image:radial-gradient(50% 102%, #233050 50%, #0d0e14 100%);
+  background-color: @less-dark-blue;
+  border-radius:4px;
+  box-sizing: border-box;
+  color: @white;
+  font-family: 'Noto Sans', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 200;
+  line-height: 20 / 14;
   md-toolbar {
     padding-top: 4px;
     padding-bottom: 4px;
     height: 20px;
-    background-color: @dark-blue2 !important;
     background: initial !important;
+    //background-color: @dark-blue2 !important;
+    //background-image:radial-gradient(50% 102%, #233050 50%, #0d0e14 100%);
   }
   .fee {
-    color: @gray2 !important;
+    color: @gray3 !important;
     margin-left: 0px !important
   }
   a {

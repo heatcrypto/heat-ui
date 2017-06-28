@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2017 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,43 +22,60 @@
  * */
 
 @import '../colors';
-@import '../widget';
 
-trader-balances {
-  .widget();
-  padding: 12px;
-  margin-bottom: 12px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 180px;
-  md-list {
-    flex-grow: 1;
-    display:flex;
-    flex-direction: column;
+server {
+  .button-row {
+    padding-left: 0px;
+    padding-right: 0px;
   }
-  md-list-item {
-    border-bottom: 1px solid @gray;
-    &.header .symbol-col,
-    &.header .balance-col {
-      font-size: 12px;
-      margin-bottom: 5px;
+  .start-stop {
+    margin-left: 0px;
+    margin-right: 0px;
+  }
+  md-switch {
+    padding-left: 8px !important;
+  }
+  .console {
+    background-color: #202020;
+    border: 1px solid #BDBDBD;
+    padding-right: 0px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    pre {
+      color: #FF8866;
+      height: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-top: 0px;
+      padding-bottom: 0px;
+      margin-top: 0px;
+      margin-bottom: 0px;
+      .date {
+        color: #EEEEEE;
+      }
+      .severity {
+        font-weight: bold;
+      }
+      .message {
+        color: #FFF59D;
+      }
     }
-    &.header {
-      border-bottom: none;
-      opacity: 0.6;
-      flex: 0;
+  }
+  .mining-stats {
+    * {
+      padding-right: 8px;
     }
-    .symbol-col {
-      width: 80px;
-      font-size: 18px;
-      letter-spacing:-1.08px;
+    .mining-stats-val {
+      font-weight: bold;
     }
-    .balance-col {
-      text-align: right;
-      font-size: 16px;
-      opacity: 0.6;
-      padding-left: 6px;
+  }
+  a {
+    &.start-stop {
+      margin-top: 20px;
+      color: @link-yellow;
+      text-decoration: underline;
+      cursor: pointer;
     }
   }
 }

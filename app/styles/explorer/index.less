@@ -32,6 +32,9 @@ explorer-latest-blocks,
 explorer-account {
   .widget();
   .list();
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
   .truncate-col {
     padding-right: 30px;
     &.left {
@@ -49,6 +52,22 @@ explorer-account {
     }
     &.generator-col {
       padding-right: 0px;
+    }
+    &.pop-col {
+      max-width: initial;
+    }
+    &.json-col {
+      min-width: 30px;
+      max-width: 30px;
+      padding-right: 0px;
+      a, a * {
+        font-size: 14px;
+        color: @link-yellow;
+        cursor: pointer;
+      }
+      md-icon {
+        padding-top: 8px;
+      }
     }
   }
 }
