@@ -148,6 +148,10 @@ class TraderMarketsComponent {
     });
   }
 
+  isSpecialMarket(market: IHeatMarket) {
+    return market.currency == '5592059897546023466' && market.asset == '0';
+  }
+
   /**
    * ON TOP: Markets where both assets are CERTIFIED, in alphabetical order (only one market BTC/HEAT for now)
    * BELOW THAT: Markets where one asset is certified, in alphabetical order (BTC/FIMK on top)
@@ -158,6 +162,10 @@ class TraderMarketsComponent {
     let assetA = <AssetInfo>a['assetInfo'];
     let currencyB = <AssetInfo>b['currencyInfo'];
     let assetB = <AssetInfo>b['assetInfo'];
+
+    // special case btc/heat always at top.
+    if (this.isSpecialMarket(a) && !this.isSpecialMarket(b)) return -1;
+    if (!this.isSpecialMarket(a) && this.isSpecialMarket(b)) return 1;
 
     let bothCertifiedA = currencyA.certified && assetA.certified;
     let bothCertifiedB = currencyB.certified && assetB.certified;
