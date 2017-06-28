@@ -34,6 +34,7 @@ module utils {
     if (typeof amount == 'undefined') {
       return '0';
     }
+    amount     = amount.replace(/,/g,'');
     var neg    = amount.indexOf('-') == 0;
     if (neg) {
       amount   = amount.substr(1);
