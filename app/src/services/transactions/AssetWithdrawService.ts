@@ -143,7 +143,19 @@ class AssetWithdrawDialog extends GenericDialog {
     this.dialogDescription = 'Description on how to withdraw ' + this.assetInfo.symbol;
     this.okBtnTitle = 'WITHDRAW';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
-    this.amount = this.amount || '0';
+    this.amount = this.userBalance.unconfirmedBalance || this.amount || '0';
+  }
+
+  /* @override */
+  fieldsReady($scope: angular.IScope) {
+    let minFeeFloat = parseFloat(this.withdrawInfo.minimumQuantity+'');
+    let amountFloat = parseFloat(this.userBalance.unconfirmedBalance+'');
+    if (amountFloat > minFeeFloat) {
+      $scope.$evalAsync(()=>{
+        this.updateTotalAmountQNT(amountFloat, minFeeFloat);
+      });
+    }
+    this.fields['amount'].changed(true);
   }
 
   /* @override */
@@ -152,16 +164,17 @@ class AssetWithdrawDialog extends GenericDialog {
     let userBalanceText = `${balance} ${this.assetInfo.symbol} available on account`;
     let feeText = `Processing and network fee ${this.withdrawInfo.feePercentage.toFixed(2)}% (${this.assetInfo.symbol})`;
     let minAmountFormatted = utils.formatQNT(this.withdrawInfo.minimumQuantity, 8);
-    let minWithdrawText = `Minimum withdraw amount is ${minAmountFormatted} ${this.assetInfo.symbol}`;
+    let minWithdrawText = `Minimum withdraw fee is ${minAmountFormatted} ${this.assetInfo.symbol}`;
 
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.staticText('balance', userBalanceText),
+      // builder.staticText('balance', userBalanceText),
       builder.hidden('recipient', this.recipient)
              .required(),
       builder.text('message', '')
              .visible(true)
-             .label(`Recipient ${this.assetInfo.symbol} address`),
+             .label(`Recipient ${this.assetInfo.symbol} address`)
+             .required(),
       builder.hidden('asset', this.assetInfo.id)
              .required(),
       builder.money('amount', this.amount)
@@ -198,28 +211,48 @@ class AssetWithdrawDialog extends GenericDialog {
               }).
               onchange(() => {
                 let amountQNT = parseFloat(this.fields['amount'].value || '0');
-                if (amountQNT <= 0) {
-                  this.fields['youWillReceive'].value = '';
-                  this.fields['totalFeeText'].value = '';
-                }
-                else {
-                  let multiplier = 1.0 - (this.withdrawInfo.feePercentage / 100);
-                  let received = Math.round(amountQNT * multiplier);
-                  let totalFee = amountQNT - received;
-                  this.fields['youWillReceive'].value = utils.formatQNT(received+'', 8);
-                  this.fields['totalFeeText'].value = `Total fee ${utils.formatQNT(totalFee+'', 8)} ${this.assetInfo.symbol}`;
-                }
+                this.updateTotalAmountQNT(amountQNT, parseFloat(this.withdrawInfo.minimumQuantity));
+
+                // if (amountQNT <= 0) {
+                //   this.fields['youWillReceive'].value = '';
+                //   this.fields['totalFeeText'].value = '';
+                // }
+                // else {
+                //   let multiplier = 1.0 - (this.withdrawInfo.feePercentage / 100);
+                //   let received = Math.round(amountQNT * multiplier);
+                //   let totalFee = amountQNT - received;
+                //   this.fields['youWillReceive'].value = utils.formatQNT(received+'', 8);
+                //   this.fields['totalFeeText'].value = `Total fee ${utils.formatQNT(totalFee+'', 8)} ${this.assetInfo.symbol}`;
+                // }
               }),
       builder.hidden('recipientPublicKey', this.recipientPublicKey),
-      builder.staticText('feeText', feeText),
       builder.text('youWillReceive', '0')
              .label('You will receive')
              .readonly(true),
-      builder.staticText('totalFeeText', ''),
+      builder.staticText('feeText', feeText),
+      builder.staticText('totalFeeText', 'Total fee: '),
       builder.staticText('minWithdrawText', minWithdrawText),
       builder.staticText('withdrawalNotice1', this.withdrawInfo.notice1),
       builder.staticText('withdrawalNotice2', this.withdrawInfo.notice2)
     ]
+  }
+
+  updateTotalAmountQNT(amountFloat: number, minFeeFloat: number) {
+    if (amountFloat <= 0) {
+      this.fields['youWillReceive'].value = '0';
+      this.fields['totalFeeText'].value = `Total fee ${utils.formatQNT(Math.round(minFeeFloat)+'', 8)} ${this.assetInfo.symbol}`;
+    }
+    else {
+      let multiplier = 1.0 - (this.withdrawInfo.feePercentage / 100);
+      let received = Math.round(amountFloat * multiplier);
+      let totalFee = amountFloat - received;
+      if (totalFee < minFeeFloat) {
+        totalFee = minFeeFloat;
+        received = Math.round(amountFloat - minFeeFloat);
+      }
+      this.fields['youWillReceive'].value = received < 0 ? '0' : utils.formatQNT(received+'', 8);
+      this.fields['totalFeeText'].value = `Total fee ${utils.formatQNT(totalFee+'', 8)} ${this.assetInfo.symbol}`;
+    }
   }
 
   /* @override */
