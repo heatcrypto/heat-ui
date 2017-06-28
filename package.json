@@ -1,6 +1,6 @@
 {
   "name": "heatwallet",
-  "version": "1.0.19",
+  "version": "2.0.0",
   "description": "Heat Ledger Generic Client Framework",
   "author": "Heat Ledger Ltd.",
   "homepage": "http://heatledger.com",
@@ -27,9 +27,9 @@
     "@types/long": "^3.0.31",
     "connect": "3.4.1",
     "del": "2.2.2",
-    "electron": "1.4.15",
-    "electron-builder": "^14.5.2",
-    "electron-builder-squirrel-windows": "13.6.1",
+    "electron": "1.7.3",
+    "electron-builder": "^19.8.0",
+    "electron-builder-squirrel-windows": "^19.8.0",
     "electron-packager": "^8.5.1",
     "es6-promise": "3.2.1",
     "gulp": "3.9.1",
@@ -70,8 +70,7 @@
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
     "pako": "1.0.3",
-    "techan": "0.8.0",
-    "zeroclipboard": "2.2.0"
+    "techan": "0.8.0"
   },
   "build": {
     "appId": "com.heatledger.heatwallet",
