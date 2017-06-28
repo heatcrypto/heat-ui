@@ -68,9 +68,9 @@ class UserContactsComponent {
       this.init();
     }
     else {
-      user.on(UserService.EVENT_UNLOCKED, () => {
-        this.init();
-      });
+      let listener = () => { this.init() };
+      user.on(UserService.EVENT_UNLOCKED, listener);
+      $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
     }
 
     $rootScope.$on('$locationChangeSuccess', () => { this.setActivePublicKey() });
