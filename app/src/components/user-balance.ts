@@ -53,15 +53,14 @@ class UserBalanceComponent {
     /* subscribe to websocket balance changed events */
     var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
     heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
-      if ("0" == balanceChange.currency) {
-        refresh();
-      }
+      refresh();
     }, $scope);
+
     this.refresh();
   }
 
   getUserBalance() : angular.IPromise<IHeatAccountBalance> {
-    return this.heat.api.getAccountBalance(this.user.account, "0");
+    return this.heat.api.getAccountBalanceVirtual(this.user.account, "0", "0", 1);
   }
 
   refresh() {
