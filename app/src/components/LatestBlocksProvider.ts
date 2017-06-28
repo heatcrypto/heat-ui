@@ -26,14 +26,16 @@
 class LatestBlocksProviderFactory  {
   constructor(private heat: HeatService, private $q: angular.IQService) {}
 
-  public createProvider(): IPaginatedDataProvider {
-    return new LatestBlocksProvider(this.heat, this.$q);
+  /* Optionally pass a single block object which will be displayed as its single result */
+  public createProvider(blockObject?: IHeatBlock): IPaginatedDataProvider {
+    return new LatestBlocksProvider(this.heat, this.$q, blockObject);
   }
 }
 
 class LatestBlocksProvider implements IPaginatedDataProvider {
   constructor(private heat: HeatService,
-              private $q: angular.IQService) {}
+              private $q: angular.IQService,
+              private blockObject: IHeatBlock) {}
 
   /* Be notified this provider got destroyed */
   public destroy() {}
@@ -41,15 +43,27 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getLength(): angular.IPromise<number> {
     var deferred = this.$q.defer();
-    this.heat.api.getBlockchainStatus().then((status) => {
-      deferred.resolve(status.numberOfBlocks);
-    },deferred.reject);
+    if (angular.isDefined(this.blockObject)) {
+      deferred.resolve(1);
+    }
+    else {
+      this.heat.api.getBlockchainStatus().then((status) => {
+        deferred.resolve(status.numberOfBlocks);
+      },deferred.reject);
+    }
     return deferred.promise;
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatBlock>> {
-    return this.heat.api.getBlocks(firstIndex, lastIndex);
+    if (angular.isDefined(this.blockObject)) {
+      var deferred = this.$q.defer();
+      deferred.resolve([this.blockObject]);
+      return deferred.promise;
+    }
+    else {
+      return this.heat.api.getBlocks(firstIndex, lastIndex);
+    }
   }
 
   public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
