@@ -33,6 +33,7 @@ interface IHeatAPI {
   getBlockchainStatus():angular.IPromise<IHeatBlockchainStatus>;
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>>;
   getBlock(numericId: string, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
+  getBlockAtHeight(height: number, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
 
   /**
    * Returns account public key
@@ -238,6 +239,7 @@ interface IHeatAPI {
    * List transactions send from one account to another
    */
   getTransactionsFromTo(sender:string, recipient:string, from:number, to:number): angular.IPromise<Array<IHeatTransaction>>;
+  getTransaction(transaction: string): angular.IPromise<IHeatTransaction>;
 
   /**
    * Search account ids, public keys and email ids. If an exact match is found on public key,
@@ -637,10 +639,6 @@ interface IHeatAsset {
    * True in case new assets can later be issued by the asset issuer
    */
   dillutable: boolean;
-  /**
-   * Launch timestamp
-   */
-  timestamp: number;
 
   properties?: string;
 }
@@ -980,6 +978,7 @@ interface IHeatBlock {
   popRewardHQT: string,
   generationSignature: string;
   generator: string;
+  generatorPublicName: string;
   generatorPublicKey: string;
   baseTarget: string;
   payloadHash: string;

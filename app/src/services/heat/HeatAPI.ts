@@ -50,6 +50,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/block/${numericId}/${includeTransactions}`);
   }
 
+  getBlockAtHeight(height: number, includeTransactions:boolean ):angular.IPromise<IHeatBlock> {
+    return this.heat.get(`/blockchain/block/height/${height}/${includeTransactions}`);
+  }
+
   getPublicKey(account: string): angular.IPromise<string> {
     var deferred = this.$q.defer();
     this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
@@ -240,6 +244,10 @@ class HeatAPI implements IHeatAPI {
 
   getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount> {
     return this.heat.get(`/account/find/${numericId}`);
+  }
+
+  getTransaction(transaction: string): angular.IPromise<IHeatTransaction> {
+    return this.heat.get(`/blockchain/transaction/${transaction}`);
   }
 
   getTransactionsForAccount(account: string, from: number, to: number): angular.IPromise<Array<IHeatTransaction>> {
