@@ -26,7 +26,7 @@
   template: `
     <div layout="row" flex layout-fill>
       <md-input-container flex>
-        <label>Search for account id and account public names</label>
+        <label>Search for account id, account public names, transaction id, block id or block height</label>
         <input name="search-text" ng-model="vm.query" ng-keypress="vm.onKeyPress($event)">
       </md-input-container>
     </div>
