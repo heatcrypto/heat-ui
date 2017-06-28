@@ -32,26 +32,26 @@
           </md-tooltip>
         </a>
       </div>
-      <div ng-if="!vm.trollbox.name && vm.user.unlocked" class="join-area" layout="row">
+      <div layout="row">
         <div flex>
-          <input type="text" placeholder="Type your name here" ng-model="vm.name"></input>
+          <input type="text" placeholder="Type your name here" ng-model="vm.name"
+                  ng-disabled="!vm.user.unlocked"></input>
         </div>
         <div>
-          <button class="md-primary md-button md-ink-ripple" ng-click="vm.joinChat()" ng-disabled="!vm.name">Join</button>
+          <button class="md-primary md-button md-ink-ripple" ng-click="vm.joinChat()" ng-disabled="!vm.name || vm.trollbox.name">Join</button>
         </div>
       </div>
-      <div flex layout="column">
-        <ul scroll-glue class="display" ng-class="{'notLoggedIn':vm.user.unlocked === false}" flex>
+      <div layout="column" flex>
+        <ul class="display" scroll-glue>
           <li ng-repeat="item in vm.messages">
             <span><b>{{item.username}}</b>: {{item.text}}</span>
           </li>
         </ul>
       </div>
-      <div ng-if="vm.user.unlocked" layout="row">
-        <div flex ng-if="vm.trollbox.name">
-          <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
-            placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
-        </div>
+      <div layout="row">
+        <textarea rows="2" ng-keypress="vm.onTextAreaKeyPress($event)"
+          ng-disabled="!vm.user.unlocked || !vm.trollbox.name"
+          placeholder="ENTER to send, SHIFT+ENTER for new line" ng-model="vm.messageText"></textarea>
       </div>
     </div>
   `
@@ -65,11 +65,13 @@ class TraderTrollboxComponent {
               private trollbox: TrollboxService,
               private $timeout: angular.ITimeoutService,
               private user: UserService) {
+
     trollbox.getMessages().then((messages) => {
       $scope.$evalAsync(() => {
         this.messages = messages;
       });
     });
+
     trollbox.subscribe((event)=> {
       $scope.$evalAsync(() => {
         if (angular.isObject(event) && angular.isString(event.username) && angular.isString(event.text)) {
@@ -79,6 +81,10 @@ class TraderTrollboxComponent {
         }
       });
     }, $scope);
+
+    if (angular.isString(user.accountName)) {
+      this.name = user.accountName.replace(/@heatwallet.com$/,"");
+    }
   }
 
   joinChat() {
@@ -86,11 +92,10 @@ class TraderTrollboxComponent {
   }
 
   onTextAreaKeyPress($event: KeyboardEvent) {
-    if ($event.keyCode == 13 && !$event.shiftKey) {
-      this.trollbox.sendMessage(this.messageText).then(()=>{
-        this.$scope.$evalAsync(()=>{
-          this.messageText = "";
-        })
+    if ($event.keyCode == 13 && !$event.shiftKey && utils.emptyToNull(this.messageText)) {
+      this.trollbox.sendMessage(this.messageText);
+      this.$scope.$evalAsync(()=>{
+        this.messageText = null;
       })
     }
   }
