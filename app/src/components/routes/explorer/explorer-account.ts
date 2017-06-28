@@ -24,9 +24,15 @@
 @Component({
   selector: 'explorerAccount',
   inputs: ['account'],
+  styles: [`
+    explorer-account .scrollable {
+      overflow-y: scroll;
+      height: 90px;
+    }
+  `],
   template: `
     <div layout="column" flex layout-fill layout-padding >
-      <explorer-search layout="column"></explorer-search>
+      <explorer-search layout="column" type="''" query="''"></explorer-search>
       <div layout="row" class="explorer-detail">
         <div layout="column" flex>
           <div class="col-item">
@@ -35,6 +41,32 @@
             </div>
             <div class="value">
               <a href="#/explorer-account/{{vm.account}}">{{vm.accountName||vm.account}}</a>
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Numeric account id:
+            </div>
+            <div class="value">
+              {{vm.account}}
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Balance:
+            </div>
+            <div class="value">
+              {{vm.balanceUnconfirmed}} HEAT
+            </div>
+          </div>
+        </div>
+        <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              Effective bal:
+            </div>
+            <div class="value">
+              {{vm.effectiveBalance}} HEAT
             </div>
           </div>
           <div class="col-item">
@@ -56,54 +88,14 @@
           </div>
         </div>
         <div layout="column" flex>
-          <div class="col-item">
+          <div class="col-item" flex layout-fill>
             <div class="title">
-              Effective bal:
+              Assets:
             </div>
-            <div class="value">
-              {{vm.effectiveBalance}} HEAT
-            </div>
-          </div>
-          <div class="col-item">
-            <div class="title">
-              Balance (unconfirmed):
-            </div>
-            <div class="value">
-              {{vm.balanceUnconfirmed}} HEAT
-            </div>
-          </div>
-          <div class="col-item">
-            <div class="title">
-              Balance (confirmed):
-            </div>
-            <div class="value">
-              {{vm.balanceConfirmed}} HEAT
-            </div>
-          </div>
-        </div>
-        <div layout="column" flex>
-          <div class="col-item">
-            <div class="title">
-              First seen:
-            </div>
-            <div class="value">
-              {{vm.firstSee}}
-            </div>
-          </div>
-          <div class="col-item">
-            <div class="title">
-              Forged:
-            </div>
-            <div class="value">
-              {{vm.forged}} HEAT
-            </div>
-          </div>
-          <div class="col-item">
-            <div class="title">
-
-            </div>
-            <div class="value">
-
+            <div class="scrollable">
+              <div class="value" ng-repeat="(key,value) in vm.assetBalances">
+                {{value.balance}} {{value.symbol}} <i>{{value.name}}</i>
+              </div>
             </div>
           </div>
         </div>
@@ -112,7 +104,7 @@
     </div>
   `
 })
-@Inject('$scope','heat')
+@Inject('$scope','heat','assetInfo')
 class ExploreAccountComponent {
   account: string; // @input
 
@@ -127,11 +119,12 @@ class ExploreAccountComponent {
   balanceUnconfirmed: string;
   balanceConfirmed: string;
   leasedTo: string;
+  accountBalances: IStringHashMap<{balance:string, symbol:string, name:string}> = {};
 
   constructor(private $scope: angular.IScope,
-              public heat: HeatService) {
+              private heat: HeatService,
+              private assetInfo: AssetInfoService) {
     this.refresh();
-
     heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
       this.refresh();
     }, $scope);
@@ -163,6 +156,27 @@ class ExploreAccountComponent {
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
         this.genesisAccountNameOverride();
+      });
+    });
+
+    this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
+      this.$scope.$evalAsync(()=>{
+        this.accountBalances = {};
+        balances.forEach(balance=>{
+          if (balance.id != "0") {
+            this.accountBalances[balance.id] = {
+              balance: utils.formatQNT(balance.virtualBalance, 8),
+              symbol: '*',
+              name: '*'
+            };
+            this.assetInfo.getInfo(balance.id).then(info=>{
+              this.$scope.$evalAsync(()=>{
+                this.accountBalances[balance.id].symbol = info.symbol;
+                this.accountBalances[balance.id].name = info.name;
+              })
+            })
+          }
+        });
       });
     });
   }
