@@ -23,6 +23,14 @@
 module dialogs {
   export function assetInfo($event, info: AssetInfo) {
     let assetInfoService = <AssetInfoService> heat.$inject.get('assetInfo');
+    let unsafeWarning = `This asset is operated by a third party.
+Heat Ledger has no control over the asset and does not provide support for it.
+It's possible the asset does NOT represent what you think it does.
+Please ensure from asset issuer that the asset is valid before purchasing it, as there may be no refunds or redemptions available.
+Asset purchases are non-refundable.`;
+
+
+
     assetInfoService.getAssetDescription(info).then((description)=>{
       dialogs.dialog({
         id: 'assetInfo',
@@ -31,10 +39,12 @@ module dialogs {
         cancelButton: false,
         locals: {
           description: description,
-          info: info
+          info: info,
+          unsafeWarning: unsafeWarning
         },
         template: `
           <div layout="column">
+            <span ng-if="!vm.info.certified">{{vm.unsafeWarning}}<br><br></span>
             <span><b>{{vm.info.symbol}}</b> {{vm.info.name}}</span>
             <pre>{{vm.description}}</pre>
           </div>
