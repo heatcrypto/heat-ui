@@ -26,8 +26,15 @@
 .explorer-detail {
   a {
     color: @link-yellow;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .scrollable {
+    overflow-y: scroll;
+    height: 90px;
   }
   .col-item {
+    margin-right: 30px;
     .value {
       min-height: 23px;
       font-size:16px;
