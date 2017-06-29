@@ -42,7 +42,6 @@ class InternalServerTimeoutError extends ServerEngineError {
   }
 }
 
-declare var require : any;
 @Service('heat')
 @Inject('$q','$http','settings','user','$timeout','env')
 class HeatService {
@@ -60,7 +59,7 @@ class HeatService {
       try {
         require('ssl-root-cas').inject();
       } catch (e) {
-        console.log(e);
+        //console.log(e);
       }
     }
   }
