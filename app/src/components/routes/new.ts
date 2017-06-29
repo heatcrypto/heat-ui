@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var __dirname: any;
 @RouteConfig('/new')
 @Component({
   selector: 'new',
