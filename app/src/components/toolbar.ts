@@ -83,7 +83,7 @@
             </md-button>
             <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
               <md-tooltip md-direction="bottom">App Server</md-tooltip>
-              <md-icon md-font-library="material-icons">settings_applications</md-icon>
+              <i><img src="assets/serverIcon.png"></i>
             </md-button>
           </div>
           <div>
