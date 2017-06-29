@@ -37,9 +37,6 @@ interface SlackMessageEvent {
 class TrollboxService {
 
   /* Trollbox backend is located on testnet server */
-  //private host = "https://alpha.heatledger.com";
-  //private port = 7734;
-  //private wss  = "wss://alpha.heatledger.com:7755/ws/";
   private host = "https://heatwallet.com";
   private port = 7734;
   private wss  = "wss://heatwallet.com:7755/ws/";
