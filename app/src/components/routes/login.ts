@@ -227,7 +227,7 @@ declare var saveAs: any;
             </div>
             <div layout="column" flex>
               <md-input-container flex>
-                <label>Pin Code (required 5 numbers)</label>
+                <label>Pin Code (required 4 numbers)</label>
                 <input ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
               </md-input-container>
             </div>
