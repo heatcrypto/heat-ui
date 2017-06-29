@@ -24,17 +24,11 @@
 @Component({
   selector: 'explorerAccount',
   inputs: ['account'],
-  styles: [`
-    explorer-account .scrollable {
-      overflow-y: scroll;
-      height: 90px;
-    }
-  `],
   template: `
     <div layout="column" flex layout-fill layout-padding >
       <explorer-search layout="column" type="''" query="''"></explorer-search>
       <div layout="row" class="explorer-detail">
-        <div layout="column" flex>
+        <div layout="column">
           <div class="col-item">
             <div class="title">
               Account:
@@ -60,7 +54,7 @@
             </div>
           </div>
         </div>
-        <div layout="column" flex>
+        <div layout="column">
           <div class="col-item">
             <div class="title">
               Effective bal:
@@ -93,8 +87,15 @@
               Assets:
             </div>
             <div class="scrollable">
-              <div class="value" ng-repeat="(key,value) in vm.assetBalances">
-                {{value.balance}} {{value.symbol}} <i>{{value.name}}</i>
+              <div class="value" ng-repeat="item in vm.assetInfos">
+                <span class="balance">{{item.balance}}</span>
+                <span class="symbol"><b>{{item.symbol}}</b></span>
+                <span class="name">
+                  <a ng-click="vm.showDescription($event, item)">{{item.name}}</a>
+                </span>
+                <span class="issuer">
+                  Issued by: <a href="#/explorer-account/{{item.issuer}}">{{item.issuerPublicName||item.issuer}}</a>
+                </span>
               </div>
             </div>
           </div>
@@ -104,7 +105,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo')
+@Inject('$scope','heat','assetInfo','$q')
 class ExploreAccountComponent {
   account: string; // @input
 
@@ -119,11 +120,12 @@ class ExploreAccountComponent {
   balanceUnconfirmed: string;
   balanceConfirmed: string;
   leasedTo: string;
-  accountBalances: IStringHashMap<{balance:string, symbol:string, name:string}> = {};
+  assetInfos: Array<AssetInfo> = [];
 
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
-              private assetInfo: AssetInfoService) {
+              private assetInfo: AssetInfoService,
+              private $q: angular.IQService) {
     this.refresh();
     heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
       this.refresh();
@@ -155,35 +157,53 @@ class ExploreAccountComponent {
         this.balanceConfirmed = utils.formatQNT(account.balance, 8);
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
-        this.genesisAccountNameOverride();
       });
     });
 
-    this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
+    this.getAccountAssets().then(assetInfos=>{
       this.$scope.$evalAsync(()=>{
-        this.accountBalances = {};
-        balances.forEach(balance=>{
-          if (balance.id != "0") {
-            this.accountBalances[balance.id] = {
-              balance: utils.formatQNT(balance.virtualBalance, 8),
-              symbol: '*',
-              name: '*'
-            };
-            this.assetInfo.getInfo(balance.id).then(info=>{
-              this.$scope.$evalAsync(()=>{
-                this.accountBalances[balance.id].symbol = info.symbol;
-                this.accountBalances[balance.id].name = info.name;
-              })
-            })
-          }
+        this.assetInfos = assetInfos.map(info => {
+          info['balance'] = utils.formatQNT(info.userBalance, 8);
+          return info;
         });
-      });
-    });
+      })
+    })
   }
 
-  genesisAccountNameOverride() {
-    if (this.account == "8150091319858025343") {
-      this.accountName = "HEAT blockchain Genesis account";
-    }
+  showDescription($event, info: AssetInfo) {
+    dialogs.assetInfo($event, info);
+  }
+
+  private getAccountAssets(): angular.IPromise<Array<AssetInfo>> {
+    let deferred = this.$q.defer();
+    this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
+      let assetInfos: Array<AssetInfo> = [];
+      let promises = [];
+      balances.forEach(balance=>{
+        if (balance.id != '0') {
+          promises.push(
+            this.assetInfo.getInfo(balance.id).then(info=>{
+              assetInfos.push(angular.extend(info, {
+                userBalance: balance.balance
+              }))
+            })
+          );
+        }
+      });
+      if (promises.length > 0) {
+        this.$q.all(promises).then(()=>{
+          assetInfos.sort((a,b)=>{
+            var textA = a.symbol.toUpperCase();
+            var textB = b.symbol.toUpperCase();
+            return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+          });
+          deferred.resolve(assetInfos);
+        }, deferred.reject);
+      }
+      else {
+        deferred.resolve([]);
+      }
+    }, deferred.reject);
+    return deferred.promise;
   }
 }
