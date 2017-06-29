@@ -42,7 +42,7 @@
     <div layout="column" flex layout-fill layout-padding >
       <explorer-search layout="column" type="''" query="''"></explorer-search>
       <div layout="row" class="explorer-detail">
-        <div layout="column" flex>
+        <div layout="column">
           <div class="col-item">
             <div class="title">
               Height:
@@ -68,7 +68,7 @@
             </div>
           </div>
         </div>
-        <div layout="column" flex>
+        <div layout="column">
           <div class="col-item">
             <div class="title">
               Generator:
