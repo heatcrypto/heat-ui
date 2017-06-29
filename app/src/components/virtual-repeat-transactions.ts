@@ -21,64 +21,6 @@
  * SOFTWARE.
  * */
 @Component({
-  selector: 'virtualRepeatTransactionsMessage',
-  inputs: ['messageText'], // open_in_new
-  template: `
-    <md-button ng-click="vm.showPopup()" class="md-icon-button" md-no-ink>
-      <md-icon md-font-library="material-icons">message</md-icon>
-    </md-button>
-    <code>{{vm.messagePreview}}</code>
-  `
-})
-@Inject('$scope','$mdPanel','render','controlCharRender')
-class VirtualRepeatTransactionsMessage {
-  PREVIEW_LENGTH = 50;
-  messageText: string; // @input
-  messagePreview: string;
-  unregister: ()=>void;
-  constructor(private $scope: angular.IScope,
-              private $mdPanel: angular.material.IPanelService,
-              private render: RenderService,
-              private controlCharRender: ControlCharRenderService,) {
-    this.unregister = $scope.$watch('vm.messageText', this.ready.bind(this));
-  }
-  ready() {
-    if (angular.isString(this.messageText)) {
-      this.messagePreview = this.messageText.substr(0, this.PREVIEW_LENGTH);
-      if (this.messageText.length > this.PREVIEW_LENGTH) {
-        this.messagePreview += " ...";
-      }
-      this.unregister();
-    }
-  }
-  showPopup() {
-    let renderedHTML = this.render.render(this.messageText, [this.controlCharRender]);
-    let position = this.$mdPanel.newPanelPosition().absolute().center();
-    let config :angular.material.IPanelConfig = {
-      attachTo: angular.element(document.body),
-      controller: function () {},
-      controllerAs: 'vm',
-      disableParentScroll: true,
-      template: `
-        <div class="virtual-repeat-transactions-message-contents" ng-bind-html="vm.renderedHTML"></div>
-      `,
-      hasBackdrop: true,
-      panelClass: 'demo-dialog-example',
-      position: position,
-      trapFocus: true,
-      zIndex: 150,
-      clickOutsideToClose: true,
-      escapeToClose: true,
-      focusOnOpen: true,
-      locals: {
-        renderedHTML: renderedHTML
-      }
-    };
-    this.$mdPanel.open(config);
-  }
-}
-
-@Component({
   selector: 'virtualRepeatTransactions',
   inputs: ['account','block','personalize','transactionObject'],
   template: `
@@ -157,7 +99,12 @@ class VirtualRepeatTransactionsMessage {
             <!-- INFO -->
             <div class="truncate-col info-col left" flex>
               <span ng-bind-html="item.renderedInfo"></span>
-              <virtual-repeat-transactions-message ng-if="item.messageText" message-text="item.messageText" flex></virtual-repeat-transactions-message>
+              <span class="virtual-repeat-transactions-message" ng-if="item.messageText">
+                <md-button ng-click="vm.showPopup(item.messageText)" class="md-icon-button" md-no-ink>
+                  <md-icon md-font-library="material-icons">message</md-icon>
+                </md-button>
+                <code>{{item.messagePreview}}</code>
+              </span>
             </div>
 
             <!-- JSON -->
@@ -173,7 +120,7 @@ class VirtualRepeatTransactionsMessage {
     </div>
   `
 })
-@Inject('$scope','$q','heat','transactionsProviderFactory','settings','user')
+@Inject('$scope','$q','heat','transactionsProviderFactory','settings','user','render','$mdPanel','controlCharRender')
 class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -188,7 +135,10 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
               private heat: HeatService,
               private transactionsProviderFactory: TransactionsProviderFactory,
               private settings: SettingsService,
-              private user: UserService) {
+              private user: UserService,
+              private render: RenderService,
+              private $mdPanel: angular.material.IPanelService,
+              private controlCharRender: ControlCharRenderService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
@@ -230,6 +180,13 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
           })
         }
         transaction['messageText'] = this.heat.getHeatMessageContents(transaction);
+        if (angular.isString(transaction['messageText'])) {
+          let messagePreview = transaction['messageText'].substr(0, 50);
+          if (transaction['messageText'].length > 50) {
+            messagePreview += " ...";
+          }
+          transaction['messagePreview'] = messagePreview;
+        }
       }
     );
 
@@ -249,6 +206,32 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
         this.provider.destroy();
       }
     });
+  }
+
+  showPopup(messageText: string) {
+    let renderedHTML = this.render.render(messageText, [this.controlCharRender]);
+    let position = this.$mdPanel.newPanelPosition().absolute().center();
+    let config :angular.material.IPanelConfig = {
+      attachTo: angular.element(document.body),
+      controller: function () {},
+      controllerAs: 'vm',
+      disableParentScroll: true,
+      template: `
+        <div class="virtual-repeat-transactions-message-contents" ng-bind-html="vm.renderedHTML"></div>
+      `,
+      hasBackdrop: true,
+      panelClass: 'demo-dialog-example',
+      position: position,
+      trapFocus: true,
+      zIndex: 150,
+      clickOutsideToClose: true,
+      escapeToClose: true,
+      focusOnOpen: true,
+      locals: {
+        renderedHTML: renderedHTML
+      }
+    };
+    this.$mdPanel.open(config);
   }
 
   jsonDetails($event, item) {
