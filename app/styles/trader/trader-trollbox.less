@@ -31,11 +31,13 @@ trader-trollbox {
   md-list {
     background-color: @dark-blue;
   }
-  a {
-    float: right;
-    font-size: 12px;
-    color: @white07;
-    margin-top: 4px;
+  .trader-component-title {
+    a {
+      float: right;
+      font-size: 12px;
+      color: @white07;
+      margin-top: 4px;
+    }
   }
   .display {
     overflow-y: scroll;
@@ -45,6 +47,11 @@ trader-trollbox {
     max-height: 100px;
     b {
       color: @white07;
+    }
+    a {
+      color: @link-yellow;
+      text-decoration: underline;
+      cursor: pointer;
     }
   }
   ul {

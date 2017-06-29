@@ -44,7 +44,8 @@
       <div layout="column" flex>
         <ul class="display" scroll-glue>
           <li ng-repeat="item in vm.messages">
-            <span><b>{{item.username}}</b>: {{item.text}}</span>
+            <span><a ng-if="item.account" href="#/explorer-account/{{item.account}}">{{item.name}}</a>
+            <b ng-if="!item.account">{{item.username}}</b>: {{item.text}}</span>
           </li>
         </ul>
       </div>
@@ -61,6 +62,8 @@ class TraderTrollboxComponent {
   private name: string;
   private messageText: string;
   public messages: Array<TrollboxServiceMessage> = [];
+  private nameRegexp = /^(.+)\s\[(\d+)\]$/;
+
   constructor(private $scope: angular.IScope,
               private trollbox: TrollboxService,
               private $timeout: angular.ITimeoutService,
@@ -68,7 +71,11 @@ class TraderTrollboxComponent {
 
     trollbox.getMessages().then((messages) => {
       $scope.$evalAsync(() => {
-        this.messages = messages;
+        console.log('messages',messages);
+        this.messages = messages.map(message => {
+          return this.augmentMessage(message);
+        });
+
       });
     });
 
@@ -76,7 +83,7 @@ class TraderTrollboxComponent {
       $scope.$evalAsync(() => {
         if (angular.isObject(event) && angular.isString(event.username) && angular.isString(event.text)) {
           if (event.username.length > 0 && event.text.length > 0) {
-            this.messages.push(event);
+            this.messages.push(this.augmentMessage(event));
           }
         }
       });
@@ -87,13 +94,25 @@ class TraderTrollboxComponent {
     }
   }
 
+  augmentMessage(message:TrollboxServiceMessage) {
+    if (message.username) {
+      let match = message.username.match(this.nameRegexp);
+      if (match) {
+        message['name'] = match[1];
+        message['account'] = match[2];
+      }
+    }
+    message['text'] = decodeURIComponent(message['text']);
+    return message;
+  }
+
   joinChat() {
     this.trollbox.join(this.name);
   }
 
   onTextAreaKeyPress($event: KeyboardEvent) {
     if ($event.keyCode == 13 && !$event.shiftKey && utils.emptyToNull(this.messageText)) {
-      this.trollbox.sendMessage(this.messageText);
+      this.trollbox.sendMessage(encodeURIComponent(this.messageText));
       this.$scope.$evalAsync(()=>{
         this.messageText = null;
       })
