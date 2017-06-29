@@ -21,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var __dirname: any;
 @Service('server')
 @Inject('$rootScope','$q','$interval','$timeout','settings')
 class ServerService extends EventEmitter {
