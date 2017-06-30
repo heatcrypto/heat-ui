@@ -91,7 +91,7 @@ Installing the dependencies
 
 ```
 cd /my/path/to/heat-ui
-npm init
+npm install
 ```
 
 The initial installation of all dependencies could take a while, several minutes.
