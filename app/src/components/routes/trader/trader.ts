@@ -48,7 +48,7 @@ declare var Big: any;
           <trader-trollbox></trader-trollbox>
         </div>
       </md-sidenav>
-      <div layout="column" flex layout-fill>
+      <div layout="column" flex layout-fill class="main-display">
         <div ng-if="vm.showMarketNotCertified">
           <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
         </div>
