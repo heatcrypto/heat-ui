@@ -48,7 +48,8 @@ class AssetInfoService {
   certifiedSymbols = {
     "btc": "5592059897546023466",
     "fimk": "8593933499455210945",
-    "gnt": "12638687347417181640"
+    "gnt": "12638687347417181640",
+    "xrp": "3861265706988762530"
   };
 
   cache: IStringHashMap<AssetInfo> = {};
