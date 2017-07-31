@@ -946,6 +946,7 @@ interface IHeatBlockchainStatus {
   numberOfBlocks: number;
   version: string;
   lastBlock: string;
+  lastBlockTimestamp: number;
   application: string;
   lastBlockchainFeederHeight: number;
   time: number;
