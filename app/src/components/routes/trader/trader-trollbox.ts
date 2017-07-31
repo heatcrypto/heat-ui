@@ -71,7 +71,6 @@ class TraderTrollboxComponent {
 
     trollbox.getMessages().then((messages) => {
       $scope.$evalAsync(() => {
-        console.log('messages',messages);
         this.messages = messages.map(message => {
           return this.augmentMessage(message);
         });
@@ -102,7 +101,9 @@ class TraderTrollboxComponent {
         message['account'] = match[2];
       }
     }
-    message['text'] = decodeURIComponent(message['text']);
+    try {
+      message['text'] = decodeURIComponent(message['text']);
+    } catch (e) {}
     return message;
   }
 
@@ -112,7 +113,7 @@ class TraderTrollboxComponent {
 
   onTextAreaKeyPress($event: KeyboardEvent) {
     if ($event.keyCode == 13 && !$event.shiftKey && utils.emptyToNull(this.messageText)) {
-      this.trollbox.sendMessage(encodeURIComponent(this.messageText));
+      this.trollbox.sendMessage(this.messageText);
       this.$scope.$evalAsync(()=>{
         this.messageText = null;
       })
