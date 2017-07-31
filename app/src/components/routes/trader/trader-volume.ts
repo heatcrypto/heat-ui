@@ -56,13 +56,14 @@ class TraderVolumeComponent {
       if (this.currencyInfo && this.assetInfo) {
         unregister.forEach(fn => fn());
         this.loadMarket();
+
+        let interval = $interval(()=>{
+          this.loadMarket();
+        }, 10*1000, 0, false);
+        $scope.$on('$destroy',()=>{$interval.cancel(interval)});
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
-    let interval = $interval(()=>{
-      this.loadMarket();
-    }, 10*1000, 0, false);
-    $scope.$on('$destroy',()=>{$interval.cancel(interval)});
   }
 
   loadMarket() {
