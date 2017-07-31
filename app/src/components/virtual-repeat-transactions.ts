@@ -535,6 +535,10 @@ class TransactionRenderer {
       return "<b>BTC</b>"
     if (asset=="0")
       return "<b>HEAT</b>";
+    if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol)
+      return this.assetInfo.cache[asset].symbol;
+    else
+      this.assetInfo.getInfo(asset);
     return asset;
   }
 }
