@@ -48,7 +48,4 @@ class SearchAccountsProvider implements IPaginatedDataProvider {
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatAccount>> {
     return this.heat.api.searchAccounts(this.query, firstIndex, lastIndex);
   }
-
-  public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
-  public removeObserver(observer: IPaginatedDataProviderObserver) { }
 }

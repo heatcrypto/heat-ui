@@ -57,7 +57,4 @@ class TradesProvider implements IPaginatedDataProvider {
     }
     return this.heat.api.getTrades(this.currency, this.asset, firstIndex, lastIndex);
   }
-
-  public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
-  public removeObserver(observer: IPaginatedDataProviderObserver) { }
 }

@@ -65,7 +65,4 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
       return this.heat.api.getBlocks(firstIndex, lastIndex);
     }
   }
-
-  public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
-  public removeObserver(observer: IPaginatedDataProviderObserver) { }
 }

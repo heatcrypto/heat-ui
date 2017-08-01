@@ -28,13 +28,6 @@ interface IPaginatedDataProvider {
   /* Returns results starting at firstIndex and up to and including lastIndex */
   getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<any[]>;
 
-  /* Adds an observer to the paginator, returns a function that (when called)
-      removes the observer from the provider. */
-  addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any;
-
-  /* Removes an observer from the paginator */
-  removeObserver(observer: IPaginatedDataProviderObserver);
-
   /* Indicate the provider could be destroyed */
   destroy();
 }

@@ -72,7 +72,4 @@ class TransactionsProvider implements IPaginatedDataProvider {
     }
     return this.heat.api.getTransactionsForAll(firstIndex, lastIndex);
   }
-
-  public addObserver(observer: IPaginatedDataProviderObserver): (...args: any[]) => any { return null; }
-  public removeObserver(observer: IPaginatedDataProviderObserver) { }
 }
