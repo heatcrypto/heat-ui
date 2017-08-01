@@ -27,7 +27,4 @@ interface IPaginatedDataProvider {
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<any[]>;
-
-  /* Indicate the provider could be destroyed */
-  destroy();
 }
