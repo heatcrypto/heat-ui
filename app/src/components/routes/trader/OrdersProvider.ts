@@ -44,7 +44,7 @@ class OrdersProvider implements IPaginatedDataProvider {
   public destroy() {}
 
   /* The number of items available */
-  public getLength(): angular.IPromise<number> {
+  public getPaginatedLength(): angular.IPromise<number> {
     if (this.account) {
       return this.heat.api.getAccountPairOrdersCount(this.account,this.currency,this.asset);
     }
@@ -55,7 +55,7 @@ class OrdersProvider implements IPaginatedDataProvider {
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatOrder>> {
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatOrder>> {
     if (this.account) {
       return this.heat.api.getAccountPairOrders(this.account,this.currency,this.asset,firstIndex,lastIndex);
     }

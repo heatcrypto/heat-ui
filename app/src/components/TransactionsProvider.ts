@@ -42,7 +42,7 @@ class TransactionsProvider implements IPaginatedDataProvider {
   public destroy() {}
 
   /* The number of items available */
-  public getLength(): angular.IPromise<number> {
+  public getPaginatedLength(): angular.IPromise<number> {
     if (angular.isString(this.account)) {
       return this.heat.api.getTransactionsForAccountCount(this.account);
     }
@@ -58,7 +58,7 @@ class TransactionsProvider implements IPaginatedDataProvider {
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTransaction>> {
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTransaction>> {
     if (angular.isString(this.account)) {
       return this.heat.api.getTransactionsForAccount(this.account, firstIndex, lastIndex);
     }

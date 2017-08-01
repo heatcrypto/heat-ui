@@ -40,12 +40,12 @@ class SearchAccountsProvider implements IPaginatedDataProvider {
   public destroy() {}
 
   /* The number of items available */
-  public getLength(): angular.IPromise<number> {
+  public getPaginatedLength(): angular.IPromise<number> {
     return this.heat.api.searchAccountsCount(this.query);
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatAccount>> {
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatAccount>> {
     return this.heat.api.searchAccounts(this.query, firstIndex, lastIndex);
   }
 

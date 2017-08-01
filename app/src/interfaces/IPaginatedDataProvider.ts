@@ -23,10 +23,10 @@
 interface IPaginatedDataProvider {
 
   /* The number of items available */
-  getLength(): angular.IPromise<number>;
+  getPaginatedLength(): angular.IPromise<number>;
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  getResults(firstIndex: number, lastIndex: number): angular.IPromise<any[]>;
+  getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<any[]>;
 
   /* Adds an observer to the paginator, returns a function that (when called)
       removes the observer from the provider. */

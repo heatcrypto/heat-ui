@@ -96,7 +96,7 @@ abstract class VirtualRepeatComponent {
     var deferred = this.$q.defer();
     if (this.provider) {
       this.loadedPages = {};
-      this.provider.getLength().then((length) => {
+      this.provider.getPaginatedLength().then((length) => {
         this.numItems = length;
         if (length == 0) {
           this.$scope.$evalAsync(() => { this.loading = false })
@@ -113,7 +113,7 @@ abstract class VirtualRepeatComponent {
     this.loadedPages[pageNumber] = null;
     var firstIndex = pageNumber * this.PAGE_SIZE;
     var lastIndex = firstIndex + this.PAGE_SIZE;
-    this.provider.getResults(firstIndex, lastIndex).then((items) => {
+    this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
       this.$scope.$evalAsync(() => { this.loading = false });
       if (this.preprocessor) {
         if (angular.isArray(items)) {

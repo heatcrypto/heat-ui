@@ -41,7 +41,7 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
   public destroy() {}
 
   /* The number of items available */
-  public getLength(): angular.IPromise<number> {
+  public getPaginatedLength(): angular.IPromise<number> {
     var deferred = this.$q.defer();
     if (angular.isDefined(this.blockObject)) {
       deferred.resolve(1);
@@ -55,7 +55,7 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatBlock>> {
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatBlock>> {
     if (angular.isDefined(this.blockObject)) {
       var deferred = this.$q.defer();
       deferred.resolve([this.blockObject]);
