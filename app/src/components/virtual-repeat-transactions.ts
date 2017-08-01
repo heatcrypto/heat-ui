@@ -200,12 +200,6 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
       heat.subscriber.blockPopped({}, refresh, $scope);
       heat.subscriber.blockPushed({}, refresh, $scope);
     }
-
-    $scope.$on("$destroy",() => {
-      if (this.provider) {
-        this.provider.destroy();
-      }
-    });
   }
 
   showPopup(messageText: string) {

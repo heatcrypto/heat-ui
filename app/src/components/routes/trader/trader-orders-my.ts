@@ -108,11 +108,6 @@ class TraderOrdersMyComponent extends VirtualRepeatComponent  {
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
 
-    $scope.$on("$destroy",() => {
-      if (this.provider) {
-        this.provider.destroy();
-      }
-    });
     this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
   }
 

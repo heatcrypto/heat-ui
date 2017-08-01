@@ -58,11 +58,6 @@ class ExplorerResultsAccountsComponent extends VirtualRepeatComponent {
         }
       }
     );
-    $scope.$on("$destroy",() => {
-      if (this.provider) {
-        this.provider.destroy();
-      }
-    });
   }
 
   onSelect(selectedAccount) {}

@@ -40,9 +40,6 @@ class OrdersProvider implements IPaginatedDataProvider {
               private heat: HeatService,
               private $q: angular.IQService) {}
 
-  /* Be notified this provider got destroyed */
-  public destroy() {}
-
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     if (this.account) {

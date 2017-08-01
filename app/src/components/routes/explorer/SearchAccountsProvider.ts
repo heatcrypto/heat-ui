@@ -36,9 +36,6 @@ class SearchAccountsProvider implements IPaginatedDataProvider {
               private $q: angular.IQService,
               private query: string) {}
 
-  /* Be notified this provider got destroyed */
-  public destroy() {}
-
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     return this.heat.api.searchAccountsCount(this.query);

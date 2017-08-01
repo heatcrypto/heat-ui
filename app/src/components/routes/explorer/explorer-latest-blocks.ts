@@ -93,12 +93,6 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     heat.subscriber.blockPopped({}, refresh, $scope);
     heat.subscriber.blockPushed({}, refresh, $scope);
-
-    $scope.$on("$destroy",() => {
-      if (this.provider) {
-        this.provider.destroy();
-      }
-    });
   }
 
   jsonDetails($event, item) {
