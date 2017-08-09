@@ -32,8 +32,16 @@ trader {
       color: @white04;
     }
   }
+  .main-display {
+    margin-left: 12px;
+  }
+  @media (max-width: 920px) {
+    .main-display {
+      overflow: scroll;
+    }
+  }
   md-sidenav {
-     margin-right: 14px !important;
+     margin-right: 0px !important;
      background-color: transparent;
      .sidenav-container {
        display: flex;
