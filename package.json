@@ -70,6 +70,7 @@
     "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
+    "ng-popover": "^2.0.0",
     "pako": "1.0.3",
     "techan": "0.8.0"
   },
