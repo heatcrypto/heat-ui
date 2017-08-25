@@ -25,6 +25,12 @@
   selector: 'traderTradeHistory',
   inputs: ['currencyInfo','assetInfo','oneClickOrders'],
   template: `
+  <script type="text/ng-template" id="popoverHistory.html">
+    <div class="account-popover">
+      <div>Buyer: <a href="#/explorer-account/{{item.buyer}}">{{item.buyer}}</a></div>
+      <div>Seller: <a href="#/explorer-account/{{item.seller}}">{{item.seller}}</a></div>
+    </div>
+  </script>
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">Past trades&nbsp;
         <span flex></span>
@@ -42,6 +48,7 @@
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
         <md-list-item class="header">
+          <div class="truncate-col info-col"></div>
           <div class="truncate-col type-col">Type</div>
           <div class="truncate-col time-col" flex>Time</div>
           <div class="truncate-col price-col">Price</div>
@@ -50,6 +57,17 @@
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" ng-class="{'virtual': item.virtual}">
+            <div class="truncate-col info-col">
+              <div
+                class="info"
+                angular-popover
+                direction="right"
+                template-url="popoverHistory.html"
+                mode="mouseover"
+                style="position: absolute;">
+              </div>
+              <img src="assets/info.png">
+            </div>
             <div class="truncate-col type-col">{{item.type}}</div>
             <div class="truncate-col time-col" flex>{{item.time}}</div>
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
