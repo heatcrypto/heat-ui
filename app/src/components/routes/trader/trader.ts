@@ -49,21 +49,23 @@ declare var Big: any;
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill class="main-display">
-        <div ng-if="vm.showMarketNotCertified">
-          <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
-        </div>
-        <div class="trader-row top">
-            <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>
-            <trader-chart class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
-        </div>
-        <div class="trader-row middle">
-          <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-buy>
-          <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-quick-buy-sell>
-          <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"l></trader-orders-sell>
-        </div>
-        <div class="trader-row bottom">
-          <trader-trade-history class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-trade-history>
-          <trader-orders-my ng-if="vm.user.unlocked" class="trader-component" one-click-orders="vm.oneClickOrders" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-my>
+        <div>
+          <div ng-if="vm.showMarketNotCertified">
+            <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
+          </div>
+          <div class="trader-row top">
+              <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>
+              <trader-chart class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-chart>
+          </div>
+          <div class="trader-row middle">
+            <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-buy>
+            <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-quick-buy-sell>
+            <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"l></trader-orders-sell>
+          </div>
+          <div class="trader-row bottom">
+            <trader-trade-history class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-trade-history>
+            <trader-orders-my ng-if="vm.user.unlocked" class="trader-component" one-click-orders="vm.oneClickOrders" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-my>
+          </div>
         </div>
       </div>
     </div>

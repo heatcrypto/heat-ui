@@ -53,19 +53,29 @@ trader {
        margin-bottom: 12px;
      }
    }
+   .main-display {
+     position: relative;
+     & > div {
+       position: absolute;
+       top: 0px;
+       left: 0px;
+       right: 0px;
+       bottom: 0px;
+       overflow-y: scroll;
+     }
+   }
    .trader-row {
      display: flex;
      margin-bottom: 8px;
      &.top {
-       flex-grow:1;
-       max-height: 280px;
+       height: 280px;
      }
      &.middle {
-       flex-grow:1;
-       max-height: 280px;
+       height: 280px;
      }
      &.bottom {
-       flex-grow:1;
+       min-height: 280px;
+       flex-grow: 1;
      }
    }
    .layout-row {
