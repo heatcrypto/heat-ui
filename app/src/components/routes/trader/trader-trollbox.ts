@@ -57,24 +57,30 @@
     </div>
   `
 })
-@Inject('$scope','trollbox','$timeout','user')
+@Inject('$q', '$scope','trollbox','$timeout','user')
 class TraderTrollboxComponent {
   private name: string;
   private messageText: string;
   public messages: Array<TrollboxServiceMessage> = [];
   private nameRegexp = /^(.+)\s\[(\d+)\]$/;
 
-  constructor(private $scope: angular.IScope,
+  constructor(public $q: angular.IQService,
+              private $scope: angular.IScope,
               private trollbox: TrollboxService,
               private $timeout: angular.ITimeoutService,
               private user: UserService) {
 
-    trollbox.getMessages().then((messages) => {
+    // do not use  $q.all(trollbox.getMessages())  because some promise may be rejected, so get messages sequentially
+    trollbox.getMessages().forEach(promise => {
+      promise.then((messages) => {
       $scope.$evalAsync(() => {
-        this.messages = messages.map(message => {
+          console.log('messages', messages);
+          let ar = messages.map(message => {
           return this.augmentMessage(message);
         });
-
+          this.messages = this.messages.concat(ar);
+          console.log('this messages', this.messages);
+        });
       });
     });
 

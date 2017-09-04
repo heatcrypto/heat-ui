@@ -7,5 +7,7 @@ node_modules
 dist
 npm-debug.log
 releases
-.idea/
 blockchain
+/.idea/
+/out/
+/*.iml
