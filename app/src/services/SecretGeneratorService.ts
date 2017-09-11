@@ -57,7 +57,7 @@ class SecretGeneratorService {
   }
 
   public generate(langCode: string): angular.IPromise<string> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<string>();
     this.getWordlist(langCode).then((wordList) => {
       deferred.resolve(this.generateSecret(wordList));
 
@@ -66,7 +66,7 @@ class SecretGeneratorService {
   }
 
   public generateBulk(langCode: string, count: number): angular.IPromise<Array<string>> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<Array<string>>();
     this.getWordlist(langCode).then((wordList) => {
       var bulk: Array<string> = [];
       for (var i=0; i<count; i++) {
@@ -106,7 +106,7 @@ class SecretGeneratorService {
   }
 
   private getWordlist(langCode: string): angular.IPromise<Array<string>> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<Array<string>>();
     deferred.resolve(this.words);
     // var lang: IDicewordLanguage = this.languages.find((lang) => lang.code == langCode);
     // if (lang.words.length > 0) {
@@ -125,21 +125,21 @@ class SecretGeneratorService {
   }
 
   private downloadWordlist(file: string, fileHash: string): angular.IPromise<Array<string>> {
-    var deferred = this.$q.defer();
-    this.$http({
+    let deferred = this.$q.defer<Array<string>>();
+    this.$http<string>({
       url: this.resolveURL(file),
       method: 'GET'
-    }).then((data: string) => {
+    }).then((response) => {
 
       /* Make sure the file contents match the expected hash */
-      var hash = heat.crypto.calculateStringHash(data);
+      var hash = heat.crypto.calculateStringHash(response.data);
       if (hash != fileHash) {
         console.error(`File hashes don't match.\nFile: ${file}\nGot hash: ${hash}\nExpected: ${fileHash}`);
         deferred.reject();
         return;
       }
 
-      var words = data.match(/[^\r\n]+/g);
+      var words = response.data.match(/[^\r\n]+/g);
 
       /* Ensure word lists always have > 1625 words */
       if (words.length < 1625) {

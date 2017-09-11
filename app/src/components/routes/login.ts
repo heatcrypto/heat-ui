@@ -576,7 +576,7 @@ class LoginComponent {
   }
 
   showChallenge() : angular.IPromise<string> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<string>();
     if (angular.isDefined(this.pageCreateRecaptchaWindow)) {
       this.pageCreateRecaptchaWindow.close();
       this.pageCreateRecaptchaWindow = null;

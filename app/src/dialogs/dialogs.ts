@@ -63,8 +63,9 @@ module dialogs {
         angular.element(document).find('head').append(`<style type="text/css" id="${styleId}">${options.style}</style>`);
       }
     }
+
     return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
-      controller: options.controller||function () {},
+      controller: Function || function () {},
       locals: angular.extend({
         title: options.title,
         okButton: angular.isDefined(options.okButton) ? options.okButton : true,
@@ -106,7 +107,7 @@ module dialogs {
       }
     }
     return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
-      controller: options.controller||function () {},
+      controller: Function || function () {},
       locals: angular.extend({
         title: options.title,
         cancelButton: options.cancelButton,

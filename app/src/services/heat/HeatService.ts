@@ -291,7 +291,7 @@ class HeatService {
   }
 
   mock<T>(data:any): angular.IPromise<T> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<T>();
     deferred.resolve(data);
     return deferred.promise
   }

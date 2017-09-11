@@ -93,7 +93,7 @@ abstract class VirtualRepeatComponent {
   }
 
   protected determineLength(retain?: boolean): angular.IPromise<number> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<number>();
     if (this.provider) {
       this.loadedPages = {};
       this.provider.getPaginatedLength().then((length) => {

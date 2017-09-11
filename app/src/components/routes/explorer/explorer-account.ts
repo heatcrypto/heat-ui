@@ -175,7 +175,7 @@ class ExploreAccountComponent {
   }
 
   private getAccountAssets(): angular.IPromise<Array<AssetInfo>> {
-    let deferred = this.$q.defer();
+    let deferred = this.$q.defer<Array<AssetInfo>>();
     this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
       let assetInfos: Array<AssetInfo> = [];
       let promises = [];

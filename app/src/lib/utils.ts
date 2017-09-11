@@ -94,7 +94,7 @@ module utils {
 
   export function delayPromise<T>(promise: angular.IPromise<T>, delay: number): angular.IPromise<T> {
     var $q = <angular.IQService> heat.$inject.get('$q');
-    var deferred = $q.defer();
+    let deferred = $q.defer<T>();
     var result, resolved = false, rejected = false;
     var timeout = setTimeout(function () {
       timeout = null;

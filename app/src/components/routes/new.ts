@@ -67,7 +67,7 @@ class NewComponent {
   }
 
   isExistingAccount(): angular.IPromise<boolean> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<boolean>();
     this.heat.api.getAccountBalance(this.user.account, "0").then(() => {
       deferred.resolve(true);
     }).catch((error: ServerEngineError) => {

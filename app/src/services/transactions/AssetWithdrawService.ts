@@ -70,7 +70,7 @@ class AssetWithdrawService extends AbstractTransaction {
       }
     };
 
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<IHeatAssetWithdrawInfo>();
     if (angular.isDefined(localCache[asset]))
       deferred.resolve(localCache[asset]);
     else
@@ -80,7 +80,7 @@ class AssetWithdrawService extends AbstractTransaction {
 
   // the assetInfo is the $scope.currencyInfo property in the parent component
   dialog($event?, assetInfo?: AssetInfo, amount?: string): angular.IPromise<IGenericDialog> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<IGenericDialog>();
 
     // you can never withdraw HEAT (which has asset id 0)
     if (assetInfo.id == "0")

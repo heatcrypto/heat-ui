@@ -55,7 +55,7 @@ class HeatAPI implements IHeatAPI {
   }
 
   getPublicKey(account: string): angular.IPromise<string> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<string>();
     this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
       var test = heat.crypto.getAccountIdFromPublicKey(publicKey);
       if (test != account) {

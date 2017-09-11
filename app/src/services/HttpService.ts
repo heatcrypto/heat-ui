@@ -37,7 +37,7 @@ class HttpService {
   }
 
   public get(url:string): angular.IPromise<string> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<string>();
     if (this.env.type == EnvType.BROWSER) {
       this.browserHttpGet(url, deferred.resolve, deferred.reject);
     }
