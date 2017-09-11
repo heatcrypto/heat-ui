@@ -69,7 +69,7 @@ class HeatAPI implements IHeatAPI {
     return deferred.promise;
   }
 
-  createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionInput> {
+  createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionOutput> {
     console.log("CreateTransaction",input);
     var arg = { value: JSON.stringify(input) };
     return this.heat.post('/tx/create', arg);
