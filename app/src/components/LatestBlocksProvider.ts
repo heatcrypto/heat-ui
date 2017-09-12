@@ -61,7 +61,7 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
       deferred.resolve([this.blockObject]);
       return deferred.promise;
     } else {
-      return this.heat.api.getBlocks(firstIndex, lastIndex);
+      return <any> this.heat.api.getBlocks(firstIndex, lastIndex);
     }
   }
 }

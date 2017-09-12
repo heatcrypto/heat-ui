@@ -48,7 +48,7 @@
     "gulp-usemin": "0.3.24",
     "open": "0.0.5",
     "serve-static": "1.11.1",
-    "typescript": "2.3.4"
+    "typescript": "^2.3.4"
   },
   "dependencies": {
     "angular": "1.5.8",

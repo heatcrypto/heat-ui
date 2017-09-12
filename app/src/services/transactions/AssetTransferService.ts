@@ -121,7 +121,7 @@ class AssetTransferDialog extends GenericDialog {
               precision(8).
               symbol('').
               asyncValidate("Not enough funds", (amount) => {
-                var deferred = this.$q.defer();
+                let deferred = this.$q.defer<boolean>();
                 if (this.fields['asset'].value) {
                   this.heat.api.getAccountBalance(this.user.account, this.fields['asset'].value).then(
                     (balance: IHeatAccountBalance) => {
@@ -148,7 +148,7 @@ class AssetTransferDialog extends GenericDialog {
               rows(2).
               visible(false).
               asyncValidate("No recipient public key", (message) => {
-                var deferred = this.$q.defer();
+                let deferred = this.$q.defer<boolean>();
                 if (String(message).trim().length == 0) {
                   deferred.resolve();
                 }

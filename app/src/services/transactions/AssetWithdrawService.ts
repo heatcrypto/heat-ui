@@ -183,7 +183,7 @@ class AssetWithdrawDialog extends GenericDialog {
              .precision(this.assetInfo.decimals)
              .symbol(this.assetInfo.symbol).
               asyncValidate("Not enough funds", (amount) => {
-                var deferred = this.$q.defer();
+                let deferred = this.$q.defer<boolean>();
                 if (this.fields['asset'].value) {
                   this.heat.api.getAccountBalance(this.user.account, this.fields['asset'].value).then(
                     (balance: IHeatAccountBalance) => {

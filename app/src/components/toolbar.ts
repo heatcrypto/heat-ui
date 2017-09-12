@@ -45,7 +45,7 @@
       <div class="md-toolbar-tools">
         <h2 ng-if="vm.isTestnet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
-          TEST-NET
+          TEST-NET&nbsp;&nbsp;&nbsp;&nbsp;
         </h2>
         <div class="wrapper">
           <div>

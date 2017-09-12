@@ -93,8 +93,8 @@ class AssetIssueDialog extends GenericDialog {
                 var len = angular.isString(symbol) ? symbol.trim().length : 0;
                 return  len >= 3 && len <= 4;
               }).
-              asyncValidate("Symbol name already in use",(symbol)=> {
-                var deferred = this.$q.defer();
+              asyncValidate("Symbol name already in use", (symbol)=> {
+                let deferred = this.$q.defer<boolean>();
                 this.heat.api.getAssetProtocol1(symbol).then((asset) => {
                   deferred.reject();
                 }, (response) => {

@@ -49,7 +49,7 @@ class DialogFieldAsset extends AbstractDialogField {
     if (this.availableAssetsPromise) {
       return this.availableAssetsPromise;
     }
-    let deferred = this.$q.defer();
+    let deferred = this.$q.defer<any>();
     if (this._searchAllAssets) {
       this.heat.api.getAllAssetProtocol1(0,100).then((assets) => {
         assets.unshift({
