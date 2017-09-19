@@ -62,7 +62,7 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
 
   currencyBalance: string = "*"; // formatted currency balance
 
-  PAGE_SIZE = 250; /* VirtualRepeatComponent @override */
+  PAGE_SIZE = 100; /* VirtualRepeatComponent @override */
 
   refreshGrid: ()=>void;
 

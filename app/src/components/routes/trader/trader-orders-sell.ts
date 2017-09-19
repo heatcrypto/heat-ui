@@ -62,7 +62,7 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
 
   assetBalance: string = "*"; // formatted asset balance
 
-  PAGE_SIZE = 250; /* VirtualRepeatComponent */
+  PAGE_SIZE = 100; /* VirtualRepeatComponent */
 
   refreshGrid:()=>void;
   refreshBalance:()=>void;
