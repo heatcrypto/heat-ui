@@ -65,19 +65,24 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Leased to:
+              Lease:
             </div>
             <div class="value">
-              <span ng-if="!vm.leasedToAccount">None</span>
-              <a ng-if="vm.leasedToAccount" href="#/explorer-account/{{vm.leasedToAccount}}">{{vm.leasedToAccountName||vm.leasedToAccount}}</a>
+              <span ng-if="vm.currentLessee=='0'">None</span>
+              <span ng-if="vm.currentLessee!='0'">
+                <a href="#/explorer-account/{{vm.currentLessee}}">{{vm.currentLesseeName}}</a> period {{vm.currentLeasingHeightFrom}}/{{vm.currentLeasingHeightTo}} remaining {{vm.currentLeasingRemain}}
+              </span>
             </div>
           </div>
           <div class="col-item">
             <div class="title">
-              Lease blocks remain:
+              Next lease:
             </div>
             <div class="value">
-              {{vm.leaseBlocksRemain}}
+              <span ng-if="vm.nextLessee=='0'">None</span>
+              <span ng-if="vm.nextLessee!='0'">
+                <a href="#/explorer-account/{{vm.nextLessee}}">{{vm.nextLesseeName}}</a> period {{vm.nextLeasingHeightFrom}}/{{vm.nextLeasingHeightTo}}
+              </span>
             </div>
           </div>
         </div>
@@ -119,8 +124,17 @@ class ExploreAccountComponent {
   effectiveBalance: string;
   balanceUnconfirmed: string;
   balanceConfirmed: string;
-  leasedTo: string;
   assetInfos: Array<AssetInfo> = [];
+
+  currentLessee: string;
+  currentLesseeName: string;
+  currentLeasingHeightFrom: number;
+  currentLeasingHeightTo: number;
+  currentLeasingRemain: number;
+  nextLessee: string;
+  nextLesseeName: string;
+  nextLeasingHeightFrom: number;
+  nextLeasingHeightTo: number;
 
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
@@ -143,7 +157,6 @@ class ExploreAccountComponent {
     this.effectiveBalance = "*";
     this.balanceUnconfirmed = "*";
     this.balanceConfirmed = "*";
-    this.leasedTo = "*";
 
     this.heat.api.getPublicKey(this.account).then((publicKey)=>{
       this.$scope.$evalAsync(()=>{
@@ -157,7 +170,22 @@ class ExploreAccountComponent {
         this.balanceConfirmed = utils.formatQNT(account.balance, 8);
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
+        this.currentLessee = account.currentLessee;
+        this.currentLesseeName = account.currentLesseeName || account.currentLessee;
+        this.currentLeasingHeightFrom = account.currentLeasingHeightFrom;
+        this.currentLeasingHeightTo = account.currentLeasingHeightTo;
+        this.nextLessee = account.nextLessee;
+        this.nextLesseeName = account.nextLesseeName || account.nextLessee;
+        this.nextLeasingHeightFrom = account.nextLeasingHeightFrom;
+        this.nextLeasingHeightTo = account.nextLeasingHeightTo;
       });
+      if (this.currentLessee != "0") {
+        this.heat.api.getBlockchainStatus().then(status=>{
+          this.$scope.$evalAsync(()=>{
+            this.currentLeasingRemain = status.lastBlockchainFeederHeight - account.currentLeasingHeightTo;
+          })
+        })
+      }
     });
 
     this.getAccountAssets().then(assetInfos=>{
