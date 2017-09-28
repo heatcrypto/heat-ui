@@ -115,6 +115,12 @@
                 <span>Create Market</span>
               </md-button>
             </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="lease balance" ng-click="vm.showLeaseBalanceDialog($event)">
+                <md-icon md-font-library="material-icons">update</md-icon>
+                <span>Lease Balance</span>
+              </md-button>
+            </md-menu-item>
             <md-menu-item ng-show="vm.isNodeEnv">
               <md-button aria-label="dev-tools" ng-click="vm.opendevTools($event)">
                 <md-icon md-font-library="material-icons">developer_board</md-icon>
@@ -170,7 +176,7 @@
   `
 })
 @Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
-  'assetIssue','whitelistMarket','storage','$window','$mdToast','walletFile','localKeyStore','panel')
+  'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast','walletFile','localKeyStore','panel')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -185,6 +191,7 @@ class ToolbarComponent {
               private assetTransfer: AssetTransferService,
               private assetIssue: AssetIssueService,
               private whitelistMarket: WhitelistMarketService,
+              private balanceLease: BalanceLeaseService,
               private storage: StorageService,
               private $window: angular.IWindowService,
               private $mdToast: angular.material.IToastService,
@@ -242,6 +249,10 @@ class ToolbarComponent {
       });
       this.storage.namespace('trader').put('my-markets', mymarkets);
     });
+  }
+
+  showLeaseBalanceDialog($event) {
+    this.balanceLease.dialog(1440, null).show()
   }
 
   signout() {
