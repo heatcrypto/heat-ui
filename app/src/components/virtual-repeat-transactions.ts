@@ -432,6 +432,20 @@ class TransactionRenderer {
         }
       }
     );
+    key = this.TYPE_ACCOUNT_CONTROL+":"+this.SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING;
+    this.transactionTypes[key] = 'BALANCE LEASE';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? 'Lease balance for $period blocks':"<b>BALANCE LEASE</b> From $sender to $recipient for $period blocks";
+      },
+      (t) => {
+        return {
+          sender: this.account(t.sender, t.senderPublicName),
+          recipient: this.account(t.recipient, t.recipientPublicName),
+          period: utils.commaFormat(t.attachment['period'].toString())
+        }
+      }
+    );
   }
 
   renderTransactionType(transaction: IHeatTransaction): string {
