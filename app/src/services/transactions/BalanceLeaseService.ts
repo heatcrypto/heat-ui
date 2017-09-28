@@ -57,8 +57,8 @@ class BalanceLeaseDialog extends GenericDialog {
               private period: number,
               private recipient: string) {
     super($event);
-    this.dialogTitle = 'Cancel ask order';
-    this.dialogDescription = 'Description on how to cancel ask order';
+    this.dialogTitle = 'Balance Lease';
+    this.dialogDescription = 'Description on how to lease balance';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
   }
@@ -71,7 +71,7 @@ class BalanceLeaseDialog extends GenericDialog {
               label('Recipient').
               required(),
       builder.text('period', this.period).
-              label('Period').
+              label('Period (number of blocks)').
               required()
     ]
   }
