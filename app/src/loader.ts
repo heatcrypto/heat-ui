@@ -92,7 +92,8 @@ module heat {
         'duScroll',
         'dc.inputAddOn',
         'jsonFormatter',
-        'luegg.directives'
+        'luegg.directives',
+        'angular-popover'
       ]);
     }
 

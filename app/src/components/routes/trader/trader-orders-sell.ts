@@ -25,14 +25,20 @@
   selector: 'traderOrdersSell',
   inputs: ['currencyInfo','assetInfo','selectedOrder'],
   template: `
+    <script type="text/ng-template" id="templateId.tml">
+      <div class="account-popover">
+        <a href="#/explorer-account/{{item.account}}">{{item.account}}</a>
+      </div>
+    </script>
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title">Sell {{vm.assetInfo.symbol}}&nbsp;
+      <div layout="row" class="trader-component-title">{{vm.assetInfo.symbol}} Sellers&nbsp;
         <span flex></span>
         <span class="balance" ng-if="vm.user.unlocked">BALANCE: {{vm.assetBalance}}&nbsp;{{vm.assetInfo.symbol}}</span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
         <md-list-item  class="header">
+          <div class="truncate-col info-col"></div>
           <div class="truncate-col price-col">Price</div>
           <div class="truncate-col quantity-col">Quantity</div>
           <div class="truncate-col total-col">Total</div>
@@ -42,6 +48,17 @@
           <md-list-item md-virtual-repeat="item in vm" md-on-demand
                ng-click="vm.select(item)" aria-label="Entry"
                ng-class="{'virtual': item.unconfirmed, 'currentlyNotValid': item.currentlyNotValid||item.cancelled}">
+           <div class="truncate-col info-col">
+             <div
+              class="info"
+              angular-popover
+              direction="right"
+              template-url="templateId.tml"
+              mode="mouseover"
+              style="position: absolute;">
+             </div>
+             <img src="assets/info.png">
+           </div>
             <div class="truncate-col price-col">{{item.priceDisplay}}</div>
             <div class="truncate-col quantity-col">{{item.quantityDisplay}}</div>
             <div class="truncate-col total-col">{{item.total}}</div>

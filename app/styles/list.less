@@ -29,7 +29,6 @@
   }
   md-list-item, md-list-item .md-list-item-inner {
     line-height: 20px;
-    overflow: hidden;
   }
   .content {
     font-size: 12px;
@@ -65,6 +64,16 @@
     }
     a {
       color: @link-yellow;
+    }
+    &.info-col {
+      width: 10px;
+      min-width: 14px;
+      padding-left: 10px;
+      padding-top: 6px;
+      .info {
+        width: 14px;
+        height: 14px;
+      }
     }
   }
 }
