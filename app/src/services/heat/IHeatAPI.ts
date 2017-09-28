@@ -262,10 +262,12 @@ interface IHeatAccount {
   effectiveBalance: string;
   guaranteedBalance: string;
   currentLessee: string;
+  currentLesseeName?: string;
   currentLeasingHeightFrom: number;
   currentLeasingHeightTo: number;
   nextLessee: string;
-  nextLeasingHeightFrom: number,
+  nextLesseeName?: string;
+  nextLeasingHeightFrom: number;
   nextLeasingHeightTo: number;
   lessors: Array<string|IHeatLessors>;
   publicName: string;
