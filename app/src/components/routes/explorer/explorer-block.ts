@@ -74,7 +74,7 @@
               Generator:
             </div>
             <div class="value">
-              <a href="#/explorer-account/{{vm.generator}}">{{vm.generatorPublicName||vm.generator}}</a>
+              <a href="#/explorer-account/{{vm.generator}}/transactions">{{vm.generatorPublicName||vm.generator}}</a>
             </div>
           </div>
           <div class="col-item">

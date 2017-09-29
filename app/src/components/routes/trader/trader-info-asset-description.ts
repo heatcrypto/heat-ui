@@ -40,7 +40,7 @@
               Issuer:
             </div>
             <div class="value">
-              <a href="#/explorer-account/{{vm.currencyIssuer}}">{{vm.currencyIssuerPublicName||vm.currencyIssuer}}</a>
+              <a href="#/explorer-account/{{vm.currencyIssuer}}/transactions">{{vm.currencyIssuerPublicName||vm.currencyIssuer}}</a>
             </div>
           </div>
           <div class="col-item launched">
@@ -82,7 +82,7 @@
               Issuer:
             </div>
             <div class="value">
-              <a href="#/explorer-account/{{vm.assetIssuer}}">{{vm.assetIssuerPublicName||vm.assetIssuer}}</a>
+              <a href="#/explorer-account/{{vm.assetIssuer}}/transactions">{{vm.assetIssuerPublicName||vm.assetIssuer}}</a>
             </div>
           </div>
           <div class="col-item launched">

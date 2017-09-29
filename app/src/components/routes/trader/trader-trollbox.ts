@@ -44,7 +44,7 @@
       <div layout="column" flex>
         <ul class="display" scroll-glue>
           <li ng-repeat="item in vm.messages">
-            <span><a ng-if="item.account" href="#/explorer-account/{{item.account}}">{{item.name}}</a>
+            <span><a ng-if="item.account" href="#/explorer-account/{{item.account}}/transactions">{{item.name}}</a>
             <b ng-if="!item.account">{{item.username}}</b>: {{item.text}}</span>
           </li>
         </ul>

@@ -22,10 +22,10 @@
  * */
 @Component({
   selector: 'virtualRepeatTransactions',
-  inputs: ['account','block','personalize','transactionObject'],
+  inputs: ['account','block','personalize','transactionObject','hideLabel'],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -531,7 +531,7 @@ class TransactionRenderer {
   }
 
   account(account: string, publicName: string): string {
-    return account == '0' ? '' : `<a href="#/explorer-account/${account}">${publicName||account}</a>`;
+    return account == '0' ? '' : `<a href="#/explorer-account/${account}/transactions">${publicName||account}</a>`;
   }
 
   amount(amountHQT: string, decimals: number, symbol?: string) {

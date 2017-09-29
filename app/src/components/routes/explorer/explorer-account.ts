@@ -20,10 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explorer-account/:account')
+@RouteConfig('/explorer-account/:account/:type')
 @Component({
   selector: 'explorerAccount',
-  inputs: ['account'],
+  inputs: ['account','type'],
   template: `
     <div layout="column" flex layout-fill layout-padding >
       <explorer-search layout="column" type="''" query="''"></explorer-search>
@@ -106,13 +106,27 @@
           </div>
         </div>
       </div>
-      <virtual-repeat-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
+
+      <div layout="row" layout-align="start center" class="type-row">
+        <md-button ng-class="{'active':vm.type=='accounts'}"
+          ng-disabled="vm.type=='transactions'"
+          ng-href="#/explorer-account/{{vm.account}}/transactions">Transactions</md-button>
+        <md-button ng-class="{'active':vm.type=='blocks'}"
+          ng-disabled="vm.type=='blocks'"
+          ng-href="#/explorer-account/{{vm.account}}/blocks">Blocks</md-button>
+        <md-button ng-class="{'active':vm.type=='assets'}"
+          ng-disabled="vm.type=='assets'"
+          ng-href="#/explorer-account/{{vm.account}}/assets">Assets</md-button>
+      </div>
+
+      <virtual-repeat-transactions hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
     </div>
   `
 })
 @Inject('$scope','heat','assetInfo','$q')
 class ExploreAccountComponent {
   account: string; // @input
+  type: string; // @input
 
   accountName: string;
   email: string;

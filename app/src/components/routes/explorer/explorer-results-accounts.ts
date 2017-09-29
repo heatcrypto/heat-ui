@@ -33,7 +33,7 @@
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
-            <div class="truncate-col id-col left"><a href="#/explorer-account/{{item.id}}">{{item.id}}</a></div>
+            <div class="truncate-col id-col left"><a href="#/explorer-account/{{item.id}}/transactions">{{item.id}}</a></div>
             <div class="truncate-col balance-col">{{item.balanceFormatted}}</div>
             <div class="truncate-col name-col left" flex>{{item.publicName}}</div>
           </md-list-item>
