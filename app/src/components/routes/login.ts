@@ -374,7 +374,7 @@ class LoginComponent {
 
   pageAddLogin() {
     this.user.unlock(this.pageAddSecretPhrase, false).then(() => {
-      this.$location.path('home');
+      this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
 
@@ -396,7 +396,7 @@ class LoginComponent {
     };
     this.localKeyStore.add(key);
     this.user.unlock(this.pageAddSecretPhrase, true, key).then(() => {
-      this.$location.path('home');
+      this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
 
@@ -433,7 +433,7 @@ class LoginComponent {
       var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
       if (key) {
         this.user.unlock(key.secretPhrase, false, key).then(() => {
-          this.$location.path('home');
+          this.$location.path(`explorer-account/${this.user.account}/transactions`);
         });
       }
       else {
