@@ -34,6 +34,8 @@ interface IHeatAPI {
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>>;
   getBlock(numericId: string, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
   getBlockAtHeight(height: number, includeTransactions:boolean ):angular.IPromise<IHeatBlock>;
+  getAccountBlocks(account:string, from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>>;
+  getAccountBlocksCount(account: string):angular.IPromise<number>;
 
   /**
    * Returns account public key

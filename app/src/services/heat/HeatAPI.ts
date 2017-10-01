@@ -54,6 +54,14 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/block/height/${height}/${includeTransactions}`);
   }
 
+  getAccountBlocks(account:string, from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
+    return this.heat.get(`/blockchain/blocks/account/${account}/${from}/${to}/null`);
+  }
+
+  getAccountBlocksCount(account: string):angular.IPromise<number> {
+    return this.heat.get(`/blockchain/blocks/account/count/${account}`, "count");
+  }
+
   getPublicKey(account: string): angular.IPromise<string> {
     var deferred = this.$q.defer();
     this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
@@ -66,7 +74,7 @@ class HeatAPI implements IHeatAPI {
         deferred.resolve(publicKey);
       }
     },deferred.reject);
-    return deferred.promise;
+    return <angular.IPromise<string>> deferred.promise;
   }
 
   createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionInput> {
