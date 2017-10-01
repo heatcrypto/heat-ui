@@ -410,12 +410,18 @@ class TransactionRenderer {
     this.transactionTypes[key] = 'CANCEL SELL';
     this.renderers[key] = new TransactionRenderHelper(
       (t) => {
-        return provider.personalize ? 'Sell order $order':"<b>CANCEL SELL</b> $sender cancelled sell order $order";
+        return provider.personalize ?
+          '$currency/$asset amount $amount price $price':
+          '<b>CANCEL SELL</b> $sender cancelled sell order $currency/$asset amount $amount price $price';
       },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
-          order: t.attachment['order']
+          order: t.attachment['order'],
+          currency: this.asset(t['cancelledAskCurrency']),
+          asset: this.asset(t['cancelledAskAsset']),
+          amount: this.amount(t['cancelledAskQuantity'], 8),
+          price: this.amount(t['cancelledAskPrice'], 8)
         }
       }
     );
@@ -423,12 +429,18 @@ class TransactionRenderer {
     this.transactionTypes[key] = 'CANCEL BUY';
     this.renderers[key] = new TransactionRenderHelper(
       (t) => {
-        return provider.personalize ? 'Buy order $order':"<b>CANCEL BUY</b> $sender cancelled buy order $order";
+        return provider.personalize ?
+          '$currency/$asset amount $amount price $price':
+          '<b>CANCEL BUY</b> $sender cancelled sell order $currency/$asset amount $amount price $price';
       },
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName),
-          order: t.attachment['order']
+          order: t.attachment['order'],
+          currency: this.asset(t['cancelledBidCurrency']),
+          asset: this.asset(t['cancelledBidAsset']),
+          amount: this.amount(t['cancelledBidQuantity'], 8),
+          price: this.amount(t['cancelledBidPrice'], 8)
         }
       }
     );
