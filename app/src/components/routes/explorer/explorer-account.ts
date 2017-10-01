@@ -25,7 +25,7 @@
   selector: 'explorerAccount',
   inputs: ['account','type'],
   template: `
-    <div layout="column" flex layout-fill layout-padding >
+    <div layout="column" flex layout-fill>
       <explorer-search layout="column" type="''" query="''"></explorer-search>
       <div layout="row" class="explorer-detail">
         <div layout="column">
@@ -34,7 +34,7 @@
               Account:
             </div>
             <div class="value">
-              <a href="#/explorer-account/{{vm.account}}">{{vm.accountName||vm.account}}</a>
+              <a href="#/explorer-account/{{vm.account}}/{{vm.type}}">{{vm.accountName||vm.account}}</a>
             </div>
           </div>
           <div class="col-item">
@@ -65,23 +65,23 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Lease:
+              Lease: [{{vm.leaseTitle}}]
             </div>
             <div class="value">
               <span ng-if="vm.currentLessee=='0'">None</span>
               <span ng-if="vm.currentLessee!='0'">
-                <a href="#/explorer-account/{{vm.currentLessee}}">{{vm.currentLesseeName}}</a> period {{vm.currentLeasingHeightFrom}}/{{vm.currentLeasingHeightTo}} remaining {{vm.currentLeasingRemain}}
+                <a href="#/explorer-account/{{vm.currentLessee}}/{{vm.type}}">{{vm.currentLesseeName}}</a>
               </span>
             </div>
           </div>
           <div class="col-item">
             <div class="title">
-              Next lease:
+              Next lease: [{{vm.nextLeaseTitle}}]
             </div>
             <div class="value">
               <span ng-if="vm.nextLessee=='0'">None</span>
               <span ng-if="vm.nextLessee!='0'">
-                <a href="#/explorer-account/{{vm.nextLessee}}">{{vm.nextLesseeName}}</a> period {{vm.nextLeasingHeightFrom}}/{{vm.nextLeasingHeightTo}}
+                <a href="#/explorer-account/{{vm.nextLessee}}/{{vm.type}}">{{vm.nextLesseeName}}</a>
               </span>
             </div>
           </div>
@@ -99,7 +99,7 @@
                   <a ng-click="vm.showDescription($event, item)">{{item.name}}</a>
                 </span>
                 <span class="issuer">
-                  Issued by: <a href="#/explorer-account/{{item.issuer}}">{{item.issuerPublicName||item.issuer}}</a>
+                  Issued by: <a href="#/explorer-account/{{item.issuer}}/{{vm.type}}">{{item.issuerPublicName||item.issuer}}</a>
                 </span>
               </div>
             </div>
@@ -114,12 +114,62 @@
         <md-button ng-class="{'active':vm.type=='blocks'}"
           ng-disabled="vm.type=='blocks'"
           ng-href="#/explorer-account/{{vm.account}}/blocks">Blocks</md-button>
-        <md-button ng-class="{'active':vm.type=='assets'}"
-          ng-disabled="vm.type=='assets'"
-          ng-href="#/explorer-account/{{vm.account}}/assets">Assets</md-button>
+        <md-button ng-class="{'active':vm.type=='lessors'}"
+          ng-disabled="vm.type=='lessors'"
+          ng-href="#/explorer-account/{{vm.account}}/lessors">Lessors</md-button>
       </div>
-
-      <virtual-repeat-transactions hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
+      <div ng-if="vm.type=='transactions'" flex layout="column">
+        <virtual-repeat-transactions hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
+      </div>
+      <div ng-if="vm.type=='blocks'" flex layout="column">
+        <explorer-latest-blocks layout="column" flex account="vm.account" hide-label="true"></explorer-latest-blocks>
+      </div>
+      <div ng-if="vm.type=='lessors'" flex layout="column" layout-fill>
+        <md-list flex layout-fill layout="column" class="lessors">
+          <md-list-item class="header">
+            <div class="truncate-col id-col left">ID</div>
+            <div class="truncate-col balance-col left">Balance</div>
+            <div class="truncate-col current-lessee-col left">Current</div>
+            <div class="truncate-col from-col left">From</div>
+            <div class="truncate-col to-col left">To</div>
+            <div class="truncate-col remain-col left">Remain</div>
+            <div class="truncate-col next-lessee-col">Next</div>
+            <div class="truncate-col from-col">From</div>
+            <div class="truncate-col to-col" flex>To</div>
+          </md-list-item>
+          <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
+            <md-list-item md-virtual-repeat="item in vm.lessors" aria-label="Entry">
+              <div class="truncate-col id-col left">
+                {{item.id}}
+              </div>
+              <div class="truncate-col balance-col left">
+                {{item.effectiveBalance}}
+              </div>
+              <div class="truncate-col current-lessee-col left">
+                {{item.currentLessee}}
+              </div>
+              <div class="truncate-col from-col left">
+                {{item.currentHeightFrom}}
+              </div>
+              <div class="truncate-col to-col left">
+                {{item.currentHeightTo}}
+              </div>
+              <div class="truncate-col remain-col left">
+                ?
+              </div>
+              <div class="truncate-col next-lessee-col">
+                {{item.nextLessee}}
+              </div>
+              <div class="truncate-col from-col">
+                {{item.nextHeightFrom}}
+              </div>
+              <div class="truncate-col to-col" flex>
+                {{item.nextHeightTo}}
+              </div>
+            </md-list-item>
+          </md-virtual-repeat-container>
+        </md-list>
+      </div>
     </div>
   `
 })
@@ -149,6 +199,9 @@ class ExploreAccountComponent {
   nextLesseeName: string;
   nextLeasingHeightFrom: number;
   nextLeasingHeightTo: number;
+  leaseTitle: string;
+  nextLeaseTitle: string;
+  lessors: Array<IHeatLessors>;
 
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
@@ -192,11 +245,14 @@ class ExploreAccountComponent {
         this.nextLesseeName = account.nextLesseeName || account.nextLessee;
         this.nextLeasingHeightFrom = account.nextLeasingHeightFrom;
         this.nextLeasingHeightTo = account.nextLeasingHeightTo;
+        this.lessors = <Array<IHeatLessors>>account.lessors;
       });
       if (this.currentLessee != "0") {
         this.heat.api.getBlockchainStatus().then(status=>{
           this.$scope.$evalAsync(()=>{
             this.currentLeasingRemain = status.lastBlockchainFeederHeight - account.currentLeasingHeightTo;
+            this.leaseTitle = `from ${this.currentLeasingHeightFrom} to ${this.currentLeasingHeightTo} remain ${this.currentLeasingRemain}`;
+            this.nextLeaseTitle = `from ${this.nextLeasingHeightFrom} to ${this.nextLeasingHeightTo}`;
           })
         })
       }
@@ -246,6 +302,6 @@ class ExploreAccountComponent {
         deferred.resolve([]);
       }
     }, deferred.reject);
-    return deferred.promise;
+    return <angular.IPromise<Array<AssetInfo>>> deferred.promise;
   }
 }
