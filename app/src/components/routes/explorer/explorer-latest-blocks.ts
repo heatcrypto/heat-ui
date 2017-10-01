@@ -22,17 +22,17 @@
  * */
 @Component({
   selector: 'explorerLatestBlocks',
-  inputs: ['blockObject'],
+  inputs: ['blockObject','account','hideLabel'],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title">Latest Blocks
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Blocks
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
           <div class="truncate-col height-col left">Height</div>
           <div class="truncate-col block-col block left">Block</div>
           <div class="truncate-col date-col left">Time</div>
-          <div class="truncate-col generator-col block left">Generator</div>
+          <div class="truncate-col generator-col block left" ng-if="!vm.account">Generator</div>
           <div class="truncate-col transactions-col">Transactions</div>
           <div class="truncate-col amount-col">Amount</div>
           <div class="truncate-col fee-col">Fee</div>
@@ -46,7 +46,7 @@
             <div class="truncate-col height-col left">{{item.height}}</div>
             <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
             <div class="truncate-col date-col left">{{item.time}}</div>
-            <div class="truncate-col generator-col block left"><a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a></div>
+            <div class="truncate-col generator-col block left" ng-if="!vm.account"><a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a></div>
             <div class="truncate-col transactions-col">{{item.numberOfTransactions}}</div>
             <div class="truncate-col amount-col">{{item.amount}}</div>
             <div class="truncate-col fee-col">{{item.fee}}</div>
@@ -68,6 +68,7 @@
 class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
   blockObject: IHeatBlock; // @input
+  account: string; // @input
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -78,7 +79,7 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
-      this.latestBlocksProviderFactory.createProvider(this.blockObject),
+      this.latestBlocksProviderFactory.createProvider(this.blockObject, this.account),
       /* decorator function */
       (block: any|IHeatBlock) => {
         var date = utils.timestampToDate(block.timestamp);

@@ -27,15 +27,16 @@ class LatestBlocksProviderFactory  {
   constructor(private heat: HeatService, private $q: angular.IQService) {}
 
   /* Optionally pass a single block object which will be displayed as its single result */
-  public createProvider(blockObject?: IHeatBlock): IPaginatedDataProvider {
-    return new LatestBlocksProvider(this.heat, this.$q, blockObject);
+  public createProvider(blockObject?: IHeatBlock, account?:string): IPaginatedDataProvider {
+    return new LatestBlocksProvider(this.heat, this.$q, blockObject, account);
   }
 }
 
 class LatestBlocksProvider implements IPaginatedDataProvider {
   constructor(private heat: HeatService,
               private $q: angular.IQService,
-              private blockObject: IHeatBlock) {}
+              private blockObject: IHeatBlock,
+              private account: string) {}
 
   /* Be notified this provider got destroyed */
   public destroy() {}
@@ -47,11 +48,18 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
       deferred.resolve(1);
     }
     else {
-      this.heat.api.getBlockchainStatus().then((status) => {
-        deferred.resolve(status.numberOfBlocks);
-      },deferred.reject);
+      if (this.account) {
+        this.heat.api.getAccountBlocksCount(this.account).then(count=>{
+          deferred.resolve(count);
+        },deferred.reject)
+      }
+      else {
+        this.heat.api.getBlockchainStatus().then((status) => {
+          deferred.resolve(status.numberOfBlocks);
+        },deferred.reject);
+      }
     }
-    return deferred.promise;
+    return <angular.IPromise<number>>deferred.promise;
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
@@ -59,10 +67,15 @@ class LatestBlocksProvider implements IPaginatedDataProvider {
     if (angular.isDefined(this.blockObject)) {
       var deferred = this.$q.defer();
       deferred.resolve([this.blockObject]);
-      return deferred.promise;
+      return <angular.IPromise<Array<IHeatBlock>>> deferred.promise;
     }
     else {
-      return this.heat.api.getBlocks(firstIndex, lastIndex);
+      if (this.account) {
+        return <angular.IPromise<Array<IHeatBlock>>> this.heat.api.getAccountBlocks(this.account, firstIndex, lastIndex);
+      }
+      else {
+        return <angular.IPromise<Array<IHeatBlock>>> this.heat.api.getBlocks(firstIndex, lastIndex);
+      }
     }
   }
 }
