@@ -26,7 +26,7 @@
     <div class="trader-component-title" layout="row">Markets&nbsp;
       <span flex></span>
       <elipses-loading ng-show="vm.loading"></elipses-loading>
-      <a ng-click="vm.toggleShowCertified()" class="configure">Show {{vm.showCertified?'uncertified':'certified only'}}</a>
+      <a ng-if="!isTestnet" ng-click="vm.toggleShowCertified()" class="configure">Show {{vm.showCertified?'uncertified':'certified only'}}</a>
     </div>
     <input type="text" placeholder="Search markets" ng-model="vm.filter" ng-change="vm.onFilterChange()"></input>
     <md-list flex layout-fill layout="column">
@@ -234,7 +234,7 @@ class TraderMarketsComponent {
         return false;
       }
     }
-    if (this.showCertified) {
+    if (this.showCertified && !heat.isTestnet) {
       if (market.currency != "0") {
         if (!market.currencyInfo || !market.currencyInfo.certified) {
           return false;

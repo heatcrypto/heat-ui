@@ -70,6 +70,7 @@ module heat {
         isUnlocked();
 
         $scope['userUnlocked'] = user.unlocked;
+        $rootScope['isTestnet'] = heat.isTestnet;
 
         $rootScope.$on('$locationChangeSuccess', isUnlocked);
 
