@@ -90,7 +90,7 @@ class SendmessageDialog extends GenericDialog {
               rows(2).
               visible(false).
               asyncValidate("No recipient public key", (message) => {
-                var deferred = this.$q.defer();
+                let deferred = this.$q.defer<boolean>();
                 if (String(message).trim().length == 0) {
                   deferred.resolve();
                 }

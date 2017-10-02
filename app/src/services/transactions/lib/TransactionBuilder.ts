@@ -119,7 +119,7 @@ class TransactionBuilder {
       this._transactionArgs = this.getCreateTransactionArgs();
 
       var p = this.heat.api.createTransaction(this._transactionArgs);
-      p.then((data:IHeatCreateTransactionOutput) => {
+      p.then((data: IHeatCreateTransactionOutput) => {
         this._transactionData = data;
         deferred.resolve();
       }).

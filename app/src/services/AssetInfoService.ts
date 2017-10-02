@@ -83,7 +83,7 @@ class AssetInfoService {
   }
 
   getInfo(asset: string): angular.IPromise<AssetInfo> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<AssetInfo>();
     if (angular.isDefined(this.cache[asset])) {
       deferred.resolve(this.cache[asset]);
     }
@@ -138,7 +138,7 @@ class AssetInfoService {
   }
 
   public getAssetDescription(info: AssetInfo): angular.IPromise<string> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<string>();
     let noDescription = "No description available ...";
     if (angular.isString(info.description) || !info.descriptionUrl) {
       deferred.resolve(info.description||noDescription);

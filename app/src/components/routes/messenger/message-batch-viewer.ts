@@ -130,7 +130,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   }
 
   getItems(firstIndex: number, lastIndex: number) : angular.IPromise<Array<any>> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<Array<any>>();
     this.heat.api.getMessagingContactMessages(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey),
                 firstIndex, lastIndex).then((messages) => {
       var index = firstIndex;

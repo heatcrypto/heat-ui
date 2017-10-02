@@ -25,7 +25,7 @@ interface IDialogOptions {
   title?: string;
   okButton?: boolean; /* calls okButtonClick on controller or $mdDialog.hide */
   cancelButton?: boolean; /* calls cancelButtonClick on controller or $mdDialog.cancel */
-  controller?: Function; /* will have $mdDialog injected as property */
+  controller?: Function | string; /* will have $mdDialog injected as property */
   template: string,
   targetEvent?: any;
   locals?: any;
@@ -35,7 +35,7 @@ interface IDialogOptions {
 interface IWizardOptions {
   id: string; /* Required wizard identifier for registering styles */
   title?: string;
-  controller?: Function; /* will have $mdDialog injected as property */
+  controller?: Function | string; /* will have $mdDialog injected as property */
   targetEvent?: any;
   locals?: any;
   style?: string;
@@ -64,7 +64,7 @@ module dialogs {
       }
     }
     return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
-      controller: options.controller||function () {},
+      controller: options.controller || function () {},
       locals: angular.extend({
         title: options.title,
         okButton: angular.isDefined(options.okButton) ? options.okButton : true,
@@ -106,7 +106,7 @@ module dialogs {
       }
     }
     return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
-      controller: options.controller||function () {},
+      controller: options.controller || function () {},
       locals: angular.extend({
         title: options.title,
         cancelButton: options.cancelButton,

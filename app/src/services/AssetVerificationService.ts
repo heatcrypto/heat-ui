@@ -37,7 +37,7 @@ class AssetCertificationService {
   }
 
   getInfo(asset: string): angular.IPromise<IHeatAssetCertification> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<IHeatAssetCertification>();
     if (angular.isDefined(this.cache[asset])) {
       deferred.resolve(this.cache[asset]);
     }

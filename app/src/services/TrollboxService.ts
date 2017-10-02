@@ -40,6 +40,9 @@ class TrollboxService {
   private host = "https://heatwallet.com";
   private port = 7734;
   private wss  = "wss://heatwallet.com:7755/ws/";
+  // private telegram_trollbox_host = "http://185.40.76.143";
+  // private telegram_trollbox_port = 7733;
+  // private wss  = "ws://185.40.76.143:7755/ws/";
   private subscriber: HeatSubscriber;
 
   public name: string;
@@ -54,11 +57,19 @@ class TrollboxService {
     this.name = name;
   }
 
-  public getMessages(): angular.IPromise<Array<TrollboxServiceMessage>> {
-    return this.heat.getRaw(this.host, this.port, '/microservice/trollbox/messages');
+  public getMessages(): angular.IPromise<Array<TrollboxServiceMessage>>[] {
+    let fromTelegram = this.heat.getRaw(this.host, this.port, '/microservice/telegram-trollbox/messages');
+    let fromSlack = this.heat.getRaw(this.host, this.port, '/microservice/trollbox/messages');
+    return [fromTelegram, fromSlack];
   }
 
   public sendMessage(message: string) {
+    this.heat.postRaw(this.host, this.port, '/microservice/telegram-trollbox/send', {
+      username: this.name,
+      message: message,
+      publicKey: this.user.publicKey,
+      signature: heat.crypto.signBytes(converters.stringToHexString("hello"), converters.stringToHexString(this.user.secretPhrase))
+    });
     return this.heat.postRaw(this.host, this.port, '/microservice/trollbox/send', {
       username: this.name,
       message: message,
@@ -70,4 +81,5 @@ class TrollboxService {
   public subscribe(callback: (event:TrollboxServiceMessage)=>void, $scope:angular.IScope): ()=>void {
     return this.subscriber.microservice({'microservice':'trollbox.service'}, callback, $scope);
   }
+
 }

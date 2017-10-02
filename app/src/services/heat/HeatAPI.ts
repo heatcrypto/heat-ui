@@ -63,7 +63,7 @@ class HeatAPI implements IHeatAPI {
   }
 
   getPublicKey(account: string): angular.IPromise<string> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<string>();
     this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
       var test = heat.crypto.getAccountIdFromPublicKey(publicKey);
       if (test != account) {
@@ -77,7 +77,7 @@ class HeatAPI implements IHeatAPI {
     return <angular.IPromise<string>> deferred.promise;
   }
 
-  createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionInput> {
+  createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionOutput> {
     console.log("CreateTransaction",input);
     var arg = { value: JSON.stringify(input) };
     return this.heat.post('/tx/create', arg);

@@ -44,7 +44,7 @@ interface IHeatAPI {
   /**
    * Create any type transaction from a JSON document
    */
-  createTransaction(input:IHeatCreateTransactionInput):angular.IPromise<IHeatCreateTransactionInput>;
+  createTransaction(input:IHeatCreateTransactionInput): angular.IPromise<IHeatCreateTransactionOutput>;
   /**
    * Broadcast a transaction to the network
    * Transactions can be either send as JSON or as HEX encoded byte string.

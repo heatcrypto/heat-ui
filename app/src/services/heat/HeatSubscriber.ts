@@ -193,7 +193,7 @@ class HeatSubscriber {
     if (this.connectedSocketPromise) {
       return this.connectedSocketPromise;
     }
-    var deferred  = this.$q.defer();
+    let deferred  = this.$q.defer<WebSocket>();
     var websocket = new WebSocket(this.url);
     this.hookupWebsocketEventListeners(websocket, deferred);
     return this.connectedSocketPromise = deferred.promise;

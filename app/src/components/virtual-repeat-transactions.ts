@@ -1,3 +1,4 @@
+///<reference path='VirtualRepeatComponent.ts'/>
 /*
  * The MIT License (MIT)
  * Copyright (c) 2017 Heat Ledger Ltd.
@@ -120,6 +121,7 @@
     </div>
   `
 })
+
 @Inject('$scope','$q','heat','transactionsProviderFactory','settings','user','render','$mdPanel','controlCharRender')
 class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
 
@@ -268,7 +270,7 @@ class TransactionRenderHelper {
     let template = angular.isFunction(this.template) ? (<(x)=>string>this.template).call(null, transaction) : this.template;
     let text = (' ' + template).slice(1);
     if (promises.length>0) {
-      var deferred = this.$q.defer();
+      var deferred = this.$q.defer<string>();
       this.$q.all(promises).then(()=>{
         angular.forEach(args, (val,key) => {
           text = text.replace(new RegExp("\\$"+key, 'g'), val);
@@ -509,7 +511,7 @@ class TransactionRenderer {
             return this.formatAmount(amount, symbol, neg);
           }
         }
-        let deferred = this.$q.defer();
+        let deferred = this.$q.defer<string>();
         this.assetInfo.getInfo(currency).then(info=>{
           deferred.resolve(this.formatAmount(amount, info.symbol, neg))
         }, deferred.reject);

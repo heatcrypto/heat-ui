@@ -57,7 +57,7 @@ abstract class AbstractBatchViewerComponent {
   }
 
   public getBatch(index: number) : angular.IPromise<Batch> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<Batch>();
     if (angular.isDefined(this.batches[index])) {
       deferred.resolve(this.batches[index]);
     }
@@ -68,7 +68,7 @@ abstract class AbstractBatchViewerComponent {
   }
 
   private getBatchInternal(index: number): angular.IPromise<Batch> {
-    var deferred = this.$q.defer();
+    let deferred = this.$q.defer<Batch>();
     // get any batch but the first one
     if (angular.isDefined(this.batches[index-1])) {
       var previousFirstIndex = this.batches[index-1].firstIndex;

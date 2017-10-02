@@ -50,7 +50,7 @@ class TransactionsProvider implements IPaginatedDataProvider {
       return this.heat.api.getTransactionsForBlockCount(this.block);
     }
     else if (angular.isDefined(this.transactionObject)) {
-      let deferred = this.$q.defer();
+      let deferred = this.$q.defer<number>();
       deferred.resolve(1);
       return deferred.promise;
     }
@@ -61,12 +61,11 @@ class TransactionsProvider implements IPaginatedDataProvider {
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTransaction>> {
     if (angular.isString(this.account)) {
       return this.heat.api.getTransactionsForAccount(this.account, firstIndex, lastIndex);
-    }
-    else if (angular.isString(this.block)) {
+    } else if (angular.isString(this.block)) {
       return this.heat.api.getTransactionsForBlock(this.block, firstIndex, lastIndex);
     }
     else if (angular.isDefined(this.transactionObject)) {
-      let deferred = this.$q.defer();
+      let deferred = this.$q.defer<Array<IHeatTransaction>>();
       deferred.resolve([this.transactionObject]);
       return deferred.promise;
     }
