@@ -27,8 +27,8 @@
   template: `
   <script type="text/ng-template" id="popoverHistory.html">
     <div class="account-popover">
-      <div>Buyer: <a href="#/explorer-account/{{item.buyer}}/transactions">{{item.buyer}}</a></div>
-      <div>Seller: <a href="#/explorer-account/{{item.seller}}/transactions">{{item.seller}}</a></div>
+      <div>Buyer: <a href="#/explorer-account/{{item.buyer}}/transactions">{{item.buyerName||item.buyer}}</a></div>
+      <div>Seller: <a href="#/explorer-account/{{item.seller}}/transactions">{{item.sellerName||item.seller}}</a></div>
     </div>
   </script>
     <div layout="column" flex layout-fill>

@@ -27,7 +27,7 @@
   template: `
     <script type="text/ng-template" id="popover.html">
       <div class="account-popover">
-        <a href="#/explorer-account/{{item.account}}/transactions">{{item.account}}</a>
+        <a href="#/explorer-account/{{item.account}}/transactions">{{item.account||item.accountName}}</a>
       </div>
     </script>
     <div layout="column" flex layout-fill>

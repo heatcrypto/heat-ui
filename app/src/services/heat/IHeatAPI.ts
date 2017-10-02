@@ -716,6 +716,7 @@ interface IHeatOrder {
    * The account number associated with the order
    */
   account: string;
+  accountName?: string;
   /**
    * The order quantity (in QNT, 1 share is 100000000 QNT)
    */
@@ -794,10 +795,12 @@ interface IHeatTrade {
    * Numeric ID of the seller account
    */
   seller: string;
+  sellerName?: string;
   /**
    * Numeric ID of the buyer account
    */
   buyer: string;
+  buyerName?: string;
   /**
    * The trade quantity (in QNT)
    */
