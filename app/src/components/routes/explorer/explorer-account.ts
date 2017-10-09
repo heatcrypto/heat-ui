@@ -87,6 +87,14 @@
           </div>
         </div>
         <div layout="column" flex>
+          <div class="col-item">
+            <div class="title">
+              Total rewards:
+            </div>
+            <div class="value">
+              {{vm.totalRewards}}
+            </div>
+          </div>
           <div class="col-item" flex layout-fill>
             <div class="title">
               Assets:
@@ -184,11 +192,12 @@ class ExploreAccountComponent {
   firstSeen: string;
   lease: string;
   leaseBlocksRemain: string;
-  forged: string;
+  totalRewards: string;
   effectiveBalance: string;
   balanceUnconfirmed: string;
   balanceConfirmed: string;
   assetInfos: Array<AssetInfo> = [];
+
 
   currentLessee: string;
   currentLesseeName: string;
@@ -220,7 +229,7 @@ class ExploreAccountComponent {
     this.firstSeen = "*";
     this.lease = "*";
     this.leaseBlocksRemain = "*";
-    this.forged = "*";
+    this.totalRewards = "*";
     this.effectiveBalance = "*";
     this.balanceUnconfirmed = "*";
     this.balanceConfirmed = "*";
@@ -266,6 +275,12 @@ class ExploreAccountComponent {
         });
       })
     })
+
+    this.heat.api.rewardsAccount(this.account).then(info=>{
+      this.$scope.$evalAsync(()=>{
+        this.totalRewards = utils.commaFormat(utils.formatQNT(info.totalRewards, 8))
+      })
+    });
   }
 
   showDescription($event, info: AssetInfo) {
