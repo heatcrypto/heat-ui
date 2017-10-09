@@ -254,6 +254,10 @@ interface IHeatAPI {
    * Search public names only.
    */
   searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>>;
+
+  rewardsAccount(account: string): angular.IPromise<IHeatRewardsInfo>;
+  rewardsList(from: number, to: number): angular.IPromise<Array<IHeatRewardsInfo>>;
+  rewardsListCount(): angular.IPromise<number>;
 }
 interface IHeatAccount {
   id: string;
@@ -1025,4 +1029,11 @@ interface IHeatMessage {
   messageIsText: boolean;
   messageIsEncrypted: boolean;
   messageIsEncryptedToSelf: boolean;
+}
+interface IHeatRewardsInfo {
+  account: string;
+  accountName: string;
+  effectiveBalance: string;
+  totalRewards: string;
+  lastBlockTimestamp: number;
 }

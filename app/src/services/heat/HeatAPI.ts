@@ -297,4 +297,16 @@ class HeatAPI implements IHeatAPI {
   searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
     return this.heat.get(`/account/search/0/${query}/${from}/${to}`);
   }
+
+  rewardsAccount(account: string): angular.IPromise<IHeatRewardsInfo> {
+    return this.heat.get(`/mining/rewards/account/${account}`);
+  }
+
+  rewardsList(from: number, to: number): angular.IPromise<Array<IHeatRewardsInfo>> {
+    return this.heat.get(`/mining/rewards/list/${from}/${to}`);
+  }
+
+  rewardsListCount(): angular.IPromise<number> {
+    return this.heat.get('/mining/rewards/list/count','count');
+  }
 }
