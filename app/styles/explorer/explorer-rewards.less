@@ -1,0 +1,33 @@
+explorer-rewards {
+  .widget();
+  .list();
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
+  .truncate-col {
+    padding-right: 30px;
+    &.left {
+      text-align: left;
+    }
+    &.block {
+      max-width: 160px;
+    }
+    &.account-col {
+      max-width: inherit;
+    }
+    &.effective-col {
+      max-width: inherit;
+    }
+    &.total-col {
+      max-width: inherit;
+    }
+    &.date-col {
+      max-width: initial;
+    }
+  }
+  a, a * {
+    font-size: 14px;
+    color: @link-yellow;
+    cursor: pointer;
+  }
+}
