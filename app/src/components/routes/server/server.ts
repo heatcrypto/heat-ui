@@ -32,7 +32,7 @@
           <md-tooltip md-direction="top">
             Connect client API to remotehost or to your local machine
           </md-tooltip>
-          Client API connected to {{ vm.connectedToLocalhost ? 'localhost' : 'remotehost' }}
+          Client API connected to {{ vm.connectedToLocalhost ? 'localhost' : vm.remotehostDisplay }}
         </md-switch>
         <span flex></span>
         <div layout="row" layout-align="center center" class="mining-stats" ng-show="vm.isMining">
@@ -79,6 +79,7 @@ class ServerComponent {
   private portLocal: string;
   private portRemote: string;
   private connectedToLocalhost: boolean;
+  private remotehostDisplay: string;
 
   /* 2017-01-27 23:22:30 INFO: Pushed block 13300804393767116009 with height 2925 */
   //private msgRegExp = /^([\d-]+\s[\d:]+)\s(\w+):\s(.*)/;
@@ -124,6 +125,8 @@ class ServerComponent {
       this.topIndex = this.determineTopIndex();
       this.onOutput();
     },3000);
+
+    this.remotehostDisplay = this.hostRemote.replace('https://','');
   }
 
   /* md-virtual-repeat */
