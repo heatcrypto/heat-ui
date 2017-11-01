@@ -26,6 +26,7 @@ const path = require("path")
 const app = electron.app
 const BrowserWindow = electron.BrowserWindow
 const spawn = require('child_process').spawn;
+const fs = require('fs');
 const APP_DIR = path.join(__dirname,'..')
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -43,6 +44,15 @@ function createWindow () {
   mainWindow.on('closed', function () {
     mainWindow = null
   })
+
+  mainWindow.webContents.on('did-finish-load', ()=>{
+    fs.readFile(path.join(__dirname, 'run-in-renderer.js'), 'utf8', function(err, contents) {
+      if (err)
+        console.log(err)
+      else
+        mainWindow.webContents.executeJavaScript(contents);
+    });
+  });
 }
 
 app.on('ready', createWindow)
