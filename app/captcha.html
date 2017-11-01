@@ -5,7 +5,7 @@
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script>
       function onResponse(response) {
-        window.opener.postMessage(
+        (window.opener || window).postMessage(
           JSON.stringify({
             "message": {
               "response": response
@@ -16,7 +16,7 @@
         );
       }
       window.onbeforeunload = function () {
-        window.opener.postMessage(
+        (window.opener || window).postMessage(
           JSON.stringify({
             "message": {
               "response": response
