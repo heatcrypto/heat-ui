@@ -96,6 +96,7 @@
       ]
     },
     "mac": {
+      "icon": "app/electron/icon.png.icns",
       "category": "public.app-category.finance",
       "target": [
         "zip"
