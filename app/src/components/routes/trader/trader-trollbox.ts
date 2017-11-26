@@ -26,7 +26,7 @@
     <div layout="column" flex layout-fill>
       <div class="trader-component-title">Trollbox&nbsp;
         <elipses-loading ng-show="vm.loading"></elipses-loading>
-        <a href="https://heatslack.herokuapp.com/" target="_blank">Join Slack!
+        <a href="https://heat-slack.herokuapp.com" target="_blank">Join Slack!
           <md-tooltip md-direction="bottom">
             This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.
           </md-tooltip>

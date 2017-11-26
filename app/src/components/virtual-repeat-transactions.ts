@@ -414,7 +414,7 @@ class TransactionRenderer {
       (t) => {
         return provider.personalize ?
           '$currency/$asset amount $amount price $price':
-          '<b>CANCEL SELL</b> $sender cancelled sell order $currency/$asset amount $amount price $price';
+          '<b>CANCEL SELL</b> $sender cancelled order $currency/$asset amount $amount price $price';
       },
       (t) => {
         return {
@@ -433,7 +433,7 @@ class TransactionRenderer {
       (t) => {
         return provider.personalize ?
           '$currency/$asset amount $amount price $price':
-          '<b>CANCEL BUY</b> $sender cancelled sell order $currency/$asset amount $amount price $price';
+          '<b>CANCEL BUY</b> $sender cancelled order $currency/$asset amount $amount price $price';
       },
       (t) => {
         return {
