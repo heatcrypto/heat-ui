@@ -26,9 +26,7 @@ module dialogs {
     var user = <UserService> heat.$inject.get('user');
     var $q = <angular.IQService> heat.$inject.get('$q');
     var env = <EnvService> heat.$inject.get('env');
-    var url = env.type == EnvType.BROWSER ?
-      `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}` :
-      `http://heatledger.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}`;
+    var url = `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}`;
     var deferred = $q.defer();
     http.get(url).then((response)=>{
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
