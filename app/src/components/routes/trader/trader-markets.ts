@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Component({
   selector: 'traderMarkets',
   template: `
@@ -52,7 +53,8 @@
     </md-list>
   `
 })
-@Inject('$scope','heat','assetInfo','storage','$q','$mdToast')
+
+@Inject('$scope','heat','assetInfo','storage','$q','$mdToast','$interval')
 class TraderMarketsComponent {
 
   // change, volume, price, none
@@ -62,6 +64,7 @@ class TraderMarketsComponent {
   filterFunc: Function;
 
   showCertified = sessionStorage.getItem('trader.markets.showUncertified')!='true';
+  preMarkets: Array<IHeatMarket> = [null, null]; //initialized to be not equals this.markets
   markets: Array<IHeatMarket> = [];
   showFakeMarketsWarning = true;
 
@@ -70,16 +73,24 @@ class TraderMarketsComponent {
               private assetInfo: AssetInfoService,
               private storage: StorageService,
               private $q: angular.IQService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private $interval: angular.IIntervalService) {
     this.filterFunc = (item) => this.filterFuncImpl(item);
     var refresh = utils.debounce(angular.bind(this, this.loadMarkets), 5*1000, false);
     heat.subscriber.trade({}, (trade)=> refresh, $scope);
     this.loadMarkets();
+
+    let interval = $interval(()=>{
+      this.loadMarkets();
+    }, 20*1000, 0, false);
+    $scope.$on('$destroy',()=>{$interval.cancel(interval)});
   }
 
   loadMarkets() {
     this.heat.api.getMarketsAll(this.sort, this.asc, "0", 1, 0, 100).then((markets) => {
       this.$scope.$evalAsync(() => {
+        if ( this.matchToPreMarkets(markets) )
+          return //do not to do extra job
         this.markets = markets
         var promises = []; // collects all balance lookup promises
         this.markets.forEach((market: IHeatMarket|any) => {
@@ -146,6 +157,39 @@ class TraderMarketsComponent {
         }
       });
     });
+  }
+
+  /**
+   * check if loaded markets match to pre loaded markets
+   */
+  matchToPreMarkets(markets: Array<IHeatMarket>) {
+    let result = true
+    if (this.preMarkets.length != markets.length) {
+      result = false
+    } else {
+      for (let i = 0; i < markets.length; ++i) {
+        let market = markets[i]
+        let found = false
+        for (let k = 0; k < this.preMarkets.length; ++k) {
+          let pre = this.preMarkets[k]
+          if (market.asset == pre.asset && market.currency == pre.currency) {
+            found = true
+            if (market.lastPrice != pre.lastPrice || market.hr24Change != pre.hr24Change
+              || market.hr24AssetVolume != pre.hr24AssetVolume || market.hr24CurrencyVolume != pre.hr24CurrencyVolume
+              || market.hr24High != pre.hr24High || market.hr24Low != pre.hr24Low) {
+              result = false
+              break
+            }
+          }
+        }
+        if (!found || !result) {
+          result = false
+          break
+        }
+      }
+    }
+    this.preMarkets = markets
+    return result
   }
 
   isSpecialMarket(market: IHeatMarket) {
