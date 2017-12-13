@@ -26,11 +26,18 @@
     <div layout="column" flex layout-fill>
       <div class="trader-component-title">Trollbox&nbsp;
         <elipses-loading ng-show="vm.loading"></elipses-loading>
+        <a href="https://t.me/joinchat/A7EBDAzpWG8Rf6kQoPu_0Q" target="_blank">Join Telegram!
+          <md-tooltip md-direction="bottom">
+            This trollbox is connected to our Telegram #trollbox channel, post either here or on #trollbox and chat in realtime.
+          </md-tooltip>
+        </a>
+<!--
         <a href="https://heat-slack.herokuapp.com" target="_blank">Join Slack!
           <md-tooltip md-direction="bottom">
             This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.
           </md-tooltip>
         </a>
+-->
       </div>
       <div layout="row">
         <div flex>
