@@ -23,19 +23,32 @@
 @Component({
   selector: 'explorerLatestBlocks',
   inputs: ['blockObject','account','hideLabel'],
+  styles: [`
+  .he {         
+    min-width: 40px !important;         
+    max-width: 70px !important;         
+  }
+  .tx {         
+    min-width: 20px !important;         
+    max-width: 40px !important;         
+  }
+  .fee {         
+    max-width: 70px !important;         
+  }
+  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Blocks
       </div>
-      <md-list flex layout-fill layout="column">
+      <md-list flex layout-fill layout="column" >
         <md-list-item class="header">
-          <div class="truncate-col height-col left">Height</div>
-          <div class="truncate-col block-col block left">Block</div>
+          <div class="he truncate-col height-col left">Height</div>
           <div class="truncate-col date-col left">Time</div>
+          <div class="truncate-col block-col block left">Block</div>
           <div class="truncate-col generator-col block left" ng-if="!vm.account">Generator</div>
-          <div class="truncate-col transactions-col">Transactions</div>
+          <div class="tx truncate-col transactions-col">Tx</div>
           <div class="truncate-col amount-col">Amount</div>
-          <div class="truncate-col fee-col">Fee</div>
+          <div class="fee truncate-col fee-col">Fee</div>
           <div class="truncate-col pos-col left">POS Reward</div>
           <div class="truncate-col pop-col left" flex>POP Reward</div>
           <!-- JSON -->
@@ -43,13 +56,13 @@
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry">
-            <div class="truncate-col height-col left">{{item.height}}</div>
-            <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
+            <div class="he truncate-col height-col left">{{item.height}}</div>
             <div class="truncate-col date-col left">{{item.time}}</div>
+            <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
             <div class="truncate-col generator-col block left" ng-if="!vm.account"><a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a></div>
-            <div class="truncate-col transactions-col">{{item.numberOfTransactions}}</div>
+            <div class="tx truncate-col transactions-col">{{item.numberOfTransactions}}</div>
             <div class="truncate-col amount-col">{{item.amount}}</div>
-            <div class="truncate-col fee-col">{{item.fee}}</div>
+            <div class="fee truncate-col fee-col">{{item.fee}}</div>
             <div class="truncate-col pos-col left">{{item.pos}}</div>
             <div class="truncate-col pop-col left" flex>{{item.pop}}</div>
             <!-- JSON -->

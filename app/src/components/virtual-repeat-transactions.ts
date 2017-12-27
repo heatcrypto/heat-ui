@@ -31,7 +31,7 @@
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
           <!-- HEIGHT -->
-          <div class="truncate-col height-col left" ng-if="!vm.personalize">Height</div>
+          <div class="he truncate-col height-col left" ng-if="!vm.personalize">Height</div>
 
           <!-- ID -->
           <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">Id</div>
@@ -62,7 +62,7 @@
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
 
             <!-- HEIGHT -->
-            <div class="truncate-col height-col left" ng-if="!vm.personalize">
+            <div class="he truncate-col height-col left" ng-if="!vm.personalize">
               <elipses-loading ng-show="item.height==2147483647"></elipses-loading>
               <span ng-show="item.height!=2147483647">{{item.height}}</span>
             </div>
