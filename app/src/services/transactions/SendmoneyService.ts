@@ -53,7 +53,7 @@ class SendmoneyDialog extends GenericDialog {
               private amount: string,
               private userMessage: string) {
     super($event);
-    this.dialogTitle = 'Send Money';
+    this.dialogTitle = 'Send HEAT';
     this.dialogDescription = 'Description on how to send money';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/,'');
