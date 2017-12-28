@@ -65,13 +65,13 @@
               <md-tooltip md-direction="bottom">Home</md-tooltip>
               <i><img src="assets/homeIcon.png"></i>
             </md-button>
-            <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Send Heat</md-tooltip>
-              <i><img src="assets/sendHeatIcon.png"></i>
-            </md-button>
             <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
               <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
               <i><img src="assets/exploreIcon.png"></i>
+            </md-button>
+            <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
+              <md-tooltip md-direction="bottom">Send Heat</md-tooltip>
+              <i><img src="assets/sendHeatIcon.png"></i>
             </md-button>
             <md-button aria-label="messages" class="md-icon-button" href="#/messenger/0" ng-if="vm.user.unlocked">
               <md-tooltip md-direction="bottom">Messages</md-tooltip>
