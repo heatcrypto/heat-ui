@@ -137,7 +137,6 @@
           <md-list-item class="header">
             <div class="truncate-col id-col left">ID</div>
             <div class="truncate-col balance-col left">Balance</div>
-            <div class="truncate-col current-lessee-col left">Current</div>
             <div class="truncate-col from-col left">From</div>
             <div class="truncate-col to-col left">To</div>
             <div class="truncate-col remain-col left">Remain</div>
@@ -148,13 +147,10 @@
           <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
             <md-list-item md-virtual-repeat="item in vm.lessors" aria-label="Entry">
               <div class="truncate-col id-col left">
-                {{item.id}}
+                <a href="#/explorer-account/{{item.id}}/transactions">{{item.id}}</a>
               </div>
-              <div class="truncate-col balance-col left">
-                {{item.effectiveBalance}}
-              </div>
-              <div class="truncate-col current-lessee-col left">
-                {{item.currentLessee}}
+              <div class="truncate-col balance-col">
+                {{item.balance}}
               </div>
               <div class="truncate-col from-col left">
                 {{item.currentHeightFrom}}
@@ -162,11 +158,8 @@
               <div class="truncate-col to-col left">
                 {{item.currentHeightTo}}
               </div>
-              <div class="truncate-col remain-col left">
-                ?
-              </div>
               <div class="truncate-col next-lessee-col">
-                {{item.nextLessee}}
+                <a ng-if="item.nextLessee" href="#/explorer-account/{{item.nextLessee}}/transactions">{{item.nextLessee}}</a>
               </div>
               <div class="truncate-col from-col">
                 {{item.nextHeightFrom}}
@@ -255,6 +248,20 @@ class ExploreAccountComponent {
         this.nextLeasingHeightFrom = account.nextLeasingHeightFrom;
         this.nextLeasingHeightTo = account.nextLeasingHeightTo;
         this.lessors = <Array<IHeatLessors>>account.lessors;
+        if (angular.isArray(this.lessors)) {
+          this.lessors.forEach((lessor:any) => {
+            lessor.balance = utils.formatQNT(lessor.effectiveBalance, 8) + " HEAT";
+            if (lessor.nextLessee=="0") {
+              lessor.nextLessee = "";
+            }
+            if (lessor.nextHeightFrom==2147483647||lessor.nextHeightFrom==lessor.currentHeightFrom) {
+              lessor.nextHeightFrom = "";
+            }
+            if (lessor.nextHeightTo==2147483647) {
+              lessor.nextHeightTo = "";
+            }
+          });
+        }
       });
       if (this.currentLessee != "0") {
         this.heat.api.getBlockchainStatus().then(status=>{
