@@ -106,6 +106,7 @@ class AssetInfoService {
           issuer: data.account,
           issuerPublicName: data.accountPublicName
         };
+        this.cache[asset] = info;
         this.assetCertification.getInfo(asset).then((certificationData)=> {
           if (certificationData.certified) {
             info.symbol = certificationData.symbol;
