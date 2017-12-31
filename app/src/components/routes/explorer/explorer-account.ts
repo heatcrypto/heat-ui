@@ -139,7 +139,6 @@
             <div class="truncate-col balance-col left">Balance</div>
             <div class="truncate-col from-col left">From</div>
             <div class="truncate-col to-col left">To</div>
-            <div class="truncate-col remain-col left">Remain</div>
             <div class="truncate-col next-lessee-col">Next</div>
             <div class="truncate-col from-col">From</div>
             <div class="truncate-col to-col" flex>To</div>
