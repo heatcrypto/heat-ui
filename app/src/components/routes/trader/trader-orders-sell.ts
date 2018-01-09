@@ -109,14 +109,12 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
 
           /* preprocessor */
           (firstIndex: number, lastIndex: number, items: Array<IHeatOrder>) => {
-            if (firstIndex == 0) {
-              items.forEach((order)=> {
-                if (order['runningTotalQNT']) {
-                  order['sum'] = utils.formatQNT(order['sumQNT'].toString(), this.currencyInfo.decimals);
-                  order['runningTotal'] = utils.formatQNT(order['runningTotalQNT'].toString(), this.assetInfo.decimals);
-                }
-              });
-            }
+            items.forEach((order) => {
+              if (order['runningTotalQNT']) {
+                order['sum'] = utils.formatQNT(order['sumQNT'].toString(), this.currencyInfo.decimals);
+                order['runningTotal'] = utils.formatQNT(order['runningTotalQNT'].toString(), this.assetInfo.decimals);
+              }
+            });
           }
         );
 
