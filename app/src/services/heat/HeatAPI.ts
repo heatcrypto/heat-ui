@@ -182,6 +182,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/trade/account/${account}/${propertiesAccount}/${propertiesProtocol}/${from}/${to}`);
   }
 
+  getAllAccountTradesCount(account: string): angular.IPromise<number> {
+    return this.heat.get(`/trade/account/count/${account}`, "count");
+  }
+
   getAccountTrades(account:string, currency:string, asset:string, from: number, to: number): angular.IPromise<Array<IHeatTrade>> {
     return this.heat.get(`/trade/account/pair/${account}/${currency}/${asset}/${from}/${to}`);
   }

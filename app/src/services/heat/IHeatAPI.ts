@@ -124,6 +124,7 @@ interface IHeatAPI {
    * Lists all trades for an account
    */
   getAllAccountTrades(account: string, propertiesAccount: string, propertiesProtocol: number, from: number, to: number): angular.IPromise<Array<IHeatTrade>>;
+  getAllAccountTradesCount(account: string): angular.IPromise<number>;
   /**
    * Lists account trades for a trading pair
    */
