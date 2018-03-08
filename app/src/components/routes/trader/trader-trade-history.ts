@@ -140,7 +140,12 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
       (trade: IHeatTrade|any) => {
         var date = utils.timestampToDate(trade.timestamp);
         trade.time = dateFormat(date, format);
-        trade.type = trade.isBuy ? 'Buy' : 'Sell';
+        if (account) {
+          trade.type = trade.seller == account ? 'Sell' : 'Buy'
+        }
+        else {
+          trade.type = trade.isBuy ? 'Buy' : 'Sell';
+        }
         trade.priceDisplay = utils.formatQNT(trade.price, this.currencyInfo.decimals);
         trade.quantityDisplay = utils.formatQNT(trade.quantity, this.assetInfo.decimals);
         var totalQNT = utils.calculateTotalOrderPriceQNT(trade.quantity, trade.price);
