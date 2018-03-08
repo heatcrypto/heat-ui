@@ -39,18 +39,25 @@
   toolbar .test-net-color {
     background-color: #4CAF50 !important;
   }
+  toolbar .beta-net-color {
+    background-color: #bf112f !important;
+  }
   `],
   template: `
-    <md-toolbar class="main-toolbar" ng-class="{'test-net-color':vm.isTestnet}">
+    <md-toolbar class="main-toolbar" ng-class="{'test-net-color':vm.isTestnet,'beta-net-color':vm.isBetanet}">
       <div class="md-toolbar-tools">
         <h2 ng-if="vm.isTestnet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           TEST-NET&nbsp;&nbsp;&nbsp;&nbsp;
         </h2>
+        <h2 ng-if="vm.isBetanet" class="test-net">
+          <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
+          B E T A N E T &nbsp;
+        </h2>
         <div class="wrapper">
           <div>
             <div class="user">
-              <div class="small-logo">
+              <div class="small-logo" ng-if="!vm.isBetanet">
               </div>
               <div class="user-detail" ng-if="vm.user.unlocked">
                 <div class="email">
@@ -77,7 +84,7 @@
               <md-tooltip md-direction="bottom">Messages</md-tooltip>
               <i><img src="assets/messageIcon.png"></i>
             </md-button>
-            <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/0/17964448319299609527':'#/trader/5592059897546023466/0'}}">
+            <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
               <md-tooltip md-direction="bottom">Exchange</md-tooltip>
               <i><img src="assets/exchangeIcon.png"></i>
             </md-button>
@@ -181,6 +188,7 @@ class ToolbarComponent {
 
   isNodeEnv = false;
   isTestnet = heat.isTestnet;
+  isBetanet = heat.isBetanet
 
   constructor(private $scope: angular.IScope,
               private $mdSidenav,

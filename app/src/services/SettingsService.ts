@@ -132,6 +132,14 @@ class SettingsService {
       this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
     }
 
+    /* betanet overrides */
+    if (heat.isBetanet) {
+      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7762";
+      this.settings[SettingsService.HEAT_PORT_LOCAL] = "7761";
+      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7763/ws/";
+      this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7763/ws/";
+    }
+
     this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];

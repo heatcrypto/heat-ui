@@ -125,6 +125,8 @@
         <md-button ng-class="{'active':vm.type=='lessors'}"
           ng-disabled="vm.type=='lessors'"
           ng-href="#/explorer-account/{{vm.account}}/lessors">Lessors</md-button>
+        <span flex></span>
+        <md-button ng-click="vm.csv($event)">Download CSV</md-button>
       </div>
       <div ng-if="vm.type=='transactions'" flex layout="column">
         <virtual-repeat-transactions hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-transactions>
@@ -139,7 +141,6 @@
             <div class="truncate-col balance-col left">Balance</div>
             <div class="truncate-col from-col left">From</div>
             <div class="truncate-col to-col left">To</div>
-            <div class="truncate-col remain-col left">Remain</div>
             <div class="truncate-col next-lessee-col">Next</div>
             <div class="truncate-col from-col">From</div>
             <div class="truncate-col to-col" flex>To</div>
@@ -213,6 +214,10 @@ class ExploreAccountComponent {
     heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
       this.refresh();
     }, $scope);
+  }
+
+  csv($event) {
+    dialogs.download($event, this.account)
   }
 
   refresh() {
