@@ -55,25 +55,24 @@ class TrollboxService {
   }
 
   public getMessages(): angular.IPromise<Array<TrollboxServiceMessage>>[] {
-    let fromTelegram = this.heat.getRaw(this.host, this.port,
-      '/microservice/telegram-trollbox/messages');
-    //let fromSlack = this.heat.getRaw(this.host, this.port, '/microservice/trollbox/messages');
-    return [fromTelegram/*, fromSlack*/];
+    //let fromTelegram = this.heat.getRaw(this.host, this.port, '/microservice/telegram-trollbox/messages');
+    let fromSlack = this.heat.getRaw(this.host, this.port, '/microservice/trollbox/messages');
+    return [/*fromTelegram,*/ fromSlack];
   }
 
   public sendMessage(message: string) {
-    return this.heat.postRaw(this.host, this.port, '/microservice/telegram-trollbox/send', {
-      username: this.name,
-      message: message,
-      publicKey: this.user.publicKey,
-      signature: heat.crypto.signBytes(converters.stringToHexString("hello"), converters.stringToHexString(this.user.secretPhrase))
-    });
-    // return this.heat.postRaw(this.host, this.port, '/microservice/trollbox/send', {
+    // return this.heat.postRaw(this.host, this.port, '/microservice/telegram-trollbox/send', {
     //   username: this.name,
     //   message: message,
     //   publicKey: this.user.publicKey,
     //   signature: heat.crypto.signBytes(converters.stringToHexString("hello"), converters.stringToHexString(this.user.secretPhrase))
     // });
+    return this.heat.postRaw(this.host, this.port, '/microservice/trollbox/send', {
+      username: this.name,
+      message: message,
+      publicKey: this.user.publicKey,
+      signature: heat.crypto.signBytes(converters.stringToHexString("hello"), converters.stringToHexString(this.user.secretPhrase))
+    });
   }
 
   public subscribe(callback: (event:TrollboxServiceMessage)=>void, $scope:angular.IScope): ()=>void {
