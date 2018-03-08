@@ -172,7 +172,7 @@ class TraderMarketsComponent {
         let found = false
         for (let k = 0; k < this.preMarkets.length; ++k) {
           let pre = this.preMarkets[k]
-          if (market.asset == pre.asset && market.currency == pre.currency) {
+          if (pre != null && market.asset == pre.asset && market.currency == pre.currency) {
             found = true
             if (market.lastPrice != pre.lastPrice || market.hr24Change != pre.hr24Change
               || market.hr24AssetVolume != pre.hr24AssetVolume || market.hr24CurrencyVolume != pre.hr24CurrencyVolume
