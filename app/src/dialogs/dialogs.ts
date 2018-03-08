@@ -66,6 +66,7 @@ module dialogs {
     return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
       controller: options.controller || function () {},
       locals: angular.extend({
+        isBetanet: heat.isBetanet,
         title: options.title,
         okButton: angular.isDefined(options.okButton) ? options.okButton : true,
         cancelButton: options.cancelButton,
@@ -77,6 +78,11 @@ module dialogs {
       targetEvent: options.targetEvent,
       template: `
       <md-dialog>
+        <md-toolbar ng-if="vm.isBetanet" style="background-color: #bf112f !important">
+          <div class="md-toolbar-tools">
+            <h2>B E T A N E T</h2>
+          </div>
+        </md-toolbar>
         <form name="dialogForm">
           <md-toolbar>
             <div class="md-toolbar-tools"><h2>{{vm.title}}</h2></div>

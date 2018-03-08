@@ -29,16 +29,25 @@ module dialogs {
       targetEvent: $event,
       template: `
         <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationBuild}}</p>
-        <p><a href="#" ng-click="vm.toggleTestnet()">Go to {{vm.isTestnet?'main':'test'}} net</a></p>
+        <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
+        <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
+        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>
       `,
       locals: {
         applicationName: settings.get(SettingsService.APPLICATION_NAME),
         applicationVersion: settings.get(SettingsService.APPLICATION_VERSION),
         applicationBuild: settings.get(SettingsService.APPLICATION_BUILD),
         isTestnet: window.localStorage.getItem('testnet')=='true',
-        toggleTestnet: () => {
-          let toggle = (window.localStorage.getItem('testnet')=='true') ? 'false':'true';
-          window.localStorage.setItem('testnet',toggle);
+        goTo: (net) => {
+          // defaults to main net
+          window.localStorage.setItem('testnet','false');
+          window.localStorage.setItem('betanet','false');
+          if (net == 'test') {
+            window.localStorage.setItem('testnet','true');
+          }
+          else if (net == 'beta') {
+            window.localStorage.setItem('betanet','true');
+          }
           window.location.reload();
         }
       }

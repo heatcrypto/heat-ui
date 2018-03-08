@@ -23,6 +23,7 @@
 module heat {
 
   export var isTestnet = window.localStorage.getItem('testnet')=='true';
+  export var isBetanet = window.localStorage.getItem('betanet')=='true';
 
   export var $inject: angular.auto.IInjectorService;
 
