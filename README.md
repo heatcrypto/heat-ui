@@ -261,4 +261,37 @@ An attribute input is prepended with an '@' sign and it means the contents of th
 
 Finally note that we use camelCase here, which means that an input of subTitle becomes sub-title in the HTML.
 
+#### Application routes
 
+In order to reach the various pages in this one page application we use routes. These routes are used in combination with @Components.
+
+In order to create a page that is accessible at the url `/#/some/path/some/where` we start by creating a folder named `app/src/components/routes/some` and in this folder we create a file named `some.ts`.
+
+Now to make that page accessible at the example url mentioned we use the @RouteConfig, a route config is applied to a @Component annotation making that component into a special kind that fills the entire ng-viewport which is a place holder for route components and is declared in `app/index.html`.
+
+Example of how to create a route and how to pass parameters in the url.
+
+```TypeScript
+@RouteConfig('/some/:param1/:param2')
+@Component({
+  selector: 'fooRoute',
+  inputs: ['param1','param2'],
+  template: `
+    <div layout="column" flex layout-fill>
+      <h1>Hello page</h1>
+    </div>
+  `
+})
+class FooRoute {
+  param1:string
+  param2:string
+}
+```
+
+Now if we want to link to that route we would use this.
+
+```HTML
+<body>
+  <a href="#/some/foo/bar">link</a>
+</body>
+```
