@@ -145,4 +145,120 @@ When building on Linux look here for dependencies https://github.com/electron-us
 
 https://github.com/sindresorhus/awesome-electron.
 
-*To be continued..*
+### Development
+
+As said AngularJS is what we use under the hood together with Angular Material. You would need to be familiar with these frameworks in order to work on heat-ui.
+
+There are several other constructs you need to be familiar with in order to do development on this code base.
+
+We'll go over them one by one.
+
+#### Services
+
+Services are what we consider to be singleton object instances, we declare services in `app/src/services` and they all have the
+same general structure.
+
+```typescript
+@Service('foo')
+@Inject('$q', '$mdToast')
+class FooService {
+  constructor(private $q: angular.IQService,
+              private $mdToast: angular.material.IToastService) {}
+}
+```
+
+A service is a TypeScript class with the @Service annotation, the name given to the annotation is how the we identify the service later on. A reference to a services can be obtained in either of two ways.
+
+The preferred way is to use dependency injection (through the @Inject annotation).
+
+An alternative way which can be used in situations where no dependency injection is possible is to use the global `heat` property. To use that do something like this: `let $q = heat.$inject.get('$q');` now $q holds a reference to the Q service.
+
+#### Dependency Injection
+
+To inject dependencies (mostly Application Services but also Angular or Material services) we use the @Inject annotation.
+
+It works as follows, if you create either a @Component or a @Service and want to access other services you will add an @Inject annotation and pass it the list of service identifiers you want to access.
+
+Now you edit the constructor of your class and prepare it to receive every injected service as an argument. This is shown in the FooService example shown above.
+
+#### Components
+
+An important aspect of heat-ui is the use of components, components are declared in `app/src/components`. To create a component we create a class and add to it the @Component annotation.
+
+Since we wrote heat-ui at a stage when Angular 2 was still in early development we could already adopt the coding style of Angular 2. If you'd look at [Angular 2 components](https://angular.io/api/core/Component) you will find that our implementation tries to mimic that, somewhat.
+
+Important to understand here is that heat-ui components are in reality angular directives, if you would look in `app/src/decorators.ts` you would find that the [@Component](https://github.com/Heat-Ledger-Ltd/heat-ui/blob/master/app/src/decorators.ts#L35) annotation will generate a directive for you based on the parameters you provide to the @Component. When in doubt how to use a @Component annotation look in decorators.ts to see how we map the inputs to the directive inputs.
+
+A component allows you to create a standalone content type, a new HTML tag so to say. The component is a way of combining both the logic and the display/contents through the use of including Code, CSS and HTML.
+
+An example, this creates a component named foo:
+
+```TypeScript
+@Component({
+  selector: 'foo',
+  template: `
+    <div>
+      <h2>Foo Component</h2>
+      <button ng-click="vm.onClick()">Click me</button>
+    </div>
+  `
+})
+class FooComponent {
+  onClick() {
+    alert('Button clicked')
+  }
+}
+```
+
+Now to later use that component in your HTML (or in HTML that belongs to another component - nested components are supported) we can simply do the following and it will display the component we just created.
+
+```HTML
+<body>
+  <foo></foo>
+</body>
+```
+
+#### Components and inputs and outputs
+
+Components can take inputs and outputs, these are declared through the `inputs` parameter to the @Component.
+
+Lets give an example where the foo button takes an input which determines the component title and sub title.
+
+```TypeScript
+@Component({
+  selector: 'foo',
+  inputs: ['@title','subTitle'],
+  template: `
+    <div>
+      <h2>{{vm.title}}</h2>
+      <button>Click me</button>
+    </div>
+  `
+})
+class FooComponent {
+  title: string
+  subTitle: string
+}
+```
+
+```HTML
+<body>
+  <foo title="Hello world!" sub-title="'This has to be in quotes'"></foo>
+</body>
+```
+
+Three parts are important here
+
+1. there is the `inputs` parameter to the @Component, it lists all inputs by their name
+2. there is the reference to the input property in the HTML template
+3. there is the property on the class
+
+Some notes; There are attribute inputs and expression inputs.
+
+An expression input is evaluated, this is what you would mostly use in our sample the subTitle input has its contents evaluated. This means that you could also pass in an reference to a property which will setup a two way Angular binding as well.
+
+An attribute input is prepended with an '@' sign and it means the contents of the attribute on the HTML element are interpreted as plain string content.
+
+Finally note that we use camelCase here, which means that an input of subTitle becomes sub-title in the HTML.
+
+
