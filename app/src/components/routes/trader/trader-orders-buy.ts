@@ -83,6 +83,7 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
   PAGE_SIZE = 100; /* VirtualRepeatComponent @override */
 
   refreshGrid: ()=>void;
+  refreshBalance: ()=>void;
 
   constructor(protected $scope: angular.IScope,
               private ordersProviderFactory: OrdersProviderFactory,
@@ -123,8 +124,9 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
         /* stop watching the currenyInfo and assetInfo */
         unregister.forEach(fn => fn());
 
-        /* listen to order events */
+        /* listen to events */
         this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
+        this.subscribeToTradeEvents(this.currencyInfo.id, this.assetInfo.id);
 
         if (this.user.unlocked) {
           this.updateCurrencyBalance();
@@ -135,7 +137,8 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
 
-    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 2000, false);
+    this.refreshBalance = utils.debounce(angular.bind(this, this.updateCurrencyBalance), 2000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
@@ -146,9 +149,14 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent  {
     }, this.$scope);
   }
 
+  private subscribeToTradeEvents(currency: string, asset: string) {
+    this.heat.subscriber.trade({currency: currency, asset: asset}, () => {
+      this.refreshGrid();
+    }, this.$scope);
+  }
+
   private subscribeToBalanceEvents(account:string, currency: string) {
-    var refreshBalance = utils.debounce(angular.bind(this, this.updateCurrencyBalance), 500, false);
-    this.heat.subscriber.balanceChanged({account:account, currency:currency}, refreshBalance, this.$scope);
+    this.heat.subscriber.balanceChanged({account:account, currency:currency}, this.refreshBalance, this.$scope);
   }
 
   onSelect(selectedOrder) {

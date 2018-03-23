@@ -120,8 +120,9 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
           }
         );
 
-        /* listen to order events */
+        /* listen to events */
         this.subscribeToOrderEvents(this.currencyInfo.id, this.assetInfo.id);
+        this.subscribeToTradeEvents(this.currencyInfo.id, this.assetInfo.id);
 
         unregister.forEach(fn => fn());
         if (this.user.unlocked) {
@@ -133,8 +134,8 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
 
-    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 1000, false);
-    this.refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 1000, false);
+    this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 2000, false);
+    this.refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 2000, false);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
@@ -142,6 +143,12 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
       if (order.type == 'ask') {
         this.refreshGrid();
       }
+    }, this.$scope);
+  }
+
+  private subscribeToTradeEvents(currency: string, asset: string) {
+    this.heat.subscriber.trade({currency: currency, asset: asset}, () => {
+      this.refreshGrid();
     }, this.$scope);
   }
 
