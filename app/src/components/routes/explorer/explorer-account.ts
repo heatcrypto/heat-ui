@@ -309,7 +309,7 @@ class ExploreAccountComponent {
           promises.push(
             this.assetInfo.getInfo(balance.id).then(info=>{
               assetInfos.push(angular.extend(info, {
-                userBalance: balance.balance
+                userBalance: balance.virtualBalance
               }))
             })
           );
