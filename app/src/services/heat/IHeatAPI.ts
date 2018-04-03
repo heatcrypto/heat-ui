@@ -41,6 +41,12 @@ interface IHeatAPI {
    * Returns account public key
    */
   getPublicKey(account: string): angular.IPromise<string>;
+
+  /**
+   * Returns the publicKey or empty string or is rejected if account does not exist
+   */
+  getPublicKeyOrEmptyString(account: string): angular.IPromise<string>;
+
   /**
    * Create any type transaction from a JSON document
    */

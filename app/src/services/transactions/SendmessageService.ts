@@ -72,12 +72,12 @@ class SendmessageDialog extends GenericDialog {
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
                     $scope.$evalAsync(()=>{
-                      this.fields['message'].visible(true);
+                      // this.fields['message'].visible(true);
                       this.fields['messagWarning'].visible(false);
                     });
                   },()=>{
                     $scope.$evalAsync(()=>{
-                      this.fields['message'].visible(false);
+                      // this.fields['message'].visible(false);
                       this.fields['messagWarning'].visible(true);
                     });
                   }
@@ -88,7 +88,7 @@ class SendmessageDialog extends GenericDialog {
              .visible(true),
       builder.text('message', this.userMessage).
               rows(2).
-              visible(false).
+              // visible(false).
               asyncValidate("No recipient public key", (message) => {
                 let deferred = this.$q.defer<boolean>();
                 if (String(message).trim().length == 0) {

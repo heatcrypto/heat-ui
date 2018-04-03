@@ -73,7 +73,31 @@ class HeatAPI implements IHeatAPI {
       else {
         deferred.resolve(publicKey);
       }
-    },deferred.reject);
+    }, deferred.reject);
+    return <angular.IPromise<string>> deferred.promise;
+  }
+
+  getPublicKeyOrEmptyString(account: string): angular.IPromise<string> {
+    let deferred = this.$q.defer<string>();
+    this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
+      var test = heat.crypto.getAccountIdFromPublicKey(publicKey);
+      if (test != account) {
+        console.log("Public key returned from server does not match account");
+        deferred.reject();
+      }
+      else {
+        deferred.resolve(publicKey);
+      }
+    }, error => {
+      /* Account exists but has no public key */
+      if ((error.errorDescription||"").toLowerCase() == "unknown publickey") {
+        deferred.resolve("")
+      }
+      /* Account does not exist */
+      else {
+        deferred.reject()
+      }
+    });
     return <angular.IPromise<string>> deferred.promise;
   }
 

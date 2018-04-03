@@ -82,15 +82,26 @@ class AssetTransferDialog extends GenericDialog {
               onchange(() => {
                 this.fields['recipientPublicKey'].value = null;
                 this.fields['message'].changed();
-                this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+                this.heat.api.getPublicKeyOrEmptyString(this.fields['recipient'].value).then(
                   (publicKey) => {
-                    this.fields['recipientPublicKey'].value = publicKey;
-                    $scope.$evalAsync(()=>{
-                      this.fields['message'].visible(true);
-                    });
+                    /* account exists but has no public key */
+                    if (publicKey == '') {
+                      $scope.$evalAsync(()=>{
+                        this.fields['recipient']['accountExists'] = true
+                        // this.fields['message'].visible(false);
+                      });
+                    }
+                    else {
+                      this.fields['recipientPublicKey'].value = publicKey;
+                      $scope.$evalAsync(()=>{
+                        this.fields['recipient']['accountExists'] = true
+                        // this.fields['message'].visible(true);
+                      });
+                    }
                   },()=>{
                     $scope.$evalAsync(()=>{
-                      this.fields['message'].visible(false);
+                      this.fields['recipient']['accountExists'] = false
+                      // this.fields['message'].visible(false);
                     });
                   }
                 );
@@ -146,7 +157,7 @@ class AssetTransferDialog extends GenericDialog {
               }),
       builder.text('message', this.userMessage).
               rows(2).
-              visible(false).
+              // visible(false).
               asyncValidate("No recipient public key", (message) => {
                 let deferred = this.$q.defer<boolean>();
                 if (String(message).trim().length == 0) {

@@ -113,7 +113,19 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
     <md-dialog class="{{ vm.dialogClass }}">
       <form name="dialogForm">
         <md-toolbar>
-          <div class="md-toolbar-tools"><h2>{{ vm.dialogTitle }}</h2></div>
+          <div class="md-toolbar-tools">
+            <h2>{{ vm.dialogTitle }}</h2>
+            <div class="wrapper">&nbsp;</div>
+            <h2>
+              <span ng-if="vm.fields.recipient && vm.fields.recipient.value && vm.fields.recipient.accountExists && vm.fields.recipientPublicKey.value">
+                {{vm.fields.recipient.value}}
+              </span>
+              <span ng-if="vm.fields.recipient && vm.fields.recipient.value && vm.fields.recipient.accountExists && !vm.fields.recipientPublicKey.value"
+                    style="color: red">NO PUBLIC KEY</span>
+              <span ng-if="vm.fields.recipient && vm.fields.recipient.value && !vm.fields.recipient.accountExists"
+                    style="color: red">NEW ACCOUNT</span>
+            </h2>
+          </div>
         </md-toolbar>
         <md-dialog-content style="min-width:500px" layout="column" layout-padding ng-switch="vm.state">
 
@@ -181,7 +193,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           </div>
         </md-dialog-content>
         <md-dialog-actions layout="row" ng-switch="vm.state">
-          <md-button ng-click="0" ng-disabled="true" class="fee">Fee {{vm.feeFormatted}} HEAT</md-button>
+          <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee {{vm.feeFormatted}} HEAT</md-button>
           <span flex></span>
 
           <!-- EDIT -->
@@ -218,11 +230,19 @@ function GenericDialogCreateController(dialog: GenericDialog) {
                    $mdDialog: angular.material.IDialogService,
                    settings: SettingsService) {
     this.fields = dialog.getFields($scope);
-    this.fields.forEach((field: AbstractDialogField) => { dialog.fields[field.name] = field });
+    this.fields.forEach((field: AbstractDialogField) => {
+      dialog.fields[field.name] = field
+      this.fields[field.name] = field
+    });
     dialog.fieldsReady($scope);
     this.builder = null; /* HeatTransactionBuilder */
 
     this.visualization_delay = settings.get(SettingsService.TRANSACTION_PROCESSING_VISUALIZATION);
+
+    /* Recipient exists check */
+    this.stateRecipient = null
+    this.stateRecipientExists = false
+    this.stateRecipientNoPublicKey = false
 
     this.dialogCancel = function () {
       $mdDialog.cancel();
