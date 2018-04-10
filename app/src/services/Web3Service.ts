@@ -4,7 +4,7 @@ declare var Tx: any;
 class Web3Service {
 
   public web3: any;
-  static readonly WEB3_HTTP_PROVIDER = "https://mainnet.infura.io/H1ZDyTIVq1HbxRXdnv5h";
+  static readonly WEB3_HTTP_PROVIDER = "https://mainnet.infura.io/<YOUR API TOKEN HERE>";
   constructor(
               private $q: angular.IQService,
               private userService: UserService) {
