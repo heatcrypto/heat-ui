@@ -1,0 +1,54 @@
+ether-transactions {
+  .widget();
+  .list();
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
+  .truncate-col {
+    padding-right: 190px;
+    &.left {
+      text-align: left;
+    }
+    &.from {
+      min-width: 300px;
+      max-width: 300px;
+    }
+    &.to {
+      min-width: 300px;
+      max-width: 300px;
+    }
+    &.render-col {
+      max-width: inherit;
+    }
+    &.block-number-col {
+      min-width: 40px;
+      max-width: 90px;
+      padding-right: 0px;
+    }
+    &.value-col {
+      max-width: 180px;
+      padding-right: 0px;
+      text-align: right;
+    }
+    &.amount-col {
+      max-width: 140px;
+      padding-right: 70px;
+      text-align: right;
+    }
+    &.time-col {
+      max-width: 170px;
+      padding-right: 0px;
+    }
+    &.generator-col {
+      padding-right: 0px;
+    }
+    &.pop-col {
+      max-width: initial;
+    }
+  }
+  .type-row {
+    .md-button:first-child {
+      margin-left: 0px;
+    }
+  }
+}
