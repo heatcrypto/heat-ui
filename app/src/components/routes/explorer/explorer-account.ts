@@ -281,10 +281,12 @@ class ExploreAccountComponent {
 
     this.getAccountAssets().then(assetInfos=>{
       this.$scope.$evalAsync(()=>{
-        this.assetInfos = assetInfos.map(info => {
-          info['balance'] = utils.formatQNT(info.userBalance, 8);
-          return info;
-        });
+        this.assetInfos = assetInfos
+            .filter(info => parseFloat(info.userBalance) !== 0)
+            .map(info => {
+              info['balance'] = utils.formatQNT(info.userBalance, 8);
+              return info;
+            });
       })
     })
 
