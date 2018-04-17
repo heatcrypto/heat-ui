@@ -88,6 +88,10 @@
               <md-tooltip md-direction="bottom">Exchange</md-tooltip>
               <i><img src="assets/exchangeIcon.png"></i>
             </md-button>
+            <md-button aria-label="ether wallet" class="md-icon-button" ng-click="vm.connectToEtherWallet($event);" ng-if="vm.user.unlocked">
+              <md-tooltip md-direction="bottom">Ether Wallet</md-tooltip>
+              <i><img src="assets/etherwallet.png"></i>
+            </md-button>
             <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
               <md-tooltip md-direction="bottom">App Server</md-tooltip>
               <i><img src="assets/serverIcon.png"></i>
@@ -296,5 +300,9 @@ class ToolbarComponent {
     let encoded = this.walletFile.encode(exported);
     var blob = new Blob([encoded], {type: "text/plain;charset=utf-8"});
     saveAs(blob, 'heat.wallet');
+  }
+
+  connectToEtherWallet($event) {
+   dialogs.connectEtherWallet($event);
   }
 }
