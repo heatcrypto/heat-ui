@@ -126,7 +126,7 @@ class SettingsService {
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
 
-    this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "http://api-ropsten.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
+    this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "http://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
     this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "YOUR ETHERSCAN API TOKEN";
     this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/<YOUR INFURA API TOKEN HERE>";
 
