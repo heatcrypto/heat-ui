@@ -42,8 +42,9 @@ class LightwalletService {
         that.privateKey = ks.exportPrivateKey(that.walletAddress, pwDerivedKey);
 
         var web3Service = <Web3Service>heat.$inject.get('web3');
+        var settingsService = <SettingsService> heat.$inject.get('settings');
         var web3Provider = new HookedWeb3Provider({
-          host: Web3Service.WEB3_HTTP_PROVIDER,
+          host: settingsService.get(SettingsService.WEB3PROVIDER),
           transaction_signer: ks
         });
         web3Service.web3.setProvider(web3Provider);

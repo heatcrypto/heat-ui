@@ -69,6 +69,10 @@ class SettingsService {
   public static HEATLEDGER_BTC_ASSET = 'settings.heatledger_btc_asset';
   public static HEATLEDGER_NAME_ASSIGNER = 'settings.heatledger_name_assigner';
 
+  public static ETHERSCAN_TRANSACTION_URL = 'settings.etherscan_get_transactions_url';
+  public static ETHERSCAN_API_TOKEN = 'settings.etherscan_api.token';
+  public static WEB3PROVIDER = 'settings.web3_provider';
+
   constructor() {
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -121,6 +125,10 @@ class SettingsService {
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
+
+    this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "http://api-ropsten.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
+    this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "YOUR ETHERSCAN API TOKEN";
+    this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/<YOUR INFURA API TOKEN HERE>";
 
     /* Override with test endpoints */
     if (heat.isTestnet) {

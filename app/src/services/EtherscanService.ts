@@ -1,18 +1,17 @@
 @Service('etherscanService')
-@Inject('$q','http')
+@Inject('$q','http', 'settings')
 class EtherscanService {
 
-  static readonly API_TOKEN = "YOUR API TOKEN HERE";
-  static readonly ETHER_TRANSACTION_URL = "http://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
   constructor(private $q: angular.IQService,
-              private http: HttpService) {}
+              private http: HttpService,
+              private settingsService: SettingsService) {}
 
   public getEtherTransactions(address: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
     let deferred = this.$q.defer<string>();
     let noData = "No transactions available ...";
-    let url = EtherscanService.ETHER_TRANSACTION_URL
+    let url = this.settingsService.get(SettingsService.ETHERSCAN_TRANSACTION_URL)
                 .replace(":address", address)
-                .replace(":apiToken", EtherscanService.API_TOKEN)
+                .replace(":apiToken", this.settingsService.get(SettingsService.ETHERSCAN_API_TOKEN))
                 .replace(":page", (firstIndex/10).toString())
                 .replace(":offset", (lastIndex).toString())
     this.http.get(url)
