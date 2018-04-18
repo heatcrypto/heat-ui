@@ -65,7 +65,7 @@
     </div>
   `
 })
-@Inject('$scope','$q', 'etherscanService', 'etherscanTransactionsProviderFactory', 'lightwalletService')
+@Inject('$scope','$q', 'etherscanService', 'etherscanTransactionsProviderFactory', 'lightwalletService', '$interval')
 class etherTransactions extends VirtualRepeatComponent {
 
   /* input*/
@@ -76,7 +76,8 @@ class etherTransactions extends VirtualRepeatComponent {
               protected $q: angular.IQService,
               private etherscanService: EtherscanService,
               private etherscanTransactionsProviderFactory: EtherscanTransactionsProviderFactory,
-              private lightwalletService: LightwalletService) {
+              private lightwalletService: LightwalletService,
+              private $interval: angular.IIntervalService) {
 
     super($scope, $q);
 
@@ -92,21 +93,15 @@ class etherTransactions extends VirtualRepeatComponent {
   }
 
   subscribeToEtherAddressChange() {
-    var that = this;
-    var account = that.address;
-    var balance = that.balance;
-    setInterval(function () {
-      if(account === that.address && balance.toString() === that.balance.toString()) {return;}
-      account = that.address;
-      balance = that.balance;
-      that.initializeVirtualRepeat(
-        that.etherscanTransactionsProviderFactory.createProvider(),
-        /* decorator function */
-        (tx: any|IEtherscanTransaction) => {
-          tx.dateTime = etherTransactions.timeStampToDateTimeString(tx.timeStamp);
-        }
-      );
-    }, 10000);
+    var account = this.address;
+    var balance = this.balance;
+    var interval = this.$interval(() => {
+      if(account === this.address && balance.toString() === this.balance.toString()) {return;}
+      account = this.address;
+      balance = this.balance;
+      this.getEtherTransactions();
+    }, 5000, 0, false);
+    this.$scope.$on('$destroy', () => { this.$interval.cancel(interval) });
   }
 
   getEtherTransactions() {
