@@ -45,7 +45,7 @@ class Web3Service {
   }
 
   sendEther(_from: string,_to: string, _value: any) {
-    this.web3.eth.sendTransaction({ from: _from, to: _to, value: _value, gasPrice: LightwalletService.GAS_PRICE, gas: LightwalletService.GAS }, function (err, txhash) {
+    this.web3.eth.sendTransaction({ from: _from, to: _to, value: _value, gasPrice: this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE), gas: this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED) }, function (err, txhash) {
       if (err) {
         dialogs.etherTransactionReceipt('Error', err.message);
       } else {

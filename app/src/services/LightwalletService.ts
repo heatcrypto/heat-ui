@@ -2,7 +2,7 @@ declare var lightwallet: any;
 declare var HookedWeb3Provider: any;
 declare var Web3: any;
 @Service('lightwalletService')
-@Inject('web3', 'user')
+@Inject('web3', 'user', 'settings')
 class LightwalletService {
 
   public secretSeed: string;
@@ -11,11 +11,10 @@ class LightwalletService {
   public web3;
   public password: string;
   static readonly BIP44 = "m/44'/60'/0'/0";
-  static readonly GAS_PRICE = 20000000000;
-  static readonly GAS = 21000;
 
   constructor(private web3Service: Web3Service,
-              private userService: UserService) {
+              private userService: UserService,
+              private settingsService: SettingsService) {
   }
 
   generateRandomSeed() {
