@@ -32,6 +32,13 @@ module dialogs {
         <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
         <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>
+        <!--
+        <p><button onclick="gtag_report_conversion_signup(undefined)">Signup Test</button></p>
+        <p><button onclick="gtag_report_conversion_bid(undefined, Date.now()+'')">Bid Test</button></p>
+        <p><button onclick="gtag_report_conversion_signup_SECURE(undefined)">Signup Test [SECURE]</button></p>
+        <p><button onclick="gtag_report_conversion_bid_SECURE(undefined, Date.now()+'')">Bid Test [SECURE]</button></p>
+        -->
+
       `,
       locals: {
         applicationName: settings.get(SettingsService.APPLICATION_NAME),

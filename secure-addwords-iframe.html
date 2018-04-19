@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+
+      /* DEBUG calls to gtag to the console */
+      console.log('gtag', arguments)
+    }
+    gtag('js', new Date());
+    gtag('config', 'AW-876749157');
+  </script>
+
+  <!-- Global site tag (gtag.js) - Google AdWords: 876749157 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-876749157"></script>
+
+  <!-- Event snippet for Bid confirmation conversion page
+In your html page, add the snippet and call gtag_report_conversion when someone clicks on the chosen link or button. -->
+  <script>
+    function gtag_report_conversion_bid(url, transaction_id) {
+      var callback = function () {
+        if (typeof (url) != 'undefined') {
+          window.location = url;
+        }
+      };
+      gtag('event', 'conversion', {
+        'send_to': 'AW-876749157/hwIsCOPB1IABEOXCiKID',
+        'transaction_id': transaction_id,
+        'event_callback': callback
+      });
+      return false;
+    }
+  </script>
+
+  <!-- Event snippet for New User Sign-up conversion page
+In your html page, add the snippet and call gtag_report_conversion when someone clicks on the chosen link or button. -->
+  <script>
+    function gtag_report_conversion_signup(url) {
+      var callback = function () {
+        if (typeof (url) != 'undefined') {
+          window.location = url;
+        }
+      };
+      gtag('event', 'conversion', {
+        'send_to': 'AW-876749157/_PMbCNml1IABEOXCiKID',
+        'event_callback': callback
+      });
+      return false;
+    }
+  </script>
+
+  <!--
+  This page runs in an iframe on a different domain from the heatwallet.com
+  content scripts. By being on a different domain the browser agent will not
+  allow the scripts loaded in this page to access the javascript/memory
+  of the page that holds the private wallet information.
+
+  The parent frame calls the following listener with (assuming the iframe container
+  has an id of 'secure-addwords-iframe' as well as a @sandbox attribute of allow-scripts:
+
+    function gtag(message) {
+      let win = document.getElementById('secure-addwords-iframe').contentWindow
+      win.postMessage(message, '*')
+    }
+-->
+
+  <script>
+    window.addEventListener('message', function (e) {
+      switch (e.data.type) {
+        case 'signup':
+          gtag_report_conversion_signup(undefined)
+          break
+        case 'bid':
+          gtag_report_conversion_bid(undefined, e.data.transaction_id)
+          break
+      }
+    }, false)
+  </script>
+</head>
+
+<body>
+  <h1>secure-addwords-iframe</h1>
+</body>
+
+</html>

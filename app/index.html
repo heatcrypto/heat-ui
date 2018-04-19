@@ -49,6 +49,71 @@
       </div>
     </div>
 
+    <!-- Google Addwords Conversion tracker runs in its separated domain for security reasons-->
+    <!-- <iframe src="https://heatwallet.com/secure-addwords-iframe.html"
+      style="width:0; height:0; border:0; border:none" id="secure-addwords-iframe"
+      sandbox="allow-scripts"></iframe>
+    <script>
+      /**
+       * We call the global gtag method which in turn calls the google gtag function
+       * which was loaded in the shielded off iframe, the only way to talk to the iframe
+       * is through sending message events for which the iframe is listening.
+       *
+       * @param message { type: [signup|bid], transaction_id: string }
+       * */
+      function gtag_SECURE(message) {
+        let win = document.getElementById('secure-addwords-iframe').contentWindow
+        win.postMessage(message, '*')
+      }
+      function gtag_report_conversion_bid_SECURE(url, transaction_id) {
+        gtag_SECURE({type:'bid', transaction_id: Date.now()+''})
+      }
+      function gtag_report_conversion_signup_SECURE(url) {
+        gtag_SECURE({type:'signup'})
+      }
+    </script> -->
+
+    <!-- Or alternatively we can use the version where the tracker code runs in the SECURE context -->
+    <!-- <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+        console.log('gtag', arguments)
+      }
+      gtag('js', new Date());
+      gtag('config', 'AW-876749157');
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-876749157"></script>
+    <script>
+      function gtag_report_conversion_bid(url, transaction_id) {
+        var callback = function () {
+          if (typeof (url) != 'undefined') {
+            window.location = url;
+          }
+        };
+        gtag('event', 'conversion', {
+          'send_to': 'AW-876749157/hwIsCOPB1IABEOXCiKID',
+          'transaction_id': transaction_id,
+          'event_callback': callback
+        });
+        return false;
+      }
+    </script>
+    <script>
+      function gtag_report_conversion_signup(url) {
+        var callback = function () {
+          if (typeof (url) != 'undefined') {
+            window.location = url;
+          }
+        };
+        gtag('event', 'conversion', {
+          'send_to': 'AW-876749157/_PMbCNml1IABEOXCiKID',
+          'event_callback': callback
+        });
+        return false;
+      }
+    </script> -->
+
   </body>
 
   <script type="text/ng-template" id="error-messages">
@@ -98,6 +163,10 @@
   <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
       new heat.Loader();
+
+      // /* TEST THE TAGS */
+      // gtag({type:'signup'})
+      // gtag({type:'bid', transaction_id: Date.now()+''})
     });
   </script>
   <script type="text/javascript" defer>
