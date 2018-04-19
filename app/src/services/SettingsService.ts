@@ -131,7 +131,7 @@ class SettingsService {
 
     this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "http://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
     this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "YOUR ETHERSCAN API TOKEN";
-    this.settings[SettingsService.WEB3PROVIDER] = "https://ropsten.infura.io/H1ZDyTIVq1HbxRXdnv5h";
+    this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/YOUR_INFURA_API_TOKEN";
     this.settings[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;
     this.settings[SettingsService.ETH_TX_GAS_REQUIRED] = 21000;
     this.settings[SettingsService.BIP44_WALLET] = "m/44'/60'/0'/0";
