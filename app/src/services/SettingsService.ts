@@ -69,6 +69,13 @@ class SettingsService {
   public static HEATLEDGER_BTC_ASSET = 'settings.heatledger_btc_asset';
   public static HEATLEDGER_NAME_ASSIGNER = 'settings.heatledger_name_assigner';
 
+  public static ETHERSCAN_TRANSACTION_URL = 'settings.etherscan_get_transactions_url';
+  public static ETHERSCAN_API_TOKEN = 'settings.etherscan_api.token';
+  public static WEB3PROVIDER = 'settings.web3_provider';
+  public static BIP44_WALLET = 'settings.bip44_wallet';
+  public static ETH_TX_GAS_PRICE = 'settings.gas_price';
+  public static ETH_TX_GAS_REQUIRED = 'settings.gas';
+
   constructor() {
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -121,6 +128,13 @@ class SettingsService {
     this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
+
+    this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "http://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
+    this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "YOUR ETHERSCAN API TOKEN";
+    this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/YOUR_INFURA_API_TOKEN";
+    this.settings[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;
+    this.settings[SettingsService.ETH_TX_GAS_REQUIRED] = 21000;
+    this.settings[SettingsService.BIP44_WALLET] = "m/44'/60'/0'/0";
 
     /* Override with test endpoints */
     if (heat.isTestnet) {

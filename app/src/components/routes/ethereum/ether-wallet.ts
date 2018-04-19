@@ -32,27 +32,25 @@
   `
 
 })
-@Inject('web3', 'user')
+@Inject('$scope','web3', 'user', '$interval')
 class EtherWallet {
 
   constructor(
+              private $scope: angular.IScope,
               private web3Service: Web3Service,
-              private userService: UserService) {
+              private userService: UserService,
+              $interval: angular.IIntervalService) {
+
     this.getEtherAccountBalance();
-    this.subscribeToGetEtherBalanceInterval();
+
+    var interval = $interval(() => this.getEtherAccountBalance(), 2000, 0, false);
+    $scope.$on('$destroy', () => { $interval.cancel(interval) });
   }
 
   private wallet = <LightwalletService>heat.$inject.get('lightwalletService');
   private etherBalance: string;
   private userEtherereumAddress: string;
   private transactions = [];
-
-  subscribeToGetEtherBalanceInterval() {
-    var that = this;
-    setInterval(function () {
-      that.etherBalance = that.web3Service.getBalanceOf(that.wallet.walletAddress);
-    }, 10000);
-  }
 
   showDeposit($event) {
     dialogs.showEtherDepositDialog($event, this.wallet.walletAddress);

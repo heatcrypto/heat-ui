@@ -1,16 +1,16 @@
 declare var Tx: any;
 @Service('web3')
-@Inject('$q', 'user')
+@Inject('$q', 'user', 'settings')
 class Web3Service {
 
   public web3: any;
-  static readonly WEB3_HTTP_PROVIDER = "https://mainnet.infura.io/<YOUR API TOKEN HERE>";
   constructor(
               private $q: angular.IQService,
-              private userService: UserService) {
+              private userService: UserService,
+              private settingsService: SettingsService) {
 
     var Web3 = require('web3');
-    this.web3 = new Web3(new Web3.providers.HttpProvider(Web3Service.WEB3_HTTP_PROVIDER));
+    this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
   }
 
   getBalanceOf(address: any) : string {
@@ -21,7 +21,6 @@ class Web3Service {
     return new Promise((resolve, reject) => {
       this.web3.eth.getTransactionCount(from, (error, result) => {
         if (error) reject(error);
-        console.log("nonce is " + result);
         resolve(this.web3.toHex(result));
       })
     })
@@ -46,7 +45,7 @@ class Web3Service {
   }
 
   sendEther(_from: string,_to: string, _value: any) {
-    this.web3.eth.sendTransaction({ from: _from, to: _to, value: _value, gasPrice: LightwalletService.GAS_PRICE, gas: LightwalletService.GAS }, function (err, txhash) {
+    this.web3.eth.sendTransaction({ from: _from, to: _to, value: _value, gasPrice: this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE), gas: this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED) }, function (err, txhash) {
       if (err) {
         dialogs.etherTransactionReceipt('Error', err.message);
       } else {
