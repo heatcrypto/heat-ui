@@ -83,12 +83,12 @@ class TraderTrollboxComponent {
     trollbox.getMessages().forEach(promise => {
       promise.then((messages) => {
       $scope.$evalAsync(() => {
-          console.log('messages', messages);
+          //console.log('messages', messages);
           let ar = messages.map(message => {
           return this.augmentMessage(message);
         });
           this.messages = this.messages.concat(ar);
-          console.log('this messages', this.messages);
+          //console.log('this messages', this.messages);
         });
       });
     });
