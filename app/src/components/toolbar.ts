@@ -68,7 +68,8 @@
                 </div>
               </div>
             </div>
-            <md-button aria-label="home" class="md-icon-button" ng-href="{{'explorer-account/'+vm.user.account+'/transactions'}}" ng-if="vm.user.unlocked">
+            <!-- ng-href="{{'explorer-account/'+vm.user.account+'/transactions'}}" -->
+            <md-button aria-label="home" class="md-icon-button" ng-href="home" ng-if="vm.user.unlocked">
               <md-tooltip md-direction="bottom">Home</md-tooltip>
               <i><img src="assets/homeIcon.png"></i>
             </md-button>
