@@ -13,8 +13,13 @@ class Web3Service {
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
   }
 
-  getBalanceOf(address: any) : string {
-    return this.web3.fromWei(this.web3.eth.getBalance(address));
+  getBalanceOf(address: any) : angular.IPromise<string> {
+    let deferred = this.$q.defer<string>()
+    this.web3.eth.getBalance(address).then(
+      balance => this.web3.fromWei(balance),
+      deferred.reject
+    )
+    return deferred.promise
   }
 
   getTransactionCount = (from: string) => {
