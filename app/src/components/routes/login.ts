@@ -127,6 +127,8 @@ declare var saveAs: any;
             <div layout="column" layout-align="center center">
               <br>
               <span class="account-preview">{{vm.pageCreateAccount}}</span>
+              <br>
+              <span>BIP44 compatible = <b>{{vm.bip44Compatible?'TRUE':'FALSE'}}</b></span>
             </div>
           </div>
 
@@ -251,6 +253,8 @@ declare var saveAs: any;
               <span ng-show="vm.pageAddSecretPhraseHasHiddenChars" class="account-preview">
                 Secret phrase has hidden characters!&nbsp;<a href="#" ng-click="vm.pageAddRemoveSecretPhraseHiddenChars()">remove</a>
               </span>
+              <br>
+              <span>BIP44 compatible = <b>{{vm.bip44Compatible?'TRUE':'FALSE'}}</b></span>
             </div>
           </div>
 
@@ -282,8 +286,10 @@ declare var saveAs: any;
   `
 })
 @Inject('$scope','$q','user','$location','heat','localKeyStore',
-        'secretGenerator','clipboard','$mdToast','env','settings','walletFile','panel')
+        'secretGenerator','clipboard','$mdToast','env','settings','walletFile','panel','lightwalletService')
 class LoginComponent {
+
+  bip44Compatible: boolean = false
 
   page: string = '';
   isFileSaverSupported: boolean;
@@ -332,7 +338,14 @@ class LoginComponent {
               private env: EnvService,
               private settings: SettingsService,
               private walletFile: WalletFileService,
-              private panel: PanelService) {
+              private panel: PanelService,
+              private lightwalletService: LightwalletService) {
+
+    // let secret = "plug before critic vessel guess vital source repair bridge method mimic simple"
+    // this.user.unlock(secret, false, this.lightwalletService.validSeed(secret)).then(() => {
+    //   this.$location.path(`home`);
+    // });
+    // return
 
     try {
       this.isFileSaverSupported = !!new Blob;
@@ -373,7 +386,7 @@ class LoginComponent {
   }
 
   pageAddLogin() {
-    this.user.unlock(this.pageAddSecretPhrase, false).then(() => {
+    this.user.unlock(this.pageAddSecretPhrase, false, undefined, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
       this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
@@ -382,6 +395,7 @@ class LoginComponent {
     this.pageAddPublicKey = heat.crypto.secretPhraseToPublicKey(this.pageAddSecretPhrase);
     this.pageAddAccount = heat.crypto.getAccountIdFromPublicKey(this.pageAddPublicKey);
     this.pageAddSecretPhraseHasHiddenChars = this.hasWhitespace.test(this.pageAddSecretPhrase);
+    this.bip44Compatible = this.lightwalletService.validSeed(this.pageAddSecretPhrase)
     this.$scope.$evalAsync(() => {
       this.pageAddCalculatedAccountId = this.pageAddAccount;
     });
@@ -395,7 +409,7 @@ class LoginComponent {
       name: ''
     };
     this.localKeyStore.add(key);
-    this.user.unlock(this.pageAddSecretPhrase, true, key).then(() => {
+    this.user.unlock(this.pageAddSecretPhrase, true, key, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
       this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
@@ -432,7 +446,7 @@ class LoginComponent {
       this.pageSigninWrongPincode = false;
       var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
       if (key) {
-        this.user.unlock(key.secretPhrase, false, key).then(() => {
+        this.user.unlock(key.secretPhrase, false, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
           this.$location.path(`explorer-account/${this.user.account}/transactions`);
         });
       }
@@ -487,6 +501,7 @@ class LoginComponent {
         this.pageCreateSecretPhrase = secretPhrase;
         this.pageCreatePublicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
         this.pageCreateAccount = heat.crypto.getAccountIdFromPublicKey(this.pageCreatePublicKey);
+        this.bip44Compatible = this.lightwalletService.validSeed(secretPhrase)
       });
     });
   }
@@ -558,7 +573,7 @@ class LoginComponent {
       name: this.pageCreateUserName
     };
     this.localKeyStore.add(key);
-    this.user.unlock(this.pageCreateSecretPhrase, true, key).then(() => {
+    this.user.unlock(this.pageCreateSecretPhrase, true, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
       this.$location.path('new');
     });
   }

@@ -49,8 +49,17 @@ class UserService extends EventEmitter {
   /* Local key storage key */
   public key: ILocalKey;
 
+  /* Compatible with Ethereum and Bitcoin */
+  public bip44Compatible: boolean;
+
   public accountColorName: string = "HEAT";
   public accountColorId: string = "0";
+
+  /* List of ethereum bip44 addresses, the first being the master address */
+  public ethAddresses: string[] = []
+
+  /* Prevents circular depency */
+  public ethWallet: LightwalletService
 
   constructor(private $q,
               private $window: angular.IWindowService,
@@ -87,10 +96,13 @@ class UserService extends EventEmitter {
    * @param key ILocalKey
    * @returns Promise
    */
-  unlock(secretPhrase: string, newAccount: boolean, key?: ILocalKey): angular.IPromise<any> {
+  unlock(secretPhrase: string, newAccount: boolean, key?: ILocalKey, bip44Compatible?: boolean): angular.IPromise<any> {
     var deferred = this.$q.defer();
     this.newAccount = newAccount;
     this.key = key;
+
+    /* Circular dependencies force this */
+    this.bip44Compatible = bip44Compatible || false
 
     /* Everything obtained from the secret phrase */
     this.secretPhrase = secretPhrase;
@@ -101,9 +113,21 @@ class UserService extends EventEmitter {
 
     /* The other parts are on the blockchain */
     this.refresh().then(() => {
-      deferred.resolve();
-      this.emit(UserService.EVENT_UNLOCKED);
+
+      /* Only if we are a bip44 will we load the eth wallet */
+      if (bip44Compatible) {
+        this.ethWallet = heat.$inject.get('lightwalletService');
+        this.ethWallet.unlock(secretPhrase, "").then(() => {
+          deferred.resolve();
+          this.emit(UserService.EVENT_UNLOCKED);
+        })
+      }
+      else {
+        deferred.resolve();
+        this.emit(UserService.EVENT_UNLOCKED);
+      }
     });
+
     return deferred.promise;
   }
 
@@ -112,7 +136,7 @@ class UserService extends EventEmitter {
     this.unlocked = null;
     this.account = null;
     this.emit(UserService.EVENT_LOCKED);
-    this.$location.path('login');
+    window.location.reload(true);
   }
 
   requireLogin() {

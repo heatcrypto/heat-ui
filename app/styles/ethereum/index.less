@@ -20,18 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Service('secretGenerator')
-@Inject('$q','settings','lightwalletService')
-class SecretGeneratorService {
 
-  constructor(private $q: angular.IQService,
-              private settings: SettingsService,
-              private lightwalletService: LightwalletService) {}
-
-  public generate(langCode: string): angular.IPromise<string> {
-    let deferred = this.$q.defer<string>();
-    deferred.resolve(this.lightwalletService.generateRandomSeed())
-    return deferred.promise;
-  }
-}
+@import '../colors';
+@import '../default';
+@import 'ethereum-account';
 

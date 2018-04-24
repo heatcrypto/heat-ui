@@ -1,0 +1,50 @@
+ethereum-account {
+  .widget();
+  .list();
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
+  .truncate-col {
+    padding-right: 30px;
+    &.left {
+      text-align: left;
+    }
+    &.block {
+      max-width: 160px;
+    }
+    &.render-col {
+      max-width: inherit;
+    }
+    &.height-col {
+      max-width: 40px;
+      padding-right: 0px;
+    }
+    &.generator-col {
+      padding-right: 0px;
+    }
+    &.pop-col {
+      max-width: initial;
+    }
+    &.info-col {
+      max-width: initial !important;
+    }
+    &.json-col {
+      min-width: 30px;
+      max-width: 30px;
+      padding-right: 0px;
+      a, a * {
+        font-size: 14px;
+        color: @link-yellow;
+        cursor: pointer;
+      }
+      md-icon {
+        padding-top: 8px;
+      }
+    }
+  }
+  .type-row {
+    .md-button:first-child {
+      margin-left: 0px;
+    }
+  }
+}

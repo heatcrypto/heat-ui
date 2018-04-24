@@ -13,12 +13,16 @@ class Web3Service {
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
   }
 
+  parseInput(input: string) {
+    return this.web3.toAscii(input)
+  }
+
   getBalanceOf(address: any) : angular.IPromise<string> {
     let deferred = this.$q.defer<string>()
-    this.web3.eth.getBalance(address).then(
-      balance => this.web3.fromWei(balance),
-      deferred.reject
-    )
+    this.web3.eth.getBalance(address, (err,balance) => {
+      if (err) deferred.reject(err)
+      else deferred.resolve(this.web3.fromWei(balance))
+    })
     return deferred.promise
   }
 

@@ -66,16 +66,16 @@
     "bytebuffer": "5.0.1",
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
+    "eth-lightwallet": "^3.0.1",
     "filesaver.js": "0.2.0",
+    "hooked-web3-provider": "^1.0.0",
     "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
     "ng-popover": "^2.0.0",
     "pako": "1.0.3",
     "techan": "0.8.0",
-    "web3": "^0.20.6",
-    "hooked-web3-provider": "^1.0.0",
-    "eth-lightwallet": "^3.0.1"
+    "web3": "^0.20.6"
   },
   "build": {
     "appId": "com.heatledger.heatwallet",

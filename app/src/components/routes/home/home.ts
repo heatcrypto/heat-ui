@@ -26,6 +26,7 @@
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <virtual-repeat-transactions layout="column" flex account="vm.user.account" personalize="true"></virtual-repeat-transactions>
+      <!-- <virtual-repeat-eth-transactions layout="column" flex account="vm.user.account" personalize="true"></virtual-repeat-eth-transactions> -->
     </div>
   `
 })

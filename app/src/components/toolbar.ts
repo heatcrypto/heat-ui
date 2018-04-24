@@ -54,6 +54,7 @@
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           B E T A N E T &nbsp;
         </h2>
+
         <div class="wrapper">
           <div>
             <div class="user">
@@ -68,11 +69,21 @@
                 </div>
               </div>
             </div>
+
+            <!--
+            <md-button aria-label="home" class="md-icon-button" href="#/ethereum-account/0xd8c32e870acf6c848d8b836da889d2f87b5d84ae">
+              <md-tooltip md-direction="bottom">Home</md-tooltip>
+              <i><img src="assets/homeIcon.png"></i>
+            </md-button>
+            -->
+
             <!-- ng-href="{{'explorer-account/'+vm.user.account+'/transactions'}}" -->
+            <!--
             <md-button aria-label="home" class="md-icon-button" ng-href="home" ng-if="vm.user.unlocked">
               <md-tooltip md-direction="bottom">Home</md-tooltip>
               <i><img src="assets/homeIcon.png"></i>
             </md-button>
+            -->
             <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
               <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
               <i><img src="assets/exploreIcon.png"></i>
@@ -89,14 +100,22 @@
               <md-tooltip md-direction="bottom">Exchange</md-tooltip>
               <i><img src="assets/exchangeIcon.png"></i>
             </md-button>
+            <!--
             <md-button aria-label="ether wallet" class="md-icon-button" ng-click="vm.connectToEtherWallet($event);" ng-if="vm.user.unlocked">
               <md-tooltip md-direction="bottom">Ether Wallet</md-tooltip>
               <i><img src="assets/etherwallet.png"></i>
             </md-button>
+            -->
             <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
               <md-tooltip md-direction="bottom">App Server</md-tooltip>
               <i><img src="assets/serverIcon.png"></i>
             </md-button>
+
+            <md-button aria-label="home" class="md-icon-button" href="#/ethereum-account/0xd8c32e870acf6c848d8b836da889d2f87b5d84ae">
+              <md-tooltip md-direction="bottom">ETHEREUM TEST</md-tooltip>
+              <i><img src="assets/homeIcon.png"></i>
+            </md-button>
+
           </div>
           <div>
             <h2 ng-if="vm.user.unlocked">
@@ -104,6 +123,26 @@
             </h2>
           </div>
         </div>
+        <md-menu ng-if="vm.user.unlocked">
+          <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+            <i><img src="assets/homeIcon.png"></i>
+          </md-button>
+          <md-menu-content width="4">
+            <md-menu-item>
+              <md-button aria-label="heat home" ng-href="#/{{'explorer-account/'+vm.user.account+'/transactions'}}">
+                <md-icon md-font-library="material-icons">swap_horiz</md-icon>
+                <span>HEAT {{vm.user.account}}</span>
+              </md-button>
+            </md-menu-item>
+
+            <md-menu-item ng-repeat="address in vm.user.ethWallet.wallet.addresses" ng-show="address.inUse">
+              <md-button aria-label="eth home" ng-href="#/{{'ethereum-account/'+address.address}}">
+                <md-icon md-font-library="material-icons">swap_horiz</md-icon>
+                <span>{{address.address}} | {{address.balance}} ETH</span>
+              </md-button>
+            </md-menu-item>
+          </md-menu>
+        </md-menu>
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
           <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
             <i><img src="assets/sandwich.png"></i>
