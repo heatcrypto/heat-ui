@@ -70,11 +70,8 @@ class LightwalletService {
       if (this.validSeed(seed)) {
         this.getEtherWallet(seed, password||"").then(wallet => {
           this.wallet = wallet
-
           console.log('wallet',wallet)
-
-          resolve()
-          this.refreshAdressBalances()
+          this.refreshAdressBalances().then(resolve, resolve)
         }, () => {
           resolve()
         })
@@ -83,27 +80,30 @@ class LightwalletService {
   }
 
   refreshAdressBalances() {
-    this.etherscanService.getEtherBalances(this.wallet.addresses.map(a => a.address)).then(balances => {
-      this.$rootScope.$evalAsync(()=>{
-        balances.forEach(bal => {
-          let entryInWallet = this.wallet.addresses.find(a => a.address == bal.address)
-          if (entryInWallet) {
-            entryInWallet.balance = bal.balance
+    return new Promise((resolve, reject) => {
+      this.etherscanService.getEtherBalances(this.wallet.addresses.map(a => a.address)).then(balances => {
+        this.$rootScope.$evalAsync(()=>{
+          balances.forEach(bal => {
+            let entryInWallet = this.wallet.addresses.find(a => a.address == bal.address)
+            if (entryInWallet) {
+              entryInWallet.balance = bal.balance
+            }
+          })
+
+          // now walk backwards marking all addresses that have no next address with a zero balance as unused bip44 addresses
+          for (let i=this.wallet.addresses.length-1; i>=0; i--) {
+            if (this.wallet.addresses[i].balance == "0") {
+              this.wallet.addresses[i].inUse = false
+            }
+            else {
+              this.wallet.addresses[i].inUse = true
+              this.wallet.addresses[i+1].inUse = true
+              break
+            }
           }
         })
-
-        // now walk backwards marking all addresses that have no next address with a zero balance as unused bip44 addresses
-        for (let i=this.wallet.addresses.length-1; i>=0; i--) {
-          if (this.wallet.addresses[i].balance == "0") {
-            this.wallet.addresses[i].inUse = false
-          }
-          else {
-            this.wallet.addresses[i].inUse = true
-            this.wallet.addresses[i+1].inUse = true
-            break
-          }
-        }
-      })
+        resolve()
+      }, reject)
     })
   }
 

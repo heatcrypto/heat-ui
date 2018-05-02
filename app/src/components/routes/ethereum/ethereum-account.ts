@@ -62,9 +62,7 @@
               <div class="value" ng-repeat="item in vm.erc20Tokens">
                 <span class="balance">{{item.balance}}</span>
                 <span class="symbol"><b>{{item.symbol}}</b></span>
-                <span class="name">
-                  <a ng-click="vm.showDescription($event, item)">{{item.name}}</a>
-                </span>
+                <span class="balance">Token: {{item.name}}</span>
               </div>
             </div>
           </div>
@@ -77,7 +75,7 @@
     </div>
   `
 })
-@Inject('$scope','web3','assetInfo','$q','user')
+@Inject('$scope','web3','assetInfo','$q','user','etherscanService')
 class EthereumAccountComponent {
   account: string; // @input
 
@@ -89,7 +87,8 @@ class EthereumAccountComponent {
               private web3: Web3Service,
               private assetInfo: AssetInfoService,
               private $q: angular.IQService,
-              private user: UserService) {
+              private user: UserService,
+              private etherscanService: EtherscanService) {
     this.personalize = this.account == this.user.account
     this.refresh();
 
@@ -106,9 +105,21 @@ class EthereumAccountComponent {
     }, err => console.log(err))
 
     // load erc20 data
-  }
 
-  showDescription($event, info: AssetInfo) {
-    dialogs.assetInfo($event, info);
+    // ERC20 balances data is DISABLED at this stage !!
+
+    // this.etherscanService.getErc20Tokens(this.account).then(tokens => {
+    //   this.$scope.$evalAsync(() => {
+    //     this.erc20Tokens = tokens.tokens.map(token => {
+    //       let balance = this.web3.web3.fromWei(token.balance)
+    //       return {
+    //         balance: balance,
+    //         symbol: token.tokenInfo.symbol,
+    //         name: token.tokenInfo.name
+    //       }
+    //     })
+
+    //   })
+    // }, err => console.log(err))
   }
 }

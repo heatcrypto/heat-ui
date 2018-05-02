@@ -40,15 +40,19 @@ interface IEtherscanTransaction {
   cumulativeGasUsed: string;
   gasUsed: number;
   confirmations: string;
+  abi:any
 }
 
 @Service('ethTransactionsProviderFactory')
-@Inject('http','$q','etherscanService')
+@Inject('http','$q','etherscanService','ethTransactionParser')
 class EthTransactionsProviderFactory  {
-  constructor(private http: HttpService, private $q: angular.IQService, private etherscanService: EtherscanService) {}
+  constructor(private http: HttpService,
+              private $q: angular.IQService,
+              private etherscanService: EtherscanService,
+              private ethTransactionParser: EthTransactionParserService) {}
 
   public createProvider(account: string): IPaginatedDataProvider {
-    return new EthTransactionsProvider(this.http, this.$q, this.etherscanService, account);
+    return new EthTransactionsProvider(this.http, this.$q, this.etherscanService, this.ethTransactionParser, account);
   }
 }
 
@@ -56,6 +60,7 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
   constructor(private http: HttpService,
               private $q: angular.IQService,
               private etherscanService: EtherscanService,
+              private ethTransactionParser: EthTransactionParserService,
               private account: string) {}
 
   /* Be notified this provider got destroyed */
@@ -70,6 +75,13 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IEtherscanTransaction>> {
-    return this.etherscanService.getEtherTransactions(this.account, firstIndex, lastIndex);
+    let deferred = this.$q.defer<Array<IEtherscanTransaction>>()
+    this.etherscanService.getEtherTransactions(this.account, firstIndex, lastIndex).then(
+      transactions => {
+        this.ethTransactionParser.parse(transactions).then(deferred.resolve, deferred.reject)
+      },
+      deferred.reject
+    )
+    return deferred.promise
   }
 }

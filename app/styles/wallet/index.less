@@ -1,0 +1,76 @@
+wallet {
+  .widget();
+  .list();
+  h2 {
+    font-size: 26px !important;
+  }
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
+  md-list-item {
+    max-height: initial;
+    line-height: 36px;
+    height: 30px;
+  }
+  a, a * {
+    font-size: 14px;
+    color: @link-yellow;
+    cursor: pointer;
+  }
+  .truncate-col {
+    padding-right: 30px;
+    &.left {
+      text-align: left;
+    }
+    &.checkbox-col {
+      max-width: 40px;
+      min-width: 40px;
+      md-checkbox {
+        margin-bottom: 0px;
+      }
+    }
+    &.identifier-col {
+      max-width: inherit;
+    }
+    &.unlock-col {
+      max-width: 80px;
+    }
+  }
+  .wallet-entries {
+    overflow-y: scroll;
+    md-list-item {
+      min-height: 30px;
+    }
+    //.wallet-entry {}
+    .currency-balance {
+      padding-left: 50px;
+      .name {
+        font-weight: bold;
+      }
+      .identifier {
+        font-style: italic;
+      }
+      .balance {
+        font-weight: bold;
+      }
+    }
+    .token-balance {
+      padding-left: 100px;
+      .name {
+        font-weight: bold;
+      }
+      .identifier {
+        font-style: italic;
+      }
+      .balance {
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+wallet-entry {
+  .widget();
+  .list();
+
+}

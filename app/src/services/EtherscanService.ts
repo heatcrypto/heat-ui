@@ -75,11 +75,10 @@ class EtherscanService {
   /* This is not using the Etherscan API but the EthPlorer one */
   public getErc20Tokens(address: string): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = this.settingsService.get(SettingsService.ETHPLORER_INFO_URL)
-                  .replace(":address", address)
-    this.http.get(url).then(response => {
-
-    }, () => {
+    this.getCachedAddressInfo(address).then(response => {
+      deferred.resolve(response)
+    }, err => {
+      console.log(err)
       deferred.resolve([])
     })
     return deferred.promise
@@ -88,8 +87,6 @@ class EtherscanService {
   // public getEtplorerTransactions(address: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
   //   let deferred = this.$q.defer<string>();
   //   let url = "https://api.ethplorer.io/getAddressTransactions/:address?apiKey=freekey"
-
-
   //   let url = this.settingsService.get(SettingsService.ETHERSCAN_TRANSACTION_URL)
   //     .replace(":address", address)
   //     .replace(":apiToken", this.settingsService.get(SettingsService.ETHERSCAN_API_TOKEN))
@@ -107,11 +104,33 @@ class EtherscanService {
 
   public getEthplorerTransactionCount(address: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    let url = `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`
-    this.http.get(url).then(response => {
+    this.getCachedAddressInfo(address).then(response => {
       deferred.resolve(parseInt(response['countTxs']))
     }, deferred.reject)
     return deferred.promise;
+  }
+
+  private cachedGetCachedAddressInfo = null
+
+  /* Calls ethplorer getAddressInfo and caches the result for 10 seconds,
+     this is needed since both the virtual repeat and the erc20 token list call this method
+     on page load and refresh */
+  private getCachedAddressInfo(address: string) {
+    if (this.cachedGetCachedAddressInfo)
+      return this.cachedGetCachedAddressInfo
+
+    let deferred = this.$q.defer();
+    this.cachedGetCachedAddressInfo = deferred.promise
+    let url = `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`
+    this.http.get(url).then(response => {
+      deferred.resolve(angular.isString(response) ? JSON.parse(response) : response)
+    }, deferred.reject)
+    this.cachedGetCachedAddressInfo.finally(() => {
+      setTimeout(()=> {
+        this.cachedGetCachedAddressInfo = null
+      }, 5*1000)
+    })
+    return this.cachedGetCachedAddressInfo
   }
 
 

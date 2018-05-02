@@ -111,8 +111,15 @@
               <i><img src="assets/serverIcon.png"></i>
             </md-button>
 
+            <!--
             <md-button aria-label="home" class="md-icon-button" href="#/ethereum-account/0xd8c32e870acf6c848d8b836da889d2f87b5d84ae">
               <md-tooltip md-direction="bottom">ETHEREUM TEST</md-tooltip>
+              <i><img src="assets/homeIcon.png"></i>
+            </md-button>
+            -->
+
+            <md-button aria-label="home" class="md-icon-button" href="#/wallet">
+              <md-tooltip md-direction="bottom">Wallet</md-tooltip>
               <i><img src="assets/homeIcon.png"></i>
             </md-button>
 

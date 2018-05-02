@@ -9,7 +9,7 @@ class Web3Service {
               private userService: UserService,
               private settingsService: SettingsService) {
 
-    var Web3 = require('web3');
+    var Web3 = window['Web3']
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
   }
 

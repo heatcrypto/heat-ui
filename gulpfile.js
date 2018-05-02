@@ -83,7 +83,7 @@ gulp.task('libjs', function () {
   var uglify = require('gulp-uglify');
   gulp.src(PATHS.libjs)
     .pipe(concat('lib.js'))
-    .pipe(uglify())
+    //.pipe(uglify())
     .pipe(gulp.dest('dist'));
 });
 

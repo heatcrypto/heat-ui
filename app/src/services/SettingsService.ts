@@ -72,6 +72,8 @@ class SettingsService {
   public static ETHPLORER_INFO_URL = 'settings.ethplorer_get_info_url';
   public static ETHERSCAN_BALANCES_URL = 'settings.etherscan_get_balances_url';
   public static ETHERSCAN_TRANSACTION_URL = 'settings.etherscan_get_transactions_url';
+  public static ETHERSCAN_CONTRACT_ABI = 'settings.etherscan_get_contract_abi';
+
   public static ETHERSCAN_API_TOKEN = 'settings.etherscan_api.token';
   public static WEB3PROVIDER = 'settings.web3_provider';
   public static BIP44_WALLET = 'settings.bip44_wallet';
@@ -131,9 +133,11 @@ class SettingsService {
     this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
     this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
 
-    this.settings[SettingsService.ETHPLORER_INFO_URL] = "https://api.ethplorer.io/getAddressInfo/:address?apiKey=freekey";
+    this.settings[SettingsService.ETHPLORER_INFO_URL] = "https://api.ethplorer.io/getAddressInfo/:address?apiKey=lwA5173TDKj60";
     this.settings[SettingsService.ETHERSCAN_BALANCES_URL] = "https://api.etherscan.io/api?module=account&action=balancemulti&address=:addresses&tag=latest&apikey=:apiToken";
     this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "https://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
+    this.settings[SettingsService.ETHERSCAN_CONTRACT_ABI] = "https://api.etherscan.io/api?module=contract&action=getabi&address=:address&apikey=:apiToken"
+
     this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "S54GZXNCVGEAVCF1AQZZ8A8WDMQ9811HW9";
     this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/OT4wn16VtAydG2y9NVna";
     this.settings[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;

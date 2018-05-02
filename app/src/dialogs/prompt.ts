@@ -20,21 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-
-@import './default';
-@import './popover';
-@import './trader/index';
-@import './home/index';
-@import './explorer/index';
-@import './ethereum/index';
-@import './messenger/index';
-@import './toolbar';
-@import './dialog';
-@import './user-balance';
-@import './virtual-repeat-transactions';
-@import './services/transactions/withdrawAssetService';
-@import './user-contacts';
-@import './json-formatter';
-@import './server/index';
-@import './login/index';
-@import './wallet/index';
+module dialogs {
+  export function prompt($event, title:string, description:string, defaultValue:string): angular.IPromise<string> {
+    let $q = <angular.IQService> heat.$inject.get('$q');
+    let deferred = $q.defer<string>();
+    let locals = {
+      v: {
+        value: defaultValue||''
+      },
+      description: description||'',
+    }
+    dialogs.dialog({
+      id: 'prompt',
+      title: title,
+      targetEvent: $event,
+      template: `
+        <p>{{vm.description}}</p>
+        <md-input-container flex>
+          <input type="text" ng-model="vm.v.value" autocomplete="off"></input><br>
+        </md-input-container>
+      `,
+      locals: locals
+    }).then(
+      () => {
+        deferred.resolve(locals.v.value)
+      },
+      deferred.reject
+    )
+    return deferred.promise
+  }
+}
