@@ -32,7 +32,13 @@
 })
 @Inject('user')
 class HomeComponent {
+
+
   constructor(public user: UserService) {
     user.requireLogin();
+
+    user.on(UserService.EVENT_UNLOCKED, () => {
+
+    })
   }
 }

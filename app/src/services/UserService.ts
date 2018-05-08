@@ -22,7 +22,7 @@
  * SOFTWARE.
  * */
 @Service('user')
-@Inject('$q','$window','localKeyStore','settings','$location')
+@Inject('$q','$window','localKeyStore','settings','$location','$rootScope')
 class UserService extends EventEmitter {
 
   public static EVENT_UNLOCKED = 'unlocked';
@@ -30,21 +30,18 @@ class UserService extends EventEmitter {
 
   public unlocked: boolean = false;
 
-  /* Secret phrase as regular string */
+  /* Secret phrase as regular string (the master seed - holds ethereum and heat) */
   public secretPhrase: string;
 
-  /* Public key as HEX string, obtained from secretphrase */
+  /* Public key as HEX string, obtained from secretphrase (this is a HEAT public key!!)*/
   public publicKey: string;
 
-  /* Account in numeric format */
+  /* HEAT Account in numeric format */
   public account: string;
 
-  /* Public or private email identifier */
+  /* HEAT Public or private email identifier */
   public accountName: string;
   public accountNameIsPrivate: boolean;
-
-  /* New accounts don't yet exist on the blockchain */
-  public newAccount: boolean;
 
   /* Local key storage key */
   public key: ILocalKey;
@@ -52,20 +49,24 @@ class UserService extends EventEmitter {
   /* Compatible with Ethereum and Bitcoin */
   public bip44Compatible: boolean;
 
-  public accountColorName: string = "HEAT";
-  public accountColorId: string = "0";
-
   /* List of ethereum bip44 addresses, the first being the master address */
+  // TODO deprecate
   public ethAddresses: string[] = []
 
   /* Prevents circular depency */
+  // TODO deprecate
   public ethWallet: LightwalletService
+
+  /* ICurrency implementation in use currently, the currency used is determined when we
+     unlock an account (provide secret phrase + selected address + currency type) */
+  public currency: ICurrency = null
 
   constructor(private $q,
               private $window: angular.IWindowService,
               private localKeyStore: LocalKeyStoreService,
               private settings: SettingsService,
-              private $location: angular.ILocationService) {
+              private $location: angular.ILocationService,
+              private $rootScope: angular.IRootScopeService) {
     super();
   }
 
@@ -92,50 +93,75 @@ class UserService extends EventEmitter {
    * reason.
    *
    * @param secretPhrase user secret phrase
-   * @param newAccount boolean
    * @param key ILocalKey
    * @returns Promise
    */
-  unlock(secretPhrase: string, newAccount: boolean, key?: ILocalKey, bip44Compatible?: boolean): angular.IPromise<any> {
+  unlock(secretPhrase: string, key?: ILocalKey, bip44Compatible?: boolean, currency?: ICurrency): angular.IPromise<any> {
     var deferred = this.$q.defer();
-    this.newAccount = newAccount;
-    this.key = key;
 
-    /* Circular dependencies force this */
-    this.bip44Compatible = bip44Compatible || false
+    /* wrap this in evalasync so that any component based on ng-if="vn.user.unlocked"
+       will be reloaded */
+    this.lock(true)
+    this.$rootScope.$evalAsync(()=> {
+      /* Now all ng-if="vn.user.unlocked" are destroyed */
+      this.$rootScope.$evalAsync(()=> {
+        this.key = key;
 
-    /* Everything obtained from the secret phrase */
-    this.secretPhrase = secretPhrase;
-    this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
-    this.account = heat.crypto.getAccountId(secretPhrase);
-    this.unlocked = true;
-    this.accountName = '[no name]';
+        /* We either receive a fully setup ICurrency from the caller or we need to create
+          one ourselves. The situation in which we create one is all the cases apart from those
+          where we explicitly want some other currency and address than standard HEAT */
+        if (!currency) {
+          let address = heat.crypto.getAccountId(secretPhrase);
+          currency = new HEATCurrency(secretPhrase, address)
+        }
 
-    /* The other parts are on the blockchain */
-    this.refresh().then(() => {
+        /* Store the currency */
+        this.currency = currency
 
-      /* Only if we are a bip44 will we load the eth wallet */
-      if (bip44Compatible) {
-        this.ethWallet = heat.$inject.get('lightwalletService');
-        this.ethWallet.unlock(secretPhrase, "").then(() => {
-          deferred.resolve();
-          this.emit(UserService.EVENT_UNLOCKED);
-        })
-      }
-      else {
-        deferred.resolve();
-        this.emit(UserService.EVENT_UNLOCKED);
-      }
-    });
+        /* Circular dependencies force this */
+        this.bip44Compatible = bip44Compatible || false
+
+        /* Everything obtained from the secret phrase - These are all for the master HEAT account */
+        this.secretPhrase = secretPhrase;
+        this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
+        this.account = heat.crypto.getAccountId(secretPhrase);
+        this.unlocked = true;
+        this.accountName = '[no name]';
+
+        /* The other parts are on the blockchain */
+        this.refresh().then(() => {
+
+          /* Only if we are a bip44 will we load the eth wallet */
+          if (bip44Compatible) {
+            this.ethWallet = heat.$inject.get('lightwalletService');
+            this.ethWallet.unlock(secretPhrase, "").then(() => {
+              deferred.resolve();
+              this.emit(UserService.EVENT_UNLOCKED);
+            })
+          }
+          else {
+            deferred.resolve();
+            this.emit(UserService.EVENT_UNLOCKED);
+          }
+        });
+      })
+    })
 
     return deferred.promise;
   }
 
-  lock() {
+  lock(noreload?:boolean) {
+    this.key = null
+    this.ethWallet = null
+    this.ethAddresses = []
     this.secretPhrase = null;
-    this.unlocked = null;
+    this.unlocked = false;
     this.account = null;
+    this.currency = null
+    this.bip44Compatible = false
     this.emit(UserService.EVENT_LOCKED);
+    if (noreload)
+      return
     window.location.reload(true);
   }
 

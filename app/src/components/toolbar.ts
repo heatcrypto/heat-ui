@@ -58,32 +58,18 @@
         <div class="wrapper">
           <div>
             <div class="user">
-              <div class="small-logo" ng-if="!vm.isBetanet">
-              </div>
-              <div class="user-detail" ng-if="vm.user.unlocked">
-                <div class="email">
-                  {{vm.user.accountName}}
+              <div class="small-logo" ng-if="!vm.isBetanet"></div>
+              <h2 ng-if="vm.user.unlocked">
+                <div class="account-name">{{vm.user.accountName}}</div>
+                <div>
+                  <user-balance ng-if="vm.user.unlocked"></user-balance>
                 </div>
-                <div class="account">
-                  {{vm.user.account}}
-                </div>
-              </div>
+              </h2>
             </div>
-
-            <!--
-            <md-button aria-label="home" class="md-icon-button" href="#/ethereum-account/0xd8c32e870acf6c848d8b836da889d2f87b5d84ae">
+            <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()" ng-if="vm.user.unlocked">
               <md-tooltip md-direction="bottom">Home</md-tooltip>
               <i><img src="assets/homeIcon.png"></i>
             </md-button>
-            -->
-
-            <!-- ng-href="{{'explorer-account/'+vm.user.account+'/transactions'}}" -->
-            <!--
-            <md-button aria-label="home" class="md-icon-button" ng-href="home" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Home</md-tooltip>
-              <i><img src="assets/homeIcon.png"></i>
-            </md-button>
-            -->
             <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
               <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
               <i><img src="assets/exploreIcon.png"></i>
@@ -100,56 +86,34 @@
               <md-tooltip md-direction="bottom">Exchange</md-tooltip>
               <i><img src="assets/exchangeIcon.png"></i>
             </md-button>
-            <!--
-            <md-button aria-label="ether wallet" class="md-icon-button" ng-click="vm.connectToEtherWallet($event);" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Ether Wallet</md-tooltip>
-              <i><img src="assets/etherwallet.png"></i>
-            </md-button>
-            -->
             <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
               <md-tooltip md-direction="bottom">App Server</md-tooltip>
               <i><img src="assets/serverIcon.png"></i>
             </md-button>
-
-            <!--
-            <md-button aria-label="home" class="md-icon-button" href="#/ethereum-account/0xd8c32e870acf6c848d8b836da889d2f87b5d84ae">
-              <md-tooltip md-direction="bottom">ETHEREUM TEST</md-tooltip>
-              <i><img src="assets/homeIcon.png"></i>
-            </md-button>
-            -->
-
             <md-button aria-label="home" class="md-icon-button" href="#/wallet">
               <md-tooltip md-direction="bottom">Wallet</md-tooltip>
-              <i><img src="assets/homeIcon.png"></i>
+              <i><img src="assets/etherwallet.png"></i>
             </md-button>
-
-          </div>
-          <div>
-            <h2 ng-if="vm.user.unlocked">
-              <user-balance></user-balance>
-            </h2>
+            <div class="selected-address" ng-if="vm.user.unlocked">
+              <div>Currently using <b>{{vm.user.currency.symbol}}</b></div>
+              <div class="address">{{vm.user.currency.address}}</div>
+            </div>
           </div>
         </div>
+
         <md-menu ng-if="vm.user.unlocked">
           <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
-            <i><img src="assets/homeIcon.png"></i>
+            <md-icon md-font-library="material-icons">face</md-icon>
           </md-button>
           <md-menu-content width="4">
-            <md-menu-item>
-              <md-button aria-label="heat home" ng-href="#/{{'explorer-account/'+vm.user.account+'/transactions'}}">
-                <md-icon md-font-library="material-icons">swap_horiz</md-icon>
-                <span>HEAT {{vm.user.account}}</span>
-              </md-button>
-            </md-menu-item>
-
-            <md-menu-item ng-repeat="address in vm.user.ethWallet.wallet.addresses" ng-show="address.inUse">
-              <md-button aria-label="eth home" ng-href="#/{{'ethereum-account/'+address.address}}">
-                <md-icon md-font-library="material-icons">swap_horiz</md-icon>
-                <span>{{address.address}} | {{address.balance}} ETH</span>
+            <md-menu-item ng-repeat="item in vm.localHeatMasterAccounts">
+              <md-button ng-click="vm.selectWalletAccount($event, item)">
+                <span>{{item.identifier}}</span>
               </md-button>
             </md-menu-item>
           </md-menu>
         </md-menu>
+
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
           <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
             <i><img src="assets/sandwich.png"></i>
@@ -234,12 +198,15 @@
   `
 })
 @Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
-  'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast','walletFile','localKeyStore','panel')
+  'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast',
+  'walletFile','localKeyStore','panel','$location')
 class ToolbarComponent {
 
   isNodeEnv = false;
   isTestnet = heat.isTestnet;
   isBetanet = heat.isBetanet
+
+  localHeatMasterAccounts: Array<{account:string, locked:boolean, identifier:string}> = []
 
   constructor(private $scope: angular.IScope,
               private $mdSidenav,
@@ -256,12 +223,68 @@ class ToolbarComponent {
               private $mdToast: angular.material.IToastService,
               private walletFile: WalletFileService,
               private localKeyStore: LocalKeyStoreService,
-              private panel: PanelService) {
+              private panel: PanelService,
+              private $location: angular.ILocationService) {
     this.isNodeEnv=env.type==EnvType.NODEJS;
+
+    var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
+    this.user.on(UserService.EVENT_UNLOCKED, refresh)
+    this.refreshLocalWallet()
+  }
+
+  goToHome() {
+
+  }
+
+  refreshLocalWallet() {
+    this.localHeatMasterAccounts = []
+    this.localKeyStore.list().map((account:string) => {
+      let name = this.localKeyStore.keyName(account)
+      this.localHeatMasterAccounts.push({
+        account: account,
+        locked: true,
+        identifier: name || account
+      })
+    });
+    this.localHeatMasterAccounts.forEach(acc => {
+      let password = this.localKeyStore.getPasswordForAccount(acc.account)
+      if (password) {
+        acc.locked = false
+      }
+    })
+  }
+
+  unlock(secretPhrase:string) {
+    this.user.unlock(secretPhrase,null).then(
+      () => {
+        this.$location.path(`/explorer-account/${this.user.account}/transactions`)
+        heat.fullApplicationScopeReload()
+      }
+    )
+  }
+
+  selectWalletAccount($event, item) {
+    let password = this.localKeyStore.getPasswordForAccount(item.account)
+    if (password) {
+      let key = this.localKeyStore.load(item.account, password);
+      if (key) {
+        this.unlock(key.secretPhrase)
+      }
+    }
+    else {
+      dialogs.prompt($event, 'Enter Password', 'Please enter your password to unlock', '').then(
+        password => {
+          let key = this.localKeyStore.load(item.account, password);
+          if (key) {
+            this.unlock(key.secretPhrase)
+          }
+        }
+      )
+    }
   }
 
   showSendmoneyDialog($event) {
-    this.sendmoney.dialog($event).show();
+    this.user.currency.invokeSendDialog($event)
   }
 
   showAssetTransferDialog($event) {

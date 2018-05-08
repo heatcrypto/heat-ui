@@ -101,7 +101,7 @@ class SendmoneyDialog extends GenericDialog {
               label('Amount').
               required().
               precision(8).
-              symbol(this.user.accountColorName).
+              symbol('HEAT').
               asyncValidate("Not enough funds", (amount) => {
                 let deferred = this.$q.defer<boolean>();
                 this.heat.api.getAccountBalance(this.user.account, '0').then(

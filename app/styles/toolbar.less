@@ -45,9 +45,9 @@ md-toolbar {
       white-space: nowrap;
       display: flex;
       flex-grow: 1;
-      &:last-child {
+      /*&:last-child {
         justify-content: flex-end;
-      }
+      }*/
     }
   }
   .md-button {
@@ -77,8 +77,22 @@ md-toolbar {
         line-height: 18px;
       }
     }
+
+    /* above is old , below is new */
+    .account-name {
+      font-size:12px !important;
+      font-weight: bolder;
+    }
   }
   .md-toolbar-tools {
     padding-right: 6px;
+  }
+  .selected-address {
+    padding-top: 8px;
+    font-size: 14px;
+    .address {
+      font-size: 12px;
+      font-family: monospace;
+    }
   }
 }

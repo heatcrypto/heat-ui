@@ -39,8 +39,22 @@ interface ILocalKeyEntry {
 @Inject('storage','walletFile')
 class LocalKeyStoreService {
   private store: Store;
+
+  /* Remembered passwords to the localKeyStore */
+  private rememberedPasswords: {[key:string]:string} = {}
+
   constructor(storage: StorageService, private walletFile: WalletFileService) {
     this.store = storage.namespace("keystore", null, true);
+  }
+
+  /* Remembers a password for an account in the key store */
+  rememberPassword(account: string, password: string) {
+    this.rememberedPasswords[account] = password
+  }
+
+  /* Returns a remembered account password (if any) */
+  getPasswordForAccount(account: string) {
+    return this.rememberedPasswords[account]
   }
 
   testnet() {

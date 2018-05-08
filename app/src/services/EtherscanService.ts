@@ -86,7 +86,7 @@ class EtherscanService {
 
   // public getEtplorerTransactions(address: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
   //   let deferred = this.$q.defer<string>();
-  //   let url = "https://api.ethplorer.io/getAddressTransactions/:address?apiKey=freekey"
+  //   let url = "https://api.ethplorer.io/getAddressTransactions/:address?apiKey=lwA5173TDKj60"
   //   let url = this.settingsService.get(SettingsService.ETHERSCAN_TRANSACTION_URL)
   //     .replace(":address", address)
   //     .replace(":apiToken", this.settingsService.get(SettingsService.ETHERSCAN_API_TOKEN))
@@ -110,6 +110,14 @@ class EtherscanService {
     return deferred.promise;
   }
 
+  public getBalance(address: string): angular.IPromise<string> {
+    let deferred = this.$q.defer<string>();
+    this.getCachedAddressInfo(address).then(response => {
+      deferred.resolve(response['ETH'].balance)
+    }, deferred.reject)
+    return deferred.promise;
+  }
+
   private cachedGetCachedAddressInfo = null
 
   /* Calls ethplorer getAddressInfo and caches the result for 10 seconds,
@@ -121,7 +129,7 @@ class EtherscanService {
 
     let deferred = this.$q.defer();
     this.cachedGetCachedAddressInfo = deferred.promise
-    let url = `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=freekey`
+    let url = `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=lwA5173TDKj60`
     this.http.get(url).then(response => {
       deferred.resolve(angular.isString(response) ? JSON.parse(response) : response)
     }, deferred.reject)

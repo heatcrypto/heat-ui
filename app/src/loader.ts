@@ -27,6 +27,11 @@ module heat {
 
   export var $inject: angular.auto.IInjectorService;
 
+  /* Allows us to fully reload all components that make up the app while leaving
+     intact all initialized services, call this method after switching to the
+     desired location path. */
+  export function fullApplicationScopeReload() {}
+
   export class Loader {
 
     static app: angular.IModule;
@@ -82,6 +87,20 @@ module heat {
         user.on(UserService.EVENT_LOCKED, () => {
           $scope.$evalAsync(() => { $scope['userUnlocked'] = false })
         });
+
+        /* Enable full application scope reload */
+        $scope['showApp'] = true
+        heat.fullApplicationScopeReload = function () {
+          $scope.$evalAsync(() => {
+            $scope['showApp'] = false
+            setTimeout(function () {
+              $scope.$evalAsync(() => {
+                $scope['showApp'] = true
+              })
+            }, 250)
+          })
+        }
+
       }]);
 
       this.init('heatApp', [

@@ -386,7 +386,7 @@ class LoginComponent {
   }
 
   pageAddLogin() {
-    this.user.unlock(this.pageAddSecretPhrase, false, undefined, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
+    this.user.unlock(this.pageAddSecretPhrase, undefined, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
       this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
@@ -409,7 +409,7 @@ class LoginComponent {
       name: ''
     };
     this.localKeyStore.add(key);
-    this.user.unlock(this.pageAddSecretPhrase, true, key, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
+    this.user.unlock(this.pageAddSecretPhrase, key, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
       this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
@@ -446,7 +446,7 @@ class LoginComponent {
       this.pageSigninWrongPincode = false;
       var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
       if (key) {
-        this.user.unlock(key.secretPhrase, false, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
+        this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
           this.$location.path(`explorer-account/${this.user.account}/transactions`);
         });
       }
@@ -512,6 +512,7 @@ class LoginComponent {
       '</head><body>'+this.templateHTML()+'</body></html>';
     var popup = window.open(`data:text/html;base64,${btoa(html)}`,
       '_blank', 'toolbar=0,location=0,menubar=0');
+    // @ts-ignore
     popup.print();
     popup.close();
   }
@@ -573,7 +574,7 @@ class LoginComponent {
       name: this.pageCreateUserName
     };
     this.localKeyStore.add(key);
-    this.user.unlock(this.pageCreateSecretPhrase, true, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
+    this.user.unlock(this.pageCreateSecretPhrase, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
       this.$location.path('new');
     });
   }

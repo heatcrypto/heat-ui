@@ -28,7 +28,7 @@
         <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
         <span class="balance">{{vm.formattedBalance}}</span>
         <span class="fraction">{{vm.formattedFraction}}</span>&nbsp;
-        <span class="currencyName">{{vm.currencyName}}</span>
+        <span class="currencyName">{{vm.user.currency.symbol}}</span>
         <md-icon ng-if="vm.showError" md-font-library="material-icons">error</md-icon>
       </span>
     </div>
@@ -39,7 +39,6 @@ class UserBalanceComponent {
 
   private formattedBalance: string = "0";
   private formattedFraction: string = ".00";
-  private currencyName: string = "HEAT";
   private loading: boolean = true;
   private showError: boolean = false;
   private errorDescription: string;
@@ -52,25 +51,35 @@ class UserBalanceComponent {
 
     /* subscribe to websocket balance changed events */
     var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
-    heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
-      refresh();
-    }, $scope);
+
+    let unsubscribe = this.user.currency.subscribeBalanceChanged(()=>refresh())
+    $scope.$on('$destroy', unsubscribe)
+
+    this.user.on(UserService.EVENT_UNLOCKED, refresh)
+    $scope.$on('$destroy', () => {
+      this.user.removeListener(UserService.EVENT_UNLOCKED, refresh)
+    })
+
+    // REFACTOR..
+    // heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
+    //   refresh();
+    // }, $scope);
 
     this.refresh();
   }
 
-  getUserBalance() : angular.IPromise<IHeatAccountBalance> {
-    return this.heat.api.getAccountBalanceVirtual(this.user.account, "0", "0", 1);
-  }
+  // getUserBalance() : angular.IPromise<IHeatAccountBalance> {
+  //   return this.heat.api.getAccountBalanceVirtual(this.user.account, "0", "0", 1);
+  // }
 
+  // REFACTOR..
   refresh() {
     this.$scope.$evalAsync(() => {
       this.loading = true;
     });
-    this.getUserBalance().then((balance) => {
+    this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
-        //var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
-        var formatted = utils.formatQNT(balance.virtualBalance, 8).split(".");
+        var formatted = balance.split(".");
         this.formattedBalance = formatted[0];
         this.formattedFraction = "." + (formatted[1]||"00");
         this.showError = false;
@@ -85,6 +94,27 @@ class UserBalanceComponent {
         this.loading = false;
         this.$timeout(3000, false).then(() => { this.refresh() });
       });
-    });
+    })
+
+    // REFACTOR..
+    // this.getUserBalance().then((balance) => {
+    //   this.$scope.$evalAsync(() => {
+    //     //var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
+    //     var formatted = utils.formatQNT(balance.virtualBalance, 8).split(".");
+    //     this.formattedBalance = formatted[0];
+    //     this.formattedFraction = "." + (formatted[1]||"00");
+    //     this.showError = false;
+    //     this.loading = false;
+    //   });
+    // }, (error: ServerEngineError) => {
+    //   this.$scope.$evalAsync(() => {
+    //     this.formattedBalance = "0";
+    //     this.formattedFraction = ".00000000";
+    //     this.showError = true;
+    //     this.errorDescription = error.description;
+    //     this.loading = false;
+    //     this.$timeout(3000, false).then(() => { this.refresh() });
+    //   });
+    // });
   }
 }
