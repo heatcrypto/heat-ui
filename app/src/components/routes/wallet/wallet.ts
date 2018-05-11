@@ -62,12 +62,50 @@ class CurrencyBalance {
 
 class CurrencyAddressLoading {
   public isCurrencyAddressLoading = true
+  public visible = false
   constructor(public name: string) {}
 }
 
 class CurrencyAddressCreate {
   public isCurrencyAddressCreate = true
-  constructor(public name: string, public address: string) {}
+  public visible = false
+  public hidden = true
+  public parent: WalletEntry
+  public flatten: () => void
+  constructor(public name: string, public wallet: WalletType) {}
+
+  /* Handler for creating a new address, this method is declared here (on the node so to say)
+    still after an architectural change where we dont display the CREATE node anymore.
+    We'll be leaving it in place where all you need to do is set this.hidden=false to
+    have it displayed again. */
+  createAddress() {
+
+    // collect all CurrencyBalance of 'our' same currency type
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+
+    // determine the first 'next' address based of the last currencyBalance displayed
+    let lastAddress = currencyBalances[currencyBalances.length -1]['address']
+
+    // look up the following address
+    for (let i=0; i<this.wallet.addresses.length; i++) {
+
+      // we've found the address
+      if (this.wallet.addresses[i].address == lastAddress) {
+
+        // next address is the one - but if no more addresses we exit since not possible
+        if (i == this.wallet.addresses.length-1)
+          return
+
+        let nextAddress = this.wallet.addresses[i+1]
+        let newCurrencyBalance = new CurrencyBalance('Ethereum','ETH',nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.visible = this.parent.expanded
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length-1])+1
+        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        this.flatten()
+        return
+      }
+    }
+  }
 }
 
 class WalletEntry {
@@ -76,20 +114,25 @@ class WalletEntry {
   public identifier:string
   public secretPhrase:string
   public bip44Compatible: boolean
-  public currencies: Array<CurrencyBalance> = []
+  public currencies: Array<CurrencyBalance|CurrencyAddressCreate|CurrencyAddressLoading> = []
   public pin:string
   public unlocked = false
   public visible = true
+  public expanded = false
   constructor(public account: string, public name: string) {
     this.identifier = name ? `${name} | ${account}` : account
   }
 
   public toggle(forceVisible?: boolean) {
-    this.currencies.forEach(currency => {
-      currency.visible = forceVisible || !currency.visible
-      currency.tokens.forEach(token => {
-        token.visible = forceVisible || !token.visible
-      })
+    this.expanded = forceVisible || !this.expanded
+    this.currencies.forEach(curr => {
+      let currency = <any>curr
+      currency.visible = this.expanded
+      if (currency.tokens) {
+        currency.tokens.forEach(token => {
+          token.visible = this.expanded
+        })
+      }
     })
   }
 }
@@ -117,18 +160,17 @@ class WalletEntry {
           Import Seed
         </md-button>
 
-        <!-- Create HEAT account (forward to #/login) -->
-        <!--
-        <md-button class="md-warn md-raised" ng-href="#/login" aria-label="Create HEAT account">
-          <md-tooltip md-direction="bottom">Create HEAT Account</md-tooltip>
-          Create HEAT Account
-        </md-button>
-        -->
-
         <!-- Export Wallet to File -->
         <md-button class="md-warn md-raised" ng-click="vm.exportWallet()" aria-label="Export Wallet">
-          <md-tooltip md-direction="bottom">Create HEAT Account</md-tooltip>
+          <md-tooltip md-direction="bottom">Export Wallet File</md-tooltip>
           Export Wallet File
+        </md-button>
+
+        <!-- Create ETH Account -->
+        <md-button class="md-warn md-raised" ng-click="vm.createEthAccount($event)" aria-label="Create Account"
+              ng-disabled="vm.walletEntries.length==0">
+          <md-tooltip md-direction="bottom">Create ETH Account</md-tooltip>
+          Create ETH Account
         </md-button>
       </div>
 
@@ -141,7 +183,7 @@ class WalletEntry {
                 - per currency token balances  -->
 
           <md-list layout-fill layout="column" flex>
-            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible">
+            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible && !entry.hidden">
 
               <!-- Wallet entry -->
               <div ng-if="entry.isWalletEntry" layout="row" class="wallet-entry" flex>
@@ -169,6 +211,21 @@ class WalletEntry {
                 <span class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</span>
               </div>
 
+              <!-- Currency Address Loading -->
+              <div ng-if="entry.isCurrencyAddressLoading" layout="row" class="currency-balance" flex>
+                <span class="name">{{entry.name}}</span>&nbsp;
+                <span class="identifier" flex>
+                  Loading ..
+                </span>
+              </div>
+
+              <!-- Currency Address Create -->
+              <div ng-if="entry.isCurrencyAddressCreate" layout="row" class="currency-balance" flex>
+                <span class="name">{{entry.name}}</span>&nbsp;
+                <span class="identifier" flex></span>
+                <md-button ng-click="entry.createAddress()">Create New</md-button>
+              </div>
+
               <!-- Token Balance -->
               <div ng-if="entry.isTokenBalance" layout="row" class="token-balance" flex>
                 <span class="name">{{entry.name}}</span>&nbsp;
@@ -184,7 +241,8 @@ class WalletEntry {
   `
 })
 @Inject('$scope','$q','localKeyStore','walletFile','$window',
-  'lightwalletService','heat','assetInfo','etherscanService','$mdToast','$mdDialog')
+  'lightwalletService','heat','assetInfo','etherscanService',
+  '$mdToast','$mdDialog','clipboard')
 class WalletComponent {
 
   selectAll = true;
@@ -202,7 +260,8 @@ class WalletComponent {
     private assetInfo: AssetInfoService,
     private etherscanService: EtherscanService,
     private $mdToast: angular.material.IToastService,
-    private $mdDialog: angular.material.IDialogService) {
+    private $mdDialog: angular.material.IDialogService,
+    private clipboard: ClipboardService) {
 
     this.initLocalKeyStore()
   }
@@ -233,14 +292,20 @@ class WalletComponent {
     this.flatten()
   }
 
+  /* Iterates down all children of walletEntries and flattens them into the entries list */
   flatten() {
-    this.entries = []
-    this.walletEntries.forEach(walletEntry => {
-      this.entries.push(walletEntry)
-      walletEntry.currencies.forEach(currencyBalance => {
-        this.entries.push(currencyBalance)
-        currencyBalance.tokens.forEach(tokenBalance => {
-          this.entries.push(tokenBalance)
+    this.$scope.$evalAsync(() => {
+      this.entries = []
+      this.walletEntries.forEach(walletEntry => {
+        this.entries.push(walletEntry)
+        walletEntry.currencies.forEach(curr => {
+          let currencyBalance = <CurrencyBalance> curr
+          this.entries.push(currencyBalance)
+          if (currencyBalance.tokens) {
+            currencyBalance.tokens.forEach(tokenBalance => {
+              this.entries.push(tokenBalance)
+            })
+          }
         })
       })
     })
@@ -292,9 +357,7 @@ class WalletComponent {
       pin => {
         if (pin == entry.pin) {
           this.localKeyStore.remove(entry.account)
-          this.$scope.$evalAsync(() => {
-            this.initLocalKeyStore()
-          })
+          this.initLocalKeyStore()
         }
       }
     );
@@ -323,51 +386,81 @@ class WalletComponent {
 
   initWalletEntry(walletEntry: WalletEntry) {
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
-    let heatCurrencyBalance = new CurrencyBalance('HEAT','HEAT',heatAccount,walletEntry.secretPhrase)
+    let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
+    heatCurrencyBalance.visible = walletEntry.expanded
     walletEntry.currencies.push(heatCurrencyBalance)
+    this.flatten()
+
     this.heat.api.getAccountByNumericId(heatAccount).then((account)=>{
       this.$scope.$evalAsync(()=> {
         let balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
         heatCurrencyBalance.balance = balanceUnconfirmed
       })
       this.getAccountAssets(heatAccount).then((assetInfos) => {
-        this.$scope.$evalAsync(()=> {
-          heatCurrencyBalance.tokens = []
-          assetInfos.forEach(assetInfo => {
-            let tokenBalance = new TokenBalance(assetInfo.name, assetInfo.symbol, assetInfo.id)
-            tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, 8)
-            heatCurrencyBalance.tokens.push(tokenBalance)
-          })
-          this.flatten()
+        heatCurrencyBalance.tokens = []
+        assetInfos.forEach(assetInfo => {
+          let tokenBalance = new TokenBalance(assetInfo.name, assetInfo.symbol, assetInfo.id)
+          tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, 8)
+          tokenBalance.visible = walletEntry.expanded
+          heatCurrencyBalance.tokens.push(tokenBalance)
         })
+        this.flatten()
       })
     }, () => {
       this.$scope.$evalAsync(()=> {
         heatCurrencyBalance.balance = "Address does not exist"
         heatCurrencyBalance.symbol = ''
       })
-      this.flatten()
     });
-    this.flatten()
 
+    /* Ethereum integration starts here */
     if (walletEntry.bip44Compatible) {
-      this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(() => {
-        // the create new address entry
-        //let addressCreate = new CurrencyAddressCreate('Ethereum',)
+      this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
 
+        let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
+        ethCurrencyAddressLoading.visible = walletEntry.expanded
+        walletEntry.currencies.push(ethCurrencyAddressLoading)
 
-        let collect = []
-        this.$scope.$evalAsync(()=> {
+        let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
+        ethCurrencyAddressCreate.visible = walletEntry.expanded
+        ethCurrencyAddressCreate.parent = walletEntry
+        ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(ethCurrencyAddressCreate)
+
+        this.flatten()
+
+        this.lightwalletService.refreshAdressBalances().then(() => {
+
+          let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
           this.lightwalletService.wallet.addresses.forEach(address => {
             if (address.inUse) {
-              let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address,walletEntry.secretPhrase)
-              walletEntry.currencies.push(ethCurrencyBalance)
-              collect.push(ethCurrencyBalance)
+              let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, walletEntry.secretPhrase)
+              ethCurrencyBalance.balance = address.balance
+              ethCurrencyBalance.visible = walletEntry.expanded
+              walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
+              index++;
             }
           })
-          this.getEthBalances(collect)
+
+          // we can remove the loading entry
+          walletEntry.currencies = walletEntry.currencies.filter(c => c!=ethCurrencyAddressLoading)
           this.flatten()
         })
+
+
+
+        // let collect = []
+        // this.$scope.$evalAsync(()=> {
+        //   this.lightwalletService.wallet.addresses.forEach(address => {
+        //     if (address.inUse) {
+        //       let ethCurrencyBalance =
+        //       walletEntry.currencies.push(ethCurrencyBalance)
+        //       collect.push(ethCurrencyBalance)
+        //     }
+        //   })
+        //   this.getEthBalances(collect)
+        //   this.flatten()
+        // })
       })
     }
   }
@@ -489,7 +582,7 @@ class WalletComponent {
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column">
-                <span>Enter your Secret Seed and provide a Password (or Pin)</span>
+                <p>Enter your Secret Seed and provide a Password (or Pin)</p>
                 <md-input-container flex>
                   <label>Secret phrase</label>
                   <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false"></textarea>
@@ -517,5 +610,136 @@ class WalletComponent {
     return deferred.promise
   }
 
+  createEthAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function () {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
+          node.createAddress()
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected==w.account)
+      }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account==account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) {}
+      }
+    }
+
+    let deferred = this.$q.defer<{password:string, secretPhrase:string}>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose:false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create ETH Account</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new Ethereum address, please choose the master HEAT account you want to attach the new Ethereum address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  Eth wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your Ethereum address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your Ethereum.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        id="wallet-secret-textarea"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
 
 }
