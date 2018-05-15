@@ -36,6 +36,7 @@
               <a href="#/ethereum-account/{{vm.account}}">{{vm.account}}</a>
             </div>
           </div>
+          <!--
           <div class="col-item">
             <div class="title">
               Account id:
@@ -44,6 +45,7 @@
               {{vm.account}}
             </div>
           </div>
+          -->
           <div class="col-item">
             <div class="title">
               Balance:
@@ -75,7 +77,7 @@
     </div>
   `
 })
-@Inject('$scope','web3','assetInfo','$q','user','etherscanService')
+@Inject('$scope','web3','assetInfo','$q','user','ethplorer')
 class EthereumAccountComponent {
   account: string; // @input
 
@@ -88,7 +90,7 @@ class EthereumAccountComponent {
               private assetInfo: AssetInfoService,
               private $q: angular.IQService,
               private user: UserService,
-              private etherscanService: EtherscanService) {
+              private ethplorer: EthplorerService) {
     this.personalize = this.account == this.user.account
     this.refresh();
 
@@ -98,28 +100,19 @@ class EthereumAccountComponent {
 
   refresh() {
     this.balanceUnconfirmed = "*";
-    this.web3.getBalanceOf(this.account).then(balance => {
+    this.ethplorer.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(()=>{
-        this.balanceUnconfirmed = balance;
+        this.balanceUnconfirmed = info.ETH.balance;
+        this.erc20Tokens = info.tokens.map(token => {
+          let tokenInfo = this.ethplorer.tokenInfoCache[token.tokenInfo.address]
+          return {
+            balance: utils.formatQNT((token.balance+"")||"0", tokenInfo?tokenInfo.decimals:8),
+            symbol: token.tokenInfo.symbol,
+            name: token.tokenInfo.name,
+            id: ''
+          }
+        })
       })
-    }, err => console.log(err))
-
-    // load erc20 data
-
-    // ERC20 balances data is DISABLED at this stage !!
-
-    // this.etherscanService.getErc20Tokens(this.account).then(tokens => {
-    //   this.$scope.$evalAsync(() => {
-    //     this.erc20Tokens = tokens.tokens.map(token => {
-    //       let balance = this.web3.web3.fromWei(token.balance)
-    //       return {
-    //         balance: balance,
-    //         symbol: token.tokenInfo.symbol,
-    //         name: token.tokenInfo.name
-    //       }
-    //     })
-
-    //   })
-    // }, err => console.log(err))
+    })
   }
 }

@@ -21,47 +21,30 @@
  * SOFTWARE.
  * */
 
-interface IEtherscanTransaction {
-  blockNumber: string;
-  timeStamp: Long;
-  hash: string;
-  nonce: number;
-  blockHash: string;
-  transactionIndex: number;
-  from: string;
-  to: string;
-  value: string;
-  gas: string;
-  gasPrice: string;
-  isError: number;
-  txreceipt_status: string;
-  input: string;
-  contractAddress: string;
-  cumulativeGasUsed: string;
-  gasUsed: number;
-  confirmations: string;
-  abi:any
-}
-
 @Service('ethTransactionsProviderFactory')
-@Inject('http','$q','etherscanService','ethTransactionParser')
+@Inject('http','$q','ethplorer','ethTransactionParser')
 class EthTransactionsProviderFactory  {
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private etherscanService: EtherscanService,
+              private ethplorer: EthplorerService,
               private ethTransactionParser: EthTransactionParserService) {}
 
   public createProvider(account: string): IPaginatedDataProvider {
-    return new EthTransactionsProvider(this.http, this.$q, this.etherscanService, this.ethTransactionParser, account);
+    return new EthTransactionsProvider(this.http, this.$q, this.ethplorer, this.ethTransactionParser, account);
   }
 }
 
 class EthTransactionsProvider implements IPaginatedDataProvider {
+
+  private paginator: EthplorerTransactionPaginator
+
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private etherscanService: EtherscanService,
+              private ethplorer: EthplorerService,
               private ethTransactionParser: EthTransactionParserService,
-              private account: string) {}
+              private account: string) {
+    this.paginator = ethplorer.createPaginator(account)
+  }
 
   /* Be notified this provider got destroyed */
   public destroy() {}
@@ -69,16 +52,16 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-    this.etherscanService.getEthplorerTransactionCount(this.account).then(deferred.resolve, deferred.reject)
+    this.paginator.getCount().then(deferred.resolve, deferred.reject)
     return deferred.promise
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IEtherscanTransaction>> {
-    let deferred = this.$q.defer<Array<IEtherscanTransaction>>()
-    this.etherscanService.getEtherTransactions(this.account, firstIndex, lastIndex).then(
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<EthplorerAddressTransactionExtended>> {
+    let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>()
+    this.paginator.getItems(firstIndex, lastIndex).then(
       transactions => {
-        this.ethTransactionParser.parse(transactions).then(deferred.resolve, deferred.reject)
+        deferred.resolve(this.ethTransactionParser.parse(transactions))
       },
       deferred.reject
     )

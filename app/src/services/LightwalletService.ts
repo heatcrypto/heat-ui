@@ -23,37 +23,52 @@
 declare var lightwallet: any;
 declare var HookedWeb3Provider: any;
 declare var Web3: any;
-declare type WalletType = {
-  addresses:Array<{
-    /* Ethereum address */
-    address:string,
+declare type WalletAddress = {
+  /* Ethereum address */
+  address: string;
 
-    /* ks.exportPrivateKey */
-    privateKey:string,
+  /* ks.exportPrivateKey */
+  privateKey: string;
 
-    /* BIP44 key index */
-    index: number,
+  /* BIP44 key index */
+  index: number;
 
-    /* Balance is full ETH */
-    balance:string,
+  /* Balance is full ETH */
+  balance: string;
 
-    /* Indicates if address is in use, two indexes at 0 balance indicates key not in use
-        (not completely accurate since a user can use an address which has a zero balance) */
-    inUse:boolean
+  /* Indicates if address is in use, two indexes at 0 balance indicates key not in use
+      (not completely accurate since a user can use an address which has a zero balance) */
+  inUse: boolean;
+
+  /* ERC20 token balances */
+  tokensBalances: Array<{
+    symbol: string;
+
+    name: string;
+
+    decimals: number;
+
+    balance: string;
+
+    address: string;
   }>
 }
+declare type WalletType = {
+  addresses: Array<WalletAddress>
+}
+
 @Service('lightwalletService')
-@Inject('web3', 'user', 'settings', '$rootScope','etherscanService')
+@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer')
 class LightwalletService {
 
   public wallet: WalletType
   static readonly BIP44 = "m/44'/60'/0'/0";
 
   constructor(private web3Service: Web3Service,
-              private userService: UserService,
-              private settingsService: SettingsService,
-              private $rootScope: angular.IRootScopeService,
-              private etherscanService: EtherscanService) {
+    private userService: UserService,
+    private settingsService: SettingsService,
+    private $rootScope: angular.IRootScopeService,
+    private ethplorer: EthplorerService) {
   }
 
   generateRandomSeed() {
@@ -68,9 +83,9 @@ class LightwalletService {
   unlock(seed: string, password?: string): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       if (this.validSeed(seed)) {
-        this.getEtherWallet(seed, password||"").then(wallet => {
+        this.getEtherWallet(seed, password || "").then(wallet => {
           this.wallet = wallet
-          console.log('wallet',wallet)
+          console.log('wallet', wallet)
           resolve(this.wallet)
         }, () => {
           resolve()
@@ -79,33 +94,90 @@ class LightwalletService {
     })
   }
 
-  refreshAdressBalances() {
-    return new Promise((resolve, reject) => {
-      this.etherscanService.getEtherBalances(this.wallet.addresses.map(a => a.address)).then(balances => {
-        balances.forEach(bal => {
-          let entryInWallet = this.wallet.addresses.find(a => a.address == bal.address)
-          if (entryInWallet) {
-            entryInWallet.balance = bal.balance
-          }
-        })
+  // getAddressBalance(address: string): Promise<WalletAddress> {
+  //   return new Promise((resolve, reject) => {
+  //     this.ethplorer.getAddressInfo(address).then(
+  //       info => {
+  //         resolve({
 
-        // now walk backwards marking all addresses that have no next address with a zero balance as unused bip44 addresses
-        for (let i=this.wallet.addresses.length-1; i>=0; i--) {
-          if (this.wallet.addresses[i].balance == "0") {
-            this.wallet.addresses[i].inUse = false
+  //         })
+  //       }
+  //     )
+  //   })
+  // }
+
+
+  refreshAdressBalances() {
+    let _self = this
+
+    /* list all addresses in bip44 order */
+    let addresses = this.wallet.addresses.map(a => a.address)
+
+    function processNext() {
+      return new Promise((resolve, reject) => {
+
+        /* get the first element from the list */
+        let address = addresses[0]
+        addresses.shift()
+
+        /* look up its data on ethplorer */
+        let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
+        ethplorer.getAddressInfo(address).then(info => {
+
+          /* lookup the 'real' WalletAddress */
+          let walletAddress = _self.wallet.addresses.find(x => x.address == address)
+          if (!walletAddress)
+            return
+
+          walletAddress.inUse = info.countTxs!=0
+          if (!walletAddress.inUse) {
+            resolve(false)
+            return
+          }
+
+          walletAddress.balance = info.ETH.balance+""
+          walletAddress.tokensBalances = []
+
+          if (info.tokens) {
+            info.tokens.forEach(token => {
+              let tokenInfo = ethplorer.tokenInfoCache[token.tokenInfo.address]
+              let decimals = tokenInfo?tokenInfo.decimals:8
+              walletAddress.tokensBalances.push({
+                symbol: tokenInfo?tokenInfo.symbol:'',
+                name: tokenInfo?tokenInfo.name:'',
+                decimals: decimals,
+                balance: utils.formatQNT((token.balance+"")||"0",decimals),
+                address: token.tokenInfo.address
+              })
+            })
+          }
+          resolve(true)
+        }, () => {
+          resolve(false)
+        })
+      })
+    }
+
+    let recurseToNext = function recurseToNext(resolve) {
+      processNext().then(
+        hasMore => {
+          if (hasMore) {
+            recurseToNext(resolve)
           }
           else {
-            this.wallet.addresses[i].inUse = true
-            break
+            resolve()
           }
         }
-        resolve()
-      }, reject)
+      )
+    }
+
+    return new Promise(resolve => {
+      recurseToNext(resolve)
     })
   }
 
   sendEther(from: string, to: string, value: any) {
-   this.web3Service.sendEther(from, to, value);
+    this.web3Service.sendEther(from, to, value);
   }
 
   getEtherWallet(seed: string, password: string): Promise<WalletType> {
@@ -137,11 +209,11 @@ class LightwalletService {
             ks.generateNewAddress(pwDerivedKey, keyCount);
             var addresses = ks.getAddresses();
 
-            let wallet = {addresses: []}
-            for (let i=0; i<keyCount; i++) {
+            let wallet = { addresses: [] }
+            for (let i = 0; i < keyCount; i++) {
               let walletAddress = addresses[i];
               let privateKey = ks.exportPrivateKey(walletAddress, pwDerivedKey);
-              wallet.addresses[i] = { address:walletAddress, privateKey, index: i, balance:"0", inUse:true }
+              wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "0", inUse: false }
             }
             resolve(wallet);
           });

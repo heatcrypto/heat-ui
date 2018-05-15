@@ -35,7 +35,7 @@ class AbiDecoderService {
 
   constructor(private web3: Web3Service) {
     this.Web3 = window['Web3']
-    this.SolidityCoder = this.Web3.__getSolidityCoder()
+    this.SolidityCoder = window['__SolidityCoder']
   }
 
   public getABIs() {

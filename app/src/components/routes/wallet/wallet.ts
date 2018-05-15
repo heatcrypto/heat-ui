@@ -241,7 +241,7 @@ class WalletEntry {
   `
 })
 @Inject('$scope','$q','localKeyStore','walletFile','$window',
-  'lightwalletService','heat','assetInfo','etherscanService',
+  'lightwalletService','heat','assetInfo','ethplorer',
   '$mdToast','$mdDialog','clipboard')
 class WalletComponent {
 
@@ -258,7 +258,7 @@ class WalletComponent {
     private lightwalletService: LightwalletService,
     private heat: HeatService,
     private assetInfo: AssetInfoService,
-    private etherscanService: EtherscanService,
+    private ethplorer: EthplorerService,
     private $mdToast: angular.material.IToastService,
     private $mdDialog: angular.material.IDialogService,
     private clipboard: ClipboardService) {
@@ -434,11 +434,18 @@ class WalletComponent {
           let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
           this.lightwalletService.wallet.addresses.forEach(address => {
             if (address.inUse) {
-              let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, walletEntry.secretPhrase)
+              let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, address.privateKey)
               ethCurrencyBalance.balance = address.balance
               ethCurrencyBalance.visible = walletEntry.expanded
               walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
               index++;
+
+              address.tokensBalances.forEach(balance => {
+                let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+                tokenBalance.balance = utils.formatQNT(balance.balance, balance.decimals)
+                tokenBalance.visible = walletEntry.expanded
+                ethCurrencyBalance.tokens.push(tokenBalance)
+              })
             }
           })
 
@@ -446,21 +453,6 @@ class WalletComponent {
           walletEntry.currencies = walletEntry.currencies.filter(c => c!=ethCurrencyAddressLoading)
           this.flatten()
         })
-
-
-
-        // let collect = []
-        // this.$scope.$evalAsync(()=> {
-        //   this.lightwalletService.wallet.addresses.forEach(address => {
-        //     if (address.inUse) {
-        //       let ethCurrencyBalance =
-        //       walletEntry.currencies.push(ethCurrencyBalance)
-        //       collect.push(ethCurrencyBalance)
-        //     }
-        //   })
-        //   this.getEthBalances(collect)
-        //   this.flatten()
-        // })
       })
     }
   }
@@ -496,21 +488,6 @@ class WalletComponent {
       }
     }, deferred.reject);
     return <angular.IPromise<Array<AssetInfo>>> deferred.promise;
-  }
-
-  getEthBalances(collect: Array<CurrencyBalance>) {
-    let addresses = collect.map(b => b.address)
-    this.etherscanService.getEtherBalances(addresses).then(balances => {
-      this.$scope.$evalAsync(() => {
-        balances.forEach(b => {
-          let balance = collect.find(_b => _b.address == b.address)
-          if (balance) {
-            balance.balance = b.balance
-            balance.inUse = true
-          }
-        })
-      })
-    })
   }
 
   // @click

@@ -2,7 +2,8 @@ module dialogs {
 
   function withdraw(_to: string, _amount:any) {
     var lightwalletService = <LightwalletService> heat.$inject.get('lightwalletService');
-    lightwalletService.sendEther(_to, _amount);
+    var user = <UserService> heat.$inject.get('user')
+    lightwalletService.sendEther(user.currency.address, _to, _amount);
     $mdDialog().hide();
   }
 

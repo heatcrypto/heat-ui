@@ -67,7 +67,7 @@
               </h2>
             </div>
             <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Home</md-tooltip>
+              <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
               <i><img src="assets/homeIcon.png"></i>
             </md-button>
             <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
@@ -75,7 +75,7 @@
               <i><img src="assets/exploreIcon.png"></i>
             </md-button>
             <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Send Heat</md-tooltip>
+              <md-tooltip md-direction="bottom">Send {{vm.user.currency.symbol}}</md-tooltip>
               <i><img src="assets/sendHeatIcon.png"></i>
             </md-button>
             <md-button aria-label="messages" class="md-icon-button" href="#/messenger/0" ng-if="vm.user.unlocked">
@@ -94,6 +94,11 @@
               <md-tooltip md-direction="bottom">Wallet</md-tooltip>
               <i><img src="assets/etherwallet.png"></i>
             </md-button>
+
+            <md-button aria-label="home" class="md-icon-button" ng-click="vm.openTestPage()">
+              <md-icon md-font-library="material-icons">check</md-icon>
+            </md-button>
+
             <div class="selected-address" ng-if="vm.user.unlocked">
               <div>Currently using <b>{{vm.user.currency.symbol}}</b></div>
               <div class="address">{{vm.user.currency.address}}</div>
@@ -233,7 +238,15 @@ class ToolbarComponent {
   }
 
   goToHome() {
+    this.$location.path(this.user.currency.homePath)
+  }
 
+  openTestPage() {
+    let address = '0x0102768bf0f0901689357262401b031e83900b4c'
+    let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
+    ethplorer.getAddressInfo(address).then(() => {
+      this.$location.path('ethereum-account/'+address)
+    })
   }
 
   refreshLocalWallet() {

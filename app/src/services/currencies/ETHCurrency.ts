@@ -1,17 +1,17 @@
 class ETHCurrency implements ICurrency {
 
-  private etherscanService: EtherscanService
+  private ethplorer: EthplorerService
   public symbol = 'ETH'
   public homePath
 
   constructor(public secretPhrase: string, public address: string) {
-    this.etherscanService = heat.$inject.get('etherscanService')
+    this.ethplorer = heat.$inject.get('ethplorer')
     this.homePath = `/ethereum-account/${this.address}`
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
-    return this.etherscanService.getBalance(this.address).then(
+    return this.ethplorer.getBalance(this.address).then(
       balance => {
         return balance+""
       }
@@ -26,12 +26,11 @@ class ETHCurrency implements ICurrency {
 
   /* Manually invoke the balance changed observers */
   notifyBalanceChanged() {
-
   }
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-
+    dialogs.withdrawEther($event)
   }
 
   /* Invoke SEND token dialog */

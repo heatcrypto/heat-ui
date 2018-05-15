@@ -30,14 +30,15 @@
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <!-- HEIGHT -->
+          <!-- HEIGHT
           <div class="he truncate-col height-col left" ng-if="!vm.personalize">Height</div>
-
-          <!-- ID -->
-          <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">Id</div>
+          -->
 
           <!-- DATE -->
           <div class="truncate-col date-col left">Time</div>
+
+          <!-- ID -->
+          <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">Id</div>
 
           <!-- INOUT -->
           <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">In/Out</div>
@@ -61,22 +62,22 @@
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
 
-            <!-- HEIGHT -->
+            <!-- HEIGHT
             <div class="he truncate-col height-col left" ng-if="!vm.personalize">
-              <!--<elipses-loading ng-show="item.height==2147483647"></elipses-loading>
-              <span ng-show="item.height!=2147483647">{{item.heightDisplay}}</span>-->
+              <span ng-show="item.height!=2147483647">{{item.heightDisplay}}</span>
               <span>
                 <a target="_blank" href="https://etherscan.io/block/{{item.heightDisplay}}">{{item.heightDisplay}}</a>
               </span>
             </div>
-
-            <!-- ID -->
-            <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-              <a target="_blank" href="https://etherscan.io/tx/{{item.hash}}">{{item.hash}}</a>
-            </div>
+            -->
 
             <!-- DATE -->
             <div class="truncate-col date-col left">{{item.time}}</div>
+
+            <!-- ID -->
+            <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
+              <a target="_blank" href="https://ethplorer.io/tx/{{item.hash}}">{{item.hash}}</a>
+            </div>
 
             <!-- INOUT -->
             <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">
@@ -141,11 +142,11 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     this.initializeVirtualRepeat(
       this.ethTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
-      (transaction: IEtherscanTransaction) => {
+      (transaction: EthplorerAddressTransactionExtended) => {
         var date = new Date(0); // 0 sets date to epoch time
-        date.setUTCSeconds(<any>transaction.timeStamp);
+        date.setUTCSeconds(<any>transaction.timestamp);
         transaction['time'] = dateFormat(date, format);
-        transaction['heightDisplay'] = transaction.blockNumber
+        transaction['heightDisplay'] = 'no height'
         if (this.personalize) {
           transaction['outgoing'] = this.user.account == transaction.from;
 
@@ -187,7 +188,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     return `https://raw.githubusercontent.com/dmdeklerk/tokens/master/images/${contractAddress}.png`
   }
 
-  renderSync(transaction: IEtherscanTransaction) {
+  renderSync(transaction: EthplorerAddressTransactionExtended) {
     try {
       if (transaction['erc20']) {
         //console.log(transaction['erc20'])
@@ -209,7 +210,7 @@ interface EthTemplateFunction {
 class EthTransactionRenderHelper {
   private $q: angular.IQService;
   constructor(private template: string|EthTemplateFunction,
-              private extractor: (transaction: IEtherscanTransaction)=>Object) {
+              private extractor: (transaction: EthplorerAddressTransactionExtended)=>Object) {
     this.$q = <angular.IQService> heat.$inject.get('$q');
   }
 
@@ -217,7 +218,7 @@ class EthTransactionRenderHelper {
     return angular.isObject(val) && angular.isFunction(val['then']);
   }
 
-  public render(transaction: IEtherscanTransaction): angular.IPromise<string>|string {
+  public render(transaction: EthplorerAddressTransactionExtended): angular.IPromise<string>|string {
     var parts = this.extractor(transaction);
     var args: IStringHashMap<string> = {};
     var promises = [];
@@ -275,11 +276,13 @@ class EthTransactionRenderer {
   private renderers: IStringHashMap<EthTransactionRenderHelper> = {};
   private transactionTypes: IStringHashMap<string> = {};
   private ethTransactionParser: EthTransactionParserService
+  private ethplorer: EthplorerService
 
   constructor(private provider?: {account?: string, personalize: boolean}) {
     let key;
     this.$q = <angular.IQService> heat.$inject.get('$q');
     this.ethTransactionParser = <EthTransactionParserService> heat.$inject.get('ethTransactionParser');
+    this.ethplorer = heat.$inject.get('ethplorer')
     key = this.TYPE_ETHEREUM_TRANSFER;
     this.transactionTypes[key] = 'TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
@@ -290,7 +293,7 @@ class EthTransactionRenderer {
         return {
           from: this.account(t.from),
           to: this.account(t.to),
-          amount: this.amount(t.value)
+          amount: t.value
         }
       }
     );
@@ -331,7 +334,7 @@ class EthTransactionRenderer {
           token: this.token(t.to),
           from: this.account(t.from),
           to: this.account(t.abi.decodedData.params[0].value),
-          value: this.amount(t.abi.decodedData.params[1].value)
+          value: this.amount(t.abi.decodedData.params[1].value, this.ethplorer.tokenInfoCache[t.to])
         }
       }
     );
@@ -343,10 +346,10 @@ class EthTransactionRenderer {
       },
       (t) => {
         return {
-          token: this.token(t.to),
-          from: this.account(t.from),
-          to: this.account(t.abi.decodedData.params[0].value),
-          value: this.amount(t.abi.decodedData.params[1].value)
+          asset: this.token(t.to),
+          sender: this.account(t.abi.decodedData.params[0].value),
+          recipient: this.account(t.abi.decodedData.params[1].value),
+          amount: this.amount(t.abi.decodedData.params[2].value, this.ethplorer.tokenInfoCache[t.to])
         }
       }
     );
@@ -457,18 +460,18 @@ class EthTransactionRenderer {
     );
   }
 
-  renderTransactionType(transaction: IEtherscanTransaction): string {
+  renderTransactionType(transaction: EthplorerAddressTransactionExtended): string {
     // let key = `${transaction.type}:${transaction.subtype}`;
     // return this.transactionTypes[key] || key;
     return 'txn type'
   }
 
-  renderAmount(transaction: IEtherscanTransaction): string|angular.IPromise<string> {
-    return transaction.value
+  renderAmount(transaction: EthplorerAddressTransactionExtended): string|angular.IPromise<string> {
+    return this.amount(transaction.value)
   }
 
   /* Returns HTML */
-  renderedToFrom(transaction: IEtherscanTransaction): string {
+  renderedToFrom(transaction: EthplorerAddressTransactionExtended): string {
     if (transaction.from == this.provider.account) {
       return this.account(transaction.to);
     }
@@ -480,11 +483,11 @@ class EthTransactionRenderer {
   //   return (neg?'-':'+') + returns;
   // }
 
-  isOutgoing(transaction: IEtherscanTransaction): boolean {
+  isOutgoing(transaction: EthplorerAddressTransactionExtended): boolean {
     return transaction.from == this.provider.account;
   }
 
-  renderInfo(transaction: IEtherscanTransaction) {
+  renderInfo(transaction: EthplorerAddressTransactionExtended) {
     let key = this.TYPE_ETHEREUM_TRANSFER
     if (transaction.abi && transaction.abi.decodedData) {
       key = transaction.abi.decodedData.name
@@ -499,19 +502,26 @@ class EthTransactionRenderer {
     if (account == this.provider.account) {
       return `<u>${account}</u>`
     }
-    return `<a target="_blank" href="https://etherscan.io/address/${account}">${account}</a>`;
+    return `<a target="_blank" href="https://ethplorer.io/address/${account}">${account}</a>`;
   }
 
   token(address: string) {
-    return this.ethTransactionParser.loadEthTokens().then(tokens => {
-      if (tokens[address]) {
-        return `<a target="_blank" href="https://etherscan.io/address/${address}">${tokens[address].symbol}</a>`;
-      }
-      return `<a target="_blank" href="https://etherscan.io/address/${address}">${address}</a>`;
-    })
+    let tokenInfo = this.ethplorer.tokenInfoCache[address]
+    if (tokenInfo) {
+      return `<a target="_blank" href="https://ethplorer.io/address/${address}">${tokenInfo.symbol}</a>`;
+    }
+    return `<a target="_blank" href="https://ethplorer.io/address/${address}">${address}</a>`;
   }
 
-  amount(amount: string, decimals?: number, symbol?: string) {
-    return `<span>${amount}</span>`;
+  amount(amount: string, tokenInfo?: EthplorerTokenInfo) {
+    let str;
+    amount = (amount+"") || "0"
+    if (tokenInfo) {
+      str = utils.formatQNT(amount, tokenInfo.decimals) + ' ' + tokenInfo.symbol
+    }
+    else {
+      str = utils.formatQNT(amount, 18) + ' ETH'
+    }
+    return `<span>${str}</span>`;
   }
 }

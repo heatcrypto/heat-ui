@@ -1,5 +1,5 @@
 /* Stupid hack to expose SolidityCoder on Web3. */
-var __SolidityCoder;
+window.__SolidityCoder;
 
 require=(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
   module.exports=[
@@ -851,7 +851,7 @@ require=(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=
   ]);
 
   module.exports = coder;
-  __SolidityCoder = coder;
+  window.__SolidityCoder = coder;
 
   },{"./address":4,"./bool":5,"./bytes":6,"./dynamicbytes":8,"./formatters":9,"./int":10,"./real":12,"./string":13,"./uint":15,"./ureal":16}],8:[function(require,module,exports){
   var f = require('./formatters');
@@ -16351,11 +16351,6 @@ require=(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=
 
   },{}],"web3":[function(require,module,exports){
   var Web3 = require('./lib/web3');
-
-  /* Stupid hack to get at SolidityCoder */
-  Web3.__getSolidityCoder = function () {
-      return __SolidityCoder
-  }
 
   // dont override global variable
   if (typeof window !== 'undefined' && typeof window.Web3 === 'undefined') {
