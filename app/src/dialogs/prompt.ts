@@ -49,4 +49,27 @@ module dialogs {
     )
     return deferred.promise
   }
+
+  export function alert($event, title:string, description:string): angular.IPromise<any> {
+    let $q = <angular.IQService> heat.$inject.get('$q');
+    let deferred = $q.defer<string>();
+    let locals = {
+      description: description||'',
+    }
+    dialogs.dialog({
+      id: 'alert',
+      title: title,
+      targetEvent: $event,
+      template: `
+        <p>{{vm.description}}</p>
+      `,
+      locals: locals
+    }).then(
+      () => {
+        deferred.resolve()
+      },
+      deferred.reject
+    )
+    return deferred.promise
+  }
 }

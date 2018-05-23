@@ -81,7 +81,7 @@ md-toolbar {
     /* above is old , below is new */
     .account-name {
       font-size:12px !important;
-      font-weight: bolder;
+      color: @gray;
     }
   }
   .md-toolbar-tools {
@@ -93,6 +93,23 @@ md-toolbar {
     .address {
       font-size: 12px;
       font-family: monospace;
+      max-width: 180px;
+    }
+    .wrapped {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    a {
+      color: @link-yellow;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 11px;
+    }
+  }
+  @media only screen and (max-width: 670px) {
+    .selected-address {
+      display: none;
     }
   }
 }

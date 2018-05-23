@@ -120,7 +120,8 @@
   `
 })
 
-@Inject('$scope','$q','ethTransactionsProviderFactory','settings','user','render','$mdPanel','controlCharRender','web3')
+@Inject('$scope','$q','ethTransactionsProviderFactory','settings','user','render',
+  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions')
 class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -136,7 +137,8 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private render: RenderService,
               private $mdPanel: angular.material.IPanelService,
               private controlCharRender: ControlCharRenderService,
-              private web3: Web3Service) {
+              private web3: Web3Service,
+              private ethereumPendingTransactions: EthereumPendingTransactionsService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
@@ -169,15 +171,15 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     );
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    let timeout = setTimeout(refresh, 10*1000)
 
-    // TODO call refresh once in a while
-  }
+    let listener = this.determineLength.bind(this)
+    ethereumPendingTransactions.addListener(listener)
 
-  timeStampToDateTimeString(timeStamp) {
-    var utcSeconds = timeStamp;
-    var date = new Date(0); // 0 sets date to epoch time
-    date.setUTCSeconds(utcSeconds);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    $scope.$on('$destroy', () => {
+      ethereumPendingTransactions.removeListener(listener)
+      clearTimeout(timeout)
+    })
   }
 
   jsonDetails($event, item) {

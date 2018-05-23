@@ -66,47 +66,120 @@
                 </div>
               </h2>
             </div>
-            <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
-              <i><img src="assets/homeIcon.png"></i>
-            </md-button>
-            <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
-              <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
-              <i><img src="assets/exploreIcon.png"></i>
-            </md-button>
-            <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Send {{vm.user.currency.symbol}}</md-tooltip>
-              <i><img src="assets/sendHeatIcon.png"></i>
-            </md-button>
-            <md-button aria-label="messages" class="md-icon-button" href="#/messenger/0" ng-if="vm.user.unlocked">
-              <md-tooltip md-direction="bottom">Messages</md-tooltip>
-              <i><img src="assets/messageIcon.png"></i>
-            </md-button>
-            <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
-              <md-tooltip md-direction="bottom">Exchange</md-tooltip>
-              <i><img src="assets/exchangeIcon.png"></i>
-            </md-button>
-            <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
-              <md-tooltip md-direction="bottom">App Server</md-tooltip>
-              <i><img src="assets/serverIcon.png"></i>
-            </md-button>
-            <md-button aria-label="home" class="md-icon-button" href="#/wallet">
-              <md-tooltip md-direction="bottom">Wallet</md-tooltip>
-              <i><img src="assets/etherwallet.png"></i>
-            </md-button>
 
-            <md-button aria-label="home" class="md-icon-button" ng-click="vm.openTestPage()">
-              <md-icon md-font-library="material-icons">check</md-icon>
-            </md-button>
+            <div hide show-gt-sm>
+              <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
+                <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
+                <i><img src="assets/exploreIcon.png"></i>
+              </md-button>
+              <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
+                <md-tooltip md-direction="bottom">Exchange</md-tooltip>
+                <i><img src="assets/exchangeIcon.png"></i>
+              </md-button>
+              <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
+                <md-tooltip md-direction="bottom">App Server</md-tooltip>
+                <i><img src="assets/serverIcon.png"></i>
+              </md-button>
+              <md-button aria-label="home" class="md-icon-button" href="#/wallet" ng-if="!vm.user.unlocked">
+                <md-tooltip md-direction="bottom">Wallet</md-tooltip>
+                <i><img src="assets/etherwallet.png"></i>
+              </md-button>
+            </div>
+
+            <div hide show-gt-sm ng-if="vm.user.unlocked">
+              <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()">
+                <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
+                <i><img src="assets/homeIcon.png"></i>
+              </md-button>
+              <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);">
+                <md-tooltip md-direction="bottom">Send {{vm.user.currency.symbol}}</md-tooltip>
+                <i><img src="assets/sendHeatIcon.png"></i>
+              </md-button>
+              <md-button aria-label="messages" class="md-icon-button" ng-click="vm.goToMessenger()">
+                <md-tooltip md-direction="bottom">Messages</md-tooltip>
+                <i><img src="assets/messageIcon.png"></i>
+              </md-button>
+              <md-button aria-label="home" class="md-icon-button" href="#/wallet">
+                <md-tooltip md-direction="bottom">Wallet</md-tooltip>
+                <i><img src="assets/etherwallet.png"></i>
+              </md-button>
+              <!--
+              <md-button aria-label="home" class="md-icon-button" ng-click="vm.openTestPage()">
+                <md-icon md-font-library="material-icons">check</md-icon>
+              </md-button>
+              -->
+            </div>
+
+            <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm>
+              <md-button aria-label="user menu" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+                <md-icon md-font-library="material-icons">more_vert</md-icon>
+              </md-button>
+              <md-menu-content width="4">
+                <md-menu-item>
+                  <md-button aria-label="explorer" href="#/explorer">
+                    <md-icon md-font-library="material-icons">explore</md-icon>
+                    Blockchain explorer
+                  </md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button aria-label="trader" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
+                    <md-icon md-font-library="material-icons">bar_chart</md-icon>
+                    Exchange
+                  </md-button>
+                </md-menu-item>
+                <md-menu-item ng-show="vm.isNodeEnv">
+                  <md-button aria-label="server" href="#/server">
+                    <md-icon md-font-library="material-icons">settings</md-icon>
+                    App Server
+                  </md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button aria-label="wallet" href="#/wallet">
+                    <md-icon md-font-library="material-icons">account_balance_wallet</md-icon>
+                    Wallet
+                  </md-button>
+                </md-menu-item>
+                <md-menu-item ng-if="vm.user.unlocked">
+                  <md-button aria-label="home" ng-click="vm.goToHome()">
+                    <md-icon md-font-library="material-icons">home</md-icon>
+                    Your {{vm.user.currency.symbol}} Home
+                  </md-button>
+                </md-menu-item>
+                <md-menu-item ng-if="vm.user.unlocked">
+                  <md-button aria-label="send heat" ng-click="vm.showSendmoneyDialog($event);">
+                    <md-icon md-font-library="material-icons">send</md-icon>
+                    Send {{vm.user.currency.symbol}}
+                  </md-button>
+                </md-menu-item>
+                <md-menu-item ng-if="vm.user.unlocked">
+                  <md-button aria-label="messages" ng-click="vm.goToMessenger()">
+                    <md-icon md-font-library="material-icons">chat</md-icon>
+                    Messages
+                  </md-button>
+                </md-menu-item>
+                <!--
+                <md-menu-item>
+                  <md-button aria-label="home" ng-click="vm.openTestPage()">
+                    <md-icon md-font-library="material-icons">check</md-icon>
+                  </md-button>
+                </md-menu-item>
+                -->
+              </md-menu-content>
+            </md-menu>
+
+            <span flex></span>
 
             <div class="selected-address" ng-if="vm.user.unlocked">
               <div>Currently using <b>{{vm.user.currency.symbol}}</b></div>
-              <div class="address">{{vm.user.currency.address}}</div>
+              <div layout="row">
+                <div class="address wrapped" id="toolbar-user-address">{{vm.user.currency.address}}</div>
+                &nbsp;<a ng-click="vm.copyAddress()">[copy]</a>
+              </div>
             </div>
           </div>
         </div>
 
-        <md-menu ng-if="vm.user.unlocked">
+        <md-menu ng-if="vm.user.unlocked" style="margin-right: -12px;">
           <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
             <md-icon md-font-library="material-icons">face</md-icon>
           </md-button>
@@ -204,7 +277,7 @@
 })
 @Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
   'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast',
-  'walletFile','localKeyStore','panel','$location')
+  'walletFile','localKeyStore','panel','$location','clipboard')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -229,7 +302,8 @@ class ToolbarComponent {
               private walletFile: WalletFileService,
               private localKeyStore: LocalKeyStoreService,
               private panel: PanelService,
-              private $location: angular.ILocationService) {
+              private $location: angular.ILocationService,
+              private clipboard: ClipboardService) {
     this.isNodeEnv=env.type==EnvType.NODEJS;
 
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
@@ -237,12 +311,20 @@ class ToolbarComponent {
     this.refreshLocalWallet()
   }
 
+  copyAddress() {
+    this.clipboard.copyWithUI(document.getElementById('toolbar-user-address'), 'Copied address to clipboard');
+  }
+
   goToHome() {
     this.$location.path(this.user.currency.homePath)
   }
 
+  goToMessenger() {
+    this.$location.path('messenger/0')
+  }
+
   openTestPage() {
-    let address = '0x0102768bf0f0901689357262401b031e83900b4c'
+    let address = '0x98d84343b9b98bb15a2ba3d6867c42a89c37a067'// '0x0102768bf0f0901689357262401b031e83900b4c'
     let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
     ethplorer.getAddressInfo(address).then(() => {
       this.$location.path('ethereum-account/'+address)

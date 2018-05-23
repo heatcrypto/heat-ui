@@ -10,7 +10,7 @@ module dialogs {
   export function withdrawEther($event) {
     return dialogs.dialog({
       id: 'withdrawEtherWallet',
-      title: "Withdraw Ether",
+      title: "Send Ether",
       targetEvent: $event,
       cancelButton: true,
       okButton: false,

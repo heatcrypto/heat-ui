@@ -53,13 +53,25 @@ class Web3Service {
     })
   }
 
-  sendEther(_from: string,_to: string, _value: any) {
-    this.web3.eth.sendTransaction({ from: _from, to: _to, value: _value, gasPrice: this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE), gas: this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED) }, function (err, txhash) {
-      if (err) {
-        dialogs.etherTransactionReceipt('Error', err.message);
-      } else {
-        dialogs.etherTransactionReceipt('Success', txhash);
-      }
+  sendEther(_from: string,_to: string, _value: any): Promise<{ txHash:string }> {
+    let data = {
+      from: _from,
+      to: _to,
+      value: _value,
+      gasPrice: this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE),
+      gas: this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
+    }
+    return new Promise((resolve, reject) => {
+      this.web3.eth.sendTransaction(data, (err, txHash) => {
+        if (err) {
+          reject(err)
+        }
+        else {
+          resolve({
+            txHash: txHash
+          })
+        }
+      })
     })
   }
 }

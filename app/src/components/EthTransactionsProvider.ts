@@ -37,6 +37,7 @@ class EthTransactionsProviderFactory  {
 class EthTransactionsProvider implements IPaginatedDataProvider {
 
   private paginator: EthplorerTransactionPaginator
+  private lastIndex: number = 0
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
@@ -52,13 +53,18 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-    this.paginator.getCount().then(deferred.resolve, deferred.reject)
+    this.paginator.getCount().then(count => {
+      deferred.resolve(Math.min(this.lastIndex + 40, count))
+    }, deferred.reject)
     return deferred.promise
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<EthplorerAddressTransactionExtended>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>()
+    if (lastIndex > this.lastIndex) {
+      this.lastIndex = lastIndex
+    }
     this.paginator.getItems(firstIndex, lastIndex).then(
       transactions => {
         deferred.resolve(this.ethTransactionParser.parse(transactions))
@@ -67,4 +73,5 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
     )
     return deferred.promise
   }
+
 }

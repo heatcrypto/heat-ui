@@ -106,6 +106,31 @@ interface EthplorerAddressHistoryOperation {
   value: string
 }
 
+interface EthplorerTxInfo {
+  // transaction hash
+  hash: string
+  // transaction block time
+  timestamp: number
+  // transaction block number
+  blockNumber: number
+  // number of confirmations
+  confirmations: number
+  // true if there were no errors during tx execution
+  success: boolean
+  // source address
+  from: string
+  // destination address
+  to: string
+  // ETH send value
+  value: string
+  // transaction input data (hex)
+  input: string
+  // gas limit set to this transaction
+  gasLimit: string
+  // gas used for this transaction
+  gasUsed: string
+}
+
 class EthplorerTransactionPaginator {
   private $q: angular.IQService
   private pool: Array<EthplorerAddressTransaction> = []
@@ -191,7 +216,7 @@ class EthplorerTransactionPaginator {
     let deferred = this.$q.defer<number>();
     this.ethplorer.getEthplorerTransactionCount(this.address).then(
       count => {
-        deferred.resolve(Math.min(count, 150))
+        deferred.resolve(Math.min(count, 1000))
       }, deferred.reject
     )
     return deferred.promise
@@ -292,7 +317,7 @@ class EthplorerService {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
           if (parsed.error) {
             console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
-            deferred.reject(null)
+            deferred.reject(parsed.error)
           }
           else {
 
@@ -375,6 +400,26 @@ class EthplorerService {
         }, () => {
           console.log(`HTTP reject for ${url}`)
           deferred.resolve([]);
+        });
+    return deferred.promise
+  }
+
+  public getTxInfo(txHash: string): angular.IPromise<EthplorerTxInfo> {
+    let deferred = this.$q.defer<EthplorerTxInfo>();
+    let url = `https://api.ethplorer.io/getTxInfo/${txHash}?apiKey=lwA5173TDKj60`
+    this.http.get(url)
+        .then((response) => {
+          var parsed = angular.isString(response) ? JSON.parse(response) : response;
+          if (parsed.error) {
+            console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
+            deferred.reject(parsed.error)
+          }
+          else {
+            deferred.resolve(parsed);
+          }
+        }, error => {
+          console.log(`HTTP reject for ${url}`)
+          deferred.reject(error)
         });
     return deferred.promise
   }

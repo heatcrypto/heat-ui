@@ -36,7 +36,7 @@ class CurrencyBalance {
   public visible = false
   constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) {}
 
-  unlock() {
+  public unlock(noPathChange?: boolean) {
     let user = <UserService> heat.$inject.get('user')
     let $location = <angular.ILocationService> heat.$inject.get('$location')
     let lightwalletService = <LightwalletService> heat.$inject.get('lightwalletService')
@@ -53,8 +53,10 @@ class CurrencyBalance {
 
     user.unlock(this.secretPhrase,null,bip44Compatible, currency).then(
       () => {
-        $location.path(currency.homePath)
-        heat.fullApplicationScopeReload()
+        if (!noPathChange) {
+          $location.path(currency.homePath)
+          heat.fullApplicationScopeReload()
+        }
       }
     )
   }
@@ -167,8 +169,7 @@ class WalletEntry {
         </md-button>
 
         <!-- Create ETH Account -->
-        <md-button class="md-warn md-raised" ng-click="vm.createEthAccount($event)" aria-label="Create Account"
-              ng-disabled="vm.walletEntries.length==0">
+        <md-button class="md-warn md-raised" ng-click="vm.createEthAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
           <md-tooltip md-direction="bottom">Create ETH Account</md-tooltip>
           Create ETH Account
         </md-button>
@@ -192,45 +193,37 @@ class WalletEntry {
                     Check this to include in wallet export
                   </md-tooltip>
                 </md-checkbox>
-                <span flex ng-if="entry.secretPhrase">
-                  <a ng-click="entry.toggle()">{{entry.identifier}}</a>
-                </span>
-                <span flex ng-if="!entry.secretPhrase">
-                  {{entry.identifier}}
-                </span>
+                <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a></div>
+                <div flex ng-if="!entry.secretPhrase" class="identifier">{{entry.identifier}}</div>
                 <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
                 <md-button ng-if="entry.unlocked" ng-click="vm.remove($event, entry)">Remove</md-button>
               </div>
 
               <!-- Currency Balance -->
               <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
-                <span class="name">{{entry.name}}</span>&nbsp;
-                <span class="identifier" flex>
-                  <a ng-click="entry.unlock()">{{entry.address}}</a>
-                </span>&nbsp;
-                <span class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</span>
+                <div class="name">{{entry.name}}</div>&nbsp;
+                <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
+                <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
               </div>
 
               <!-- Currency Address Loading -->
               <div ng-if="entry.isCurrencyAddressLoading" layout="row" class="currency-balance" flex>
-                <span class="name">{{entry.name}}</span>&nbsp;
-                <span class="identifier" flex>
-                  Loading ..
-                </span>
+                <div class="name">{{entry.name}}</div>&nbsp;
+                <div class="identifier" flex>Loading ..</div>
               </div>
 
               <!-- Currency Address Create -->
               <div ng-if="entry.isCurrencyAddressCreate" layout="row" class="currency-balance" flex>
-                <span class="name">{{entry.name}}</span>&nbsp;
-                <span class="identifier" flex></span>
+                <div class="name">{{entry.name}}</div>&nbsp;
+                <div class="identifier" flex></div>
                 <md-button ng-click="entry.createAddress()">Create New</md-button>
               </div>
 
               <!-- Token Balance -->
               <div ng-if="entry.isTokenBalance" layout="row" class="token-balance" flex>
-                <span class="name">{{entry.name}}</span>&nbsp;
-                <span class="identifier" flex>{{entry.address}}</span>&nbsp;
-                <span class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</span>
+                <div class="name">{{entry.name}}</div>&nbsp;
+                <div class="identifier" flex>{{entry.address}}</div>&nbsp;
+                <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
               </div>
 
             </md-list-item>
@@ -242,10 +235,11 @@ class WalletEntry {
 })
 @Inject('$scope','$q','localKeyStore','walletFile','$window',
   'lightwalletService','heat','assetInfo','ethplorer',
-  '$mdToast','$mdDialog','clipboard')
+  '$mdToast','$mdDialog','clipboard','user')
 class WalletComponent {
 
   selectAll = true;
+  allLocked = true
 
   entries:Array<WalletEntry|CurrencyBalance|TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
@@ -261,7 +255,8 @@ class WalletComponent {
     private ethplorer: EthplorerService,
     private $mdToast: angular.material.IToastService,
     private $mdDialog: angular.material.IDialogService,
-    private clipboard: ClipboardService) {
+    private clipboard: ClipboardService,
+    private user: UserService) {
 
     this.initLocalKeyStore()
   }
@@ -366,10 +361,12 @@ class WalletComponent {
   unlock($event, selectedWalletEntry: WalletEntry) {
     dialogs.prompt($event, 'Enter Pin Code', 'Please enter your pin code to unlock', '').then(
       pin => {
+        let count = 0
         this.walletEntries.forEach(walletEntry => {
           if (!walletEntry.secretPhrase) {
             var key = this.localKeyStore.load(walletEntry.account, pin);
             if (key) {
+              count += 1
               this.localKeyStore.rememberPassword(walletEntry.account, pin)
               walletEntry.pin = pin
               walletEntry.secretPhrase = key.secretPhrase
@@ -379,12 +376,38 @@ class WalletComponent {
             }
           }
         })
+        let message = `Unlocked ${count?count:'NO'} entries`
+        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
         selectedWalletEntry.toggle(true)
+
+        /* Only if no user is signed in currently, will we auto select one signin */
+        if (!this.user.unlocked) {
+          /* Try and unlock the selected entry */
+          if (selectedWalletEntry.unlocked) {
+            for (let i=0; i<selectedWalletEntry.currencies.length; i++) {
+              let balance = <CurrencyBalance> selectedWalletEntry.currencies[i]
+              if (balance.isCurrencyBalance) {
+                balance.unlock(true)
+                return
+              }
+            }
+          }
+
+          /* Try and find another CurrencyBalance */
+          for (let i=0; i<this.entries.length; i++) {
+            let balance = <CurrencyBalance> selectedWalletEntry.currencies[i]
+            if (balance.isCurrencyBalance) {
+              balance.unlock(true)
+              return
+            }
+          }
+        }
       }
     )
   }
 
   initWalletEntry(walletEntry: WalletEntry) {
+    this.allLocked = false
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
     let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
     heatCurrencyBalance.visible = walletEntry.expanded
@@ -435,7 +458,7 @@ class WalletComponent {
           this.lightwalletService.wallet.addresses.forEach(address => {
             if (address.inUse) {
               let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, address.privateKey)
-              ethCurrencyBalance.balance = address.balance
+              ethCurrencyBalance.balance = Number.parseFloat(address.balance).toFixed(18)
               ethCurrencyBalance.visible = walletEntry.expanded
               walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
               index++;

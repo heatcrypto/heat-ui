@@ -72,12 +72,33 @@
       </div>
 
       <div flex layout="column">
+        <div layout="column" ng-if="vm.pendingTransactions.length">
+          <div layout="row" class="trader-component-title">Pending Transactions</div>
+          <md-list flex layout-fill layout="column">
+            <md-list-item class="header">
+              <div class="truncate-col date-col left">Time</div>
+              <div class="truncate-col id-col left">Status</div>
+              <div class="truncate-col info-col left" flex>Transaction Hash</div>
+            </md-list-item>
+            <md-list-item ng-repeat="item in vm.pendingTransactions" class="row">
+              <div class="truncate-col date-col left">{{item.date}}</div>
+              <div class="truncate-col id-col left">
+                Pending&nbsp;<elipses-loading></elipses-loading>
+              </div>
+              <div class="truncate-col info-col left" flex>
+                <a target="_blank" href="https://ethplorer.io/tx/{{item.txHash}}">{{item.txHash}}</a>
+              </div>
+            </md-list-item>
+          </md-list>
+          <p></p>
+        </div>
         <virtual-repeat-eth-transactions layout="column" flex layout-fill account="vm.account" personalize="vm.personalize"></virtual-repeat-eth-transactions>
       </div>
     </div>
   `
 })
-@Inject('$scope','web3','assetInfo','$q','user','ethplorer')
+@Inject('$scope','web3','assetInfo','$q','user','ethplorer',
+  'ethereumPendingTransactions','settings','$interval','$mdToast')
 class EthereumAccountComponent {
   account: string; // @input
 
@@ -85,17 +106,79 @@ class EthereumAccountComponent {
   erc20Tokens: Array<{balance:string, symbol:string, name:string, id:string}> = [];
   personalize: boolean
 
+  pendingTransactions: Array<{date:string, txHash:string, timestamp:number, address:string}> = []
+  prevIndex = 0
+
   constructor(private $scope: angular.IScope,
               private web3: Web3Service,
               private assetInfo: AssetInfoService,
               private $q: angular.IQService,
               private user: UserService,
-              private ethplorer: EthplorerService) {
+              private ethplorer: EthplorerService,
+              private ethereumPendingTransactions: EthereumPendingTransactionsService,
+              private settings: SettingsService,
+              private $interval: angular.IIntervalService,
+              private $mdToast: angular.material.IToastService) {
     this.personalize = this.account == this.user.account
     this.refresh();
 
     // TODO register some refresh interval
     // this.refresh();
+
+    let listener = this.updatePendingTransactions.bind(this)
+    ethereumPendingTransactions.addListener(listener)
+    this.updatePendingTransactions()
+
+    let promise = $interval(this.timerHandler.bind(this), 20000)
+    this.timerHandler()
+
+    $scope.$on('$destroy', () => {
+      ethereumPendingTransactions.removeListener(listener)
+      $interval.cancel(promise)
+    })
+  }
+
+  /* Continueous timer that polls for one pending txn every 5 seconds,
+      in case there is more than one txn pending we test one other
+      each iteration */
+  timerHandler() {
+    this.refresh()
+    if (this.pendingTransactions.length) {
+      this.prevIndex += 1
+      if (this.prevIndex>=this.pendingTransactions.length) {
+        this.prevIndex = 0
+      }
+      let pendingTxn = this.pendingTransactions[this.prevIndex]
+      this.ethplorer.getTxInfo(pendingTxn.txHash).then(
+        data => {
+          this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with hash ${pendingTxn.txHash} found`).hideDelay(2000));
+          this.ethereumPendingTransactions.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+        },
+        err => {
+          console.log('Transaction not found', err)
+        }
+      )
+    }
+  }
+
+  updatePendingTransactions() {
+    this.$scope.$evalAsync(() => {
+      this.pendingTransactions = []
+      let addr = this.user.account
+      let txns = this.ethereumPendingTransactions.pending[addr]
+      if (txns) {
+        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+        txns.forEach(tx => {
+          this.pendingTransactions.push({
+            date: dateFormat(new Date(tx.timestamp), format),
+            timestamp: tx.timestamp,
+            txHash: tx.txHash,
+            address: addr
+          })
+        })
+        this.pendingTransactions.sort((a,b) => b.timestamp-a.timestamp)
+      }
+    })
   }
 
   refresh() {
