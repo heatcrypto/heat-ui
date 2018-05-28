@@ -20,7 +20,8 @@
 
   </head>
   <body>
-    <div class="application-loading-animation-container">
+
+    <div class="application-loading-animation-container" hide show-gt-xs>
       <div>
         <svg class="spinner" width="65px" height="65px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
           <circle class="path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
@@ -40,7 +41,11 @@
     <link rel="stylesheet" href="styles/index.css">
 
     <div layout="column" flex layout-fill class="application-content" ng-if="showApp">
-      <div layout="row" flex  layout-fill>
+      <div layout="column" flex layout-fill hide-gt-xs layout-align="center center">
+        <p>This site is optimized for desktop/tablet use only.</p>
+        <p>Please checkout our mobile app instead</p>
+      </div>
+      <div layout="row" flex  layout-fill hide show-gt-xs>
         <div flex layout-fill layout="column">
           <downloading-blockchain></downloading-blockchain>
           <toolbar></toolbar>

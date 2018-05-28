@@ -1,58 +1,25 @@
-class EthPendingTransactionManager {
-  public entries: {[address:string]:Array<{txHash:string,timestamp:number}>} = {}
-  constructor() {
-    this.init()
-  }
-
-  init() {
-    this.entries = {}
-    for (let i=0; i<window.localStorage.length; i++) {
-      let key = window.localStorage.key(i)
-      if (key.startsWith('ethPendingTxn:')) {
-        let parts = key.split(':'), addr = parts[1],  txHash = parts[2], timestamp = parseInt(parts[3])
-        this.entries[addr] = this.entries[addr] || []
-        this.entries[addr].push({txHash:txHash, timestamp: timestamp});
-      }
-    }
-  }
-
-  add(address:string, txHash:string, timestamp: number) {
-    window.localStorage.setItem(`ethPendingTxn:${address}:${txHash}:${timestamp}`, "1")
-    this.init()
-  }
-
-  remove(address:string, txHash:string, timestamp: number) {
-    window.localStorage.removeItem(`ethPendingTxn:${address}:${txHash}:${timestamp}`)
-    this.init()
-  }
-}
-
-// class EthPendingTransactionNotice {
-
-//   private ethplorer: EthplorerService;
-//   private $timeout: angular.ITimeoutService
-
-//   constructor(private txHash: string) {
-//     this.ethplorer = heat.$inject.get('ethplorer')
-//     this.$timeout = heat.$inject.get('$timeout')
-//     this.checkStatus()
-//   }
-
-//   checkStatus() {
-//     this.$timeout(3000).then(() => {
-//       this.ethplorer.getTxInfo(this.txHash).then(
-//         info => {
-//           console.log('Status got this info ==>', info)
-//           this.checkStatus()
-//         },
-//         error => {
-//           console.log('Status got ERROR ==>', error)
-//           this.checkStatus()
-//         }
-//       )
-//     })
-//   }
-// }
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2018 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
 
 class ETHCurrency implements ICurrency {
 
@@ -73,7 +40,7 @@ class ETHCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.ethplorer.getBalance(this.address).then(
       balance => {
-        return Number.parseFloat(balance+"").toFixed(18)
+        return utils.commaFormat(Number(balance+"").toFixed(18))
       }
     )
   }
@@ -118,6 +85,7 @@ class ETHCurrency implements ICurrency {
         let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
         let from = user.currency.address
         let to = $scope['vm'].data.recipient
+        $scope['vm'].disableOKBtn = true
         web3.sendEther(from, to, amountInWei).then(
           data => {
             $mdDialog.hide(data).then(() => {
@@ -131,6 +99,7 @@ class ETHCurrency implements ICurrency {
           }
         )
       }
+      $scope['vm'].disableOKBtn = false
       $scope['vm'].data = {
         amount: '',
         recipient: '',
@@ -197,7 +166,7 @@ class ETHCurrency implements ICurrency {
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.recipient || !vm.data.amount"
+              <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>

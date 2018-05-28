@@ -289,13 +289,13 @@ class EthTransactionRenderer {
     this.transactionTypes[key] = 'TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
       (t) => {
-        return '<b>TRANSFER</b> Transfer $amount ETH from $from to $to'
+        return '<b>TRANSFER</b> $amount from $from to $to'
       },
       (t) => {
         return {
           from: this.account(t.from),
           to: this.account(t.to),
-          amount: t.value
+          amount: this.amount(t.value)
         }
       }
     );
@@ -502,7 +502,7 @@ class EthTransactionRenderer {
 
   account(account: string): string {
     if (account == this.provider.account) {
-      return `<u>${account}</u>`
+      return `<a target="_blank" href="https://ethplorer.io/address/${account}">Myself</a>`;
     }
     return `<a target="_blank" href="https://ethplorer.io/address/${account}">${account}</a>`;
   }
@@ -522,7 +522,7 @@ class EthTransactionRenderer {
       str = utils.formatQNT(amount, tokenInfo.decimals) + ' ' + tokenInfo.symbol
     }
     else {
-      str = utils.formatQNT(amount, 18) + ' ETH'
+      str = utils.commaFormat(Number(amount).toFixed(18)).replace(/(\.\d*?[1-9])0+$/g, "$1" ) + ' ETH'
     }
     return `<span>${str}</span>`;
   }

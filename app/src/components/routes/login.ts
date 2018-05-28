@@ -341,12 +341,6 @@ class LoginComponent {
               private panel: PanelService,
               private lightwalletService: LightwalletService) {
 
-    // let secret = "plug before critic vessel guess vital source repair bridge method mimic simple"
-    // this.user.unlock(secret, false, this.lightwalletService.validSeed(secret)).then(() => {
-    //   this.$location.path(`home`);
-    // });
-    // return
-
     try {
       this.isFileSaverSupported = !!new Blob;
     } catch (e) {}

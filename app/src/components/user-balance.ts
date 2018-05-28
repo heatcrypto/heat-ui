@@ -34,7 +34,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$timeout')
+@Inject('$scope','user','heat','$q','$interval')
 class UserBalanceComponent {
 
   private formattedBalance: string = "0";
@@ -47,7 +47,7 @@ class UserBalanceComponent {
               public user: UserService,
               private heat: HeatService,
               private $q: angular.IQService,
-              private $timeout: angular.ITimeoutService) {
+              private $interval: angular.IIntervalService) {
 
     /* subscribe to websocket balance changed events */
     var refresh = utils.debounce((angular.bind(this, this.refresh)), 1*1000, false);
@@ -60,23 +60,19 @@ class UserBalanceComponent {
       this.user.removeListener(UserService.EVENT_UNLOCKED, refresh)
     })
 
-    // REFACTOR..
-    // heat.subscriber.balanceChanged({account: user.account}, (balanceChange: IHeatSubscriberBalanceChangedResponse) => {
-    //   refresh();
-    // }, $scope);
+    let interval = $interval(refresh, 10*1000)
+    $scope.$on('$destroy', () => { $interval.cancel(interval) })
 
     this.refresh();
-  }
 
-  // getUserBalance() : angular.IPromise<IHeatAccountBalance> {
-  //   return this.heat.api.getAccountBalanceVirtual(this.user.account, "0", "0", 1);
-  // }
+  }
 
   // REFACTOR..
   refresh() {
     this.$scope.$evalAsync(() => {
       this.loading = true;
     });
+    let address = this.user.currency.address
     this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
         var formatted = balance.split(".");
@@ -92,29 +88,7 @@ class UserBalanceComponent {
         this.showError = true;
         this.errorDescription = error.description;
         this.loading = false;
-        this.$timeout(3000, false).then(() => { this.refresh() });
       });
     })
-
-    // REFACTOR..
-    // this.getUserBalance().then((balance) => {
-    //   this.$scope.$evalAsync(() => {
-    //     //var formatted = utils.formatQNT(balance.unconfirmedBalance, 8).split(".");
-    //     var formatted = utils.formatQNT(balance.virtualBalance, 8).split(".");
-    //     this.formattedBalance = formatted[0];
-    //     this.formattedFraction = "." + (formatted[1]||"00");
-    //     this.showError = false;
-    //     this.loading = false;
-    //   });
-    // }, (error: ServerEngineError) => {
-    //   this.$scope.$evalAsync(() => {
-    //     this.formattedBalance = "0";
-    //     this.formattedFraction = ".00000000";
-    //     this.showError = true;
-    //     this.errorDescription = error.description;
-    //     this.loading = false;
-    //     this.$timeout(3000, false).then(() => { this.refresh() });
-    //   });
-    // });
   }
 }

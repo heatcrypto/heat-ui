@@ -30,22 +30,12 @@
         <div layout="column">
           <div class="col-item">
             <div class="title">
-              Account:
+              Address:
             </div>
             <div class="value">
               <a href="#/ethereum-account/{{vm.account}}">{{vm.account}}</a>
             </div>
           </div>
-          <!--
-          <div class="col-item">
-            <div class="title">
-              Account id:
-            </div>
-            <div class="value">
-              {{vm.account}}
-            </div>
-          </div>
-          -->
           <div class="col-item">
             <div class="title">
               Balance:
@@ -138,7 +128,7 @@ class EthereumAccountComponent {
     })
   }
 
-  /* Continueous timer that polls for one pending txn every 5 seconds,
+  /* Continueous timer that polls for one pending txn every 20 seconds,
       in case there is more than one txn pending we test one other
       each iteration */
   timerHandler() {

@@ -65,6 +65,7 @@ class CurrencyBalance {
 class CurrencyAddressLoading {
   public isCurrencyAddressLoading = true
   public visible = false
+  public wallet: WalletType
   constructor(public name: string) {}
 }
 
@@ -121,7 +122,7 @@ class WalletEntry {
   public unlocked = false
   public visible = true
   public expanded = false
-  constructor(public account: string, public name: string) {
+  constructor(public account: string, public name: string, public component: WalletComponent) {
     this.identifier = name ? `${name} | ${account}` : account
   }
 
@@ -136,7 +137,24 @@ class WalletEntry {
         })
       }
     })
+    if (this.expanded) {
+      this.component.loadEthereumAddresses(this)
+    }
   }
+
+  showSecretPhrase() {
+    let panel:PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+        </md-input-container>
+      </div>
+    `, {
+      secretPhrase: this.secretPhrase
+    })
+  }
+
 }
 
 @RouteConfig('/wallet')
@@ -159,11 +177,11 @@ class WalletEntry {
         <!-- Adds a wallet seed (heat secret phrase or bip44 eth/btc seed) -->
         <md-button class="md-primary md-raised" ng-click="vm.importSeed()" aria-label="Import Seed">
           <md-tooltip md-direction="bottom">Import Seed</md-tooltip>
-          Import Seed
+          Import Seed/Private Key
         </md-button>
 
         <!-- Export Wallet to File -->
-        <md-button class="md-warn md-raised" ng-click="vm.exportWallet()" aria-label="Export Wallet">
+        <md-button class="md-warn md-raised" ng-click="vm.exportWallet()" aria-label="Export Wallet" ng-if="!vm.allLocked">
           <md-tooltip md-direction="bottom">Export Wallet File</md-tooltip>
           Export Wallet File
         </md-button>
@@ -188,15 +206,40 @@ class WalletEntry {
 
               <!-- Wallet entry -->
               <div ng-if="entry.isWalletEntry" layout="row" class="wallet-entry" flex>
+                <!--
                 <md-checkbox ng-model="entry.selected">
                   <md-tooltip md-direction="bottom">
                     Check this to include in wallet export
                   </md-tooltip>
                 </md-checkbox>
+                -->
+                <md-button class="md-icon-button left" ng-click="entry.toggle()">
+                  <md-icon md-font-library="material-icons">{{entry.expanded?'expand_less':'expand_more'}}</md-icon>
+                </md-button>
+
                 <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a></div>
                 <div flex ng-if="!entry.secretPhrase" class="identifier">{{entry.identifier}}</div>
                 <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
-                <md-button ng-if="entry.unlocked" ng-click="vm.remove($event, entry)">Remove</md-button>
+
+                <md-menu md-position-mode="target-right target" md-offset="34px 34px" ng-if="entry.unlocked">
+                  <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdOpenMenu($event)" md-menu-origin >
+                    <md-icon md-font-library="material-icons">more_horiz</md-icon>
+                  </md-button>
+                  <md-menu-content width="4">
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="entry.showSecretPhrase()">
+                        <md-icon md-font-library="material-icons">file_copy</md-icon>
+                        Show private key
+                      </md-button>
+                    </md-menu-item>
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.remove($event, entry)">
+                        <md-icon md-font-library="material-icons">delete_forever</md-icon>
+                        Remove
+                      </md-button>
+                    </md-menu-item>
+                  </md-menu-content>
+                </md-menu>
               </div>
 
               <!-- Currency Balance -->
@@ -266,7 +309,7 @@ class WalletComponent {
     this.walletEntries = []
     this.localKeyStore.list().map((account:string) => {
       let name = this.localKeyStore.keyName(account)
-      let walletEntry = new WalletEntry(account, name)
+      let walletEntry = new WalletEntry(account, name, this)
       this.walletEntries.push(walletEntry)
     });
     this.walletEntries.forEach(walletEntry => {
@@ -359,7 +402,7 @@ class WalletComponent {
   }
 
   unlock($event, selectedWalletEntry: WalletEntry) {
-    dialogs.prompt($event, 'Enter Pin Code', 'Please enter your pin code to unlock', '').then(
+    dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your password (or pin code) to unlock', '').then(
       pin => {
         let count = 0
         this.walletEntries.forEach(walletEntry => {
@@ -431,17 +474,18 @@ class WalletComponent {
       })
     }, () => {
       this.$scope.$evalAsync(()=> {
-        heatCurrencyBalance.balance = "Address does not exist"
+        heatCurrencyBalance.balance = "Address is unused"
         heatCurrencyBalance.symbol = ''
       })
     });
 
     /* Ethereum integration starts here */
-    if (walletEntry.bip44Compatible) {
+    if (walletEntry.bip44Compatible || this.lightwalletService.validPrivateKey(walletEntry.secretPhrase)) {
       this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
 
         let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
         ethCurrencyAddressLoading.visible = walletEntry.expanded
+        ethCurrencyAddressLoading.wallet = wallet
         walletEntry.currencies.push(ethCurrencyAddressLoading)
 
         let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
@@ -452,32 +496,50 @@ class WalletComponent {
 
         this.flatten()
 
-        this.lightwalletService.refreshAdressBalances().then(() => {
-
-          let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
-          this.lightwalletService.wallet.addresses.forEach(address => {
-            if (address.inUse) {
-              let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, address.privateKey)
-              ethCurrencyBalance.balance = Number.parseFloat(address.balance).toFixed(18)
-              ethCurrencyBalance.visible = walletEntry.expanded
-              walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
-              index++;
-
-              address.tokensBalances.forEach(balance => {
-                let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-                tokenBalance.balance = utils.formatQNT(balance.balance, balance.decimals)
-                tokenBalance.visible = walletEntry.expanded
-                ethCurrencyBalance.tokens.push(tokenBalance)
-              })
-            }
-          })
-
-          // we can remove the loading entry
-          walletEntry.currencies = walletEntry.currencies.filter(c => c!=ethCurrencyAddressLoading)
-          this.flatten()
-        })
+        /* Only if this node is expanded will we load the addresses */
+        if (walletEntry.expanded) {
+          this.loadEthereumAddresses(walletEntry)
+        }
       })
     }
+  }
+
+  /* Only when we expand a wallet entry do we lookup its balances */
+  public loadEthereumAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let ethCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading)
+    if (!ethCurrencyAddressLoading)
+      return
+
+    this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
+      ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        if (address.inUse) {
+          let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, address.privateKey)
+          ethCurrencyBalance.balance = Number(address.balance+"").toFixed(18)
+          ethCurrencyBalance.visible = walletEntry.expanded
+          walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
+          index++;
+
+          address.tokensBalances.forEach(balance => {
+            let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = utils.commaFormat(balance.balance)
+            tokenBalance.visible = walletEntry.expanded
+            ethCurrencyBalance.tokens.push(tokenBalance)
+          })
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c!=ethCurrencyAddressLoading)
+      this.flatten()
+    })
   }
 
   private getAccountAssets(account:string): angular.IPromise<Array<AssetInfo>> {
@@ -528,15 +590,6 @@ class WalletComponent {
         let message = `Seed was successfully imported to your wallet`;
         this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
         heat.fullApplicationScopeReload()
-
-        // this.$scope.$evalAsync(() => {
-        //   this.initLocalKeyStore()
-        //   this.walletEntries.forEach(walletEntry => {
-        //     if (walletEntry.account == account) {
-        //       walletEntry.toggle(true)
-        //     }
-        //   })
-        // })
       }
     )
   }
@@ -578,13 +631,13 @@ class WalletComponent {
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Hello</h2></div>
+              <div class="md-toolbar-tools"><h2>Import Seed/Private Key</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column">
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
                 <md-input-container flex>
-                  <label>Secret phrase</label>
+                  <label>HEAT Secret Phrase / Seed / Private Key</label>
                   <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false"></textarea>
                 </md-input-container>
                 <md-input-container flex>
@@ -679,7 +732,7 @@ class WalletComponent {
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Create ETH Account</h2></div>
+              <div class="md-toolbar-tools"><h2>Create Ethereum Address</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column">

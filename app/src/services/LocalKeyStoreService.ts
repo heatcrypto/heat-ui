@@ -62,6 +62,7 @@ class LocalKeyStoreService {
   }
 
   add(key: ILocalKey) {
+    this.rememberPassword(key.account, key.pincode)
     this.store.put(`key.${key.account}${this.testnet()}`, this.encode(key));
     this.store.put(`name.${key.account}${this.testnet()}`, key.name);
   }
@@ -122,7 +123,9 @@ class LocalKeyStoreService {
   load(account: string, passphrase: string): ILocalKey {
     var contents = this.store.get(`key.${account}${this.testnet()}`);
     try {
-      return this.decode(contents, passphrase);
+      let result = this.decode(contents, passphrase);
+      this.rememberPassword(account, passphrase)
+      return result
     } catch (e) {
       console.log(e);
     }

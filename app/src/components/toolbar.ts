@@ -67,6 +67,13 @@
               </h2>
             </div>
 
+            <div hide show-gt-sm ng-if="vm.user.unlocked">
+              <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()">
+                <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
+                <i><img src="assets/homeIcon.png"></i>
+              </md-button>
+            </div>
+
             <div hide show-gt-sm>
               <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
                 <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
@@ -82,15 +89,19 @@
               </md-button>
               <md-button aria-label="home" class="md-icon-button" href="#/wallet" ng-if="!vm.user.unlocked">
                 <md-tooltip md-direction="bottom">Wallet</md-tooltip>
-                <i><img src="assets/etherwallet.png"></i>
+                <i><img src="assets/walletIcon.png"></i>
               </md-button>
+
+              <!--
+              <md-button aria-label="home" class="md-icon-button" ng-click="vm.$mdToast.show(vm.$mdToast.simple().textContent('Incorrect Password (or Pin)').hideDelay(15000))">
+                <i><img src="assets/walletIcon.png"></i>
+              </md-button>
+              -->
+
+
             </div>
 
             <div hide show-gt-sm ng-if="vm.user.unlocked">
-              <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()">
-                <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
-                <i><img src="assets/homeIcon.png"></i>
-              </md-button>
               <md-button aria-label="send heat" class="md-icon-button" ng-click="vm.showSendmoneyDialog($event);">
                 <md-tooltip md-direction="bottom">Send {{vm.user.currency.symbol}}</md-tooltip>
                 <i><img src="assets/sendHeatIcon.png"></i>
@@ -101,13 +112,8 @@
               </md-button>
               <md-button aria-label="home" class="md-icon-button" href="#/wallet">
                 <md-tooltip md-direction="bottom">Wallet</md-tooltip>
-                <i><img src="assets/etherwallet.png"></i>
+                <i><img src="assets/walletIcon.png"></i>
               </md-button>
-              <!--
-              <md-button aria-label="home" class="md-icon-button" ng-click="vm.openTestPage()">
-                <md-icon md-font-library="material-icons">check</md-icon>
-              </md-button>
-              -->
             </div>
 
             <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm>
@@ -115,6 +121,12 @@
                 <md-icon md-font-library="material-icons">more_vert</md-icon>
               </md-button>
               <md-menu-content width="4">
+                <md-menu-item ng-if="vm.user.unlocked">
+                  <md-button aria-label="home" ng-click="vm.goToHome()">
+                    <md-icon md-font-library="material-icons">home</md-icon>
+                    Your {{vm.user.currency.symbol}} Home
+                  </md-button>
+                </md-menu-item>
                 <md-menu-item>
                   <md-button aria-label="explorer" href="#/explorer">
                     <md-icon md-font-library="material-icons">explore</md-icon>
@@ -137,12 +149,6 @@
                   <md-button aria-label="wallet" href="#/wallet">
                     <md-icon md-font-library="material-icons">account_balance_wallet</md-icon>
                     Wallet
-                  </md-button>
-                </md-menu-item>
-                <md-menu-item ng-if="vm.user.unlocked">
-                  <md-button aria-label="home" ng-click="vm.goToHome()">
-                    <md-icon md-font-library="material-icons">home</md-icon>
-                    Your {{vm.user.currency.symbol}} Home
                   </md-button>
                 </md-menu-item>
                 <md-menu-item ng-if="vm.user.unlocked">
@@ -172,7 +178,9 @@
             <div class="selected-address" ng-if="vm.user.unlocked">
               <div>Currently using <b>{{vm.user.currency.symbol}}</b></div>
               <div layout="row">
-                <div class="address wrapped" id="toolbar-user-address">{{vm.user.currency.address}}</div>
+                <div class="address wrapped">
+                  <a href="#{{vm.user.currency.homePath}}" id="toolbar-user-address">{{vm.user.currency.address}}</a>
+                </div>
                 &nbsp;<a ng-click="vm.copyAddress()">[copy]</a>
               </div>
             </div>
@@ -242,7 +250,7 @@
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="Show copy" ng-click="vm.showSecretPhrase()">
                 <md-icon md-font-library="material-icons">content_copy</md-icon>
-                <span>Export Key</span>
+                <span>Show private key</span>
               </md-button>
             </md-menu-item>
             <md-menu-item>
@@ -367,12 +375,16 @@ class ToolbarComponent {
       }
     }
     else {
-      dialogs.prompt($event, 'Enter Password', 'Please enter your password to unlock', '').then(
+      dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin) to unlock', '').then(
         password => {
-          let key = this.localKeyStore.load(item.account, password);
-          if (key) {
-            this.unlock(key.secretPhrase)
-          }
+          try {
+            let key = this.localKeyStore.load(item.account, password);
+            if (key) {
+              this.unlock(key.secretPhrase)
+              return
+            }
+          } catch (e) { console.log(e) }
+          this.$mdToast.show(this.$mdToast.simple().textContent("Incorrect Password (or Pin)").hideDelay(5000));
         }
       )
     }
@@ -465,9 +477,5 @@ class ToolbarComponent {
     let encoded = this.walletFile.encode(exported);
     var blob = new Blob([encoded], {type: "text/plain;charset=utf-8"});
     saveAs(blob, 'heat.wallet');
-  }
-
-  connectToEtherWallet($event) {
-   dialogs.connectEtherWallet($event);
   }
 }
