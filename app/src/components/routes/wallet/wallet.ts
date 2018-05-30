@@ -646,6 +646,7 @@ class WalletComponent {
   }
 
   promptSecretPlusPassword($event): angular.IPromise<{password:string, secretPhrase:string}> {
+    let self = this
     function DialogController($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].cancelButtonClick = function () {
         $mdDialog.cancel()
@@ -656,10 +657,14 @@ class WalletComponent {
           secretPhrase: $scope['vm'].data.secretPhrase,
         })
       }
+      $scope['vm'].secretChanged = function () {
+        $scope['vm'].data.bip44Compatible = self.lightwalletService.validSeed($scope['vm'].data.secretPhrase)
+      }
       $scope['vm'].data = {
         password1: '',
         password2: '',
-        secretPhrase: ''
+        secretPhrase: '',
+        bip44Compatible: false
       }
     }
 
@@ -681,7 +686,7 @@ class WalletComponent {
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
                 <md-input-container flex>
                   <label>HEAT Secret Phrase / Seed / Private Key</label>
-                  <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false"></textarea>
+                  <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false" ng-change="vm.secretChanged() "></textarea>
                 </md-input-container>
                 <md-input-container flex>
                   <label>Password</label>
@@ -691,6 +696,7 @@ class WalletComponent {
                   <label>Password (confirm)</label>
                   <input ng-model="vm.data.password2" required name="password2">
                 </md-input-container>
+                <span>BIP44 compatible = <b>{{vm.data.bip44Compatible?'TRUE':'FALSE'}}</b></span>
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">

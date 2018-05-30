@@ -28,7 +28,10 @@
       <div layout="row" class="button-row">
         <md-button class="start-stop" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
         <md-button class="start-stop md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
-        <md-button class="start-stop" ng-click="vm.showFolder()">Install Dir</md-button>
+        <md-button class="start-stop" ng-click="vm.showFolder()">
+          <md-tooltip md-direction="bottom">Access your blockchain and config files and back them up before updating HEAT server</md-tooltip>
+          Install Dir
+        </md-button>
 
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
           <md-tooltip md-direction="top">
