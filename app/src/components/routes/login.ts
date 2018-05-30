@@ -36,7 +36,7 @@ declare var saveAs: any;
           <div layout="column" flex ng-if="!vm.page">
             <div layout="row" layout-align="center center">
               <md-button class="md-primary md-raised" ng-click="vm.page='signin'" aria-label="Sign in" ng-show="vm.localKeys.length">
-                <md-tooltip md-direction="bottom">Sign in with your pin</md-tooltip>
+                <md-tooltip md-direction="bottom">Sign in with your Password (or Pin Code)</md-tooltip>
                 Sign in
               </md-button>
               <md-button class="md-primary md-raised" ng-click="vm.page='create';vm.generateNewSecretPhrase()" aria-label="Create">
@@ -62,7 +62,7 @@ declare var saveAs: any;
             </div>
             <div layout="column" flex>
               <md-input-container flex ng-show="vm.pageSigninAccount">
-                <label>Pin Code</label>
+                <label>Password (or Pin Code)</label>
                 <input ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
               </md-input-container>
             </div>
@@ -101,7 +101,7 @@ declare var saveAs: any;
             </div>
             <div layout="column" flex>
               <md-input-container flex>
-                <label>Pin Code (required, minumum 4 numbers)</label>
+                <label>Password (or Pin Code) (required)</label>
                 <input ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
               </md-input-container>
             </div>
@@ -229,7 +229,7 @@ declare var saveAs: any;
             </div>
             <div layout="column" flex>
               <md-input-container flex>
-                <label>Pin Code (required 4 numbers)</label>
+                <label>Password (or Pin Code) (required)</label>
                 <input ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
               </md-input-container>
             </div>
@@ -486,7 +486,7 @@ class LoginComponent {
   }
 
   isValidPincode(pincode) {
-    return /^\d{4,15}$/.test(pincode);
+    return /^[a-zA-Z0-9_.-]{4,15}$/.test(pincode);
   }
 
   generateNewSecretPhrase() {

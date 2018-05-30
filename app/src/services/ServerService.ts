@@ -74,6 +74,13 @@ class ServerService extends EventEmitter {
     }
   }
 
+  getAppDir(dirName) {
+    var os = this.getOS();
+    var path = require('path');
+    let dir = path.join(__dirname,'..','heatledger', dirName);
+    return path.resolve(dir)
+  }
+
   startServer() {
     if (this.isRunning) {
       throw new Error('Server starting or already up, check server.isRunning before calling this method');

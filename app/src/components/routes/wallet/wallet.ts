@@ -81,13 +81,29 @@ class CurrencyAddressCreate {
     still after an architectural change where we dont display the CREATE node anymore.
     We'll be leaving it in place where all you need to do is set this.hidden=false to
     have it displayed again. */
-  createAddress() {
+  createAddress(component: WalletComponent) {
 
     // collect all CurrencyBalance of 'our' same currency type
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
 
+    // if there is no address in use yet we use the first one
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('Ethereum','ETH',nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+
     // determine the first 'next' address based of the last currencyBalance displayed
     let lastAddress = currencyBalances[currencyBalances.length -1]['address']
+
+    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
+    if (!currencyBalances[currencyBalances.length -1]['inUse']) {
+      return false
+    }
 
     // look up the following address
     for (let i=0; i<this.wallet.addresses.length; i++) {
@@ -101,13 +117,16 @@ class CurrencyAddressCreate {
 
         let nextAddress = this.wallet.addresses[i+1]
         let newCurrencyBalance = new CurrencyBalance('Ethereum','ETH',nextAddress.address, nextAddress.privateKey)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length-1])+1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
         this.flatten()
-        return
+        return true
       }
     }
+
+    return false
   }
 }
 
@@ -188,8 +207,8 @@ class WalletEntry {
 
         <!-- Create ETH Account -->
         <md-button class="md-warn md-raised" ng-click="vm.createEthAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Create ETH Account</md-tooltip>
-          Create ETH Account
+          <md-tooltip md-direction="bottom">Create Eth Address</md-tooltip>
+          Create ETH Address
         </md-button>
       </div>
 
@@ -286,6 +305,7 @@ class WalletComponent {
 
   entries:Array<WalletEntry|CurrencyBalance|TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
+  createdAddresses: {[key:string]:Array<string>} = {}
 
   constructor(private $scope: angular.IScope,
     private $q: angular.IQService,
@@ -302,6 +322,7 @@ class WalletComponent {
     private user: UserService) {
 
     this.initLocalKeyStore()
+    this.initCreatedAddresses()
   }
 
   initLocalKeyStore() {
@@ -328,6 +349,24 @@ class WalletComponent {
       }
     })
     this.flatten()
+  }
+
+  initCreatedAddresses() {
+    for (let i=0; i<window.localStorage.length; i++) {
+      let key = window.localStorage.key(i)
+      let data = key.match(/eth-address-created:(.+):(.+)/)
+      if (data) {
+        let acc = data[1], addr = data[2]
+        this.createdAddresses[acc] = this.createdAddresses[acc] || []
+        this.createdAddresses[acc].push(addr)
+      }
+    }
+  }
+
+  rememberAdressCreated(account: string, ethAddress: string) {
+    this.createdAddresses[account] = this.createdAddresses[account] || []
+    this.createdAddresses[account].push(ethAddress)
+    window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`,"1")
   }
 
   /* Iterates down all children of walletEntries and flattens them into the entries list */
@@ -391,7 +430,7 @@ class WalletComponent {
   remove($event, entry:WalletEntry) {
     dialogs.prompt($event, 'Remove Wallet Entry',
       `This completely removes the wallet entry from your device.
-       Please enter your pin code to confirm you wish to remove this entry`, '').then(
+       Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
       pin => {
         if (pin == entry.pin) {
           this.localKeyStore.remove(entry.account)
@@ -402,7 +441,7 @@ class WalletComponent {
   }
 
   unlock($event, selectedWalletEntry: WalletEntry) {
-    dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your password (or pin code) to unlock', '').then(
+    dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin Code) to unlock', '').then(
       pin => {
         let count = 0
         this.walletEntries.forEach(walletEntry => {
@@ -520,19 +559,23 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
       ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        if (address.inUse) {
+        let wasCreated = (this.createdAddresses[walletEntry.account]||[]).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
           let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, address.privateKey)
           ethCurrencyBalance.balance = Number(address.balance+"").toFixed(18)
           ethCurrencyBalance.visible = walletEntry.expanded
+          ethCurrencyBalance.inUse = wasCreated ? false : true
           walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
           index++;
 
-          address.tokensBalances.forEach(balance => {
-            let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-            tokenBalance.balance = utils.commaFormat(balance.balance)
-            tokenBalance.visible = walletEntry.expanded
-            ethCurrencyBalance.tokens.push(tokenBalance)
-          })
+          if (address.tokensBalances) {
+            address.tokensBalances.forEach(balance => {
+              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+              tokenBalance.balance = utils.commaFormat(balance.balance)
+              tokenBalance.visible = walletEntry.expanded
+              ethCurrencyBalance.tokens.push(tokenBalance)
+            })
+          }
         }
       })
 
@@ -678,15 +721,18 @@ class WalletComponent {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function () {
+      $scope['vm'].okButtonClick = function ($event) {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-          node.createAddress()
+          success = node.createAddress(self)
           walletEntry.toggle(true)
         }
         $mdDialog.hide(null).then(() => {
-
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          }
         })
       }
 
@@ -774,8 +820,8 @@ class WalletComponent {
 
                   <md-input-container flex>
                     <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
-                        id="wallet-secret-textarea"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>
@@ -784,9 +830,9 @@ class WalletComponent {
             </md-dialog-content>
             <md-dialog-actions layout="row">
               <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

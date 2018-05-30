@@ -176,15 +176,17 @@ class EthereumAccountComponent {
     this.ethplorer.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(()=>{
         this.balanceUnconfirmed = info.ETH.balance;
-        this.erc20Tokens = info.tokens.map(token => {
-          let tokenInfo = this.ethplorer.tokenInfoCache[token.tokenInfo.address]
-          return {
-            balance: utils.formatQNT((token.balance+"")||"0", tokenInfo?tokenInfo.decimals:8),
-            symbol: token.tokenInfo.symbol,
-            name: token.tokenInfo.name,
-            id: ''
-          }
-        })
+        if (info.tokens) {
+          this.erc20Tokens = info.tokens.map(token => {
+            let tokenInfo = this.ethplorer.tokenInfoCache[token.tokenInfo.address]
+            return {
+              balance: utils.formatQNT((token.balance+"")||"0", tokenInfo?tokenInfo.decimals:8),
+              symbol: token.tokenInfo.symbol,
+              name: token.tokenInfo.name,
+              id: ''
+            }
+          })
+        }
       })
     })
   }

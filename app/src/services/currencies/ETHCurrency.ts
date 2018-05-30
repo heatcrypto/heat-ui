@@ -64,7 +64,9 @@ class ETHCurrency implements ICurrency {
         this.pendingTransactions.add(address, data.txHash, timestamp)
       },
       err => {
-        dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: '+JSON.stringify(err))
+        if (err) {
+          dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: '+JSON.stringify(err))
+        }
       }
     )
   }

@@ -78,7 +78,7 @@
   },
   "build": {
     "appId": "com.heatledger.heatwallet",
-    "copyright": "Copyright © 2017 Heat Ledger Ltd.",
+    "copyright": "Copyright © 2018 Heat Ledger Ltd.",
     "productName": "Heatwallet",
     "compression": "normal",
     "extraResources": [

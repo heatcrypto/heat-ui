@@ -32,6 +32,8 @@ module dialogs {
         <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
         <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>
+        <br>
+        <p>Ethereum API <u>Powered by <a href="https://ethplorer.io">Ethplorer.io</a></u></p>
         <!--
         <p><button onclick="gtag_report_conversion_signup(undefined)">Signup Test</button></p>
         <p><button onclick="gtag_report_conversion_bid(undefined, Date.now()+'')">Bid Test</button></p>

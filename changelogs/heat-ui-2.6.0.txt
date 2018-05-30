@@ -1,0 +1,28 @@
+This is a client only release which gives you the new HEAT multi-currency wallet manager.
+
+Gradually we'll be adding more cryptocurrencies starting with this release for Ethereum
+and the Ethereum ERC20 tokens.
+
+An update to the HEAT twelve-word secret phrase generator was applied making HEAT seeds
+compatible with BIP39 [https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki].
+
+Your HEAT seed now also becomes the basis for your Ethereum and Bitcoin HD wallets.
+
+So thats one 12-word phrase giving you access to all your crypto holdings.
+
+The Ethereum part of the wallet manager is implemented on top of https://github.com/ConsenSys/eth-lightwallet/
+which implements a HD wallet and gives you an endless list of addresses all derived
+from a single seed.
+
+ERC20 tokens sending feature is under development still and will follow soon.
+
+What is supported is the display of your token balances (HEAT Assets & ERC20 tokens), the
+display of your transaction history (ABI aware transaction details which means transaction
+details are parsed from the raw transaction.input - supported ABI's are expected to increase).
+
+Most of the development work has been for behind the scenes stuff like remaking the client
+structure to support multiple different currencies and updates to the wallet structure,
+however experienced HEAT users will notice still quite a lot changed. The new
+wallet manager screen is no doubt the largest visual update.
+
+We hope you'll enjoy this release.

@@ -28,6 +28,8 @@
       <div layout="row" class="button-row">
         <md-button class="start-stop" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
         <md-button class="start-stop md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
+        <md-button class="start-stop" ng-click="vm.showFolder()">Install Dir</md-button>
+
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
           <md-tooltip md-direction="top">
             Connect client API to remotehost or to your local machine
@@ -46,6 +48,7 @@
         <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
         <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
         <a ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
+
       </div>
       <div layout="column" flex class="console" layout-fill>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column"
@@ -61,7 +64,7 @@
     </div>
   `
 })
-@Inject('$scope','server','heat','user','settings')
+@Inject('$scope','server','heat','user','settings','$mdToast')
 class ServerComponent {
   private ROW_HEIGHT = 12; // must match the `server .console pre { height: 12px }` style rule above
 
@@ -91,7 +94,8 @@ class ServerComponent {
               public server: ServerService,
               private heat: HeatService,
               private user: UserService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private $mdToast: angular.material.IToastService) {
 
     if (user.unlocked) {
       heat.subscriber.blockPushed({generator:user.account}, ()=>{this.updateMiningInfo()});
@@ -129,6 +133,10 @@ class ServerComponent {
     this.remotehostDisplay = this.hostRemote.replace('https://','');
   }
 
+  showFolder() {
+    require('electron').shell.showItemInFolder(this.server.getAppDir('.'))
+  }
+
   /* md-virtual-repeat */
   getItemAtIndex(index) {
     return this.render(this.server.buffer[index]);
@@ -157,6 +165,8 @@ class ServerComponent {
 
   startServer() {
     this.server.startServer()
+    this.$mdToast.show(this.$mdToast.simple().textContent("In some cases you need to Start the server A SECOND TIME!\n"+
+      "Wheter that's the case is indicated at the end of the log output (the colored text with black background).").hideDelay(10000));
   }
 
   stopServer() {
