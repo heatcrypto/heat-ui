@@ -40,7 +40,7 @@ class ETHCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.ethplorer.getBalance(this.address).then(
       balance => {
-        return utils.commaFormat(Number(balance+"").toFixed(18))
+        return utils.commaFormat(new Big(balance+"").toFixed(18))
       }
     )
   }
