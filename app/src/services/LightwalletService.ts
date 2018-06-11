@@ -94,7 +94,7 @@ class LightwalletService {
         promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
       }
       promise.then(wallet => {
-        console.log('wallet', wallet)
+        //console.log('wallet', wallet)
         resolve(wallet)
       }).catch(() => {
         reject()
