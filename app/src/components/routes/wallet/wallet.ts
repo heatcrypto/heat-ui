@@ -141,6 +141,7 @@ class WalletEntry {
   public unlocked = false
   public visible = true
   public expanded = false
+  public btcWalletAddressIndex = 0
   constructor(public account: string, public name: string, public component: WalletComponent) {
     this.identifier = name ? `${name} | ${account}` : account
   }
@@ -209,6 +210,12 @@ class WalletEntry {
         <md-button class="md-warn md-raised" ng-click="vm.createEthAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
           <md-tooltip md-direction="bottom">Create Eth Address</md-tooltip>
           Create ETH Address
+        </md-button>
+
+        <!-- Create BTC Account -->
+        <md-button class="md-warn md-raised" ng-click="vm.createBtcAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
+          <md-tooltip md-direction="bottom">Create BTC Address</md-tooltip>
+          Create BTC Address
         </md-button>
       </div>
 
@@ -297,7 +304,7 @@ class WalletEntry {
 })
 @Inject('$scope','$q','localKeyStore','walletFile','$window',
   'lightwalletService','heat','assetInfo','ethplorer',
-  '$mdToast','$mdDialog','clipboard','user')
+  '$mdToast','$mdDialog','clipboard','user','bitcoreService')
 class WalletComponent {
 
   selectAll = true;
@@ -319,7 +326,8 @@ class WalletComponent {
     private $mdToast: angular.material.IToastService,
     private $mdDialog: angular.material.IDialogService,
     private clipboard: ClipboardService,
-    private user: UserService) {
+    private user: UserService,
+    private bitcoreService: BitcoreService) {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
@@ -525,13 +533,28 @@ class WalletComponent {
         let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
         ethCurrencyAddressLoading.visible = walletEntry.expanded
         ethCurrencyAddressLoading.wallet = wallet
+
+        let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
+        btcCurrencyAddressLoading.visible = walletEntry.expanded
+        btcCurrencyAddressLoading.wallet = wallet
+
         walletEntry.currencies.push(ethCurrencyAddressLoading)
+        walletEntry.currencies.push(btcCurrencyAddressLoading)
+
 
         let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
         ethCurrencyAddressCreate.visible = walletEntry.expanded
         ethCurrencyAddressCreate.parent = walletEntry
         ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
+
+        let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
+        btcCurrencyAddressCreate.visible = walletEntry.expanded
+        btcCurrencyAddressCreate.parent = walletEntry
+        btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+
         walletEntry.currencies.push(ethCurrencyAddressCreate)
+        walletEntry.currencies.push(btcCurrencyAddressCreate)
+
 
         this.flatten()
 
@@ -822,6 +845,104 @@ class WalletComponent {
 
                   <p>This is your Ethereum address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
                       Please store it in a safe place or you may lose access to your Ethereum.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createBtcAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        walletEntry.toggle(true)
+        self.bitcoreService.getBitcoinWallet(walletEntry.secretPhrase, walletEntry.btcWalletAddressIndex);
+        walletEntry.btcWalletAddressIndex++;
+        $mdDialog.hide();
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected==w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{password:string, secretPhrase:string}>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose:false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create Bitcoin Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new Bitcoin address, please choose the master HEAT account you want to attach the new Bitcoin address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  Btc wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your Bitcoin address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your Bitcoin.
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
