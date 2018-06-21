@@ -1038,3 +1038,16 @@ interface IHeatRewardsInfo {
   totalRewards: string;
   lastBlockTimestamp: number;
 }
+interface IHeatServerHealth {
+  balancesEquality: number[]; //Three values about equality to other peers: [mismatching count, all count, average height of all compared peers]
+  lastBlockHeight: number;
+  lastBlockTimestamp: number;
+  peersIndicator: {
+    connected: number;
+    disconnected: number;
+    nonConnected: number;
+    blacklisted: number;
+    all: number;
+    timestamp: number;
+  }
+}

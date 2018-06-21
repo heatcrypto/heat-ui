@@ -69,6 +69,48 @@ class SettingsService {
   public static HEATLEDGER_BTC_ASSET = 'settings.heatledger_btc_asset';
   public static HEATLEDGER_NAME_ASSIGNER = 'settings.heatledger_name_assigner';
 
+  public static MAINNET_KNOWN_SERVERS = [
+    {
+      host: "https://heatwallet.com",
+      port: 7734,
+      websocket: "wss://heatwallet.com:7755/ws/",
+      certifierAccount: "2243498237075721643",
+      btcAsset: "5592059897546023466",
+      nameAssigner: "14439304480879065693"
+    },
+    {
+      host: "http://localhost",
+      port: 7733,
+      websocket: "ws://localhost:7763/ws/"
+    }
+  ];
+
+  public static TESTNET_KNOWN_SERVERS = [
+    {
+      host: "https://alpha.heatledger.com",
+      port: 7734,
+      websocket: "wss://heatwallet.com:7755/ws/",
+      certifierAccount: "4729421738299387565",
+      btcAsset: "2801534132504071984",
+      nameAssigner: "0000000"
+    },
+    {
+      host: "http://localhost",
+      port: 7733,
+      websocket: "ws://localhost:7755/ws/"
+    },
+    {
+      host: "http://localhost",
+      port: 7737,
+      websocket: "ws://localhost:7757/ws/"
+    },
+    {
+      host: "http://185.40.76.143",
+      port: 7733,
+      websocket: "ws://185.40.76.143:7757/ws/"
+    }
+  ];
+
   constructor() {
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -152,6 +194,21 @@ class SettingsService {
   }
 
   settings={};
+
+  public getKnownServers() {
+    if (heat.isTestnet)
+      return SettingsService.TESTNET_KNOWN_SERVERS;
+    return SettingsService.MAINNET_KNOWN_SERVERS;
+  }
+
+  public setCurrentServer(server) {
+    this.settings[SettingsService.HEAT_HOST] = server.host;
+    this.settings[SettingsService.HEAT_PORT] = server.port;
+    this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+    this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = server.certifierAccount;
+    this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = server.btcAsset;
+    this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = server.nameAssigner;
+  }
 
   public get(id:string) {
     return this.settings[id];

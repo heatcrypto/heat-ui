@@ -42,6 +42,12 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get('/blockchain/status');
   }
 
+  getServerHealth(host?: string, port?: number):angular.IPromise<IHeatServerHealth> {
+    if (!host)
+      return this.heat.get('/tools/telemetry/health');
+    return this.heat.getRaw(host, port, '/tools/telemetry/health');
+  }
+
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
     return this.heat.get(`/blockchain/blocks/${from}/${to}/null`); // @see api, null means no transaction data at all
   }
