@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var lightwallet: any;
 declare var HookedWeb3Provider: any;
 declare var Web3: any;
 declare type WalletAddress = {
@@ -58,25 +57,28 @@ declare type WalletType = {
 }
 
 @Service('lightwalletService')
-@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer')
+@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer', '$window')
 class LightwalletService {
 
   //public wallet: WalletType
   static readonly BIP44 = "m/44'/60'/0'/0";
+  private lightwallet;
 
   constructor(private web3Service: Web3Service,
     private userService: UserService,
     private settingsService: SettingsService,
     private $rootScope: angular.IRootScopeService,
-    private ethplorer: EthplorerService) {
+    private ethplorer: EthplorerService,
+    private $window: angular.IWindowService,) {
+      this.lightwallet = $window.heatlibs.lightwallet;
   }
 
   generateRandomSeed() {
-    return lightwallet.keystore.generateRandomSeed();
+    return this.lightwallet.keystore.generateRandomSeed();
   }
 
   validSeed(seed) {
-    return lightwallet.keystore.isSeedValid(seed)
+    return this.lightwallet.keystore.isSeedValid(seed)
   }
 
   validPrivateKey(privKey) {
@@ -192,7 +194,7 @@ class LightwalletService {
     let that = this;
     return new Promise((resolve, reject) => {
       try {
-        lightwallet.keystore.createVault({
+        this.lightwallet.keystore.createVault({
           password: password,
           seedPhrase: seed,
           hdPathString: LightwalletService.BIP44
@@ -246,10 +248,10 @@ class LightwalletService {
     let that = this;
     return new Promise((resolve, reject) => {
       try {
-        lightwallet.keystore.createVault({
+        this.lightwallet.keystore.createVault({
           password: password,
           // we use a random seed each time since lightwallet needs that
-          seedPhrase: lightwallet.keystore.generateRandomSeed(),
+          seedPhrase: this.lightwallet.keystore.generateRandomSeed(),
           hdPathString: LightwalletService.BIP44
         }, (err, ks) => {
           if (err) {
@@ -273,12 +275,12 @@ class LightwalletService {
             }
 
             try {
-              var encPrivKey = lightwallet.keystore._encryptKey(privkeyHex, pwDerivedKey);
+              var encPrivKey = this.lightwallet.keystore._encryptKey(privkeyHex, pwDerivedKey);
               var keyObj = {
                 privKey: privkeyHex,
                 encPrivKey: encPrivKey
               }
-              var address = lightwallet.keystore._computeAddressFromPrivKey(keyObj.privKey);
+              var address = this.lightwallet.keystore._computeAddressFromPrivKey(keyObj.privKey);
               ks.encPrivKeys[address] = keyObj.encPrivKey;
               ks.addresses.push(address);
 
