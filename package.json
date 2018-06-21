@@ -66,7 +66,6 @@
     "bytebuffer": "5.0.1",
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
-    "eth-lightwallet": "^3.0.1",
     "filesaver.js": "0.2.0",
     "hooked-web3-provider": "^1.0.0",
     "jsonformatter": "^0.6.0",
