@@ -21,12 +21,25 @@ class BtcBlockExplorerService {
     return deferred.promise
   }
 
-  public getTransactions(address: string) {
+  public getTransactions(address: string): angular.IPromise<any> {
     var getTransactionsApi = 'https://testnet.blockexplorer.com/api/txs/?address=:address';
     var deferred = this.$q.defer();
     this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
       console.log("transactions response " + response)
+      deferred.resolve(parsed.txs)
+    }, ()=> {
+      deferred.reject();
+    })
+    return deferred.promise;
+  }
+
+  public getAddressInfo(address: string) {
+    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/addr/:address';
+    var deferred = this.$q.defer();
+    this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
+      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+      console.log("address info response " + response)
     })
   }
 }

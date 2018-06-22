@@ -9,30 +9,23 @@
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <!-- HEIGHT
-          <div class="he truncate-col height-col left" >Height</div>
-          -->
+          <!-- TX ID  -->
+          <div class="he truncate-col height-col left">Transaction ID</div>
 
           <!-- DATE -->
           <div class="truncate-col date-col left">Time</div>
 
-          <!-- ID -->
-          <div class="truncate-col id-col left">Id</div>
+          <!-- BLOCKHEIGHT -->
+          <div class="truncate-col id-col left">BLOCKHEIGHT</div>
 
-          <!-- INOUT -->
-          <div class="truncate-col inoutgoing-col left">In/Out</div>
+          <!-- FROM -->
+          <div class="truncate-col inoutgoing-col left">FROM</div>
 
-          <!-- TRANSACTION -->
-          <!-- <div class="truncate-col transaction-col left">Transaction</div> -->
+          <!-- TO -->
+          <div class="truncate-col transaction-col left">TO</div>
 
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
-
-          <!-- TOFROM -->
-          <div class="truncate-col tofrom-col left">To/From</div>
-
-          <!-- INFO -->
-          <div class="truncate-col info-col left" flex>Info</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -41,48 +34,33 @@
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
 
-            <!-- HEIGHT
+            <!-- TX ID -->
             <div class="he truncate-col height-col left" >
-              <span ng-show="item.height!=2147483647">{{item.heightDisplay}}</span>
               <span>
-                <a target="_blank" href="https://etherscan.io/block/{{item.heightDisplay}}">{{item.heightDisplay}}</a>
+                <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
-            -->
 
             <!-- DATE -->
             <div class="truncate-col date-col left">{{item.time}}</div>
 
-            <!-- ID -->
-            <div class="truncate-col id-col left">
-              <a target="_blank" href="https://ethplorer.io/tx/{{item.hash}}">{{item.hash}}</a>
-            </div>
+            <!-- BLOCKHEIGHT -->
+            <div class="truncate-col date-col left">{{item.blockheight}}</div>
 
-            <!-- INOUT -->
+
+            <!-- FROM -->
             <div class="truncate-col inoutgoing-col left">
-              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
-                {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
-              </md-icon>
+             <span>testFrom {{item.from}}</span>
             </div>
 
-            <!-- TRANSACTION -->
-            <!-- <div class="truncate-col transaction-col left">
-              <span ng-bind-html="item.renderedTransactionType"></span>
-            </div> -->
+            <!-- TO -->
+            <div class="truncate-col transaction-col left">
+              <span>testTo {{item.to}}</span>
+            </div>
 
             <!-- AMOUNT -->
             <div class="truncate-col amount-col left">
-              <span ng-bind-html="item.renderedAmount"></span>
-            </div>
-
-            <!-- TOFROM -->
-            <div class="truncate-col tofrom-col left">
-              <span ng-bind-html="item.renderedToFrom"></span>
-            </div>
-
-            <!-- INFO -->
-            <div class="truncate-col info-col left" flex>
-              <span ng-bind-html="item.renderedInfo"></span>
+              <span>some amount {{item.amount}}</span>
             </div>
 
             <!-- JSON -->
@@ -114,10 +92,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any|IBTCTransaction) => {
-        var date = new Date(0); // 0 sets date to epoch time
-        date.setUTCSeconds(<any>transaction.timestamp);
-        transaction['time'] = dateFormat(date, format);
-        transaction['heightDisplay'] = 'no height'
+
       }
     );
 
@@ -128,7 +103,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
+    dialogs.jsonDetails($event, item, 'Transaction: '+item.txid);
   }
 
 

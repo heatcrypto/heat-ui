@@ -533,28 +533,14 @@ class WalletComponent {
         let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
         ethCurrencyAddressLoading.visible = walletEntry.expanded
         ethCurrencyAddressLoading.wallet = wallet
-
-        let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
-        btcCurrencyAddressLoading.visible = walletEntry.expanded
-        btcCurrencyAddressLoading.wallet = wallet
-
         walletEntry.currencies.push(ethCurrencyAddressLoading)
-        walletEntry.currencies.push(btcCurrencyAddressLoading)
-
 
         let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
         ethCurrencyAddressCreate.visible = walletEntry.expanded
         ethCurrencyAddressCreate.parent = walletEntry
         ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
 
-        let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
-        btcCurrencyAddressCreate.visible = walletEntry.expanded
-        btcCurrencyAddressCreate.parent = walletEntry
-        btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-
         walletEntry.currencies.push(ethCurrencyAddressCreate)
-        walletEntry.currencies.push(btcCurrencyAddressCreate)
-
 
         this.flatten()
 
@@ -562,7 +548,27 @@ class WalletComponent {
         if (walletEntry.expanded) {
           this.loadEthereumAddresses(walletEntry)
         }
-      })
+      }).then(()=> {
+        this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
+          let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
+          btcCurrencyAddressLoading.visible = walletEntry.expanded;
+          btcCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(btcCurrencyAddressLoading);
+
+          let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
+          btcCurrencyAddressCreate.visible = walletEntry.expanded
+          btcCurrencyAddressCreate.parent = walletEntry
+          btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(btcCurrencyAddressCreate)
+
+          this.flatten()
+
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadBitcoinAddresses(walletEntry)
+          }
+        });
+      });
     }
   }
 
@@ -604,6 +610,40 @@ class WalletComponent {
 
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c!=ethCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
+
+
+  /* Only when we expand a wallet entry do we lookup its balances */
+  public loadBitcoinAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let btcCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading)
+    if (!btcCurrencyAddressLoading)
+      return
+
+    this.bitcoreService.refreshAdressBalances(btcCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
+      btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account]||[]).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let btcCurrencyBalance = new CurrencyBalance('Bitcoin','BTC',address.address, address.privateKey)
+          btcCurrencyBalance.balance = address.balance+""
+          btcCurrencyBalance.visible = walletEntry.expanded
+          btcCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
+          index++;
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c!=btcCurrencyAddressLoading)
       this.flatten()
     })
   }
@@ -888,9 +928,16 @@ class WalletComponent {
       $scope['vm'].okButtonClick = function ($event) {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
         walletEntry.toggle(true)
-        self.bitcoreService.getBitcoinWallet(walletEntry.secretPhrase, walletEntry.btcWalletAddressIndex);
+        var btcWallet = self.bitcoreService.getBitcoinWallet(walletEntry.secretPhrase, walletEntry.btcWalletAddressIndex);
         walletEntry.btcWalletAddressIndex++;
         $mdDialog.hide();
+        console.log('address ' + btcWallet.address)
+        console.log('private key ' + btcWallet.privateKey)
+        // this.btcBlockExplorerService.getBalances(btcWallet.address)
+        // this.btcBlockExplorerService.getTransactions(btcWallet.address)
+        let $location = <angular.ILocationService> heat.$inject.get('$location')
+        $location.path('bitcoin-account/'+btcWallet.address)
+
       }
 
       $scope['vm'].data = {
