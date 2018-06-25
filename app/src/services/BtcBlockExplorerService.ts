@@ -7,15 +7,13 @@ class BtcBlockExplorerService {
               private $q: angular.IQService) {
   }
 
-  public getBalances(address: string) {
+  public getBalance(address: string) {
     let deferred = this.$q.defer<string>();
     var balancesApi = 'https://testnet.blockexplorer.com/api/addr/:address/balance';
     this.http.get(balancesApi.replace(':address', address))
         .then(response => {
-          console.log("balances response " + response)
           deferred.resolve(response)
         }, () => {
-          console.log(`HTTP reject for ${balancesApi}`)
           deferred.reject()
         })
     return deferred.promise
@@ -26,7 +24,6 @@ class BtcBlockExplorerService {
     var deferred = this.$q.defer();
     this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
-      console.log("transactions response " + response)
       deferred.resolve(parsed.txs)
     }, ()=> {
       deferred.reject();
@@ -34,12 +31,21 @@ class BtcBlockExplorerService {
     return deferred.promise;
   }
 
-  public getAddressInfo(address: string) {
+  public getAddressInfo(address: string): angular.IPromise<BlockExplorerAddressInfo>  {
     var getTransactionsApi = 'https://testnet.blockexplorer.com/api/addr/:address';
-    var deferred = this.$q.defer();
+    var deferred = this.$q.defer<BlockExplorerAddressInfo>();
     this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
-      console.log("address info response " + response)
+      deferred.resolve(parsed);
+    }, () => {
+      deferred.reject();
     })
+    return deferred.promise
   }
+}
+
+interface BlockExplorerAddressInfo {
+  address: string;
+  txApperances: number;
+  balance: number;
 }

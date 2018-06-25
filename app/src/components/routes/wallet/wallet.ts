@@ -47,6 +47,9 @@ class CurrencyBalance {
     if (this.name=='Ethereum') {
       currency = new ETHCurrency(this.secretPhrase ,this.address)
     }
+    else if(this.name=='Bitcoin'){
+      currency = new BTCCurrency(this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
@@ -128,6 +131,54 @@ class CurrencyAddressCreate {
 
     return false
   }
+
+  createBtcAddress(component: WalletComponent) {
+
+    // collect all CurrencyBalance of 'our' same currency type
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+
+    // if there is no address in use yet we use the first one
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('Bitcoin','BTC',nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+
+    // determine the first 'next' address based of the last currencyBalance displayed
+    let lastAddress = currencyBalances[currencyBalances.length -1]['address']
+
+    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
+    if (!currencyBalances[currencyBalances.length -1]['inUse']) {
+      return false
+    }
+
+    // look up the following address
+    for (let i=0; i<this.wallet.addresses.length; i++) {
+
+      // we've found the address
+      if (this.wallet.addresses[i].address == lastAddress) {
+
+        // next address is the one - but if no more addresses we exit since not possible
+        if (i == this.wallet.addresses.length-1)
+          return
+
+        let nextAddress = this.wallet.addresses[i+1]
+        let newCurrencyBalance = new CurrencyBalance('Bitcoin','BTC',nextAddress.address, nextAddress.privateKey)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        newCurrencyBalance.visible = this.parent.expanded
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length-1])+1
+        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        this.flatten()
+        return true
+      }
+    }
+
+    return false
+  }
 }
 
 class WalletEntry {
@@ -158,7 +209,8 @@ class WalletEntry {
       }
     })
     if (this.expanded) {
-      this.component.loadEthereumAddresses(this)
+      this.component.loadEthereumAddresses(this);
+      this.component.loadBitcoinAddresses(this);
     }
   }
 
@@ -576,7 +628,7 @@ class WalletComponent {
   public loadEthereumAddresses(walletEntry: WalletEntry) {
 
     /* Find the Loading node, if thats not available we can exit */
-    let ethCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading)
+    let ethCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name=='Ethereum')
     if (!ethCurrencyAddressLoading)
       return
 
@@ -619,7 +671,7 @@ class WalletComponent {
   public loadBitcoinAddresses(walletEntry: WalletEntry) {
 
     /* Find the Loading node, if thats not available we can exit */
-    let btcCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading)
+    let btcCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
     if (!btcCurrencyAddressLoading)
       return
 
@@ -928,15 +980,24 @@ class WalletComponent {
       $scope['vm'].okButtonClick = function ($event) {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
         walletEntry.toggle(true)
-        var btcWallet = self.bitcoreService.getBitcoinWallet(walletEntry.secretPhrase, walletEntry.btcWalletAddressIndex);
-        walletEntry.btcWalletAddressIndex++;
-        $mdDialog.hide();
-        console.log('address ' + btcWallet.address)
-        console.log('private key ' + btcWallet.privateKey)
-        // this.btcBlockExplorerService.getBalances(btcWallet.address)
+        // var btcWallet = self.bitcoreService.getBitcoinWallet(walletEntry.secretPhrase, walletEntry.btcWalletAddressIndex);
+        // walletEntry.btcWalletAddressIndex++;
+        // $mdDialog.hide();
+        // console.log('address ' + btcWallet.address)
+        // console.log('private key ' + btcWallet.privateKey)
+
+
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
+          success = node.createBtcAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null);
+        // this.btcBlockExplorerService.getBalance(btcWallet.address)
         // this.btcBlockExplorerService.getTransactions(btcWallet.address)
-        let $location = <angular.ILocationService> heat.$inject.get('$location')
-        $location.path('bitcoin-account/'+btcWallet.address)
+        // let $location = <angular.ILocationService> heat.$inject.get('$location')
+        // $location.path('bitcoin-account/'+btcWallet.address)
 
       }
 

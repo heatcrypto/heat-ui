@@ -50,29 +50,25 @@ class BitcoreService {
         addresses.shift()
 
         /* look up its data on ethplorer */
-        // let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
-        // ethplorer.getAddressInfo(address).then(info => {
+        let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+        btcBlockExplorerService.getAddressInfo(address).then(info => {
 
-        //   /* lookup the 'real' WalletAddress */
-        //   let walletAddress = wallet.addresses.find(x => x.address == address)
-        //   if (!walletAddress)
-        //     return
+          /* lookup the 'real' WalletAddress */
+          let walletAddress = wallet.addresses.find(x => x.address == address)
+          if (!walletAddress)
+            return
 
-        //   walletAddress.inUse = info.countTxs!=0
-        //   if (!walletAddress.inUse) {
-        //     resolve(false)
-        //     return
-        //   }
+          walletAddress.inUse = info.txApperances!=0
+          if (!walletAddress.inUse) {
+            resolve(false)
+            return
+          }
 
-        //   walletAddress.balance = info.ETH.balance+""
-        //   walletAddress.tokensBalances = []
-        //   resolve(true)
-        // }, () => {
-        //   resolve(false)
-        // })
-
-        // remove this line after uncommenting above code
-        resolve(true)
+          walletAddress.balance = info.balance+""
+          resolve(true)
+        }, () => {
+          resolve(false)
+        })
       })
     }
 

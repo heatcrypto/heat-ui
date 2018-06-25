@@ -39,7 +39,7 @@ class BitcoinAccountComponent {
   constructor(private $scope: angular.IScope,
               private btcBlockExplorerService: BtcBlockExplorerService) {
 
-    this.btcBlockExplorerService.getBalances(this.account).then((response) => {
+    this.btcBlockExplorerService.getBalance(this.account).then((response) => {
       this.balanceUnconfirmed = parseFloat(response) / 100000000; // convert response from Satoshis to BTC
     });
   }

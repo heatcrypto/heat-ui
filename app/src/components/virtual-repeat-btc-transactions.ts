@@ -60,7 +60,7 @@
 
             <!-- AMOUNT -->
             <div class="truncate-col amount-col left">
-              <span>some amount {{item.amount}}</span>
+              <span>{{item.amount}}</span>
             </div>
 
             <!-- JSON -->
@@ -92,7 +92,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any|IBTCTransaction) => {
-
+        transaction.amount = transaction.vout[0].value;
       }
     );
 
