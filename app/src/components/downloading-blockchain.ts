@@ -106,8 +106,7 @@ class DownloadingBlockchainComponent {
       knownServers.forEach(server => {
         let health: IHeatServerHealth = server["health"];
         server["score"] = null;
-        if (!health)
-          return;
+        if (health)
         server["score"] = 0; // has health means has min score
         if (server.host == this.settings.get(SettingsService.HEAT_HOST) && server.port == this.settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
@@ -119,7 +118,7 @@ class DownloadingBlockchainComponent {
       });
 
       if (currentServerIsAlive && ! currentServerHealth)
-        return;
+        return;  //has no health (old version or monitoring API is disabled) so nothing to compare
 
       //compare health of other servers with health of the current server
       knownServers.forEach(server => {
@@ -153,7 +152,7 @@ class DownloadingBlockchainComponent {
       });
       let best;
       knownServers.forEach(server => {
-        if (! currentServerIsAlive || server["score"] > 0)
+        if (! currentServerIsAlive || server["score"] >= 0)
           if (!best || server["score"] > best["score"] || (server["score"] != null && best["score"] == null))
             best = server;
       });
