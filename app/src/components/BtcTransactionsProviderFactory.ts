@@ -23,13 +23,20 @@ class BtcTransactionsProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-      deferred.resolve(10);
-      return <angular.IPromise<number>>deferred.promise;
+    this.btcBlockExplorerService.getAddressInfo(this.account).then(addressInfo => {
+      deferred.resolve(addressInfo.txApperances)
+    }, () => {
+      deferred.reject()
+    })
+
+    return <angular.IPromise<number>>deferred.promise;
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<any>> {
-    return this.btcBlockExplorerService.getTransactions('my5Kt1UfJ6oKuaA9vtqpJUeDSEo6AcDHh4')
+    let pageNum = 0;
+    pageNum = (lastIndex / 10) - 1;
+    return this.btcBlockExplorerService.getTransactions(this.account, pageNum)
   }
 
 }

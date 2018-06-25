@@ -979,26 +979,17 @@ class WalletComponent {
 
       $scope['vm'].okButtonClick = function ($event) {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
-        walletEntry.toggle(true)
-        // var btcWallet = self.bitcoreService.getBitcoinWallet(walletEntry.secretPhrase, walletEntry.btcWalletAddressIndex);
-        // walletEntry.btcWalletAddressIndex++;
-        // $mdDialog.hide();
-        // console.log('address ' + btcWallet.address)
-        // console.log('private key ' + btcWallet.privateKey)
-
-
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
           success = node.createBtcAddress(self)
           walletEntry.toggle(true)
         }
-        $mdDialog.hide(null);
-        // this.btcBlockExplorerService.getBalance(btcWallet.address)
-        // this.btcBlockExplorerService.getTransactions(btcWallet.address)
-        // let $location = <angular.ILocationService> heat.$inject.get('$location')
-        // $location.path('bitcoin-account/'+btcWallet.address)
-
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          }
+        })
       }
 
       $scope['vm'].data = {

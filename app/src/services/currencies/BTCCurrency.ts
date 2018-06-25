@@ -17,7 +17,8 @@ class BTCCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.btcBlockExplorerService.getBalance(this.address).then(
       balance => {
-        return utils.commaFormat(new Big(balance+"").toFixed(18))
+        let balanceUnconfirmed = parseFloat(balance) / 100000000;
+        return utils.commaFormat(new Big(balanceUnconfirmed+"").toFixed(8))
       }
     )
   }

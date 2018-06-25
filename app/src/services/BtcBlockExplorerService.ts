@@ -19,10 +19,10 @@ class BtcBlockExplorerService {
     return deferred.promise
   }
 
-  public getTransactions(address: string): angular.IPromise<any> {
-    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/txs/?address=:address';
+  public getTransactions(address: string, pageNum: number): angular.IPromise<any> {
+    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/txs/?address=:address&pageNum=:pageNum';
     var deferred = this.$q.defer();
-    this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
+    this.http.get(getTransactionsApi.replace(':address', address).replace(':pageNum', pageNum.toString())).then(response => {
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.txs)
     }, ()=> {

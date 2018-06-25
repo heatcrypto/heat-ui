@@ -100,6 +100,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     let timeout = setTimeout(refresh, 10*1000)
 
     let listener = this.determineLength.bind(this)
+    this.PAGE_SIZE = 10;
   }
 
   jsonDetails($event, item) {
