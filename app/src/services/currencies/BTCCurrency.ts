@@ -61,15 +61,17 @@ class BTCCurrency implements ICurrency {
       }
       $scope['vm'].okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
-        let web3 = <Web3Service> heat.$inject.get('web3')
-        let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
-        let from = user.currency.address
+        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+
+        let amountInSatoshi = $scope['vm'].data.amount.replace(',','')
+
+        let from = {address: user.currency.address, privateKey: user.secretPhrase}
         let to = $scope['vm'].data.recipient
         $scope['vm'].disableOKBtn = true
-        web3.sendEther(from, to, amountInWei).then(
+        bitcoreService.sendBitcoins(from, to, amountInSatoshi).then(
           data => {
             $mdDialog.hide(data).then(() => {
-              dialogs.alert(event, 'Success', `TxHash: ${data.txHash}`);
+              dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
             })
           },
           err => {
@@ -84,17 +86,17 @@ class BTCCurrency implements ICurrency {
         amount: '',
         recipient: '',
         recipientInfo: '',
-        fee: '0.000420'
+        fee: '0.0005'
       }
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
-        let ethplorer = <EthplorerService> heat.$inject.get('ethplorer')
-        ethplorer.getAddressInfo($scope['vm'].data.recipient).then(
+        let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
+        btcBlockExplorerService.getAddressInfo($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = Number.parseFloat(info.ETH.balance).toFixed(18)
-              $scope['vm'].data.recipientInfo = `Balance: ${balance} ETH`
+              let balance = info.balance.toFixed(8)
+              $scope['vm'].data.recipientInfo = `Balance: ${balance} BTC`
             })
           },
           error => {
@@ -113,7 +115,7 @@ class BTCCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txHash:string }>()
+    let deferred = $q.defer<{ txId:string }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -124,7 +126,7 @@ class BTCCurrency implements ICurrency {
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Send Ether</h2></div>
+              <div class="md-toolbar-tools"><h2>Send BTC</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column">
@@ -136,11 +138,11 @@ class BTCCurrency implements ICurrency {
                 </md-input-container>
 
                 <md-input-container flex >
-                  <label>Amount in ETH</label>
+                  <label>Amount in BTC</label>
                   <input ng-model="vm.data.amount" required name="amount">
                 </md-input-container>
 
-                <p>Fee: {{vm.data.fee}} ETH</p>
+                <p>Fee: {{vm.data.fee}} BTC</p>
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">

@@ -6,13 +6,14 @@ class BitcoreService {
   static readonly BIP44 = "m/44'/0'/0'/0/";
   private bitcore;
   private bip39;
+  private explorers;
 
   constructor(private $window: angular.IWindowService,
     private btcBlockExplorerService: BtcBlockExplorerService,
     private $location: angular.ILocationService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
-
+    this.explorers = $window.heatlibs.explorers;
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
@@ -92,20 +93,58 @@ class BitcoreService {
     })
   }
 
-  sendBitcoins(from: string, to: string, value: any) {
-    console.log('bitcoin sent')
+  sendBitcoins(from: any, to: string, value: number): Promise<{ txId:string }> {
+    let insight = new this.explorers.Insight('testnet');
+
+    return new Promise ((resolve, reject) => {
+      insight.getUnspentUtxos(from.address, (err, utxos) => {
+        if (err) {
+          console.log('Error getting UTXOs ' + err)
+          reject(err)
+        } else {
+          let tx = this.bitcore.Transaction();
+          tx.from(utxos)
+          tx.to(to, 1000000)
+          tx.change(from.address)
+          tx.fee(50000)
+          tx.sign(from.privateKey)
+          tx.serialize();
+
+          this.broadcastTransaction(insight, tx).then(data => {
+            resolve(data)
+          }, err => {
+            reject(err)
+          })
+        }
+      });
+    })
+  }
+
+  private broadcastTransaction (insight: any, tx: any): Promise<{ txId:string }> {
+    return new Promise((resolve, reject) => {
+      insight.broadcast(tx, (err, txId) => {
+        if(err) {
+          console.log('Error broadcasting transaction ' + err)
+          reject(err)
+        } else {
+          console.log('transfer success ' + txId)
+          resolve({
+            txId: txId
+          })
+        }
+      })
+    })
   }
 
   getBitcoinWallet(mnemonic: string, index: Number = 0) {
 
-    var seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
-    var HDPrivateKey = this.bitcore.HDPrivateKey;
-    var hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'testnet')
+    let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
+    let HDPrivateKey = this.bitcore.HDPrivateKey;
+    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'testnet')
 
-    var derived = hdPrivateKey.derive(BitcoreService.BIP44 + index);
-    var address = derived.privateKey.toAddress();
-    var privateKey = derived.privateKey.toWIF();
-
+    let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index);
+    let address = derived.privateKey.toAddress();
+    let privateKey = derived.privateKey.toWIF();
     return {
       address: address.toString(),
       privateKey: privateKey.toString()

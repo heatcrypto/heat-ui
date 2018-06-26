@@ -23,8 +23,8 @@ class BtcTransactionsProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-    this.btcBlockExplorerService.getAddressInfo(this.account).then(addressInfo => {
-      deferred.resolve(addressInfo.txApperances)
+    this.btcBlockExplorerService.getAddressInfo(this.account).then(result => {
+      deferred.resolve(result.transactions.length)
     }, () => {
       deferred.reject()
     })

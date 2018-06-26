@@ -32,7 +32,7 @@ class BtcBlockExplorerService {
   }
 
   public getAddressInfo(address: string): angular.IPromise<BlockExplorerAddressInfo>  {
-    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/addr/:address';
+    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/addr/:address?noTxList=0&noCache=1';
     var deferred = this.$q.defer<BlockExplorerAddressInfo>();
     this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -48,4 +48,5 @@ interface BlockExplorerAddressInfo {
   address: string;
   txApperances: number;
   balance: number;
+  transactions: Array<string>
 }
