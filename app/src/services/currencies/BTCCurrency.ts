@@ -138,7 +138,7 @@ class BTCCurrency implements ICurrency {
                 </md-input-container>
 
                 <md-input-container flex >
-                  <label>Amount in BTC</label>
+                  <label>Amount in Satoshi</label>
                   <input ng-model="vm.data.amount" required name="amount">
                 </md-input-container>
 

@@ -9,20 +9,18 @@
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <!-- TX ID  -->
-          <div class="he truncate-col height-col left">Transaction ID</div>
 
           <!-- DATE -->
           <div class="truncate-col date-col left">Time</div>
 
-          <!-- BLOCKHEIGHT -->
-          <div class="truncate-col id-col left">BLOCKHEIGHT</div>
+          <!-- TX ID  -->
+          <div class="he truncate-col info-col left">Transaction ID</div>
 
           <!-- FROM -->
-          <div class="truncate-col inoutgoing-col left">FROM</div>
+          <div class="truncate-col info-col left">FROM</div>
 
           <!-- TO -->
-          <div class="truncate-col transaction-col left">TO</div>
+          <div class="truncate-col info-col left">TO</div>
 
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
@@ -34,28 +32,24 @@
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
 
+            <!-- DATE -->
+            <div class="truncate-col date-col left">{{item.dateTime}}</div>
+
             <!-- TX ID -->
-            <div class="he truncate-col height-col left" >
+            <div class="he truncate-col info-col left" >
               <span>
                 <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
 
-            <!-- DATE -->
-            <div class="truncate-col date-col left">{{item.time}}</div>
-
-            <!-- BLOCKHEIGHT -->
-            <div class="truncate-col date-col left">{{item.blockheight}}</div>
-
-
             <!-- FROM -->
-            <div class="truncate-col inoutgoing-col left">
-             <span>testFrom {{item.from}}</span>
+            <div class="truncate-col info-col left">
+             <span>{{item.from}}</span>
             </div>
 
             <!-- TO -->
-            <div class="truncate-col transaction-col left">
-              <span>testTo {{item.to}}</span>
+            <div class="truncate-col info-col left">
+              <span>{{item.to}}</span>
             </div>
 
             <!-- AMOUNT -->
@@ -93,6 +87,9 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
       /* decorator function */
       (transaction: any|IBTCTransaction) => {
         transaction.amount = transaction.vout[0].value;
+        transaction.dateTime = dateFormat(transaction.time, format);
+        transaction.from = transaction.vin[0].addr;
+        transaction.to = transaction.vout[0].scriptPubKey.addresses[0]
       }
     );
 

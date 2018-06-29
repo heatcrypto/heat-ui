@@ -50,7 +50,7 @@ class BitcoreService {
         let address = addresses[0]
         addresses.shift()
 
-        /* look up its data on ethplorer */
+        /* look up its data on btcBlockExplorerService */
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
         btcBlockExplorerService.getAddressInfo(address).then(info => {
 
