@@ -87,7 +87,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
       /* decorator function */
       (transaction: any|IBTCTransaction) => {
         transaction.amount = transaction.vout[0].value;
-        transaction.dateTime = dateFormat(transaction.time, format);
+        transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
         transaction.to = transaction.vout[0].scriptPubKey.addresses[0]
       }

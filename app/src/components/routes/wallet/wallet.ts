@@ -25,7 +25,7 @@ class TokenBalance {
   public isTokenBalance = true
   public balance: string
   public visible = false
-  constructor(public name: string, public symbol: string, public address: string) {}
+  constructor(public name: string, public symbol: string, public address: string) { }
 }
 
 class CurrencyBalance {
@@ -34,27 +34,27 @@ class CurrencyBalance {
   public inUse = false
   public tokens: Array<TokenBalance> = []
   public visible = false
-  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) {}
+  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) { }
 
   public unlock(noPathChange?: boolean) {
-    let user = <UserService> heat.$inject.get('user')
-    let $location = <angular.ILocationService> heat.$inject.get('$location')
-    let lightwalletService = <LightwalletService> heat.$inject.get('lightwalletService')
+    let user = <UserService>heat.$inject.get('user')
+    let $location = <angular.ILocationService>heat.$inject.get('$location')
+    let lightwalletService = <LightwalletService>heat.$inject.get('lightwalletService')
     let bip44Compatible = lightwalletService.validSeed(this.secretPhrase)
 
     /* Create the ICurrency based on the currency type */
     let currency: ICurrency = null
-    if (this.name=='Ethereum') {
-      currency = new ETHCurrency(this.secretPhrase ,this.address)
+    if (this.name == 'Ethereum') {
+      currency = new ETHCurrency(this.secretPhrase, this.address)
     }
-    else if(this.name=='Bitcoin'){
+    else if (this.name == 'Bitcoin') {
       currency = new BTCCurrency(this.secretPhrase, this.address)
     }
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
 
-    user.unlock(this.secretPhrase,null,bip44Compatible, currency).then(
+    user.unlock(this.secretPhrase, null, bip44Compatible, currency).then(
       () => {
         if (!noPathChange) {
           $location.path(currency.homePath)
@@ -69,7 +69,7 @@ class CurrencyAddressLoading {
   public isCurrencyAddressLoading = true
   public visible = false
   public wallet: WalletType
-  constructor(public name: string) {}
+  constructor(public name: string) { }
 }
 
 class CurrencyAddressCreate {
@@ -78,7 +78,7 @@ class CurrencyAddressCreate {
   public hidden = true
   public parent: WalletEntry
   public flatten: () => void
-  constructor(public name: string, public wallet: WalletType) {}
+  constructor(public name: string, public wallet: WalletType) { }
 
   /* Handler for creating a new address, this method is declared here (on the node so to say)
     still after an architectural change where we dont display the CREATE node anymore.
@@ -92,7 +92,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Ethereum','ETH',nextAddress.address, nextAddress.privateKey)
+      let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.parent.currencies.push(newCurrencyBalance)
@@ -101,28 +101,28 @@ class CurrencyAddressCreate {
     }
 
     // determine the first 'next' address based of the last currencyBalance displayed
-    let lastAddress = currencyBalances[currencyBalances.length -1]['address']
+    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
     // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-    if (!currencyBalances[currencyBalances.length -1]['inUse']) {
+    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
       return false
     }
 
     // look up the following address
-    for (let i=0; i<this.wallet.addresses.length; i++) {
+    for (let i = 0; i < this.wallet.addresses.length; i++) {
 
       // we've found the address
       if (this.wallet.addresses[i].address == lastAddress) {
 
         // next address is the one - but if no more addresses we exit since not possible
-        if (i == this.wallet.addresses.length-1)
+        if (i == this.wallet.addresses.length - 1)
           return
 
-        let nextAddress = this.wallet.addresses[i+1]
-        let newCurrencyBalance = new CurrencyBalance('Ethereum','ETH',nextAddress.address, nextAddress.privateKey)
+        let nextAddress = this.wallet.addresses[i + 1]
+        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length-1])+1
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
         this.flatten()
         return true
@@ -140,7 +140,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Bitcoin','BTC',nextAddress.address, nextAddress.privateKey)
+      let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.parent.currencies.push(newCurrencyBalance)
@@ -149,28 +149,28 @@ class CurrencyAddressCreate {
     }
 
     // determine the first 'next' address based of the last currencyBalance displayed
-    let lastAddress = currencyBalances[currencyBalances.length -1]['address']
+    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
     // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-    if (!currencyBalances[currencyBalances.length -1]['inUse']) {
+    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
       return false
     }
 
     // look up the following address
-    for (let i=0; i<this.wallet.addresses.length; i++) {
+    for (let i = 0; i < this.wallet.addresses.length; i++) {
 
       // we've found the address
       if (this.wallet.addresses[i].address == lastAddress) {
 
         // next address is the one - but if no more addresses we exit since not possible
-        if (i == this.wallet.addresses.length-1)
+        if (i == this.wallet.addresses.length - 1)
           return
 
-        let nextAddress = this.wallet.addresses[i+1]
-        let newCurrencyBalance = new CurrencyBalance('Bitcoin','BTC',nextAddress.address, nextAddress.privateKey)
+        let nextAddress = this.wallet.addresses[i + 1]
+        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length-1])+1
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
         this.flatten()
         return true
@@ -182,13 +182,13 @@ class CurrencyAddressCreate {
 }
 
 class WalletEntry {
-  public isWalletEntry=true
-  public selected=true
-  public identifier:string
-  public secretPhrase:string
+  public isWalletEntry = true
+  public selected = true
+  public identifier: string
+  public secretPhrase: string
   public bip44Compatible: boolean
-  public currencies: Array<CurrencyBalance|CurrencyAddressCreate|CurrencyAddressLoading> = []
-  public pin:string
+  public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
+  public pin: string
   public unlocked = false
   public visible = true
   public expanded = false
@@ -215,7 +215,7 @@ class WalletEntry {
   }
 
   showSecretPhrase() {
-    let panel:PanelService = heat.$inject.get('panel')
+    let panel: PanelService = heat.$inject.get('panel')
     panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
@@ -223,8 +223,8 @@ class WalletEntry {
         </md-input-container>
       </div>
     `, {
-      secretPhrase: this.secretPhrase
-    })
+        secretPhrase: this.secretPhrase
+      })
   }
 
 }
@@ -354,17 +354,17 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope','$q','localKeyStore','walletFile','$window',
-  'lightwalletService','heat','assetInfo','ethplorer',
-  '$mdToast','$mdDialog','clipboard','user','bitcoreService')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window',
+  'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
+  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService')
 class WalletComponent {
 
   selectAll = true;
   allLocked = true
 
-  entries:Array<WalletEntry|CurrencyBalance|TokenBalance> = []
+  entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
-  createdAddresses: {[key:string]:Array<string>} = {}
+  createdAddresses: { [key: string]: Array<string> } = {}
 
   constructor(private $scope: angular.IScope,
     private $q: angular.IQService,
@@ -388,7 +388,7 @@ class WalletComponent {
   initLocalKeyStore() {
     this.entries = []
     this.walletEntries = []
-    this.localKeyStore.list().map((account:string) => {
+    this.localKeyStore.list().map((account: string) => {
       let name = this.localKeyStore.keyName(account)
       let walletEntry = new WalletEntry(account, name, this)
       this.walletEntries.push(walletEntry)
@@ -412,7 +412,7 @@ class WalletComponent {
   }
 
   initCreatedAddresses() {
-    for (let i=0; i<window.localStorage.length; i++) {
+    for (let i = 0; i < window.localStorage.length; i++) {
       let key = window.localStorage.key(i)
       let data = key.match(/eth-address-created:(.+):(.+)/)
       if (data) {
@@ -426,7 +426,7 @@ class WalletComponent {
   rememberAdressCreated(account: string, ethAddress: string) {
     this.createdAddresses[account] = this.createdAddresses[account] || []
     this.createdAddresses[account].push(ethAddress)
-    window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`,"1")
+    window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`, "1")
   }
 
   /* Iterates down all children of walletEntries and flattens them into the entries list */
@@ -436,7 +436,7 @@ class WalletComponent {
       this.walletEntries.forEach(walletEntry => {
         this.entries.push(walletEntry)
         walletEntry.currencies.forEach(curr => {
-          let currencyBalance = <CurrencyBalance> curr
+          let currencyBalance = <CurrencyBalance>curr
           this.entries.push(currencyBalance)
           if (currencyBalance.tokens) {
             currencyBalance.tokens.forEach(tokenBalance => {
@@ -487,7 +487,7 @@ class WalletComponent {
     }
   }
 
-  remove($event, entry:WalletEntry) {
+  remove($event, entry: WalletEntry) {
     dialogs.prompt($event, 'Remove Wallet Entry',
       `This completely removes the wallet entry from your device.
        Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
@@ -497,7 +497,7 @@ class WalletComponent {
           this.initLocalKeyStore()
         }
       }
-    );
+      );
   }
 
   unlock($event, selectedWalletEntry: WalletEntry) {
@@ -518,7 +518,7 @@ class WalletComponent {
             }
           }
         })
-        let message = `Unlocked ${count?count:'NO'} entries`
+        let message = `Unlocked ${count ? count : 'NO'} entries`
         this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
         selectedWalletEntry.toggle(true)
 
@@ -526,8 +526,8 @@ class WalletComponent {
         if (!this.user.unlocked) {
           /* Try and unlock the selected entry */
           if (selectedWalletEntry.unlocked) {
-            for (let i=0; i<selectedWalletEntry.currencies.length; i++) {
-              let balance = <CurrencyBalance> selectedWalletEntry.currencies[i]
+            for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
+              let balance = <CurrencyBalance>selectedWalletEntry.currencies[i]
               if (balance.isCurrencyBalance) {
                 balance.unlock(true)
                 return
@@ -536,8 +536,8 @@ class WalletComponent {
           }
 
           /* Try and find another CurrencyBalance */
-          for (let i=0; i<this.entries.length; i++) {
-            let balance = <CurrencyBalance> selectedWalletEntry.currencies[i]
+          for (let i = 0; i < this.entries.length; i++) {
+            let balance = <CurrencyBalance>selectedWalletEntry.currencies[i]
             if (balance.isCurrencyBalance) {
               balance.unlock(true)
               return
@@ -556,8 +556,8 @@ class WalletComponent {
     walletEntry.currencies.push(heatCurrencyBalance)
     this.flatten()
 
-    this.heat.api.getAccountByNumericId(heatAccount).then((account)=>{
-      this.$scope.$evalAsync(()=> {
+    this.heat.api.getAccountByNumericId(heatAccount).then((account) => {
+      this.$scope.$evalAsync(() => {
         let balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
         heatCurrencyBalance.balance = balanceUnconfirmed
       })
@@ -572,14 +572,35 @@ class WalletComponent {
         this.flatten()
       })
     }, () => {
-      this.$scope.$evalAsync(()=> {
+      this.$scope.$evalAsync(() => {
         heatCurrencyBalance.balance = "Address is unused"
         heatCurrencyBalance.symbol = ''
       })
     });
 
-    /* Ethereum integration starts here */
-    if (walletEntry.bip44Compatible || this.lightwalletService.validPrivateKey(walletEntry.secretPhrase)) {
+    /* Bitcoin and Ethereum integration start here */
+
+    this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
+      if (wallet !== undefined) {
+        let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
+        btcCurrencyAddressLoading.visible = walletEntry.expanded;
+        btcCurrencyAddressLoading.wallet = wallet;
+        walletEntry.currencies.push(btcCurrencyAddressLoading);
+
+        let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
+        btcCurrencyAddressCreate.visible = walletEntry.expanded
+        btcCurrencyAddressCreate.parent = walletEntry
+        btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(btcCurrencyAddressCreate)
+
+        this.flatten()
+
+        /* Only if this node is expanded will we load the addresses */
+        if (walletEntry.expanded) {
+          this.loadBitcoinAddresses(walletEntry)
+        }
+      }
+    }).then(() => {
       this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
 
         let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
@@ -600,35 +621,15 @@ class WalletComponent {
         if (walletEntry.expanded) {
           this.loadEthereumAddresses(walletEntry)
         }
-      }).then(()=> {
-        this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
-          let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
-          btcCurrencyAddressLoading.visible = walletEntry.expanded;
-          btcCurrencyAddressLoading.wallet = wallet;
-          walletEntry.currencies.push(btcCurrencyAddressLoading);
-
-          let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
-          btcCurrencyAddressCreate.visible = walletEntry.expanded
-          btcCurrencyAddressCreate.parent = walletEntry
-          btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(btcCurrencyAddressCreate)
-
-          this.flatten()
-
-          /* Only if this node is expanded will we load the addresses */
-          if (walletEntry.expanded) {
-            this.loadBitcoinAddresses(walletEntry)
-          }
-        });
-      });
-    }
+      })
+    });
   }
 
   /* Only when we expand a wallet entry do we lookup its balances */
   public loadEthereumAddresses(walletEntry: WalletEntry) {
 
     /* Find the Loading node, if thats not available we can exit */
-    let ethCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name=='Ethereum')
+    let ethCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Ethereum')
     if (!ethCurrencyAddressLoading)
       return
 
@@ -640,10 +641,10 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
       ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account]||[]).indexOf(address.address) != -1
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let ethCurrencyBalance = new CurrencyBalance('Ethereum','ETH',address.address, address.privateKey)
-          ethCurrencyBalance.balance = Number(address.balance+"").toFixed(18)
+          let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
+          ethCurrencyBalance.balance = Number(address.balance + "").toFixed(18)
           ethCurrencyBalance.visible = walletEntry.expanded
           ethCurrencyBalance.inUse = wasCreated ? false : true
           walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
@@ -661,7 +662,7 @@ class WalletComponent {
       })
 
       // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c!=ethCurrencyAddressLoading)
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != ethCurrencyAddressLoading)
       this.flatten()
     })
   }
@@ -683,10 +684,10 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
       btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account]||[]).indexOf(address.address) != -1
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let btcCurrencyBalance = new CurrencyBalance('Bitcoin','BTC',address.address, address.privateKey)
-          btcCurrencyBalance.balance = address.balance+""
+          let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
+          btcCurrencyBalance.balance = address.balance + ""
           btcCurrencyBalance.visible = walletEntry.expanded
           btcCurrencyBalance.inUse = wasCreated ? false : true
           walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
@@ -695,20 +696,20 @@ class WalletComponent {
       })
 
       // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c!=btcCurrencyAddressLoading)
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != btcCurrencyAddressLoading)
       this.flatten()
     })
   }
 
-  private getAccountAssets(account:string): angular.IPromise<Array<AssetInfo>> {
+  private getAccountAssets(account: string): angular.IPromise<Array<AssetInfo>> {
     let deferred = this.$q.defer<Array<AssetInfo>>();
     this.heat.api.getAccountBalances(account, "0", 1, 0, 100).then(balances => {
       let assetInfos: Array<AssetInfo> = [];
       let promises = [];
-      balances.forEach(balance=>{
+      balances.forEach(balance => {
         if (balance.id != '0') {
           promises.push(
-            this.assetInfo.getInfo(balance.id).then(info=>{
+            this.assetInfo.getInfo(balance.id).then(info => {
               assetInfos.push(angular.extend(info, {
                 userBalance: balance.virtualBalance
               }))
@@ -717,8 +718,8 @@ class WalletComponent {
         }
       });
       if (promises.length > 0) {
-        this.$q.all(promises).then(()=>{
-          assetInfos.sort((a,b)=>{
+        this.$q.all(promises).then(() => {
+          assetInfos.sort((a, b) => {
             var textA = a.symbol.toUpperCase();
             var textB = b.symbol.toUpperCase();
             return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
@@ -730,7 +731,7 @@ class WalletComponent {
         deferred.resolve([]);
       }
     }, deferred.reject);
-    return <angular.IPromise<Array<AssetInfo>>> deferred.promise;
+    return <angular.IPromise<Array<AssetInfo>>>deferred.promise;
   }
 
   // @click
@@ -756,11 +757,11 @@ class WalletComponent {
   exportWallet() {
     let exported = this.localKeyStore.export();
     let encoded = this.walletFile.encode(exported);
-    var blob = new Blob([encoded], {type: "text/plain;charset=utf-8"});
+    var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
     saveAs(blob, 'heat.wallet');
   }
 
-  promptSecretPlusPassword($event): angular.IPromise<{password:string, secretPhrase:string}> {
+  promptSecretPlusPassword($event): angular.IPromise<{ password: string, secretPhrase: string }> {
     let self = this
     function DialogController($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].cancelButtonClick = function () {
@@ -783,12 +784,12 @@ class WalletComponent {
       }
     }
 
-    let deferred = this.$q.defer<{password:string, secretPhrase:string}>()
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
     this.$mdDialog.show({
       controller: DialogController,
       parent: angular.element(document.body),
       targetEvent: $event,
-      clickOutsideToClose:false,
+      clickOutsideToClose: false,
       controllerAs: 'vm',
       template: `
         <md-dialog>
@@ -866,13 +867,13 @@ class WalletComponent {
 
       $scope['vm'].selectedWalletEntryChanged = function () {
         $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected==w.account)
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
 
       $scope['vm'].passwordChanged = function () {
         let password = $scope['vm'].data.password
         let account = $scope['vm'].data.selected
-        let walletEntry = walletEntries.find(w => w.account==account)
+        let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
           if (key) {
@@ -884,16 +885,16 @@ class WalletComponent {
             self.initWalletEntry(walletEntry)
             walletEntry.toggle(true)
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
-    let deferred = this.$q.defer<{password:string, secretPhrase:string}>()
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
     this.$mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
       targetEvent: $event,
-      clickOutsideToClose:false,
+      clickOutsideToClose: false,
       controllerAs: 'vm',
       template: `
         <md-dialog>
@@ -1001,16 +1002,16 @@ class WalletComponent {
 
       $scope['vm'].selectedWalletEntryChanged = function () {
         $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected==w.account)
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
     }
 
-    let deferred = this.$q.defer<{password:string, secretPhrase:string}>()
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
     this.$mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
       targetEvent: $event,
-      clickOutsideToClose:false,
+      clickOutsideToClose: false,
       controllerAs: 'vm',
       template: `
         <md-dialog>

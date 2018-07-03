@@ -92,11 +92,14 @@ class LightwalletService {
       if (this.validSeed(seedOrPrivateKey)) {
         promise = this.getEtherWallet(seedOrPrivateKey, password || "")
       }
-      else {
+      else if (this.validPrivateKey(seedOrPrivateKey)) {
         promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
       }
+      else {
+        reject()
+      }
       promise.then(wallet => {
-        //console.log('wallet', wallet)
+        // console.log('wallet', wallet)
         resolve(wallet)
       }).catch(() => {
         reject()
@@ -275,12 +278,12 @@ class LightwalletService {
             }
 
             try {
-              var encPrivKey = this.lightwallet.keystore._encryptKey(privkeyHex, pwDerivedKey);
+              var encPrivKey = this.heatlibs.lightwallet.keystore._encryptKey(privkeyHex, pwDerivedKey);
               var keyObj = {
                 privKey: privkeyHex,
                 encPrivKey: encPrivKey
               }
-              var address = this.lightwallet.keystore._computeAddressFromPrivKey(keyObj.privKey);
+              var address = this.heatlibs.lightwallet.keystore._computeAddressFromPrivKey(keyObj.privKey);
               ks.encPrivKeys[address] = keyObj.encPrivKey;
               ks.addresses.push(address);
 

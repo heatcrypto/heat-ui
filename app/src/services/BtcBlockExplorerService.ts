@@ -42,6 +42,18 @@ class BtcBlockExplorerService {
     })
     return deferred.promise
   }
+
+  public getEstimatedFee(): angular.IPromise<BlockExplorerAddressInfo>  {
+    var getEstimatedFeeApi = 'https://testnet.blockexplorer.com/api/utils/estimatefee';
+    var deferred = this.$q.defer<BlockExplorerAddressInfo>();
+    this.http.get(getEstimatedFeeApi).then(response => {
+      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+      deferred.resolve(parsed);
+    }, () => {
+      deferred.reject();
+    })
+    return deferred.promise
+  }
 }
 
 interface BlockExplorerAddressInfo {

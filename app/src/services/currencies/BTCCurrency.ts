@@ -63,12 +63,22 @@ class BTCCurrency implements ICurrency {
         let user = <UserService> heat.$inject.get('user')
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
 
-        let amountInSatoshi = $scope['vm'].data.amount.replace(',','')
+        let amountInSatoshi = $scope['vm'].data.amount * 100000000;
+        let feeInSatoshi = $scope['vm'].data.fee * 100000000;
 
-        let from = {address: user.currency.address, privateKey: user.secretPhrase}
+        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
         let to = $scope['vm'].data.recipient
+
+        let txObject = {
+          from: addressPrivateKeyPair.address,
+          to: to,
+          amount: amountInSatoshi,
+          fee: feeInSatoshi,
+          changeAddress: addressPrivateKeyPair.address,
+          privateKey: addressPrivateKeyPair.privateKey
+        }
         $scope['vm'].disableOKBtn = true
-        bitcoreService.sendBitcoins(from, to, amountInSatoshi).then(
+        bitcoreService.sendBitcoins(txObject).then(
           data => {
             $mdDialog.hide(data).then(() => {
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
@@ -138,11 +148,14 @@ class BTCCurrency implements ICurrency {
                 </md-input-container>
 
                 <md-input-container flex >
-                  <label>Amount in Satoshi</label>
+                  <label>Amount in BTC</label>
                   <input ng-model="vm.data.amount" required name="amount">
                 </md-input-container>
 
-                <p>Fee: {{vm.data.fee}} BTC</p>
+                <md-input-container flex>
+                  <label>Fee in BTC</label>
+                  <input ng-model="vm.data.fee" required name="fee">
+                </md-input-container>
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">

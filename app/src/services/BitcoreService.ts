@@ -17,12 +17,24 @@ class BitcoreService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: string): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
-
-      if(walletType.addresses.length === 20){
-        resolve(walletType);
+      if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
+        let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
+        if (walletType.addresses.length === 20) {
+          resolve(walletType);
+        }
+      } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
+        try {
+          let privateKey = this.bitcore.PrivateKey.fromWIF(seedOrPrivateKey)
+          let address = privateKey.toAddress();
+          let walletType = { addresses: [] }
+          walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
+          resolve(walletType)
+        } catch(e) {
+          // resolve empty promise if private key is not of this network so that next .then executes
+          resolve()
+        }
       }
       else {
         reject();
@@ -59,13 +71,13 @@ class BitcoreService {
           if (!walletAddress)
             return
 
-          walletAddress.inUse = info.txApperances!=0
+          walletAddress.inUse = info.txApperances != 0
           if (!walletAddress.inUse) {
             resolve(false)
             return
           }
 
-          walletAddress.balance = info.balance+""
+          walletAddress.balance = info.balance + ""
           resolve(true)
         }, () => {
           resolve(false)
@@ -93,21 +105,20 @@ class BitcoreService {
     })
   }
 
-  sendBitcoins(from: any, to: string, value: number): Promise<{ txId:string }> {
+  sendBitcoins(txObject: any): Promise<{ txId: string }> {
     let insight = new this.explorers.Insight('testnet');
 
-    return new Promise ((resolve, reject) => {
-      insight.getUnspentUtxos(from.address, (err, utxos) => {
+    return new Promise((resolve, reject) => {
+      insight.getUnspentUtxos(txObject.from, (err, utxos) => {
         if (err) {
-          console.log('Error getting UTXOs ' + err)
           reject(err)
         } else {
           let tx = this.bitcore.Transaction();
           tx.from(utxos)
-          tx.to(to, 1000000)
-          tx.change(from.address)
-          tx.fee(50000)
-          tx.sign(from.privateKey)
+          tx.to(txObject.to, txObject.amount)
+          tx.change(txObject.from)
+          tx.fee(txObject.fee)
+          tx.sign(txObject.privateKey)
           tx.serialize();
 
           this.broadcastTransaction(insight, tx).then(data => {
@@ -120,14 +131,12 @@ class BitcoreService {
     })
   }
 
-  private broadcastTransaction (insight: any, tx: any): Promise<{ txId:string }> {
+  private broadcastTransaction(insight: any, tx: any): Promise<{ txId: string }> {
     return new Promise((resolve, reject) => {
       insight.broadcast(tx, (err, txId) => {
-        if(err) {
-          console.log('Error broadcasting transaction ' + err)
+        if (err) {
           reject(err)
         } else {
-          console.log('transfer success ' + txId)
           resolve({
             txId: txId
           })
