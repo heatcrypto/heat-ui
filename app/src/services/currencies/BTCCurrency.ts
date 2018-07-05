@@ -120,6 +120,14 @@ class BTCCurrency implements ICurrency {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
+
+      function getEstimatedFee() {
+        let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
+        btcBlockExplorerService.getEstimatedFee().then(data => {
+          $scope['vm'].data.fee = data;
+        })
+      }
+      getEstimatedFee();
     }
 
     let $q = heat.$inject.get('$q')

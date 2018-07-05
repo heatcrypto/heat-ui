@@ -31,7 +31,7 @@ class BitcoreService {
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
           resolve(walletType)
-        } catch(e) {
+        } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
           resolve()
         }
@@ -113,19 +113,23 @@ class BitcoreService {
         if (err) {
           reject(err)
         } else {
-          let tx = this.bitcore.Transaction();
-          tx.from(utxos)
-          tx.to(txObject.to, txObject.amount)
-          tx.change(txObject.from)
-          tx.fee(txObject.fee)
-          tx.sign(txObject.privateKey)
-          tx.serialize();
+          try {
+            let tx = this.bitcore.Transaction();
+            tx.from(utxos)
+            tx.to(txObject.to, txObject.amount)
+            tx.change(txObject.from)
+            tx.fee(txObject.fee)
+            tx.sign(txObject.privateKey)
+            tx.serialize();
 
-          this.broadcastTransaction(insight, tx).then(data => {
-            resolve(data)
-          }, err => {
+            this.broadcastTransaction(insight, tx).then(data => {
+              resolve(data)
+            }, err => {
+              reject(err)
+            })
+          } catch (err) {
             reject(err)
-          })
+          }
         }
       });
     })

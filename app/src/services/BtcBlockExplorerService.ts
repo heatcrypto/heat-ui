@@ -9,8 +9,8 @@ class BtcBlockExplorerService {
 
   public getBalance(address: string) {
     let deferred = this.$q.defer<string>();
-    var balancesApi = 'https://testnet.blockexplorer.com/api/addr/:address/balance';
-    this.http.get(balancesApi.replace(':address', address))
+    let balancesApi = `https://testnet.blockexplorer.com/api/addr/${address}/balance`;
+    this.http.get(balancesApi)
         .then(response => {
           deferred.resolve(response)
         }, () => {
@@ -20,10 +20,10 @@ class BtcBlockExplorerService {
   }
 
   public getTransactions(address: string, pageNum: number): angular.IPromise<any> {
-    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/txs/?address=:address&pageNum=:pageNum';
-    var deferred = this.$q.defer();
-    this.http.get(getTransactionsApi.replace(':address', address).replace(':pageNum', pageNum.toString())).then(response => {
-      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+    let getTransactionsApi = `https://testnet.blockexplorer.com/api/txs/?address=${address}&pageNum=${pageNum}`;
+    let deferred = this.$q.defer();
+    this.http.get(getTransactionsApi).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.txs)
     }, ()=> {
       deferred.reject();
@@ -32,10 +32,10 @@ class BtcBlockExplorerService {
   }
 
   public getAddressInfo(address: string): angular.IPromise<BlockExplorerAddressInfo>  {
-    var getTransactionsApi = 'https://testnet.blockexplorer.com/api/addr/:address?noTxList=0&noCache=1';
-    var deferred = this.$q.defer<BlockExplorerAddressInfo>();
-    this.http.get(getTransactionsApi.replace(':address', address)).then(response => {
-      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+    let getTransactionsApi = `https://testnet.blockexplorer.com/api/addr/${address}?noTxList=0&noCache=1`;
+    let deferred = this.$q.defer<BlockExplorerAddressInfo>();
+    this.http.get(getTransactionsApi).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed);
     }, () => {
       deferred.reject();
@@ -44,11 +44,15 @@ class BtcBlockExplorerService {
   }
 
   public getEstimatedFee() {
-    var getEstimatedFeeApi = 'https://testnet.blockexplorer.com/api/utils/estimatefee';
-    var deferred = this.$q.defer();
+    let getEstimatedFeeApi = `https://testnet.blockexplorer.com/api/utils/estimatefee?nbBlocks=2`;
+    let deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
-      var parsed = angular.isString(response) ? JSON.parse(response) : response;
-      deferred.resolve(parsed);
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let fee;
+      Object.keys(parsed).forEach(function(key){
+        fee = parsed[key];
+      })
+      deferred.resolve(fee);
     }, () => {
       deferred.reject();
     })
@@ -56,10 +60,10 @@ class BtcBlockExplorerService {
   }
 
   public getTxInfo(txId: string) {
-    var getEstimatedFeeApi = 'https://testnet.blockexplorer.com/api/tx/:txId';
-    var deferred = this.$q.defer<BlockExplorerTxInfo>();
-    this.http.get(getEstimatedFeeApi.replace(':txId', txId)).then(response => {
-      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+    let getEstimatedFeeApi = `https://testnet.blockexplorer.com/api/tx/${txId}`;
+    let deferred = this.$q.defer<BlockExplorerTxInfo>();
+    this.http.get(getEstimatedFeeApi).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed);
     }, () => {
       deferred.reject();
