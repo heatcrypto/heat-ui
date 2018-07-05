@@ -43,10 +43,22 @@ class BtcBlockExplorerService {
     return deferred.promise
   }
 
-  public getEstimatedFee(): angular.IPromise<BlockExplorerAddressInfo>  {
+  public getEstimatedFee() {
     var getEstimatedFeeApi = 'https://testnet.blockexplorer.com/api/utils/estimatefee';
-    var deferred = this.$q.defer<BlockExplorerAddressInfo>();
+    var deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
+      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+      deferred.resolve(parsed);
+    }, () => {
+      deferred.reject();
+    })
+    return deferred.promise
+  }
+
+  public getTxInfo(txId: string) {
+    var getEstimatedFeeApi = 'https://testnet.blockexplorer.com/api/tx/:txId';
+    var deferred = this.$q.defer<BlockExplorerTxInfo>();
+    this.http.get(getEstimatedFeeApi.replace(':txId', txId)).then(response => {
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed);
     }, () => {
@@ -61,4 +73,11 @@ interface BlockExplorerAddressInfo {
   txApperances: number;
   balance: number;
   transactions: Array<string>
+}
+
+interface BlockExplorerTxInfo {
+  txid: string,
+  blockheight: number,
+  confirmations: number,
+  time: number
 }

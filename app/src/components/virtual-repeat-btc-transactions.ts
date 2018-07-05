@@ -38,7 +38,7 @@
             <!-- TX ID -->
             <div class="he truncate-col info-col left" >
               <span>
-                <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
+                <a target="_blank" href="https://testnet.blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
 
@@ -71,7 +71,7 @@
   `
 })
 
-@Inject('$scope','$q','btcTransactionsProviderFactory','settings')
+@Inject('$scope','$q','btcTransactionsProviderFactory','settings', 'bitcoinPendingTransactions')
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -79,7 +79,8 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
               private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private bitcoinPendingTransactions: BitcoinPendingTransactionsService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
@@ -98,6 +99,12 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
+    bitcoinPendingTransactions.addListener(listener)
+
+    $scope.$on('$destroy', () => {
+      bitcoinPendingTransactions.removeListener(listener)
+      clearTimeout(timeout)
+    })
   }
 
   jsonDetails($event, item) {

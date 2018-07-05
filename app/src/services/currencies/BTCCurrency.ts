@@ -3,14 +3,14 @@ class BTCCurrency implements ICurrency {
   private btcBlockExplorerService: BtcBlockExplorerService
   public symbol = 'BTC'
   public homePath
-  // private pendingTransactions: EthereumPendingTransactionsService
+  private pendingTransactions: BitcoinPendingTransactionsService
   private user: UserService
 
   constructor(public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/bitcoin-account/${this.address}`
-    // this.pendingTransactions = heat.$inject.get('ethereumPendingTransactions')
+    this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
@@ -39,7 +39,7 @@ class BTCCurrency implements ICurrency {
       data => {
         let address = this.user.account
         let timestamp = new Date().getTime()
-        // this.pendingTransactions.add(address, data.txHash, timestamp)
+        this.pendingTransactions.add(address, data.txId, timestamp)
       },
       err => {
         if (err) {
