@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Service('settings')
 class SettingsService {
 
@@ -80,54 +81,62 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
-  public static MAINNET_KNOWN_SERVERS = [
-    {
-      host: "https://heatwallet.com",
-      port: 7734,
-      websocket: "wss://heatwallet.com:7755/ws/",
-      certifierAccount: "2243498237075721643",
-      btcAsset: "5592059897546023466",
-      nameAssigner: "14439304480879065693"
-    },
-    {
-      host: "http://localhost",
-      port: 7733,
-      websocket: "ws://localhost:7763/ws/"
-    },
-    {
-      host: "http://185.40.76.143",
-      port: 7733,
-      websocket: "ws://185.40.76.143:7757/ws/"
-    }
-  ];
-
-  public static TESTNET_KNOWN_SERVERS = [
-    {
-      host: "https://alpha.heatledger.com",
-      port: 7734,
-      websocket: "wss://heatwallet.com:7755/ws/",
-      certifierAccount: "4729421738299387565",
-      btcAsset: "2801534132504071984",
-      nameAssigner: "0000000"
-    },
-    {
-      host: "http://localhost",
-      port: 7733,
-      websocket: "ws://localhost:7755/ws/"
-    },
-    {
-      host: "http://localhost",
-      port: 7737,
-      websocket: "ws://localhost:7757/ws/"
-    },
-    {
-      host: "http://185.40.76.143",
-      port: 7733,
-      websocket: "ws://185.40.76.143:7757/ws/"
-    }
-  ];
+  public MAINNET_KNOWN_SERVERS: ServerDescriptor[];
+  public TESTNET_KNOWN_SERVERS: ServerDescriptor[];
 
   constructor() {
+    this.TESTNET_KNOWN_SERVERS = [
+      {
+        host: "http://localhost",
+        port: 7733,
+        websocket: "ws://localhost:7755/ws/",
+        priority: 2
+      },
+      {
+        host: "https://alpha.heatledger.com",
+        port: 7734,
+        websocket: "wss://heatwallet.com:7755/ws/",
+        certifierAccount: "4729421738299387565",
+        btcAsset: "2801534132504071984",
+        nameAssigner: "0000000",
+        priority: 1
+      },
+      {
+        host: "http://localhost",
+        port: 7737,
+        websocket: "ws://localhost:7757/ws/",
+        priority: 3
+      },
+      // {
+      //   host: "http://185.40.76.143",
+      //   port: 7733,
+      //   websocket: "ws://185.40.76.143:7757/ws/"
+      // }
+    ];
+    this.MAINNET_KNOWN_SERVERS = [
+      {
+        host: "https://heatwallet.com",
+        port: 7734,
+        websocket: "wss://heatwallet.com:7755/ws/",
+        certifierAccount: "2243498237075721643",
+        btcAsset: "5592059897546023466",
+        nameAssigner: "14439304480879065693",
+        priority: 1
+      },
+      {
+        host: "http://localhost",
+        port: 7733,
+        websocket: "ws://localhost:7763/ws/",
+        priority: 2
+      },
+      {
+        host: "http://185.40.76.143",
+        port: 7733,
+        websocket: "ws://185.40.76.143:7757/ws/",
+        priority: 3
+      }
+    ];
+
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
     this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
@@ -231,10 +240,10 @@ class SettingsService {
   }
 
 
-  public getKnownServers() {
+  public getKnownServers(): ServerDescriptor[] {
     if (heat.isTestnet)
-      return SettingsService.TESTNET_KNOWN_SERVERS;
-    return SettingsService.MAINNET_KNOWN_SERVERS;
+      return this.TESTNET_KNOWN_SERVERS;
+    return this.MAINNET_KNOWN_SERVERS;
   }
 
   public setCurrentServer(server) {
@@ -246,4 +255,17 @@ class SettingsService {
     this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = server.nameAssigner;
   }
 
+}
+
+interface ServerDescriptor {
+  host: string;
+  port: number;
+  websocket: string;
+  certifierAccount?: string;
+  btcAsset?: string;
+  nameAssigner?: string;
+  priority?: number;
+  health?: IHeatServerHealth;
+  statusScore?: number;
+  statusError?: any;
 }

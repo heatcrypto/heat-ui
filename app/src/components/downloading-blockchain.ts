@@ -42,14 +42,14 @@ class DownloadingBlockchainComponent {
     this.refresh();
 
     let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
-    let checkServerHealthInterval = $interval(()=>{ this.checkServerHealth() }, 33*1000, 0, false);
+    let checkServerHealthInterval = $interval(()=>{ this.checkServerHealth(this.settings) }, 33*1000, 0, false);
 
     $scope.$on('$destroy',()=>{
       $interval.cancel(interval);
       $interval.cancel(checkServerHealthInterval);
     });
 
-    this.checkServerHealth();
+    this.checkServerHealth(this.settings, true);
   }
 
   refresh() {
@@ -78,19 +78,19 @@ class DownloadingBlockchainComponent {
    * Compares health of known servers with current server.
    * If other health is significantly over current server health then switches to other server.
    */
-  checkServerHealth() {
-    let knownServers = this.settings.getKnownServers();
+  checkServerHealth(settings: SettingsService, firstTime?: boolean) {
+    let knownServers: ServerDescriptor[] = settings.getKnownServers();
 
     let currentServerHealth: IHeatServerHealth;
     let promises = [];
     knownServers.forEach(server => {
       promises.push(
         this.heat.api.getServerHealth(server.host, server.port).then(health=> {
-          server["health"] = health;
-          server["error"] = null;
+          server.health = health;
+          server.statusError = null;
         }).catch(function (err) {
-          server["health"] = null;
-          server["error"] = err;
+          server.health = null;
+          server.statusError = err;
           return err;
         })
       )
@@ -104,16 +104,16 @@ class DownloadingBlockchainComponent {
 
       //find the health of the current server
       knownServers.forEach(server => {
-        let health: IHeatServerHealth = server["health"];
-        server["score"] = null;
+        let health: IHeatServerHealth = server.health;
+        server.statusScore = null;
         if (health)
-          server["score"] = 0; // has health means has min score
-        if (server.host == this.settings.get(SettingsService.HEAT_HOST) && server.port == this.settings.get(SettingsService.HEAT_PORT)) {
+          server.statusScore = 0; // has health means has min score
+        if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
-          server["score"] = 0;  // better than self is 0
+          server.statusScore = 0;  // better than self is 0
           //if the server response is nothing then server is down
-          currentServerIsAlive = !(server["error"] && !server["error"]["data"]);
+          currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
         }
       });
 
@@ -122,7 +122,7 @@ class DownloadingBlockchainComponent {
 
       //compare health of other servers with health of the current server
       knownServers.forEach(server => {
-        let health: IHeatServerHealth = server["health"];
+        let health: IHeatServerHealth = server.health;
         if (!health || !currentServerHealth || !(health.balancesEquality[1] >= minEqualityServersNumber))
           return;
         let mismatches = health.balancesEquality[0] / health.balancesEquality[1];
@@ -146,24 +146,34 @@ class DownloadingBlockchainComponent {
             ? -1
             : 0;
         if (blocksEstimation == 1 && balancesEstimation >= 0 && peerEstimation >= 0)
-          server["score"] = blocksEstimation + balancesEstimation + peerEstimation;
+          server.statusScore = blocksEstimation + balancesEstimation + peerEstimation;
         else
-          server["score"] = 0;
+          server.statusScore = 0;
       });
-      let best;
+      let best: ServerDescriptor = currentServer;
       knownServers.forEach(server => {
-        if (! currentServerIsAlive || server["score"] >= 0)
-          if (!best || server["score"] > best["score"] || (server["score"] != null && best["score"] == null))
+        if (best == currentServer && !currentServerIsAlive)
+          best = server;
+        if (server.statusScore >= 0 || !currentServerIsAlive) {
+          if (server.statusScore != null && best.statusScore == null)
             best = server;
+          if (server.statusScore > best.statusScore)
+            best = server;
+          if (server.statusScore == best.statusScore && server.priority < best.priority)
+            best = server;
+        }
       });
       if (best && best != currentServer) {
-        this.settings.setCurrentServer(best);
-        if (currentServer)
-          alert("HEAT server API address switched from \n"
-            + currentServer.host + ":" + currentServer.port +
-            "\nto\n" + best.host + ":" + best.port);
-        else
-          alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+        settings.setCurrentServer(best);
+        //on initializing (first time) switched silently
+        if (!firstTime) {
+          if (currentServer)
+            alert("HEAT server API address switched from \n"
+              + currentServer.host + ":" + currentServer.port +
+              "\nto\n" + best.host + ":" + best.port);
+          else
+            alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+        }
       }
     })
   }
