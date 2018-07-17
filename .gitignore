@@ -11,5 +11,6 @@ releases
 blockchain
 /.idea/
 /out/
+/.out/
 /*.iml
 .DS_Store
