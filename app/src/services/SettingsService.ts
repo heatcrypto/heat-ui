@@ -22,6 +22,7 @@
  * */
 
 @Service('settings')
+@Inject('http')
 class SettingsService {
 
   /* DO NOT TOUCH.
@@ -84,58 +85,15 @@ class SettingsService {
   public MAINNET_KNOWN_SERVERS: ServerDescriptor[];
   public TESTNET_KNOWN_SERVERS: ServerDescriptor[];
 
-  constructor() {
-    this.TESTNET_KNOWN_SERVERS = [
-      {
-        host: "http://localhost",
-        port: 7733,
-        websocket: "ws://localhost:7755/ws/",
-        priority: 2
-      },
-      {
-        host: "https://alpha.heatledger.com",
-        port: 7734,
-        websocket: "wss://heatwallet.com:7755/ws/",
-        certifierAccount: "4729421738299387565",
-        btcAsset: "2801534132504071984",
-        nameAssigner: "0000000",
-        priority: 1
-      },
-      {
-        host: "http://localhost",
-        port: 7737,
-        websocket: "ws://localhost:7757/ws/",
-        priority: 3
-      },
-      // {
-      //   host: "http://185.40.76.143",
-      //   port: 7733,
-      //   websocket: "ws://185.40.76.143:7757/ws/"
-      // }
-    ];
-    this.MAINNET_KNOWN_SERVERS = [
-      {
-        host: "https://heatwallet.com",
-        port: 7734,
-        websocket: "wss://heatwallet.com:7755/ws/",
-        certifierAccount: "2243498237075721643",
-        btcAsset: "5592059897546023466",
-        nameAssigner: "14439304480879065693",
-        priority: 1
-      },
-      {
-        host: "http://localhost",
-        port: 7733,
-        websocket: "ws://localhost:7763/ws/",
-        priority: 2
-      },
-      {
-        host: "http://185.40.76.143",
-        port: 7733,
-        websocket: "ws://185.40.76.143:7757/ws/",
-        priority: 3
-      }
-    ];
+  constructor(private http: HttpService) {
+
+    http.get('known-servers-config.json').then((json: any) => {
+      this.TESTNET_KNOWN_SERVERS = json.testnet;
+      this.MAINNET_KNOWN_SERVERS = json.mainnet;
+    }, () => {
+      this.TESTNET_KNOWN_SERVERS = [];
+      this.MAINNET_KNOWN_SERVERS = [];
+    });
 
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -222,11 +180,11 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    // if (true) {
-    //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
-    //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
-    //   this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
-    // }
+    if (true) {
+      this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
+      this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
+      this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
+    }
   }
 
   settings={};

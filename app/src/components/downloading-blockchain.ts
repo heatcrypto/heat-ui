@@ -49,7 +49,16 @@ class DownloadingBlockchainComponent {
       $interval.cancel(checkServerHealthInterval);
     });
 
-    this.checkServerHealth(this.settings, true);
+    //Check servers health to choose the right
+    //wait for loading  known-servers-config.json
+    setTimeout(() => {
+      if (this.settings.getKnownServers())
+        this.checkServerHealth(this.settings, true);
+      else
+        setTimeout(() => {
+          this.checkServerHealth(this.settings, true);
+        }, 500)
+    }, 200);
   }
 
   refresh() {

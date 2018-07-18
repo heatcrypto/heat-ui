@@ -54,6 +54,9 @@ var PATHS = {
   electron: [
     'app/electron.js',
     'app/package.json'
+  ],
+  config: [
+    'app/known-servers-config.json'
   ]
 };
 
@@ -119,6 +122,8 @@ gulp.task('copy:dist', ['tshelpers','libjs'], function () {
   gulp.src(PATHS.html)
     .pipe(gulp.dest('dist'));
   gulp.src(PATHS.electron)
+    .pipe(gulp.dest('dist'));
+  gulp.src(PATHS.config)
     .pipe(gulp.dest('dist'));
 });
 
