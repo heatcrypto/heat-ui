@@ -134,31 +134,17 @@ class DownloadingBlockchainComponent {
         let health: IHeatServerHealth = server.health;
         if (!health || !currentServerHealth || !(health.balancesEquality[1] >= minEqualityServersNumber))
           return;
-        let mismatches = health.balancesEquality[0] / health.balancesEquality[1];
-        let currentServerMismatches = currentServerHealth.balancesEquality[0] / currentServerHealth.balancesEquality[1];
-        let balancesEstimation = (mismatches < 0.9 * currentServerMismatches
-          && health.balancesEquality[2] > 0.8 * currentServerHealth.balancesEquality[2])
-          ? 1
-          : (mismatches > currentServerMismatches || health.balancesEquality[2] < 0.7 * currentServerHealth.balancesEquality[2])
-            ? -1
-            : 0;
-        let blocksEstimation = (health.lastBlockHeight > 2 + currentServerHealth.lastBlockHeight)
-          ? 1
-          : (health.lastBlockHeight + 2 < currentServerHealth.lastBlockHeight)
-            ? -1
-            : 0;
-        let connected = health.peersIndicator.connected / health.peersIndicator.all;
-        let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
-        let peerEstimation = (0.8 * connected > currentServerConnected)
-          ? 1
-          : (connected < 0.8 * currentServerConnected)
-            ? -1
-            : 0;
-        if (blocksEstimation == 1 && balancesEstimation >= 0 && peerEstimation >= 0)
-          server.statusScore = blocksEstimation + balancesEstimation + peerEstimation;
+
+        let blocksEstimation = this.calculateBlockchainEstimation(currentServerHealth, health);
+        let balancesEqualityEstimation = this.calculateBalancesEqualityEstimation(currentServerHealth, health);
+        let peerEstimation = this.calculatePeerEstimation(currentServerHealth, health);
+
+        if (blocksEstimation == 1 && balancesEqualityEstimation >= 0 && peerEstimation >= 0)
+          server.statusScore = blocksEstimation + balancesEqualityEstimation + peerEstimation;
         else
           server.statusScore = 0;
       });
+
       let best: ServerDescriptor = currentServer;
       knownServers.forEach(server => {
         if (best == currentServer && !currentServerIsAlive)
@@ -185,6 +171,42 @@ class DownloadingBlockchainComponent {
         }
       }
     })
+  }
+
+  /**
+   * If returned value is greater 0 it means the blockchain from health is "better" than blockchain from currentServerHealth.
+   */
+  calculateBlockchainEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    let cumulativeDifficulty = new BigInteger(health.cumulativeDifficulty);
+    let difficultyDelta = cumulativeDifficulty.compareTo(new BigInteger(currentServerHealth.cumulativeDifficulty));
+    if (Math.abs(health.lastBlockHeight - currentServerHealth.lastBlockHeight) > 2) {
+      if (difficultyDelta > 0)
+        return 1;
+      if (difficultyDelta < 0)
+        return -1;
+    }
+    return 0;
+  }
+
+  calculateBalancesEqualityEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    let mismatches = health.balancesEquality[0] / health.balancesEquality[1];
+    let currentServerMismatches = currentServerHealth.balancesEquality[0] / currentServerHealth.balancesEquality[1];
+    return (mismatches < 0.9 * currentServerMismatches
+      && health.balancesEquality[2] > 0.8 * currentServerHealth.balancesEquality[2])
+      ? 1
+      : (mismatches > currentServerMismatches || health.balancesEquality[2] < 0.7 * currentServerHealth.balancesEquality[2])
+        ? -1
+        : 0;
+  }
+
+  calculatePeerEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    let connected = health.peersIndicator.connected / health.peersIndicator.all;
+    let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
+    return (0.8 * connected > currentServerConnected)
+      ? 1
+      : (connected < 0.8 * currentServerConnected)
+        ? -1
+        : 0;
   }
 
 }

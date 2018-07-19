@@ -1048,6 +1048,8 @@ interface IHeatServerHealth {
   balancesEquality: number[]; //Three values about equality to other peers: [mismatching count, all count, average height of all compared peers]
   lastBlockHeight: number;
   lastBlockTimestamp: number;
+  cumulativeDifficulty: string;
+  serverTime: number;
   peersIndicator: {
     connected: number;
     disconnected: number;
