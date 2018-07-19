@@ -304,11 +304,13 @@ Client (heat-ui application) use Heat API to access to the Heat Ledger server.
 The server can fall or have network issues. In that case the client does not work.
 The client failover feature helps to resolve this problem.
  
-If you have multiple running servers you can specify those servers in the variables 
-`SettingsService.MAINNET_KNOWN_SERVERS, SettingsService.TESTNET_KNOWN_SERVERS`. 
-Client can switches between Heat Ledger servers specified in these variables.
+If you have multiple running servers you can specify those servers in the file `app/known-servers-config.json`.
+The structure of each item in the JSON (in the file `app/known-servers-config.json`) 
+is defined in the interface `ServerDescriptor` (in the `app/src/services/SettingsService.ts`) 
+Client can switches between Heat Ledger servers specified in these file.
 
 Client periodically polls the servers for their health value. 
 If the health of other server significantly exceeds the health of the current server, 
 the client will automatically switches to another server.
-If health of servers are equal then used field `ServerDescriptor.priority` to define more preferable server.
+If health of servers are equal then used field `ServerDescriptor.priority` to define more 
+preferable server (less value is more priority).
