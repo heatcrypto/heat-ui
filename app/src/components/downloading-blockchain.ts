@@ -120,9 +120,9 @@ class DownloadingBlockchainComponent {
         if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
-          server.statusScore = 0;  // better than self is 0
           //if the server response is nothing then server is down
           currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
+          server.statusScore = currentServerIsAlive ? 0 : null;
         }
       });
 
@@ -162,7 +162,7 @@ class DownloadingBlockchainComponent {
       let best: ServerDescriptor = currentServer;
       knownServers.forEach(server => {
         if (best == currentServer && !currentServerIsAlive)
-          best = server;
+          best = server; //if current server is not alive switch to other server in any case
         if (server.statusScore >= 0 || !currentServerIsAlive) {
           if (server.statusScore != null && best.statusScore == null)
             best = server;
