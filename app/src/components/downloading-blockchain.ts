@@ -30,7 +30,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','$interval','settings')
+@Inject('$scope','heat','$interval','settings', '$router')
 class DownloadingBlockchainComponent {
   showComponent = false;
   lastBlockHeight = 0;
@@ -38,7 +38,8 @@ class DownloadingBlockchainComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private $interval: angular.IIntervalService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private router) {
     this.refresh();
 
     let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
@@ -161,8 +162,10 @@ class DownloadingBlockchainComponent {
       if (best && best != currentServer) {
         settings.setCurrentServer(best);
         this.heat.resetSubscriber();
-        //on initializing (first time) switched silently
-        if (!firstTime) {
+        if (firstTime) {
+          //on initializing (first time) switched silently and starts from login page
+          this.router.navigate('/login');
+        } else {
           if (currentServer)
             alert("HEAT server API address switched from \n"
               + currentServer.host + ":" + currentServer.port +
