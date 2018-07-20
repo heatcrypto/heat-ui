@@ -160,6 +160,7 @@ class DownloadingBlockchainComponent {
       });
       if (best && best != currentServer) {
         settings.setCurrentServer(best);
+        this.heat.resetSubscriber();
         //on initializing (first time) switched silently
         if (!firstTime) {
           if (currentServer)
