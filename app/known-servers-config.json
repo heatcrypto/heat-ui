@@ -4,9 +4,6 @@
       "host": "https://alpha.heatledger.com",
       "port": 7734,
       "websocket": "wss://heatwallet.com:7755/ws/",
-      "certifierAccount": "4729421738299387565",
-      "btcAsset": "2801534132504071984",
-      "nameAssigner": "0000000",
       "priority": 1
     },
     {
@@ -21,9 +18,6 @@
       "host":"https://heatwallet.com",
       "port": 7734,
       "websocket": "wss://heatwallet.com:7755/ws/",
-      "certifierAccount": "2243498237075721643",
-      "btcAsset": "5592059897546023466",
-      "nameAssigner": "14439304480879065693",
       "priority": 1
     },
     {

@@ -213,9 +213,6 @@ class SettingsService {
     this.settings[SettingsService.HEAT_HOST] = server.host;
     this.settings[SettingsService.HEAT_PORT] = server.port;
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
-    this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = server.certifierAccount;
-    this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = server.btcAsset;
-    this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = server.nameAssigner;
   }
 
 }
@@ -224,9 +221,6 @@ interface ServerDescriptor {
   host: string;
   port: number;
   websocket: string;
-  certifierAccount?: string;
-  btcAsset?: string;
-  nameAssigner?: string;
   priority?: number;
   health?: IHeatServerHealth;
   statusScore?: number;
