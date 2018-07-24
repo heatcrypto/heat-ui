@@ -32,5 +32,6 @@
       "websocket": "ws://localhost:7763/ws/",
       "priority": 2
     }
-  ]
+  ],
+  "betanet": []
 }

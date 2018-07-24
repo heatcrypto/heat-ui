@@ -84,14 +84,17 @@ class SettingsService {
 
   public MAINNET_KNOWN_SERVERS: ServerDescriptor[];
   public TESTNET_KNOWN_SERVERS: ServerDescriptor[];
+  public BETANET_KNOWN_SERVERS: ServerDescriptor[];
 
   constructor(private http: HttpService) {
 
     http.get('known-servers-config.json').then((json: any) => {
       this.TESTNET_KNOWN_SERVERS = json.testnet;
+      this.BETANET_KNOWN_SERVERS = json.betanet;
       this.MAINNET_KNOWN_SERVERS = json.mainnet;
     }, () => {
       this.TESTNET_KNOWN_SERVERS = [];
+      this.BETANET_KNOWN_SERVERS = [];
       this.MAINNET_KNOWN_SERVERS = [];
     });
 
@@ -201,6 +204,8 @@ class SettingsService {
   public getKnownServers(): ServerDescriptor[] {
     if (heat.isTestnet)
       return this.TESTNET_KNOWN_SERVERS;
+    if (heat.isBetanet)
+      return this.BETANET_KNOWN_SERVERS;
     return this.MAINNET_KNOWN_SERVERS;
   }
 
