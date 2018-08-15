@@ -23,17 +23,17 @@
 
 var room = null;
 var initiator;
-var pc = null;
 var signalingURL;
 
+var connections = {}; //{remotePeerId: RTCPeerConnection, ...}
 var dataChannels = [];
 var signalingChannelReady;
 var channel;
-var pc_config = {
+var config = {
   "iceServers": [{url: 'stun:23.21.150.121'}, {url: 'stun:stun.l.google.com:19302'}]
 };
 
-function init(sURL, roomParam) {
+function initWebRTC(sURL, roomParam) {
   signalingURL = sURL;
   room = roomParam;
   openSignalingChannel();
@@ -49,29 +49,40 @@ function openSignalingChannel() {
 
 function onSignalingChannelOpened() {
   signalingChannelReady = true;
-  createPeerConnection();
-  sendMessageToSignalingServer(["webrtc", room, {"type": "ROOM"}]);
+  //createPeerConnection();
+  sendSignalingMessage(["webrtc", room, {"type": "ROOM"}]);
   initiator = false;
-}
-
-function onSignalingChannelClosed() {
-  signalingChannelReady = false;
 }
 
 function onSignalingMessage(message) {
   var msg = JSON.parse(message.data);
   if (msg.type === 'WELCOME') {
     initiator = true;
-    doCall();
-    printState("do call");
+    msg.remotePeerIds.forEach(function(peerId) {
+      if (!connections[peerId]) {
+        var pc = createPeerConnection(peerId);
+        if (pc)
+          doCall(peerId);
+      }
+    })
+    // doCall();
+    // printState("do call");
   } else if (msg.type === 'offer') {
-    pc.setRemoteDescription(new RTCSessionDescription(msg));
-    doAnswer();
-    printState("do answer");
+    var peerId = msg.fromPeer;
+    var pc = connections[peerId];
+    if (!pc)
+      pc = createPeerConnection(peerId);
+    if (pc) {
+      pc.setRemoteDescription(new RTCSessionDescription(msg));
+      doAnswer(peerId);
+      printState("do answer");
+    }
   } else if (msg.type === 'answer') {
+    var pc = connections[msg.fromPeer];
     pc.setRemoteDescription(new RTCSessionDescription(msg));
     printState("got answer");
   } else if (msg.type === 'candidate') {
+    var pc = connections[msg.fromPeer];
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: msg.label,
       candidate: msg.candidate
@@ -83,42 +94,60 @@ function onSignalingMessage(message) {
     onRoomReceived(room);
     printState("Room received");
   } else if (msg.type === 'WRONGROOM') {
+    //window.location.href = "/";
     printState("Wrong room");
   }
 }
 
-function sendMessageToSignalingServer(message) {
+function onSignalingChannelClosed() {
+  signalingChannelReady = false;
+}
+
+function sendSignalingMessage(message) {
   var msgString = JSON.stringify(message);
   channel.send(msgString);
   printState("Sent " + msgString);
 }
 
-function createPeerConnection() {
+function createPeerConnection(peerId) {
   try {
-    pc = new RTCPeerConnection(pc_config, null);
-    pc.onicecandidate = onIceCandidate;
-    pc.ondatachannel = onDataChannel;
+    var pc = new RTCPeerConnection(config, null);
+    pc.onicecandidate = function(event) {
+      if (event.candidate)
+        sendSignalingMessage(["webrtc", room, peerId, {
+          type: 'candidate',
+          label: event.candidate.sdpMLineIndex,
+          id: event.candidate.sdpMid,
+          candidate: event.candidate.candidate
+        }]);
+    };
+    pc.ondatachannel = function(event) {
+      console.log('Received data channel creating request');  //calee do
+      var dataChannel = event.channel;
+      dataChannels.push(dataChannel);
+      initDataChannel(dataChannel);
+      printState("initDataChannel");
+
+      var checkChannelMessage = {"type": "CHECK_CHANNEL", "uuid": ("" + uuidv4())};
+      //send checking message to signaling server,
+      // then when other peer will send this uuid also the server will be sure that both ends established channel
+      sendSignalingMessage(["webrtc", room, peerId, checkChannelMessage]);
+      //send checking message to peer
+      sendMessageToPeer(JSON.stringify(checkChannelMessage), dataChannel);
+      printState("Checking message sent " + checkChannelMessage.uuid);
+    };
+    connections[peerId] = pc;
+
+    var s = '';
+    for(key in connections)
+      s += (key + ' = ' + connections[key] + ';  ');
+    printState("connections: " + s);
+    return pc;
   } catch (e) {
     console.log(e);
     pc = null;
     return;
   }
-}
-
-function onDataChannel(evt) {
-  console.log('Received data channel creating request');  //calee do
-  dataChannel = evt.channel;
-  dataChannels.push(dataChannel);
-  initDataChannel(dataChannel);
-  printState("initDataChannel");
-
-  let checkChannelMessage = {"type": "CHECK_CHANNEL", "uuid": ("" + uuidv4())};
-  //send checking message to signaling server,
-  // then when other peer will send this uuid also the server will be sure that both ends established channel
-  sendMessageToSignalingServer(["webrtc", room, checkChannelMessage]);
-  //send checking message to peer
-  sendMessageToPeer(JSON.stringify(checkChannelMessage));
-  printState("Checking message sent " + checkChannelMessage.uuid);
 }
 
 function initDataChannel(dataChannel) {
@@ -127,9 +156,9 @@ function initDataChannel(dataChannel) {
   dataChannel.onmessage = onReceiveMessage.bind(dataChannel);
 }
 
-function createDataChannel(role) {
+function createDataChannel(peerConnection, role) {
   try {
-    dataChannel = pc.createDataChannel("datachannel_" + room + role, null);  //caller do
+    var dataChannel = peerConnection.createDataChannel("datachannel_" + room + role, null);  //caller do
     dataChannels.push(dataChannel);
   } catch (e) {
     console.log('error creating data channel ' + e);
@@ -138,41 +167,43 @@ function createDataChannel(role) {
   initDataChannel(dataChannel);
 }
 
-function onIceCandidate(event) {
-  if (event.candidate && !event.candidate.candidate.includes("91.243.236.23"))
-    sendMessageToSignalingServer(["webrtc", room, {
-      type: 'candidate',
-      label: event.candidate.sdpMLineIndex,
-      id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
-    }]);
-}
-
 function failureCallback(e) {
   console.log("failure callback " + e.message);
 }
 
-function doCall() {
-  createDataChannel("caller");
-  pc.createOffer(setLocalAndSendMessage, failureCallback, null);
+function doCall(toPeer) {
+  var peerConnection = connections[toPeer];
+  createDataChannel(peerConnection, "caller");
+  peerConnection.createOffer(function (offer) {
+    peerConnection.setLocalDescription(offer, function() {
+      sendSignalingMessage(["webrtc", room, toPeer, peerConnection.localDescription]);
+    }, failureCallback);
+  }, failureCallback, null);
 }
 
-function doAnswer() {
-  pc.createAnswer(setLocalAndSendMessage, failureCallback, null);
+function doAnswer(peerId) {
+  var peerConnection = connections[peerId];
+  peerConnection.createAnswer(function (answer) {
+    peerConnection.setLocalDescription(answer, function() {
+      sendSignalingMessage(["webrtc", room, peerId, peerConnection.localDescription]);
+    }, failureCallback);
+  }, failureCallback);
 }
 
 function setLocalAndSendMessage(sessionDescription) {
   pc.setLocalDescription(sessionDescription);
-  //sessionDescription.room = room * 1;
-  sendMessageToSignalingServer(["webrtc", room, sessionDescription]);
+  sendSignalingMessage(["webrtc", room, sessionDescription]);
 }
 
 function onChannelStateChange() {
   console.log('Data channel state is: ' + this.readyState);
 }
 
-function sendMessageToPeer(data) {
-  dataChannel.send(data);
+function sendMessageToPeer(data, channel) {
+  if (channel)
+    channel.send(data);
+  else
+    dataChannels.forEach(function(channel) {channel.send(data);});
 }
 
 function onReceiveMessage(event) {
@@ -182,7 +213,7 @@ function onReceiveMessage(event) {
     if (msg.type === 'chatmessage') {
       onPrivateMessageReceived(msg.txt);
     } else if (msg.type === 'CHECK_CHANNEL') {
-      sendMessageToSignalingServer(["webrtc", room, msg]);
+      sendSignalingMessage(["webrtc", room, msg]);
       printState("Checking message received (then sent to signaling server) " + msg.uuid);
     }
   } catch (e) {
