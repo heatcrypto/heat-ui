@@ -72,11 +72,13 @@ class SendmessageDialog extends GenericDialog {
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
                     $scope.$evalAsync(()=>{
+                      this.fields['recipient']['accountExists'] = true
                       // this.fields['message'].visible(true);
                       this.fields['messagWarning'].visible(false);
                     });
                   },()=>{
                     $scope.$evalAsync(()=>{
+                      this.fields['recipient']['accountExists'] = false
                       // this.fields['message'].visible(false);
                       this.fields['messagWarning'].visible(true);
                     });
