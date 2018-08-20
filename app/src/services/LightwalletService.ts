@@ -20,8 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var HookedWeb3Provider: any;
-declare var Web3: any;
 declare type WalletAddress = {
   /* Ethereum address */
   address: string;
@@ -207,6 +205,7 @@ class LightwalletService {
             return;
           }
 
+          var HookedWeb3Provider = this.$window.heatlibs.HookedWeb3Provider;
           var web3Provider = new HookedWeb3Provider({
             host: this.settingsService.get(SettingsService.WEB3PROVIDER),
             transaction_signer: ks
@@ -262,6 +261,7 @@ class LightwalletService {
             return;
           }
 
+          var HookedWeb3Provider = this.$window.heatlibs.HookedWeb3Provider;
           var web3Provider = new HookedWeb3Provider({
             host: this.settingsService.get(SettingsService.WEB3PROVIDER),
             transaction_signer: ks

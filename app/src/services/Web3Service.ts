@@ -1,15 +1,16 @@
 declare var Tx: any;
 @Service('web3')
-@Inject('$q', 'user', 'settings')
+@Inject('$q', 'user', 'settings', '$window')
 class Web3Service {
 
   public web3: any;
   constructor(
               private $q: angular.IQService,
               private userService: UserService,
-              private settingsService: SettingsService) {
+              private settingsService: SettingsService,
+              private $window: angular.IWindowService) {
 
-    var Web3 = window['Web3']
+    const Web3 = $window.heatlibs.Web3
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
   }
 
