@@ -71,20 +71,19 @@ class SendmoneyDialog extends GenericDialog {
               onchange(() => {
                 this.fields['recipientPublicKey'].value = null;
                 this.fields['message'].changed();
-                this.fields['recipient']['accountExists'] = false
                 this.heat.api.getPublicKeyOrEmptyString(this.fields['recipient'].value).then(
                   (publicKey) => {
                     /* account exists but has no public key */
                     if (publicKey == '') {
                       $scope.$evalAsync(()=>{
-                        this.fields['recipient']['accountExists'] = true
+                        this.fields['recipient']['accountExists'] = true;
                         // this.fields['message'].visible(false);
                       });
                     }
                     else {
                       this.fields['recipientPublicKey'].value = publicKey;
                       $scope.$evalAsync(()=>{
-                        this.fields['recipient']['accountExists'] = true
+                        this.fields['recipient']['accountExists'] = true;
                         // this.fields['message'].visible(true);
                       });
                     }

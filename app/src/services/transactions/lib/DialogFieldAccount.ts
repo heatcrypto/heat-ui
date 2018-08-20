@@ -77,7 +77,8 @@ class DialogFieldAccount extends AbstractDialogField {
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem"
-        ng-disabled="vm.f._disabled">
+        ng-disabled="vm.f._disabled"
+        ng-blur="vm.blur()">
         <md-item-template>
           <div layout="row" flex class="monospace-font">
             <span>{{item.publicName||''}}</span>
@@ -111,6 +112,10 @@ class DialogFieldAccountComponent {
   }
 
   searchTextChange() {
+    // this.f.value = this.searchText;
+  }
+
+  blur() {
     this.f.value = this.searchText;
   }
 }
