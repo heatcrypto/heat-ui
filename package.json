@@ -15,7 +15,8 @@
   },
   "scripts": {
     "pack": "build --dir",
-    "dist": "build"
+    "dist": "build",
+    "start": "gulp play"
   },
   "devDependencies": {
     "@types/angular": "^1.6.18",
