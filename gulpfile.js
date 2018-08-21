@@ -138,7 +138,8 @@ gulp.task('play', ['ts2js','copy:dist', 'less'], function () {
   //var open = require('open'); // open browser window
   //var path = require('path');
 
-  var port = 9001, app;
+  var port, app;
+  port = process.env.PORT || 9001;
 
   gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['ts2js', 'copy:dist', 'less']);
 
