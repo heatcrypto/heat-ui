@@ -9,7 +9,7 @@ class BtcBlockExplorerService {
 
   public getBalance(address: string) {
     let deferred = this.$q.defer<string>();
-    let balancesApi = `https://testnet.blockexplorer.com/api/addr/${address}/balance`;
+    let balancesApi = `https://blockexplorer.com/api/addr/${address}/balance`;
     this.http.get(balancesApi)
         .then(response => {
           deferred.resolve(response)
@@ -20,7 +20,7 @@ class BtcBlockExplorerService {
   }
 
   public getTransactions(address: string, pageNum: number): angular.IPromise<any> {
-    let getTransactionsApi = `https://testnet.blockexplorer.com/api/txs/?address=${address}&pageNum=${pageNum}`;
+    let getTransactionsApi = `https://blockexplorer.com/api/txs/?address=${address}&pageNum=${pageNum}`;
     let deferred = this.$q.defer();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -32,7 +32,7 @@ class BtcBlockExplorerService {
   }
 
   public getAddressInfo(address: string): angular.IPromise<BlockExplorerAddressInfo>  {
-    let getTransactionsApi = `https://testnet.blockexplorer.com/api/addr/${address}?noTxList=0&noCache=1`;
+    let getTransactionsApi = `https://blockexplorer.com/api/addr/${address}?noTxList=0&noCache=1`;
     let deferred = this.$q.defer<BlockExplorerAddressInfo>();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -44,7 +44,7 @@ class BtcBlockExplorerService {
   }
 
   public getEstimatedFee() {
-    let getEstimatedFeeApi = `https://testnet.blockexplorer.com/api/utils/estimatefee?nbBlocks=2`;
+    let getEstimatedFeeApi = `https://blockexplorer.com/api/utils/estimatefee?nbBlocks=2`;
     let deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -60,7 +60,7 @@ class BtcBlockExplorerService {
   }
 
   public getTxInfo(txId: string) {
-    let getEstimatedFeeApi = `https://testnet.blockexplorer.com/api/tx/${txId}`;
+    let getEstimatedFeeApi = `https://blockexplorer.com/api/tx/${txId}`;
     let deferred = this.$q.defer<BlockExplorerTxInfo>();
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;

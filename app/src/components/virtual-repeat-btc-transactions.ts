@@ -38,7 +38,7 @@
             <!-- TX ID -->
             <div class="he truncate-col info-col left" >
               <span>
-                <a target="_blank" href="https://testnet.blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
+                <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
 

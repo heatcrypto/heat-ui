@@ -106,7 +106,7 @@ class BitcoreService {
   }
 
   sendBitcoins(txObject: any): Promise<{ txId: string }> {
-    let insight = new this.explorers.Insight('testnet');
+    let insight = new this.explorers.Insight('mainnet');
 
     return new Promise((resolve, reject) => {
       insight.getUnspentUtxos(txObject.from, (err, utxos) => {
@@ -120,7 +120,7 @@ class BitcoreService {
             tx.change(txObject.from)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)
-            tx.serialize();
+            tx.serialize(true);
 
             this.broadcastTransaction(insight, tx).then(data => {
               resolve(data)
@@ -153,7 +153,7 @@ class BitcoreService {
 
     let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
     let HDPrivateKey = this.bitcore.HDPrivateKey;
-    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'testnet')
+    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
 
     let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index);
     let address = derived.privateKey.toAddress();

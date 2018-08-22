@@ -40,7 +40,7 @@
                 Pending&nbsp;<elipses-loading></elipses-loading>
               </div>
               <div class="truncate-col info-col left" flex>
-                <a target="_blank" href="https://testnet.blockexplorer.com/tx/{{item.txId}}">{{item.txId}}</a>
+                <a target="_blank" href="https://blockexplorer.com/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
             </md-list-item>
           </md-list>
