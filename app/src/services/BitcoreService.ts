@@ -120,7 +120,7 @@ class BitcoreService {
             tx.change(txObject.from)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)
-            tx.serialize(true);
+            tx.serialize();
 
             this.broadcastTransaction(insight, tx).then(data => {
               resolve(data)
