@@ -44,7 +44,7 @@ class BtcBlockExplorerService {
   }
 
   public getEstimatedFee() {
-    let getEstimatedFeeApi = `https://blockexplorer.com/api/utils/estimatefee?nbBlocks=10`;
+    let getEstimatedFeeApi = `https://blockexplorer.com/api/utils/estimatefee?nbBlocks=5`;
     let deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
