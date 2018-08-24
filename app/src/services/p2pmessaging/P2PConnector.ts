@@ -46,7 +46,12 @@ class Room {
   onFailure: (room: string, e: any) => any;
 
   /**
-   * On failure callback.
+   * On opening channel callback.
+   */
+  onOpenDataChannel: (peerId: string) => any;
+
+  /**
+   * On closing channel callback.
    */
   onCloseDataChannel: (peerId: string) => any;
 
@@ -58,6 +63,8 @@ class P2PConnector {
 
   initiator;
   webSocketPromise: Promise<WebSocket>;
+  signalingMessageAwaitings: Function[] = [];
+  notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
   rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
   signalingChannelReady: boolean = false;
@@ -66,6 +73,45 @@ class P2PConnector {
 
   constructor(private settings: SettingsService) {
 
+  }
+
+  /**
+   * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
+   * "0" - offline, "1" - online
+   */
+  setOnlineStatus(status: string) {
+    this.getWebSocket().then(websocket => {
+      this.sendSignalingMessage([{"type": "SET_ONLINE_STATUS", "status": status}]);
+    }, reason => console.log(reason))
+  }
+
+  getOnlineStatus(peerId: string): Promise<string> {
+    return this.request(
+      () => this.sendSignalingMessage([{"type": "GET_ONLINE_STATUS", "peerId": peerId}]),
+      (msg) => {
+        if (msg.type === "ONLINE_STATUS" && msg.peerId == peerId)
+          return msg.status;
+        return this.notAcceptedResponse;
+      })
+  }
+
+  request(request: () => void, handleResponse: (msg) => any): Promise<any> {
+    let p = new Promise<any>((resolve, reject) => {
+      let f = (msg) => {
+        let v = handleResponse(msg);
+        if (v !== this.notAcceptedResponse) {
+          resolve(v);
+          let i: number = this.signalingMessageAwaitings.indexOf(f);
+          if (i !== -1)
+            this.signalingMessageAwaitings.splice(i, 1);
+        }
+      };
+      this.signalingMessageAwaitings.push(f);
+      this.getWebSocket().then(websocket => {
+        request();
+      }, reason => console.log(reason))
+    });
+    return promiseTimeout(3000, p);
   }
 
   room(room: Room) {
@@ -80,13 +126,17 @@ class P2PConnector {
   /**
    * Resolves opened websocket.
    */
-  getWebSocket(url: string) {
-    if (!this.webSocketPromise) {
+  getWebSocket() {
+    if (!this.signalingChannelReady) {
       this.webSocketPromise = new Promise((resolve, reject) => {
+          let url = this.settings.get(SettingsService.HEAT_WEBSOCKET);
           let socket = new WebSocket(url);
           console.log("socket" + socket);
           socket.onopen = () => {
-            console.log("connected");
+            this.signalingChannel = socket;
+            this.signalingChannel.onmessage = (msg) => this.onSignalingMessage(msg);
+            this.signalingChannel.onclose = () => this.onSignalingChannelClosed();
+            this.signalingChannelReady = true;
             resolve(socket);
           };
           socket.onerror = (error) => {
@@ -100,29 +150,17 @@ class P2PConnector {
 
   openSignalingChannel(roomName: string) {
     let sendRoom = () => {
-      this.sendSignalingMessage(["webrtc", roomName, {"type": "ROOM"}])
+      this.sendSignalingMessage([{"type": "ROOM", "room": roomName}])
     };
     if (this.signalingChannelReady) {
       sendRoom();
       return;
     }
-    this.signalingChannelReady = false;
-    this.getWebSocket(this.settings.get(SettingsService.HEAT_WEBSOCKET)).then(websocket => {
-      this.signalingChannel = websocket;
+    this.getWebSocket().then(websocket => {
       sendRoom();
       this.initiator = false;
-      this.signalingChannelReady = true;
-      this.signalingChannel.onmessage = (msg) => this.onSignalingMessage(msg);
-      this.signalingChannel.onclose = () => this.onSignalingChannelClosed();
     }, reason => console.log(reason))
   }
-
-  // onSignalingChannelOpened(r) {
-  //   this.signalingChannelReady = true;
-  //   //createPeerConnection();
-  //   //this.sendSignalingMessage(["webrtc", this.room, {"type": "ROOM"}]);
-  //   this.initiator = false;
-  // }
 
   onSignalingMessage(message) {
     let msg = JSON.parse(message.data);
@@ -139,7 +177,7 @@ class P2PConnector {
       // doCall();
       console.log("do call");
     } else if (msg.type === 'offer') {
-      let peerId = msg.fromPeer;
+      let peerId: string = msg.fromPeer;
       let pc = this.rooms[room][peerId];
       if (!pc)
         pc = this.createPeerConnection(room, peerId);
@@ -167,6 +205,8 @@ class P2PConnector {
     } else if (msg.type === 'WRONGROOM') {
       //window.location.href = "/";
       console.log("Wrong room");
+    } else {
+      this.signalingMessageAwaitings.forEach(f => f(msg));
     }
   }
 
@@ -174,19 +214,20 @@ class P2PConnector {
     this.signalingChannelReady = false;
   }
 
-  sendSignalingMessage(message) {
+  sendSignalingMessage(message: any[]) {
+    message.splice(0, 0, "webrtc");
     let msgString = JSON.stringify(message);
     this.signalingChannel.send(msgString);
     //printState("Sent " + msgString);
   }
 
-  createPeerConnection(room: string, peerId) {
+  createPeerConnection(roomName: string, peerId: string) {
     let pc: RTCPeerConnection;
     try {
       pc = new RTCPeerConnection(this.config);
       pc.onicecandidate = (event) => {
         if (event.candidate)
-          this.sendSignalingMessage(["webrtc", room, peerId, {
+          this.sendSignalingMessage([{"room": roomName, "toPeerId": peerId}, {
             type: 'candidate',
             label: event.candidate.sdpMLineIndex,
             id: event.candidate.sdpMid,
@@ -196,11 +237,11 @@ class P2PConnector {
       pc.ondatachannel = (event) => {
         let dataChannel = event.channel;
         console.log('Received data channel creating request');  //calee do
-        this.initDataChannel(room, peerId, dataChannel, true);
+        this.initDataChannel(roomName, peerId, dataChannel, true);
         console.log("init Data Channel");
       };
 
-      this.rooms[room][peerId] = pc;
+      this.rooms[roomName][peerId] = pc;
 
       return pc;
     } catch (e) {
@@ -218,16 +259,21 @@ class P2PConnector {
     this.rooms[room]["dataChannels"].push(dataChannel);
   }
 
-  onOpenDataChannel(room: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
+  onOpenDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
     if (sendCheckingMessage) {
-      let checkChannelMessage = {"type": "CHECK_CHANNEL", "value": ("" + Math.random())};
+      let checkChannelMessage = {"type": "CHECK_CHANNEL", "room": roomName, "value": ("" + Math.random())};
       //send checking message to signaling server,
       // then when other peer will send this value also the server will be sure that both ends established channel
-      this.sendSignalingMessage(["webrtc", room, peerId, checkChannelMessage]);
+      this.sendSignalingMessage([checkChannelMessage]);
       //send checking message to peer
-      this.sendMessage(room, JSON.stringify(checkChannelMessage), dataChannel);
+      this.sendMessage(roomName, JSON.stringify(checkChannelMessage), dataChannel);
       console.log("Checking message sent " + checkChannelMessage.value);
     }
+
+    let room: Room = this.rooms[roomName]["room"];
+    if (room && room.onOpenDataChannel)
+      room.onOpenDataChannel(peerId);
+
     console.log("Data channel is opened");
   }
 
@@ -244,7 +290,8 @@ class P2PConnector {
       if (this.signalingChannel)
         this.signalingChannel.close();
 
-    room.onCloseDataChannel(peerId);
+    if (room && room.onCloseDataChannel)
+      room.onCloseDataChannel(peerId);
   }
 
   createDataChannel(room: string, peerId: string, peerConnection: RTCPeerConnection, role) {
@@ -260,7 +307,8 @@ class P2PConnector {
 
   onFailure(roomName: string, peerId: string, e) {
     let room: Room = this.rooms[roomName]["room"];
-    room.onFailure(roomName, e);
+    if (room.onFailure)
+      room.onFailure(roomName, e);
   }
 
   doCall(roomName: string, peerId: string) {
@@ -268,7 +316,7 @@ class P2PConnector {
     this.createDataChannel(roomName, peerId, peerConnection, "caller");
     peerConnection.createOffer((offer) => {
         peerConnection.setLocalDescription(offer, () => {
-          this.sendSignalingMessage(["webrtc", roomName, peerId, peerConnection.localDescription]);
+          this.sendSignalingMessage([{"room": roomName, "toPeerId": peerId}, peerConnection.localDescription]);
         }, (e) => this.onFailure(roomName, peerId, e));
       }, (e) => this.onFailure(roomName, peerId, e),
       null);
@@ -278,7 +326,7 @@ class P2PConnector {
     let peerConnection = this.rooms[roomName][peerId];
     peerConnection.createAnswer((answer) => {
       peerConnection.setLocalDescription(answer, () => {
-        this.sendSignalingMessage(["webrtc", roomName, peerId, peerConnection.localDescription]);
+        this.sendSignalingMessage([{"room": roomName, "toPeerId": peerId}, peerConnection.localDescription]);
       }, (e) => this.onFailure(roomName, peerId, e));
     }, (e) => this.onFailure(roomName, peerId, e));
   }
@@ -307,14 +355,15 @@ class P2PConnector {
     //let room = dataChannelLabel.substr(0, dataChannelLabel.lastIndexOf(":"));
     try {
       let room: Room = this.rooms[roomName]["room"];
-      room.onMessage(peerId, event.data);
+      if (room.onMessage)
+        room.onMessage(peerId, event.data);
 
       let msg = JSON.parse(event.data);
 
       if (msg.type === 'chatmessage') {
         console.log("chatmessage " + msg.txt);
       } else if (msg.type === 'CHECK_CHANNEL') {
-        this.sendSignalingMessage(["webrtc", roomName, msg]);
+        this.sendSignalingMessage([{"room": roomName}, msg]);
         console.log("CHECK_CHANNEL " + msg.txt);
         console.log("Checking message received (then sent to signaling server) " + msg.value);
       }
@@ -333,4 +382,23 @@ class P2PConnector {
     //room deleting is in the onCloseDataChannel()
   }
 
+}
+
+function promiseTimeout(ms, promise) {
+  return new Promise(function (resolve, reject) {
+    // create a timeout to reject promise if not resolved
+    var timer = setTimeout(function () {
+      reject(new Error("promise timeout"));
+    }, ms);
+
+    promise
+      .then(function (res) {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(function (err) {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 }

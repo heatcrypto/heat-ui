@@ -25,6 +25,7 @@
     "@types/bytebuffer": "^5.0.33",
     "@types/jsbn": "^1.2.28",
     "@types/long": "^3.0.31",
+    "@types/webrtc": "~0.0.23",
     "connect": "3.4.1",
     "del": "2.2.2",
     "electron": "2.0.2",
@@ -74,7 +75,8 @@
     "material-design-icons": "2.2.3",
     "ng-popover": "^2.0.0",
     "pako": "1.0.3",
-    "techan": "0.8.0"
+    "techan": "0.8.0",
+    "webrtc-adapter": "6.3.2"
   },
   "build": {
     "appId": "com.heatledger.heatwallet",
