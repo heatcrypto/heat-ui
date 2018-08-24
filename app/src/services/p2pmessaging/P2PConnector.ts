@@ -29,7 +29,7 @@ class Room {
   }
 
   /**
-   * Sends message to all members of room.
+   * Sends message to all members of room (all peers in the room).
    */
   sendMessage(message: string) {
     this.connector.sendMessage(this.name, message);
@@ -66,6 +66,10 @@ class P2PConnector {
   signalingMessageAwaitings: Function[] = [];
   notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
+  private templateRoom: Room;
+  private onRoomCreate: (room: Room) => any;
+  private allowCaller: (caller: string) => boolean;
+
   rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
   signalingChannelReady: boolean = false;
   signalingChannel: WebSocket;
@@ -75,14 +79,25 @@ class P2PConnector {
 
   }
 
+  setup(room: Room,
+        onRoomCreate: (room: Room) => any,
+        allowCaller: (caller: string) => boolean) {
+    this.templateRoom = room;
+    this.onRoomCreate = onRoomCreate;
+    this.allowCaller = allowCaller;
+  }
+
+  call(toPeerId: string, caller: string, room: Room) {
+    this.room(room);
+    this.sendSignalingMessage([{"type": "CALL", "toPeerId": toPeerId, "caller": caller, "room": room.name}]);
+  }
+
   /**
    * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
    * "0" - offline, "1" - online
    */
   setOnlineStatus(status: string) {
-    this.getWebSocket().then(websocket => {
-      this.sendSignalingMessage([{"type": "SET_ONLINE_STATUS", "status": status}]);
-    }, reason => console.log(reason))
+    this.sendSignalingMessage([{"type": "SET_ONLINE_STATUS", "status": status}]);
   }
 
   getOnlineStatus(peerId: string): Promise<string> {
@@ -115,19 +130,25 @@ class P2PConnector {
   }
 
   room(room: Room) {
-    if (!this.rooms[room.name]) {
-      this.rooms[room.name] = {};
-      this.rooms[room.name]["dataChannels"] = [];
-      this.rooms[room.name]["room"] = room;
-      this.openSignalingChannel(room.name);
+    if (this.rooms[room.name]) {
+      let existingRoom: Room = this.rooms[room.name]["room"];
+      if (existingRoom) {
+        if (existingRoom === room)
+          return;
+        this.closeRoom(existingRoom.name);
+      }
     }
+    this.rooms[room.name] = {};
+    this.rooms[room.name]["dataChannels"] = [];
+    this.rooms[room.name]["room"] = room;
+    this.openSignalingChannel(room.name);
   }
 
   /**
    * Resolves opened websocket.
    */
   getWebSocket() {
-    if (!this.signalingChannelReady) {
+    if (!this.webSocketPromise) {
       this.webSocketPromise = new Promise((resolve, reject) => {
           let url = this.settings.get(SettingsService.HEAT_WEBSOCKET);
           let socket = new WebSocket(url);
@@ -164,34 +185,40 @@ class P2PConnector {
 
   onSignalingMessage(message) {
     let msg = JSON.parse(message.data);
-    let room: string = msg.room;
-    if (msg.type === 'WELCOME') {
+    let roomName: string = msg.room;
+
+    if (msg.type === 'CALL') {
+      let caller: string = msg.caller;
+      if (this.templateRoom && this.allowCaller(caller)) {
+        let room = this.createRoom(roomName);
+        this.room(room);
+      }
+    } else if (msg.type === 'WELCOME') {  //welcome to existing room
       this.initiator = true;
       msg.remotePeerIds.forEach((peerId: string) => {
-        if (!this.rooms[room][peerId]) {
-          let pc = this.createPeerConnection(room, peerId);
+        if (!this.rooms[roomName][peerId]) {
+          let pc = this.createPeerConnection(roomName, peerId);
           if (pc)
-            this.doCall(room, peerId);
+            this.doCall(roomName, peerId);
         }
       });
-      // doCall();
       console.log("do call");
     } else if (msg.type === 'offer') {
       let peerId: string = msg.fromPeer;
-      let pc = this.rooms[room][peerId];
+      let pc = this.rooms[roomName][peerId];
       if (!pc)
-        pc = this.createPeerConnection(room, peerId);
+        pc = this.createPeerConnection(roomName, peerId);
       if (pc) {
         pc.setRemoteDescription(new RTCSessionDescription(msg));
-        this.doAnswer(room, peerId);
+        this.doAnswer(roomName, peerId);
         console.log("do answer");
       }
     } else if (msg.type === 'answer') {
-      let pc = this.rooms[room][msg.fromPeer];
+      let pc = this.rooms[roomName][msg.fromPeer];
       pc.setRemoteDescription(new RTCSessionDescription(msg));
       console.log("got answer");
     } else if (msg.type === 'candidate') {
-      let pc = this.rooms[room][msg.fromPeer];
+      let pc = this.rooms[roomName][msg.fromPeer];
       let candidate = new RTCIceCandidate({
         sdpMLineIndex: msg.label,
         candidate: msg.candidate
@@ -215,10 +242,11 @@ class P2PConnector {
   }
 
   sendSignalingMessage(message: any[]) {
-    message.splice(0, 0, "webrtc");
-    let msgString = JSON.stringify(message);
-    this.signalingChannel.send(msgString);
-    //printState("Sent " + msgString);
+    this.getWebSocket().then(websocket => {
+      message.splice(0, 0, "webrtc");
+      let msgString = JSON.stringify(message);
+      this.signalingChannel.send(msgString);
+    }, reason => console.log(reason))
   }
 
   createPeerConnection(roomName: string, peerId: string) {
@@ -266,7 +294,7 @@ class P2PConnector {
       // then when other peer will send this value also the server will be sure that both ends established channel
       this.sendSignalingMessage([checkChannelMessage]);
       //send checking message to peer
-      this.sendMessage(roomName, JSON.stringify(checkChannelMessage), dataChannel);
+      this.send(roomName, JSON.stringify(checkChannelMessage), dataChannel);
       console.log("Checking message sent " + checkChannelMessage.value);
     }
 
@@ -335,7 +363,12 @@ class P2PConnector {
   //   console.log('Data channel state is: ' + dataChannel.readyState);
   // }
 
-  sendMessage(room: string, data, channel?: RTCDataChannel) {
+  sendMessage(room: string, text: string) {
+    let msg = {type: "chat", text: text}
+    this.send(room, msg);
+  }
+
+  send(room: string, data, channel?: RTCDataChannel) {
     if (channel) {
       channel.send(data);
     } else {
@@ -350,19 +383,14 @@ class P2PConnector {
   }
 
   onMessage(roomName: string, peerId: string, event: MessageEvent) {
-    console.log(event.target);
-    //let dataChannelLabel: string = event.channel.label;
-    //let room = dataChannelLabel.substr(0, dataChannelLabel.lastIndexOf(":"));
     try {
       let room: Room = this.rooms[roomName]["room"];
-      if (room.onMessage)
+      if (room && room.onMessage)
         room.onMessage(peerId, event.data);
 
       let msg = JSON.parse(event.data);
 
-      if (msg.type === 'chatmessage') {
-        console.log("chatmessage " + msg.txt);
-      } else if (msg.type === 'CHECK_CHANNEL') {
+      if (msg.type === 'CHECK_CHANNEL') {
         this.sendSignalingMessage([{"room": roomName}, msg]);
         console.log("CHECK_CHANNEL " + msg.txt);
         console.log("Checking message received (then sent to signaling server) " + msg.value);
@@ -380,6 +408,16 @@ class P2PConnector {
     dataChannels.forEach(channel => channel.close());
     dataChannels.length = 0;
     //room deleting is in the onCloseDataChannel()
+  }
+
+  private createRoom(name: string): Room {
+    let room = new Room(name, this);
+    room.onMessage = this.templateRoom.onMessage;
+    room.onFailure = this.templateRoom.onFailure;
+    room.onOpenDataChannel = this.templateRoom.onOpenDataChannel;
+    room.onCloseDataChannel = this.templateRoom.onCloseDataChannel;
+    this.onRoomCreate(room);
+    return room;
   }
 
 }
