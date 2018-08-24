@@ -23,7 +23,7 @@
 declare var techan: any, d3: any;
 @Component({
   selector: 'traderChart',
-  inputs: ['currencyInfo','assetInfo'],
+  inputs: ['currencyInfo', 'assetInfo'],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" layout-align="end" class="intervals">
@@ -49,7 +49,7 @@ declare var techan: any, d3: any;
     setTimeout(loop, 50);
   }
 })
-@Inject('$scope','heat','$q', '$interval', '$window')
+@Inject('$scope', 'heat', '$q', '$interval', '$window')
 class TraderChartComponent {
 
   // inputs
@@ -67,7 +67,7 @@ class TraderChartComponent {
     data: any,
     x: any,
     xAxis: any
-  } = {closeLine: null, close: null, closeArea: null, volumeLine: null, volumeArea: null, data: null, x: null, xAxis: null};
+  } = { closeLine: null, close: null, closeArea: null, volumeLine: null, volumeArea: null, data: null, x: null, xAxis: null };
 
   // we need these in order to know how big our svg should be
   fullWidth: number;
@@ -75,14 +75,13 @@ class TraderChartComponent {
 
   lastTrade: any;
 
-  refreshChartDelayed: (order)=>void;
+  refreshChartDelayed: (order) => void;
 
   constructor(private $scope: angular.IScope,
-              private heat: HeatService,
-              private $q: angular.IQService,
-              private $interval: angular.IIntervalService,
-              private $window: angular.IWindowService)
-  {
+    private heat: HeatService,
+    private $q: angular.IQService,
+    private $interval: angular.IIntervalService,
+    private $window: angular.IWindowService) {
     // have to wrap in function since currencyInfo and assetInfo are set after construction
     var ready = () => {
       if (this.currencyInfo && this.assetInfo) {
@@ -91,17 +90,17 @@ class TraderChartComponent {
         unregister.forEach(fn => fn());
       }
     };
-    var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
+    var unregister = [$scope.$watch('vm.currencyInfo', ready), $scope.$watch('vm.assetInfo', ready)];
 
-    let onresize = utils.debounce(()=>{ this.determineElementSize() },50);
+    let onresize = utils.debounce(() => { this.determineElementSize() }, 50);
     angular.element($window).on('resize', onresize);
-    let interval = $interval(()=> { this.checkForFlatline() }, 2000);
-    $scope.$on('$destroy',()=>{
+    let interval = $interval(() => { this.checkForFlatline() }, 2000);
+    $scope.$on('$destroy', () => {
       angular.element($window).off('resize', onresize);
       $interval.cancel(interval);
     });
 
-    this.refreshChartDelayed = utils.debounce(order=> {this.refreshChart(order)}, 5*1000, false);
+    this.refreshChartDelayed = utils.debounce(order => { this.refreshChart(order) }, 5 * 1000, false);
   }
 
   private determineElementSize(): boolean {
@@ -117,18 +116,18 @@ class TraderChartComponent {
 
   private getOHLCChartData(): angular.IPromise<IHeatChart> {
     if (this.filter === 'ONE_DAY' ||
-        this.filter === 'ONE_HOUR' ||
-        this.filter === 'FIVE_MINUTES' ||
-        this.filter === 'ONE_MINUTE') {
-          this.interval = 'ONE_MINUTE'
+      this.filter === 'ONE_HOUR' ||
+      this.filter === 'FIVE_MINUTES' ||
+      this.filter === 'ONE_MINUTE') {
+      this.interval = 'ONE_MINUTE'
     } else {
-          this.interval = 'HOUR'
+      this.interval = 'HOUR'
     }
     return this.heat.api.getOHLCChartData(this.currencyInfo.id, this.assetInfo.id, this.interval);
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
+    this.heat.subscriber.order({ currency: currency, asset: asset }, (order: IHeatOrder) => {
       this.refreshChartDelayed(order);
     }, this.$scope);
   }
@@ -222,7 +221,7 @@ class TraderChartComponent {
 
   public refresh() {
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
-      let margin = {top: 20, right: 80, bottom: 60, left: 50},
+      let margin = { top: 20, right: 80, bottom: 60, left: 50 },
         width = this.fullWidth - margin.left - margin.right,
         height = this.fullHeight - margin.top - margin.bottom;
 
@@ -233,25 +232,25 @@ class TraderChartComponent {
 
       let tickFormat
       if (this.filter === 'ONE_DAY' ||
-          this.filter === 'ONE_HOUR' ||
-          this.filter === 'FIVE_MINUTES' ||
-          this.filter === 'ONE_MINUTE') {
-            tickFormat = '%H:%M:%S'
+        this.filter === 'ONE_HOUR' ||
+        this.filter === 'FIVE_MINUTES' ||
+        this.filter === 'ONE_MINUTE') {
+        tickFormat = '%H:%M:%S'
       } else {
-            tickFormat = "%m-%d"
+        tickFormat = "%m-%d"
       }
 
       this.chart.x = d3.scaleTime()
         .range([0, width])
 
       var volume = techan.plot.volume()
-          .accessor(techan.accessor.ohlc())
-          .xScale(this.chart.x)
-          .yScale(yVolume);
+        .accessor(techan.accessor.ohlc())
+        .xScale(this.chart.x)
+        .yScale(yVolume);
 
       this.chart.close = techan.plot.close()
-          .xScale(this.chart.x)
-          .yScale(yClose);
+        .xScale(this.chart.x)
+        .yScale(yClose);
 
       this.chart.xAxis = d3.axisBottom()
         .scale(this.chart.x)
@@ -310,14 +309,66 @@ class TraderChartComponent {
       });
 
       svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")");
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")");
 
       svg.append("g")
-              .attr("class", "yClose axis")
+        .attr("class", "yClose axis")
 
       svg.append("g")
-              .attr("class", "yVolume axis")
+        .attr("class", "yVolume axis")
+
+      let focus = svg.append("g")
+        .attr("class", "focus")
+        .style("display", "none");
+
+      focus.append("line").attr("class", "x--line")
+        .style("stroke", "#777")
+        .attr("stroke-width", 1.5)
+        .attr("y1", -height)
+        .attr("y2", 0);
+
+      focus.append("line").attr("class", "y--line")
+        .style("stroke", "#777")
+        .attr("stroke-width", 1.5)
+        .attr("x1", 0)
+        .attr("x2", width);
+
+      focus.append("text")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("dy", ".35em")
+        .style("fill", "white")
+
+      svg.append("rect").attr("class", "overlay")
+        .attr("width", width)
+        .attr("height", height)
+        .on("mouseover", function () { focus.style("display", null); })
+        .on("mouseout", function () { focus.style("display", "none"); })
+        .on("mousemove", mousemove);
+      let x = this.chart.x;
+      let filter = this.filter;
+      function mousemove() {
+        var xCoordinate = x.invert(d3.mouse(this)[0]);
+
+        var yCoordinate = yClose.invert(d3.mouse(this)[1]);
+
+        focus.select(".x--line")
+          .attr("transform", "translate(" + x(xCoordinate) + "," + (height) + ")");
+        focus.select(".y--line")
+          .attr("transform", "translate(" + (0) + "," + yClose(yCoordinate) + ")");
+        let xText;
+        if (filter === 'ONE_DAY' ||
+          filter === 'ONE_HOUR' ||
+          filter === 'FIVE_MINUTES' ||
+          filter === 'ONE_MINUTE') {
+          xText = `${xCoordinate.getHours()}:${xCoordinate.getMinutes()}:${xCoordinate.getSeconds()}`
+        } else {
+          xText = `${xCoordinate.getMonth()+1}-${xCoordinate.getDate()} `
+        }
+        focus.select("text").text(`${xText}, ${yCoordinate.toFixed(3)}`);
+
+      }
 
       let startDate = new Date(filterDate.valueOf())
       if (this.filter == 'ALL') {
@@ -337,21 +388,21 @@ class TraderChartComponent {
       if (this.filter === 'ONE_HOUR' ||
         this.filter === 'FIVE_MINUTES' ||
         this.filter === 'ONE_MINUTE') {
-          let now = new Date()
-          while (itemDate <= now) {
-            this.chart.data.push({
-              date: new Date(itemDate.valueOf()),
-              open: this.lastTrade.close,
-              high: this.lastTrade.close,
-              low: this.lastTrade.close,
-              close: this.lastTrade.close,
-              volume: 0
-            })
-            let interval
-            itemDate.setSeconds(itemDate.getSeconds() + 2);
-          }
-          yClose.domain([this.lastTrade.close - 5000, this.lastTrade.close + 5000]);
+        let now = new Date()
+        while (itemDate <= now) {
+          this.chart.data.push({
+            date: new Date(itemDate.valueOf()),
+            open: this.lastTrade.close,
+            high: this.lastTrade.close,
+            low: this.lastTrade.close,
+            close: this.lastTrade.close,
+            volume: 0
+          })
+          let interval
+          itemDate.setSeconds(itemDate.getSeconds() + 2);
         }
+        yClose.domain([this.lastTrade.close - 5000, this.lastTrade.close + 5000]);
+      }
 
       this.chart.x.domain([startDate, new Date()]);
 
@@ -386,18 +437,18 @@ class TraderChartComponent {
       svg.append("path")
         .datum(this.chart.data)
         .attr("class", "volume-area")
-        .attr("fill","url(#svgVolumeGradient)")
+        .attr("fill", "url(#svgVolumeGradient)")
         .attr("d", this.chart.volumeArea);
 
       this.chart.volumeLine = d3.line()
-      .x((d) => { return this.chart.x(d.date); })
-      .y((d) => { return yVolume(d.volume); })
-      .curve(d3.curveBasis)
+        .x((d) => { return this.chart.x(d.date); })
+        .y((d) => { return yVolume(d.volume); })
+        .curve(d3.curveBasis)
 
       svg.append("path")
         .datum(this.chart.data)
         .attr("class", "volume-line")
-        .attr("fill","none")
+        .attr("fill", "none")
         .attr("stroke", "#4e5fd3")
         .attr("stroke-width", "1px")
         .attr("d", this.chart.volumeLine)
@@ -431,7 +482,7 @@ class TraderChartComponent {
       svg.append("path")
         .datum(this.chart.data)
         .attr("class", "close-area")
-        .attr("fill","url(#svgCloseGradient)")
+        .attr("fill", "url(#svgCloseGradient)")
         .attr("d", this.chart.closeArea);
 
       this.chart.closeLine = d3.line()
@@ -442,7 +493,7 @@ class TraderChartComponent {
       svg.append("path")
         .datum(this.chart.data)
         .attr("class", "close-line")
-        .attr("fill","none")
+        .attr("fill", "none")
         .attr("stroke", "#ea543d")
         .attr("stroke-width", "1px")
         .attr("d", this.chart.closeLine)
