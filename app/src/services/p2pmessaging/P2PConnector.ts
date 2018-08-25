@@ -31,14 +31,14 @@ class Room {
   /**
    * Sends message to all members of room (all peers in the room).
    */
-  sendMessage(message: string) {
+  sendMessage(message: {}) {
     this.connector.sendMessage(this.name, message);
   }
 
   /**
    * On receiving message callback.
    */
-  onMessage: (fromPeerId: string, data: any) => any;
+  onMessage: (msg: {}) => any;
 
   /**
    * On failure callback.
@@ -71,7 +71,7 @@ class P2PConnector {
   private allowCaller: (caller: string) => boolean;
 
   rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
-  signalingChannelReady: boolean = false;
+  signalingChannelReady: boolean = null;
   signalingChannel: WebSocket;
   config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
 
@@ -148,15 +148,15 @@ class P2PConnector {
    * Resolves opened websocket.
    */
   getWebSocket() {
-    if (!this.webSocketPromise) {
+    if (!this.webSocketPromise || this.signalingChannelReady === false) {
       this.webSocketPromise = new Promise((resolve, reject) => {
           let url = this.settings.get(SettingsService.HEAT_WEBSOCKET);
           let socket = new WebSocket(url);
           console.log("socket" + socket);
           socket.onopen = () => {
             this.signalingChannel = socket;
-            this.signalingChannel.onmessage = (msg) => this.onSignalingMessage(msg);
-            this.signalingChannel.onclose = () => this.onSignalingChannelClosed();
+            socket.onmessage = (msg) => this.onSignalingMessage(msg);
+            socket.onclose = () => this.onSignalingChannelClosed();
             this.signalingChannelReady = true;
             resolve(socket);
           };
@@ -363,9 +363,8 @@ class P2PConnector {
   //   console.log('Data channel state is: ' + dataChannel.readyState);
   // }
 
-  sendMessage(room: string, text: string) {
-    let msg = {type: "chat", text: text}
-    this.send(room, msg);
+  sendMessage(room: string, message: {}) {
+    this.send(room, JSON.stringify(message));
   }
 
   send(room: string, data, channel?: RTCDataChannel) {
@@ -384,12 +383,14 @@ class P2PConnector {
 
   onMessage(roomName: string, peerId: string, event: MessageEvent) {
     try {
-      let room: Room = this.rooms[roomName]["room"];
-      if (room && room.onMessage)
-        room.onMessage(peerId, event.data);
-
       let msg = JSON.parse(event.data);
 
+      let room: Room = this.rooms[roomName]["room"];
+      if (room && room.onMessage) {
+        msg.fromPeerId = peerId;
+        msg.roomName = roomName;
+        room.onMessage(msg);
+      }
       if (msg.type === 'CHECK_CHANNEL') {
         this.sendSignalingMessage([{"room": roomName}, msg]);
         console.log("CHECK_CHANNEL " + msg.txt);
