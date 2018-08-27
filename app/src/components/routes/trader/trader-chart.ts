@@ -376,7 +376,9 @@ class TraderChartComponent {
           xText = `${xCoordinate.getMonth() + 1}-${xCoordinate.getDate()} `
         }
         focus.select("#xyValues").text(`${xText}, ${yCoordinate.toFixed(3)}`);
-        focus.select("#volumeValue").text(`Volume: ${yCoordinateRightAxis.toFixed(3)}`);
+        if (yCoordinateRightAxis) {
+          focus.select("#volumeValue").text(`Volume: ${yCoordinateRightAxis.toFixed(3)}`);
+        }
 
       }
 
@@ -423,7 +425,7 @@ class TraderChartComponent {
         .x((d) => { return this.chart.x(d.date); })
         .y0(height)
         .y1((d) => { return yVolume(d.volume); })
-        .curve(d3.curveBasis)
+        .curve(d3.curveLinear)
 
       var volumeGradient = defs.append("linearGradient")
         .attr("id", "svgVolumeGradient")
@@ -453,7 +455,7 @@ class TraderChartComponent {
       this.chart.volumeLine = d3.line()
         .x((d) => { return this.chart.x(d.date); })
         .y((d) => { return yVolume(d.volume); })
-        .curve(d3.curveBasis)
+        .curve(d3.curveLinear)
 
       svg.append("path")
         .datum(this.chart.data)
@@ -468,7 +470,7 @@ class TraderChartComponent {
         .x((d) => { return this.chart.x(d.date); })
         .y0(height)
         .y1((d) => { return yClose(d.close); })
-        .curve(d3.curveBasis)
+        .curve(d3.curveLinear)
 
       var closeGradient = defs.append("linearGradient")
         .attr("id", "svgCloseGradient")
@@ -498,7 +500,7 @@ class TraderChartComponent {
       this.chart.closeLine = d3.line()
         .x((d) => { return this.chart.x(d.date); })
         .y((d) => { return yClose(d.close); })
-        .curve(d3.curveBasis)
+        .curve(d3.curveLinear)
 
       svg.append("path")
         .datum(this.chart.data)
