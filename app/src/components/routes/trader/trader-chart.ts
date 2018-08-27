@@ -335,8 +335,16 @@ class TraderChartComponent {
         .attr("x2", width);
 
       focus.append("text")
+        .attr('id', 'xyValues')
         .attr("x", 0)
-        .attr("y", 0)
+        .attr("y", -15)
+        .attr("dy", ".35em")
+        .style("fill", "white")
+
+      focus.append("text")
+        .attr('id', 'volumeValue')
+        .attr("x", 0)
+        .attr("y", -5)
         .attr("dy", ".35em")
         .style("fill", "white")
 
@@ -352,6 +360,7 @@ class TraderChartComponent {
         var xCoordinate = x.invert(d3.mouse(this)[0]);
 
         var yCoordinate = yClose.invert(d3.mouse(this)[1]);
+        var yCoordinateRightAxis = yVolume.invert(d3.mouse(this)[1]);
 
         focus.select(".x--line")
           .attr("transform", "translate(" + x(xCoordinate) + "," + (height) + ")");
@@ -364,9 +373,10 @@ class TraderChartComponent {
           filter === 'ONE_MINUTE') {
           xText = `${xCoordinate.getHours()}:${xCoordinate.getMinutes()}:${xCoordinate.getSeconds()}`
         } else {
-          xText = `${xCoordinate.getMonth()+1}-${xCoordinate.getDate()} `
+          xText = `${xCoordinate.getMonth() + 1}-${xCoordinate.getDate()} `
         }
-        focus.select("text").text(`${xText}, ${yCoordinate.toFixed(3)}`);
+        focus.select("#xyValues").text(`${xText}, ${yCoordinate.toFixed(3)}`);
+        focus.select("#volumeValue").text(`Volume: ${yCoordinateRightAxis.toFixed(3)}`);
 
       }
 
