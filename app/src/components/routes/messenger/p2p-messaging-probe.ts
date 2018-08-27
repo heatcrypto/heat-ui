@@ -95,33 +95,38 @@ class P2PMessagingProbeComponent {
               private p2pconnector: P2PConnector) {
     //user.requireLogin();
 
-    let interval = $interval(()=>{
-      this.whoIsOnline = "";
-      for (let i = 0; i < 150; i++) {
-        this.p2pconnector.getOnlineStatus(String(i)).then(status => {
-          if (status)
-            this.whoIsOnline = this.whoIsOnline + i + " " + status + ";   "
-        });
-      }
-    }, 3*1000, 0, false);
+    // let interval = $interval(()=>{
+    //   this.whoIsOnline = "";
+    //   for (let i = 0; i < 150; i++) {
+    //     this.p2pconnector.getOnlineStatus(String(i)).then(status => {
+    //       if (status)
+    //         this.whoIsOnline = this.whoIsOnline + i + " " + status + ";   "
+    //     });
+    //   }
+    // }, 3*1000, 0, false);
 
-    $scope.$on('$destroy',()=>{
-      $interval.cancel(interval);
-    });
+    // $scope.$on('$destroy',()=>{
+    //   $interval.cancel(interval);
+    // });
 
     //setup p2pconnector
-    let templateRoom: Room = new Room("", this.p2pconnector);
-    templateRoom.onMessage = msg => this.onMessage(msg);
-    templateRoom.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-    templateRoom.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
     this.p2pconnector.setup(
-      templateRoom,
-      incomingRoom => {
-        this.room = incomingRoom;
-        this.roomName = incomingRoom.name;
+      (roomName) => {
+        let room = new Room(roomName, this.p2pconnector);
+        room.onMessage = msg => this.onMessage(msg);
+        room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+        room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+        room.rejected = (byPeerId, reason) => {
+          this.messages.push("Peer '" + byPeerId + "' rejects me. Reason: " + reason);
+          this.$scope.$apply();
+        };
+        room.sign = this.sign;
+        this.room = room;
+        this.roomName = roomName;
         this.canCall = true;
-        this.messages.push("Accepted incoming call in room '" + incomingRoom.name + "'");
+        this.messages.push("Accepted incoming call in room '" + roomName + "'");
         $scope.$apply();
+        return room;
       },
       caller => {
         this.messages.push("Call from '" + caller + "' accepted");
@@ -138,6 +143,11 @@ class P2PMessagingProbeComponent {
     this.room.onMessage = msg => this.onMessage(msg);
     this.room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
     this.room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+    this.room.rejected = (byPeerId, reason) => {
+      this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
+      this.$scope.$apply();
+    };
+    this.room.sign = this.sign;
     this.room.enter();
     this.canCall = true;
   }
@@ -155,11 +165,23 @@ class P2PMessagingProbeComponent {
   onOpenDataChannel(peerId: string) {
     this.connected = true;
     this.messages.push("Opened channel with peer '" + peerId + "'");
+    this.$scope.$apply();
   }
 
   onCloseDataChannel(peerId: string) {
     this.connected = false;
     this.messages.push("Closed channel with peer '" + peerId + "'");
+    this.$scope.$apply();
+  }
+
+  sign(dataHex: string): {signatureHex: string, dataHex: string, publicKeyHex: string} {
+    //let secret = this.user.secretPhrase;
+    //must be the real secret phrase to proof the passed to room public key is owned.
+    //Now use the random string for testing
+    let secret = randomString();
+    let publicKey = heat.crypto.secretPhraseToPublicKey(secret);
+    let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(secret));
+    return {signatureHex: signature, dataHex: dataHex, publicKeyHex: publicKey}
   }
 
   onMessage(msg: any) {

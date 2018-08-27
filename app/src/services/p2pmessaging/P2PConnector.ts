@@ -62,18 +62,39 @@ class Room {
    */
   onCloseDataChannel: (peerId: string) => any;
 
+  /**
+   * Invoked when peer rejects connection to him.
+   */
+  rejected: (byPeerId: string, reason: string) => any;
+
+  sign: (dataHex: string) => {signatureHex: string, dataHex: string, publicKeyHex: string};
+
+  /**
+   * Public key is proven. Returns true if the public key owner is allowed to connect.
+   * @param room
+   * @param peerId
+   * @param publicKey
+   */
+  provenPublicKeyAllowed(room: Room, peerId: string, publicKey: any): boolean {
+    if (true /*existing public key*/)
+      return true;
+  }
 }
 
 @Service('P2PConnector')
 @Inject('settings')
 class P2PConnector {
 
+  private static MSG_TYPE_CHECK_CHANNEL = "CHECK_CHANNEL";
+  private static MSG_TYPE_REQUEST_PROOF_IDENTITY = "GET_PROOF_IDENTITY";
+  private static MSG_TYPE_RESPONSE_PROOF_IDENTITY = "PROOF_IDENTITY";
+
   private webSocketPromise: Promise<WebSocket>;
   private signalingMessageAwaitings: Function[] = [];
   private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
   private templateRoom: Room;
-  private onRoomCreate: (room: Room) => any;
+  private createRoom: (name: string) => Room;
   private allowCaller: (caller: string) => boolean;
 
   private rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
@@ -85,11 +106,13 @@ class P2PConnector {
 
   }
 
-  setup(room: Room,
-        onRoomCreate: (room: Room) => any,
+  /**
+   * @param createRoom function to create the room on incoming call
+   * @param allowCaller function to accept the caller
+   */
+  setup(createRoom: (name: string) => Room,
         allowCaller: (caller: string) => boolean) {
-    this.templateRoom = room;
-    this.onRoomCreate = onRoomCreate;
+    this.createRoom = createRoom;
     this.allowCaller = allowCaller;
   }
 
@@ -287,13 +310,13 @@ class P2PConnector {
     //this.rooms[room][]
     dataChannel.onopen = () => this.onOpenDataChannel(room, peerId, dataChannel, sendCheckingMessage);
     dataChannel.onclose = () => this.onCloseDataChannel(room, peerId, dataChannel);
-    dataChannel.onmessage = (event) => this.onMessage(room, peerId, event);
+    dataChannel.onmessage = (event) => this.onMessage(room, peerId, dataChannel, event);
     this.rooms[room]["dataChannels"].push(dataChannel);
   }
 
   onOpenDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
     if (sendCheckingMessage) {
-      let checkChannelMessage = {"type": "CHECK_CHANNEL", "room": roomName, "value": ("" + Math.random())};
+      let checkChannelMessage = {"type": P2PConnector.MSG_TYPE_CHECK_CHANNEL, "room": roomName, "value": ("" + Math.random())};
       //send checking message to signaling server,
       // then when other peer will send this value also the server will be sure that both ends established channel
       this.sendSignalingMessage([checkChannelMessage]);
@@ -305,6 +328,18 @@ class P2PConnector {
     let room: Room = this.rooms[roomName]["room"];
     if (room && room.onOpenDataChannel)
       room.onOpenDataChannel(peerId);
+
+    //request proof of identity - other party must respond by sending the data signed by its public key.
+    //In request my party send own proof also.
+    //For example, generate random data, sign it, send signed data to other party, the other party signs the data and sends it back
+    let dataHex = converters.stringToHexString(randomString());
+    if (!room["proofData"])
+      room["proofData"] = {};
+    room["proofData"][peerId] = dataHex;
+    let signedData = room.sign(dataHex);
+    let proofRequest = {type: P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY,
+      signature: signedData.signatureHex, data: signedData.dataHex, publicKey: signedData.publicKeyHex};
+    this.send(roomName, JSON.stringify(proofRequest), dataChannel);
 
     console.log("Data channel is opened");
   }
@@ -367,6 +402,9 @@ class P2PConnector {
   //   console.log('Data channel state is: ' + dataChannel.readyState);
   // }
 
+  /**
+   * Sends message to all online members of room.
+   */
   sendMessage(room: string, message: {}) {
     this.send(room, JSON.stringify(message));
   }
@@ -385,7 +423,7 @@ class P2PConnector {
     }
   }
 
-  onMessage(roomName: string, peerId: string, event: MessageEvent) {
+  onMessage(roomName: string, peerId: string, dataChannel: RTCDataChannel, event: MessageEvent) {
     try {
       let msg = JSON.parse(event.data);
 
@@ -395,10 +433,39 @@ class P2PConnector {
         msg.roomName = roomName;
         room.onMessage(msg);
       }
-      if (msg.type === 'CHECK_CHANNEL') {
-        this.sendSignalingMessage([{"room": roomName}, msg]);
+      if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
+        this.sendSignalingMessage([{room: roomName}, msg]);
         console.log("CHECK_CHANNEL " + msg.txt);
         console.log("Checking message received (then sent to signaling server) " + msg.value);
+      } else if (msg.type === P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY) {
+        let signedData = room.sign(msg.data);
+        let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY,
+          signature: signedData.signatureHex, data: signedData.dataHex, publicKey: signedData.publicKeyHex};
+        this.send(roomName, JSON.stringify(response), dataChannel);
+      } else if (msg.type === P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY) {
+        if (msg.rejected) {
+          room.rejected(peerId, msg.rejected);
+          return;
+        }
+        if (room["proofData"][peerId] !== msg.data) {
+          let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY, rejected: "Received data does not match the sent data"};
+          this.send(roomName, JSON.stringify(response), dataChannel);
+          dataChannel.close();
+          return;
+        }
+        if (heat.crypto.verifyBytes(msg.signature, msg.data, msg.publicKey)) {
+          delete room["proofData"][peerId];
+          console.log("PROOF_IDENTITY ok: \n" + msg.signature + " " +  msg.data + " " + msg.publicKey);
+          if (!room.provenPublicKeyAllowed(room, peerId, msg.publicKey)) {
+            let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY, rejected: "Public key owner is not allowed to connect"};
+            this.send(roomName, JSON.stringify(response), dataChannel);
+            dataChannel.close();
+          }
+        } else {
+          let response = {type: P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY, rejected: "Invalid signature"};
+          this.send(roomName, JSON.stringify(response), dataChannel);
+          dataChannel.close();
+        }
       }
     } catch (e) {
       console.log(e);
@@ -413,16 +480,6 @@ class P2PConnector {
     dataChannels.forEach(channel => channel.close());
     dataChannels.length = 0;
     //room deleting is in the onCloseDataChannel()
-  }
-
-  private createRoom(name: string): Room {
-    let room = new Room(name, this);
-    room.onMessage = this.templateRoom.onMessage;
-    room.onFailure = this.templateRoom.onFailure;
-    room.onOpenDataChannel = this.templateRoom.onOpenDataChannel;
-    room.onCloseDataChannel = this.templateRoom.onCloseDataChannel;
-    this.onRoomCreate(room);
-    return room;
   }
 
 }
@@ -444,4 +501,8 @@ function promiseTimeout(ms, promise) {
         reject(err);
       });
   });
+}
+
+function randomString() {
+  return Math.random().toString(36).substr(2);
 }
