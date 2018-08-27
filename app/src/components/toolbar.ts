@@ -35,6 +35,7 @@
   toolbar .test-net {
     font-size: 22px !important;
     font-weight: bold !important;
+    line-height: 0.6;
   }
   toolbar .test-net-color {
     background-color: #4CAF50 !important;
@@ -49,6 +50,7 @@
         <h2 ng-if="vm.isTestnet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           TEST-NET&nbsp;&nbsp;&nbsp;&nbsp;
+          <br/><span style="font-size: 9px; font-weight: normal;">{{vm.heatServerLocation}}&nbsp;&nbsp;&nbsp;&nbsp;</span>
         </h2>
         <h2 ng-if="vm.isBetanet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
@@ -90,6 +92,11 @@
               <md-button aria-label="home" class="md-icon-button" href="#/wallet" ng-if="!vm.user.unlocked">
                 <md-tooltip md-direction="bottom">Wallet</md-tooltip>
                 <i><img src="assets/walletIcon.png"></i>
+              </md-button>
+
+              <md-button aria-label="messages2" class="md-icon-button" ng-click="vm.goToProbe()">
+                <md-tooltip md-direction="bottom">Messages2</md-tooltip>
+                <i><img src="assets/messageIcon.png"></i>
               </md-button>
 
               <!--
@@ -283,18 +290,20 @@
     </md-toolbar>
   `
 })
-@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
+@Inject('$rootScope','$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
   'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast',
   'walletFile','localKeyStore','panel','$location','clipboard')
 class ToolbarComponent {
 
   isNodeEnv = false;
   isTestnet = heat.isTestnet;
-  isBetanet = heat.isBetanet
+  isBetanet = heat.isBetanet;
+  heatServerLocation;
 
   localHeatMasterAccounts: Array<{account:string, locked:boolean, identifier:string}> = []
 
-  constructor(private $scope: angular.IScope,
+  constructor(private $rootScope: angular.IScope,
+              private $scope: angular.IScope,
               private $mdSidenav,
               public user: UserService,
               private sendmoney: SendmoneyService,
@@ -317,6 +326,10 @@ class ToolbarComponent {
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
     this.refreshLocalWallet()
+
+    $rootScope.$on('HEAT_SERVER_LOCATION', (event, location) => {
+      this.heatServerLocation = location;
+    });
   }
 
   copyAddress() {
@@ -331,6 +344,10 @@ class ToolbarComponent {
     this.$location.path('messenger/0')
   }
 
+  goToProbe() {
+    this.$location.path('p2pmessagingprobe')
+  }
+
   openTestPage() {
     let address = '0x98d84343b9b98bb15a2ba3d6867c42a89c37a067'// '0x0102768bf0f0901689357262401b031e83900b4c'
     let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
@@ -340,9 +357,9 @@ class ToolbarComponent {
   }
 
   refreshLocalWallet() {
-    this.localHeatMasterAccounts = []
+    this.localHeatMasterAccounts = [];
     this.localKeyStore.list().map((account:string) => {
-      let name = this.localKeyStore.keyName(account)
+      let name = this.localKeyStore.keyName(account);
       this.localHeatMasterAccounts.push({
         account: account,
         locked: true,

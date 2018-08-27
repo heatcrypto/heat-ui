@@ -29,6 +29,13 @@ class Room {
   }
 
   /**
+   * Registers room and member (caller) on the server side (in the signaling server).
+   */
+  enter() {
+    this.connector.room(this);
+  }
+
+  /**
    * Sends message to all members of room (all peers in the room).
    */
   sendMessage(message: {}) {
@@ -61,19 +68,18 @@ class Room {
 @Inject('settings')
 class P2PConnector {
 
-  initiator;
-  webSocketPromise: Promise<WebSocket>;
-  signalingMessageAwaitings: Function[] = [];
-  notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
+  private webSocketPromise: Promise<WebSocket>;
+  private signalingMessageAwaitings: Function[] = [];
+  private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
   private templateRoom: Room;
   private onRoomCreate: (room: Room) => any;
   private allowCaller: (caller: string) => boolean;
 
-  rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
-  signalingChannelReady: boolean = null;
-  signalingChannel: WebSocket;
-  config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
+  private rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
+  private signalingChannelReady: boolean = null;
+  private signalingChannel: WebSocket;
+  private config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
 
   constructor(private settings: SettingsService) {
 
@@ -179,7 +185,6 @@ class P2PConnector {
     }
     this.getWebSocket().then(websocket => {
       sendRoom();
-      this.initiator = false;
     }, reason => console.log(reason))
   }
 
@@ -194,7 +199,6 @@ class P2PConnector {
         this.room(room);
       }
     } else if (msg.type === 'WELCOME') {  //welcome to existing room
-      this.initiator = true;
       msg.remotePeerIds.forEach((peerId: string) => {
         if (!this.rooms[roomName][peerId]) {
           let pc = this.createPeerConnection(roomName, peerId);
