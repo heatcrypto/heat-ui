@@ -323,14 +323,14 @@ class TraderChartComponent {
         .style("display", "none");
 
       focus.append("line").attr("class", "x--line")
-        .style("stroke", "#777")
-        .attr("stroke-width", 1.5)
+        .style("stroke", "#FFFFFF")
+        .attr("stroke-width", "1px")
         .attr("y1", -height)
         .attr("y2", 0);
 
       focus.append("line").attr("class", "y--line")
-        .style("stroke", "#777")
-        .attr("stroke-width", 1.5)
+        .style("stroke", "#FFFFFF")
+        .attr("stroke-width", "1px")
         .attr("x1", 0)
         .attr("x2", width);
 
@@ -356,14 +356,24 @@ class TraderChartComponent {
         .on("mousemove", mousemove);
       let x = this.chart.x;
       let filter = this.filter;
-      function mousemove() {
-        var xCoordinate = x.invert(d3.mouse(this)[0]);
 
-        var yCoordinate = yClose.invert(d3.mouse(this)[1]);
-        var yCoordinateRightAxis = yVolume.invert(d3.mouse(this)[1]);
+      let bisectDate = d3.bisector(function (d) { return d.date; }).left;
+      let data = this.chart.data;
+      function mousemove() {
+
+        let x0 = x.invert(d3.mouse(this)[0]),
+          i = bisectDate(data, x0, 1),
+          d0 = data[i - 1],
+          d1 = data[i],
+          d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+
+        let xCoordinate = d.date;
+
+        let yCoordinate = yClose.invert(d3.mouse(this)[1]);
+        let yCoordinateRightAxis = yVolume.invert(d3.mouse(this)[1]) / 1000000;
 
         focus.select(".x--line")
-          .attr("transform", "translate(" + x(xCoordinate) + "," + (height) + ")");
+          .attr("transform", "translate(" + x(d.date) + "," + (height) + ")");
         focus.select(".y--line")
           .attr("transform", "translate(" + (0) + "," + yClose(yCoordinate) + ")");
         let xText;
@@ -373,7 +383,7 @@ class TraderChartComponent {
           filter === 'ONE_MINUTE') {
           xText = `${xCoordinate.getHours()}:${xCoordinate.getMinutes()}:${xCoordinate.getSeconds()}`
         } else {
-          xText = `${xCoordinate.getMonth() + 1}-${xCoordinate.getDate()} `
+          xText = `${xCoordinate.getFullYear()}-${xCoordinate.getMonth() + 1}-${xCoordinate.getDate()} ${xCoordinate.getHours()}:${xCoordinate.getMinutes()}:${xCoordinate.getSeconds()}`
         }
         focus.select("#xyValues").text(`${xText}, ${yCoordinate.toFixed(3)}`);
         if (yCoordinateRightAxis) {
@@ -425,7 +435,7 @@ class TraderChartComponent {
         .x((d) => { return this.chart.x(d.date); })
         .y0(height)
         .y1((d) => { return yVolume(d.volume); })
-        .curve(d3.curveLinear)
+        .curve(d3.curveStep)
 
       var volumeGradient = defs.append("linearGradient")
         .attr("id", "svgVolumeGradient")
@@ -455,7 +465,7 @@ class TraderChartComponent {
       this.chart.volumeLine = d3.line()
         .x((d) => { return this.chart.x(d.date); })
         .y((d) => { return yVolume(d.volume); })
-        .curve(d3.curveLinear)
+        .curve(d3.curveStep)
 
       svg.append("path")
         .datum(this.chart.data)
