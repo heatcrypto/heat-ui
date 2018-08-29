@@ -368,22 +368,34 @@ class TraderChartComponent {
           d = x0 - d0.date > d1.date - x0 ? d1 : d0;
 
         let xCoordinate = d.date;
-
-        let yCoordinate = yClose.invert(d3.mouse(this)[1]);
-        let yCoordinateRightAxis = yVolume.invert(d3.mouse(this)[1]) / 1000000;
+        let yCoordinate = d.close;
+        let yCoordinateRightAxis = d.volume / 10000000;
 
         focus.select(".x--line")
           .attr("transform", "translate(" + x(d.date) + "," + (height) + ")");
         focus.select(".y--line")
           .attr("transform", "translate(" + (0) + "," + yClose(yCoordinate) + ")");
         let xText;
+        let dd = xCoordinate.getDate();
+        let MM = xCoordinate.getMonth();
+        let yyyy = xCoordinate.getFullYear();
+        let hh = xCoordinate.getHours();
+        let mm = xCoordinate.getMinutes();
+        let ss = xCoordinate.getSeconds();
+
+        if (dd < 10) dd = '0' + dd;
+        if (MM + 1 < 10) MM = '0' + (MM + 1);
+        if (hh < 10) hh = '0' + hh;
+        if (mm < 10) mm = '0' + mm;
+        if (ss < 10) ss = '0' + ss;
+
         if (filter === 'ONE_DAY' ||
           filter === 'ONE_HOUR' ||
           filter === 'FIVE_MINUTES' ||
           filter === 'ONE_MINUTE') {
-          xText = `${xCoordinate.getHours()}:${xCoordinate.getMinutes()}:${xCoordinate.getSeconds()}`
+          xText = `${hh}:${mm}:${ss}`
         } else {
-          xText = `${xCoordinate.getFullYear()}-${xCoordinate.getMonth() + 1}-${xCoordinate.getDate()} ${xCoordinate.getHours()}:${xCoordinate.getMinutes()}:${xCoordinate.getSeconds()}`
+          xText = `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`
         }
         focus.select("#xyValues").text(`${xText}, ${yCoordinate.toFixed(3)}`);
         if (yCoordinateRightAxis) {
