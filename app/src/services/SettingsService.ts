@@ -92,7 +92,8 @@ class SettingsService {
       this.TESTNET_KNOWN_SERVERS = json.testnet;
       this.BETANET_KNOWN_SERVERS = json.betanet;
       this.MAINNET_KNOWN_SERVERS = json.mainnet;
-    }, () => {
+    }, (reason) => {
+      console.log("Cannot load 'known-servers-config.json': " + reason ? reason : "");
       this.TESTNET_KNOWN_SERVERS = [];
       this.BETANET_KNOWN_SERVERS = [];
       this.MAINNET_KNOWN_SERVERS = [];
