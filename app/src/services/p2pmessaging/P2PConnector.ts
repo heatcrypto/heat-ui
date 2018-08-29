@@ -67,8 +67,6 @@ class Room {
    */
   rejected: (byPeerId: string, reason: string) => any;
 
-  sign: (dataHex: string) => {signatureHex: string, dataHex: string, publicKeyHex: string};
-
   /**
    * Public key is proven. Returns true if the public key owner is allowed to connect.
    * @param room
@@ -79,6 +77,12 @@ class Room {
     if (true /*existing public key*/)
       return true;
   }
+}
+
+interface ProvingData {
+  signatureHex: string,
+  dataHex: string,
+  publicKeyHex: string
 }
 
 @Service('P2PConnector')
@@ -93,10 +97,14 @@ class P2PConnector {
   private signalingMessageAwaitings: Function[] = [];
   private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
-  private templateRoom: Room;
   private createRoom: (name: string) => Room;
   private allowCaller: (caller: string) => boolean;
+  private sign: (dataHex: string) => ProvingData;
+  private signalingError: (reason: string) => void;
 
+  private pendingIdentity: string;
+  private identity: string;
+  private pendingRoom: Function[] = [];
   private rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
   private signalingChannelReady: boolean = null;
   private signalingChannel: WebSocket;
@@ -107,13 +115,22 @@ class P2PConnector {
   }
 
   /**
+   * @param identity
    * @param createRoom function to create the room on incoming call
    * @param allowCaller function to accept the caller
+   * @param signalingError
+   * @param sign Signing delegated to client class because this service class should not to have deal with secret info
    */
-  setup(createRoom: (name: string) => Room,
-        allowCaller: (caller: string) => boolean) {
+  setup(identity: string,
+        createRoom: (name: string) => Room,
+        allowCaller: (caller: string) => boolean,
+        signalingError: (reason: string) => void,
+        sign: (dataHex: string) => ProvingData) {
+    this.pendingIdentity = identity;
     this.createRoom = createRoom;
     this.allowCaller = allowCaller;
+    this.sign = sign;
+    this.signalingError = signalingError;
   }
 
   call(toPeerId: string, caller: string, room: Room) {
@@ -139,6 +156,16 @@ class P2PConnector {
       })
   }
 
+  getTmp(roomName: string): Promise<Array<string>> {
+    return this.request(
+      () => this.sendSignalingMessage([{"type": "WHO_ONLINE"}]),
+      (msg) => {
+        if (msg.type === "WHO_ONLINE")
+          return msg.remotePeerIds;
+        return this.notAcceptedResponse;
+      })
+  }
+
   request(request: () => void, handleResponse: (msg) => any): Promise<any> {
     let p = new Promise<any>((resolve, reject) => {
       let f = (msg) => {
@@ -159,18 +186,28 @@ class P2PConnector {
   }
 
   room(room: Room) {
-    if (this.rooms[room.name]) {
-      let existingRoom: Room = this.rooms[room.name]["room"];
-      if (existingRoom) {
-        if (existingRoom === room)
-          return;
-        this.closeRoom(existingRoom.name);
+    let approveRoom = () => {
+      if (this.rooms[room.name]) {
+        let existingRoom: Room = this.rooms[room.name]["room"];
+        if (existingRoom) {
+          if (existingRoom === room)
+            return;
+          this.closeRoom(existingRoom.name);
+        }
       }
+      this.rooms[room.name] = {};
+      this.rooms[room.name]["dataChannels"] = [];
+      this.rooms[room.name]["room"] = room;
+    };
+
+    if (this.identity) {
+      approveRoom();
+      this.sendSignalingMessage([{"type": "ROOM", "room": room.name}]);
+    } else {
+      this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
+      this.pendingRoom.push(approveRoom);
+      return;
     }
-    this.rooms[room.name] = {};
-    this.rooms[room.name]["dataChannels"] = [];
-    this.rooms[room.name]["room"] = room;
-    this.openSignalingChannel(room.name);
   }
 
   /**
@@ -198,29 +235,25 @@ class P2PConnector {
     return this.webSocketPromise;
   }
 
-  openSignalingChannel(roomName: string) {
-    let sendRoom = () => {
-      this.sendSignalingMessage([{"type": "ROOM", "room": roomName}])
-    };
-    if (this.signalingChannelReady) {
-      sendRoom();
-      return;
-    }
-    this.getWebSocket().then(websocket => {
-      sendRoom();
-    }, reason => console.log(reason))
-  }
-
   onSignalingMessage(message) {
     let msg = JSON.parse(message.data);
     let roomName: string = msg.room;
 
-    if (msg.type === 'CALL') {
+    if (msg.type === 'PROVE_IDENTITY') {
+      let signedData = this.sign(msg.data);
+      signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
+      this.sendSignalingMessage([signedData]);
+    } else if (msg.type === 'APPROVED_IDENTITY') {
+      this.identity = this.pendingIdentity;
+      this.pendingRoom.forEach(f => f());
+    } else if (msg.type === 'CALL') {
       let caller: string = msg.caller;
-      if (this.templateRoom && this.allowCaller(caller)) {
+      if (this.allowCaller(caller)) {
         let room = this.createRoom(roomName);
         this.room(room);
       }
+    } else if (msg.type === 'ERROR') {
+      this.signalingError(msg.reason);
     } else if (msg.type === 'WELCOME') {  //welcome to existing room
       msg.remotePeerIds.forEach((peerId: string) => {
         if (!this.rooms[roomName][peerId]) {
@@ -336,7 +369,7 @@ class P2PConnector {
     if (!room["proofData"])
       room["proofData"] = {};
     room["proofData"][peerId] = dataHex;
-    let signedData = room.sign(dataHex);
+    let signedData = this.sign(dataHex);
     let proofRequest = {type: P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY,
       signature: signedData.signatureHex, data: signedData.dataHex, publicKey: signedData.publicKeyHex};
     this.send(roomName, JSON.stringify(proofRequest), dataChannel);
@@ -438,7 +471,7 @@ class P2PConnector {
         console.log("CHECK_CHANNEL " + msg.txt);
         console.log("Checking message received (then sent to signaling server) " + msg.value);
       } else if (msg.type === P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY) {
-        let signedData = room.sign(msg.data);
+        let signedData = this.sign(msg.data);
         let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY,
           signature: signedData.signatureHex, data: signedData.dataHex, publicKey: signedData.publicKeyHex};
         this.send(roomName, JSON.stringify(response), dataChannel);
@@ -480,6 +513,14 @@ class P2PConnector {
     dataChannels.forEach(channel => channel.close());
     dataChannels.length = 0;
     //room deleting is in the onCloseDataChannel()
+  }
+
+  close() {
+    this.identity = null;
+    this.pendingIdentity = null;
+    for (let roomName in this.rooms) {
+      this.closeRoom(roomName);
+    }
   }
 
 }
