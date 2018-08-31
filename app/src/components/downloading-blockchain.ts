@@ -26,16 +26,19 @@
     <div layout="column" flex layout-fill ng-show="vm.showComponent">
       <md-progress-linear md-mode="indeterminate"></md-progress-linear>
       <center><div><b>Attention!!</b></div>
+      <p>{{vm.heatServerLocation}}</p>
       <div>Downloading blockchain last block height: {{vm.lastBlockHeight}}, time {{vm.lastBlockTime}}</div></center>
     </div>
   `
 })
-@Inject('$scope','heat','$interval','settings', '$router')
+@Inject('$rootScope', '$scope','heat','$interval','settings', '$router')
 class DownloadingBlockchainComponent {
   showComponent = false;
   lastBlockHeight = 0;
   lastBlockTime = 0;
-  constructor(private $scope: angular.IScope,
+  heatServerLocation;
+  constructor(private $rootScope: angular.IScope,
+              private $scope: angular.IScope,
               private heat: HeatService,
               private $interval: angular.IIntervalService,
               private settings: SettingsService,
@@ -121,6 +124,10 @@ class DownloadingBlockchainComponent {
         if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
+          if (!this.heatServerLocation) {
+            this.heatServerLocation = currentServer.host + ":" + currentServer.port;
+            this.$rootScope.$emit('HEAT_SERVER_LOCATION', this.heatServerLocation);
+          }
           //if the server response is nothing then server is down
           currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
           server.statusScore = currentServerIsAlive ? 0 : null;
@@ -161,6 +168,8 @@ class DownloadingBlockchainComponent {
       });
       if (best && best != currentServer) {
         settings.setCurrentServer(best);
+        this.heatServerLocation = best.host + ":" + best.port;
+        this.$rootScope.$emit('HEAT_SERVER_LOCATION', this.heatServerLocation);
         this.heat.resetSubscriber();
         if (firstTime) {
           //on initializing (first time) switched silently and starts from login page
