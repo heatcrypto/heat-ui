@@ -104,7 +104,8 @@ class P2PConnector {
 
   private pendingIdentity: string;
   private identity: string;
-  private pendingRoom: Function[] = [];
+  private pendingToApproveRooms: Function[] = [];
+  private pendingOnlineStatus: Function;
   private rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
   private signalingChannelReady: boolean = null;
   private signalingChannel: WebSocket;
@@ -133,17 +134,19 @@ class P2PConnector {
     this.signalingError = signalingError;
   }
 
-  call(toPeerId: string, caller: string, room: Room) {
-    this.room(room);
-    this.sendSignalingMessage([{"type": "CALL", "toPeerId": toPeerId, "caller": caller, "room": room.name}]);
-  }
-
   /**
    * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
-   * "0" - offline, "1" - online
    */
   setOnlineStatus(status: string) {
-    this.sendSignalingMessage([{"type": "SET_ONLINE_STATUS", "status": status}]);
+    let sendOnlineStatus = () => {
+      this.sendSignalingMessage([{"type": "SET_ONLINE_STATUS", "status": status}]);
+    };
+    if (this.identity) {
+      sendOnlineStatus();
+    } else {
+      this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
+      this.pendingOnlineStatus = sendOnlineStatus;
+    }
   }
 
   getOnlineStatus(peerId: string): Promise<string> {
@@ -154,6 +157,11 @@ class P2PConnector {
           return msg.status;
         return this.notAcceptedResponse;
       })
+  }
+
+  call(toPeerId: string, caller: string, room: Room) {
+    this.room(room);
+    this.sendSignalingMessage([{"type": "CALL", "toPeerId": toPeerId, "caller": caller, "room": room.name}]);
   }
 
   getTmp(roomName: string): Promise<Array<string>> {
@@ -205,7 +213,7 @@ class P2PConnector {
       this.sendSignalingMessage([{"type": "ROOM", "room": room.name}]);
     } else {
       this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
-      this.pendingRoom.push(approveRoom);
+      this.pendingToApproveRooms.push(approveRoom);
       return;
     }
   }
@@ -245,7 +253,11 @@ class P2PConnector {
       this.sendSignalingMessage([signedData]);
     } else if (msg.type === 'APPROVED_IDENTITY') {
       this.identity = this.pendingIdentity;
-      this.pendingRoom.forEach(f => f());
+      this.pendingToApproveRooms.forEach(f => f());
+      this.pendingToApproveRooms = [];
+      if (this.pendingOnlineStatus)
+        this.pendingOnlineStatus();
+      this.pendingOnlineStatus = null;
     } else if (msg.type === 'CALL') {
       let caller: string = msg.caller;
       if (this.allowCaller(caller)) {
@@ -299,6 +311,10 @@ class P2PConnector {
 
   onSignalingChannelClosed() {
     this.signalingChannelReady = false;
+
+    //will force authentication the next time the socket is opened
+    this.pendingIdentity = this.identity;
+    this.identity = null;
   }
 
   sendSignalingMessage(message: any[]) {
@@ -515,12 +531,19 @@ class P2PConnector {
     //room deleting is in the onCloseDataChannel()
   }
 
+  /**
+   * Clear all data. Close websocket of signaling channel.
+   */
   close() {
     this.identity = null;
     this.pendingIdentity = null;
+    this.pendingToApproveRooms = [];
+    this.pendingOnlineStatus = null;
     for (let roomName in this.rooms) {
       this.closeRoom(roomName);
     }
+    if (this.signalingChannel)
+      this.signalingChannel.close();
   }
 
 }

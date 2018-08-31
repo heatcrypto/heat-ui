@@ -45,15 +45,24 @@
 </p>
 
 <p>Who is online: {{vm.whoIsOnline}}</p>
+
+<form ng-submit="vm.send()">
+   <input type="text" ng-model="vm.messageText" ng-disabled="!vm.connected"/>
+   <button type="submit" class="md-primary md-button md-ink-ripple" ng-disabled="!vm.connected">Send</button>
+   <!--<input type="submit" class="md-primary md-button md-ink-ripple" ng-disabled="!vm.connected"/>-->
+</form>
+
+<!--
 <p><input type="text" ng-model="vm.messageText" />
 <button class="md-primary md-button md-ink-ripple" ng-disabled="!vm.connected" ng-click="vm.send()">Send</button>
 </p>
+-->
 
-  <div>
-    <div ng-repeat="message in vm.messages track by $index">
-      <span>{{message}}</span>
-    </div>
+<div>
+  <div ng-repeat="message in vm.messages track by $index">
+    <span>{{message}}</span>
   </div>
+</div>
 
 <!--<textarea>{{vm.messageConsole}}</textarea>-->
 `
@@ -79,10 +88,10 @@ class P2PMessagingProbeComponent {
   messageText: string;
   messages: string[] = [];
   peerId: string;
-  myName: string;
+  myName: string = "Robin";
   roomName: string;
   room: Room;
-  whoIsOnline: string;
+  whoIsOnline: string = "";
   messageConsole: string;
 
   publickey: string; // @input
@@ -96,21 +105,16 @@ class P2PMessagingProbeComponent {
     //user.requireLogin();
 
     // let interval = $interval(()=>{
-    //   this.whoIsOnline = "";
-    //   for (let i = 0; i < 150; i++) {
-    //     this.p2pconnector.getOnlineStatus(String(i)).then(status => {
-    //       if (status)
-    //         this.whoIsOnline = this.whoIsOnline + i + " " + status + ";   "
-    //     });
-    //   }
+    //   this.updateWhoIsOnline();
     // }, 3*1000, 0, false);
-
+    //
     // $scope.$on('$destroy',()=>{
     //   $interval.cancel(interval);
     // });
 
     //setup p2pconnector
     this.p2pconnector.setup(
+      this.myName,
       (roomName) => {
         let room = new Room(roomName, this.p2pconnector);
         room.onMessage = msg => this.onMessage(msg);
@@ -120,7 +124,6 @@ class P2PMessagingProbeComponent {
           this.messages.push("Peer '" + byPeerId + "' rejects me. Reason: " + reason);
           this.$scope.$apply();
         };
-        room.sign = this.sign;
         this.room = room;
         this.roomName = roomName;
         this.canCall = true;
@@ -131,7 +134,9 @@ class P2PMessagingProbeComponent {
       caller => {
         this.messages.push("Call from '" + caller + "' accepted");
         return true; //accept all income calls
-      }
+      },
+      reason => this.signalingError(reason),
+      this.sign
     );
 
     //set my online status
@@ -147,7 +152,6 @@ class P2PMessagingProbeComponent {
       this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
       this.$scope.$apply();
     };
-    this.room.sign = this.sign;
     this.room.enter();
     this.canCall = true;
   }
@@ -159,22 +163,34 @@ class P2PMessagingProbeComponent {
   }
 
   send() {
+    this.messages.push(" >>> " + this.messageText);
     this.room.sendMessage({type: "chat", text: this.messageText});
   }
 
   onOpenDataChannel(peerId: string) {
     this.connected = true;
     this.messages.push("Opened channel with peer '" + peerId + "'");
+
+    this.updateWhoIsOnline();
+
     this.$scope.$apply();
   }
 
   onCloseDataChannel(peerId: string) {
     this.connected = false;
     this.messages.push("Closed channel with peer '" + peerId + "'");
+
+    this.updateWhoIsOnline();
+
     this.$scope.$apply();
   }
 
-  sign(dataHex: string): {signatureHex: string, dataHex: string, publicKeyHex: string} {
+  signalingError(reason: string) {
+    this.messages.push("Signaling error: " + reason);
+    this.$scope.$apply();
+  }
+
+  sign(dataHex: string): ProvingData {
     //let secret = this.user.secretPhrase;
     //must be the real secret phrase to proof the passed to room public key is owned.
     //Now use the random string for testing
@@ -186,10 +202,19 @@ class P2PMessagingProbeComponent {
 
   onMessage(msg: any) {
     if (msg.type == "chat") {
-      this.messages.push(msg.roomName + "  " + msg.fromPeerId + ": " + msg.text);
+      this.messages.push(" <<< " + msg.roomName + "  " + msg.fromPeerId + ": " + msg.text);
       this.$scope.$apply();
     }
   }
 
+  private updateWhoIsOnline() {
+    this.p2pconnector.getTmp(this.roomName).then(remotePeerIds => {
+      this.whoIsOnline = "";
+      remotePeerIds.forEach((peerId: string) => {
+        this.whoIsOnline = this.whoIsOnline + " " + peerId + ";   "
+      });
+      this.$scope.$apply();
+    });
+  }
 
 }
