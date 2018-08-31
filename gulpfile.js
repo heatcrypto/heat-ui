@@ -104,11 +104,12 @@ gulp.task('clean', function (done) {
 gulp.task('libjs',  function () {
   var concat = require('gulp-concat');
   var uglify = require('gulp-uglify');
-  var rename = require("gulp-rename");
+  var sourcemaps = require('gulp-sourcemaps');
   return gulp.src(PATHS.libjs)
-    .pipe(concat('lib.js'))
+    .pipe(concat(LIBJS_HASHED_NAME))
+    .pipe(sourcemaps.init())
     .pipe(uglify())
-    .pipe(rename(LIBJS_HASHED_NAME))
+    .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
 
@@ -118,11 +119,12 @@ gulp.task('libjs',  function () {
 gulp.task('tshelpers', function () {
   var concat = require('gulp-concat');
   var uglify = require('gulp-uglify');
-  var rename = require("gulp-rename");
+  var sourcemaps = require('gulp-sourcemaps');
   return gulp.src(PATHS.tshelpers)
-    .pipe(concat('tshelpers.js'))
+    .pipe(concat(TSHELPERS_HASHED_NAME))
+    .pipe(sourcemaps.init())
     .pipe(uglify())
-    .pipe(rename(TSHELPERS_HASHED_NAME))
+    .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
 
