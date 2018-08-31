@@ -112,7 +112,10 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
 
         if(inputs.includes(this.account)) {
-          transaction.amount = `0-${transaction.amount}`;
+          transaction.amount = `-${transaction.amount}`;
+        }
+        if(!outputs.includes(this.account)){
+          transaction.to = 'Multiple Outputs"';
         }
 
         transaction.json = {
@@ -124,7 +127,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           confirmations: transaction.confirmations,
           fees: transaction.fees,
           inputs: inputs.trim(),
-          outputs: outputs.trim()
+          outputs: outputs.trim(),
         }
       }
     );
