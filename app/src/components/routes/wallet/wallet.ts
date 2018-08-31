@@ -472,7 +472,7 @@ class WalletComponent {
       reader.onload = () => {
         this.$scope.$evalAsync(() => {
           let fileContents = reader.result;
-          let wallet = this.walletFile.createFromText(fileContents);
+          let wallet = this.walletFile.createFromText(<string>fileContents);
           if (wallet) {
             let addedKeys = this.localKeyStore.import(wallet);
             this.$scope.$evalAsync(() => {
