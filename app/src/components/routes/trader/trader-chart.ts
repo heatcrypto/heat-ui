@@ -299,7 +299,7 @@ class TraderChartComponent {
             high: +d[3],
             low: +d[2],
             close: +d[6],
-            volume: +d[4]
+            volume: +d[4]/10
           });
         }
       });
@@ -369,7 +369,7 @@ class TraderChartComponent {
 
         let xCoordinate = d.date;
         let yCoordinate = d.close;
-        let yCoordinateRightAxis = d.volume / 10000000;
+        let yCoordinateRightAxis = d.volume / 1000000;
 
         focus.select(".x--line")
           .attr("transform", "translate(" + x(d.date) + "," + (height) + ")");
