@@ -49,7 +49,8 @@
 
             <!-- TO -->
             <div class="truncate-col info-col left">
-              <span>{{item.to}}</span>
+              <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
+              <span ng-show = "item.to === 'Multiple Outputs'"><a ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a></span>
             </div>
 
             <!-- AMOUNT -->
@@ -109,13 +110,29 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           outputs += `
           ${transaction.vout[i].scriptPubKey.addresses[0]} (${transaction.vout[i].value})`;
         }
+        // by default assign To field to zeroth address
         transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
-
-        if(inputs.includes(this.account)) {
-          transaction.amount = `-${transaction.amount}`;
+        // if change address is same and API returns change address as zeroth address then point To field and volume to some other address
+        if(transaction.from === transaction.to) {
+          transaction.to = transaction.vout[1].scriptPubKey.addListener[0];
+          transaction.amount = transaction.vout[1].value;
         }
-        if(!outputs.includes(this.account)){
-          transaction.to = 'Multiple Outputs"';
+
+        // if BTC were transferred from the unlocked account address then show it as "-Amount"
+        if (inputs.includes(this.account)) {
+          transaction.amount = `-${transaction.amount}`;
+        } else {
+          // if input does not include the current unlocked account address then output will always have it
+          for (let i = 0; i < transaction.vout.length; i++) {
+            if(transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
+              transaction.to = this.account;
+              transaction.amount = transaction.vout[i].value;
+            }
+          }
+        }
+        // if change address was different then show hardcoded output
+        if (!outputs.includes(this.account)) {
+          transaction.to = 'Multiple Outputs';
         }
 
         transaction.json = {
@@ -128,6 +145,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           fees: transaction.fees,
           inputs: inputs.trim(),
           outputs: outputs.trim(),
+          size: transaction.size
         }
       }
     );
