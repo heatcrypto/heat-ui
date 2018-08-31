@@ -59,7 +59,7 @@
 
             <!-- JSON -->
             <div class="truncate-col json-col">
-              <a ng-click="vm.jsonDetails($event, item)">
+              <a ng-click="vm.jsonDetails($event, item.json)">
                 <md-icon md-font-library="material-icons">code</md-icon>
               </a>
             </div>
@@ -90,23 +90,41 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         transaction.amount = transaction.vout[0].value;
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
+
+        let totalInputs = 0;
+        let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {
+          totalInputs += parseFloat(transaction.vin[i].value);
+          inputs += `
+          ${transaction.vin[i].addr} (${transaction.vin[i].value})`;
           if (transaction.vin[i].addr === this.account) {
             transaction.from = transaction.vin[i].addr;
-            transaction.amount = '-' + transaction.amount;
-            break;
           }
         }
 
+        let totalOutputs = 0;
+        let outputs = '';
+        for (let i = 0; i < transaction.vout.length; i++) {
+          totalOutputs += parseFloat(transaction.vout[i].value);
+          outputs += `
+          ${transaction.vout[i].scriptPubKey.addresses[0]} (${transaction.vout[i].value})`;
+        }
         transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
-        if (transaction.from !== this.account) {
-          for (let i = 0; i < transaction.vout.length; i++) {
-            if(transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
-              transaction.to = transaction.vout[i].scriptPubKey.addresses[0];
-              transaction.amount = transaction.vout[i].value;
-              break;
-            }
-          }
+
+        if(inputs.includes(this.account)) {
+          transaction.amount = `0-${transaction.amount}`;
+        }
+
+        transaction.json = {
+          txid: transaction.txid,
+          time: transaction.dateTime,
+          block: transaction.blockheight,
+          totalInputs,
+          totalOutputs,
+          confirmations: transaction.confirmations,
+          fees: transaction.fees,
+          inputs: inputs.trim(),
+          outputs: outputs.trim()
         }
       }
     );
