@@ -49,7 +49,8 @@
 
             <!-- TO -->
             <div class="truncate-col info-col left">
-              <span>{{item.to}}</span>
+              <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
+              <span ng-show = "item.to === 'Multiple Outputs'"><a ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a></span>
             </div>
 
             <!-- AMOUNT -->
@@ -59,7 +60,7 @@
 
             <!-- JSON -->
             <div class="truncate-col json-col">
-              <a ng-click="vm.jsonDetails($event, item)">
+              <a ng-click="vm.jsonDetails($event, item.json)">
                 <md-icon md-font-library="material-icons">code</md-icon>
               </a>
             </div>
@@ -71,31 +72,86 @@
   `
 })
 
-@Inject('$scope','$q','btcTransactionsProviderFactory','settings', 'bitcoinPendingTransactions')
+@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions')
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
 
   constructor(protected $scope: angular.IScope,
-              protected $q: angular.IQService,
-              private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
-              private settings: SettingsService,
-              private bitcoinPendingTransactions: BitcoinPendingTransactionsService) {
+    protected $q: angular.IQService,
+    private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
+    private settings: SettingsService,
+    private bitcoinPendingTransactions: BitcoinPendingTransactionsService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
-      (transaction: any|IBTCTransaction) => {
+      (transaction: any | IBTCTransaction) => {
         transaction.amount = transaction.vout[0].value;
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
-        transaction.to = transaction.vout[0].scriptPubKey.addresses[0]
+
+        let totalInputs = 0;
+        let inputs = '';
+        for (let i = 0; i < transaction.vin.length; i++) {
+          totalInputs += parseFloat(transaction.vin[i].value);
+          inputs += `
+          ${transaction.vin[i].addr} (${transaction.vin[i].value})`;
+          if (transaction.vin[i].addr === this.account) {
+            transaction.from = transaction.vin[i].addr;
+          }
+        }
+
+        let totalOutputs = 0;
+        let outputs = '';
+        for (let i = 0; i < transaction.vout.length; i++) {
+          totalOutputs += parseFloat(transaction.vout[i].value);
+          outputs += `
+          ${transaction.vout[i].scriptPubKey.addresses[0]} (${transaction.vout[i].value})`;
+        }
+        // by default assign To field to zeroth address
+        transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
+        // if change address is same and API returns change address as zeroth address then point To field and volume to some other address
+        if(transaction.from === transaction.to) {
+          transaction.to = transaction.vout[1].scriptPubKey.addListener[0];
+          transaction.amount = transaction.vout[1].value;
+        }
+
+        // if BTC were transferred from the unlocked account address then show it as "-Amount"
+        if (inputs.includes(this.account)) {
+          transaction.amount = `-${transaction.amount}`;
+        } else {
+          // if input does not include the current unlocked account address then output will always have it
+          for (let i = 0; i < transaction.vout.length; i++) {
+            if(transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
+              transaction.to = this.account;
+              transaction.amount = transaction.vout[i].value;
+            }
+          }
+        }
+        // if change address was different then show hardcoded output
+        if (!outputs.includes(this.account)) {
+          transaction.to = 'Multiple Outputs';
+        }
+
+        transaction.json = {
+          txid: transaction.txid,
+          time: transaction.dateTime,
+          block: transaction.blockheight,
+          totalInputs,
+          totalOutputs,
+          confirmations: transaction.confirmations,
+          fees: transaction.fees,
+          inputs: inputs.trim(),
+          outputs: outputs.trim(),
+          size: transaction.size
+        }
       }
     );
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    let timeout = setTimeout(refresh, 10*1000)
+    let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
@@ -108,11 +164,11 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.txid);
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
   }
 
 
-  onSelect(selectedTransaction) {}
+  onSelect(selectedTransaction) { }
 }
 
 interface IBTCTransaction {
