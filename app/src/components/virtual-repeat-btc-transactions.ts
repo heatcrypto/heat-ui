@@ -71,31 +71,48 @@
   `
 })
 
-@Inject('$scope','$q','btcTransactionsProviderFactory','settings', 'bitcoinPendingTransactions')
+@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions')
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
 
   constructor(protected $scope: angular.IScope,
-              protected $q: angular.IQService,
-              private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
-              private settings: SettingsService,
-              private bitcoinPendingTransactions: BitcoinPendingTransactionsService) {
+    protected $q: angular.IQService,
+    private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
+    private settings: SettingsService,
+    private bitcoinPendingTransactions: BitcoinPendingTransactionsService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
-      (transaction: any|IBTCTransaction) => {
+      (transaction: any | IBTCTransaction) => {
         transaction.amount = transaction.vout[0].value;
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
-        transaction.to = transaction.vout[0].scriptPubKey.addresses[0]
+        for (let i = 0; i < transaction.vin.length; i++) {
+          if (transaction.vin[i].addr === this.account) {
+            transaction.from = transaction.vin[i].addr;
+            transaction.amount = '-' + transaction.amount;
+            break;
+          }
+        }
+
+        transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
+        if (transaction.from !== this.account) {
+          for (let i = 0; i < transaction.vout.length; i++) {
+            if(transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
+              transaction.to = transaction.vout[i].scriptPubKey.addresses[0];
+              transaction.amount = transaction.vout[i].value;
+              break;
+            }
+          }
+        }
       }
     );
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    let timeout = setTimeout(refresh, 10*1000)
+    let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
@@ -108,11 +125,11 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.txid);
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
   }
 
 
-  onSelect(selectedTransaction) {}
+  onSelect(selectedTransaction) { }
 }
 
 interface IBTCTransaction {
