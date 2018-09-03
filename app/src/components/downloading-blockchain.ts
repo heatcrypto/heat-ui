@@ -30,7 +30,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','$interval','settings')
+@Inject('$scope','heat','$interval','settings', '$router')
 class DownloadingBlockchainComponent {
   showComponent = false;
   lastBlockHeight = 0;
@@ -38,11 +38,30 @@ class DownloadingBlockchainComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private $interval: angular.IIntervalService,
-              private settings: SettingsService) {
+              private settings: SettingsService,
+              private router) {
     this.refresh();
+
     let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
-    $scope.$on('$destroy',()=>{ $interval.cancel(interval) });
+    let checkServerHealthInterval = $interval(()=>{ this.checkServerHealth(this.settings) }, 33*1000, 0, false);
+
+    $scope.$on('$destroy',()=>{
+      $interval.cancel(interval);
+      $interval.cancel(checkServerHealthInterval);
+    });
+
+    //Check servers health to choose the right
+    //wait for loading  known-servers-config.json
+    setTimeout(() => {
+      if (this.settings.getKnownServers())
+        this.checkServerHealth(this.settings, true);
+      else
+        setTimeout(() => {
+          this.checkServerHealth(this.settings, true);
+        }, 500)
+    }, 200);
   }
+
   refresh() {
     this.heat.api.getBlockchainStatus().then(status=>{
       this.$scope.$evalAsync(()=>{
@@ -63,4 +82,135 @@ class DownloadingBlockchainComponent {
       })
     })
   }
+
+  /**
+   * Failover procedure.
+   * Compares health of known servers with current server.
+   * If other health is significantly over current server health then switches to other server.
+   */
+  checkServerHealth(settings: SettingsService, firstTime?: boolean) {
+    let knownServers: ServerDescriptor[] = settings.getKnownServers();
+
+    let currentServerHealth: IHeatServerHealth;
+    let promises = [];
+    knownServers.forEach(server => {
+      promises.push(
+        this.heat.api.getServerHealth(server.host, server.port).then(health=> {
+          server.health = health;
+          server.statusError = null;
+        }).catch(function (err) {
+          server.health = null;
+          server.statusError = err;
+          return err;
+        })
+      )
+    });
+
+    let minEqualityServersNumber = heat.isTestnet ? 3 : 10;
+
+    Promise.all(promises).then(() => {
+      let currentServerIsAlive = false;
+      let currentServer = null;
+
+      //find the health of the current server
+      knownServers.forEach(server => {
+        let health: IHeatServerHealth = server.health;
+        server.statusScore = null;
+        if (health)
+          server.statusScore = 0; // has health means has min score
+        if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
+          currentServerHealth = health;
+          currentServer = server;
+          //if the server response is nothing then server is down
+          currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
+          server.statusScore = currentServerIsAlive ? 0 : null;
+        }
+      });
+
+      if (currentServerIsAlive && ! currentServerHealth)
+        return;  //has no health (old version or monitoring API is disabled) so nothing to compare
+
+      //compare health of other servers with health of the current server
+      knownServers.forEach(server => {
+        let health: IHeatServerHealth = server.health;
+        if (!health || !currentServerHealth || !(health.balancesEquality[1] >= minEqualityServersNumber))
+          return;
+
+        let blocksEstimation = this.calculateBlockchainEstimation(currentServerHealth, health);
+        let balancesEqualityEstimation = this.calculateBalancesEqualityEstimation(currentServerHealth, health);
+        let peerEstimation = this.calculatePeerEstimation(currentServerHealth, health);
+
+        if (blocksEstimation == 1 && balancesEqualityEstimation >= 0 && peerEstimation >= 0)
+          server.statusScore = blocksEstimation + balancesEqualityEstimation + peerEstimation;
+        else
+          server.statusScore = 0;
+      });
+
+      let best: ServerDescriptor = currentServer;
+      knownServers.forEach(server => {
+        if (best == currentServer && !currentServerIsAlive)
+          best = server; //if current server is not alive switch to other server in any case
+        if (server.statusScore >= 0 || !currentServerIsAlive) {
+          if (server.statusScore != null && best.statusScore == null)
+            best = server;
+          if (server.statusScore > best.statusScore)
+            best = server;
+          if (server.statusScore == best.statusScore && server.priority < best.priority)
+            best = server;
+        }
+      });
+      if (best && best != currentServer) {
+        settings.setCurrentServer(best);
+        this.heat.resetSubscriber();
+        if (firstTime) {
+          //on initializing (first time) switched silently and starts from login page
+          this.router.navigate('/login');
+        } else {
+          if (currentServer)
+            alert("HEAT server API address switched from \n"
+              + currentServer.host + ":" + currentServer.port +
+              "\nto\n" + best.host + ":" + best.port);
+          else
+            alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+        }
+      }
+    })
+  }
+
+  /**
+   * If returned value is greater 0 it means the blockchain from health is "better" than blockchain from currentServerHealth.
+   */
+  calculateBlockchainEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    let cumulativeDifficulty = new BigInteger(health.cumulativeDifficulty);
+    let difficultyDelta = cumulativeDifficulty.compareTo(new BigInteger(currentServerHealth.cumulativeDifficulty));
+    if (Math.abs(health.lastBlockHeight - currentServerHealth.lastBlockHeight) > 2) {
+      if (difficultyDelta > 0)
+        return 1;
+      if (difficultyDelta < 0)
+        return -1;
+    }
+    return 0;
+  }
+
+  calculateBalancesEqualityEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    let mismatches = health.balancesEquality[0] / health.balancesEquality[1];
+    let currentServerMismatches = currentServerHealth.balancesEquality[0] / currentServerHealth.balancesEquality[1];
+    return (mismatches < 0.9 * currentServerMismatches
+      && health.balancesEquality[2] > 0.8 * currentServerHealth.balancesEquality[2])
+      ? 1
+      : (mismatches > currentServerMismatches || health.balancesEquality[2] < 0.7 * currentServerHealth.balancesEquality[2])
+        ? -1
+        : 0;
+  }
+
+  calculatePeerEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    let connected = health.peersIndicator.connected / health.peersIndicator.all;
+    let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
+    return (0.8 * connected > currentServerConnected)
+      ? 1
+      : (connected < 0.8 * currentServerConnected)
+        ? -1
+        : 0;
+  }
+
 }

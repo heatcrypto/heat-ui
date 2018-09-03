@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Service('settings')
+@Inject('http')
 class SettingsService {
 
   /* DO NOT TOUCH.
@@ -80,7 +82,23 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
-  constructor() {
+  public MAINNET_KNOWN_SERVERS: ServerDescriptor[];
+  public TESTNET_KNOWN_SERVERS: ServerDescriptor[];
+  public BETANET_KNOWN_SERVERS: ServerDescriptor[];
+
+  constructor(private http: HttpService) {
+
+    http.get('known-servers-config.json').then((json: any) => {
+      this.TESTNET_KNOWN_SERVERS = json.testnet;
+      this.BETANET_KNOWN_SERVERS = json.betanet;
+      this.MAINNET_KNOWN_SERVERS = json.mainnet;
+    }, (reason) => {
+      console.log("Cannot load 'known-servers-config.json': " + reason ? reason : "");
+      this.TESTNET_KNOWN_SERVERS = [];
+      this.BETANET_KNOWN_SERVERS = [];
+      this.MAINNET_KNOWN_SERVERS = [];
+    });
+
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
     this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
@@ -182,4 +200,30 @@ class SettingsService {
   public put(id:string,value:string) {
     return this.settings[id]=value;
   }
+
+
+  public getKnownServers(): ServerDescriptor[] {
+    if (heat.isTestnet)
+      return this.TESTNET_KNOWN_SERVERS;
+    if (heat.isBetanet)
+      return this.BETANET_KNOWN_SERVERS;
+    return this.MAINNET_KNOWN_SERVERS;
+  }
+
+  public setCurrentServer(server) {
+    this.settings[SettingsService.HEAT_HOST] = server.host;
+    this.settings[SettingsService.HEAT_PORT] = server.port;
+    this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+  }
+
+}
+
+interface ServerDescriptor {
+  host: string;
+  port: number;
+  websocket: string;
+  priority?: number;
+  health?: IHeatServerHealth;
+  statusScore?: number;
+  statusError?: any;
 }

@@ -68,6 +68,10 @@ class HeatService {
     return new HeatSubscriber(url, this.$q, this.$timeout);
   }
 
+  public resetSubscriber()  {
+    this.subscriber.reset(this.settings.get(SettingsService.HEAT_WEBSOCKET));
+  }
+
   getAuthData(): Object {
     var timestamp = Date.now();
     var baseMessage = this.user.account + timestamp;
