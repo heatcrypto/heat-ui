@@ -14,7 +14,7 @@
           <div class="truncate-col date-col left">Time</div>
 
           <!-- TX ID  -->
-          <div class="he truncate-col info-col left">Transaction ID</div>
+          <div class="truncate-col info-col left">Transaction ID</div>
 
           <!-- FROM -->
           <div class="truncate-col info-col left">FROM</div>
@@ -36,7 +36,7 @@
             <div class="truncate-col date-col left">{{item.dateTime}}</div>
 
             <!-- TX ID -->
-            <div class="he truncate-col info-col left" >
+            <div class="truncate-col info-col left" >
               <span>
                 <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
@@ -50,7 +50,7 @@
             <!-- TO -->
             <div class="truncate-col info-col left">
               <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
-              <span ng-show = "item.to === 'Multiple Outputs'"><a ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a></span>
+              <a ng-show = "item.to === 'Multiple Outputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
             </div>
 
             <!-- AMOUNT -->
