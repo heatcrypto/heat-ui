@@ -38,7 +38,7 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Balance:
+              Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
               {{vm.balanceUnconfirmed}} BTC
@@ -79,6 +79,7 @@ class BitcoinAccountComponent {
   balanceUnconfirmed: any;
   pendingTransactions: Array<{ date: string, txId: string, time: number, address: string }> = []
   prevIndex = 0
+  busy = true
 
   constructor(private $scope: angular.IScope,
     private btcBlockExplorerService: BtcBlockExplorerService,
@@ -94,7 +95,7 @@ class BitcoinAccountComponent {
     bitcoinPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 20000)
+    let promise = $interval(this.timerHandler.bind(this), 30000)
     this.timerHandler()
 
     $scope.$on('$destroy', () => {
@@ -146,10 +147,12 @@ class BitcoinAccountComponent {
   }
 
   refresh() {
-    this.balanceUnconfirmed = "*";
+    this.busy = true;
+    this.balanceUnconfirmed = "";
     this.btcBlockExplorerService.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(() => {
         this.balanceUnconfirmed = new Big(info.balance).toFixed(8);
+        this.busy = false;
       })
     })
   }
