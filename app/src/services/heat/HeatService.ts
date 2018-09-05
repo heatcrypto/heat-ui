@@ -55,13 +55,6 @@ class HeatService {
               private user: UserService,
               private $timeout: angular.ITimeoutService,
               private env: EnvService) {
-    if (env.type==EnvType.NODEJS) {
-      try {
-        require('ssl-root-cas').inject();
-      } catch (e) {
-        //console.log(e);
-      }
-    }
   }
 
   public createSubscriber(url: string)  {
