@@ -160,6 +160,8 @@ class DownloadingBlockchainComponent {
         }
       });
       if (best && best != currentServer) {
+        let bestIsAlive = !(best.statusError && !best.statusError["data"]);
+        if (bestIsAlive) {
         settings.setCurrentServer(best);
         this.heat.resetSubscriber();
         if (firstTime) {
@@ -173,6 +175,7 @@ class DownloadingBlockchainComponent {
           else
             alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
         }
+      }
       }
     })
   }
