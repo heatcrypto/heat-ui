@@ -30,7 +30,6 @@ var lesshint = require('gulp-lesshint');
 var path = require('path');
 var gutil = require('gulp-util');
 var noop = require("gulp-noop");
-var runSequence = require('run-sequence');
 
 /* These are the hashed new names for lib.js, heat-ui.js and tshelpers.js */
 var generateHash = require('random-hash').generateHash
@@ -65,9 +64,6 @@ var PATHS = {
   electron: [
     'app/electron.js',
     'app/package.json'
-  ],
-  config: [
-    'app/known-servers-config.json'
   ]
 };
 
@@ -186,14 +182,13 @@ gulp.task('updatescriptrefs', ['less', 'copy:dist', 'usemin', 'libjs', 'tshelper
     .pipe(gulp.dest('dist'));
 })
 
-gulp.task('copy:dist', ['copy:assets','copy:dice_words','copy:loading','copy:html','copy:electron','copy:config'])
+gulp.task('copy:dist', ['copy:assets','copy:dice_words','copy:loading','copy:html','copy:electron'])
 
 gulp.task('copy:assets', () => gulp.src(PATHS.assets).pipe(gulp.dest('dist/assets')))
 gulp.task('copy:dice_words', () => gulp.src(PATHS.dice_words).pipe(gulp.dest('dist/dice-words')))
 gulp.task('copy:loading', () => gulp.src(PATHS.loading).pipe(gulp.dest('dist/loading')))
 gulp.task('copy:html', () => gulp.src(PATHS.html).pipe(gulp.dest('dist')))
 gulp.task('copy:electron', () => gulp.src(PATHS.electron).pipe(gulp.dest('dist')))
-gulp.task('copy:config', () => gulp.src(PATHS.config).pipe(gulp.dest('dist')))
 
 gulp.task('play', ['build'], function () {
   var http = require('http');
