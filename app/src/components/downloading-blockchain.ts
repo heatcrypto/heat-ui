@@ -91,7 +91,7 @@ class DownloadingBlockchainComponent {
    * If other health is significantly over current server health then switches to other server.
    */
   checkServerHealth(settings: SettingsService, firstTime?: boolean) {
-    let knownServers: ServerDescriptor[] = settings.getKnownServers();
+    let knownServers: ServerDescriptor[] = settings.getKnownServers() || [];
 
     let currentServerHealth: IHeatServerHealth;
     let promises = [];
