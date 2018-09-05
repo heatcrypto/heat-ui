@@ -22,7 +22,6 @@
  * */
 
 @Service('settings')
-@Inject('http')
 class SettingsService {
 
   /* DO NOT TOUCH.
@@ -82,22 +81,33 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
-  public MAINNET_KNOWN_SERVERS: ServerDescriptor[];
-  public TESTNET_KNOWN_SERVERS: ServerDescriptor[];
-  public BETANET_KNOWN_SERVERS: ServerDescriptor[];
+  public MAINNET_KNOWN_SERVERS: ServerDescriptor[] = [{
+    "host":"https://heatwallet.com",
+    "port": 7734,
+    "websocket": "wss://heatwallet.com:7755/ws/",
+    "priority": 1
+  },
+  {
+    "host": "http://localhost",
+    "port": 7733,
+    "websocket": "ws://localhost:7763/ws/",
+    "priority": 2
+  }]
+  public TESTNET_KNOWN_SERVERS: ServerDescriptor[] = [{
+    "host": "https://alpha.heatledger.com",
+    "port": 7734,
+    "websocket": "wss://heatwallet.com:7755/ws/",
+    "priority": 1
+  },
+  {
+    "host": "http://localhost",
+    "port": 7733,
+    "websocket": "ws://localhost:7755/ws/",
+    "priority": 2
+  }]
+  public BETANET_KNOWN_SERVERS: ServerDescriptor[] = []
 
-  constructor(private http: HttpService) {
-
-    http.get('known-servers-config.json').then((json: any) => {
-      this.TESTNET_KNOWN_SERVERS = json.testnet;
-      this.BETANET_KNOWN_SERVERS = json.betanet;
-      this.MAINNET_KNOWN_SERVERS = json.mainnet;
-    }, (reason) => {
-      console.log("Cannot load 'known-servers-config.json': " + reason ? reason : "");
-      this.TESTNET_KNOWN_SERVERS = [];
-      this.BETANET_KNOWN_SERVERS = [];
-      this.MAINNET_KNOWN_SERVERS = [];
-    });
+  constructor() {
 
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -200,7 +210,6 @@ class SettingsService {
   public put(id:string,value:string) {
     return this.settings[id]=value;
   }
-
 
   public getKnownServers(): ServerDescriptor[] {
     if (heat.isTestnet)
