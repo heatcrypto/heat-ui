@@ -60,6 +60,8 @@
         </span>
       </div>
 
+      <div layout="column" flex ng-if="vm.type=='search'">No results found</div>
+
     </div>
   `
 })
