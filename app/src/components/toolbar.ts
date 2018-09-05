@@ -35,6 +35,7 @@
   toolbar .test-net {
     font-size: 22px !important;
     font-weight: bold !important;
+    line-height: 0.6;
   }
   toolbar .test-net-color {
     background-color: #4CAF50 !important;
@@ -49,6 +50,7 @@
         <h2 ng-if="vm.isTestnet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           TEST-NET&nbsp;&nbsp;&nbsp;&nbsp;
+          <br/><span style="font-size: 9px; font-weight: normal;">{{vm.heatServerLocation}}&nbsp;&nbsp;&nbsp;&nbsp;</span>
         </h2>
         <h2 ng-if="vm.isBetanet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
@@ -283,18 +285,20 @@
     </md-toolbar>
   `
 })
-@Inject('$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
+@Inject('$rootScope','$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
   'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast',
   'walletFile','localKeyStore','panel','$location','clipboard')
 class ToolbarComponent {
 
   isNodeEnv = false;
   isTestnet = heat.isTestnet;
-  isBetanet = heat.isBetanet
+  isBetanet = heat.isBetanet;
+  heatServerLocation;
 
   localHeatMasterAccounts: Array<{account:string, locked:boolean, identifier:string}> = []
 
-  constructor(private $scope: angular.IScope,
+  constructor(private $rootScope: angular.IScope,
+              private $scope: angular.IScope,
               private $mdSidenav,
               public user: UserService,
               private sendmoney: SendmoneyService,
@@ -317,6 +321,10 @@ class ToolbarComponent {
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
     this.refreshLocalWallet()
+
+    $rootScope.$on('HEAT_SERVER_LOCATION', (event, location) => {
+      this.heatServerLocation = location;
+    });
   }
 
   copyAddress() {
@@ -340,9 +348,9 @@ class ToolbarComponent {
   }
 
   refreshLocalWallet() {
-    this.localHeatMasterAccounts = []
+    this.localHeatMasterAccounts = [];
     this.localKeyStore.list().map((account:string) => {
-      let name = this.localKeyStore.keyName(account)
+      let name = this.localKeyStore.keyName(account);
       this.localHeatMasterAccounts.push({
         account: account,
         locked: true,
