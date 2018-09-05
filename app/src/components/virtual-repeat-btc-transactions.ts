@@ -114,7 +114,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
         // if change address is same and API returns change address as zeroth address then point To field and volume to some other address
         if(transaction.from === transaction.to) {
-          transaction.to = transaction.vout[1].scriptPubKey.addListener[0];
+          transaction.to = transaction.vout[1].scriptPubKey.addresses[0];
           transaction.amount = transaction.vout[1].value;
         }
 
