@@ -1,19 +1,15 @@
 @Service('bitcoreService')
-@Inject('$window', 'btcBlockExplorerService', '$location')
+@Inject('$window', 'http')
 class BitcoreService {
 
-  //public wallet: WalletType
   static readonly BIP44 = "m/44'/0'/0'/0/";
   private bitcore;
   private bip39;
-  private explorers;
 
-  constructor(private $window: angular.IWindowService,
-    private btcBlockExplorerService: BtcBlockExplorerService,
-    private $location: angular.ILocationService) {
+  constructor($window: angular.IWindowService,
+    private http: HttpService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
-    this.explorers = $window.heatlibs.explorers;
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
@@ -106,13 +102,9 @@ class BitcoreService {
   }
 
   sendBitcoins(txObject: any): Promise<{ txId: string }> {
-    let insight = new this.explorers.Insight('mainnet');
-
     return new Promise((resolve, reject) => {
-      insight.getUnspentUtxos(txObject.from, (err, utxos) => {
-        if (err) {
-          reject(err)
-        } else {
+      this.getUnspentUtxos(txObject.from).then(
+        utxos => {
           try {
             let tx = this.bitcore.Transaction();
             tx.from(utxos)
@@ -120,32 +112,24 @@ class BitcoreService {
             tx.change(txObject.from)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)
-            tx.serialize();
+            let rawTx = tx.serialize()
 
-            this.broadcastTransaction(insight, tx).then(data => {
-              resolve(data)
-            }, err => {
-              reject(err)
-            })
+            this.broadcast(rawTx).then(
+              txId => {
+                resolve(txId)
+              },
+              error => {
+                reject(error)
+              }
+            )
           } catch (err) {
             reject(err)
           }
-        }
-      });
-    })
-  }
-
-  private broadcastTransaction(insight: any, tx: any): Promise<{ txId: string }> {
-    return new Promise((resolve, reject) => {
-      insight.broadcast(tx, (err, txId) => {
-        if (err) {
+        },
+        err => {
           reject(err)
-        } else {
-          resolve({
-            txId: txId
-          })
         }
-      })
+      )
     })
   }
 
@@ -163,4 +147,45 @@ class BitcoreService {
       privateKey: privateKey.toString()
     }
   }
+
+  getUnspentUtxos(addresses) {
+    const Address = this.bitcore.Address;
+    const Transaction = this.bitcore.Transaction;
+    const UnspentOutput = Transaction.UnspentOutput;
+    return new Promise((resolve, reject) => {
+      if (!Array.isArray(addresses)) {
+        addresses = [addresses];
+      }
+      addresses = addresses.map((address) => new Address(address));
+      this.http.post('https://insight.bitpay.com/api/addrs/utxo', {
+        addrs: addresses.map((address) => address.toString()).join(',')
+      }).then(
+        response => {
+          try {
+            resolve((<[any]>response).map(unspent => new UnspentOutput(unspent)))
+          } catch (ex) {
+            reject(ex);
+          }
+        },
+        error => {
+          reject(error)
+        }
+      )
+    })
+  }
+
+  broadcast(rawTx: string) {
+    return new Promise<{ txId: string }>((resolve, reject) => {
+      this.http.post('https://insight.bitpay.com/api/tx/send', { rawtx: rawTx }).then(
+        response => {
+          let txId = response ? response['txid'] : null
+          resolve({ txId: txId })
+        },
+        error => {
+          reject(error)
+        }
+      )
+    })
+  }
+
 }
