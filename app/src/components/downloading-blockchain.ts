@@ -30,12 +30,14 @@
     </div>
   `
 })
-@Inject('$scope','heat','$interval','settings', '$router')
+@Inject('$rootScope', '$scope','heat','$interval','settings', '$router')
 class DownloadingBlockchainComponent {
   showComponent = false;
   lastBlockHeight = 0;
   lastBlockTime = 0;
-  constructor(private $scope: angular.IScope,
+  heatServerLocation;
+  constructor(private $rootScope: angular.IScope,
+              private $scope: angular.IScope,
               private heat: HeatService,
               private $interval: angular.IIntervalService,
               private settings: SettingsService,
@@ -121,6 +123,8 @@ class DownloadingBlockchainComponent {
         if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
+          if (!this.heatServerLocation)
+            this.notifyOnServerLocationUpdating(currentServer);
           //if the server response is nothing then server is down
           currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
           server.statusScore = currentServerIsAlive ? 0 : null;
@@ -160,18 +164,22 @@ class DownloadingBlockchainComponent {
         }
       });
       if (best && best != currentServer) {
-        settings.setCurrentServer(best);
-        this.heat.resetSubscriber();
-        if (firstTime) {
-          //on initializing (first time) switched silently and starts from login page
-          this.router.navigate('/login');
-        } else {
-          if (currentServer)
-            alert("HEAT server API address switched from \n"
-              + currentServer.host + ":" + currentServer.port +
-              "\nto\n" + best.host + ":" + best.port);
-          else
-            alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+        let bestIsAlive = !(best.statusError && !best.statusError["data"]);
+        if (bestIsAlive) {
+          settings.setCurrentServer(best);
+          this.notifyOnServerLocationUpdating(best);
+          this.heat.resetSubscriber();
+          if (firstTime) {
+            //on initializing (first time) switched silently and starts from login page
+            this.router.navigate('/login');
+          } else {
+            if (currentServer)
+              alert("HEAT server API address switched from \n"
+                + currentServer.host + ":" + currentServer.port +
+                "\nto\n" + best.host + ":" + best.port);
+            else
+              alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+          }
         }
       }
     })
@@ -211,6 +219,11 @@ class DownloadingBlockchainComponent {
       : (connected < 0.8 * currentServerConnected)
         ? -1
         : 0;
+  }
+
+  private notifyOnServerLocationUpdating(sd: ServerDescriptor) {
+    this.heatServerLocation = sd.host + ":" + sd.port;
+    this.$rootScope.$emit('HEAT_SERVER_LOCATION', this.heatServerLocation);
   }
 
 }
