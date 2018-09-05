@@ -38,19 +38,15 @@ class HttpService {
    * When no QueuedRequest are in the this.queues[index] one is created and the request
    * is performed immediately, if there is anything in the queue the request
    */
-  private throttled = ['https://blockexplorer.com', 'https://api.ethplorer.io']
-  private queues: Array<Array<QueuedRequest>> = [[],[]]
+  private throttled = ['https://blockexplorer.com', 'https://api.ethplorer.io', 'https://insight.bitpay.com']
+  private queues: Array<Array<QueuedRequest>>
 
   constructor(private $http: angular.IHttpService,
               private env: EnvService,
               private $q: angular.IQService) {
-    if (env.type==EnvType.NODEJS) {
-      try {
-        require('ssl-root-cas').inject();
-      } catch (e) {
-        console.log(e);
-      }
-    }
+    this.queues = []
+    for (let i=0; i<this.throttled.length; i++)
+      this.queues.push([])
   }
 
   private dumpQueue() {
@@ -185,9 +181,9 @@ class HttpService {
       let a = document.createElement('a')
       a.href = url
       let hostname = a.hostname
-      let port = a.port ? parseInt(a.port) : 80;
-      let path = a.pathname
       let isHttps = a.protocol == 'https:'
+      let port = a.port ? parseInt(a.port) : (isHttps ? 443 : 80);
+      let path = a.pathname
       this.nodeHttpPost(isHttps, hostname, port, path, data, deferred.resolve, deferred.reject);
     }
     return deferred.promise;
@@ -227,8 +223,7 @@ class HttpService {
       var body = [];
       res.on('data', (chunk) => { body.push(chunk) });
       res.on('end', () => {
-        var response = { data: JSON.parse(body.join('')) };
-        onSuccess(response)
+        onSuccess(JSON.parse(body.join('')))
       });
     });
     req.on('error', (e) => { onFailure(e) });
