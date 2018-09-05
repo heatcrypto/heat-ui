@@ -246,7 +246,7 @@ class EthplorerService {
               private http: HttpService,
               private settingsService: SettingsService,
               private web3: Web3Service) {
-    http.get('https://raw.githubusercontent.com/MyEtherWallet/ethereum-lists/master/tokens/tokens-eth.json').then(response => {
+    http.get('https://raw.githubusercontent.com/dmdeklerk/ethereum-lists/master/dist/tokens/eth/tokens-eth.min.json').then(response => {
       let array = angular.isString(response) ? JSON.parse(response) : response
       array.forEach(x => {
         this.tokenInfoCache[x.address] = <any> {
