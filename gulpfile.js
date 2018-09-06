@@ -21,11 +21,15 @@
  * SOFTWARE.
  * */
 
+/* Set to true to disable minimizing and uglifying of code */
+const DEBUG = true
+
 require('es6-promise').polyfill(); /* usemin requires this */
 var gulp = require('gulp');
 var lesshint = require('gulp-lesshint');
 var path = require('path');
 var gutil = require('gulp-util');
+var noop = require("gulp-noop");
 
 /* These are the hashed new names for lib.js, heat-ui.js and tshelpers.js */
 var generateHash = require('random-hash').generateHash
@@ -83,7 +87,7 @@ gulp.task('usemin', function() {
   return gulp.src('app/index.html')
     .pipe(usemin({
       css: [ minifyCss(), rev() ],
-      js: [ uglify(), rev() ],
+      js: [ (DEBUG ? noop() : uglify()), rev() ],
       chart: [ uglify(), rev() ],
       inlinejs: [ uglify(), 'concat' ],
       inlinecss: [ minifyCss(), 'concat' ]
@@ -108,7 +112,7 @@ gulp.task('libjs',  function () {
   return gulp.src(PATHS.libjs)
     .pipe(concat(LIBJS_HASHED_NAME))
     .pipe(sourcemaps.init())
-    .pipe(uglify())
+    .pipe((DEBUG ? noop() : uglify()))
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
@@ -123,7 +127,7 @@ gulp.task('tshelpers', function () {
   return gulp.src(PATHS.tshelpers)
     .pipe(concat(TSHELPERS_HASHED_NAME))
     .pipe(sourcemaps.init())
-    .pipe(uglify())
+    .pipe(DEBUG ? noop() : uglify())
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
@@ -141,15 +145,11 @@ gulp.task('ts2js', function () {
   return gulp.src(PATHS.src)
     .pipe(sourcemaps.init())
     .pipe(typescript(extend(tscConfig.compilerOptions, { outFile: HEATUIJS_HASHED_NAME })))
-    .pipe(uglify())
+    .pipe((DEBUG ? noop() : uglify()))
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
 
-/**
- * Runs less compiler on all less files, output is placed in styles/LESS_HASHED_NAME
- * Minifies the css
- */
 gulp.task('less', function () {
   var rename = require("gulp-rename");
   var less = require('gulp-less');
@@ -173,11 +173,11 @@ gulp.task('less', function () {
 gulp.task('updatescriptrefs', ['less', 'copy:dist', 'usemin', 'libjs', 'tshelpers', 'ts2js'], function () {
   var replace = require('gulp-replace');
   return gulp.src('dist/index.html')
-    // .pipe(replace('<script src="node_modules-', '<script defer src="node_modules-'))
-    // .pipe(replace('<script src="charting-', '<script defer src="charting-'))
-    .pipe(replace('<script src="lib.js', '<script src="'+LIBJS_HASHED_NAME))
-    .pipe(replace('<script src="heat-ui.js', '<script src="'+HEATUIJS_HASHED_NAME))
-    .pipe(replace('<script src="tshelpers.js', '<script src="'+TSHELPERS_HASHED_NAME))
+    .pipe(replace('<script src="node_modules-', '<script defer src="node_modules-'))
+    .pipe(replace('<script src="charting-', '<script defer src="charting-'))
+    .pipe(replace('<script src="lib.js', '<script defer src="'+LIBJS_HASHED_NAME))
+    .pipe(replace('<script src="heat-ui.js', '<script defer src="'+HEATUIJS_HASHED_NAME))
+    .pipe(replace('<script src="tshelpers.js', '<script defer src="'+TSHELPERS_HASHED_NAME))
     .pipe(replace('<link rel="stylesheet" href="styles/index.css', '<link rel="stylesheet" href="styles/'+LESS_HASHED_NAME))
     .pipe(gulp.dest('dist'));
 })
@@ -200,7 +200,7 @@ gulp.task('play', ['build'], function () {
   var port, app;
   port = process.env.PORT || 9001;
 
-  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['ts2js', 'copy:dist', 'less']);
+  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['updatescriptrefs']);
 
   app = connect().use(serveStatic(__dirname));
   http.createServer(app).listen(port, function () {
@@ -210,12 +210,9 @@ gulp.task('play', ['build'], function () {
 
 gulp.task('build', ['updatescriptrefs']);
 
-// gulp.task('electron', function () {
-//   gulp.src('app/electron/*')
-//     .pipe(gulp.dest('dist/electron'));
-//   gulp.src(['app/node_modules/**/*'])
-//     .pipe(gulp.dest('dist/node_modules'));
-// });
+gulp.task('electron', ['copy:electron1','copy:electron2'])
+gulp.task('copy:electron1', () => gulp.src('app/electron/*').pipe(gulp.dest('dist/electron')) )
+gulp.task('copy:electron2', () => gulp.src(['app/node_modules/**/*']).pipe(gulp.dest('dist/node_modules')) )
 
 // gulp.task('lint', function () {
 //   return gulp.src('app/styles/**/*.less')

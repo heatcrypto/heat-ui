@@ -81,6 +81,7 @@ class HeatSubscriber {
   private connectedSocketPromise: angular.IPromise<WebSocket> = null;
   private subscribeTopics: Array<HeatSubscriberTopic> = [];
   private unsubscribeTopics: Array<HeatSubscriberTopic> = [];
+  private needReset: boolean = false;
 
   constructor(private url: string,
               private $q: angular.IQService,
@@ -119,6 +120,11 @@ class HeatSubscriber {
 
   public microservice(filter: IStringHashMap<string>, callback: (any)=>void, $scope?: angular.IScope): () => void {
     return this.subscribe(new HeatSubscriberTopic(this.MICROSERVICE, filter), callback, $scope);
+  }
+
+  public reset(url: string) {
+    this.url = url;
+    this.needReset = true;
   }
 
   /* End subscriber options, start of general implementation code */
@@ -162,6 +168,11 @@ class HeatSubscriber {
   private syncTopicSubscriptions() {
     this.getConnectedSocket().then(
       (websocket)=>{
+        if (this.needReset) {
+          websocket.close(3001, "Heat subscribes reseted");
+          this.needReset = false;
+          return;
+        }
         this.unsubscribeTopics.forEach(topic => {
           if (topic.isSubscribed()) {
             this.sendUnsubscribe(websocket, topic);

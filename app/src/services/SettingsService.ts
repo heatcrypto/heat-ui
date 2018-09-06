@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Service('settings')
 class SettingsService {
 
@@ -80,7 +81,34 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
+  public MAINNET_KNOWN_SERVERS: ServerDescriptor[] = [{
+    "host":"https://heatwallet.com",
+    "port": 7734,
+    "websocket": "wss://heatwallet.com:7755/ws/",
+    "priority": 1
+  },
+  {
+    "host": "http://localhost",
+    "port": 7733,
+    "websocket": "ws://localhost:7763/ws/",
+    "priority": 2
+  }]
+  public TESTNET_KNOWN_SERVERS: ServerDescriptor[] = [{
+    "host": "https://alpha.heatledger.com",
+    "port": 7734,
+    "websocket": "wss://heatwallet.com:7755/ws/",
+    "priority": 1
+  },
+  {
+    "host": "http://localhost",
+    "port": 7733,
+    "websocket": "ws://localhost:7755/ws/",
+    "priority": 2
+  }]
+  public BETANET_KNOWN_SERVERS: ServerDescriptor[] = []
+
   constructor() {
+
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
     this.settings[SettingsService.WEBSOCKET_URL_LOCALHOST] = 'ws://localhost:8884/ws/';
@@ -182,4 +210,29 @@ class SettingsService {
   public put(id:string,value:string) {
     return this.settings[id]=value;
   }
+
+  public getKnownServers(): ServerDescriptor[] {
+    if (heat.isTestnet)
+      return this.TESTNET_KNOWN_SERVERS;
+    if (heat.isBetanet)
+      return this.BETANET_KNOWN_SERVERS;
+    return this.MAINNET_KNOWN_SERVERS;
+  }
+
+  public setCurrentServer(server) {
+    this.settings[SettingsService.HEAT_HOST] = server.host;
+    this.settings[SettingsService.HEAT_PORT] = server.port;
+    this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+  }
+
+}
+
+interface ServerDescriptor {
+  host: string;
+  port: number;
+  websocket: string;
+  priority?: number;
+  health?: IHeatServerHealth;
+  statusScore?: number;
+  statusError?: any;
 }

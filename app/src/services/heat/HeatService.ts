@@ -55,17 +55,14 @@ class HeatService {
               private user: UserService,
               private $timeout: angular.ITimeoutService,
               private env: EnvService) {
-    if (env.type==EnvType.NODEJS) {
-      try {
-        require('ssl-root-cas').inject();
-      } catch (e) {
-        //console.log(e);
-      }
-    }
   }
 
   public createSubscriber(url: string)  {
     return new HeatSubscriber(url, this.$q, this.$timeout);
+  }
+
+  public resetSubscriber()  {
+    this.subscriber.reset(this.settings.get(SettingsService.HEAT_WEBSOCKET));
   }
 
   getAuthData(): Object {

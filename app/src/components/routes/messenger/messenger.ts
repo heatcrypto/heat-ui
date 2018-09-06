@@ -26,7 +26,7 @@
   inputs: ['publickey'],
   styles: [`
     messenger user-contacts {
-      width: 240px;
+      width: 300px;
       min-width: 240px;
     }
     messenger edit-message {
