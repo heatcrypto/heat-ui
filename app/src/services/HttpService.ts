@@ -49,7 +49,7 @@ class HttpService {
       this.queues.push([])
   }
 
-  private dumpQueue() {
+  /*private dumpQueue() {
     let s = ['HTTP QUEUES :: -->']
     for (let i=0; i<this.throttled.length; i++) {
       for (let j=0; j<this.queues[i].length; j++) {
@@ -57,7 +57,7 @@ class HttpService {
       }
     }
     console.log(s.join('\n'))
-  }
+  }*/
 
   /**
    * The promise gets resolved or rejected when the internal GET request completes.
@@ -92,11 +92,11 @@ class HttpService {
       promise: promise
     }
     queue.push(request)
-    this.dumpQueue()
+    // this.dumpQueue()
     request.promise.finally(()=>{
       let i = queue.indexOf(request)
       if (i != -1) queue.splice(i, 1)
-      this.dumpQueue()
+      // this.dumpQueue()
     })
 
     let deferred = this.$q.defer();
@@ -123,16 +123,6 @@ class HttpService {
       }
     })
     return promise;
-
-
-    // let deferred = this.$q.defer<string>();
-    // if (this.env.type == EnvType.BROWSER) {
-    //   this.browserHttpGet(url, deferred.resolve, deferred.reject);
-    // }
-    // else {
-    //   this.nodeHttpGet(url, deferred.resolve, deferred.reject);
-    // }
-    // return deferred.promise;
   }
 
   private browserHttpGet(url: string, onSuccess: Function, onFailure: Function) {
