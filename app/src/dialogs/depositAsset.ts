@@ -42,18 +42,21 @@ module dialogs {
           }
         `,
         template: `
-          <div>
-            Transfer the desired amount of {{vm.type}} to your Heatwallet's {{vm.type}} address:<br>
-            <b>{{vm.address}}</b><a href='https://blocktrail.com/{{vm.type}}/address/{{vm.address}}/transactions' target='_blank'>click to view pending</a><br>
+          <div ng-if="vm.isBtc">
+            Transfer the desired amount of Bitcoins to your Heatwallet's Bitcoin address:<br>
+            <b>{{vm.address}}</b><a href='https://blocktrail.com/BTC/address/{{vm.address}}/transactions' target='_blank'>click to view pending</a><br>
             <div class="qrcodeBox" id="depositeAddressQRCode"></div>
             (This address changes after single deposit).<br><br>
-            When the transfer has 1 confirmation in the {{vm.type}} network, your HEAT account will receive the {{vm.type}} Assets (id: 5592059897546023466) shortly and you can trade them in any market they're accepted at.<br><br>
-            {{vm.type}} Deposit fee is 0%. {{vm.type}} redemption (withdrawal) fee is 0.40%, minimum fee 0.0015 {{vm.type}} due to {{vm.type}} network tx fees. To mitigate the risks of early phase decentralized blockchain rollbacks, The Heat Ledger {{vm.type}} gateway does not currently use automated hot wallets. Standard processing time is 0-12 hours, sometimes longer on non-business days.<br><br>
-            Please do NOT send {{vm.type}} directly from another 3rd party exchange as deposits to Heat Wallet need to have an unique txid associated.
+            When the transfer has 1 confirmation in the Bitcoin network, your HEAT account will receive the Bitcoin Assets (id: 5592059897546023466) shortly and you can trade them in any market they're accepted at.<br><br>
+            Bitcoin Deposit fee is 0%. Bitcoin redemption (withdrawal) fee is 0.40%, minimum fee 0.0015 Bitcoin due to Bitcoin network tx fees. To mitigate the risks of early phase decentralized blockchain rollbacks, The Heat Ledger Bitcoin gateway does not currently use automated hot wallets. Standard processing time is 0-12 hours, sometimes longer on non-business days.<br><br>
+            Please do NOT send Bitcoin directly from another 3rd party exchange as deposits to Heat Wallet need to have an unique txid associated.
           </div>
+
+          <div ng-if="!vm.isBtc" ng-bind-html="vm.dialogue"></div>
+
         `,
         locals: {
-          dialogue: parsed.deposit.dialogue, type:parsed.deposit.type, address:parsed.deposit.address, emit: function() {
+          dialogue: parsed.deposit.dialogue, isBtc: parsed.deposit.dialogue.includes('5592059897546023466'), address:parsed.deposit.address, shorQR: function() {
             showQrCodeOnDialogLoad(parsed.deposit.address);
           }()
         }
