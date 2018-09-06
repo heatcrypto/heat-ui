@@ -63,7 +63,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex ng-show="vm.pageSigninAccount">
                 <label>Password (or Pin Code)</label>
-                <input ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
+                <input type="password" ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center" ng-show="vm.pageSigninWrongPincode">
@@ -102,7 +102,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex>
                 <label>Password (or Pin Code) (required)</label>
-                <input ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
+                <input type="password" ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
               </md-input-container>
             </div>
             <div layout="column" flex>
@@ -230,7 +230,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex>
                 <label>Password (or Pin Code) (required)</label>
-                <input ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
+                <input type="password" ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center">
