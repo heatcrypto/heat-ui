@@ -75,13 +75,13 @@ class ServerService extends EventEmitter {
   }
 
   getAppDir(dirName) {
-    var os = this.getOS();
     var path = require('path');
     let dir = path.join(__dirname,'..','heatledger', dirName);
     return path.resolve(dir)
   }
 
   startServer() {
+    console.log('ServerService::start server')
     if (this.isRunning) {
       throw new Error('Server starting or already up, check server.isRunning before calling this method');
     }
@@ -90,41 +90,74 @@ class ServerService extends EventEmitter {
     this.isRunning = true;
     this.log("[SERVER] command >> "+this.command);
     this.log("[SERVER] cwd     >> "+this.cwd);
-    var promise = spawn(this.command,[],{cwd:this.cwd});
-    this.childProcess = promise.childProcess;
-    this.log("[SERVER] pid     >> "+this.childProcess.pid);
-    this.childProcess.stdout.on('data', (data) => {
-      this.log(data.toString());
-    });
-    this.childProcess.stderr.on('data', (data) => {
-      this.log(data.toString());
-    });
 
-    promise.then(() => {
-      this.log("[SPAWN] DONE!");
-      this.$rootScope.$evalAsync(()=>{
-        this.isRunning = false;
-        this.isReady = false;
-        if (this.needsRecoveryRestart()) {
-          this.$timeout(()=> {
-            this.startServer();
-          },2000,true);
+    // Point the blockchain dir to be in the appData dir
+    // Set ENV vars to:
+    //   - HEAT_WALLET_BLOCKCHAINDIR
+    //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
+    this.getUserDataDirFromMainProcess().then(
+      userDataDir => {
+        var env = {}
+
+        // When things go wrong undefined is returned
+        if (userDataDir) {
+          var path = require('path');
+          env['HEAT_WALLET_BLOCKCHAINDIR'] = path.join(userDataDir, 'blockchain')
+          env['HEAT_WALLET_BLOCKCHAINDIR_TEST'] = path.join(userDataDir, 'blockchain-test')
         }
+
+        var promise = spawn(this.command,[],{
+          cwd:this.cwd,
+          env: env
+        });
+        this.childProcess = promise.childProcess;
+        this.log("[SERVER] pid     >> "+this.childProcess.pid);
+        this.childProcess.stdout.on('data', (data) => {
+          this.log(data.toString());
+        });
+        this.childProcess.stderr.on('data', (data) => {
+          this.log(data.toString());
+        });
+
+        promise.then(() => {
+          this.log("[SPAWN] DONE!");
+          this.$rootScope.$evalAsync(()=>{
+            this.isRunning = false;
+            this.isReady = false;
+            if (this.needsRecoveryRestart()) {
+              this.$timeout(()=> {
+                this.startServer();
+              },2000,true);
+            }
+          })
+        })
+        .catch((err) => {
+          var message = angular.isObject(err) ? (err.message||''):'';
+          this.log(`[SPAWN EXIT] ${message}`, err);
+          this.$rootScope.$evalAsync(()=>{
+            this.isRunning = false;
+            this.isReady = false;
+            if (this.needsRecoveryRestart()) {
+              this.$timeout(()=> {
+                this.startServer();
+              },2000,true);
+            }
+          });
+        });
+      }
+    )
+  }
+
+  private getUserDataDirFromMainProcess() {
+    let {ipcRenderer} = require('electron')
+    return new Promise(resolve => {
+      let timeout = setTimeout(resolve, 2000)
+      ipcRenderer.on('userData-is-here-reply', (event, arg) => {
+        clearTimeout(timeout)
+        resolve(arg)
       })
+      ipcRenderer.send('userData-is-where-request', '')
     })
-    .catch((err) => {
-      var message = angular.isObject(err) ? (err.message||''):'';
-      this.log(`[SPAWN EXIT] ${message}`, err);
-      this.$rootScope.$evalAsync(()=>{
-        this.isRunning = false;
-        this.isReady = false;
-        if (this.needsRecoveryRestart()) {
-          this.$timeout(()=> {
-            this.startServer();
-          },2000,true);
-        }
-      });
-    });
   }
 
   log(msg, error?:any) {
@@ -134,7 +167,7 @@ class ServerService extends EventEmitter {
     else if (this.settings.get(SettingsService.LOG_HEAT_SERVER_ALL))
       console.log(msg);
     if (!this.isReady) {
-      if (msg.indexOf('** HEATLEDGER SERVER READY **')!=-1) {
+      if (msg.indexOf('** HEAT SERVER READY **')!=-1) {
         this.$rootScope.$evalAsync(()=>{
           this.isReady = true;
         });
@@ -171,7 +204,7 @@ class ServerService extends EventEmitter {
 
   applicationShutdown() {
     var deferred = this.$q.defer();
-    var dialog = dialogs.shutdown(null);
+    dialogs.shutdown(null);
     this.$interval(() => {
       if (!this.isRunning) {
         deferred.resolve();
@@ -183,10 +216,8 @@ class ServerService extends EventEmitter {
   needsRecoveryRestart() {
     var end = this.buffer.length-30;
     for (var i=this.buffer.length; i>end; --i) {
-      if (angular.isString(this.buffer[i])) {
-        if (this.buffer[i].indexOf("To complete storage recovery process please restart")!=-1) {
-          return true;
-        }
+      if ((this.buffer[i]+"").indexOf("To complete storage recovery process please restart")!=-1) {
+        return true;
       }
     }
     return false;
