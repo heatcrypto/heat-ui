@@ -806,11 +806,11 @@ class WalletComponent {
                 </md-input-container>
                 <md-input-container flex>
                   <label>Password</label>
-                  <input ng-model="vm.data.password1" required name="password1">
+                  <input type="password" ng-model="vm.data.password1" required name="password1">
                 </md-input-container>
                 <md-input-container flex>
                   <label>Password (confirm)</label>
-                  <input ng-model="vm.data.password2" required name="password2">
+                  <input type="password" ng-model="vm.data.password2" required name="password2">
                 </md-input-container>
                 <span>BIP44 compatible = <b>{{vm.data.bip44Compatible?'TRUE':'FALSE'}}</b></span>
               </div>
