@@ -20,13 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@RouteConfig('/explorer-results/:type/','/explorer-results/:type/:query')
+@RouteConfig('/explorer-results/:type/', '/explorer-results/:type/:query')
 @Component({
   selector: 'explorerResults',
-  inputs: ['type','query'],
+  inputs: ['type', 'query'],
   template: `
     <div layout="column" flex layout-padding layout-fill>
-      <explorer-search layout="column" type="vm.type" query="vm.query"></explorer-search>
+      <explorer-search layout="column" query="vm.query"></explorer-search>
       <div layout="row" layout-align="start center" class="type-row">
         <md-button ng-class="{'active':vm.type=='accounts'}"
           ng-disabled="vm.type=='accounts'"
@@ -60,10 +60,12 @@
         </span>
       </div>
 
+      <div layout="column" flex ng-if="vm.type=='search'">No results found</div>
+
     </div>
   `
 })
-@Inject('$scope','heat')
+@Inject('$scope', 'heat', '$location')
 class ExplorerResultsComponent {
   type: string; // @input
   query: string; // @input
@@ -72,27 +74,52 @@ class ExplorerResultsComponent {
   transactionObject: IHeatTransaction;
 
   constructor(private $scope: angular.IScope,
-              private heat: HeatService) {
-    if (this.type == 'blocks') {
-      heat.api.getBlock(this.query, true).then(block=>{
-        $scope.$evalAsync(()=>{
-          this.blockObject = block;
+    private heat: HeatService,
+    private $location: angular.ILocationService) {
+
+    if (this.type === 'search' || this.type === 'accounts') {
+      heat.api.searchAccountsCount(this.query).then(count => {
+        $scope.$evalAsync(() => {
+          if (this.type === 'search' && count > 0) {
+            this.type = 'accounts'
+            this.$location.path(`/explorer-results/${this.type}/${this.query}`)
+          }
         })
-      }, ()=>{
+      })
+    }
+
+    if (this.type === 'search' || this.type === 'blocks') {
+      heat.api.getBlock(this.query, true).then(block => {
+        $scope.$evalAsync(() => {
+          this.blockObject = block;
+          if (this.type === 'search') {
+            this.type = 'blocks'
+            this.$location.path(`/explorer-results/${this.type}/${this.query}`)
+          }
+        })
+      }, () => {
         let height = parseInt(this.query);
         if (!isNaN(height)) {
-          heat.api.getBlockAtHeight(height, true).then(block=>{
-            $scope.$evalAsync(()=>{
+          heat.api.getBlockAtHeight(height, true).then(block => {
+            $scope.$evalAsync(() => {
               this.blockObject = block;
+              if (this.type === 'search') {
+                this.type = 'blocks'
+                this.$location.path(`/explorer-results/${this.type}/${this.query}`);
+              }
             })
           });
         }
       });
     }
-    else if (this.type == 'transactions') {
-      heat.api.getTransaction(this.query).then(transaction=>{
-        $scope.$evalAsync(()=>{
+    if (this.type === 'search' || this.type === 'transactions') {
+      heat.api.getTransaction(this.query).then(transaction => {
+        $scope.$evalAsync(() => {
           this.transactionObject = transaction;
+          if (this.type === 'search') {
+            this.type = 'transactions';
+            this.$location.path(`/explorer-results/${this.type}/${this.query}`);
+          }
         })
       });
     }
