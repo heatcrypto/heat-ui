@@ -14,7 +14,7 @@
           <div class="truncate-col date-col left">Time</div>
 
           <!-- TX ID  -->
-          <div class="truncate-col info-col left">Transaction ID</div>
+          <div class="truncate-col tx-col left">Transaction ID</div>
 
           <!-- FROM -->
           <div class="truncate-col info-col left">FROM</div>
@@ -36,7 +36,7 @@
             <div class="truncate-col date-col left">{{item.dateTime}}</div>
 
             <!-- TX ID -->
-            <div class="truncate-col info-col left" >
+            <div class="truncate-col tx-col left" >
               <span>
                 <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
