@@ -45,7 +45,7 @@ class TraProvider implements IPaginatedDataProvider {
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
-  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTra>> {
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTrade>> {
     return this.heat.api.getAllAccountTrades(this.account, "0", 0, firstIndex, lastIndex);
   }
 }

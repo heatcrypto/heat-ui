@@ -45,11 +45,8 @@
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
 
-          <!-- BUYER -->
-          <div class="truncate-col inoutgoing-col left">Buyer</div>
-
-          <!-- SELLER -->
-          <div class="truncate-col inoutgoing-col left">Seller</div>
+          <!-- BUYER/ SELLER -->
+          <div class="truncate-col inoutgoing-col left">Buyer/ Seller</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -73,14 +70,9 @@
             <!-- AMOUNT -->
             <div class="truncate-col amount-col left">{{item.amount}}</div>
 
-            <!-- BUYER -->
+            <!-- BUYER/ SELLER -->
             <div class="truncate-col inoutgoing-col left">
-             {{item.buyerName}}
-            </div>
-
-            <!-- SELLER -->
-            <div class="truncate-col inoutgoing-col left">
-              {{item.sellerName}}
+              <a href="#/explorer-account/{{item.buyerseller}}/trades">{{item.buyerseller}} </a>
             </div>
 
             <!-- JSON -->
@@ -97,18 +89,19 @@
   `
 })
 
-@Inject('$scope', '$q', 'heat', 'explorerTradesProviderFactory', 'settings')
+@Inject('$scope', '$q', 'heat', 'explorerTradesProviderFactory', 'settings', 'assetInfo')
 class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
 
   account: string; // @input
   block: string; // @input
   personalize: boolean; // @input
-  tradesRenderer: TradesRenderer = new TradesRenderer();
+
   constructor(protected $scope: angular.IScope,
     protected $q: angular.IQService,
     private heat: HeatService,
     private explorerTradesProviderFactory: ExplorerTradesProviderFactory,
-    private settings: SettingsService) {
+    private settings: SettingsService,
+    private assetInfo: AssetInfoService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
@@ -117,14 +110,14 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
       (trade: any | IHeatTrade) => {
         let date = utils.timestampToDate(trade.timestamp);
         trade.time = dateFormat(date, format);
-        trade.heightDisplay = trade.height == 2147483647 ? '*' : trade.height;
-        let currecy = this.tradesRenderer.asset(trade.currency);
-        let asset = this.tradesRenderer.asset(trade.asset);
+        let currecy = this.asset(trade.currency);
+        let asset = this.asset(trade.asset);
         let decimals = currecy.decimals;
         trade.market = `${currecy.symbol}/${asset.symbol}`;
         trade.type = trade.isbuy ? 'Buy' : 'Sell';
         trade.price = (trade.price / (Math.pow(10, decimals))).toFixed(decimals);
         trade.amount = (trade.quantity / (Math.pow(10, decimals))).toFixed(decimals);
+        trade.buyerseller = trade.isbuy ? trade.sellerName : trade.buyerName;
       });
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
@@ -134,51 +127,16 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
     }
   }
 
-  jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Trade: ' + item.askOrder);
-  }
-
-  onSelect(selectedTrade) { }
-}
-
-class TradesRenderer {
-  private assetInfo: AssetInfoService;
-  private $q: angular.IQService;
-  private heat: HeatService;
-
-  constructor() {
-    this.heat = <HeatService>heat.$inject.get('heat');
-    this.assetInfo = <AssetInfoService>heat.$inject.get('assetInfo');
-    this.$q = <angular.IQService>heat.$inject.get('$q');
-  }
-
-  // renderAsset() {
-  //   if (angular.isDefined(this.assetInfo.cache[currency])) {
-  //     let symbol = this.assetInfo.cache[currency].symbol;
-  //     if (angular.isString(symbol)) {
-  //       return this.formatAmount(amount, symbol, neg);
-  //     }
-  //   }
-  //   let deferred = this.$q.defer<string>();
-  //   this.assetInfo.getInfo(currency).then(info => {
-  //     deferred.resolve(this.formatAmount(amount, info.symbol, neg))
-  //   }, deferred.reject);
-  //   return deferred.promise;
-  // }
-
-  formatAmount(amount: string, neg: boolean): string {
-    let returns = this.amount(amount, 8);
-    return (neg ? '-' : '+') + returns;
-  }
-
-  amount(amountHQT: string, decimals: number) {
-    return `${utils.formatQNT(amountHQT || "0", decimals)}`;
-  }
-
   asset(asset: string) {
     if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol)
       return this.assetInfo.cache[asset];
     else
       this.assetInfo.getInfo(asset);
   }
+
+  jsonDetails($event, item) {
+    dialogs.jsonDetails($event, item, 'Trade: ' + item.askOrder);
+  }
+
+  onSelect(selectedTrade) { }
 }
