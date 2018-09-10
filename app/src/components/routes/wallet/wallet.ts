@@ -429,6 +429,12 @@ class WalletComponent {
     window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`, "1")
   }
 
+  removeFromAddressCreated(account: string, ethAddress: string) {
+    this.createdAddresses[account] = this.createdAddresses[account] || []
+    this.createdAddresses[account] = this.createdAddresses[account].filter(addr => addr == ethAddress)
+    window.localStorage.removeItem(`eth-address-created:${account}:${ethAddress}`)
+  }
+
   /* Iterates down all children of walletEntries and flattens them into the entries list */
   flatten() {
     this.$scope.$evalAsync(() => {
@@ -641,6 +647,9 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
       ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        if (address.inUse) {
+          this.removeFromAddressCreated(walletEntry.account, address.address)
+        }
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
           let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
@@ -684,6 +693,9 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
       btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        if (address.inUse) {
+          this.removeFromAddressCreated(walletEntry.account, address.address)
+        }
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
           let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
