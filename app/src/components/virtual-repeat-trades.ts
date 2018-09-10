@@ -72,7 +72,7 @@
 
             <!-- BUYER/ SELLER -->
             <div class="truncate-col inoutgoing-col left">
-              <a href="#/explorer-account/{{item.buyerseller}}/trades">{{item.buyerseller}} </a>
+              <a href="#/explorer-account/{{item.buyerseller}}/trades">{{item.buyersellerName}} </a>
             </div>
 
             <!-- JSON -->
@@ -114,10 +114,11 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
         let asset = this.asset(trade.asset);
         let decimals = currecy.decimals;
         trade.market = `${currecy.symbol}/${asset.symbol}`;
-        trade.type = trade.isbuy ? 'Buy' : 'Sell';
+        trade.type = trade.buyer === this.account? 'Buy': 'Sell';
         trade.price = (trade.price / (Math.pow(10, decimals))).toFixed(decimals);
         trade.amount = (trade.quantity / (Math.pow(10, decimals))).toFixed(decimals);
-        trade.buyerseller = trade.isbuy ? trade.sellerName : trade.buyerName;
+        trade.buyersellerName = trade.type === 'Buy' ? trade.sellerName : trade.buyerName;
+        trade.buyerseller = trade.type === 'Buy' ? trade.seller : trade.buyer;
       });
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
