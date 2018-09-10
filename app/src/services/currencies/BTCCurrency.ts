@@ -63,8 +63,8 @@ class BTCCurrency implements ICurrency {
         let user = <UserService> heat.$inject.get('user')
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
 
-        let amountInSatoshi = $scope['vm'].data.amount * 100000000;
-        let feeInSatoshi = $scope['vm'].data.fee * 100000000;
+        let amountInSatoshi = new Big($scope['vm'].data.amount).times('100000000').toFixed(0);
+        let feeInSatoshi = new Big($scope['vm'].data.fee).times('100000000').toFixed(0);
 
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
         let to = $scope['vm'].data.recipient
