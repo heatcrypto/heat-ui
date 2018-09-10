@@ -148,7 +148,7 @@ class ServerService extends EventEmitter {
     )
   }
 
-  private getUserDataDirFromMainProcess() {
+  getUserDataDirFromMainProcess() {
     let {ipcRenderer} = require('electron')
     return new Promise(resolve => {
       let timeout = setTimeout(resolve, 2000)
