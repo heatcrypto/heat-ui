@@ -72,8 +72,8 @@ class BTCCurrency implements ICurrency {
         let txObject = {
           from: addressPrivateKeyPair.address,
           to: to,
-          amount: amountInSatoshi,
-          fee: feeInSatoshi,
+          amount: parseInt(amountInSatoshi),
+          fee: parseInt(feeInSatoshi),
           changeAddress: addressPrivateKeyPair.address,
           privateKey: addressPrivateKeyPair.privateKey
         }
