@@ -72,11 +72,15 @@ To acces your installation or user profile you can do so from the in app server 
 
 After installation when first presented with the HEAT wallet you are offered to create a HEAT account, you are asked to choose an alias which will be assigned to your new account. Aliases start with a name of your choosing and end with `@heatwallet.com`.
 
-```Note! Email aliases currently serve as account identifiers. Future uses include email/messaging and other functionality.```
+```
+Note! Email aliases currently serve as account identifiers. Future uses include email/messaging and other functionality.
+```
 
 After choosing an available name you select wheter you want your account to be public or private. Public names support things like autocomplete and will show the name instead of the account id in the wallet. Private names will display as account number only, only you will be able to see your private name.
 
-```Note! Work is underway where others that know your private name can send funds to you using that name instead of your account id.```
+```
+Note! Work is underway where others that know your private name can send funds to you using that name instead of your account id.
+```
 
 Public names show up everywhere in the wallet where a `recipient` can be entered.
 
@@ -127,11 +131,15 @@ Bitcoin is supported in two ways:
   1. Through bitcoin private keys directly
   2. Through BIP44 HEAT seeds
 
-```Note! HEAT private keys are also BIP44 compatible seeds, see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki. What this means is that the same seed that gives you access to your HEAT account (the 12 words phrase) also gives you access to any number of derived Bitcoin addresses.```
+```
+Note! HEAT private keys are also BIP44 compatible seeds, see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki. What this means is that the same seed that gives you access to your HEAT account (the 12 words phrase) also gives you access to any number of derived Bitcoin addresses.
+```
 
 Bitcoin private keys can be added to the wallet by clicking the Wallet icon in the toolbar and clicking `Import Seed/Private Key`.
 
-```Note! Currently only existing bitcoin addresses can be added by their private key. To create a new bitcoin address create a HEAT account and add bitcoin addresses to that.```
+```
+Note! Currently only existing bitcoin addresses can be added by their private key. To create a new bitcoin address create a HEAT account and add bitcoin addresses to that.
+```
 
 ![Bitcoin private key](https://i.imgur.com/IyCsGVt.gif)
 
@@ -161,11 +169,15 @@ Ethereum is supported in these ways:
   2. Through BIP44 HEAT seeds
   3. Through support for the binary Ethereum ABI protocol we can inspect and visualize raw Ethereum transactions (ERC20 details)
 
-    Note! HEAT private keys are also BIP44 compatible seeds, see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki. What this means is that the same seed that gives you access to your HEAT account (the 12 words phrase) also gives you access to any number of derived Bitcoin addresses.
+```
+Note! HEAT private keys are also BIP44 compatible seeds, see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki. What this means is that the same seed that gives you access to your HEAT account (the 12 words phrase) also gives you access to any number of derived Bitcoin addresses.
+```
 
 Ethereum private keys can be added to the wallet in the exact same way as we can add Bitcoin private keys. Please see [the section on bitcoin](#bitcoin) for how to do that.
 
-```Note! Currently only existing ethereum addresses can be added by their private key. To create a new bitcoin address create a HEAT account and add bitcoin addresses to that.```
+```
+Note! Currently only existing ethereum addresses can be added by their private key. To create a new bitcoin address create a HEAT account and add bitcoin addresses to that.
+```
 
 The wallet page will display all Ethereum addresses based of your master HEAT key plus it will display your ERC20 token balances for each Ethereum address.
 
