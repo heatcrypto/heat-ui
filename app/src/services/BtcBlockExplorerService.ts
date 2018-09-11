@@ -56,15 +56,13 @@ class BtcBlockExplorerService {
     return deferred.promise
   }
 
-  public getEstimatedFee() {
-    let getEstimatedFeeApi = `https://blockexplorer.com/api/utils/estimatefee?nbBlocks=5`;
+  public getEstimatedFee(numberOfBlocks:number) {
+    let getEstimatedFeeApi = `https://blockexplorer.com/api/utils/estimatefee?nbBlocks=${numberOfBlocks}`;
     let deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let fee;
-      Object.keys(parsed).forEach(function(key){
-        fee = parsed[key];
-      })
+      // returns {"10":0.0000274}
+      let fee = parsed[numberOfBlocks+'']
       deferred.resolve(fee);
     }, () => {
       deferred.reject();
