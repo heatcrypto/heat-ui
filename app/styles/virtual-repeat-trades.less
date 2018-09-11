@@ -21,22 +21,64 @@
  * SOFTWARE.
  * */
 
-@import './default';
-@import './popover';
-@import './trader/index';
-@import './home/index';
-@import './explorer/index';
-@import './ethereum/index';
-@import './messenger/index';
-@import './toolbar';
-@import './dialog';
-@import './user-balance';
-@import './virtual-repeat-transactions';
-@import './virtual-repeat-trades';
-@import './services/transactions/withdrawAssetService';
-@import './user-contacts';
-@import './json-formatter';
-@import './server/index';
-@import './login/index';
-@import './wallet/index';
-@import './bitcoin/index';
+ @import './colors';
+ @import './default';
+ @import './widget';
+
+ virtual-repeat-trades {
+   .widget();
+   .list();
+   md-list-item.md-no-proxy {
+     flex-grow: 0;
+   }
+   .row {
+     .inoutgoing-col {
+       font-size: 16px;
+     }
+   }
+   .truncate-col {
+     padding-right: 30px;
+     &.left {
+       text-align: left;
+     }
+     &.block {
+       max-width: 160px;
+     }
+     &.type-col {
+       max-width: 60px;
+     }
+     &.price-col {
+       max-width: 70px;
+     }
+     &.amount-col {
+      max-width: 70px;
+    }
+     &.generator-col {
+       padding-right: 0px;
+     }
+     &.market-col {
+       max-width: 70px;
+     }
+     &.buyerseller-col {
+       min-width: 695px;
+       a, a * {
+        font-size: 12px;
+        color: @link-yellow;
+        cursor: pointer;
+      }
+     }
+     &.json-col {
+       min-width: 30px;
+       max-width: 30px;
+       padding-right: 0px;
+       a, a * {
+         font-size: 14px;
+         color: @link-yellow;
+         cursor: pointer;
+       }
+       md-icon {
+         padding-top: 8px;
+       }
+     }
+   }
+ }

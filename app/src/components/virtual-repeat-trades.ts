@@ -34,19 +34,19 @@
           <div class="truncate-col date-col left">Time</div>
 
           <!-- MARKET -->
-          <div class="truncate-col id-col left">Market</div>
+          <div class="truncate-col market-col left">Market</div>
 
           <!-- TYPE -->
-          <div class="truncate-col info-col left" flex>Type</div>
+          <div class="truncate-col type-col left" flex>Type</div>
 
           <!-- PRICE -->
-          <div class="he truncate-col height-col left">Price</div>
+          <div class="truncate-col price-col left">Price</div>
 
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
 
           <!-- BUYER/ SELLER -->
-          <div class="truncate-col inoutgoing-col left">Buyer/ Seller</div>
+          <div class="truncate-col buyerseller-col left">Buyer/ Seller</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -59,19 +59,19 @@
             <div class="truncate-col date-col left">{{item.time}}</div>
 
             <!-- MARKET -->
-            <div class="truncate-col id-col left">{{item.market}}</div>
+            <div class="truncate-col market-col left">{{item.market}}</div>
 
             <!-- TYPE -->
-            <div class="truncate-col info-col left" flex>{{item.type}}</div>
+            <div class="truncate-col type-col left" flex>{{item.type}}</div>
 
             <!-- PRICE -->
-            <div class="he truncate-col height-col left">{{item.price}}</div>
+            <div class="truncate-col price-col left">{{item.price}}</div>
 
             <!-- AMOUNT -->
             <div class="truncate-col amount-col left">{{item.amount}}</div>
 
             <!-- BUYER/ SELLER -->
-            <div class="truncate-col inoutgoing-col left">
+            <div class="truncate-col buyerseller-col left">
               <a href="#/explorer-account/{{item.buyerseller}}/trades">{{item.buyersellerName}} </a>
             </div>
 
