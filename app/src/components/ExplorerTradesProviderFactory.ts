@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2017 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -21,22 +21,31 @@
  * SOFTWARE.
  * */
 
-@import './default';
-@import './popover';
-@import './trader/index';
-@import './home/index';
-@import './explorer/index';
-@import './ethereum/index';
-@import './messenger/index';
-@import './toolbar';
-@import './dialog';
-@import './user-balance';
-@import './virtual-repeat-transactions';
-@import './virtual-repeat-trades';
-@import './services/transactions/withdrawAssetService';
-@import './user-contacts';
-@import './json-formatter';
-@import './server/index';
-@import './login/index';
-@import './wallet/index';
-@import './bitcoin/index';
+@Service('explorerTradesProviderFactory')
+@Inject('heat','$q')
+class ExplorerTradesProviderFactory  {
+  constructor(private heat: HeatService, private $q: angular.IQService) {}
+
+  public createProvider(account: string): IPaginatedDataProvider {
+    return new TraProvider(this.heat, this.$q, account);
+  }
+}
+
+class TraProvider implements IPaginatedDataProvider {
+  constructor(private heat: HeatService,
+              private $q: angular.IQService,
+              private account: string) {}
+
+  /* Be notified this provider got destroyed */
+  public destroy() {}
+
+  /* The number of items available */
+  public getPaginatedLength(): angular.IPromise<number> {
+    return this.heat.api.getAllAccountTradesCount(this.account);
+  }
+
+  /* Returns results starting at firstIndex and up to and including lastIndex */
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatTrade>> {
+    return this.heat.api.getAllAccountTrades(this.account, "0", 0, firstIndex, lastIndex);
+  }
+}
