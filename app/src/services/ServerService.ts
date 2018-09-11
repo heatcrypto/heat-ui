@@ -97,7 +97,7 @@ class ServerService extends EventEmitter {
     //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
     this.getUserDataDirFromMainProcess().then(
       userDataDir => {
-        var env = {}
+        var env = process.env
 
         // When things go wrong undefined is returned
         if (userDataDir) {
