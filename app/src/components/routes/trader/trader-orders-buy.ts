@@ -191,7 +191,7 @@ class TraderOrdersBuyComponent extends VirtualRepeatComponent {
       });
     }, () => {
       this.$scope.$evalAsync(() => {
-        this.currencyBalance = "?";
+        this.currencyBalance = "0";
       });
     })
   }
