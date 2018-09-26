@@ -120,8 +120,6 @@ class TraderTradeHistoryComponent extends VirtualRepeatComponent  {
 
         /* reload on block popped */
         heat.subscriber.blockPopped({}, refresh, $scope);
-
-        angular.element($window).bind('resize', () => this.onResize());
       }
     };
     var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];

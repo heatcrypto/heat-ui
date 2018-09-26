@@ -274,7 +274,6 @@ class TraderChartComponent {
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      let parseDate = d3.timeParse("%d-%b-%y %H:%M:%S");
       let accessor = this.chart.close.accessor();
       let filterDate = this.getFilterDateTime(this.filter)
       this.chart.data = [];
@@ -290,11 +289,11 @@ class TraderChartComponent {
           [6] close // string or number if < 9007199254740991
           */
 
-        let itemDate = utils.timestampToDate(parseInt(d[0]));
+        let itemDate = utils.timestampToDate(d[0]);
 
         if (itemDate >= filterDate) {
           this.chart.data.push({
-            date: parseDate(convertToDate(d[0])),
+            date: itemDate,
             open: +d[5],
             high: +d[3],
             low: +d[2],
@@ -432,7 +431,6 @@ class TraderChartComponent {
             close: this.lastTrade.close,
             volume: 0
           })
-          let interval
           itemDate.setSeconds(itemDate.getSeconds() + 2);
         }
         yClose.domain([this.lastTrade.close - 5000, this.lastTrade.close + 5000]);
@@ -549,12 +547,6 @@ class TraderChartComponent {
       svg.selectAll("g.yVolume.axis")
         .attr("transform", "translate( " + width + ", 0 )")
         .call(yVolumeAxis)
-
-      function convertToDate(date) {
-        let format = 'dd-mmm-yy HH:mm:ss';
-        let dateFormated = utils.timestampToDate(parseInt(date));
-        return dateFormat(dateFormated, format);
-      }
     });
   }
 
