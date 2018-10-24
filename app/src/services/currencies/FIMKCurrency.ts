@@ -79,7 +79,7 @@ class FIMKCurrency implements ICurrency {
           recipient: to,
           amountNQT: utils.convertToNQT(String($scope['vm'].data.amountNQT)),
           feeNQT: utils.convertToNQT(String($scope['vm'].data.feeNQT)),
-          publicKey: fimkCryptoService.getPublicKey(user.secretPhrase),
+          publicKey: user.publicKey,
           deadline: '1440',
           requestType: 'sendMoney'
         }

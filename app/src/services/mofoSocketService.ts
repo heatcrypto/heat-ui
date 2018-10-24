@@ -4,35 +4,6 @@ class MofoSocketService {
   private socket: any;;
   private url: string;
 
-  private prototype = {
-    installMethods: [
-      'callAPIFunction',
-      'getAccountAssets',
-      'getAccountCurrencies',
-      'getActivity',
-      'getRecentTransactions',
-      'getComments',
-      'getCommentCount',
-      'getAccountPosts',
-      'getAssetPosts',
-      'getAccounts',
-      'getAccount',
-      'getAsset',
-      'getForgingStats',
-      'getActivityStatistics',
-      'getAskOrder',
-      'getBidOrder',
-      'getAssetChartData',
-      'getAssetOrders',
-      'getAssetTrades',
-      'getMyOpenOrders',
-      'getBlockchainState',
-      'getAccountLessors',
-      'search',
-      'getAssetPrivateAccounts'
-    ]
-  };
-
   constructor(
     private $q: angular.IQService,
     private $timeout: angular.ITimeoutService,
@@ -53,7 +24,7 @@ class MofoSocketService {
 
   createSocket = (url) => {
     if(this.socket) {
-      // if socket already exists then close the socket
+      this.socket.close()
     }
     this.url = url;
     this.socket = new WebSocket(url);
