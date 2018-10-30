@@ -1,8 +1,9 @@
 @Service('mofoSocketService')
 @Inject('$q', '$timeout', '$interval', '$rootScope')
 class MofoSocketService {
-  private socket: any;;
+  private socket: any;
   private url: string;
+  private alive_cb: any;
 
   constructor(
     private $q: angular.IQService,
@@ -44,6 +45,13 @@ class MofoSocketService {
 
   onopen = (event) => {
     console.log('WEBSOCKET - onopen ' + new Date(), { socket: this.socket, event: event })
+    this.alive_cb = this.$interval(this._createKeepAliveIntervalHandler(), 10000);
+  }
+
+  private _createKeepAliveIntervalHandler = () => {
+    return () => {
+      this._send('ping');
+    }
   }
 
   onclose = (event) => {
