@@ -53,6 +53,9 @@ class CurrencyBalance {
     else if (this.name == 'FIMK') {
       currency = new FIMKCurrency(this.secretPhrase, this.address)
     }
+    else if (this.name == 'NEXT') {
+      currency = new NXTCurrency(this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
@@ -201,6 +204,20 @@ class CurrencyAddressCreate {
 
     return false
   }
+
+  createNXTAddress(component: WalletComponent) {
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('NEXT', 'NXT', nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+    return false
+  }
 }
 
 class WalletEntry {
@@ -234,6 +251,7 @@ class WalletEntry {
       this.component.loadEthereumAddresses(this);
       this.component.loadBitcoinAddresses(this);
       this.component.loadFIMKAddresses(this);
+      this.component.loadNEXTAddresses(this);
     }
   }
 
@@ -297,6 +315,12 @@ class WalletEntry {
         <md-button class="md-warn md-raised" ng-click="vm.createFIMKAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
           <md-tooltip md-direction="bottom">Create FIMK Address</md-tooltip>
           Create FIMK Address
+        </md-button>
+
+        <!-- Create NEXT Account -->
+        <md-button class="md-warn md-raised" ng-click="vm.createNXTAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
+          <md-tooltip md-direction="bottom">Create NXT Address</md-tooltip>
+          Create NXT Address
         </md-button>
       </div>
 
@@ -385,7 +409,7 @@ class WalletEntry {
 })
 @Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window',
   'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
-  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService')
+  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nextCryptoService')
 class WalletComponent {
 
   selectAll = true;
@@ -409,7 +433,8 @@ class WalletComponent {
     private clipboard: ClipboardService,
     private user: UserService,
     private bitcoreService: BitcoreService,
-    private fimkCryptoService: FIMKCryptoService) {
+    private fimkCryptoService: FIMKCryptoService,
+    private nextCryptoService: NEXTCryptoService) {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
@@ -669,6 +694,64 @@ class WalletComponent {
       if (walletEntry.expanded) {
         this.loadFIMKAddresses(walletEntry)
       }
+    })
+
+    this.nextCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+      let nextCurrencyAddressLoading = new CurrencyAddressLoading('NEXT')
+      nextCurrencyAddressLoading.visible = walletEntry.expanded
+      nextCurrencyAddressLoading.wallet = wallet
+      walletEntry.currencies.push(nextCurrencyAddressLoading)
+
+      let nextCurrencyAddressCreate = new CurrencyAddressCreate('NEXT', wallet)
+      nextCurrencyAddressCreate.visible = walletEntry.expanded
+      nextCurrencyAddressCreate.parent = walletEntry
+      nextCurrencyAddressCreate.flatten = this.flatten.bind(this)
+      walletEntry.currencies.push(nextCurrencyAddressCreate)
+      /* Only if this node is expanded will we load the addresses */
+      if (walletEntry.expanded) {
+        this.loadNEXTAddresses(walletEntry)
+      }
+    })
+  }
+
+  public loadNEXTAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let nextCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NEXT')
+    if (!nextCurrencyAddressLoading)
+      return
+
+    this.nextCryptoService.refreshAdressBalances(nextCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(nextCurrencyAddressLoading)
+      nextCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let nextCurrencyBalance = new CurrencyBalance('NEXT', 'NXT', address.address, address.privateKey)
+          nextCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+          nextCurrencyBalance.visible = walletEntry.expanded
+          nextCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, nextCurrencyBalance)
+          index++;
+
+          if (address.tokensBalances) {
+            address.tokensBalances.forEach(balance => {
+              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+              tokenBalance.balance = utils.commaFormat(balance.balance)
+              tokenBalance.visible = walletEntry.expanded
+              nextCurrencyBalance.tokens.push(tokenBalance)
+            })
+          }
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != nextCurrencyAddressLoading)
+      this.flatten()
     })
   }
 
@@ -1237,6 +1320,111 @@ class WalletComponent {
 
                   <p>This is your FIMK address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
                       Please store it in a safe place or you may lose access to your FIMK.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createNXTAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NEXT')
+          success = node.createNXTAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
+          }
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create NXT Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new NXT address, please choose the master HEAT account you want to attach the new NXT address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  NXT wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your NXT address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your NXT.
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
