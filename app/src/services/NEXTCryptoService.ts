@@ -22,7 +22,7 @@ class NEXTCryptoService {
     return new Promise((resolve, reject) => {
       let nextBlockExplorerService: NextBlockExplorerService = heat.$inject.get('nextBlockExplorerService')
       nextBlockExplorerService.getAccount(wallet.addresses[0].address).then(data => {
-        wallet.addresses[0].balance = new Big(utils.convertToQNTf(data.balanceNQT)).toFixed(8);
+        wallet.addresses[0].balance = new Big(utils.convertToQNTf(data.unconfirmedBalanceNQT)).toFixed(8);
         wallet.addresses[0].inUse = true;
         nextBlockExplorerService.getAccountAssets(address).then(accountAssets => {
           wallet.addresses[0].tokensBalances = []

@@ -108,4 +108,16 @@ class NextBlockExplorerService {
     });
     return deferred.promise;
   }
+
+  public getPublicKeyFromAddress = (account: string) => {
+    let deferred = this.$q.defer<any>();
+    this.http.get(`${this.url}nxt?requestType=getAccountPublicKey&account=${account}`).then(ret => {
+      let data = JSON.parse(JSON.stringify(ret))
+      if (data.publicKey)
+        deferred.resolve(data.publicKey)
+      else
+        deferred.reject(data.errorDescription)
+    });
+    return deferred.promise;
+  }
 }

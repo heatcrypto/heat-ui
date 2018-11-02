@@ -25,6 +25,9 @@
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
 
+          <!-- MESSAGE -->
+          <div class="truncate-col message-col left">Message</div>
+
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
 
@@ -55,6 +58,11 @@
               <span>{{item.amount}}</span>
             </div>
 
+            <!-- MESSAGE -->
+            <div class="truncate-col message-col left">
+              <span>{{item.message}}</span>
+            </div>
+
             <!-- JSON -->
             <div class="truncate-col json-col">
               <a ng-click="vm.jsonDetails($event, item.json)">
@@ -69,7 +77,7 @@
   `
 })
 
-@Inject('$scope', '$q', 'nextTransactionsProviderFactory', 'settings', 'nextPendingTransactions')
+@Inject('$scope', '$q', 'nextTransactionsProviderFactory', 'settings', 'nextPendingTransactions', 'user', 'nextBlockExplorerService')
 class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -78,10 +86,13 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
               protected $q: angular.IQService,
               private nextTransactionsProviderFactory: NextTransactionsProviderFactory,
               private settings: SettingsService,
-              private nextPendingTransactions: NextPendingTransactionsService) {
+              private nextPendingTransactions: NextPendingTransactionsService,
+              private user: UserService,
+              private nextBlockExplorerService: NextBlockExplorerService) {
 
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let secretPhrase = this.user.secretPhrase;
     this.initializeVirtualRepeat(
       this.nextTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -92,6 +103,23 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
         transaction.from = transaction.senderRS;
         transaction.to = transaction.recipientRS;
         transaction.txid = transaction.transaction;
+        transaction.message = ''
+        if (transaction.attachment.encryptedMessage) {
+          if(transaction.senderPublicKey !== this.user.publicKey)
+            transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.senderPublicKey, secretPhrase)
+          else {
+            try {
+              let recipientPublicKey;
+              this.nextBlockExplorerService.getPublicKeyFromAddress(transaction.recipientRS).then(_publicKey => {
+                recipientPublicKey = _publicKey
+                transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, recipientPublicKey, secretPhrase)
+                transaction.json.message = transaction.message
+              })
+            } catch(e) {
+              transaction.message = ''
+            }
+          }
+        }
         transaction.json = {
           txid: transaction.transaction,
           time: transaction.dateTime,

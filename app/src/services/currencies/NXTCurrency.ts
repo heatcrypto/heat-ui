@@ -74,8 +74,22 @@ class NXTCurrency implements ICurrency {
         let to = $scope['vm'].data.recipient
         let amountNQT = utils.convertToNQT(String($scope['vm'].data.amountNQT))
         let feeNQT = utils.convertToNQT(String($scope['vm'].data.feeNQT))
-        let txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60`;
-
+        let recipientPublicKey;
+        let txObject;
+        if($scope['vm'].data.recipientPublicKey) {
+          recipientPublicKey = converters.hexStringToByteArray($scope['vm'].data.recipientPublicKey)
+        }
+        let userMessage = $scope['vm'].data.message
+        if(userMessage && userMessage != '' && recipientPublicKey) {
+          let options: heat.crypto.IEncryptOptions = {
+            "publicKey": recipientPublicKey
+          };
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
+          txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true`;
+        }
+        else {
+          txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60`;
+        }
         $scope['vm'].disableOKBtn = true
         nextBlockExplorerService.sendNxt(txObject).then(
           data => {
@@ -97,7 +111,8 @@ class NXTCurrency implements ICurrency {
         amountNQT: '',
         recipient: '',
         recipientInfo: '',
-        feeNQT: defaultFee
+        feeNQT: defaultFee,
+        message: ''
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -114,6 +129,11 @@ class NXTCurrency implements ICurrency {
             $scope.$evalAsync(() => {
               $scope['vm'].data.recipientInfo = error.message||'Invalid'
             })
+          }
+        )
+        nextBlockExplorerService.getPublicKeyFromAddress($scope['vm'].data.recipient).then(
+          publicKey => {
+            $scope['vm'].data.recipientPublicKey = publicKey;
           }
         )
       }, 1000, false)
@@ -151,6 +171,11 @@ class NXTCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Amount in NXT</label>
                   <input ng-model="vm.data.amountNQT" required name="amount">
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Message</label>
+                  <input ng-model="vm.data.message" name="message">
                 </md-input-container>
 
                 <md-input-container flex>
