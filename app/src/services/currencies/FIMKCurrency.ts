@@ -23,8 +23,10 @@ class FIMKCurrency implements ICurrency {
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
     let deferred = this.$q.defer();
-    this.mofoSocketService.getAccount(this.address).then(formattedBalance => {
-      deferred.resolve(formattedBalance)
+    this.mofoSocketService.getAccount(this.address).then(info => {
+      let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
+      let formattedBalance = new Big(balance + "")
+      deferred.resolve(new Big(formattedBalance).toFixed(8))
     }, err => {
       deferred.reject();
     })
@@ -72,16 +74,36 @@ class FIMKCurrency implements ICurrency {
         let user = <UserService> heat.$inject.get('user')
         let fimkCryptoService = <FIMKCryptoService> heat.$inject.get('fimkCryptoService')
         let mofoSocketService = <MofoSocketService> heat.$inject.get('mofoSocketService')
-
         let to = $scope['vm'].data.recipient
+        let recipientPublicKey = converters.hexStringToByteArray($scope['vm'].data.recipientPublicKey)
+        let userMessage = $scope['vm'].data.message
+        let txObject;
+        if(userMessage && userMessage != '') {
+          let options: heat.crypto.IEncryptOptions = {
+            "publicKey": recipientPublicKey
+          };
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
+          txObject = {
+            recipient: to,
+            amountNQT: utils.convertToNQT(String($scope['vm'].data.amountNQT)),
+            feeNQT: utils.convertToNQT(String($scope['vm'].data.feeNQT)),
+            publicKey: user.publicKey,
+            deadline: '1440',
+            requestType: 'sendMoney',
+            encryptedMessageData: encryptedNote.message,
+            encryptedMessageNonce: encryptedNote.nonce,
+            messageToEncryptIsText: 'true'
+          }
 
-        let txObject = {
-          recipient: to,
-          amountNQT: utils.convertToNQT(String($scope['vm'].data.amountNQT)),
-          feeNQT: utils.convertToNQT(String($scope['vm'].data.feeNQT)),
-          publicKey: user.publicKey,
-          deadline: '1440',
-          requestType: 'sendMoney'
+        } else {
+          txObject = {
+            recipient: to,
+            amountNQT: utils.convertToNQT(String($scope['vm'].data.amountNQT)),
+            feeNQT: utils.convertToNQT(String($scope['vm'].data.feeNQT)),
+            publicKey: user.publicKey,
+            deadline: '1440',
+            requestType: 'sendMoney'
+          }
         }
 
         $scope['vm'].disableOKBtn = true
@@ -105,17 +127,22 @@ class FIMKCurrency implements ICurrency {
         amountNQT: '',
         recipient: '',
         recipientInfo: '',
-        feeNQT: defaultFee
+        feeNQT: defaultFee,
+        message: ''
       }
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
         let mofoSocketService = <MofoSocketService> heat.$inject.get('mofoSocketService')
+        let heatService = <HeatService> heat.$inject.get('heat')
         mofoSocketService.getAccount($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = new Big(info).toFixed(8)
+              let unconfirmedBalanceNQT = parseInt(info.unconfirmedBalanceNQT) / 100000000;
+              let formattedBalance = new Big(unconfirmedBalanceNQT + "")
+              let balance = new Big(formattedBalance).toFixed(8);
               $scope['vm'].data.recipientInfo = `Balance: ${balance} FIM`
+              $scope['vm'].data.recipientPublicKey = info.publicKey
             })
           },
           error => {
@@ -127,6 +154,7 @@ class FIMKCurrency implements ICurrency {
       }, 1000, false)
       $scope['vm'].recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
+        $scope['vm'].data.recipientPublicKey = ''
         lookup()
       }
     }
@@ -159,6 +187,11 @@ class FIMKCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Amount in FIM</label>
                   <input ng-model="vm.data.amountNQT" required name="amount">
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Message</label>
+                  <input ng-model="vm.data.message" name="message">
                 </md-input-container>
 
                 <md-input-container flex>

@@ -25,6 +25,9 @@
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
 
+          <!-- MESSAGE -->
+          <div class="truncate-col message-col left">Message</div>
+
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
 
@@ -55,6 +58,11 @@
               <span>{{item.amount}}</span>
             </div>
 
+            <!-- MESSAGE -->
+            <div class="truncate-col message-col left">
+              <span>{{item.message}}</span>
+            </div>
+
             <!-- JSON -->
             <div class="truncate-col json-col">
               <a ng-click="vm.jsonDetails($event, item.json)">
@@ -69,7 +77,7 @@
   `
 })
 
-@Inject('$scope', '$q', 'fimkTransactionsProviderFactory', 'settings', 'fimkPendingTransactions')
+@Inject('$scope', '$q', 'fimkTransactionsProviderFactory', 'settings', 'fimkPendingTransactions', 'user')
 class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -78,19 +86,27 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
     protected $q: angular.IQService,
     private fimkTransactionsProviderFactory: FimkTransactionsProviderFactory,
     private settings: SettingsService,
-    private fimkPendingTransactions: FimkPendingTransactionsService) {
+    private fimkPendingTransactions: FimkPendingTransactionsService,
+    private user: UserService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let secretPhrase = this.user.secretPhrase;
     this.initializeVirtualRepeat(
       this.fimkTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any) => {
-        transaction.amount = transaction.amountNQT/100000000;
+        transaction.amount = transaction.amountNQT / 100000000;
         let date = utils.timestampToDate(transaction.timestamp);
         transaction.dateTime = dateFormat(date, format);
         transaction.from = transaction.senderRS;
         transaction.to = transaction.recipientRS;
         transaction.txid = transaction.transaction;
+        if (transaction.attachment.senderPublicKey) {
+          if(transaction.attachment.senderPublicKey !== this.user.publicKey)
+            transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.senderPublicKey, secretPhrase)
+          else
+          transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.recipientPublicKey, secretPhrase)
+        }
         transaction.json = {
           txid: transaction.transaction,
           time: transaction.dateTime,
@@ -99,7 +115,7 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
           amount: transaction.amount,
           block: transaction.height,
           confirmations: transaction.confirmations,
-          fee: transaction.feeNQT/100000000
+          fee: transaction.feeNQT / 100000000
         }
       }
     );

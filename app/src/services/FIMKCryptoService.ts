@@ -21,17 +21,17 @@ class FIMKCryptoService {
     });
   }
 
-  getPublicKey(seedOrPrivateKey: any) {
-    return this.nxtCrypto.getPublicKey(seedOrPrivateKey);
-  }
   refreshAdressBalances(wallet: WalletType) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
       let mofoSocketService: MofoSocketService = heat.$inject.get('mofoSocketService')
       mofoSocketService.getTransactions(address).then(transactions => {
-        mofoSocketService.getAccount(address).then(balance => {
+        mofoSocketService.getAccount(address).then(info => {
           wallet.addresses[0].inUse = true;
-          wallet.addresses[0].balance = balance;
+          let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
+          let formattedBalance = new Big(balance + "")
+          let balanceUnconfirmed = new Big(formattedBalance).toFixed(8);
+          wallet.addresses[0].balance = balanceUnconfirmed
           mofoSocketService.getAccountAssets(address).then(accountAssets => {
             wallet.addresses[0].tokensBalances = []
             accountAssets.forEach(asset => {
