@@ -75,10 +75,13 @@ class FIMKCurrency implements ICurrency {
         let fimkCryptoService = <FIMKCryptoService> heat.$inject.get('fimkCryptoService')
         let mofoSocketService = <MofoSocketService> heat.$inject.get('mofoSocketService')
         let to = $scope['vm'].data.recipient
-        let recipientPublicKey = converters.hexStringToByteArray($scope['vm'].data.recipientPublicKey)
+        let recipientPublicKey;
+        if($scope['vm'].data.recipientPublicKey) {
+          recipientPublicKey = converters.hexStringToByteArray($scope['vm'].data.recipientPublicKey)
+        }
         let userMessage = $scope['vm'].data.message
         let txObject;
-        if(userMessage && userMessage != '') {
+        if(userMessage && userMessage != '' && recipientPublicKey) {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
