@@ -101,11 +101,17 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
         transaction.from = transaction.senderRS;
         transaction.to = transaction.recipientRS;
         transaction.txid = transaction.transaction;
+        transaction.message = ''
         if (transaction.attachment.senderPublicKey) {
           if(transaction.attachment.senderPublicKey !== this.user.publicKey)
             transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.senderPublicKey, secretPhrase)
-          else
-          transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.recipientPublicKey, secretPhrase)
+          else {
+            try {
+              transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.recipientPublicKey, secretPhrase)
+            } catch(e) {
+              transaction.message = ''
+            }
+          }
         }
         transaction.json = {
           txid: transaction.transaction,
@@ -115,7 +121,8 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
           amount: transaction.amount,
           block: transaction.height,
           confirmations: transaction.confirmations,
-          fee: transaction.feeNQT / 100000000
+          fee: transaction.feeNQT / 100000000,
+          message: transaction.message
         }
       }
     );
