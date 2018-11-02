@@ -107,15 +107,25 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         let outputs = '';
         for (let i = 0; i < transaction.vout.length; i++) {
           totalOutputs += parseFloat(transaction.vout[i].value);
-          outputs += `
-          ${transaction.vout[i].scriptPubKey.addresses[0]} (${transaction.vout[i].value})`;
+          if (transaction.vout[i].scriptPubKey.addresses) {
+            outputs += `
+            ${transaction.vout[i].scriptPubKey.addresses[0]} (${transaction.vout[i].value})`;
+          }
         }
         // by default assign To field to zeroth address
-        transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
+        for (let i = 0; i < transaction.vout.length && transaction.vout[i].scriptPubKey.addresses; i++) {
+          if (transaction.vout[i].scriptPubKey.addresses) {
+            transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
+            break;
+          }
+        }
         // if change address is same and API returns change address as zeroth address then point To field and volume to some other address
-        if(transaction.from === transaction.to) {
-          transaction.to = transaction.vout[1].scriptPubKey.addresses[0];
-          transaction.amount = transaction.vout[1].value;
+        if (transaction.from === transaction.to) {
+          for (let i = 1; i < transaction.vout.length && transaction.vout[i].scriptPubKey.addresses; i++) {
+            transaction.to = transaction.vout[i].scriptPubKey.addresses[0];
+            transaction.amount = transaction.vout[i].value;
+            break;
+          }
         }
 
         // if BTC were transferred from the unlocked account address then show it as "-Amount"
@@ -124,7 +134,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         } else {
           // if input does not include the current unlocked account address then output will always have it
           for (let i = 0; i < transaction.vout.length; i++) {
-            if(transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
+            if (transaction.vout[i].scriptPubKey.addresses && transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
               transaction.to = this.account;
               transaction.amount = transaction.vout[i].value;
             }
