@@ -113,9 +113,7 @@ class MofoSocketService {
     this._send(['call', 'getFIMKAccount', 'getAccount', { account: address }])
     this.$rootScope.$on('getFIMKAccount', (event, opts) => {
       if (opts.unconfirmedBalanceNQT) {
-        let balance = parseInt(opts.unconfirmedBalanceNQT) / 100000000;
-        let formattedBalance = utils.commaFormat(new Big(balance + "").toFixed(8))
-        deferred.resolve(formattedBalance)
+        deferred.resolve(opts)
       } else if(opts.errorDescription == "Unknown account") {
         deferred.resolve("0.00000000")
       } else {

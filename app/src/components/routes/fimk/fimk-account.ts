@@ -161,7 +161,9 @@ class FimkAccountComponent {
     this.balanceUnconfirmed = "";
     this.mofoSocketService.getAccount(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(info).toFixed(8);
+        let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
+        let formattedBalance = new Big(balance + "")
+        this.balanceUnconfirmed = new Big(formattedBalance).toFixed(8);
         this.busy = false;
       })
     })
