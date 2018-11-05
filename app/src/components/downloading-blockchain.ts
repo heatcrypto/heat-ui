@@ -126,7 +126,7 @@ class DownloadingBlockchainComponent {
           if (!this.heatServerLocation)
             this.notifyOnServerLocationUpdating(currentServer);
           //if the server response is nothing then server is down
-          currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
+          currentServerIsAlive = !server.statusError;
           server.statusScore = currentServerIsAlive ? 0 : null;
         }
       });
@@ -151,20 +151,27 @@ class DownloadingBlockchainComponent {
       });
 
       let best: ServerDescriptor = currentServer;
+      let causeToSelectBest;
       knownServers.forEach(server => {
-        if (best == currentServer && !currentServerIsAlive)
+        if (best == currentServer && !currentServerIsAlive) {
           best = server; //if current server is not alive switch to other server in any case
+          let se = currentServer.statusError;
+          causeToSelectBest = "Сurrent server is not alive"
+            + (se.code ? ". Code: " + se.code : "") + (se.description ? ". Description: " + se.description : "");
+        }
         if (server.statusScore >= 0 || !currentServerIsAlive) {
-          if (server.statusScore != null && best.statusScore == null)
+          if ((server.statusScore != null && best.statusScore == null) || server.statusScore > best.statusScore) {
             best = server;
-          if (server.statusScore > best.statusScore)
+            causeToSelectBest = "Status code is better";
+          }
+          if (server.statusScore == best.statusScore && server.priority < best.priority) {
             best = server;
-          if (server.statusScore == best.statusScore && server.priority < best.priority)
-            best = server;
+            causeToSelectBest = "Attribute Priority";
+          }
         }
       });
       if (best && best != currentServer) {
-        let bestIsAlive = !(best.statusError && !best.statusError["data"]);
+        let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
           settings.setCurrentServer(best);
           this.notifyOnServerLocationUpdating(best);
@@ -173,12 +180,13 @@ class DownloadingBlockchainComponent {
             //on initializing (first time) switched silently and starts from login page
             this.router.navigate('/login');
           } else {
-            if (currentServer)
-              alert("HEAT server API address switched from \n"
-                + currentServer.host + ":" + currentServer.port +
-                "\nto\n" + best.host + ":" + best.port);
-            else
-              alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+            let message = currentServer
+              ? "HEAT server API address switched from \n" + currentServer.host + ":" + currentServer.port
+                + "\nto\n" + best.host + ":" + best.port
+              : "HEAT server API address switched to\n" + best.host + ":" + best.port;
+            if (causeToSelectBest)
+              message = message + " \n\n" + "Reason: " + causeToSelectBest;
+            alert(message);
           }
         }
       }
