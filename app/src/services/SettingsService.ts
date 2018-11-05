@@ -85,13 +85,13 @@ class SettingsService {
     "host":"https://heatwallet.com",
     "port": 7734,
     "websocket": "wss://heatwallet.com:7755/ws/",
-    "priority": 1
+    "priority": 2
   },
   {
     "host": "http://localhost",
     "port": 7733,
     "websocket": "ws://localhost:7763/ws/",
-    "priority": 2
+    "priority": 1
   }]
   public TESTNET_KNOWN_SERVERS: ServerDescriptor[] = [{
     "host": "https://alpha.heatledger.com",
