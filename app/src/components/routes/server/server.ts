@@ -178,6 +178,7 @@ class ServerComponent {
     var port = this.isConnectedToLocalhost() ? this.portRemote : this.portLocal;
     this.settings.put(SettingsService.HEAT_HOST, host);
     this.settings.put(SettingsService.HEAT_PORT, port);
+    this.settings.forceServerPriority(host, port);  //failover will choose this host by priority
   }
 
   startServer() {

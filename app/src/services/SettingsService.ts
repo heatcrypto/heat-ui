@@ -225,12 +225,28 @@ class SettingsService {
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
   }
 
+  /**
+   * failover will choose this host by priority
+   */
+  forceServerPriority(host: string, port: string) {
+    let portNum = parseInt(port);
+    for (const server of this.getKnownServers()) {
+      if (server.host == host && server.port == portNum) {
+        server.originalPriority = server.priority;
+        server.priority = 0;
+      } else {
+        if (server.originalPriority)
+          server.priority = server.originalPriority;
+      }
+    }
+  }
 }
 
 interface ServerDescriptor {
   host: string;
   port: number;
   websocket: string;
+  originalPriority?: number;
   priority?: number;
   health?: IHeatServerHealth;
   statusScore?: number;
