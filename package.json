@@ -88,6 +88,10 @@
       {
         "from": "../heatledger/build/install/heatledger",
         "to": "heatledger"
+      },
+      {
+        "from": "./dist/known-servers-config.json",
+        "to": "known-servers-config.json"
       }
     ],
     "win": {

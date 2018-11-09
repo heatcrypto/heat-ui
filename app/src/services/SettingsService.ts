@@ -22,6 +22,7 @@
  * */
 
 @Service('settings')
+@Inject('env', 'http')
 class SettingsService {
 
   /* DO NOT TOUCH.
@@ -92,7 +93,7 @@ class SettingsService {
     "port": 7733,
     "websocket": "ws://localhost:7763/ws/",
     "priority": 1
-  }]
+  }];
   public TESTNET_KNOWN_SERVERS: ServerDescriptor[] = [{
     "host": "https://alpha.heatledger.com",
     "port": 7734,
@@ -104,10 +105,33 @@ class SettingsService {
     "port": 7733,
     "websocket": "ws://localhost:7755/ws/",
     "priority": 2
-  }]
-  public BETANET_KNOWN_SERVERS: ServerDescriptor[] = []
+  }];
+  public BETANET_KNOWN_SERVERS: ServerDescriptor[] = [];
 
-  constructor() {
+  constructor(private env: EnvService,
+              private http: HttpService) {
+    if (this.env.type == EnvType.BROWSER) {
+      http.get('known-servers-config.json').then((json: any) => {
+        this.TESTNET_KNOWN_SERVERS = json.testnet;
+        this.BETANET_KNOWN_SERVERS = json.betanet;
+        this.MAINNET_KNOWN_SERVERS = json.mainnet;
+      }, (reason) => {
+        console.log("Cannot load 'known-servers-config.json': " + reason ? reason : "");
+      });
+    } else if (this.env.type == EnvType.NODEJS) {
+      // @ts-ignore
+      const fs = require('fs');
+      fs.readFile('resources/known-servers-config.json', (err, data) => {
+        if (err) {
+          console.log("Cannot load 'known-servers-config.json': " + err);
+          throw err;
+        }
+        let json = JSON.parse(data);
+        this.TESTNET_KNOWN_SERVERS = json.testnet;
+        this.BETANET_KNOWN_SERVERS = json.betanet;
+        this.MAINNET_KNOWN_SERVERS = json.mainnet;
+      });
+    }
 
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
