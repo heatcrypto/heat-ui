@@ -53,9 +53,9 @@ class DownloadingBlockchainComponent {
     });
 
     //Check servers health to choose the right
-    //wait for loading  known-servers-config.json
+    //wait for loading  failover-config.json
     setTimeout(() => {
-      if (this.settings.getKnownServers())
+      if (SettingsService.getFailoverDescriptor())
         this.checkServerHealth(this.settings, true);
       else
         setTimeout(() => {
@@ -91,7 +91,7 @@ class DownloadingBlockchainComponent {
    * If other health is significantly over current server health then switches to other server.
    */
   checkServerHealth(settings: SettingsService, firstTime?: boolean) {
-    let knownServers: ServerDescriptor[] = settings.getKnownServers() || [];
+    let knownServers: ServerDescriptor[] = SettingsService.getFailoverDescriptor().knownServers || [];
 
     let currentServerHealth: IHeatServerHealth;
     let promises = [];
@@ -166,7 +166,7 @@ class DownloadingBlockchainComponent {
           }
           if (server.statusScore == best.statusScore && server.priority < best.priority) {
             best = server;
-            causeToSelectBest = "Attribute Priority";
+            causeToSelectBest = "Server priority";
           }
         }
       });
@@ -199,7 +199,8 @@ class DownloadingBlockchainComponent {
   calculateBlockchainEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
     let cumulativeDifficulty = new BigInteger(health.cumulativeDifficulty);
     let difficultyDelta = cumulativeDifficulty.compareTo(new BigInteger(currentServerHealth.cumulativeDifficulty));
-    if (Math.abs(health.lastBlockHeight - currentServerHealth.lastBlockHeight) > 2) {
+    let threshold = SettingsService.getFailoverDescriptor().heightDeltaThreshold;
+    if (Math.abs(health.lastBlockHeight - currentServerHealth.lastBlockHeight) > threshold) {
       if (difficultyDelta > 0)
         return 1;
       if (difficultyDelta < 0)
@@ -211,8 +212,10 @@ class DownloadingBlockchainComponent {
   calculateBalancesEqualityEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
     let mismatches = health.balancesEquality[0] / health.balancesEquality[1];
     let currentServerMismatches = currentServerHealth.balancesEquality[0] / currentServerHealth.balancesEquality[1];
-    return (mismatches < 0.9 * currentServerMismatches
-      && health.balancesEquality[2] > 0.8 * currentServerHealth.balancesEquality[2])
+    let mismatchesThreshold = SettingsService.getFailoverDescriptor().balancesMismatchesThreshold;
+    let equalityThreshold = SettingsService.getFailoverDescriptor().balancesEqualityThreshold;
+    return (mismatches < mismatchesThreshold * currentServerMismatches
+      && health.balancesEquality[2] > equalityThreshold * currentServerHealth.balancesEquality[2])
       ? 1
       : (mismatches > currentServerMismatches || health.balancesEquality[2] < 0.7 * currentServerHealth.balancesEquality[2])
         ? -1
@@ -222,7 +225,8 @@ class DownloadingBlockchainComponent {
   calculatePeerEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
     let connected = health.peersIndicator.connected / health.peersIndicator.all;
     let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
-    return (0.8 * connected > currentServerConnected)
+    let threshold = SettingsService.getFailoverDescriptor().connectedPeersThreshold;
+    return (threshold * connected > currentServerConnected)
       ? 1
       : (connected < 0.8 * currentServerConnected)
         ? -1

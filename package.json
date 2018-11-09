@@ -90,8 +90,8 @@
         "to": "heatledger"
       },
       {
-        "from": "./dist/known-servers-config.json",
-        "to": "known-servers-config.json"
+        "from": "./dist/failover-config.json",
+        "to": "failover-config.json"
       }
     ],
     "win": {

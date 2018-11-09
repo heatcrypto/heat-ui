@@ -82,54 +82,61 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
-  public MAINNET_KNOWN_SERVERS: ServerDescriptor[] = [{
-    "host":"https://heatwallet.com",
-    "port": 7734,
-    "websocket": "wss://heatwallet.com:7755/ws/",
-    "priority": 2
-  },
-  {
-    "host": "http://localhost",
-    "port": 7733,
-    "websocket": "ws://localhost:7763/ws/",
-    "priority": 1
-  }];
-  public TESTNET_KNOWN_SERVERS: ServerDescriptor[] = [{
-    "host": "https://alpha.heatledger.com",
-    "port": 7734,
-    "websocket": "wss://heatwallet.com:7755/ws/",
-    "priority": 1
-  },
-  {
-    "host": "http://localhost",
-    "port": 7733,
-    "websocket": "ws://localhost:7755/ws/",
-    "priority": 2
-  }];
-  public BETANET_KNOWN_SERVERS: ServerDescriptor[] = [];
+  public static FAILOVER_DESCRIPTOR: FailoverDescriptor = {
+    heightDeltaThreshold: 2,
+    balancesMismatchesThreshold: 0.9,
+    balancesEqualityThreshold: 0.8,
+    connectedPeersThreshold: 0.8,
+    knownServers: []
+  };
+
+  static getFailoverDescriptor(): FailoverDescriptor {
+    return SettingsService.FAILOVER_DESCRIPTOR;
+  }
+
+  /**
+   * failover will choose this host by priority
+   */
+  static forceServerPriority(host: string, port: string) {
+    let portNum = parseInt(port);
+    for (const server of SettingsService.getFailoverDescriptor().knownServers) {
+      if (server.host == host && server.port == portNum) {
+        server.originalPriority = server.priority;
+        server.priority = 0;
+      } else {
+        if (server.originalPriority)
+          server.priority = server.originalPriority;
+      }
+    }
+  }
 
   constructor(private env: EnvService,
               private http: HttpService) {
+
+    let resolveFailoverDescriptor: Function = function(json: any) {
+      if (heat.isTestnet)
+        SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
+      if (heat.isBetanet)
+        SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
+      else
+        SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
+    };
     if (this.env.type == EnvType.BROWSER) {
-      http.get('known-servers-config.json').then((json: any) => {
-        this.TESTNET_KNOWN_SERVERS = json.testnet;
-        this.BETANET_KNOWN_SERVERS = json.betanet;
-        this.MAINNET_KNOWN_SERVERS = json.mainnet;
+      http.get('failover-config.json').then((json: any) => {
+        resolveFailoverDescriptor(json);
       }, (reason) => {
-        console.log("Cannot load 'known-servers-config.json': " + reason ? reason : "");
+        console.log("Cannot load 'failover-config.json': " + reason ? reason : "");
       });
     } else if (this.env.type == EnvType.NODEJS) {
       // @ts-ignore
       const fs = require('fs');
-      fs.readFile('resources/known-servers-config.json', (err, data) => {
+      fs.readFile('resources/failover-config.json', (err, data) => {
         if (err) {
-          console.log("Cannot load 'known-servers-config.json': " + err);
+          console.log("Cannot load 'failover-config.json': " + err);
           throw err;
         }
         let json = JSON.parse(data);
-        this.TESTNET_KNOWN_SERVERS = json.testnet;
-        this.BETANET_KNOWN_SERVERS = json.betanet;
-        this.MAINNET_KNOWN_SERVERS = json.mainnet;
+        resolveFailoverDescriptor(json);
       });
     }
 
@@ -235,35 +242,12 @@ class SettingsService {
     return this.settings[id]=value;
   }
 
-  public getKnownServers(): ServerDescriptor[] {
-    if (heat.isTestnet)
-      return this.TESTNET_KNOWN_SERVERS;
-    if (heat.isBetanet)
-      return this.BETANET_KNOWN_SERVERS;
-    return this.MAINNET_KNOWN_SERVERS;
-  }
-
   public setCurrentServer(server) {
     this.settings[SettingsService.HEAT_HOST] = server.host;
     this.settings[SettingsService.HEAT_PORT] = server.port;
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
   }
 
-  /**
-   * failover will choose this host by priority
-   */
-  forceServerPriority(host: string, port: string) {
-    let portNum = parseInt(port);
-    for (const server of this.getKnownServers()) {
-      if (server.host == host && server.port == portNum) {
-        server.originalPriority = server.priority;
-        server.priority = 0;
-      } else {
-        if (server.originalPriority)
-          server.priority = server.originalPriority;
-      }
-    }
-  }
 }
 
 interface ServerDescriptor {
@@ -275,4 +259,12 @@ interface ServerDescriptor {
   health?: IHeatServerHealth;
   statusScore?: number;
   statusError?: any;
+}
+
+interface FailoverDescriptor {
+  heightDeltaThreshold: number;  // e.g.  2 means 2 blocks ahead
+  balancesMismatchesThreshold: number;  // 0 - 1
+  balancesEqualityThreshold: number;  // 0 - 1
+  connectedPeersThreshold: number;  // 0 - 1
+  knownServers: ServerDescriptor[];
 }
