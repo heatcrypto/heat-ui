@@ -29,6 +29,7 @@ class SettingsService {
      Replaced with contents of VERSION file by release.sh */
   private VERSION = "%BUILD_OVERRIDE_VERSION%";
   private BUILD = "%BUILD_OVERRIDE_BUILD%";
+  public static EMBEDDED_HEATLEDGER_VERSION = "%BUILD_OVERRIDE_HEATLEDGER_VERSION%";
 
   /*public static WEBSOCKET_URL = 'settings.websocket_url';
   public static WEBSOCKET_URL_FALLBACK = 'settings.websocket_url_fallback';
