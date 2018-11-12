@@ -1,0 +1,45 @@
+{
+  "mainnet": {
+    "heightDeltaThreshold": 2,
+    "balancesMismatchesThreshold": 0.9,
+    "balancesEqualityThreshold": 0.8,
+    "connectedPeersThreshold": 0.8,
+    "knownServers": [
+      {
+        "host":"https://heatwallet.com",
+        "port": 7734,
+        "websocket": "wss://heatwallet.com:7755/ws/",
+        "priority": 2
+      },
+      {
+        "host": "http://localhost",
+        "port": 7733,
+        "websocket": "ws://localhost:7737/ws/",
+        "priority": 1
+      }
+    ]
+  },
+
+  "testnet": {
+    "heightDeltaThreshold": 2,
+    "balancesMismatchesThreshold": 0.9,
+    "balancesEqualityThreshold": 0.8,
+    "connectedPeersThreshold": 0.8,
+    "knownServers": [
+      {
+        "host": "https://alpha.heatledger.com",
+        "port": 7734,
+        "websocket": "wss://heatwallet.com:7755/ws/",
+        "priority": 1
+      },
+      {
+        "host": "http://localhost",
+        "port": 7733,
+        "websocket": "ws://localhost:7755/ws/",
+        "priority": 2
+      }
+    ]
+  },
+ 
+  "betanet": {}
+}
