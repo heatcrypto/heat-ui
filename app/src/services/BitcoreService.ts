@@ -112,7 +112,14 @@ class BitcoreService {
             tx.change(txObject.from)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)
-            let rawTx = tx.serialize()
+            let rawTx;
+            try {
+              rawTx = tx.serialize()
+            } catch (e) {
+              console.log(e)
+              console.log('transaction',tx)
+              reject(e)
+            }
 
             this.broadcast(rawTx).then(
               txId => {

@@ -97,7 +97,7 @@ class ServerService extends EventEmitter {
     //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
     this.getUserDataDirFromMainProcess().then(
       userDataDir => {
-        var env = {}
+        var env = process.env
 
         // When things go wrong undefined is returned
         if (userDataDir) {
@@ -148,7 +148,7 @@ class ServerService extends EventEmitter {
     )
   }
 
-  private getUserDataDirFromMainProcess() {
+  getUserDataDirFromMainProcess() {
     let {ipcRenderer} = require('electron')
     return new Promise(resolve => {
       let timeout = setTimeout(resolve, 2000)

@@ -77,7 +77,7 @@ class TraderMarketsComponent {
               private $interval: angular.IIntervalService) {
     this.filterFunc = (item) => this.filterFuncImpl(item);
     var refresh = utils.debounce(angular.bind(this, this.loadMarkets), 5*1000, false);
-    heat.subscriber.trade({}, (trade)=> refresh, $scope);
+    heat.subscriber.trade({}, refresh, $scope);
     this.loadMarkets();
 
     let interval = $interval(()=>{

@@ -23,7 +23,7 @@
  * */
 @Component({
   selector: 'traderOrdersSell',
-  inputs: ['currencyInfo','assetInfo','selectedOrder'],
+  inputs: ['currencyInfo', 'assetInfo', 'selectedOrder'],
   template: `
     <script type="text/ng-template" id="templateId.tml">
       <div class="account-popover">
@@ -33,7 +33,7 @@
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title">{{vm.assetInfo.symbol}} Sellers&nbsp;
         <span flex></span>
-        <span class="balance" ng-if="vm.user.unlocked">BALANCE: {{vm.assetBalance}}&nbsp;{{vm.assetInfo.symbol}}</span>
+        <span class="balance clickable-text" ng-click="vm.broadcast()" ng-if="vm.user.unlocked">BALANCE: {{vm.assetBalance}}&nbsp;{{vm.assetInfo.symbol}}</span>
         <elipses-loading ng-show="vm.loading"></elipses-loading>
       </div>
       <md-list flex layout-fill layout="column" ng-if="vm.currencyInfo&&vm.assetInfo">
@@ -69,8 +69,8 @@
     </div>
   `
 })
-@Inject('$scope','ordersProviderFactory','$q','heat','user')
-class TraderOrdersSellComponent extends VirtualRepeatComponent  {
+@Inject('$scope', '$rootScope', 'ordersProviderFactory', '$q', 'heat', 'user')
+class TraderOrdersSellComponent extends VirtualRepeatComponent {
 
   /* @inputs */
   currencyInfo: AssetInfo; // @input
@@ -81,15 +81,17 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
 
   PAGE_SIZE = 100; /* VirtualRepeatComponent */
 
-  refreshGrid:()=>void;
-  refreshBalance:()=>void;
+  private orders: Array<IHeatOrder> = [];
+
+  refreshGrid: () => void;
+  refreshBalance: () => void;
 
   constructor(protected $scope: angular.IScope,
-              private ordersProviderFactory: OrdersProviderFactory,
-              $q: angular.IQService,
-              private heat: HeatService,
-              private user: UserService)
-  {
+    private $rootScope: angular.IScope,
+    private ordersProviderFactory: OrdersProviderFactory,
+    $q: angular.IQService,
+    private heat: HeatService,
+    private user: UserService) {
     super($scope, $q);
 
     var ready = () => {
@@ -100,11 +102,12 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
           this.ordersProviderFactory.createProvider(this.currencyInfo.id, this.assetInfo.id, null, true),
 
           /* decorator */
-          (order: IHeatOrder|any, context:any) => {
-            order.priceDisplay = utils.formatQNT(order.price,this.currencyInfo.decimals);
-            order.quantityDisplay = utils.formatQNT(order.unconfirmedQuantity ,this.assetInfo.decimals);
+          (order: IHeatOrder | any, context: any) => {
+            order.priceDisplay = utils.formatQNT(order.price, this.currencyInfo.decimals);
+            order.quantityDisplay = utils.formatQNT(order.unconfirmedQuantity, this.assetInfo.decimals);
             var totalQNT = utils.calculateTotalOrderPriceQNT(order.unconfirmedQuantity, order.price);
-            order.total = utils.formatQNT(totalQNT,this.currencyInfo.decimals);
+            order.total = utils.formatQNT(totalQNT, this.currencyInfo.decimals);
+            this.orders.push(order);
           },
 
           /* preprocessor */
@@ -130,14 +133,34 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
         }
       }
     };
-    var unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
+    var unregister = [$scope.$watch('vm.currencyInfo', ready), $scope.$watch('vm.assetInfo', ready)];
 
     this.refreshGrid = utils.debounce(angular.bind(this, this.determineLength), 2000, false);
     this.refreshBalance = utils.debounce(angular.bind(this, this.updateAssetBalance), 2000, false);
+
+    $scope.$on('total', (event, opts) => {
+      let price = parseInt(this.orders[0].price);
+      let totalQuantity = 0;
+      let total = parseFloat(opts.total);
+      for (let i = 0; i < this.orders.length; i++) {
+        totalQuantity += (parseFloat(this.orders[i].quantity)/100000000);
+        if (totalQuantity >= total) {
+          price = parseInt(this.orders[i].price);
+          break;
+        }
+      }
+      price = price/100000000;
+      let balance = total / price;
+      this.$rootScope.$broadcast('price', { price, balance, total })
+    });
+  }
+
+  private broadcast() {
+    this.$rootScope.$broadcast('balance', { balance: this.assetBalance })
   }
 
   private subscribeToOrderEvents(currency: string, asset: string) {
-    this.heat.subscriber.order({currency: currency, asset: asset}, (order: IHeatOrder) => {
+    this.heat.subscriber.order({ currency: currency, asset: asset }, (order: IHeatOrder) => {
       if (order.type == 'ask') {
         this.refreshGrid();
       }
@@ -145,13 +168,13 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
   }
 
   private subscribeToTradeEvents(currency: string, asset: string) {
-    this.heat.subscriber.trade({currency: currency, asset: asset}, () => {
+    this.heat.subscriber.trade({ currency: currency, asset: asset }, () => {
       this.refreshGrid();
     }, this.$scope);
   }
 
-  private subscribeToBalanceEvents(account:string, currency: string) {
-    this.heat.subscriber.balanceChanged({account:account, currency:currency}, this.refreshBalance, this.$scope);
+  private subscribeToBalanceEvents(account: string, currency: string) {
+    this.heat.subscriber.balanceChanged({ account: account, currency: currency }, this.refreshBalance, this.$scope);
   }
 
   onSelect(selectedOrder) {
@@ -159,13 +182,13 @@ class TraderOrdersSellComponent extends VirtualRepeatComponent  {
   }
 
   updateAssetBalance() {
-    this.heat.api.getAccountBalanceVirtual(this.user.account, this.assetInfo.id,"0",1).then((balance)=>{
-      this.$scope.$evalAsync(()=> {
+    this.heat.api.getAccountBalanceVirtual(this.user.account, this.assetInfo.id, "0", 1).then((balance) => {
+      this.$scope.$evalAsync(() => {
         this.assetBalance = utils.formatQNT(balance.virtualBalance, this.assetInfo.decimals);
       });
-    },()=>{
-      this.$scope.$evalAsync(()=> {
-        this.assetBalance = "?";
+    }, () => {
+      this.$scope.$evalAsync(() => {
+        this.assetBalance = "0";
       });
     })
   }

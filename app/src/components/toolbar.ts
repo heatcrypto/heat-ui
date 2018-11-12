@@ -69,14 +69,14 @@
               </h2>
             </div>
 
-            <div hide show-gt-sm ng-if="vm.user.unlocked">
+            <div ng-if="vm.user.unlocked">
               <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()">
                 <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
                 <i><img src="assets/homeIcon.png"></i>
               </md-button>
             </div>
 
-            <div hide show-gt-sm>
+            <div>
               <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
                 <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
                 <i><img src="assets/exploreIcon.png"></i>
@@ -118,29 +118,11 @@
               </md-button>
             </div>
 
-            <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm>
+            <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm ng-if="vm.user.unlocked">
               <md-button aria-label="user menu" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
                 <md-icon md-font-library="material-icons">more_vert</md-icon>
               </md-button>
               <md-menu-content width="4">
-                <md-menu-item ng-if="vm.user.unlocked">
-                  <md-button aria-label="home" ng-click="vm.goToHome()">
-                    <md-icon md-font-library="material-icons">home</md-icon>
-                    Your {{vm.user.currency.symbol}} Home
-                  </md-button>
-                </md-menu-item>
-                <md-menu-item>
-                  <md-button aria-label="explorer" href="#/explorer">
-                    <md-icon md-font-library="material-icons">explore</md-icon>
-                    Blockchain explorer
-                  </md-button>
-                </md-menu-item>
-                <md-menu-item>
-                  <md-button aria-label="trader" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
-                    <md-icon md-font-library="material-icons">bar_chart</md-icon>
-                    Exchange
-                  </md-button>
-                </md-menu-item>
                 <md-menu-item ng-show="vm.isNodeEnv">
                   <md-button aria-label="server" href="#/server">
                     <md-icon md-font-library="material-icons">settings</md-icon>
