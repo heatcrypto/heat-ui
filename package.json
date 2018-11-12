@@ -88,6 +88,10 @@
       {
         "from": "../heatledger/build/install/heatledger",
         "to": "heatledger"
+      },
+      {
+        "from": "./dist/failover-config.json",
+        "to": "failover-config.json"
       }
     ],
     "win": {
