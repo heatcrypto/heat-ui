@@ -82,13 +82,7 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
-  public static FAILOVER_DESCRIPTOR: FailoverDescriptor = {
-    heightDeltaThreshold: 2,
-    balancesMismatchesThreshold: 0.9,
-    balancesEqualityThreshold: 0.8,
-    connectedPeersThreshold: 0.8,
-    knownServers: []
-  };
+  public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
   static getFailoverDescriptor(): FailoverDescriptor {
     return SettingsService.FAILOVER_DESCRIPTOR;
