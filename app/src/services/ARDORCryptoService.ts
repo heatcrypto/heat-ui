@@ -13,14 +13,16 @@ class ARDORCryptoService {
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let walletType = { addresses: [] }
-      walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR'), privateKey: seedOrPrivateKey }
+      let publicKey = this.nxtCrypto.getPublicKey(seedOrPrivateKey)
+      let address = this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR')
+      let accountId = this.nxtCrypto.getAccountId(publicKey)
+      walletType.addresses[0] = { address: address, privateKey: seedOrPrivateKey, accountId: accountId }
       resolve(walletType);
     });
   }
 
   refreshAdressBalances(wallet: WalletType) {
-    let address = wallet.addresses[0].address
-    let userAccount = this.user.account;
+    let userAccount = wallet.addresses[0].accountId;
     return new Promise((resolve, reject) => {
       let ardorBlockExplorerService: ArdorBlockExplorerService = heat.$inject.get('ardorBlockExplorerService')
       ardorBlockExplorerService.getTransactions(userAccount,0,10).then(transactions => {

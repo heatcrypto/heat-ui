@@ -37,6 +37,8 @@ declare type WalletAddress = {
       (not completely accurate since a user can use an address which has a zero balance) */
   inUse: boolean;
 
+  accountId: string;
+
   /* ERC20 token balances */
   tokensBalances: Array<{
     symbol: string;
