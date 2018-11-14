@@ -1,7 +1,7 @@
 ///<reference path='VirtualRepeatComponent.ts'/>
 
 @Component({
-  selector: 'virtualRepeatNextTransactions',
+  selector: 'virtualRepeatNxtTransactions',
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill>
@@ -77,24 +77,24 @@
   `
 })
 
-@Inject('$scope', '$q', 'nextTransactionsProviderFactory', 'settings', 'nextPendingTransactions', 'user', 'nextBlockExplorerService')
+@Inject('$scope', '$q', 'nxtTransactionsProviderFactory', 'settings', 'nxtPendingTransactions', 'user', 'nxtBlockExplorerService')
 class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
-              private nextTransactionsProviderFactory: NextTransactionsProviderFactory,
+              private nxtTransactionsProviderFactory: NxtTransactionsProviderFactory,
               private settings: SettingsService,
-              private nextPendingTransactions: NextPendingTransactionsService,
+              private nxtPendingTransactions: NxtPendingTransactionsService,
               private user: UserService,
-              private nextBlockExplorerService: NextBlockExplorerService) {
+              private nxtBlockExplorerService: NxtBlockExplorerService) {
 
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     let secretPhrase = this.user.secretPhrase;
     this.initializeVirtualRepeat(
-      this.nextTransactionsProviderFactory.createProvider(this.account),
+      this.nxtTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any) => {
         transaction.amount = transaction.amountNQT/100000000;
@@ -110,7 +110,7 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
           else {
             try {
               let recipientPublicKey;
-              this.nextBlockExplorerService.getPublicKeyFromAddress(transaction.recipientRS).then(_publicKey => {
+              this.nxtBlockExplorerService.getPublicKeyFromAddress(transaction.recipientRS).then(_publicKey => {
                 recipientPublicKey = _publicKey
                 transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, recipientPublicKey, secretPhrase)
                 transaction.json.message = transaction.message
@@ -138,10 +138,10 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    nextPendingTransactions.addListener(listener)
+    nxtPendingTransactions.addListener(listener)
 
     $scope.$on('$destroy', () => {
-      nextPendingTransactions.removeListener(listener)
+      nxtPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

@@ -53,9 +53,12 @@ class CurrencyBalance {
     else if (this.name == 'FIMK') {
       currency = new FIMKCurrency(this.secretPhrase, this.address)
     }
-    else if (this.name == 'NEXT') {
+    else if (this.name == 'NXT') {
       currency = new NXTCurrency(this.secretPhrase, this.address)
     }
+    // else if (this.name == 'ARDOR') {
+    //   currency = new ARDRCurrency(this.secretPhrase, this.address)
+    // }
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
@@ -106,7 +109,7 @@ class CurrencyAddressCreate {
       return true
     }
 
-    // determine the first 'next' address based of the last currencyBalance displayed
+    // determine the first 'nxt' address based of the last currencyBalance displayed
     let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
     // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
@@ -154,7 +157,7 @@ class CurrencyAddressCreate {
       return true
     }
 
-    // determine the first 'next' address based of the last currencyBalance displayed
+    // determine the first 'nxt' address based of the last currencyBalance displayed
     let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
     // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
@@ -209,7 +212,21 @@ class CurrencyAddressCreate {
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('NEXT', 'NXT', nextAddress.address, nextAddress.privateKey)
+      let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+    return false
+  }
+
+  createARDRAddress(component: WalletComponent) {
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.parent.currencies.push(newCurrencyBalance)
@@ -251,7 +268,8 @@ class WalletEntry {
       this.component.loadEthereumAddresses(this);
       this.component.loadBitcoinAddresses(this);
       this.component.loadFIMKAddresses(this);
-      this.component.loadNEXTAddresses(this);
+      this.component.loadNXTAddresses(this);
+      // this.component.loadARDORAddresses(this);
     }
   }
 
@@ -317,10 +335,17 @@ class WalletEntry {
           Create FIMK Address
         </md-button>
 
-        <!-- Create NEXT Account -->
+        <!-- Create NXT Account -->
         <md-button class="md-warn md-raised" ng-click="vm.createNXTAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
           <md-tooltip md-direction="bottom">Create NXT Address</md-tooltip>
           Create NXT Address
+        </md-button>
+
+
+        <!-- Create ARDOR Account -->
+        <md-button class="md-warn md-raised" ng-click="vm.createARDRAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
+          <md-tooltip md-direction="bottom">Create ARDOR Address</md-tooltip>
+          Create ARDOR Address
         </md-button>
       </div>
 
@@ -409,7 +434,7 @@ class WalletEntry {
 })
 @Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window',
   'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
-  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nextCryptoService')
+  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService')
 class WalletComponent {
 
   selectAll = true;
@@ -434,7 +459,8 @@ class WalletComponent {
     private user: UserService,
     private bitcoreService: BitcoreService,
     private fimkCryptoService: FIMKCryptoService,
-    private nextCryptoService: NEXTCryptoService) {
+    private nxtCryptoService: NXTCryptoService,
+    private ardorCryptoService: ARDORCryptoService) {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
@@ -696,46 +722,63 @@ class WalletComponent {
       }
     })
 
-    this.nextCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let nextCurrencyAddressLoading = new CurrencyAddressLoading('NEXT')
-      nextCurrencyAddressLoading.visible = walletEntry.expanded
-      nextCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(nextCurrencyAddressLoading)
+    this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+      let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
+      nxtCurrencyAddressLoading.visible = walletEntry.expanded
+      nxtCurrencyAddressLoading.wallet = wallet
+      walletEntry.currencies.push(nxtCurrencyAddressLoading)
 
-      let nextCurrencyAddressCreate = new CurrencyAddressCreate('NEXT', wallet)
-      nextCurrencyAddressCreate.visible = walletEntry.expanded
-      nextCurrencyAddressCreate.parent = walletEntry
-      nextCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(nextCurrencyAddressCreate)
+      let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
+      nxtCurrencyAddressCreate.visible = walletEntry.expanded
+      nxtCurrencyAddressCreate.parent = walletEntry
+      nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
+      walletEntry.currencies.push(nxtCurrencyAddressCreate)
       /* Only if this node is expanded will we load the addresses */
       if (walletEntry.expanded) {
-        this.loadNEXTAddresses(walletEntry)
+        this.loadNXTAddresses(walletEntry)
       }
     })
+
+    // this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+    //   let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
+    //   ardorCurrencyAddressLoading.visible = walletEntry.expanded
+    //   ardorCurrencyAddressLoading.wallet = wallet
+    //   walletEntry.currencies.push(ardorCurrencyAddressLoading)
+
+    //   let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
+    //   ardorCurrencyAddressCreate.visible = walletEntry.expanded
+    //   ardorCurrencyAddressCreate.parent = walletEntry
+    //   ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
+    //   walletEntry.currencies.push(ardorCurrencyAddressCreate)
+    //   /* Only if this node is expanded will we load the addresses */
+    //   if (walletEntry.expanded) {
+    //     this.loadARDORAddresses(walletEntry)
+    //   }
+    // })
   }
 
-  public loadNEXTAddresses(walletEntry: WalletEntry) {
+  public loadNXTAddresses(walletEntry: WalletEntry) {
 
     /* Find the Loading node, if thats not available we can exit */
-    let nextCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NEXT')
-    if (!nextCurrencyAddressLoading)
+    let nxtCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NXT')
+    if (!nxtCurrencyAddressLoading)
       return
 
-    this.nextCryptoService.refreshAdressBalances(nextCurrencyAddressLoading.wallet).then(() => {
+    this.nxtCryptoService.refreshAdressBalances(nxtCurrencyAddressLoading.wallet).then(() => {
 
       /* Make sure we exit if no loading node exists */
       if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
         return
 
-      let index = walletEntry.currencies.indexOf(nextCurrencyAddressLoading)
-      nextCurrencyAddressLoading.wallet.addresses.forEach(address => {
+      let index = walletEntry.currencies.indexOf(nxtCurrencyAddressLoading)
+      nxtCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let nextCurrencyBalance = new CurrencyBalance('NEXT', 'NXT', address.address, address.privateKey)
-          nextCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-          nextCurrencyBalance.visible = walletEntry.expanded
-          nextCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, nextCurrencyBalance)
+          let nxtCurrencyBalance = new CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
+          nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+          nxtCurrencyBalance.visible = walletEntry.expanded
+          nxtCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
           index++;
 
           if (address.tokensBalances) {
@@ -743,17 +786,58 @@ class WalletComponent {
               let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
               tokenBalance.balance = utils.commaFormat(balance.balance)
               tokenBalance.visible = walletEntry.expanded
-              nextCurrencyBalance.tokens.push(tokenBalance)
+              nxtCurrencyBalance.tokens.push(tokenBalance)
             })
           }
         }
       })
 
       // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != nextCurrencyAddressLoading)
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != nxtCurrencyAddressLoading)
       this.flatten()
     })
   }
+
+  // public loadARDORAddresses(walletEntry: WalletEntry) {
+
+  //   /* Find the Loading node, if thats not available we can exit */
+  //   let ardorCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'ARDOR')
+  //   if (!ardorCurrencyAddressLoading)
+  //     return
+
+  //   this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
+
+  //     /* Make sure we exit if no loading node exists */
+  //     if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+  //       return
+
+  //     let index = walletEntry.currencies.indexOf(ardorCurrencyAddressLoading)
+  //     ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
+  //       let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+  //       if (address.inUse || wasCreated) {
+  //         let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
+  //         nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+  //         nxtCurrencyBalance.visible = walletEntry.expanded
+  //         nxtCurrencyBalance.inUse = wasCreated ? false : true
+  //         walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
+  //         index++;
+
+  //         if (address.tokensBalances) {
+  //           address.tokensBalances.forEach(balance => {
+  //             let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+  //             tokenBalance.balance = utils.commaFormat(balance.balance)
+  //             tokenBalance.visible = walletEntry.expanded
+  //             nxtCurrencyBalance.tokens.push(tokenBalance)
+  //           })
+  //         }
+  //       }
+  //     })
+
+  //     // we can remove the loading entry
+  //     walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
+  //     this.flatten()
+  //   })
+  // }
 
   /* Only when we expand a wallet entry do we lookup its balances */
   public loadFIMKAddresses(walletEntry: WalletEntry) {
@@ -1364,7 +1448,7 @@ class WalletComponent {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
         let success = false
         if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NEXT')
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
           success = node.createNXTAddress(self)
           walletEntry.toggle(true)
         }
@@ -1425,6 +1509,111 @@ class WalletComponent {
 
                   <p>This is your NXT address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
                       Please store it in a safe place or you may lose access to your NXT.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createARDRAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
+          success = node.createARDRAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
+          }
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create ARDR Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new ARDR address, please choose the master HEAT account you want to attach the new ARDR address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  ARDR wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your ARDR address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your ARDR.
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>

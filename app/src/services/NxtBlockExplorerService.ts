@@ -1,6 +1,6 @@
-@Service('nextBlockExplorerService')
+@Service('nxtBlockExplorerService')
 @Inject('$q', 'http')
-class NextBlockExplorerService {
+class NxtBlockExplorerService {
   private url: string;
 
   constructor(
@@ -115,6 +115,18 @@ class NextBlockExplorerService {
       let data = JSON.parse(JSON.stringify(ret))
       if (data.publicKey)
         deferred.resolve(data.publicKey)
+      else
+        deferred.reject(data.errorDescription)
+    });
+    return deferred.promise;
+  }
+
+  public getAssetInfo = (asset: string) => {
+    let deferred = this.$q.defer<any>();
+    this.http.get(`${this.url}nxt?requestType=getAsset&asset=${asset}`).then(ret => {
+      let data = JSON.parse(JSON.stringify(ret))
+      if (data.name)
+        deferred.resolve(data)
       else
         deferred.reject(data.errorDescription)
     });

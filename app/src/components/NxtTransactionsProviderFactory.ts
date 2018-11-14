@@ -1,20 +1,20 @@
-@Service('nextTransactionsProviderFactory')
-@Inject('http','$q', 'nextBlockExplorerService')
-class NextTransactionsProviderFactory  {
+@Service('nxtTransactionsProviderFactory')
+@Inject('http','$q', 'nxtBlockExplorerService')
+class NxtTransactionsProviderFactory  {
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private nextBlockExplorerService: NextBlockExplorerService) {}
+              private nxtBlockExplorerService: NxtBlockExplorerService) {}
 
   public createProvider(account: string): IPaginatedDataProvider {
-    return new NextTransactionsProvider(this.http, this.$q, this.nextBlockExplorerService, account);
+    return new NxtTransactionsProvider(this.http, this.$q, this.nxtBlockExplorerService, account);
   }
 }
 
-class NextTransactionsProvider implements IPaginatedDataProvider {
+class NxtTransactionsProvider implements IPaginatedDataProvider {
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private nextBlockExplorerService: NextBlockExplorerService,
+              private nxtBlockExplorerService: NxtBlockExplorerService,
               private account: string) {}
 
   /* Be notified this provider got destroyed */
@@ -23,7 +23,7 @@ class NextTransactionsProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-    this.nextBlockExplorerService.getTransactionsCount(this.account).then(result => {
+    this.nxtBlockExplorerService.getTransactionsCount(this.account).then(result => {
       deferred.resolve(result)
     }, () => {
       deferred.reject()
@@ -34,7 +34,7 @@ class NextTransactionsProvider implements IPaginatedDataProvider {
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<any>> {
-    return this.nextBlockExplorerService.getTransactions(this.account, firstIndex, lastIndex)
+    return this.nxtBlockExplorerService.getTransactions(this.account, firstIndex, lastIndex)
   }
 
 }

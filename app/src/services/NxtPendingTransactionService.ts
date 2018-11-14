@@ -1,6 +1,6 @@
-@Service('nextPendingTransactions')
+@Service('nxtPendingTransactions')
 @Inject('$q', 'http', 'settings')
-class NextPendingTransactionsService {
+class NxtPendingTransactionsService {
 
   public pending: {[address:string]:Array<{txId:string,time:number}>} = {}
   private listeners: Array<(removed?: boolean)=>void> = []

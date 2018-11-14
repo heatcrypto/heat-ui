@@ -1,6 +1,6 @@
-@RouteConfig('/next-account/:account')
+@RouteConfig('/nxt-account/:account')
 @Component({
-  selector: 'nextAccount',
+  selector: 'nxtAccount',
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill>
@@ -11,7 +11,7 @@
               Address:
             </div>
             <div class="value">
-              <a href="#/next-account/{{vm.account}}">{{vm.account}}</a>
+              <a href="#/nxt-account/{{vm.account}}">{{vm.account}}</a>
             </div>
           </div>
           <div class="col-item">
@@ -46,13 +46,13 @@
           </md-list>
           <p></p>
         </div>
-        <virtual-repeat-next-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-next-transactions>
+        <virtual-repeat-nxt-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-nxt-transactions>
       </div>
     </div>
   `
 })
-@Inject('$scope', 'nextBlockExplorerService', 'nextPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
-class NextAccountComponent {
+@Inject('$scope', 'nxtBlockExplorerService', 'nxtPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
+class NxtAccountComponent {
   account: string; // @input
   balanceUnconfirmed: any;
   pendingTransactions: Array<{ date: string, txId: string, time: number, address: string }> = []
@@ -60,8 +60,8 @@ class NextAccountComponent {
   busy = true
 
   constructor(private $scope: angular.IScope,
-              private nextBlockExplorerService: NextBlockExplorerService,
-              private nextPendingTransactions: NextPendingTransactionsService,
+              private nxtBlockExplorerService: NxtBlockExplorerService,
+              private nxtPendingTransactions: NxtPendingTransactionsService,
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
@@ -70,14 +70,14 @@ class NextAccountComponent {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    nextPendingTransactions.addListener(listener)
+    nxtPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
     let promise = $interval(this.timerHandler.bind(this), 30000)
     this.timerHandler()
 
     $scope.$on('$destroy', () => {
-      nextPendingTransactions.removeListener(listener)
+      nxtPendingTransactions.removeListener(listener)
       $interval.cancel(promise)
     })
   }
@@ -91,11 +91,11 @@ class NextAccountComponent {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
-      this.nextBlockExplorerService.getTransactionStatus(pendingTxn.txId).then(
+      this.nxtBlockExplorerService.getTransactionStatus(pendingTxn.txId).then(
         data => {
           if (data.confirmations) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
-            this.nextPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
+            this.nxtPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
         },
         err => {
@@ -109,7 +109,7 @@ class NextAccountComponent {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
       let addr = this.user.account
-      let txns = this.nextPendingTransactions.pending[addr]
+      let txns = this.nxtPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
@@ -128,7 +128,7 @@ class NextAccountComponent {
   refresh() {
     this.busy = true;
     this.balanceUnconfirmed = "";
-    this.nextBlockExplorerService.getAccount(this.account).then(info => {
+    this.nxtBlockExplorerService.getAccount(this.account).then(info => {
       this.$scope.$evalAsync(() => {
         this.balanceUnconfirmed = new Big(utils.convertToQNTf(info.balanceNQT)).toFixed(8);
         this.busy = false;

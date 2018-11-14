@@ -1,6 +1,6 @@
-@Service('nextCryptoService')
+@Service('nxtCryptoService')
 @Inject('$window')
-class NEXTCryptoService {
+class NXTCryptoService {
 
   private nxtCrypto;
 
@@ -20,22 +20,30 @@ class NEXTCryptoService {
   refreshAdressBalances(wallet: WalletType) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
-      let nextBlockExplorerService: NextBlockExplorerService = heat.$inject.get('nextBlockExplorerService')
-      nextBlockExplorerService.getAccount(wallet.addresses[0].address).then(data => {
+      let nxtBlockExplorerService: NxtBlockExplorerService = heat.$inject.get('nxtBlockExplorerService')
+      nxtBlockExplorerService.getAccount(wallet.addresses[0].address).then(data => {
         wallet.addresses[0].balance = new Big(utils.convertToQNTf(data.unconfirmedBalanceNQT)).toFixed(8);
         wallet.addresses[0].inUse = true;
-        nextBlockExplorerService.getAccountAssets(address).then(accountAssets => {
+        nxtBlockExplorerService.getAccountAssets(address).then(accountAssets => {
           wallet.addresses[0].tokensBalances = []
+          let promises = []
           accountAssets.forEach(asset => {
-            wallet.addresses[0].tokensBalances.push({
-              symbol: asset?asset.name:'',
-              name: asset?asset.name:'',
-              decimals: asset.decimals,
-              balance: utils.formatQNT(asset.unconfirmedQuantityQNT,asset.decimals),
-              address: asset.asset
+            let promise = nxtBlockExplorerService.getAssetInfo(asset.asset).then(assetInfo => {
+              wallet.addresses[0].tokensBalances.push({
+                symbol: assetInfo?assetInfo.name:'',
+                name: assetInfo?assetInfo.name:'',
+                decimals: assetInfo.decimals,
+                balance: utils.formatQNT(asset.unconfirmedQuantityQNT,assetInfo.decimals),
+                address: asset.asset
+              })
             })
+            promises.push(promise)
           });
-          resolve(true)
+
+          Promise.all(promises).then(() => resolve(true))
+
+          if(accountAssets.length === 0)
+            resolve(true)
         })
       }, err => {
         resolve(false)

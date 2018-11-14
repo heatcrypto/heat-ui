@@ -1,10 +1,10 @@
 class NXTCurrency implements ICurrency {
 
-  private nextBlockExplorerService: NextBlockExplorerService;
+  private nxtBlockExplorerService: NxtBlockExplorerService;
   public symbol = 'NXT'
   public homePath
   private user: UserService;
-  private pendingTransactions: NextPendingTransactionsService
+  private pendingTransactions: NxtPendingTransactionsService
 
   private $rootScope;
   private $q;
@@ -12,9 +12,9 @@ class NXTCurrency implements ICurrency {
   constructor(public secretPhrase: string,
               public address: string) {
     this.user = heat.$inject.get('user')
-    this.homePath = `/next-account/${this.address}`
-    this.pendingTransactions = heat.$inject.get('nextPendingTransactions')
-    this.nextBlockExplorerService = heat.$inject.get('nextBlockExplorerService')
+    this.homePath = `/nxt-account/${this.address}`
+    this.pendingTransactions = heat.$inject.get('nxtPendingTransactions')
+    this.nxtBlockExplorerService = heat.$inject.get('nxtBlockExplorerService')
     this.$rootScope = heat.$inject.get('$rootScope')
     this.$q = heat.$inject.get('$q')
   }
@@ -22,7 +22,7 @@ class NXTCurrency implements ICurrency {
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
     let deferred = this.$q.defer();
-    this.nextBlockExplorerService.getAccount(this.address).then(data => {
+    this.nxtBlockExplorerService.getAccount(this.address).then(data => {
       deferred.resolve(new Big(utils.convertToQNTf(data.balanceNQT)).toFixed(8))
     }, err => {
       deferred.reject();
@@ -69,7 +69,7 @@ class NXTCurrency implements ICurrency {
       }
       $scope['vm'].okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
-        let nextBlockExplorerService = <NextBlockExplorerService> heat.$inject.get('nextBlockExplorerService')
+        let nxtBlockExplorerService = <NxtBlockExplorerService> heat.$inject.get('nxtBlockExplorerService')
 
         let to = $scope['vm'].data.recipient
         let amountNQT = utils.convertToNQT(String($scope['vm'].data.amountNQT))
@@ -91,7 +91,7 @@ class NXTCurrency implements ICurrency {
           txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60`;
         }
         $scope['vm'].disableOKBtn = true
-        nextBlockExplorerService.sendNxt(txObject).then(
+        nxtBlockExplorerService.sendNxt(txObject).then(
           data => {
             $mdDialog.hide(data).then(() => {
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
@@ -117,8 +117,8 @@ class NXTCurrency implements ICurrency {
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
-        let nextBlockExplorerService = <NextBlockExplorerService> heat.$inject.get('nextBlockExplorerService')
-        nextBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
+        let nxtBlockExplorerService = <NxtBlockExplorerService> heat.$inject.get('nxtBlockExplorerService')
+        nxtBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
               let balance = new Big(utils.convertToQNTf(info)).toFixed(8)
@@ -131,7 +131,7 @@ class NXTCurrency implements ICurrency {
             })
           }
         )
-        nextBlockExplorerService.getPublicKeyFromAddress($scope['vm'].data.recipient).then(
+        nxtBlockExplorerService.getPublicKeyFromAddress($scope['vm'].data.recipient).then(
           publicKey => {
             $scope['vm'].data.recipientPublicKey = publicKey;
           }
