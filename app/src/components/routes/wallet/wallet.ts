@@ -56,9 +56,9 @@ class CurrencyBalance {
     else if (this.name == 'NXT') {
       currency = new NXTCurrency(this.secretPhrase, this.address)
     }
-    // else if (this.name == 'ARDOR') {
-    //   currency = new ARDRCurrency(this.secretPhrase, this.address)
-    // }
+    else if (this.name == 'ARDOR') {
+      currency = new ARDRCurrency(this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
@@ -269,7 +269,7 @@ class WalletEntry {
       this.component.loadBitcoinAddresses(this);
       this.component.loadFIMKAddresses(this);
       this.component.loadNXTAddresses(this);
-      // this.component.loadARDORAddresses(this);
+      this.component.loadARDORAddresses(this);
     }
   }
 
@@ -739,22 +739,22 @@ class WalletComponent {
       }
     })
 
-    // this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-    //   let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
-    //   ardorCurrencyAddressLoading.visible = walletEntry.expanded
-    //   ardorCurrencyAddressLoading.wallet = wallet
-    //   walletEntry.currencies.push(ardorCurrencyAddressLoading)
+    this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+      let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
+      ardorCurrencyAddressLoading.visible = walletEntry.expanded
+      ardorCurrencyAddressLoading.wallet = wallet
+      walletEntry.currencies.push(ardorCurrencyAddressLoading)
 
-    //   let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
-    //   ardorCurrencyAddressCreate.visible = walletEntry.expanded
-    //   ardorCurrencyAddressCreate.parent = walletEntry
-    //   ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-    //   walletEntry.currencies.push(ardorCurrencyAddressCreate)
-    //   /* Only if this node is expanded will we load the addresses */
-    //   if (walletEntry.expanded) {
-    //     this.loadARDORAddresses(walletEntry)
-    //   }
-    // })
+      let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
+      ardorCurrencyAddressCreate.visible = walletEntry.expanded
+      ardorCurrencyAddressCreate.parent = walletEntry
+      ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
+      walletEntry.currencies.push(ardorCurrencyAddressCreate)
+      /* Only if this node is expanded will we load the addresses */
+      if (walletEntry.expanded) {
+        this.loadARDORAddresses(walletEntry)
+      }
+    })
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -798,46 +798,46 @@ class WalletComponent {
     })
   }
 
-  // public loadARDORAddresses(walletEntry: WalletEntry) {
+  public loadARDORAddresses(walletEntry: WalletEntry) {
 
-  //   /* Find the Loading node, if thats not available we can exit */
-  //   let ardorCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'ARDOR')
-  //   if (!ardorCurrencyAddressLoading)
-  //     return
+    /* Find the Loading node, if thats not available we can exit */
+    let ardorCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'ARDOR')
+    if (!ardorCurrencyAddressLoading)
+      return
 
-  //   this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
+    this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
 
-  //     /* Make sure we exit if no loading node exists */
-  //     if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-  //       return
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
 
-  //     let index = walletEntry.currencies.indexOf(ardorCurrencyAddressLoading)
-  //     ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
-  //       let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-  //       if (address.inUse || wasCreated) {
-  //         let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
-  //         nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-  //         nxtCurrencyBalance.visible = walletEntry.expanded
-  //         nxtCurrencyBalance.inUse = wasCreated ? false : true
-  //         walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
-  //         index++;
+      let index = walletEntry.currencies.indexOf(ardorCurrencyAddressLoading)
+      ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
+          nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+          nxtCurrencyBalance.visible = walletEntry.expanded
+          nxtCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
+          index++;
 
-  //         if (address.tokensBalances) {
-  //           address.tokensBalances.forEach(balance => {
-  //             let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-  //             tokenBalance.balance = utils.commaFormat(balance.balance)
-  //             tokenBalance.visible = walletEntry.expanded
-  //             nxtCurrencyBalance.tokens.push(tokenBalance)
-  //           })
-  //         }
-  //       }
-  //     })
+          if (address.tokensBalances) {
+            address.tokensBalances.forEach(balance => {
+              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+              tokenBalance.balance = utils.commaFormat(balance.balance)
+              tokenBalance.visible = walletEntry.expanded
+              nxtCurrencyBalance.tokens.push(tokenBalance)
+            })
+          }
+        }
+      })
 
-  //     // we can remove the loading entry
-  //     walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
-  //     this.flatten()
-  //   })
-  // }
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
 
   /* Only when we expand a wallet entry do we lookup its balances */
   public loadFIMKAddresses(walletEntry: WalletEntry) {
