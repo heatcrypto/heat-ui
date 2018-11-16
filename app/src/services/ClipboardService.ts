@@ -85,7 +85,7 @@ class ClipboardService {
       () => {
         this.$mdToast.show(
           this.$mdToast.simple()
-              .textContent("Press CTRL+V to copy")
+              .textContent("Press CTRL+C to copy")
               .hideDelay(10000)
         )
       }
