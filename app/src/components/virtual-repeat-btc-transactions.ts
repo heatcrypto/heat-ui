@@ -72,26 +72,35 @@
   `
 })
 
-@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions')
+@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions', 'user', 'bitcoinMessagesService')
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
-
+  btcMessages: Array<{ txId: string, message: string }> = []
   constructor(protected $scope: angular.IScope,
     protected $q: angular.IQService,
     private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
     private settings: SettingsService,
-    private bitcoinPendingTransactions: BitcoinPendingTransactionsService) {
+    private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
+    private user: UserService,
+    private bitcoinMessagesService: BitcoinMessagesService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let privateKey = this.user.secretPhrase;
+    let publicKey = this.user.publicKey;
+    this.getBitcoinMessages(privateKey, publicKey)
     this.initializeVirtualRepeat(
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any | IBTCTransaction) => {
         transaction.amount = transaction.vout[0].value;
+        this.btcMessages.forEach(message => {
+          if (message.txId == transaction.txid) {
+            transaction.message = message.message
+          }
+        })
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
-
         let totalInputs = 0;
         let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {
@@ -155,7 +164,8 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           fees: transaction.fees,
           inputs: inputs.trim(),
           outputs: outputs.trim(),
-          size: transaction.size
+          size: transaction.size,
+          message: transaction.message ? transaction.message : ''
         }
       }
     );
@@ -179,6 +189,22 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
 
   onSelect(selectedTransaction) { }
+
+  getBitcoinMessages = (privateKey: string, publicKey: string) => {
+    this.btcMessages = []
+    let addr = this.user.account
+    let messages = this.bitcoinMessagesService.messages[addr]
+    if (messages) {
+      messages.forEach(entry => {
+        let parts = entry.message.split(':'), data = parts[0], nonce = parts[1]
+        let message = heat.crypto.decryptMessage(data, nonce, publicKey, privateKey)
+        this.btcMessages.push({
+          txId: entry.txId,
+          message: message
+        })
+      })
+    }
+  }
 }
 
 interface IBTCTransaction {

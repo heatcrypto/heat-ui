@@ -5,12 +5,14 @@ class BTCCurrency implements ICurrency {
   public homePath
   private pendingTransactions: BitcoinPendingTransactionsService
   private user: UserService
+  private bitcoinMessagesService: BitcoinMessagesService;
 
   constructor(public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/bitcoin-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
+    this.bitcoinMessagesService = heat.$inject.get('bitcoinMessagesService')
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
@@ -34,12 +36,16 @@ class BTCCurrency implements ICurrency {
   }
 
   /* Invoke SEND currency dialog */
-  invokeSendDialog($event) {
+  invokeSendDialog = ($event) => {
     this.sendBtc($event).then(
       data => {
         let address = this.user.account
+        let privateKey = this.user.secretPhrase
+        let publicKey = this.user.publicKey
+        let encryptedMessage = heat.crypto.encryptMessage(data.message, publicKey, privateKey)
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp)
+        this.bitcoinMessagesService.add(address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
       },
       err => {
         if (err) {
@@ -81,6 +87,7 @@ class BTCCurrency implements ICurrency {
         bitcoreService.sendBitcoins(txObject).then(
           data => {
             $mdDialog.hide(data).then(() => {
+              data.message = $scope['vm'].data.message;
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
             })
           },
@@ -96,7 +103,8 @@ class BTCCurrency implements ICurrency {
         amount: '',
         recipient: '',
         recipientInfo: '',
-        fee: '0.0005'
+        fee: '0.0005',
+        message: ''
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -133,7 +141,7 @@ class BTCCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId:string }>()
+    let deferred = $q.defer<{ txId:string, message: string }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -158,6 +166,11 @@ class BTCCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Amount in BTC</label>
                   <input ng-model="vm.data.amount" required name="amount">
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Message</label>
+                  <input ng-model="vm.data.message" name="message">
                 </md-input-container>
 
                 <md-input-container flex>

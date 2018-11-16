@@ -101,7 +101,7 @@ class BitcoreService {
     })
   }
 
-  sendBitcoins(txObject: any): Promise<{ txId: string }> {
+  sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
     return new Promise((resolve, reject) => {
       this.getUnspentUtxos(txObject.from).then(
         utxos => {
@@ -116,7 +116,7 @@ class BitcoreService {
 
             this.broadcast(rawTx).then(
               txId => {
-                resolve(txId)
+                resolve({txId : txId.txId, message: ''})
               },
               error => {
                 reject(error)
