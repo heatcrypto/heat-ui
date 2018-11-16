@@ -119,6 +119,13 @@ class ServerComponent {
     this.portLocal  = this.settings.get(SettingsService.HEAT_PORT_LOCAL);
     this.portRemote = this.settings.get(SettingsService.HEAT_PORT_REMOTE);
     this.connectedToLocalhost = this.isConnectedToLocalhost();
+
+    //failover will choose this host by priority
+    SettingsService.forceServerPriority(
+      this.isConnectedToLocalhost() ? this.hostRemote : this.hostLocal,
+      this.isConnectedToLocalhost() ? this.portRemote : this.portLocal
+    );
+
     this.onOutput = () => {
       $scope.$evalAsync(()=> {
         this.calculatedTopIndex = this.determineTopIndex();

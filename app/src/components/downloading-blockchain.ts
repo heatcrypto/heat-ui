@@ -181,9 +181,9 @@ class DownloadingBlockchainComponent {
             this.router.navigate('/login');
           } else {
             let message = currentServer
-              ? "HEAT server API address switched from \n" + currentServer.host + ":" + currentServer.port
+              ? "Client API address switched from \n" + currentServer.host + ":" + currentServer.port
                 + "\nto\n" + best.host + ":" + best.port
-              : "HEAT server API address switched to\n" + best.host + ":" + best.port;
+              : "Client API address switched to\n" + best.host + ":" + best.port;
             if (causeToSelectBest)
               message = message + " \n\n" + "Reason: " + causeToSelectBest;
             alert(message);

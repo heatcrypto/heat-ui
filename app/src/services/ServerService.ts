@@ -205,7 +205,7 @@ class ServerService extends EventEmitter {
     if (!this.isRunning)
       throw new Error('Server already stopped, check server.isRunning before calling this method');
 
-    this.$mdToast.show(this.$mdToast.simple().textContent("Please wait while the HEAT server stopped").hideDelay(10000));
+    this.$mdToast.show(this.$mdToast.simple().textContent("Please wait while the HEAT server will be stopped").hideDelay(10000));
 
     /*
     Files 'stopServerSignalFile', 'serverStoppedSignalFile' are used for signaling between wallet app and server.
