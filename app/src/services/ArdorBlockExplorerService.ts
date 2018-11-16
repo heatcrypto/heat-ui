@@ -110,4 +110,16 @@ class ArdorBlockExplorerService {
     });
     return deferred.promise;
   }
+
+  public getAssetInfo = (asset: string) => {
+    let deferred = this.$q.defer<any>();
+    this.http.get(`${this.url}nxt?requestType=getAsset&asset=${asset}`).then(ret => {
+      let data = JSON.parse(JSON.stringify(ret))
+      if (data.name)
+        deferred.resolve(data)
+      else
+        deferred.reject(data.errorDescription)
+    });
+    return deferred.promise;
+  }
 }
