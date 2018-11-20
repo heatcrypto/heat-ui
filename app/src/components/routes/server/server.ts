@@ -122,8 +122,8 @@ class ServerComponent {
 
     //failover will choose this host by priority
     SettingsService.forceServerPriority(
-      this.isConnectedToLocalhost() ? this.hostRemote : this.hostLocal,
-      this.isConnectedToLocalhost() ? this.portRemote : this.portLocal
+      this.isConnectedToLocalhost() ? this.hostLocal : this.hostRemote,
+      this.isConnectedToLocalhost() ? this.portLocal : this.portRemote
     );
 
     this.onOutput = () => {

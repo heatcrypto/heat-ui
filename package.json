@@ -89,7 +89,9 @@
       {
         "from": "../heatledger/build/install/heatledger",
         "to": "heatledger"
-      },
+      }
+    ],
+    "extraFiles": [
       {
         "from": "./dist/failover-config.json",
         "to": "failover-config.json"

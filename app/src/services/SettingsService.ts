@@ -86,6 +86,14 @@ class SettingsService {
   public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
   static getFailoverDescriptor(): FailoverDescriptor {
+    if (!SettingsService.FAILOVER_DESCRIPTOR)
+      SettingsService.FAILOVER_DESCRIPTOR =  {
+        heightDeltaThreshold: 2,
+        balancesMismatchesThreshold: 0.9,
+        balancesEqualityThreshold: 0.8,
+        connectedPeersThreshold: 0.8,
+        knownServers: []
+      };
     return SettingsService.FAILOVER_DESCRIPTOR;
   }
 
@@ -125,7 +133,7 @@ class SettingsService {
     } else if (this.env.type == EnvType.NODEJS) {
       // @ts-ignore
       const fs = require('fs');
-      fs.readFile('resources/failover-config.json', (err, data) => {
+      fs.readFile('failover-config.json', (err, data) => {
         if (err) {
           console.log("Cannot load 'failover-config.json': " + err);
           throw err;
