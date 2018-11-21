@@ -5,7 +5,7 @@ bitcoin-account {
     flex-grow: 0;
   }
   .truncate-col {
-    padding-right: 30px;
+    margin-right: 10px;
     &.left {
       text-align: left;
     }
@@ -26,12 +26,8 @@ bitcoin-account {
       max-width: initial;
     }
     &.info-col {
-      width: 200px !important;
-      max-width: 250px !important;
+      max-width: 242px !important;
       margin-top:-5px;
-      padding-left: 0px;
-      margin-left: 15px;
-      margin-right: 10px;
       a, a * {
         color: @link-yellow;
         cursor: pointer;
@@ -39,11 +35,7 @@ bitcoin-account {
       }
     }
     &.tx-col {
-      max-width: 440px;
-      padding-right: 0px;
-      margin-right: 10px;
-      padding-right: 0px;
-      width: 400px;
+      max-width: 427px;
       a, a * {
         color: @link-yellow;
         cursor: pointer;
@@ -51,19 +43,19 @@ bitcoin-account {
       }
     }
     &.amount-col {
-      margin-left: 0px;
-      padding-right: 0px;
-      margin-right: -20px;
+     max-width: 80px;
     }
+
+    &.message-col {
+      max-width: 80px;
+     }
 
     &.date-col {
       width: 120px;
-      margin-right:-10px;
     }
     &.json-col {
       min-width: 30px;
       max-width: 30px;
-      padding-right: 0px;
       a, a * {
         font-size: 14px;
         color: @link-yellow;
@@ -78,5 +70,9 @@ bitcoin-account {
     .md-button:first-child {
       margin-left: 0px;
     }
+  }
+  .fee {
+    color: @gray3 !important;
+    margin-left: 0px !important
   }
 }

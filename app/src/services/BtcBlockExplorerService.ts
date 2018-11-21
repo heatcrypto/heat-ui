@@ -9,10 +9,11 @@ class BtcBlockExplorerService {
 
   public getBalance(address: string) {
     let deferred = this.$q.defer<string>();
-    let balancesApi = `https://blockexplorer.com/api/addr/${address}/balance`;
+    let balancesApi = `https://api.blockcypher.com/v1/btc/main/addrs/${address}/balance?token=d7995959366d4369976aabb3355c7216`;
     this.http.get(balancesApi)
         .then(response => {
-          deferred.resolve(response)
+          let parsed = angular.isString(response) ? JSON.parse(response) : response;
+          deferred.resolve(parsed.final_balance)
         }, () => {
           deferred.reject()
         })
@@ -31,9 +32,9 @@ class BtcBlockExplorerService {
     return deferred.promise;
   }
 
-  public getAddressInfo(address: string): angular.IPromise<BlockExplorerAddressInfo>  {
-    let getTransactionsApi = `https://blockexplorer.com/api/addr/${address}?noTxList=0&noCache=1`;
-    let deferred = this.$q.defer<BlockExplorerAddressInfo>();
+  public getAddressInfo(address: string): angular.IPromise<any>  {
+    let getTransactionsApi = `https://api.blockcypher.com/v1/btc/main/addrs/${address}?token=d7995959366d4369976aabb3355c7216`;
+    let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed);
@@ -44,14 +45,19 @@ class BtcBlockExplorerService {
   }
 
   public getEstimatedFee() {
-    let getEstimatedFeeApi = `https://blockexplorer.com/api/utils/estimatefee?nbBlocks=5`;
+    let getEstimatedFeeApi = `https://bitcoinfees.earn.com/api/v1/fees/list`;
     let deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       let fee;
-      Object.keys(parsed).forEach(function(key){
-        fee = parsed[key];
-      })
+      parsed.fees.forEach(feeObject => {
+        if(feeObject.maxDelay == 1) {
+          fee = feeObject.minFee
+        }
+      });
+     if(!fee)
+      fee = 20
+
       deferred.resolve(fee);
     }, () => {
       deferred.reject();
@@ -60,9 +66,9 @@ class BtcBlockExplorerService {
   }
 
   public getTxInfo(txId: string) {
-    let getEstimatedFeeApi = `https://blockexplorer.com/api/tx/${txId}`;
-    let deferred = this.$q.defer<BlockExplorerTxInfo>();
-    this.http.get(getEstimatedFeeApi).then(response => {
+    let getTxInfoApi = `https://api.blockcypher.com/v1/btc/main/txs/${txId}?token=d7995959366d4369976aabb3355c7216`;
+    let deferred = this.$q.defer<any>();
+    this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed);
     }, () => {
@@ -70,18 +76,4 @@ class BtcBlockExplorerService {
     })
     return deferred.promise
   }
-}
-
-interface BlockExplorerAddressInfo {
-  address: string;
-  txApperances: number;
-  balance: number;
-  transactions: Array<string>
-}
-
-interface BlockExplorerTxInfo {
-  txid: string,
-  blockheight: number,
-  confirmations: number,
-  time: number
 }

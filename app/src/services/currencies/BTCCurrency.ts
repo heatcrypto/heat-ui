@@ -65,13 +65,17 @@ class BTCCurrency implements ICurrency {
       $scope['vm'].cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+
+      let createTx = function(isForFeeEstimation: boolean = false) {
         let user = <UserService> heat.$inject.get('user')
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
 
         let amountInSatoshi = $scope['vm'].data.amount * 100000000;
-        let feeInSatoshi = $scope['vm'].data.fee * 100000000;
-
+        let feeInSatoshi
+        if(!isForFeeEstimation)
+          feeInSatoshi = $scope['vm'].data.fee * 100000000;
+        else
+          feeInSatoshi = 0
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
         let to = $scope['vm'].data.recipient
 
@@ -83,8 +87,13 @@ class BTCCurrency implements ICurrency {
           changeAddress: addressPrivateKeyPair.address,
           privateKey: addressPrivateKeyPair.privateKey
         }
+        return txObject
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].disableOKBtn = true
-        bitcoreService.sendBitcoins(txObject).then(
+        bitcoreService.sendBitcoins(createTx()).then(
           data => {
             $mdDialog.hide(data).then(() => {
               data.message = $scope['vm'].data.message;
@@ -113,7 +122,7 @@ class BTCCurrency implements ICurrency {
         btcBlockExplorerService.getAddressInfo($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = info.balance.toFixed(8)
+              let balance = (info.final_balance / 100000000).toFixed(8)
               $scope['vm'].data.recipientInfo = `Balance: ${balance} BTC`
             })
           },
@@ -125,14 +134,30 @@ class BTCCurrency implements ICurrency {
         )
       }, 1000, false)
       $scope['vm'].recipientChanged = function () {
+        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
+        $scope['vm'].data.txBytes = []
+        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
+          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+        })
+      }
+
+      $scope['vm'].amountChanged = function () {
+        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+        $scope['vm'].data.txBytes = []
+        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
+          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+        })
       }
 
       function getEstimatedFee() {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
         btcBlockExplorerService.getEstimatedFee().then(data => {
-          $scope['vm'].data.fee = data;
+          if(data != -1)
+            $scope['vm'].data.estimatedFee = data;
         })
       }
       getEstimatedFee();
@@ -165,7 +190,7 @@ class BTCCurrency implements ICurrency {
 
                 <md-input-container flex >
                   <label>Amount in BTC</label>
-                  <input ng-model="vm.data.amount" required name="amount">
+                  <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
                 </md-input-container>
 
                 <md-input-container flex >
@@ -180,6 +205,7 @@ class BTCCurrency implements ICurrency {
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
+              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee/Byte {{vm.data.estimatedFee}} Sat</md-button>
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"

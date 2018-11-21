@@ -25,6 +25,9 @@
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
 
+          <!-- MESSAGE -->
+          <div class="truncate-col message-col left">Message</div>
+
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
 
@@ -38,7 +41,7 @@
             <!-- TX ID -->
             <div class="truncate-col tx-col left" >
               <span>
-                <a target="_blank" href="https://blockexplorer.com/tx/{{item.txid}}">{{item.txid}}</a>
+                <a target="_blank" href="https://live.blockcypher.com/btc/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
 
@@ -56,6 +59,11 @@
             <!-- AMOUNT -->
             <div class="truncate-col amount-col left">
               <span>{{item.amount}}</span>
+            </div>
+
+            <!-- MESSAGE -->
+            <div class="truncate-col message-col left">
+              <span>{{item.displayMessage}}</span>
             </div>
 
             <!-- JSON -->
@@ -96,6 +104,11 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         transaction.amount = transaction.vout[0].value;
         this.btcMessages.forEach(message => {
           if (message.txId == transaction.txid) {
+            transaction.displayMessage = message.message;
+            if(transaction.displayMessage.length > 13) {
+              transaction.displayMessage = transaction.displayMessage.substr(0, 10).concat('...')
+              console.log(transaction.displayMessage)
+            }
             transaction.message = message.message
           }
         })

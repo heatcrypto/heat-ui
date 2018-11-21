@@ -54,15 +54,15 @@
             <md-list-item class="header">
               <div class="truncate-col date-col left">Time</div>
               <div class="truncate-col id-col left">Status</div>
-              <div class="truncate-col info-col left" flex>Transaction Id</div>
+              <div class="truncate-col tx-col left" flex>Transaction Id</div>
             </md-list-item>
             <md-list-item ng-repeat="item in vm.pendingTransactions" class="row">
               <div class="truncate-col date-col left">{{item.date}}</div>
               <div class="truncate-col id-col left">
                 Pending&nbsp;<elipses-loading></elipses-loading>
               </div>
-              <div class="truncate-col info-col left" flex>
-                <a target="_blank" href="https://blockexplorer.com/tx/{{item.txId}}">{{item.txId}}</a>
+              <div class="truncate-col tx-col left" flex>
+                <a target="_blank" href="https://live.blockcypher.com/btc/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
             </md-list-item>
           </md-list>
@@ -114,7 +114,7 @@ class BitcoinAccountComponent {
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.btcBlockExplorerService.getTxInfo(pendingTxn.txId).then(
         data => {
-          if (data.blockheight !== -1) {
+          if (data.block_height !== -1) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
             this.bitcoinPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
@@ -151,7 +151,7 @@ class BitcoinAccountComponent {
     this.balanceUnconfirmed = "";
     this.btcBlockExplorerService.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(info.balance).toFixed(8);
+        this.balanceUnconfirmed = new Big(info.final_balance / 100000000).toFixed(8);
         this.busy = false;
       })
     })

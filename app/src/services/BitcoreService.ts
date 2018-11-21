@@ -67,13 +67,13 @@ class BitcoreService {
           if (!walletAddress)
             return
 
-          walletAddress.inUse = info.txApperances != 0
+          walletAddress.inUse = info.final_n_tx != 0
           if (!walletAddress.inUse) {
             resolve(false)
             return
           }
 
-          walletAddress.balance = info.balance + ""
+          walletAddress.balance = info.final_balance / 100000000 + ""
           resolve(true)
         }, () => {
           resolve(false)
@@ -101,7 +101,7 @@ class BitcoreService {
     })
   }
 
-  sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
+  signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
     return new Promise((resolve, reject) => {
       this.getUnspentUtxos(txObject.from).then(
         utxos => {
@@ -112,16 +112,12 @@ class BitcoreService {
             tx.change(txObject.from)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)
-            let rawTx = tx.serialize()
-
-            this.broadcast(rawTx).then(
-              txId => {
-                resolve({txId : txId.txId, message: ''})
-              },
-              error => {
-                reject(error)
-              }
-            )
+            let rawTx;
+            if(uncheckedSerialize)
+              rawTx = tx.uncheckedSerialize()
+            else
+              rawTx = tx.serialize()
+            resolve(rawTx)
           } catch (err) {
             reject(err)
           }
@@ -130,6 +126,21 @@ class BitcoreService {
           reject(err)
         }
       )
+    })
+  }
+
+  sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
+    return new Promise((resolve, reject) => {
+      this.signTransaction(txObject).then(rawTx => {
+        this.broadcast(rawTx).then(
+          txId => {
+            resolve({txId : txId.txId, message: ''})
+          },
+          error => {
+            reject(error)
+          }
+        )
+      })
     })
   }
 
@@ -176,6 +187,7 @@ class BitcoreService {
 
   broadcast(rawTx: string) {
     return new Promise<{ txId: string }>((resolve, reject) => {
+      console.log('here')
       this.http.post('https://insight.bitpay.com/api/tx/send', { rawtx: rawTx }).then(
         response => {
           let txId = response ? response['txid'] : null
