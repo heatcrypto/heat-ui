@@ -34,7 +34,6 @@ class MofoSocketService {
 
 
   _send = (argv) => {
-    console.log('hello')
     if (this.socket && this.socket.readyState == 1) {
       var message = JSON.stringify(argv);
       this.socket.send(message);
