@@ -23,7 +23,7 @@ class ARDRCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     let deferred = this.$q.defer();
     this.ardorBlockExplorerService.getBalance(this.address).then(data => {
-      deferred.resolve(new Big(utils.convertToQNTf(data.balanceNQT)).toFixed(8))
+      deferred.resolve(new Big(utils.convertToQNTf(data)).toFixed(8))
     }, err => {
       deferred.reject();
     })
