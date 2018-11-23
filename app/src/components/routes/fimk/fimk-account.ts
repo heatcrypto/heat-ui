@@ -105,11 +105,12 @@ class FimkAccountComponent {
         socketUrl: 'ws://localhost:7986/ws/'
       }
     ]
+
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.mofoSocketService.getSocketUrl() == w.socketUrl).name
   }
 
   changeSocketAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.mofoSocketService.closeSocket();
     this.mofoSocketService.mofoSocket(ret.socketUrl)
   }
 

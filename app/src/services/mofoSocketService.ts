@@ -19,14 +19,11 @@ class MofoSocketService {
     this.createSocket(url)
   }
 
-  closeSocket = () => {
-    this.socket.close();
+  getSocketUrl = () => {
+    return this.url
   }
 
   createSocket = (url) => {
-    if(this.socket) {
-      this.socket.close()
-    }
     this.url = url;
     this.socket = new WebSocket(url);
     this.socket.onclose = (evt) => { this.onclose(evt) };
@@ -37,6 +34,7 @@ class MofoSocketService {
 
 
   _send = (argv) => {
+    console.log('hello')
     if (this.socket && this.socket.readyState == 1) {
       var message = JSON.stringify(argv);
       this.socket.send(message);
@@ -45,6 +43,8 @@ class MofoSocketService {
 
   onopen = (event) => {
     console.log('WEBSOCKET - onopen ' + new Date(), { socket: this.socket, event: event })
+    if(this.alive_cb)
+      this.$interval.cancel(this.alive_cb)
     this.alive_cb = this.$interval(this._createKeepAliveIntervalHandler(), 10000);
   }
 
