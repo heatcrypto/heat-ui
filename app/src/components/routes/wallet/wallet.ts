@@ -317,36 +317,9 @@ class WalletEntry {
           Export Wallet File
         </md-button>
 
-        <!-- Create ETH Account -->
-        <md-button class="md-warn md-raised" ng-click="vm.createEthAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Create Eth Address</md-tooltip>
-          Create ETH Address
-        </md-button>
-
-        <!-- Create BTC Account -->
-        <md-button class="md-warn md-raised" ng-click="vm.createBtcAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Create BTC Address</md-tooltip>
-          Create BTC Address
-        </md-button>
-
-        <!-- Create FIMK Account -->
-        <md-button class="md-warn md-raised" ng-click="vm.createFIMKAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Create FIMK Address</md-tooltip>
-          Create FIMK Address
-        </md-button>
-
-        <!-- Create NXT Account -->
-        <md-button class="md-warn md-raised" ng-click="vm.createNXTAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Create NXT Address</md-tooltip>
-          Create NXT Address
-        </md-button>
-
-
-        <!-- Create ARDOR Account -->
-        <md-button class="md-warn md-raised" ng-click="vm.createARDRAccount($event)" aria-label="Create Account" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Create ARDOR Address</md-tooltip>
-          Create ARDOR Address
-        </md-button>
+        <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
+          <md-option ng-repeat="entry in vm.chains" value="{{entry}}">{{entry}}</md-option>
+        </md-select>
       </div>
 
       <div layout="column" layout-fill  flex>
@@ -443,6 +416,8 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
+  chains = ['ETH', 'BTC', 'FIMK', 'NXT', 'ARDR'];
+  selectedChain = '';
 
   constructor(private $scope: angular.IScope,
     private $q: angular.IQService,
@@ -464,6 +439,23 @@ class WalletComponent {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
+  }
+
+  createAccount($event) {
+    if(this.$scope['vm'].selectedChain === 'ETH') {
+      this.createEthAccount($event)
+    } else if(this.$scope['vm'].selectedChain === 'BTC') {
+      this.createBtcAccount($event)
+    }
+    else if(this.$scope['vm'].selectedChain === 'FIMK') {
+      this.createFIMKAccount($event)
+    }
+    else if(this.$scope['vm'].selectedChain === 'NXT') {
+      this.createNXTAccount($event)
+    }
+    else if(this.$scope['vm'].selectedChain === 'ARDR') {
+      this.createARDRAccount($event)
+    }
   }
 
   initLocalKeyStore() {
