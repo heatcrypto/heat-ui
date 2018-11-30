@@ -1,0 +1,52 @@
+ @import '../../widget';
+ @import '../../list';
+
+ ardor-trader-orders-my {
+  .widget();
+  .list();
+  display: flex;
+  .layout-column {
+    height: inherit !important;
+  }
+  .selector {
+    i {
+      font-size: 12px;
+      font-weight: bold;
+      font-style: normal;
+      margin-right: 22px;
+      margin-left: 6px;
+      position: relative;
+      top: -3px;
+    }
+  }
+  .expires-col {
+    max-width: inherit;
+    white-space: nowrap;
+  }
+  .type-col {
+    text-align: left;
+    max-width: 30px;
+    min-width: inherit;
+  }
+  .market-col {
+    text-align: left;
+    max-width: 60px;
+    min-width: 40px;
+  }
+  .cancel-col {
+    text-align: left;
+    max-width: 50px;
+    width: 50px;
+    min-width: inherit;
+  }
+  .quantity-col, .price-col, .total-col {
+    max-width: 100px;
+    width: 80px;
+    min-width: inherit;
+  }
+  a {
+    color: @link-yellow;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}

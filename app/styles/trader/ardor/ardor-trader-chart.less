@@ -1,0 +1,39 @@
+@import '../../widget';
+@import '../../colors';
+
+ardor-trader-chart {
+  .widget();
+  .intervals > div {
+    margin-right: 10px;
+    cursor: pointer;
+    &:focus {
+      outline: none;
+      text-decoration: underline;
+    }
+  }
+  g.axis {
+    path.domain {
+      visibility: hidden;
+    }
+    text {
+      fill: none;
+      stroke: @white;
+      opacity: 0.6;
+      font-weight: lighter;
+    }
+  }
+  .grid line {
+    stroke: lightgrey;
+    stroke-opacity: 0.7;
+    shape-rendering: crispEdges;
+  }
+
+  .grid path {
+    stroke-width: 0;
+  }
+
+  .overlay {
+    fill: none;
+    pointer-events: all;
+  }
+}
