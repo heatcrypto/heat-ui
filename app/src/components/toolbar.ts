@@ -81,7 +81,7 @@
                 <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
                 <i><img src="assets/exploreIcon.png"></i>
               </md-button>
-              <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
+              <md-button aria-label="trader" class="md-icon-button" ng-click="vm.goToExchange()">
                 <md-tooltip md-direction="bottom">Exchange</md-tooltip>
                 <i><img src="assets/exchangeIcon.png"></i>
               </md-button>
@@ -136,7 +136,7 @@
                   </md-button>
                 </md-menu-item>
                 <md-menu-item>
-                  <md-button aria-label="trader" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
+                  <md-button aria-label="trader" ng-click="vm.goToExchange()">
                     <md-icon md-font-library="material-icons">bar_chart</md-icon>
                     Exchange
                   </md-button>
@@ -333,6 +333,14 @@ class ToolbarComponent {
 
   goToHome() {
     this.$location.path(this.user.currency.homePath)
+  }
+
+  goToExchange() {
+    if(this.user.currency && this.user.currency.symbol === 'ARDR') {
+      this.$location.path('/ardor-trader/15307894944226771409/ardor')
+    } else{
+      this.isTestnet?this.$location.path('/trader/2949625650944850605/0'):this.$location.path('/trader/5592059897546023466/0')
+    }
   }
 
   goToMessenger() {

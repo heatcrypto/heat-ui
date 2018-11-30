@@ -85,13 +85,13 @@ class ARDRCurrency implements ICurrency {
             "publicKey": recipientPublicKey
           };
           let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
-          txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
+          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
         }
         else {
-          txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
+          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
         }
         $scope['vm'].disableOKBtn = true
-        ardorBlockExplorerService.sendArdr(txObject).then(
+        ardorBlockExplorerService.sendTransactionWithSecret(txObject).then(
           data => {
             $mdDialog.hide(data).then(() => {
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);

@@ -1,0 +1,41 @@
+@import '../../colors';
+@import '../../widget';
+
+ardor-trader-balances {
+  .widget();
+  padding: 12px;
+  margin-bottom: 12px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  md-list {
+    flex-grow: 1;
+    display:flex;
+    flex-direction: column;
+  }
+  md-list-item {
+    border-bottom: 1px solid @gray;
+    &.header .symbol-col,
+    &.header .balance-col {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    &.header {
+      border-bottom: none;
+      opacity: 0.6;
+      flex: 0;
+    }
+    .symbol-col {
+      width: 80px;
+      font-size: 18px;
+      letter-spacing:-1.08px;
+    }
+    .balance-col {
+      text-align: right;
+      font-size: 16px;
+      opacity: 0.6;
+      padding-left: 6px;
+    }
+  }
+}
