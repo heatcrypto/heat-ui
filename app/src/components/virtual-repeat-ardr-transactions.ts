@@ -98,7 +98,7 @@ class VirtualRepeatArdrTransactionsComponent extends VirtualRepeatComponent {
       /* decorator function */
       (transaction: any) => {
         transaction.amount = transaction.amountNQT/100000000;
-        let date = utils.timestampToDate(transaction.timestamp);
+        let date = utils.ardorTimestampToDate(transaction.timestamp);
         transaction.dateTime = dateFormat(date, format);
         transaction.from = transaction.senderRS;
         transaction.to = transaction.recipientRS;

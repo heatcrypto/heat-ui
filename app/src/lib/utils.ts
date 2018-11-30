@@ -84,6 +84,10 @@ module utils {
     return false;
   }
 
+  export function ardorTimestampToDate(timestamp: number) {
+    return new Date(Date.UTC(2018, 0, 1, 0, 0, 0, 0) + timestamp * 1000);
+  }
+
   export function timestampToDate(timestamp: number) {
     return new Date(Date.UTC(2013, 10, 24, 12, 0, 0, 0) + timestamp * 1000);
   }
