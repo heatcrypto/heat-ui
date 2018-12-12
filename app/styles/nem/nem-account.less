@@ -1,0 +1,86 @@
+nem-account {
+  .widget();
+  .list();
+
+  .load-more {
+    max-width: 100px;
+  }
+  md-list-item.md-no-proxy {
+    flex-grow: 0;
+  }
+  .md-select-ws {
+    margin: 0px;
+  }
+  .truncate-col {
+    &.left {
+      text-align: left;
+    }
+    &.block {
+      max-width: 160px;
+    }
+    &.render-col {
+      max-width: inherit;
+    }
+    &.height-col {
+      max-width: 40px;
+      padding-right: 0px;
+    }
+    &.generator-col {
+      padding-right: 0px;
+    }
+    &.pop-col {
+      max-width: initial;
+    }
+    &.info-col {
+      max-width: 310px!important;
+      margin-top:-5px;
+      margin-right: 15px;
+      a, a * {
+        color: @link-yellow;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    }
+    &.tx-col {
+      max-width: 350px!important;
+      padding-right: 0px;
+      margin-right: 10px;
+      a, a * {
+        color: @link-yellow;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .info {
+        width: 350px;
+        height: 14px;
+      }
+    }
+    &.amount-col {
+      padding-right: 0px;
+      max-width: 70px;
+      margin-right: 75px;
+    }
+    &.date-col {
+      width: 120px;
+      margin-right:10px;
+    }
+    &.json-col {
+      min-width: 30px;
+      max-width: 30px;
+      padding-right: 0px;
+      a, a * {
+        font-size: 14px;
+        color: @link-yellow;
+        cursor: pointer;
+      }
+      md-icon {
+        padding-top: 8px;
+      }
+    }
+  }
+  .type-row {
+    .md-button:first-child {
+      margin-left: 0px;
+    }
+  }
+}
