@@ -108,6 +108,7 @@ class FimkAccountComponent {
 
     this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.mofoSocketService.getSocketUrl() == w.socketUrl).name
 
+
   }
 
   changeSocketAddress() {

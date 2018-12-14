@@ -235,7 +235,6 @@ class CurrencyAddressCreate {
     }
     return false
   }
-
 }
 
 class WalletEntry {
@@ -748,6 +747,7 @@ class WalletComponent {
         this.loadARDORAddresses(walletEntry)
       }
     })
+
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
