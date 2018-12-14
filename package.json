@@ -1,6 +1,6 @@
 {
   "name": "heatwallet",
-  "version": "2.7.0",
+  "version": "2.8.1",
   "description": "Heat Ledger Generic Client Framework",
   "author": "Heat Ledger Ltd.",
   "homepage": "http://heatledger.com",
@@ -27,10 +27,10 @@
     "@types/long": "^3.0.31",
     "connect": "3.4.1",
     "del": "2.2.2",
-    "electron": "2.0.2",
-    "electron-builder": "^20.28.3",
-    "electron-builder-squirrel-windows": "^20.15.0",
-    "electron-packager": "^12.1.0",
+    "electron": "2.0.8",
+    "electron-builder": "20.28.4",
+    "electron-builder-squirrel-windows": "20.28.3",
+    "electron-packager": "12.1.1",
     "es6-promise": "3.2.1",
     "gulp": "3.9.1",
     "gulp-concat": "2.6.0",
@@ -51,7 +51,8 @@
     "open": "0.0.5",
     "random-hash": "^4.0.1",
     "serve-static": "1.11.1",
-    "typescript": "^2.3.4"
+    "typescript": "^2.3.4",
+    "clipboard": "^2.0.4"
   },
   "dependencies": {
     "angular": "1.5.8",
@@ -88,6 +89,12 @@
       {
         "from": "../heatledger/build/install/heatledger",
         "to": "heatledger"
+      }
+    ],
+    "extraFiles": [
+      {
+        "from": "./dist/failover-config.json",
+        "to": "failover-config.json"
       }
     ],
     "win": {

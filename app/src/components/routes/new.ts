@@ -37,7 +37,7 @@
       <div layout="column" layout-padding class="outer-container">
         <div layout="column" flex layout-align="start center">
           <h2>Howdy new user</h2>
-          <p>Click on the home button in the toolbar to go to your new account, you have yet to receive your first payment so payments are empty.</p>
+          <p>To see your new account, please click on the home button on the horizontal menu bar above. Your payments section is empty until you receive new payments.</p>
         </div>
         <div layout="column" flex layout-align="start center" ng-show="!vm.activated">
           <p>Your account gets activated (and messages become visible) once your account is registered on the blockchain,

@@ -235,6 +235,7 @@ class CurrencyAddressCreate {
     }
     return false
   }
+
 }
 
 class WalletEntry {

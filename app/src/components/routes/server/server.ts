@@ -28,9 +28,13 @@
       <div layout="row" class="button-row">
         <md-button class="start-stop" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
         <md-button class="start-stop md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
-        <md-button class="start-stop" ng-click="vm.showFolder()">
-          <md-tooltip md-direction="bottom">Access your blockchain and config files and back them up before updating HEAT server</md-tooltip>
+        <md-button class="start-stop" ng-click="vm.showInstallFolder()">
+          <md-tooltip md-direction="bottom">Access your server config files and back them up before updating HEAT server</md-tooltip>
           Install Dir
+        </md-button>
+        <md-button class="start-stop" ng-click="vm.showUserDataFolder()">
+          <md-tooltip md-direction="bottom">Access your user profile</md-tooltip>
+          User Dir
         </md-button>
 
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
@@ -115,6 +119,13 @@ class ServerComponent {
     this.portLocal  = this.settings.get(SettingsService.HEAT_PORT_LOCAL);
     this.portRemote = this.settings.get(SettingsService.HEAT_PORT_REMOTE);
     this.connectedToLocalhost = this.isConnectedToLocalhost();
+
+    //failover will choose this host by priority
+    SettingsService.forceServerPriority(
+      this.isConnectedToLocalhost() ? this.hostLocal : this.hostRemote,
+      this.isConnectedToLocalhost() ? this.portLocal : this.portRemote
+    );
+
     this.onOutput = () => {
       $scope.$evalAsync(()=> {
         this.calculatedTopIndex = this.determineTopIndex();
@@ -136,8 +147,18 @@ class ServerComponent {
     this.remotehostDisplay = this.hostRemote.replace('https://','');
   }
 
-  showFolder() {
+  showInstallFolder() {
     require('electron').shell.showItemInFolder(this.server.getAppDir('.'))
+  }
+
+  showUserDataFolder() {
+    this.server.getUserDataDirFromMainProcess().then(
+      userDataDir => {
+        var path = require('path');
+        let dir = path.join(userDataDir);
+        require('electron').shell.showItemInFolder(path.resolve(dir))
+      }
+    )
   }
 
   /* md-virtual-repeat */
@@ -164,6 +185,7 @@ class ServerComponent {
     var port = this.isConnectedToLocalhost() ? this.portRemote : this.portLocal;
     this.settings.put(SettingsService.HEAT_HOST, host);
     this.settings.put(SettingsService.HEAT_PORT, port);
+    SettingsService.forceServerPriority(host, port);  //failover will choose this host by priority
   }
 
   startServer() {

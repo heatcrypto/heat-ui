@@ -24,8 +24,8 @@ class FIMKCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     let deferred = this.$q.defer();
     this.mofoSocketService.getAccount(this.address).then(info => {
-      let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
-      let formattedBalance = new Big(balance + "")
+      let balance = info.unconfirmedBalanceNQT ? parseInt(info.unconfirmedBalanceNQT) / 100000000 : 0;
+      let formattedBalance = new Big(balance + "");
       deferred.resolve(new Big(formattedBalance).toFixed(8))
     }, err => {
       deferred.reject();

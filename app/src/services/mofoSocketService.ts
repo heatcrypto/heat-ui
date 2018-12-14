@@ -44,6 +44,7 @@ class MofoSocketService {
     console.log('WEBSOCKET - onopen ' + new Date(), { socket: this.socket, event: event })
     if(this.alive_cb)
       this.$interval.cancel(this.alive_cb)
+
     this.alive_cb = this.$interval(this._createKeepAliveIntervalHandler(), 10000);
   }
 

@@ -53,9 +53,9 @@ class DownloadingBlockchainComponent {
     });
 
     //Check servers health to choose the right
-    //wait for loading  known-servers-config.json
+    //wait for loading  failover-config.json
     setTimeout(() => {
-      if (this.settings.getKnownServers())
+      if (SettingsService.getFailoverDescriptor())
         this.checkServerHealth(this.settings, true);
       else
         setTimeout(() => {
@@ -91,7 +91,7 @@ class DownloadingBlockchainComponent {
    * If other health is significantly over current server health then switches to other server.
    */
   checkServerHealth(settings: SettingsService, firstTime?: boolean) {
-    let knownServers: ServerDescriptor[] = settings.getKnownServers() || [];
+    let knownServers: ServerDescriptor[] = SettingsService.getFailoverDescriptor().knownServers || [];
 
     let currentServerHealth: IHeatServerHealth;
     let promises = [];
@@ -126,7 +126,7 @@ class DownloadingBlockchainComponent {
           if (!this.heatServerLocation)
             this.notifyOnServerLocationUpdating(currentServer);
           //if the server response is nothing then server is down
-          currentServerIsAlive = !(server.statusError && !server.statusError["data"]);
+          currentServerIsAlive = !server.statusError;
           server.statusScore = currentServerIsAlive ? 0 : null;
         }
       });
@@ -151,20 +151,27 @@ class DownloadingBlockchainComponent {
       });
 
       let best: ServerDescriptor = currentServer;
+      let causeToSelectBest;
       knownServers.forEach(server => {
-        if (best == currentServer && !currentServerIsAlive)
+        if (best == currentServer && !currentServerIsAlive) {
           best = server; //if current server is not alive switch to other server in any case
+          let se = currentServer.statusError;
+          causeToSelectBest = "Сurrent server is not alive"
+            + (se.code ? ". Code: " + se.code : "") + (se.description ? ". Description: " + se.description : "");
+        }
         if (server.statusScore >= 0 || !currentServerIsAlive) {
-          if (server.statusScore != null && best.statusScore == null)
+          if ((server.statusScore != null && best.statusScore == null) || server.statusScore > best.statusScore) {
             best = server;
-          if (server.statusScore > best.statusScore)
+            causeToSelectBest = "Status code is better";
+          }
+          if (server.statusScore == best.statusScore && server.priority < best.priority) {
             best = server;
-          if (server.statusScore == best.statusScore && server.priority < best.priority)
-            best = server;
+            causeToSelectBest = "Server priority";
+          }
         }
       });
       if (best && best != currentServer) {
-        let bestIsAlive = !(best.statusError && !best.statusError["data"]);
+        let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
           settings.setCurrentServer(best);
           this.notifyOnServerLocationUpdating(best);
@@ -173,12 +180,13 @@ class DownloadingBlockchainComponent {
             //on initializing (first time) switched silently and starts from login page
             this.router.navigate('/login');
           } else {
-            if (currentServer)
-              alert("HEAT server API address switched from \n"
-                + currentServer.host + ":" + currentServer.port +
-                "\nto\n" + best.host + ":" + best.port);
-            else
-              alert("HEAT server API address switched to\n" + best.host + ":" + best.port);
+            let message = currentServer
+              ? "Client API address switched from \n" + currentServer.host + ":" + currentServer.port
+                + "\nto\n" + best.host + ":" + best.port
+              : "Client API address switched to\n" + best.host + ":" + best.port;
+            if (causeToSelectBest)
+              message = message + " \n\n" + "Reason: " + causeToSelectBest;
+            alert(message);
           }
         }
       }
@@ -191,7 +199,8 @@ class DownloadingBlockchainComponent {
   calculateBlockchainEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
     let cumulativeDifficulty = new BigInteger(health.cumulativeDifficulty);
     let difficultyDelta = cumulativeDifficulty.compareTo(new BigInteger(currentServerHealth.cumulativeDifficulty));
-    if (Math.abs(health.lastBlockHeight - currentServerHealth.lastBlockHeight) > 2) {
+    let threshold = SettingsService.getFailoverDescriptor().heightDeltaThreshold;
+    if (Math.abs(health.lastBlockHeight - currentServerHealth.lastBlockHeight) > threshold) {
       if (difficultyDelta > 0)
         return 1;
       if (difficultyDelta < 0)
@@ -203,8 +212,10 @@ class DownloadingBlockchainComponent {
   calculateBalancesEqualityEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
     let mismatches = health.balancesEquality[0] / health.balancesEquality[1];
     let currentServerMismatches = currentServerHealth.balancesEquality[0] / currentServerHealth.balancesEquality[1];
-    return (mismatches < 0.9 * currentServerMismatches
-      && health.balancesEquality[2] > 0.8 * currentServerHealth.balancesEquality[2])
+    let mismatchesThreshold = SettingsService.getFailoverDescriptor().balancesMismatchesThreshold;
+    let equalityThreshold = SettingsService.getFailoverDescriptor().balancesEqualityThreshold;
+    return (mismatches < mismatchesThreshold * currentServerMismatches
+      && health.balancesEquality[2] > equalityThreshold * currentServerHealth.balancesEquality[2])
       ? 1
       : (mismatches > currentServerMismatches || health.balancesEquality[2] < 0.7 * currentServerHealth.balancesEquality[2])
         ? -1
@@ -214,7 +225,8 @@ class DownloadingBlockchainComponent {
   calculatePeerEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
     let connected = health.peersIndicator.connected / health.peersIndicator.all;
     let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
-    return (0.8 * connected > currentServerConnected)
+    let threshold = SettingsService.getFailoverDescriptor().connectedPeersThreshold;
+    return (threshold * connected > currentServerConnected)
       ? 1
       : (connected < 0.8 * currentServerConnected)
         ? -1

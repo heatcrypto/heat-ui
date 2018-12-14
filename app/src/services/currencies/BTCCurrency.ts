@@ -69,21 +69,21 @@ class BTCCurrency implements ICurrency {
       let createTx = function(isForFeeEstimation: boolean = false) {
         let user = <UserService> heat.$inject.get('user')
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-
-        let amountInSatoshi = $scope['vm'].data.amount * 100000000;
+        let amountInSatoshi = new Big($scope['vm'].data.amount).times('100000000').toFixed(0);
         let feeInSatoshi
         if(!isForFeeEstimation)
           feeInSatoshi = $scope['vm'].data.fee * 100000000;
         else
           feeInSatoshi = 0
+
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
         let to = $scope['vm'].data.recipient
 
         let txObject = {
           from: addressPrivateKeyPair.address,
           to: to,
-          amount: amountInSatoshi,
-          fee: feeInSatoshi,
+          amount: parseInt(amountInSatoshi),
+          fee: parseInt(feeInSatoshi),
           changeAddress: addressPrivateKeyPair.address,
           privateKey: addressPrivateKeyPair.privateKey
         }
@@ -108,6 +108,8 @@ class BTCCurrency implements ICurrency {
         )
       }
       $scope['vm'].disableOKBtn = false
+
+      let defaultFee = '0.0005'
       $scope['vm'].data = {
         amount: '',
         recipient: '',
@@ -153,14 +155,14 @@ class BTCCurrency implements ICurrency {
         })
       }
 
-      function getEstimatedFee() {
+      $scope['vm'].getEstimatedFee = () => {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
         btcBlockExplorerService.getEstimatedFee().then(data => {
           if(data != -1)
             $scope['vm'].data.estimatedFee = data;
         })
       }
-      getEstimatedFee();
+      $scope['vm'].getEstimatedFee();
     }
 
     let $q = heat.$inject.get('$q')
@@ -202,6 +204,24 @@ class BTCCurrency implements ICurrency {
                   <label>Fee in BTC</label>
                   <input ng-model="vm.data.fee" required name="fee">
                 </md-input-container>
+
+                <!-- <md-input-container flex>
+                  <label>Confirmation time</label>
+                  <md-select ng-model="vm.data.feeBlocks" ng-change="vm.getEstimatedFee()">
+                    <md-option value="2">Confirm in 2 blocks</md-option>
+                    <md-option value="3">Confirm in 3 blocks</md-option>
+                    <md-option value="4">Confirm in 4 blocks</md-option>
+                    <md-option value="5">Confirm in 5 blocks</md-option>
+                    <md-option value="6">Confirm in 6 blocks</md-option>
+                    <md-option value="7">Confirm in 7 blocks</md-option>
+                    <md-option value="8">Confirm in 8 blocks</md-option>
+                    <md-option value="9">Confirm in 9 blocks</md-option>
+                    <md-option value="10">Confirm in 10 blocks</md-option>
+                    <md-option value="15">Confirm in 15 blocks</md-option>
+                    <md-option value="20">Confirm in 20 blocks</md-option>
+                  </md-select>
+                  <span>Fee is calculated based on realtime data, faster Confirmation Time means higher fee</span>
+                </md-input-container> -->
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">

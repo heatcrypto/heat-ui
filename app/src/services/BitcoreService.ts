@@ -118,6 +118,7 @@ class BitcoreService {
             else
               rawTx = tx.serialize()
             resolve(rawTx)
+
           } catch (err) {
             reject(err)
           }
