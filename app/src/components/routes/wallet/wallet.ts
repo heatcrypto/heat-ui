@@ -62,6 +62,9 @@ class CurrencyBalance {
     else if (this.name == 'NEM') {
       currency = new NEMCurrency(this.secretPhrase, this.address)
     }
+    else if (this.name == 'BitcoinCash') {
+      currency = new BCHCurrency(this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
@@ -288,6 +291,7 @@ class WalletEntry {
       this.component.loadNXTAddresses(this);
       this.component.loadARDORAddresses(this);
       this.component.loadNEMAddresses(this)
+      this.component.loadBitcoinCashAddresses(this)
     }
   }
 
@@ -425,7 +429,7 @@ class WalletEntry {
 })
 @Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window',
   'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
-  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nemCryptoService')
+  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nemCryptoService', 'bchCryptoService')
 class WalletComponent {
 
   selectAll = true;
@@ -434,7 +438,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = ['ETH', 'BTC', 'FIMK', 'NXT', 'ARDR', 'NEM'];
+  chains = ['ETH', 'BTC', 'FIMK', 'NXT', 'ARDR', 'NEM', 'BCH'];
   selectedChain = '';
 
   constructor(private $scope: angular.IScope,
@@ -454,7 +458,8 @@ class WalletComponent {
     private fimkCryptoService: FIMKCryptoService,
     private nxtCryptoService: NXTCryptoService,
     private ardorCryptoService: ARDORCryptoService,
-    private nemCryptoService: NEMCryptoService) {
+    private nemCryptoService: NEMCryptoService,
+    private bchCryptoService: BCHCryptoService) {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
@@ -474,8 +479,12 @@ class WalletComponent {
     }
     else if(this.$scope['vm'].selectedChain === 'ARDR') {
       this.createARDRAccount($event)
-    } else if(this.$scope['vm'].selectedChain === 'NEM') {
+    }
+    else if(this.$scope['vm'].selectedChain === 'NEM') {
       this.createNEMAccount($event)
+    }
+    else if(this.$scope['vm'].selectedChain === 'BCH') {
+      this.createBCHAccount($event)
     }
   }
 
@@ -686,6 +695,28 @@ class WalletComponent {
         btcCurrencyAddressCreate.parent = walletEntry
         btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
         walletEntry.currencies.push(btcCurrencyAddressCreate)
+
+        this.flatten()
+
+        /* Only if this node is expanded will we load the addresses */
+        if (walletEntry.expanded) {
+          this.loadBitcoinAddresses(walletEntry)
+        }
+      }
+    })
+
+    this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+      if (wallet !== undefined) {
+        let bchCurrencyAddressLoading = new CurrencyAddressLoading('BitcoinCash')
+        bchCurrencyAddressLoading.visible = walletEntry.expanded;
+        bchCurrencyAddressLoading.wallet = wallet;
+        walletEntry.currencies.push(bchCurrencyAddressLoading);
+
+        let bchCurrencyAddressCreate = new CurrencyAddressCreate('BitcoinCash', wallet)
+        bchCurrencyAddressCreate.visible = walletEntry.expanded
+        bchCurrencyAddressCreate.parent = walletEntry
+        bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(bchCurrencyAddressCreate)
 
         this.flatten()
 
@@ -1024,6 +1055,38 @@ class WalletComponent {
 
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != btcCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
+
+  public loadBitcoinCashAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let bchCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'BitcoinCash')
+    if (!bchCurrencyAddressLoading)
+      return
+
+    this.bchCryptoService.refreshAdressBalances(bchCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(bchCurrencyAddressLoading)
+      bchCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let bchCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
+          bchCurrencyBalance.balance = address.balance + ""
+          bchCurrencyBalance.visible = walletEntry.expanded
+          bchCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, bchCurrencyBalance)
+          index++;
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != bchCurrencyAddressLoading)
       this.flatten()
     })
   }
@@ -1790,6 +1853,111 @@ class WalletComponent {
 
                   <p>This is your NEM address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
                       Please store it in a safe place or you may lose access to your NEM.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createBCHAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'BitcoinCash')
+          success = node.createBtcAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          }
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create Bitcoin Cash Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new Bitcoin Cash address, please choose the master HEAT account you want to attach the new Bitcoin Cash address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  Btc wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your Bitcoin Cash address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your Bitcoin Cash.
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>

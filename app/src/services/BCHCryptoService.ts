@@ -1,8 +1,8 @@
-@Service('bitcoreService')
+@Service('bchCryptoService')
 @Inject('$window', 'http')
-class BitcoreService {
+class BCHCryptoService {
 
-  static readonly BIP44 = "m/44'/1'/0'/0/";
+  static readonly BIP44 = "m/44'/145'/0'/0/";
   private bitcore;
   private bip39;
 
@@ -17,7 +17,7 @@ class BitcoreService {
     return new Promise((resolve, reject) => {
       if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
-        if (walletType.addresses.length === 20) {
+        if (walletType.addresses.length === 1) {
           resolve(walletType);
         }
       } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
@@ -42,7 +42,7 @@ class BitcoreService {
     let walletType = { addresses: [] }
     for (let i = 0; i < keyCount; i++) {
       let wallet = this.getBitcoinWallet(mnemonic, i)
-      walletType.addresses[i] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
+      walletType.addresses[0] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
     }
     return walletType;
   }
@@ -59,21 +59,21 @@ class BitcoreService {
         addresses.shift()
 
         /* look up its data on btcBlockExplorerService */
-        let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getAddressInfo(address).then(info => {
+        let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
+        bchBlockExplorerService.getBalance(address).then(info => {
 
           /* lookup the 'real' WalletAddress */
           let walletAddress = wallet.addresses.find(x => x.address == address)
           if (!walletAddress)
             return
 
-          walletAddress.inUse = info.final_n_tx != 0
+          walletAddress.inUse = parseFloat(info) != 0
           if (!walletAddress.inUse) {
             resolve(false)
             return
           }
 
-          walletAddress.balance = info.final_balance / 100000000 + ""
+          walletAddress.balance = parseFloat(info) / 100000000 + ""
           resolve(true)
         }, () => {
           resolve(false)
@@ -99,6 +99,21 @@ class BitcoreService {
     return new Promise(resolve => {
       recurseToNext(resolve)
     })
+  }
+
+  getBitcoinWallet(mnemonic: string, index: Number = 0) {
+
+    let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
+    let HDPrivateKey = this.bitcore.HDPrivateKey;
+    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
+
+    let derived = hdPrivateKey.derive(BCHCryptoService.BIP44 + index);
+    let address = derived.privateKey.toAddress();
+    let privateKey = derived.privateKey.toWIF();
+    return {
+      address: address.toString(),
+      privateKey: privateKey.toString()
+    }
   }
 
   signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
@@ -129,36 +144,6 @@ class BitcoreService {
     })
   }
 
-  sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
-    return new Promise((resolve, reject) => {
-      this.signTransaction(txObject).then(rawTx => {
-        this.broadcast(rawTx).then(
-          txId => {
-            resolve({txId : txId.txId, message: ''})
-          },
-          error => {
-            reject(error)
-          }
-        )
-      })
-    })
-  }
-
-  getBitcoinWallet(mnemonic: string, index: Number = 0) {
-
-    let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
-    let HDPrivateKey = this.bitcore.HDPrivateKey;
-    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
-
-    let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index);
-    let address = derived.privateKey.toAddress();
-    let privateKey = derived.privateKey.toWIF();
-    return {
-      address: address.toString(),
-      privateKey: privateKey.toString()
-    }
-  }
-
   getUnspentUtxos(addresses) {
     const Address = this.bitcore.Address;
     const Transaction = this.bitcore.Transaction;
@@ -187,8 +172,7 @@ class BitcoreService {
 
   broadcast(rawTx: string) {
     return new Promise<{ txId: string }>((resolve, reject) => {
-      console.log('here')
-      this.http.post('https://insight.bitpay.com/api/tx/send', { rawtx: rawTx }).then(
+      this.http.post('https://bch.coin.space/api/tx/send', { rawtx: rawTx }).then(
         response => {
           let txId = response ? response['txid'] : null
           resolve({ txId: txId })
