@@ -318,7 +318,7 @@ class WalletEntry {
         </md-button>
 
         <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
-          <md-option ng-repeat="entry in vm.chains" value="{{entry}}">{{entry}}</md-option>
+          <md-option ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
       </div>
 
@@ -405,9 +405,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window',
-  'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
-  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService')
 class WalletComponent {
 
   selectAll = true;
@@ -416,7 +414,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = ['ETH', 'BTC', 'FIMK', 'NXT', 'ARDR'];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDOR', disabled: true }];
   selectedChain = '';
 
   constructor(private $scope: angular.IScope,
@@ -435,25 +433,40 @@ class WalletComponent {
     private bitcoreService: BitcoreService,
     private fimkCryptoService: FIMKCryptoService,
     private nxtCryptoService: NXTCryptoService,
-    private ardorCryptoService: ARDORCryptoService) {
+    private ardorCryptoService: ARDORCryptoService,
+    private nxtBlockExplorerService: NxtBlockExplorerService,
+    private ardorBlockExplorerService: ArdorBlockExplorerService) {
+
+    nxtBlockExplorerService.getBlockchainStatus().then(() => {
+      let nxtChain = { name: 'NXT', disabled: false }
+      let index = this.chains.findIndex((entry) => entry.name === nxtChain.name);
+      this.chains[index] = nxtChain
+    })
+
+    ardorBlockExplorerService.getBlockchainStatus().then(() => {
+      let ardorChain = { name: 'ARDOR', disabled: false }
+      let index = this.chains.findIndex((entry) => entry.name === ardorChain.name);
+      this.chains[index] = ardorChain
+    })
+
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
   }
 
   createAccount($event) {
-    if(this.$scope['vm'].selectedChain === 'ETH') {
+    if (this.$scope['vm'].selectedChain === 'ETH') {
       this.createEthAccount($event)
-    } else if(this.$scope['vm'].selectedChain === 'BTC') {
+    } else if (this.$scope['vm'].selectedChain === 'BTC') {
       this.createBtcAccount($event)
     }
-    else if(this.$scope['vm'].selectedChain === 'FIMK') {
+    else if (this.$scope['vm'].selectedChain === 'FIMK') {
       this.createFIMKAccount($event)
     }
-    else if(this.$scope['vm'].selectedChain === 'NXT') {
+    else if (this.$scope['vm'].selectedChain === 'NXT') {
       this.createNXTAccount($event)
     }
-    else if(this.$scope['vm'].selectedChain === 'ARDR') {
+    else if (this.$scope['vm'].selectedChain === 'ARDR') {
       this.createARDRAccount($event)
     }
   }
@@ -715,39 +728,39 @@ class WalletComponent {
     })
 
     this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
-      nxtCurrencyAddressLoading.visible = walletEntry.expanded
-      nxtCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(nxtCurrencyAddressLoading)
-
       let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
       nxtCurrencyAddressCreate.visible = walletEntry.expanded
       nxtCurrencyAddressCreate.parent = walletEntry
       nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
       walletEntry.currencies.push(nxtCurrencyAddressCreate)
-      /* Only if this node is expanded will we load the addresses */
+
+      this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
+        let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
+        nxtCurrencyAddressLoading.visible = walletEntry.expanded
+        nxtCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(nxtCurrencyAddressLoading)
+      })
       if (walletEntry.expanded) {
         this.loadNXTAddresses(walletEntry)
       }
     })
-
     this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
-      ardorCurrencyAddressLoading.visible = walletEntry.expanded
-      ardorCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(ardorCurrencyAddressLoading)
-
       let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
       ardorCurrencyAddressCreate.visible = walletEntry.expanded
       ardorCurrencyAddressCreate.parent = walletEntry
       ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
       walletEntry.currencies.push(ardorCurrencyAddressCreate)
-      /* Only if this node is expanded will we load the addresses */
+      this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
+        let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
+        ardorCurrencyAddressLoading.visible = walletEntry.expanded
+        ardorCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(ardorCurrencyAddressLoading)
+      })
+
       if (walletEntry.expanded) {
         this.loadARDORAddresses(walletEntry)
       }
     })
-
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -799,7 +812,6 @@ class WalletComponent {
       return
 
     this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
-
       /* Make sure we exit if no loading node exists */
       if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
         return
@@ -1632,3 +1644,4 @@ class WalletComponent {
     return deferred.promise
   }
 }
+
