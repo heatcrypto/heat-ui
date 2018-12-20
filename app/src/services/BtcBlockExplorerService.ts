@@ -47,20 +47,17 @@ class BtcBlockExplorerService {
   public getEstimatedFee() {
     let getEstimatedFeeApi = `https://bitcoinfees.earn.com/api/v1/fees/list`;
     let deferred = this.$q.defer();
+    let fee = 20;
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let fee;
       parsed.fees.forEach(feeObject => {
         if(feeObject.maxDelay == 1) {
           fee = feeObject.minFee
         }
       });
-     if(!fee)
-      fee = 20
-
       deferred.resolve(fee);
     }, () => {
-      deferred.reject();
+      deferred.resolve(fee);
     })
     return deferred.promise
   }

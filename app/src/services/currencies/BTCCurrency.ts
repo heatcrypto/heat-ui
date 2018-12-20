@@ -112,7 +112,7 @@ class BTCCurrency implements ICurrency {
         amount: '',
         recipient: '',
         recipientInfo: '',
-        fee: '0.0005',
+        fee: '0.00004540',
         message: ''
       }
 
@@ -156,8 +156,7 @@ class BTCCurrency implements ICurrency {
       function getEstimatedFee() {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
         btcBlockExplorerService.getEstimatedFee().then(data => {
-          if(data != -1)
-            $scope['vm'].data.estimatedFee = data;
+          $scope['vm'].data.estimatedFee = data;
         })
       }
       getEstimatedFee();
