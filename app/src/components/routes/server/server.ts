@@ -37,6 +37,11 @@
           User Dir
         </md-button>
 
+        <md-button ng-click="vm.editFailoverConfig()">
+          <md-tooltip md-direction="bottom">Edit failover config</md-tooltip>
+          Failover Config
+        </md-button>
+
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
           <md-tooltip md-direction="top">
             Connect client API to remotehost or to your local machine
@@ -159,6 +164,24 @@ class ServerComponent {
         require('electron').shell.showItemInFolder(path.resolve(dir))
       }
     )
+  }
+
+  editFailoverConfig() {
+    // @ts-ignore
+    const fs = require('fs');
+    let filePath = 'failover-config.json';
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        console.log("Cannot load 'failover-config.json': " + err);
+        throw err;
+      }
+      dialogs.textEditor("Failover Config", data, (editedData) => {
+        fs.writeFile(filePath, editedData, (err) => {
+          if (err) throw err;
+          this.settings.applyFailoverConfig();
+        });
+      });
+    });
   }
 
   /* md-virtual-repeat */

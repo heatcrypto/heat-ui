@@ -116,32 +116,7 @@ class SettingsService {
   constructor(private env: EnvService,
               private http: HttpService) {
 
-    let resolveFailoverDescriptor: Function = function(json: any) {
-      if (heat.isTestnet)
-        SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
-      if (heat.isBetanet)
-        SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
-      else
-        SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
-    };
-    if (this.env.type == EnvType.BROWSER) {
-      http.get('failover-config.json').then((json: any) => {
-        resolveFailoverDescriptor(json);
-      }, (reason) => {
-        console.log("Cannot load 'failover-config.json': " + reason ? reason : "");
-      });
-    } else if (this.env.type == EnvType.NODEJS) {
-      // @ts-ignore
-      const fs = require('fs');
-      fs.readFile('failover-config.json', (err, data) => {
-        if (err) {
-          console.log("Cannot load 'failover-config.json': " + err);
-          throw err;
-        }
-        let json = JSON.parse(data);
-        resolveFailoverDescriptor(json);
-      });
-    }
+    this.applyFailoverConfig();
 
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -249,6 +224,35 @@ class SettingsService {
     this.settings[SettingsService.HEAT_HOST] = server.host;
     this.settings[SettingsService.HEAT_PORT] = server.port;
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+  }
+
+  public applyFailoverConfig() {
+    let resolveFailoverDescriptor: Function = function(json: any) {
+      if (heat.isTestnet)
+        SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
+      if (heat.isBetanet)
+        SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
+      else
+        SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
+    };
+    if (this.env.type == EnvType.BROWSER) {
+      this.http.get('failover-config.json').then((json: any) => {
+        resolveFailoverDescriptor(json);
+      }, (reason) => {
+        console.log("Cannot load 'failover-config.json': " + reason ? reason : "");
+      });
+    } else if (this.env.type == EnvType.NODEJS) {
+      // @ts-ignore
+      const fs = require('fs');
+      fs.readFile('failover-config.json', (err, data) => {
+        if (err) {
+          console.log("Cannot load 'failover-config.json': " + err);
+          throw err;
+        }
+        let json = JSON.parse(data);
+        resolveFailoverDescriptor(json);
+      });
+    }
   }
 
 }

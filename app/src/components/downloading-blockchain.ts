@@ -131,6 +131,9 @@ class DownloadingBlockchainComponent {
         }
       });
 
+      if (!currentServer)
+        return;
+
       if (currentServerIsAlive && ! currentServerHealth)
         return;  //has no health (old version or monitoring API is disabled) so nothing to compare
 

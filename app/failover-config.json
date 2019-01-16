@@ -9,13 +9,13 @@
         "host":"https://heatwallet.com",
         "port": 7734,
         "websocket": "wss://heatwallet.com:7755/ws/",
-        "priority": 2
+        "priority": 1
       },
       {
         "host": "http://localhost",
         "port": 7733,
         "websocket": "ws://localhost:7737/ws/",
-        "priority": 1
+        "priority": 2
       }
     ]
   },
