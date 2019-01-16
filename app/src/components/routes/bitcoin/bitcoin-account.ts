@@ -114,7 +114,7 @@ class BitcoinAccountComponent {
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.btcBlockExplorerService.getTxInfo(pendingTxn.txId).then(
         data => {
-          if (data.block_height !== -1) {
+          if (data.blockheight !== -1) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
             this.bitcoinPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
@@ -149,9 +149,9 @@ class BitcoinAccountComponent {
   refresh() {
     this.busy = true;
     this.balanceUnconfirmed = "";
-    this.btcBlockExplorerService.getAddressInfo(this.account).then(info => {
+    this.btcBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(info.final_balance / 100000000).toFixed(8);
+        this.balanceUnconfirmed = new Big(info / 100000000).toFixed(8);
         this.busy = false;
       })
     })

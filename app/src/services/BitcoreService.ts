@@ -67,13 +67,13 @@ class BitcoreService {
           if (!walletAddress)
             return
 
-          walletAddress.inUse = info.final_n_tx != 0
+          walletAddress.inUse = info.txApperances != 0
           if (!walletAddress.inUse) {
             resolve(false)
             return
           }
 
-          walletAddress.balance = info.final_balance / 100000000 + ""
+          walletAddress.balance = info.balanceSat / 100000000 + ""
           resolve(true)
         }, () => {
           resolve(false)
@@ -169,7 +169,7 @@ class BitcoreService {
         addresses = [addresses];
       }
       addresses = addresses.map((address) => new Address(address));
-      this.http.post('https://insight.bitpay.com/api/addrs/utxo', {
+      this.http.post(`${BtcBlockExplorerService.endPoint}/addrs/utxo`, {
         addrs: addresses.map((address) => address.toString()).join(',')
       }).then(
         response => {
@@ -188,8 +188,7 @@ class BitcoreService {
 
   broadcast(rawTx: string) {
     return new Promise<{ txId: string }>((resolve, reject) => {
-      console.log('here')
-      this.http.post('https://insight.bitpay.com/api/tx/send', { rawtx: rawTx }).then(
+      this.http.post(`${BtcBlockExplorerService.endPoint}/tx/send`, { rawtx: rawTx }).then(
         response => {
           let txId = response ? response['txid'] : null
           resolve({ txId: txId })

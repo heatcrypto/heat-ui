@@ -19,7 +19,7 @@ class BTCCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.btcBlockExplorerService.getBalance(this.address).then(
       balance => {
-        let balanceUnconfirmed = parseFloat(balance) / 100000000;
+        let balanceUnconfirmed = balance / 100000000;
         return utils.commaFormat(new Big(balanceUnconfirmed+"").toFixed(8))
       }
     )
@@ -119,10 +119,10 @@ class BTCCurrency implements ICurrency {
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getAddressInfo($scope['vm'].data.recipient).then(
+        btcBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = (info.final_balance / 100000000).toFixed(8)
+              let balance = (info / 100000000).toFixed(8)
               $scope['vm'].data.recipientInfo = `Balance: ${balance} BTC`
             })
           },
