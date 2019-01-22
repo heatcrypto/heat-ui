@@ -102,7 +102,6 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any | IBTCTransaction) => {
-        transaction.amount = transaction.valueIn;
         this.btcMessages.forEach(message => {
           if (message.txId == transaction.txid) {
             transaction.displayMessage = message.message;
@@ -118,26 +117,31 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         } else {
           transaction.from = transaction.vin[0].addr;
         }
-        if(transaction.from == this.account)
-          transaction.amount = `-${transaction.amount}`;
-
         if (transaction.vout.length > 2) {
           transaction.to = 'Multiple Outputs'
         } else {
           let isSameChangeAddress = false;
           let to;
+          let value;
           transaction.vout.forEach(entry => {
             if (entry.scriptPubKey && entry.scriptPubKey.addresses && transaction.from != 'Multiple Inputs' && entry.scriptPubKey.addresses.includes(transaction.from))
               isSameChangeAddress = true;
-            else
+            else {
               to = entry.scriptPubKey.addresses[0]
+              value = entry.value
+            }
           });
-          if (!isSameChangeAddress)
+          if (!isSameChangeAddress){
             transaction.to = 'Multiple Outputs'
+            transaction.amount = ''
+          }
           else {
             transaction.to = to
+            transaction.amount = value
           }
         }
+        if(transaction.from == this.account)
+          transaction.amount = `-${transaction.amount}`;
         var inputs = '', outputs = ''
         transaction.vin.forEach(entry => inputs = inputs.concat(`${entry.addr} (${entry.value}) \n`));
         transaction.vout.forEach(entry => outputs = outputs.concat(`${entry.scriptPubKey.addresses[0]} (${entry.value}) \n`));
