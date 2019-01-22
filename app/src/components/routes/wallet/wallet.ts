@@ -741,10 +741,10 @@ class WalletComponent {
         nxtCurrencyAddressLoading.visible = walletEntry.expanded
         nxtCurrencyAddressLoading.wallet = wallet
         walletEntry.currencies.push(nxtCurrencyAddressLoading)
+        if (walletEntry.expanded) {
+          this.loadNXTAddresses(walletEntry)
+        }
       })
-      if (walletEntry.expanded) {
-        this.loadNXTAddresses(walletEntry)
-      }
     })
 
     this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
