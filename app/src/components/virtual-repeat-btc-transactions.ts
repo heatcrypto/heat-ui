@@ -18,7 +18,7 @@
           <!-- TO -->
           <div class="truncate-col info-col left">TO</div>
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left">Amount</div>
+          <div class="truncate-col amount-col right">Amount</div>
           <!-- MESSAGE -->
           <div class="truncate-col message-col left">Message</div>
           <!-- JSON -->
@@ -44,7 +44,7 @@
               <a ng-show = "item.to === 'Multiple Outputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
             </div>
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left">
+            <div class="truncate-col amount-col right">
               <span>{{item.amount}}</span>
             </div>
             <!-- MESSAGE -->
