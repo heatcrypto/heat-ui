@@ -146,7 +146,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           }
         }
         // if change address was different then show hardcoded output
-        if (!outputs.includes(this.account)) {
+        if (!outputs.includes(this.account) && transaction.vout.length > 1) {
           transaction.to = 'Multiple Outputs';
         }
 
