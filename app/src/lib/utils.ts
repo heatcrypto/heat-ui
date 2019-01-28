@@ -84,6 +84,10 @@ module utils {
     return false;
   }
 
+  export function ardorTimestampToDate(timestamp: number) {
+    return new Date(Date.UTC(2018, 0, 1, 0, 0, 0, 0) + timestamp * 1000);
+  }
+
   export function timestampToDate(timestamp: number) {
     return new Date(Date.UTC(2013, 10, 24, 12, 0, 0, 0) + timestamp * 1000);
   }
@@ -125,6 +129,42 @@ module utils {
         }
       });
     return deferred.promise;
+  }
+
+  export function convertToNQT (amountNXT) {
+    if (typeof amountNXT == 'undefined') {
+      return '0';
+    }
+    amountNXT = String(amountNXT).replace(/,/g, '');
+    var parts = amountNXT.split(".");
+    var amount = parts[0];
+    if (parts.length == 1) {
+      var fraction;
+      fraction = "00000000";
+    }
+    else if (parts.length == 2) {
+      if (parts[1].length <= 8) {
+        var fraction = parts[1];
+      }
+      else {
+        var fraction = parts[1].substring(0, 8);
+      }
+    }
+    else {
+      throw "Invalid input";
+    }
+    for (var i = fraction.length; i < 8; i++) {
+      fraction += "0";
+    }
+    var result = amount + "" + fraction;
+    if (!/^\d+$/.test(result)) {
+      throw "Invalid input.";
+    }
+    result = result.replace(/^0+/, "");
+    if (result === "") {
+      result = "0";
+    }
+    return result;
   }
 
   export function formatQNT(quantity: string, decimals?: number, returnNullZero?: boolean): string {

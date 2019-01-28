@@ -125,6 +125,9 @@
         <md-button ng-class="{'active':vm.type=='lessors'}"
           ng-disabled="vm.type=='lessors'"
           ng-href="#/explorer-account/{{vm.account}}/lessors">Lessors</md-button>
+        <md-button ng-class="{'active':vm.type=='trades'}"
+          ng-disabled="vm.type=='trades'"
+          ng-href="#/explorer-account/{{vm.account}}/trades">Trades</md-button>
         <span flex></span>
         <md-button ng-click="vm.csv($event)">Download CSV</md-button>
       </div>
@@ -133,6 +136,9 @@
       </div>
       <div ng-if="vm.type=='blocks'" flex layout="column">
         <explorer-latest-blocks layout="column" flex account="vm.account" hide-label="true"></explorer-latest-blocks>
+      </div>
+      <div ng-if="vm.type=='trades'" flex layout="column">
+        <virtual-repeat-trades hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-trades>
       </div>
       <div ng-if="vm.type=='lessors'" flex layout="column" layout-fill>
         <md-list flex layout-fill layout="column" class="lessors">
@@ -282,11 +288,11 @@ class ExploreAccountComponent {
     this.getAccountAssets().then(assetInfos=>{
       this.$scope.$evalAsync(()=>{
         this.assetInfos = assetInfos
-            .filter(info => parseFloat(info.userBalance) !== 0)
-            .map(info => {
-              info['balance'] = utils.formatQNT(info.userBalance, 8);
-              return info;
-            });
+          .filter(info => parseFloat(info.userBalance) !== 0)
+          .map(info => {
+            info['balance'] = utils.formatQNT(info.userBalance, 8);
+            return info;
+          });
       })
     })
 

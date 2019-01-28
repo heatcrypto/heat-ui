@@ -41,7 +41,7 @@ class ExplorerSearchComponent {
 
   onKeyPress($event) {
     if ($event.keyCode == 13) {
-      let type = this.type || 'accounts';
+      let type = this.type || 'search';
       let query = this.query || '';
       this.$location.path(`/explorer-results/${type}/${query}`);
     }

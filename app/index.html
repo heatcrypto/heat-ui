@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-controller="AppController as app" class="loading hide-live-agent">
+<html lang="en" ng-controller="AppController as app" class="loading hide-live-agent" ng-strict-di>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
@@ -152,18 +152,14 @@
   <script src="../node_modules/jsonformatter/dist/json-formatter.min.js" defer></script>
   <script src="../node_modules/angularjs-scroll-glue/src/scrollglue.js" defer></script>
   <script src="../node_modules/ng-popover/dist/angular-popover.min.js" defer></script>
+  <script src="../node_modules/heat-libs/dist/heat-libs.umd.js" defer></script>
+  <script src="../node_modules/clipboard/dist/clipboard.min.js" defer></script>
   <script src="../app/node_helpers/make-dcodeIO-bytebuffer-global.js" defer></script>
   <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
-
-  <script src="../app/node_helpers/make-nodejs-hidden.js" defer></script>
-  <script src="../app/src/web3/web3-custom.js" defer></script>
-  <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
-
-  <script src="../app/node_helpers/make-nodejs-hidden.js" defer></script>
-  <script src="../node_modules/eth-lightwallet/dist/lightwallet.js" defer></script>
-  <script src="../node_modules/hooked-web3-provider/build/hooked-web3-provider.min.js" defer></script>
-  <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
+  <script src="../app/src/lib/qrcode.js" defer></script>
   <!-- endbuild -->
+
+  <!-- <script src="../node_modules/heat-libs/dist/heat-libs.umd.js" defer></script> -->
 
   <!-- build:chart charting.js -->
   <script src="../app/node_helpers/make-nodejs-hidden.js" defer></script>

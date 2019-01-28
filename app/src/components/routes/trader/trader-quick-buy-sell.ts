@@ -23,7 +23,7 @@
 heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
   return {
     require: 'ngModel',
-    link: function(scope, elem, attr, ngModel) {
+    link: function (scope, elem, attr, ngModel) {
 
       var decimals;
       var notifyUser = utils.debounce(() => {
@@ -33,7 +33,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
       }, 500, true);
 
       //For DOM -> model validation
-      ngModel.$parsers.unshift(function(value) {
+      ngModel.$parsers.unshift(function (value) {
         decimals = parseInt(attr.maxDecimals);
         var valid = !utils.hasToManyDecimals(value, decimals);
         ngModel.$setValidity('decimals', valid);
@@ -48,7 +48,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
 
 @Component({
   selector: 'traderQuickBuySell',
-  inputs: ['currencyInfo','assetInfo','selectedOrder','oneClickOrders'],
+  inputs: ['currencyInfo', 'assetInfo', 'selectedOrder', 'oneClickOrders'],
   template: `
     <div>
       <div class="trader-component-title">Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
@@ -160,7 +160,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
     </div>
   `
 })
-@Inject('$scope','$q','$mdToast','placeAskOrder','placeBidOrder','user','settings')
+@Inject('$scope', '$q', '$mdToast', 'placeAskOrder', 'placeBidOrder', 'user', 'settings')
 class TraderQuickBuySellComponent {
 
   // inputs
@@ -172,7 +172,7 @@ class TraderQuickBuySellComponent {
   quantity: string = '0';
   price: string = '0';
   total: string = null;
-  fee: string = utils.formatQNT(HeatAPI.fee.standard,8); // fee in HEAT
+  fee: string = utils.formatQNT(HeatAPI.fee.standard, 8); // fee in HEAT
   isTestnet: boolean;
 
   EXPIRY_MIN = 3600;
@@ -187,21 +187,21 @@ class TraderQuickBuySellComponent {
     },
     'hours': {
       label: 'Hours',
-      min: Math.round(this.EXPIRY_MIN / (60*60)),
-      max: Math.round(this.EXPIRY_MAX / (60*60)),
-      delta: 60*60
+      min: Math.round(this.EXPIRY_MIN / (60 * 60)),
+      max: Math.round(this.EXPIRY_MAX / (60 * 60)),
+      delta: 60 * 60
     },
     'days': {
       label: 'Days',
       min: 1,
       max: 30,
-      delta: (60*60*24)
+      delta: (60 * 60 * 24)
     },
     'weeks': {
       label: 'Weeks',
       min: 1,
       max: 4,
-      delta: (60*60*24*7)
+      delta: (60 * 60 * 24 * 7)
     }
   }
   expiryUnits = 'days';
@@ -211,15 +211,22 @@ class TraderQuickBuySellComponent {
   expiresTooltip: string = '';
 
   // displays the toast in debounce wrapper
-  notifyUser: (text:string)=>void;
+  notifyUser: (text: string) => void;
 
   constructor(private $scope: angular.IScope,
-              private $q: angular.IQService,
-              private $mdToast: angular.material.IToastService,
-              private placeAskOrder: PlaceAskOrderService,
-              private placeBidOrder: PlaceBidOrderService,
-              public user: UserService,
-              private settings: SettingsService) {
+    private $q: angular.IQService,
+    private $mdToast: angular.material.IToastService,
+    private placeAskOrder: PlaceAskOrderService,
+    private placeBidOrder: PlaceBidOrderService,
+    public user: UserService,
+    private settings: SettingsService) {
+
+    $scope.$on('price', (event, opts) => {
+      this.price = opts.price.toFixed(8);
+      this.quantity = opts.balance.toFixed(8);
+      this.total = opts.total.toFixed(8);
+    })
+
     $scope.$watch('vm.selectedOrder', () => {
       if (this.selectedOrder) {
         this.quantity = this.selectedOrder['runningTotal'];
@@ -253,14 +260,14 @@ class TraderQuickBuySellComponent {
   }
 
   expiryUnitsValueChanged(suppressNotification?: boolean) {
-    this.expiry = parseInt(this.expiryUnitsValue+'') * this.expiryUnitsOptions[this.expiryUnits].delta;
+    this.expiry = parseInt(this.expiryUnitsValue + '') * this.expiryUnitsOptions[this.expiryUnits].delta;
     this.expiryValid = false;
     this.expiresTooltip = '';
 
     if (this.expiry <= this.EXPIRY_MAX && this.expiry >= this.EXPIRY_MIN) {
       this.expiryValid = true;
       let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-      let date = new Date(Date.now() + (this.expiry*1000));
+      let date = new Date(Date.now() + (this.expiry * 1000));
       let dateFormatted = dateFormat(date, format);
       this.expiresTooltip = `This order will expiry if (even partially) unfilled by ${dateFormatted}`;
     }
@@ -282,8 +289,8 @@ class TraderQuickBuySellComponent {
         return;
       }
     }
-    var dialog = this.placeAskOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
-                      utils.unformat(this.quantity),parseInt(this.expiry+''),true,$event);
+    var dialog = this.placeAskOrder.dialog(this.currencyInfo, this.assetInfo, utils.unformat(this.price),
+      utils.unformat(this.quantity), parseInt(this.expiry + ''), true, $event);
     if (this.oneClickOrders)
       dialog.send()
     else
@@ -299,8 +306,8 @@ class TraderQuickBuySellComponent {
         return;
       }
     }
-    var dialog = this.placeBidOrder.dialog(this.currencyInfo,this.assetInfo,utils.unformat(this.price),
-                      utils.unformat(this.quantity),parseInt(this.expiry+''),true,$event);
+    var dialog = this.placeBidOrder.dialog(this.currencyInfo, this.assetInfo, utils.unformat(this.price),
+      utils.unformat(this.quantity), parseInt(this.expiry + ''), true, $event);
     if (this.oneClickOrders)
       dialog.send()
     else

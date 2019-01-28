@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 declare var saveAs: any;
 @RouteConfig('/login')
 @Component({
@@ -63,7 +64,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex ng-show="vm.pageSigninAccount">
                 <label>Password (or Pin Code)</label>
-                <input ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
+                <input type="password" ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center" ng-show="vm.pageSigninWrongPincode">
@@ -92,17 +93,16 @@ declare var saveAs: any;
               <md-input-container flex>
                 <label>Secret phrase</label>
                 <textarea rows="2" flex ng-model="vm.pageCreateSecretPhrase" readonly ng-trim="false" id="create-new-textarea"></textarea>
-                <!--
-                <md-icon md-font-library="material-icons" ng-click="vm.copy('create-new-textarea', 'Secret phrase copied')" class="clickable-icon">
+                <!--copy to clipboard using clipboard.js, see https://www.npmjs.com/package/clipboard-->
+                <md-icon id="copy-secret" data-clipboard-target="#create-new-textarea" md-font-library="material-icons" class="clickable-icon">
                   <md-tooltip md-direction="right">Copy to clipboard</md-tooltip>content_copy
                 </md-icon>
-                -->
               </md-input-container>
             </div>
             <div layout="column" flex>
               <md-input-container flex>
                 <label>Password (or Pin Code) (required)</label>
-                <input ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
+                <input type="password" ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
               </md-input-container>
             </div>
             <div layout="column" flex>
@@ -230,7 +230,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex>
                 <label>Password (or Pin Code) (required)</label>
-                <input ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
+                <input type="password" ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center">
@@ -355,6 +355,9 @@ class LoginComponent {
     else {
       this.page='create';
     }
+
+    // @ts-ignore
+    new ClipboardJS('#copy-secret');
   }
 
   initLocalKeys() {
@@ -571,10 +574,6 @@ class LoginComponent {
     this.user.unlock(this.pageCreateSecretPhrase, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
       this.$location.path('new');
     });
-  }
-
-  copy(element: string, successMsg: string) {
-    this.clipboard.copyWithUI(document.getElementById(element), successMsg);
   }
 
   doChallenge() {

@@ -21,12 +21,22 @@
  * SOFTWARE.
  * */
 
+/* Set to true to disable minimizing and uglifying of code */
+const DEBUG = true
+
 require('es6-promise').polyfill(); /* usemin requires this */
 var gulp = require('gulp');
-var less = require('gulp-less');
 var lesshint = require('gulp-lesshint');
 var path = require('path');
-var plumber = require('gulp-plumber');
+var gutil = require('gulp-util');
+var noop = require("gulp-noop");
+
+/* These are the hashed new names for lib.js, heat-ui.js and tshelpers.js */
+var generateHash = require('random-hash').generateHash
+var LIBJS_HASHED_NAME = 'lib-'+generateHash()+'.js'
+var HEATUIJS_HASHED_NAME = 'heat-ui-'+generateHash()+'.js'
+var TSHELPERS_HASHED_NAME = 'tshelpers-'+generateHash()+'.js'
+var LESS_HASHED_NAME = 'index-'+generateHash()+'.css'
 
 var PATHS = {
   src: [
@@ -55,11 +65,23 @@ var PATHS = {
     'app/electron.js',
     'app/package.json'
   ],
-  config: [
-    'app/known-servers-config.json'
+  etc: [
+    'app/*.json'
   ]
 };
 
+gulp.task('default', function () {
+  return gutil.log('Gulp is running')
+});
+
+/**
+ * Parses app/index.html for build:js and build:css statements, moves
+ * index.html to dist and creates:
+ *  - charting-xxx.js
+ *  - node_modules-xxx.js
+ *  - material-xxx.css
+ * Updates index.html script and style references.
+ */
 gulp.task('usemin', function() {
   var usemin = require('gulp-usemin');
   var uglify = require('gulp-uglify');
@@ -68,7 +90,7 @@ gulp.task('usemin', function() {
   return gulp.src('app/index.html')
     .pipe(usemin({
       css: [ minifyCss(), rev() ],
-      js: [ uglify(), rev() ],
+      js: [ (DEBUG ? noop() : uglify()), rev() ],
       chart: [ uglify(), rev() ],
       inlinejs: [ uglify(), 'concat' ],
       inlinecss: [ minifyCss(), 'concat' ]
@@ -81,71 +103,108 @@ gulp.task('clean', function (done) {
   del(['dist'], done);
 });
 
-gulp.task('libjs', function () {
+/**
+ * Collects all scripts in lib folder and concatenates these to one big file.
+ * Runs the minifier/uglifier over the generated code.
+ * Renames lib.js to LIBJS_HASHED_NAME
+ */
+gulp.task('libjs',  function () {
   var concat = require('gulp-concat');
   var uglify = require('gulp-uglify');
-  gulp.src(PATHS.libjs)
-    .pipe(concat('lib.js'))
-    //.pipe(uglify())
-    .pipe(gulp.dest('dist'));
-});
-
-gulp.task('tshelpers', function () {
-  var concat = require('gulp-concat');
-  gulp.src(PATHS.tshelpers)
-    .pipe(concat('tshelpers.js'))
-    .pipe(gulp.dest('dist'));
-});
-
-gulp.task('ts2js', function () {
-  var typescript = require('gulp-typescript');
   var sourcemaps = require('gulp-sourcemaps');
-  var concat = require('gulp-concat');
-  var tscConfig = require('./tsconfig.json');
-  var extend = require('util')._extend;
-
-  gulp.src(PATHS.src)
+  return gulp.src(PATHS.libjs)
+    .pipe(concat(LIBJS_HASHED_NAME))
     .pipe(sourcemaps.init())
-    .pipe(typescript(extend(tscConfig.compilerOptions, { outFile: 'heat-ui.js' })))
-    // .pipe(concat('heat-ui.js'))
+    .pipe((DEBUG ? noop() : uglify()))
     .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
 
-gulp.task('copy:dist', ['tshelpers','libjs'], function () {
-  gulp.src(PATHS.assets)
-    .pipe(gulp.dest('dist/assets'));
-  gulp.src(PATHS.dice_words)
-    .pipe(gulp.dest('dist/dice-words'));
-  gulp.src(PATHS.loading)
-    .pipe(gulp.dest('dist/loading'));
-  gulp.src(PATHS.html)
+/**
+ * Minifies and renames tshelpers to TSHELPERS_HASHED_NAME, moves that to dist
+ */
+gulp.task('tshelpers', function () {
+  var concat = require('gulp-concat');
+  var uglify = require('gulp-uglify');
+  var sourcemaps = require('gulp-sourcemaps');
+  return gulp.src(PATHS.tshelpers)
+    .pipe(concat(TSHELPERS_HASHED_NAME))
+    .pipe(sourcemaps.init())
+    .pipe(DEBUG ? noop() : uglify())
+    .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
-  gulp.src(PATHS.electron)
-    .pipe(gulp.dest('dist'));
-  gulp.src(PATHS.config)
+});
+
+/**
+ * Compiles all typescript and collects all in heat-ui.js which is then renamed to
+ * a unque name defined in HEATUIJS_HASHED_NAME
+ */
+gulp.task('ts2js', function () {
+  var typescript = require('gulp-typescript');
+  var sourcemaps = require('gulp-sourcemaps');
+  var uglify = require('gulp-uglify');
+  var tscConfig = require('./tsconfig.json');
+  var extend = require('util')._extend;
+  return gulp.src(PATHS.src)
+    .pipe(sourcemaps.init())
+    .pipe(typescript(extend(tscConfig.compilerOptions, { outFile: HEATUIJS_HASHED_NAME })))
+    .pipe((DEBUG ? noop() : uglify()))
+    .pipe(sourcemaps.write('../dist/maps'))
     .pipe(gulp.dest('dist'));
 });
 
 gulp.task('less', function () {
+  var rename = require("gulp-rename");
+  var less = require('gulp-less');
+  var plumber = require('gulp-plumber');
+  var minifyCss = require('gulp-minify-css');
   return gulp.src('./app/styles/index.less')
     .pipe(plumber())
-      .pipe(less({
-        paths: [path.join(__dirname, 'less', 'includes')]
-      }))
-      .pipe(gulp.dest('./dist/styles/'));
+    .pipe(less({
+      paths: [path.join(__dirname, 'less', 'includes')]
+    }))
+    .pipe(minifyCss())
+    .pipe(rename(LESS_HASHED_NAME))
+    .pipe(gulp.dest('./dist/styles/'));
 });
 
-gulp.task('play', ['ts2js','copy:dist', 'less'], function () {
+/**
+ * Updates the script refs in dist/index.html to use the hashed names for
+ * lib.js, tshelpers.js and heat-ui.js.
+ * Must run after those files have been created and renamed.
+ */
+gulp.task('updatescriptrefs', ['less', 'copy:dist', 'usemin', 'libjs', 'tshelpers', 'ts2js'], function () {
+  var replace = require('gulp-replace');
+  return gulp.src('dist/index.html')
+    .pipe(replace('<script src="node_modules-', '<script defer src="node_modules-'))
+    .pipe(replace('<script src="charting-', '<script defer src="charting-'))
+    .pipe(replace('<script src="lib.js', '<script defer src="'+LIBJS_HASHED_NAME))
+    .pipe(replace('<script src="heat-ui.js', '<script defer src="'+HEATUIJS_HASHED_NAME))
+    .pipe(replace('<script src="tshelpers.js', '<script defer src="'+TSHELPERS_HASHED_NAME))
+    .pipe(replace('<link rel="stylesheet" href="styles/index.css', '<link rel="stylesheet" href="styles/'+LESS_HASHED_NAME))
+    .pipe(gulp.dest('dist'));
+})
+
+gulp.task('copy:dist', ['copy:assets','copy:dice_words','copy:loading','copy:html','copy:electron','copy:etc'])
+
+gulp.task('copy:assets', () => gulp.src(PATHS.assets).pipe(gulp.dest('dist/assets')))
+gulp.task('copy:dice_words', () => gulp.src(PATHS.dice_words).pipe(gulp.dest('dist/dice-words')))
+gulp.task('copy:loading', () => gulp.src(PATHS.loading).pipe(gulp.dest('dist/loading')))
+gulp.task('copy:html', () => gulp.src(PATHS.html).pipe(gulp.dest('dist')))
+gulp.task('copy:electron', () => gulp.src(PATHS.electron).pipe(gulp.dest('dist')))
+gulp.task('copy:etc', () => gulp.src(PATHS.etc).pipe(gulp.dest('dist')))
+
+gulp.task('play', ['build'], function () {
   var http = require('http');
   var connect = require('connect');
   var serveStatic = require('serve-static');
   //var open = require('open'); // open browser window
   //var path = require('path');
 
-  var port = 9001, app;
+  var port, app;
+  port = process.env.PORT || 9001;
 
-  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['ts2js', 'copy:dist', 'less']);
+  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['updatescriptrefs']);
 
   app = connect().use(serveStatic(__dirname));
   http.createServer(app).listen(port, function () {
@@ -153,28 +212,17 @@ gulp.task('play', ['ts2js','copy:dist', 'less'], function () {
   });
 });
 
-gulp.task('build', ['clean','ts2js','usemin','copy:dist','less'], function () {
-  var replace = require('gulp-replace');
-  return gulp.src('dist/index.html')
-    .pipe(replace('<script src="node_modules-', '<script defer src="node_modules-'))
-    .pipe(replace('<script src="charting-', '<script defer src="charting-'))
-    .pipe(gulp.dest('dist'));
-});
+gulp.task('build', ['updatescriptrefs']);
 
-gulp.task('electron', function () {
-  gulp.src('app/electron/*')
-    .pipe(gulp.dest('dist/electron'));
-  gulp.src(['app/node_modules/**/*'])
-    .pipe(gulp.dest('dist/node_modules'));
-});
+gulp.task('electron', ['copy:electron1','copy:electron2'])
+gulp.task('copy:electron1', () => gulp.src('app/electron/*').pipe(gulp.dest('dist/electron')) )
+gulp.task('copy:electron2', () => gulp.src(['app/node_modules/**/*']).pipe(gulp.dest('dist/node_modules')) )
 
-gulp.task('lint', function () {
-  return gulp.src('app/styles/**/*.less')
-    .pipe(lesshint({
-        // Options
-    }))
-    .pipe(lesshint.reporter())
-    .pipe(lesshint.failOnError());
-});
-
-gulp.task('default', ['play']);
+// gulp.task('lint', function () {
+//   return gulp.src('app/styles/**/*.less')
+//     .pipe(lesshint({
+//         // Options
+//     }))
+//     .pipe(lesshint.reporter())
+//     .pipe(lesshint.failOnError());
+// });

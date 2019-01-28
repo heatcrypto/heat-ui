@@ -1,0 +1,38 @@
+ @import '../../widget';
+ @import '../../list';
+
+ ardor-trader-trade-history {
+  .widget();
+  .list();
+  display: flex;
+  .layout-column {
+    height: inherit !important;
+  }
+  .selector {
+    i {
+      font-size: 12px;
+      font-weight: bold;
+      font-style: normal;
+      margin-right: 22px;
+      margin-left: 6px;
+      position: relative;
+      top: -3px;
+    }
+  }
+  .type-col {
+    max-width: 30px;
+    width: 30px;
+    min-width: inherit;
+  }
+  .price-col, .total-col{
+    max-width: 80px;
+    width: 80px;
+    min-width: inherit;
+  }
+  .cancel-col {
+    text-align: left;
+    max-width: 50px;
+    width: 50px;
+    min-width: inherit;
+  }
+}

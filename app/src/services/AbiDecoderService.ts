@@ -23,19 +23,20 @@
  * SOFTWARE.
  * */
 @Service('abiDecoder')
-@Inject('web3')
+@Inject('web3', '$window')
 class AbiDecoderService {
 
   private SolidityCoder: any
   private Web3: any
   private state = {
-    savedABIs : [],
+    savedABIs: [],
     methodIDs: {}
   }
 
-  constructor(private web3: Web3Service) {
-    this.Web3 = window['Web3']
-    this.SolidityCoder = window['__SolidityCoder']
+  constructor(private web3: Web3Service,
+              private $window: angular.IWindowService) {
+    this.Web3 = $window.heatlibs.Web3
+    this.SolidityCoder = $window.heatlibs.__SolidityCoder
   }
 
   public getABIs() {
@@ -46,13 +47,13 @@ class AbiDecoderService {
     if (Array.isArray(abiArray)) {
       // Iterate new abi to generate method id's
       abiArray.map((abi) => {
-        if(abi.name){
-          const signature = new (this.Web3)().sha3(abi.name + "(" + abi.inputs.map(function(input) {return input.type;}).join(",") + ")");
+        if (abi.name) {
+          const signature = new (this.Web3)().sha3(abi.name + "(" + abi.inputs.map(function (input) { return input.type; }).join(",") + ")");
           //const signature = this.web3.web3.sha3(abi.name + "(" + abi.inputs.map(function(input) {return input.type;}).join(",") + ")");
-          if(abi.type == "event"){
+          if (abi.type == "event") {
             this.state.methodIDs[signature.slice(2)] = abi;
           }
-          else{
+          else {
             this.state.methodIDs[signature.slice(2, 10)] = abi;
           }
         }
@@ -68,15 +69,15 @@ class AbiDecoderService {
     if (Array.isArray(abiArray)) {
       // Iterate new abi to generate method id's
       abiArray.map((abi) => {
-        if(abi.name){
-          const signature = new (this.Web3)().sha3(abi.name + "(" + abi.inputs.map(function(input) {return input.type;}).join(",") + ")");
+        if (abi.name) {
+          const signature = new (this.Web3)().sha3(abi.name + "(" + abi.inputs.map(function (input) { return input.type; }).join(",") + ")");
           //const signature = this.web3.web3.sha3(abi.name + "(" + abi.inputs.map(function(input) {return input.type;}).join(",") + ")");
-          if(abi.type == "event"){
+          if (abi.type == "event") {
             if (this.state.methodIDs[signature.slice(2)]) {
               delete this.state.methodIDs[signature.slice(2)];
             }
           }
-          else{
+          else {
             if (this.state.methodIDs[signature.slice(2, 10)]) {
               delete this.state.methodIDs[signature.slice(2, 10)];
             }
@@ -126,7 +127,7 @@ class AbiDecoderService {
     }
   }
 
-  public padZeros (address) {
+  public padZeros(address) {
     var formatted = address;
     if (address.indexOf('0x') != -1) {
       formatted = address.slice(2);

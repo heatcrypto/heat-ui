@@ -1,0 +1,84 @@
+ardor-trader {
+  md-list-item {
+    &.currentlyNotValid * {
+      text-decoration: line-through;
+      color: @white04;
+    }
+    &.virtual * {
+      font-style: italic;
+      color: @white04;
+    }
+  }
+  .main-display {
+    margin-left: 12px;
+  }
+  @media (max-width: 920px) {
+    .main-display {
+      overflow: scroll;
+    }
+  }
+  md-sidenav {
+     margin-right: 0px !important;
+     background-color: transparent;
+     .sidenav-container {
+       display: flex;
+       flex-direction: column;
+       height: 100%;
+     }
+     .trader-component-title {
+       font-size: 16px !important;
+       margin-bottom: 12px;
+     }
+   }
+   .main-display {
+     position: relative;
+     & > div {
+       position: absolute;
+       top: 0px;
+       left: 0px;
+       right: 0px;
+       bottom: 0px;
+       overflow-y: scroll;
+     }
+   }
+   .trader-row {
+     display: flex;
+     margin-bottom: 8px;
+     &.top {
+       height: 250px;
+     }
+     &.middle {
+       height: 280px;
+     }
+     &.bottom {
+       min-height: 280px;
+       flex-grow: 1;
+     }
+   }
+   .layout-row {
+     margin-bottom: 9px;
+     .trader-component {
+       margin-right: 9px;
+       flex-grow: 1;
+     }
+     &:last-child {
+       margin-bottom: 0px;
+     }
+   }
+   .top-warning {
+     height: 32px;
+     line-height: 32px;
+     padding: 0 16px 0 16px;
+     margin-bottom: 9px;
+     background-color: @orange;
+     border-radius: 4px;
+     font-weight: bold;
+     display:inline-block;
+   }
+   md-list-item.header{
+     overflow: hidden;
+   }
+   .info-col {
+     flex-grow: 0 !important;
+   }
+ }

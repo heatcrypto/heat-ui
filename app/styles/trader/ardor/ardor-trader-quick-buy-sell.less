@@ -1,0 +1,101 @@
+@import '../../colors';
+@import '../../widget';
+
+ardor-trader-quick-buy-sell {
+  .widget();
+  border-radius: 4px;
+  flex-grow: 0 !important;
+  box-sizing: border-box;
+  width: 300px;
+  a {
+    color: @link-yellow;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .expires-invalid {
+    font-weight: bold !important;
+    color: @heatOrange !important;
+  }
+  & > div {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    form {
+      font-size: 12px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-left: auto;
+      margin-right: auto;
+      .row {
+        display: flex;;
+        flex-grow: 1;
+        max-height: 25px;
+        margin-bottom: 2px;
+        .label {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          &:first-child {
+            width: 80px;
+          }
+          &:last-child {
+            width: 80px;
+            margin-left: 12px;
+          }
+        }
+        .input {
+          position: relative;
+          width: 108px;
+          input[type="text"], input[type="number"]  {
+            background-color: @white005;
+            color: @white07;
+            border: none;
+            padding: 4px;
+            text-align: right;
+            width: 100px;
+            position: absolute;
+            top: 0px;
+            bottom: 0px;
+            &:focus {
+              border: solid 1px #707070;
+            }
+          }
+        }
+        .fee {
+          text-align: right;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .md-button {
+          margin-top: 5px;
+        }
+        &.bottom-row {
+          display: flex;
+          max-height: 35px;
+          md-switch {
+            margin: 5px 8px 0px;
+            .md-label {
+              width: 40px;
+              display: inline-block;
+              white-space: initial;
+              line-height: 12px;
+            }
+            .md-bar {
+              top: 8px;
+              height: 8px;
+              width: 24px;
+            }
+            .md-thumb {
+              top: 6px;
+              height: 8px;
+              width: 8px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

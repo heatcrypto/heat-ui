@@ -45,7 +45,13 @@ function createWindow () {
     mainWindow = null
   })
 
+  electron.ipcMain.on('userData-is-where-request', (event, arg) => {
+    let userDataDir = app.getPath('userData')
+    event.sender.send('userData-is-here-reply', userDataDir)
+  })
+
   mainWindow.webContents.on('did-finish-load', ()=>{
+    // inject the context menu logic
     fs.readFile(path.join(__dirname, 'run-in-renderer.js'), 'utf8', function(err, contents) {
       if (err)
         console.log(err)

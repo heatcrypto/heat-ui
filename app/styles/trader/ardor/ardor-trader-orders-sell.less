@@ -1,0 +1,19 @@
+@import '../../colors';
+@import '../../widget';
+@import '../../list';
+
+ardor-trader-orders-sell {
+  .widget();
+  .list();
+  box-sizing: border-box;
+  min-width: 280px;
+  display: flex;
+  .layout-column {
+    height: inherit !important;
+  }
+  border: 1px solid @orange;
+  border-radius: 4px;
+  .clickable-text {
+    cursor: pointer;
+  }
+}

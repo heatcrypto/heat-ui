@@ -22,13 +22,14 @@
  * */
 
 @Service('settings')
-@Inject('http')
+@Inject('env', 'http')
 class SettingsService {
 
   /* DO NOT TOUCH.
      Replaced with contents of VERSION file by release.sh */
   private VERSION = "%BUILD_OVERRIDE_VERSION%";
   private BUILD = "%BUILD_OVERRIDE_BUILD%";
+  public static EMBEDDED_HEATLEDGER_VERSION = "%BUILD_OVERRIDE_HEATLEDGER_VERSION%";
 
   /*public static WEBSOCKET_URL = 'settings.websocket_url';
   public static WEBSOCKET_URL_FALLBACK = 'settings.websocket_url_fallback';
@@ -82,21 +83,40 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
-  public MAINNET_KNOWN_SERVERS: ServerDescriptor[];
-  public TESTNET_KNOWN_SERVERS: ServerDescriptor[];
-  public BETANET_KNOWN_SERVERS: ServerDescriptor[];
+  public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
-  constructor(private http: HttpService) {
+  static getFailoverDescriptor(): FailoverDescriptor {
+    if (!SettingsService.FAILOVER_DESCRIPTOR)
+      SettingsService.FAILOVER_DESCRIPTOR =  {
+        heightDeltaThreshold: 2,
+        balancesMismatchesThreshold: 0.9,
+        balancesEqualityThreshold: 0.8,
+        connectedPeersThreshold: 0.8,
+        knownServers: []
+      };
+    return SettingsService.FAILOVER_DESCRIPTOR;
+  }
 
-    http.get('known-servers-config.json').then((json: any) => {
-      this.TESTNET_KNOWN_SERVERS = json.testnet;
-      this.BETANET_KNOWN_SERVERS = json.betanet;
-      this.MAINNET_KNOWN_SERVERS = json.mainnet;
-    }, () => {
-      this.TESTNET_KNOWN_SERVERS = [];
-      this.BETANET_KNOWN_SERVERS = [];
-      this.MAINNET_KNOWN_SERVERS = [];
-    });
+  /**
+   * failover will choose this host by priority
+   */
+  static forceServerPriority(host: string, port: string) {
+    let portNum = parseInt(port);
+    for (const server of SettingsService.getFailoverDescriptor().knownServers) {
+      if (server.host == host && server.port == portNum) {
+        server.originalPriority = server.priority;
+        server.priority = 0;
+      } else {
+        if (server.originalPriority)
+          server.priority = server.originalPriority;
+      }
+    }
+  }
+
+  constructor(private env: EnvService,
+              private http: HttpService) {
+
+    this.applyFailoverConfig();
 
     /*this.settings[SettingsService.WEBSOCKET_URL] = 'wss://alpha.heatledger.com:8884/ws/';
     this.settings[SettingsService.WEBSOCKET_URL_FALLBACK] = [];
@@ -200,19 +220,39 @@ class SettingsService {
     return this.settings[id]=value;
   }
 
-
-  public getKnownServers(): ServerDescriptor[] {
-    if (heat.isTestnet)
-      return this.TESTNET_KNOWN_SERVERS;
-    if (heat.isBetanet)
-      return this.BETANET_KNOWN_SERVERS;
-    return this.MAINNET_KNOWN_SERVERS;
-  }
-
   public setCurrentServer(server) {
     this.settings[SettingsService.HEAT_HOST] = server.host;
     this.settings[SettingsService.HEAT_PORT] = server.port;
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+  }
+
+  public applyFailoverConfig() {
+    let resolveFailoverDescriptor: Function = function(json: any) {
+      if (heat.isTestnet)
+        SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
+      if (heat.isBetanet)
+        SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
+      else
+        SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
+    };
+    if (this.env.type == EnvType.BROWSER) {
+      this.http.get('failover-config.json').then((json: any) => {
+        resolveFailoverDescriptor(json);
+      }, (reason) => {
+        console.log("Cannot load 'failover-config.json': " + reason ? reason : "");
+      });
+    } else if (this.env.type == EnvType.NODEJS) {
+      // @ts-ignore
+      const fs = require('fs');
+      fs.readFile('failover-config.json', (err, data) => {
+        if (err) {
+          console.log("Cannot load 'failover-config.json': " + err);
+          throw err;
+        }
+        let json = JSON.parse(data);
+        resolveFailoverDescriptor(json);
+      });
+    }
   }
 
 }
@@ -221,8 +261,17 @@ interface ServerDescriptor {
   host: string;
   port: number;
   websocket: string;
+  originalPriority?: number;
   priority?: number;
   health?: IHeatServerHealth;
   statusScore?: number;
   statusError?: any;
+}
+
+interface FailoverDescriptor {
+  heightDeltaThreshold: number;  // e.g.  2 means 2 blocks ahead
+  balancesMismatchesThreshold: number;  // 0 - 1
+  balancesEqualityThreshold: number;  // 0 - 1
+  connectedPeersThreshold: number;  // 0 - 1
+  knownServers: ServerDescriptor[];
 }

@@ -69,19 +69,19 @@
               </h2>
             </div>
 
-            <div hide show-gt-sm ng-if="vm.user.unlocked">
+            <div ng-if="vm.user.unlocked">
               <md-button aria-label="home" class="md-icon-button" ng-click="vm.goToHome()">
                 <md-tooltip md-direction="bottom">Your {{vm.user.currency.symbol}} Home</md-tooltip>
                 <i><img src="assets/homeIcon.png"></i>
               </md-button>
             </div>
 
-            <div hide show-gt-sm>
+            <div>
               <md-button aria-label="explorer" class="md-icon-button" href="#/explorer">
                 <md-tooltip md-direction="bottom">Blockchain explorer</md-tooltip>
                 <i><img src="assets/exploreIcon.png"></i>
               </md-button>
-              <md-button aria-label="trader" class="md-icon-button" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
+              <md-button aria-label="trader" class="md-icon-button" ng-click="vm.goToExchange()">
                 <md-tooltip md-direction="bottom">Exchange</md-tooltip>
                 <i><img src="assets/exchangeIcon.png"></i>
               </md-button>
@@ -123,7 +123,7 @@
               </md-button>
             </div>
 
-            <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm>
+            <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm ng-if="vm.user.unlocked">
               <md-button aria-label="user menu" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
                 <md-icon md-font-library="material-icons">more_vert</md-icon>
               </md-button>
@@ -141,7 +141,7 @@
                   </md-button>
                 </md-menu-item>
                 <md-menu-item>
-                  <md-button aria-label="trader" href="{{vm.isTestnet?'#/trader/2949625650944850605/0':'#/trader/5592059897546023466/0'}}">
+                  <md-button aria-label="trader" ng-click="vm.goToExchange()">
                     <md-icon md-font-library="material-icons">bar_chart</md-icon>
                     Exchange
                   </md-button>
@@ -290,9 +290,9 @@
     </md-toolbar>
   `
 })
-@Inject('$rootScope','$scope','$mdSidenav','user','sendmoney','electron','env','assetTransfer',
-  'assetIssue','whitelistMarket','balanceLease','storage','$window','$mdToast',
-  'walletFile','localKeyStore','panel','$location','clipboard')
+@Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
+  'assetIssue', 'whitelistMarket', 'balanceLease', 'storage', '$window', '$mdToast',
+  'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard')
 class ToolbarComponent {
 
   isNodeEnv = false;
@@ -300,28 +300,28 @@ class ToolbarComponent {
   isBetanet = heat.isBetanet;
   heatServerLocation;
 
-  localHeatMasterAccounts: Array<{account:string, locked:boolean, identifier:string}> = []
+  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
   constructor(private $rootScope: angular.IScope,
-              private $scope: angular.IScope,
-              private $mdSidenav,
-              public user: UserService,
-              private sendmoney: SendmoneyService,
-              private electron: ElectronService,
-              public env: EnvService,
-              private assetTransfer: AssetTransferService,
-              private assetIssue: AssetIssueService,
-              private whitelistMarket: WhitelistMarketService,
-              private balanceLease: BalanceLeaseService,
-              private storage: StorageService,
-              private $window: angular.IWindowService,
-              private $mdToast: angular.material.IToastService,
-              private walletFile: WalletFileService,
-              private localKeyStore: LocalKeyStoreService,
-              private panel: PanelService,
-              private $location: angular.ILocationService,
-              private clipboard: ClipboardService) {
-    this.isNodeEnv=env.type==EnvType.NODEJS;
+    private $scope: angular.IScope,
+    private $mdSidenav,
+    public user: UserService,
+    private sendmoney: SendmoneyService,
+    private electron: ElectronService,
+    public env: EnvService,
+    private assetTransfer: AssetTransferService,
+    private assetIssue: AssetIssueService,
+    private whitelistMarket: WhitelistMarketService,
+    private balanceLease: BalanceLeaseService,
+    private storage: StorageService,
+    private $window: angular.IWindowService,
+    private $mdToast: angular.material.IToastService,
+    private walletFile: WalletFileService,
+    private localKeyStore: LocalKeyStoreService,
+    private panel: PanelService,
+    private $location: angular.ILocationService,
+    private clipboard: ClipboardService) {
+    this.isNodeEnv = env.type == EnvType.NODEJS;
 
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
@@ -340,6 +340,14 @@ class ToolbarComponent {
     this.$location.path(this.user.currency.homePath)
   }
 
+  goToExchange() {
+    if (this.user.currency && this.user.currency.symbol === 'ARDR') {
+      this.$location.path('/ardor-trader/15307894944226771409/ardor')
+    } else {
+      this.isTestnet ? this.$location.path('/trader/2949625650944850605/0') : this.$location.path('/trader/5592059897546023466/0')
+    }
+  }
+
   goToMessenger() {
     this.$location.path('messenger/0')
   }
@@ -352,13 +360,13 @@ class ToolbarComponent {
     let address = '0x98d84343b9b98bb15a2ba3d6867c42a89c37a067'// '0x0102768bf0f0901689357262401b031e83900b4c'
     let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
     ethplorer.getAddressInfo(address).then(() => {
-      this.$location.path('ethereum-account/'+address)
+      this.$location.path('ethereum-account/' + address)
     })
   }
 
   refreshLocalWallet() {
     this.localHeatMasterAccounts = [];
-    this.localKeyStore.list().map((account:string) => {
+    this.localKeyStore.list().map((account: string) => {
       let name = this.localKeyStore.keyName(account);
       this.localHeatMasterAccounts.push({
         account: account,
@@ -374,8 +382,8 @@ class ToolbarComponent {
     })
   }
 
-  unlock(secretPhrase:string) {
-    this.user.unlock(secretPhrase,null).then(
+  unlock(secretPhrase: string) {
+    this.user.unlock(secretPhrase, null).then(
       () => {
         this.$location.path(`/explorer-account/${this.user.account}/transactions`)
         heat.fullApplicationScopeReload()
@@ -421,7 +429,7 @@ class ToolbarComponent {
 
   showWhitelistMarketDialog($event) {
     var dialog = <WhitelistMarketferDialog>this.whitelistMarket.dialog($event);
-    dialog.show().then(()=> {
+    dialog.show().then(() => {
 
       /* PATCHUP IN AWAITING OF SERVER FUNCTIONALITY - also cleanup trader-markets.ts */
 
@@ -431,14 +439,14 @@ class ToolbarComponent {
       var assetAvailableAssets = <Array<DialogFieldAssetAssetInfo>>dialog.fields['asset']['availableAssets'];
       var currencySymbol, assetSymbol;
 
-      for (var i=0;i<currencyAvailableAssets.length;i++) {
+      for (var i = 0; i < currencyAvailableAssets.length; i++) {
         var available = currencyAvailableAssets[i];
         if (available.id == currency) {
           currencySymbol = available.symbol;
           break;
         }
       }
-      for (var i=0;i<assetAvailableAssets.length;i++) {
+      for (var i = 0; i < assetAvailableAssets.length; i++) {
         var available = assetAvailableAssets[i];
         if (available.id == asset) {
           assetSymbol = available.symbol;
@@ -450,8 +458,8 @@ class ToolbarComponent {
         mymarkets = [];
       }
       mymarkets.push({
-        currency:{id: currency,symbol: currencySymbol},
-        asset:{id:asset,symbol: assetSymbol}
+        currency: { id: currency, symbol: currencySymbol },
+        asset: { id: asset, symbol: assetSymbol }
       });
       this.storage.namespace('trader').put('my-markets', mymarkets);
     });
@@ -485,14 +493,14 @@ class ToolbarComponent {
         </md-input-container>
       </div>
     `, {
-      secretPhrase: this.user.secretPhrase
-    })
+        secretPhrase: this.user.secretPhrase
+      })
   }
 
   backupWallet() {
     let exported = this.localKeyStore.export();
     let encoded = this.walletFile.encode(exported);
-    var blob = new Blob([encoded], {type: "text/plain;charset=utf-8"});
+    var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
     saveAs(blob, 'heat.wallet');
   }
 }

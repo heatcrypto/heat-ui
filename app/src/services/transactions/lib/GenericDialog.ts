@@ -122,8 +122,8 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
               </span>
               <span ng-if="vm.fields.recipient && vm.fields.recipient.value && vm.fields.recipient.accountExists && !vm.fields.recipientPublicKey.value"
                     style="color: red">NO PUBLIC KEY</span>
-              <span ng-if="vm.fields.recipient && vm.fields.recipient.value && !vm.fields.recipient.accountExists"
-                    style="color: red">NEW ACCOUNT</span>
+              <span ng-if="vm.fields.recipient && vm.fields.recipient.value && vm.fields.recipient.accountExists === false"
+                    style="color: red">UNKNOWN DESTINATION</span>
             </h2>
           </div>
         </md-toolbar>

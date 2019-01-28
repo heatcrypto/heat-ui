@@ -1,0 +1,84 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Heat Ledger Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+ @import './colors';
+ @import './default';
+ @import './widget';
+
+ virtual-repeat-trades {
+   .widget();
+   .list();
+   md-list-item.md-no-proxy {
+     flex-grow: 0;
+   }
+   .row {
+     .inoutgoing-col {
+       font-size: 16px;
+     }
+   }
+   .truncate-col {
+     padding-right: 30px;
+     &.left {
+       text-align: left;
+     }
+     &.block {
+       max-width: 160px;
+     }
+     &.type-col {
+       max-width: 60px;
+     }
+     &.price-col {
+       max-width: 70px;
+     }
+     &.amount-col {
+      max-width: 70px;
+    }
+     &.generator-col {
+       padding-right: 0px;
+     }
+     &.market-col {
+       max-width: 70px;
+     }
+     &.buyerseller-col {
+       min-width: 695px;
+       a, a * {
+        font-size: 12px;
+        color: @link-yellow;
+        cursor: pointer;
+      }
+     }
+     &.json-col {
+       min-width: 30px;
+       max-width: 30px;
+       padding-right: 0px;
+       a, a * {
+         font-size: 14px;
+         color: @link-yellow;
+         cursor: pointer;
+       }
+       md-icon {
+         padding-top: 8px;
+       }
+     }
+   }
+ }
