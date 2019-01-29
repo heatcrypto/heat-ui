@@ -94,11 +94,6 @@
                 <i><img src="assets/walletIcon.png"></i>
               </md-button>
 
-              <md-button aria-label="messages2" class="md-icon-button" ng-click="vm.goToProbe()">
-                <md-tooltip md-direction="bottom">Messages2</md-tooltip>
-                <i><img src="assets/messageIcon.png"></i>
-              </md-button>
-
               <!--
               <md-button aria-label="home" class="md-icon-button" ng-click="vm.$mdToast.show(vm.$mdToast.simple().textContent('Incorrect Password (or Pin)').hideDelay(15000))">
                 <i><img src="assets/walletIcon.png"></i>
@@ -303,24 +298,24 @@ class ToolbarComponent {
   localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
   constructor(private $rootScope: angular.IScope,
-    private $scope: angular.IScope,
-    private $mdSidenav,
-    public user: UserService,
-    private sendmoney: SendmoneyService,
-    private electron: ElectronService,
-    public env: EnvService,
-    private assetTransfer: AssetTransferService,
-    private assetIssue: AssetIssueService,
-    private whitelistMarket: WhitelistMarketService,
-    private balanceLease: BalanceLeaseService,
-    private storage: StorageService,
-    private $window: angular.IWindowService,
-    private $mdToast: angular.material.IToastService,
-    private walletFile: WalletFileService,
-    private localKeyStore: LocalKeyStoreService,
-    private panel: PanelService,
-    private $location: angular.ILocationService,
-    private clipboard: ClipboardService) {
+              private $scope: angular.IScope,
+              private $mdSidenav,
+              public user: UserService,
+              private sendmoney: SendmoneyService,
+              private electron: ElectronService,
+              public env: EnvService,
+              private assetTransfer: AssetTransferService,
+              private assetIssue: AssetIssueService,
+              private whitelistMarket: WhitelistMarketService,
+              private balanceLease: BalanceLeaseService,
+              private storage: StorageService,
+              private $window: angular.IWindowService,
+              private $mdToast: angular.material.IToastService,
+              private walletFile: WalletFileService,
+              private localKeyStore: LocalKeyStoreService,
+              private panel: PanelService,
+              private $location: angular.ILocationService,
+              private clipboard: ClipboardService) {
     this.isNodeEnv = env.type == EnvType.NODEJS;
 
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
@@ -350,10 +345,6 @@ class ToolbarComponent {
 
   goToMessenger() {
     this.$location.path('messenger/0')
-  }
-
-  goToProbe() {
-    this.$location.path('p2pmessagingprobe')
   }
 
   openTestPage() {
@@ -493,8 +484,8 @@ class ToolbarComponent {
         </md-input-container>
       </div>
     `, {
-        secretPhrase: this.user.secretPhrase
-      })
+      secretPhrase: this.user.secretPhrase
+    })
   }
 
   backupWallet() {
