@@ -347,6 +347,7 @@ class P2PConnector {
   }
 
   createPeerConnection(roomName: string, peerId: string) {
+    let peer = this.rooms.get(roomName).getPeer(peerId);
     let pc: RTCPeerConnection;
     try {
       pc = new RTCPeerConnection(this.config);
@@ -364,20 +365,19 @@ class P2PConnector {
         console.log('Received data channel creating request');  //calee do
         this.initDataChannel(roomName, peerId, dataChannel, true);
         console.log("init Data Channel");
-        pc["dataChannel"] = dataChannel;
+        peer.dataChannel = dataChannel;
       };
       pc.oniceconnectionstatechange = (event: Event) => {
         if (pc.iceConnectionState == 'disconnected') {
-          let dc: RTCDataChannel = pc["dataChannel"];
-          if (dc) {
-            dc.close();
-            this.onCloseDataChannel(roomName, peerId, dc);
+          if (peer.dataChannel) {
+            peer.dataChannel.close();
+            //this.onCloseDataChannel(roomName, peerId, peer.dataChannel);
           }
           console.log('Disconnected');
         }
       };
 
-      this.rooms.get(roomName).getPeer(peerId).peerConnection = pc;
+      peer.peerConnection = pc;
 
       return pc;
     } catch (e) {
@@ -495,11 +495,20 @@ class P2PConnector {
 
   send(roomName: string, data, channel?: RTCDataChannel) {
     if (channel) {
-      channel.send(data);
+      this.sendInternal(channel, data);
     } else {
       if (roomName && this.rooms.get(roomName)) {
-        this.rooms.get(roomName).getDataChannels().forEach(channel => channel.send(data));
+        this.rooms.get(roomName).getDataChannels().forEach(channel => this.sendInternal(channel, data));
       }
+    }
+  }
+
+  private sendInternal(channel: RTCDataChannel, data) {
+    if (channel.readyState == "open") {
+      channel.send(data);
+    } else {
+      //todo
+      console.log("not sent. channel state=" + channel.readyState);
     }
   }
 

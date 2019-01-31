@@ -177,10 +177,15 @@ class P2PMessagingProbeComponent {
   }
 
   onCloseDataChannel(peerId: string) {
-    this.connected = false;
+    let openedChannels = 0;
+    this.room.getDataChannels().forEach(channel => {
+      if (channel.readyState == "open")
+        openedChannels++;
+    });
+    this.connected = openedChannels > 0;
     this.messages.push("Closed channel with peer '" + peerId + "'");
 
-    this.updateWhoIsOnline();
+    //this.updateWhoIsOnline();
 
     this.$scope.$apply();
   }
