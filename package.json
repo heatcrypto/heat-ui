@@ -80,7 +80,7 @@
     "ng-popover": "^2.0.0",
     "pako": "1.0.3",
     "techan": "0.8.0",
-    "webrtc-adapter": "6.3.2"
+    "webrtc-adapter": "7.2.0"
   },
   "build": {
     "appId": "com.heatledger.heatwallet",
