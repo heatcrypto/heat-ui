@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 Heat Ledger Ltd.
+ * Copyright (c) 2019 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -186,9 +186,7 @@ class P2PConnector {
         }
       };
       this.signalingMessageAwaitings.push(f);
-      this.getWebSocket().then(websocket => {
-        request();
-      }, reason => console.log(reason))
+      return request();
     });
     return promiseTimeout(3000, p);
   }
@@ -235,6 +233,7 @@ class P2PConnector {
             resolve(socket);
           };
           socket.onerror = (error) => {
+            console.log(error);
             reject(error);
           };
         }
@@ -317,11 +316,11 @@ class P2PConnector {
     this.identity = null;
   }
 
-  sendSignalingMessage(message: any[]) {
-    this.getWebSocket().then(websocket => {
+  sendSignalingMessage(message: any[]): Promise<any> {
+    return this.getWebSocket().then(websocket => {
       message.splice(0, 0, "webrtc");
       let msgString = JSON.stringify(message);
-      this.signalingChannel.send(msgString);
+      websocket.send(msgString);
     }, reason => console.log(reason))
   }
 
@@ -343,6 +342,17 @@ class P2PConnector {
         console.log('Received data channel creating request');  //calee do
         this.initDataChannel(roomName, peerId, dataChannel, true);
         console.log("init Data Channel");
+        pc["dataChannel"] = dataChannel;
+      };
+      pc.oniceconnectionstatechange = (event: Event) => {
+        if (pc.iceConnectionState == 'disconnected') {
+          let dc: RTCDataChannel = pc["dataChannel"];
+          if (dc) {
+            dc.close();
+            this.onCloseDataChannel(roomName, peerId, dc);
+          }
+          console.log('Disconnected');
+        }
       };
 
       this.rooms[roomName][peerId] = pc;
@@ -358,9 +368,10 @@ class P2PConnector {
   initDataChannel(room: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
     //this.rooms[room][]
     dataChannel.onopen = () => this.onOpenDataChannel(room, peerId, dataChannel, sendCheckingMessage);
-    dataChannel.onclose = () => this.onCloseDataChannel(room, peerId, dataChannel);
+    dataChannel.onclose = (event) => this.onCloseDataChannel(room, peerId, dataChannel);
     dataChannel.onmessage = (event) => this.onMessage(room, peerId, dataChannel, event);
     this.rooms[room]["dataChannels"].push(dataChannel);
+    console.log(`initDataChannel ${room} ${peerId} ${dataChannel.label}`);
   }
 
   onOpenDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
@@ -390,21 +401,24 @@ class P2PConnector {
       signature: signedData.signatureHex, data: signedData.dataHex, publicKey: signedData.publicKeyHex};
     this.send(roomName, JSON.stringify(proofRequest), dataChannel);
 
-    console.log("Data channel is opened");
+    console.log(`Data channel is opened ${dataChannel.label}`);
   }
 
   onCloseDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel) {
+    console.log(`onCloseDataChannel ${roomName} ${peerId}`);
     let room: Room = this.rooms[roomName]["room"];
 
     let dataChannels = this.rooms[roomName]["dataChannels"];
     let i: number = dataChannels.indexOf(dataChannel);
     if (i !== -1)
       dataChannels.splice(i, 1);
-    if (dataChannels.length == 0)
-      delete this.rooms[roomName];
-    if (Object.keys(this.rooms).length == 0)
-      if (this.signalingChannel)
-        this.signalingChannel.close();
+    // if (dataChannels.length == 0)
+    //   delete this.rooms[roomName];
+
+    //commented out because websocket somewhy does not open on the next request
+    // if (Object.keys(this.rooms).length == 0)
+    //   if (this.signalingChannel)
+    //     this.signalingChannel.close();
 
     if (room && room.onCloseDataChannel)
       room.onCloseDataChannel(peerId);
