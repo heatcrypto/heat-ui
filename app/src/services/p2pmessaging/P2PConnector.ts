@@ -28,11 +28,13 @@ class Room {
 
   }
 
+  private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>();
+
   /**
    * Registers room and member (caller) on the server side (in the signaling server).
    */
   enter() {
-    this.connector.room(this);
+    this.connector.register(this);
   }
 
   /**
@@ -50,7 +52,7 @@ class Room {
   /**
    * On failure callback.
    */
-  onFailure: (room: string, e: any) => any;
+  onFailure: (peerId: string, e: any) => any;
 
   /**
    * On opening channel callback.
@@ -77,12 +79,37 @@ class Room {
     if (true /*existing public key*/)
       return true;
   }
+
+  getDataChannels() {
+    let dataChannels: RTCDataChannel[] = [];
+    this.peers.forEach(peer => {
+      if (peer.dataChannel) {
+        dataChannels.push(peer.dataChannel)
+      }
+    });
+    return dataChannels;
+  }
+
+  getPeer(peerId: string) {
+    let p = this.peers.get(peerId);
+    if (!p) {
+      p = {dataChannel: null, peerConnection: null};
+      this.peers.set(peerId, p);
+    }
+    return p;
+  }
+
 }
 
 interface ProvingData {
   signatureHex: string,
   dataHex: string,
   publicKeyHex: string
+}
+
+interface RTCPeer {
+  peerConnection: RTCPeerConnection,
+  dataChannel: RTCDataChannel
 }
 
 @Service('P2PConnector')
@@ -106,7 +133,7 @@ class P2PConnector {
   private identity: string;
   private pendingToApproveRooms: Function[] = [];
   private pendingOnlineStatus: Function;
-  private rooms = {}; //structure {room: {dataChannels: []}, {remotePeerId: RTCPeerConnection}, ...}
+  private rooms: Map<string, Room> = new Map<string, Room>(); // roomName -> room
   private signalingChannelReady: boolean = null;
   private signalingChannel: WebSocket;
   private config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
@@ -160,7 +187,7 @@ class P2PConnector {
   }
 
   call(toPeerId: string, caller: string, room: Room) {
-    this.room(room);
+    this.register(room);
     this.sendSignalingMessage([{"type": "CALL", "toPeerId": toPeerId, "caller": caller, "room": room.name}]);
   }
 
@@ -191,19 +218,15 @@ class P2PConnector {
     return promiseTimeout(3000, p);
   }
 
-  room(room: Room) {
+  register(room: Room) {
     let approveRoom = () => {
-      if (this.rooms[room.name]) {
-        let existingRoom: Room = this.rooms[room.name]["room"];
-        if (existingRoom) {
-          if (existingRoom === room)
-            return;
-          this.closeRoom(existingRoom.name);
-        }
+      let existingRoom: Room = this.rooms.get(room.name);
+      if (existingRoom) {
+        if (existingRoom === room)
+          return;
+        this.closeRoom(existingRoom);
       }
-      this.rooms[room.name] = {};
-      this.rooms[room.name]["dataChannels"] = [];
-      this.rooms[room.name]["room"] = room;
+      this.rooms.set(room.name, room);
     };
 
     if (this.identity) {
@@ -224,7 +247,7 @@ class P2PConnector {
       this.webSocketPromise = new Promise((resolve, reject) => {
           let url = this.settings.get(SettingsService.HEAT_WEBSOCKET);
           let socket = new WebSocket(url);
-          console.log("socket" + socket);
+          console.log("new socket, readyState=" + socket.readyState);
           socket.onopen = () => {
             this.signalingChannel = socket;
             socket.onmessage = (msg) => this.onSignalingMessage(msg);
@@ -261,22 +284,21 @@ class P2PConnector {
       let caller: string = msg.caller;
       if (this.allowCaller(caller)) {
         let room = this.createRoom(roomName);
-        this.room(room);
+        this.register(room);
       }
     } else if (msg.type === 'ERROR') {
       this.signalingError(msg.reason);
     } else if (msg.type === 'WELCOME') {  //welcome to existing room
       msg.remotePeerIds.forEach((peerId: string) => {
-        if (!this.rooms[roomName][peerId]) {
-          let pc = this.createPeerConnection(roomName, peerId);
-          if (pc)
-            this.doCall(roomName, peerId);
+        let peer = this.rooms.get(roomName).getPeer(peerId);
+        if (!peer.peerConnection) {
+          this.createPeerConnection(roomName, peerId);
         }
+        this.doCall(roomName, peerId);
       });
-      console.log("do call");
     } else if (msg.type === 'offer') {
       let peerId: string = msg.fromPeer;
-      let pc = this.rooms[roomName][peerId];
+      let pc = this.rooms.get(roomName).getPeer(peerId).peerConnection;
       if (!pc)
         pc = this.createPeerConnection(roomName, peerId);
       if (pc) {
@@ -285,11 +307,11 @@ class P2PConnector {
         console.log("do answer");
       }
     } else if (msg.type === 'answer') {
-      let pc = this.rooms[roomName][msg.fromPeer];
+      let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
       pc.setRemoteDescription(new RTCSessionDescription(msg));
       console.log("got answer");
     } else if (msg.type === 'candidate') {
-      let pc = this.rooms[roomName][msg.fromPeer];
+      let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
       let candidate = new RTCIceCandidate({
         sdpMLineIndex: msg.label,
         candidate: msg.candidate
@@ -355,7 +377,7 @@ class P2PConnector {
         }
       };
 
-      this.rooms[roomName][peerId] = pc;
+      this.rooms.get(roomName).getPeer(peerId).peerConnection = pc;
 
       return pc;
     } catch (e) {
@@ -365,13 +387,13 @@ class P2PConnector {
     }
   }
 
-  initDataChannel(room: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
+  initDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
     //this.rooms[room][]
-    dataChannel.onopen = () => this.onOpenDataChannel(room, peerId, dataChannel, sendCheckingMessage);
-    dataChannel.onclose = (event) => this.onCloseDataChannel(room, peerId, dataChannel);
-    dataChannel.onmessage = (event) => this.onMessage(room, peerId, dataChannel, event);
-    this.rooms[room]["dataChannels"].push(dataChannel);
-    console.log(`initDataChannel ${room} ${peerId} ${dataChannel.label}`);
+    dataChannel.onopen = (event) => this.onOpenDataChannel(roomName, peerId, dataChannel, sendCheckingMessage);
+    dataChannel.onclose = (event) => this.onCloseDataChannel(roomName, peerId, dataChannel);
+    dataChannel.onmessage = (event) => this.onMessage(roomName, peerId, dataChannel, event);
+    this.rooms.get(roomName).getPeer(peerId).dataChannel = dataChannel;
+    console.log(`initDataChannel ${roomName} ${peerId} ${dataChannel.label}`);
   }
 
   onOpenDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
@@ -385,7 +407,7 @@ class P2PConnector {
       console.log("Checking message sent " + checkChannelMessage.value);
     }
 
-    let room: Room = this.rooms[roomName]["room"];
+    let room: Room = this.rooms.get(roomName);
     if (room && room.onOpenDataChannel)
       room.onOpenDataChannel(peerId);
 
@@ -406,12 +428,10 @@ class P2PConnector {
 
   onCloseDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel) {
     console.log(`onCloseDataChannel ${roomName} ${peerId}`);
-    let room: Room = this.rooms[roomName]["room"];
+    let room: Room = this.rooms.get(roomName);
 
-    let dataChannels = this.rooms[roomName]["dataChannels"];
-    let i: number = dataChannels.indexOf(dataChannel);
-    if (i !== -1)
-      dataChannels.splice(i, 1);
+    room.getPeer(peerId).dataChannel = null;
+
     // if (dataChannels.length == 0)
     //   delete this.rooms[roomName];
 
@@ -436,13 +456,14 @@ class P2PConnector {
   }
 
   onFailure(roomName: string, peerId: string, e) {
-    let room: Room = this.rooms[roomName]["room"];
+    let room: Room = this.rooms.get(roomName);
     if (room.onFailure)
-      room.onFailure(roomName, e);
+      room.onFailure(peerId, e);
   }
 
   doCall(roomName: string, peerId: string) {
-    let peerConnection = this.rooms[roomName][peerId];
+    console.log("do call");
+    let peerConnection = this.rooms.get(roomName).getPeer(peerId).peerConnection;
     this.createDataChannel(roomName, peerId, peerConnection, "caller");
     peerConnection.createOffer((offer) => {
         peerConnection.setLocalDescription(offer, () => {
@@ -453,7 +474,7 @@ class P2PConnector {
   }
 
   doAnswer(roomName: string, peerId: string) {
-    let peerConnection = this.rooms[roomName][peerId];
+    let peerConnection = this.rooms.get(roomName).getPeer(peerId).peerConnection;
     peerConnection.createAnswer((answer) => {
       peerConnection.setLocalDescription(answer, () => {
         this.sendSignalingMessage([{"room": roomName, "toPeerId": peerId}, peerConnection.localDescription]);
@@ -472,16 +493,12 @@ class P2PConnector {
     this.send(room, JSON.stringify(message));
   }
 
-  send(room: string, data, channel?: RTCDataChannel) {
+  send(roomName: string, data, channel?: RTCDataChannel) {
     if (channel) {
       channel.send(data);
     } else {
-      if (room && this.rooms[room]) {
-        let dataChannels: RTCDataChannel[] = this.rooms[room]["dataChannels"];
-        if (dataChannels)
-          dataChannels.forEach(function (channel) {
-            channel.send(data);
-          });
+      if (roomName && this.rooms.get(roomName)) {
+        this.rooms.get(roomName).getDataChannels().forEach(channel => channel.send(data));
       }
     }
   }
@@ -490,7 +507,7 @@ class P2PConnector {
     try {
       let msg = JSON.parse(event.data);
 
-      let room: Room = this.rooms[roomName]["room"];
+      let room: Room = this.rooms.get(roomName);
       if (room && room.onMessage) {
         msg.fromPeerId = peerId;
         msg.roomName = roomName;
@@ -538,10 +555,10 @@ class P2PConnector {
   /**
    * Close all data channels for the room, delete the room.
    */
-  closeRoom(roomName: string) {
-    let dataChannels: RTCDataChannel[] = this.rooms[roomName]["dataChannels"];
+  closeRoom(room: Room) {
+    let dataChannels = room.getDataChannels();
     dataChannels.forEach(channel => channel.close());
-    dataChannels.length = 0;
+
     //room deleting is in the onCloseDataChannel()
   }
 
@@ -553,9 +570,7 @@ class P2PConnector {
     this.pendingIdentity = null;
     this.pendingToApproveRooms = [];
     this.pendingOnlineStatus = null;
-    for (let roomName in this.rooms) {
-      this.closeRoom(roomName);
-    }
+    this.rooms.forEach(room => this.closeRoom(room));
     if (this.signalingChannel)
       this.signalingChannel.close();
   }
