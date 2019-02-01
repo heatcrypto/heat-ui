@@ -58,7 +58,7 @@
 </p>
 -->
 
-<div>
+<div style="overflow: scroll;">
   <div ng-repeat="message in vm.messages track by $index">
     <span>{{message}}</span>
   </div>
@@ -163,8 +163,8 @@ class P2PMessagingProbeComponent {
   }
 
   send() {
-    this.messages.push(" >>> " + this.messageText);
-    this.room.sendMessage({type: "chat", text: this.messageText});
+    let count = this.room.sendMessage({type: "chat", text: this.messageText});
+    this.messages.push((count > 0 ? ">>> " : "- not sent - ") + this.messageText);
   }
 
   onOpenDataChannel(peerId: string) {
