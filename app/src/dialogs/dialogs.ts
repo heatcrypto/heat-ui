@@ -171,4 +171,23 @@ module dialogs {
       `
     });
   }
+
+  export function confirm(title, content) {
+    return dialogs.dialog({
+      id: 'confirmDialog',
+      title: title,
+      //targetEvent: $event,
+      okButton: true,
+      cancelButton: true,
+      locals: {
+        content: content
+      },
+      template: `
+        <!--<md-input-container flex>-->
+        <p>{{vm.content}}</p>
+        <!--</md-input-container>-->
+      `,
+    })
+  }
+
 }

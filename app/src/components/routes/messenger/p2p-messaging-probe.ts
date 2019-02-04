@@ -90,7 +90,7 @@ class P2PMessagingProbeComponent {
   peerId: string;
   myName: string = "Robin";
   roomName: string;
-  room: Room;
+  rooms: Map<string, Room> = new Map<string, Room>();
   whoIsOnline: string = "";
   messageConsole: string;
 
@@ -116,15 +116,18 @@ class P2PMessagingProbeComponent {
     this.p2pconnector.setup(
       this.myName,
       (roomName) => {
-        let room = new Room(roomName, this.p2pconnector);
-        room.onMessage = msg => this.onMessage(msg);
-        room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-        room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-        room.rejected = (byPeerId, reason) => {
-          this.messages.push("Peer '" + byPeerId + "' rejects me. Reason: " + reason);
-          this.$scope.$apply();
-        };
-        this.room = room;
+        let room = this.rooms.get(roomName);
+        if (!room) {
+          room = new Room(roomName, this.p2pconnector);
+          this.rooms.set(roomName, room);
+          room.onMessage = msg => this.onMessage(msg);
+          room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+          room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+          room.rejected = (byPeerId, reason) => {
+            this.messages.push("Peer '" + byPeerId + "' rejects me. Reason: " + reason);
+            this.$scope.$apply();
+          };
+        }
         this.roomName = roomName;
         this.canCall = true;
         this.messages.push("Accepted incoming call in room '" + roomName + "'");
@@ -144,27 +147,34 @@ class P2PMessagingProbeComponent {
   }
 
   enterRoom() {
-    this.room = new Room(this.roomName, this.p2pconnector);
-    this.room.onMessage = msg => this.onMessage(msg);
-    this.room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-    this.room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-    this.room.rejected = (byPeerId, reason) => {
-      this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
-      this.$scope.$apply();
-    };
-    this.room.enter();
+    let room = this.rooms.get(this.roomName);
+    if (!room) {
+      room = new Room(this.roomName, this.p2pconnector);
+      this.rooms.set(this.roomName, room);
+      room.onMessage = msg => this.onMessage(msg);
+      room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+      room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+      room.rejected = (byPeerId, reason) => {
+        this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
+        this.$scope.$apply();
+      };
+      room.enter();
+    }
     this.canCall = true;
+    return room;
   }
 
   call() {
-    if (!this.room)
-      this.enterRoom();
-    this.p2pconnector.call(this.peerId, this.myName, this.room);
+    let room = this.enterRoom();
+    this.p2pconnector.call(this.peerId, this.myName, room);
   }
 
   send() {
-    let count = this.room.sendMessage({type: "chat", text: this.messageText});
-    this.messages.push((count > 0 ? ">>> " : "- not sent - ") + this.messageText);
+    let room = this.rooms.get(this.roomName);
+    if (room) {
+      let count = room.sendMessage({type: "chat", text: this.messageText});
+      this.messages.push((count > 0 ? ">>> " : "- not sent - ") + this.messageText);
+    }
   }
 
   onOpenDataChannel(peerId: string) {
@@ -177,17 +187,20 @@ class P2PMessagingProbeComponent {
   }
 
   onCloseDataChannel(peerId: string) {
-    let openedChannels = 0;
-    this.room.getDataChannels().forEach(channel => {
-      if (channel.readyState == "open")
-        openedChannels++;
-    });
-    this.connected = openedChannels > 0;
-    this.messages.push("Closed channel with peer '" + peerId + "'");
+    let room = this.rooms.get(this.roomName);
+    if (room) {
+      let openedChannels = 0;
+      room.getDataChannels().forEach(channel => {
+        if (channel.readyState == "open")
+          openedChannels++;
+      });
+      this.connected = openedChannels > 0;
+      this.messages.push("Closed channel with peer '" + peerId + "'");
 
-    //this.updateWhoIsOnline();
+      //this.updateWhoIsOnline();
 
-    this.$scope.$apply();
+      this.$scope.$apply();
+    }
   }
 
   signalingError(reason: string) {

@@ -100,7 +100,7 @@ class Room {
     if (existingPeer) {
       return existingPeer;
     }
-    let p: RTCPeer = {publicKey: publicKey, dataChannel: null, peerConnection: null};
+    let p: RTCPeer = new RTCPeer(publicKey);
     this.peers.set(peerId, p);
     return p;
   }
@@ -117,10 +117,18 @@ interface ProvingData {
   publicKeyHex: string
 }
 
-interface RTCPeer {
-  publicKey: string,
-  peerConnection: RTCPeerConnection,
-  dataChannel: RTCDataChannel
+class RTCPeer {
+  constructor(publicKey: string) {
+    this.publicKey = publicKey;
+  }
+
+  publicKey: string;
+  peerConnection: RTCPeerConnection;
+  dataChannel: RTCDataChannel;
+
+  isConnected() {
+    return this.dataChannel && this.dataChannel.readyState == "open"
+  }
 }
 
 @Service('P2PConnector')
@@ -212,23 +220,6 @@ class P2PConnector {
       })
   }
 
-  request(request: () => void, handleResponse: (msg) => any): Promise<any> {
-    let p = new Promise<any>((resolve, reject) => {
-      let f = (msg) => {
-        let v = handleResponse(msg);
-        if (v !== this.notAcceptedResponse) {
-          resolve(v);
-          let i: number = this.signalingMessageAwaitings.indexOf(f);
-          if (i !== -1)
-            this.signalingMessageAwaitings.splice(i, 1);
-        }
-      };
-      this.signalingMessageAwaitings.push(f);
-      return request();
-    });
-    return promiseTimeout(3000, p);
-  }
-
   register(room: Room) {
     let approveRoom = () => {
       let existingRoom: Room = this.rooms.get(room.name);
@@ -305,19 +296,24 @@ class P2PConnector {
         if (!peer.peerConnection) {
           this.createPeerConnection(roomName, peerId);
         }
-        if (!peer.dataChannel || peer.dataChannel.readyState !== "open")
-          this.doCall(roomName, peerId);
+        if (!peer.isConnected()) {
+          this.doOffer(roomName, peerId);
+        }
       });
     } else if (msg.type === 'offer') {
       let peerId: string = msg.fromPeer;
       let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
-      let pc = peer.peerConnection;
-      if (!pc)
-        pc = this.createPeerConnection(roomName, peerId);
-      if (pc) {
-        pc.setRemoteDescription(new RTCSessionDescription(msg));
-        this.doAnswer(roomName, peerId);
-        console.log("do answer");
+      if (!peer.isConnected()) {
+        dialogs.confirm("Incoming call", `User ${msg.fromPeer} calls you.`).then(o => {
+          let pc = peer.peerConnection;
+          if (!pc) {
+            pc = this.createPeerConnection(roomName, peerId);
+          }
+          if (pc) {
+            pc.setRemoteDescription(new RTCSessionDescription(msg));
+            this.doAnswer(roomName, peerId);
+          }
+        });
       }
     } else if (msg.type === 'answer') {
       let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
@@ -473,8 +469,15 @@ class P2PConnector {
       room.onFailure(peerId, e);
   }
 
-  doCall(roomName: string, peerId: string) {
-    console.log("do call");
+  /**
+   * offer example:
+   * [
+   * {"room":"1", "toPeerId":"93ac1cc5f78d3c54da74282dfb5012a2f29b5310b52bea5288f147f31a361419"},
+   * {"type":"offer", "sdp":"v=0\r\no=- 199179691613427 ... webrtc-datachannel 1024\r\n"}
+   * ]
+   */
+  doOffer(roomName: string, peerId: string) {
+    console.log("do offer");
     let peerConnection = this.rooms.get(roomName).getPeer(peerId).peerConnection;
     this.createDataChannel(roomName, peerId, peerConnection, "caller");
     peerConnection.createOffer((offer) => {
@@ -485,7 +488,15 @@ class P2PConnector {
       null);
   }
 
+  /**
+   * answer example:
+   * [
+   * {"room":"1", "toPeerId":"12a26b3d6c17395f787166254b50259075fa0649ef0045ebd0c1555c4c5d8462"},
+   * {"type":"answer", "sdp":"v=0\r\no=- 6490594091461 ... webrtc-datachannel 1024\r\n"}
+   * ]
+   */
   doAnswer(roomName: string, peerId: string) {
+    console.log("do answer");
     let peerConnection = this.rooms.get(roomName).getPeer(peerId).peerConnection;
     peerConnection.createAnswer((answer) => {
       peerConnection.setLocalDescription(answer, () => {
@@ -523,6 +534,7 @@ class P2PConnector {
       return 1;
     }
     console.log("not sent. channel state=");
+    return 0;
   }
 
   onMessage(roomName: string, peerId: string, dataChannel: RTCDataChannel, event: MessageEvent) {
@@ -595,6 +607,24 @@ class P2PConnector {
     this.rooms.forEach(room => this.closeRoom(room));
     if (this.signalingChannel)
       this.signalingChannel.close();
+  }
+
+
+  private request(request: () => void, handleResponse: (msg) => any): Promise<any> {
+    let p = new Promise<any>((resolve, reject) => {
+      let f = (msg) => {
+        let v = handleResponse(msg);
+        if (v !== this.notAcceptedResponse) {
+          resolve(v);
+          let i: number = this.signalingMessageAwaitings.indexOf(f);
+          if (i !== -1)
+            this.signalingMessageAwaitings.splice(i, 1);
+        }
+      };
+      this.signalingMessageAwaitings.push(f);
+      return request();
+    });
+    return promiseTimeout(3000, p);
   }
 
 }
