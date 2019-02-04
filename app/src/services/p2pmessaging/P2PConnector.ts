@@ -71,6 +71,11 @@ class Room {
   rejected: (byPeerId: string, reason: string) => any;
 
   /**
+   * Invoked on offer from the peer to establish p2p channel. Needs to resolve promise if user allows call.
+   */
+  confirmIncomingCall: (peerId: string) => Promise<any>;
+
+  /**
    * Public key is proven. Returns true if the public key owner is allowed to connect.
    * @param room
    * @param peerId
@@ -304,7 +309,8 @@ class P2PConnector {
       let peerId: string = msg.fromPeer;
       let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
       if (!peer.isConnected()) {
-        dialogs.confirm("Incoming call", `User ${msg.fromPeer} calls you.`).then(o => {
+        let room = this.rooms.get(roomName);
+        room.confirmIncomingCall(peerId).then(() => {
           let pc = peer.peerConnection;
           if (!pc) {
             pc = this.createPeerConnection(roomName, peerId);

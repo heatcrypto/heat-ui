@@ -120,6 +120,7 @@ class P2PMessagingProbeComponent {
         if (!room) {
           room = new Room(roomName, this.p2pconnector);
           this.rooms.set(roomName, room);
+          room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
           room.onMessage = msg => this.onMessage(msg);
           room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
           room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
@@ -151,6 +152,7 @@ class P2PMessagingProbeComponent {
     if (!room) {
       room = new Room(this.roomName, this.p2pconnector);
       this.rooms.set(this.roomName, room);
+      room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
       room.onMessage = msg => this.onMessage(msg);
       room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
       room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
@@ -158,8 +160,8 @@ class P2PMessagingProbeComponent {
         this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
         this.$scope.$apply();
       };
-      room.enter();
     }
+    room.enter();
     this.canCall = true;
     return room;
   }
@@ -235,4 +237,9 @@ class P2PMessagingProbeComponent {
     });
   }
 
+  private confirmIncomingCall(peerId: string): Promise<any> {
+    return new Promise<any>((resolve) => {
+      dialogs.confirm("Incoming call", `User ${peerId} calls you.`).then(() => resolve());
+    });
+  }
 }
