@@ -72,7 +72,7 @@
   //   </div>
   // `
 })
-@Inject('$scope', 'user', 'sendmessage', '$interval', 'P2PConnector')
+@Inject('$scope', 'user', 'sendmessage', '$interval', 'P2PConnector', 'storage')
 class P2PMessagingProbeComponent {
 
   // get publickey() {
@@ -88,7 +88,8 @@ class P2PMessagingProbeComponent {
   messageText: string;
   messages: string[] = [];
   peerId: string;
-  myName: string = "Robin";
+  secret: string;
+  myName: string;
   roomName: string;
   rooms: Map<string, Room> = new Map<string, Room>();
   whoIsOnline: string = "";
@@ -101,7 +102,8 @@ class P2PMessagingProbeComponent {
               private user: UserService,
               private sendmessage: SendmessageService,
               private $interval: angular.IIntervalService,
-              private p2pconnector: P2PConnector) {
+              private p2pconnector: P2PConnector,
+              private storage: StorageService) {
     //user.requireLogin();
 
     // let interval = $interval(()=>{
@@ -112,15 +114,21 @@ class P2PMessagingProbeComponent {
     //   $interval.cancel(interval);
     // });
 
+    this.user.unlock("user1");
+
+    this.secret = randomString();
+    this.myName = heat.crypto.secretPhraseToPublicKey(this.secret);
+
     //setup p2pconnector
     this.p2pconnector.setup(
       this.myName,
       (roomName) => {
         let room = this.rooms.get(roomName);
         if (!room) {
-          room = new Room(roomName, this.p2pconnector);
+          room = new Room(roomName, this.p2pconnector, this.storage);
           this.rooms.set(roomName, room);
           room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+          room.onFailure = e => this.onError(e);
           room.onMessage = msg => this.onMessage(msg);
           room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
           room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
@@ -139,8 +147,8 @@ class P2PMessagingProbeComponent {
         this.messages.push("Call from '" + caller + "' accepted");
         return true; //accept all income calls
       },
-      reason => this.signalingError(reason),
-      this.sign
+      reason => this.onError(reason),
+      dataHex => this.sign(dataHex)
     );
 
     //set my online status
@@ -150,10 +158,11 @@ class P2PMessagingProbeComponent {
   enterRoom() {
     let room = this.rooms.get(this.roomName);
     if (!room) {
-      room = new Room(this.roomName, this.p2pconnector);
+      room = new Room(this.roomName, this.p2pconnector, this.storage);
       this.rooms.set(this.roomName, room);
       room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
       room.onMessage = msg => this.onMessage(msg);
+      room.onFailure = e => this.onError(e);
       room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
       room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
       room.rejected = (byPeerId, reason) => {
@@ -174,7 +183,7 @@ class P2PMessagingProbeComponent {
   send() {
     let room = this.rooms.get(this.roomName);
     if (room) {
-      let count = room.sendMessage({type: "chat", text: this.messageText});
+      let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
       this.messages.push((count > 0 ? ">>> " : "- not sent - ") + this.messageText);
     }
   }
@@ -205,8 +214,8 @@ class P2PMessagingProbeComponent {
     }
   }
 
-  signalingError(reason: string) {
-    this.messages.push("Signaling error: " + reason);
+  onError(reason: string) {
+    this.messages.push("Error: " + reason);
     this.$scope.$apply();
   }
 
@@ -214,9 +223,8 @@ class P2PMessagingProbeComponent {
     //let secret = this.user.secretPhrase;
     //must be the real secret phrase to proof the passed to room public key is owned.
     //Now use the random string for testing
-    let secret = randomString();
-    let publicKey = heat.crypto.secretPhraseToPublicKey(secret);
-    let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(secret));
+    let publicKey = heat.crypto.secretPhraseToPublicKey(this.secret);
+    let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(this.secret));
     return {signatureHex: signature, dataHex: dataHex, publicKeyHex: publicKey}
   }
 

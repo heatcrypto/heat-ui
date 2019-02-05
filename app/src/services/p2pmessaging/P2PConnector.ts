@@ -24,11 +24,13 @@
 class Room {
 
   constructor(public name: string,
-              private connector: P2PConnector) {
+              private connector: P2PConnector,
+              private storage: StorageService) {
 
   }
 
   private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>();
+  private messageHistory: MessageHistory;
 
   /**
    * If room not exists registers the room on the server (signaling server).
@@ -41,7 +43,7 @@ class Room {
   /**
    * Sends message to all members of room (all peers in the room).
    */
-  sendMessage(message: {}): number {
+  sendMessage(message: P2PMessage): number {
     return this.connector.sendMessage(this.name, message);
   }
 
@@ -74,6 +76,13 @@ class Room {
    * Invoked on offer from the peer to establish p2p channel. Needs to resolve promise if user allows call.
    */
   confirmIncomingCall: (peerId: string) => Promise<any>;
+
+  getMessageHistory() {
+    if (!this.messageHistory) {
+      this.messageHistory = new MessageHistory(this, this.storage);
+    }
+    return this.messageHistory;
+  }
 
   /**
    * Public key is proven. Returns true if the public key owner is allowed to connect.
@@ -116,6 +125,12 @@ class Room {
 
 }
 
+interface P2PMessage {
+  timestamp: number,
+  type: "chat" | "",
+  text: string
+}
+
 interface ProvingData {
   signatureHex: string,
   dataHex: string,
@@ -134,6 +149,57 @@ class RTCPeer {
   isConnected() {
     return this.dataChannel && this.dataChannel.readyState == "open"
   }
+}
+
+class MessageHistory {
+
+  static MAX_PAGES_COUNT = 100; //max number of pages for one room
+  static MAX_PAGE_LENGTH = 200; //it is the count of messages in one item of localStorage
+
+  private store: Store;
+  //todo messages encryption
+
+  private page: number;
+  private pageContent: Array<any> = new Array<any>();
+  private pages: number[];
+
+  constructor(private room: Room,
+              private storage: StorageService) {
+    this.store = storage.namespace('p2p-messages.' + this.room.name);
+    this.pages = this.store.keys().map(value => parseInt(value)).sort();
+    if (this.pages.length == 0) {
+      this.page = 0;
+      this.pages.push(this.page);
+    } else {
+      this.page = this.pages[this.pages.length - 1];
+    }
+  }
+
+  put(timestamp: number, fromPeer: string, message: string) {
+    this.pageContent.push({timestamp: timestamp, fromPeer: fromPeer, message: message});
+    try {
+      this.store.put('' + this.page, JSON.stringify(this.pageContent));
+    } catch (domException) {
+      if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
+        //todo shrink history of all accounts when reach storage limit
+      }
+      this.store.put('' + this.page, JSON.stringify(this.pageContent));
+    }
+    if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
+      this.pageContent = [];
+      this.page++;
+      this.pages.push(this.page);
+    }
+    if (this.pages.length > MessageHistory.MAX_PAGES_COUNT) {
+      this.store.remove('' + this.pages[0]);
+      this.pages.splice(0, 1);
+    }
+  }
+
+  remove() {
+    //todo needs message id
+  }
+
 }
 
 @Service('P2PConnector')
@@ -316,14 +382,20 @@ class P2PConnector {
             pc = this.createPeerConnection(roomName, peerId);
           }
           if (pc) {
-            pc.setRemoteDescription(new RTCSessionDescription(msg));
+            pc.setRemoteDescription(new RTCSessionDescription(msg))
+              .catch(e => {
+                room.onFailure(peerId, e.name);
+              });
             this.doAnswer(roomName, peerId);
           }
         });
       }
     } else if (msg.type === 'answer') {
       let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
-      pc.setRemoteDescription(new RTCSessionDescription(msg));
+      pc.setRemoteDescription(new RTCSessionDescription(msg))
+        .catch(e => {
+          this.rooms.get(roomName).onFailure(msg.fromPeer, e.name);
+        });
       console.log("got answer");
     } else if (msg.type === 'candidate') {
       let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
@@ -331,7 +403,11 @@ class P2PConnector {
         sdpMLineIndex: msg.label,
         candidate: msg.candidate
       });
-      pc.addIceCandidate(candidate);
+      pc.addIceCandidate(candidate)
+        .catch(e => {
+          console.log("Failure during addIceCandidate(): " + e.name);
+          this.rooms.get(roomName).onFailure(msg.fromPeer, e.name);
+        });
       console.log("addIceCandidate");
       // } else if (msg.type === 'GETROOM') {
       //   this.room = msg.value;
@@ -518,11 +594,16 @@ class P2PConnector {
   /**
    * Sends message to all online members of room.
    */
-  sendMessage(roomName: string, message: {}) {
-    return this.send(roomName, JSON.stringify(message));
+  sendMessage(roomName: string, message: P2PMessage) {
+    let count = this.send(roomName, JSON.stringify(message));
+    if (message.type == "chat") {
+      // in message history prefix "=" means that message from me
+      this.rooms.get(roomName).getMessageHistory().put(message.timestamp, "=" + this.identity, message.text);
+    }
+    return count;
   }
 
-  send(roomName: string, data, channel?: RTCDataChannel) {
+  private send(roomName: string, data, channel?: RTCDataChannel) {
     if (channel) {
       return this.sendInternal(channel, data);
     } else {
@@ -551,6 +632,9 @@ class P2PConnector {
       if (room && room.onMessage) {
         msg.fromPeerId = peerId;
         msg.roomName = roomName;
+      }
+      if (msg.type == "chat") {
+        room.getMessageHistory().put(msg.timestamp, peerId, msg.text);
         room.onMessage(msg);
       }
       if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
