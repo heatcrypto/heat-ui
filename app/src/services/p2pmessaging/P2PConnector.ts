@@ -151,16 +151,21 @@ class RTCPeer {
   }
 }
 
+interface MessageHistoryItem {
+  timestamp: number,
+  fromPeer: string,
+  message: string
+}
+
 class MessageHistory {
 
-  static MAX_PAGES_COUNT = 100; //max number of pages for one room
-  static MAX_PAGE_LENGTH = 200; //it is the count of messages in one item of localStorage
+  static MAX_PAGES_COUNT = 200; //max number of pages for one room
+  static MAX_PAGE_LENGTH = 100; //it is the count of messages in one item of localStorage
 
   private store: Store;
-  //todo messages encryption
 
-  private page: number;
-  private pageContent: Array<any> = new Array<any>();
+  private page: number; //current page number
+  private pageContent: Array<MessageHistoryItem> = new Array<MessageHistoryItem>();
   private pages: number[];
 
   constructor(private room: Room,
@@ -168,23 +173,33 @@ class MessageHistory {
     this.store = storage.namespace('p2p-messages.' + this.room.name);
     this.pages = this.store.keys().map(value => parseInt(value)).sort();
     if (this.pages.length == 0) {
-      this.page = 0;
-      this.pages.push(this.page);
+      this.pages.push(this.page = 0);
     } else {
       this.page = this.pages[this.pages.length - 1];
     }
   }
 
+  getPageCount() {
+    return this.pages.length;
+  }
+
+  /**
+   * Returns messages by page.
+   * @param page in range [0, MessageHistory.getPageCount()]
+   */
+  getItems(page: number): Array<MessageHistoryItem> {
+    if (page >= 0 && page < this.pages.length) {
+      let v = this.store.getString('' + this.pages[page]);
+      if (v) {
+        return JSON.parse(v);
+      }
+    }
+    return null;
+  }
+
   put(timestamp: number, fromPeer: string, message: string) {
     this.pageContent.push({timestamp: timestamp, fromPeer: fromPeer, message: message});
-    try {
-      this.store.put('' + this.page, JSON.stringify(this.pageContent));
-    } catch (domException) {
-      if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
-        //todo shrink history of all accounts when reach storage limit
-      }
-      this.store.put('' + this.page, JSON.stringify(this.pageContent));
-    }
+    this.savePage(this.page, this.pageContent);
     if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
       this.pageContent = [];
       this.page++;
@@ -196,8 +211,31 @@ class MessageHistory {
     }
   }
 
-  remove() {
-    //todo needs message id
+  //using timestamp as message id is not ideal, but it is quick solution
+  remove(timestamp: number) {
+    //todo remove message on the remote peers also
+    //iterate from end to begin because more likely user removed the recent message
+    for (let page = this.pages.length - 1; page >= 0; page--) {
+      let items = this.getItems(page);
+      if (items) {
+        let newItems = items.filter(item => item.timestamp != timestamp);
+        if (items.length != newItems.length) {
+          this.savePage(this.pages[page], newItems);
+        }
+      }
+    }
+  }
+
+  private savePage(page: number, pageContent: Array<MessageHistoryItem>) {
+    //todo messages encryption
+    try {
+      this.store.put('' + page, JSON.stringify(pageContent));
+    } catch (domException) {
+      if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
+        //todo shrink history of all accounts when reach storage limit
+      }
+      this.store.put('' + page, JSON.stringify(pageContent));
+    }
   }
 
 }

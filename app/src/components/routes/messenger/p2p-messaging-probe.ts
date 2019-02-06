@@ -72,7 +72,7 @@
   //   </div>
   // `
 })
-@Inject('$scope', 'user', 'sendmessage', '$interval', 'P2PConnector', 'storage')
+@Inject('$scope', 'user', 'sendmessage', '$interval', 'P2PConnector', 'storage', 'settings')
 class P2PMessagingProbeComponent {
 
   // get publickey() {
@@ -103,7 +103,8 @@ class P2PMessagingProbeComponent {
               private sendmessage: SendmessageService,
               private $interval: angular.IIntervalService,
               private p2pconnector: P2PConnector,
-              private storage: StorageService) {
+              private storage: StorageService,
+              private settings: SettingsService) {
     //user.requireLogin();
 
     // let interval = $interval(()=>{
@@ -170,6 +171,20 @@ class P2PMessagingProbeComponent {
         this.$scope.$apply();
       };
     }
+
+    this.messages = [];
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let recentMessages = room.getMessageHistory().getItems(room.getMessageHistory().getPageCount() - 1);
+    if (recentMessages) {
+      recentMessages.forEach(item => {
+        let fromMe = item.fromPeer.startsWith("=");
+        this.messages.push((fromMe ? " >>> " : " <<< ")
+          + (item.timestamp ? dateFormat(new Date(item.timestamp), format) : "?") + "  "
+          + (fromMe ? "me" : item.fromPeer)
+          + ": " + item.message);
+      });
+    }
+
     room.enter();
     this.canCall = true;
     return room;
