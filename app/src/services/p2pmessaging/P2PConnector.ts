@@ -25,7 +25,8 @@ class Room {
 
   constructor(public name: string,
               private connector: P2PConnector,
-              private storage: StorageService) {
+              private storage: StorageService,
+              private user: UserService) {
 
   }
 
@@ -79,7 +80,7 @@ class Room {
 
   getMessageHistory() {
     if (!this.messageHistory) {
-      this.messageHistory = new MessageHistory(this, this.storage);
+      this.messageHistory = new MessageHistory(this, this.storage, this.user);
     }
     return this.messageHistory;
   }
@@ -159,27 +160,32 @@ interface MessageHistoryItem {
 
 class MessageHistory {
 
+  //todo migrate from localStorage to IndexedDB
+
   static MAX_PAGES_COUNT = 200; //max number of pages for one room
   static MAX_PAGE_LENGTH = 100; //it is the count of messages in one item of localStorage
 
   private store: Store;
 
   private page: number; //current page number
-  private pageContent: Array<MessageHistoryItem> = new Array<MessageHistoryItem>();
+  private pageContent: Array<MessageHistoryItem>;
   private pages: number[];
 
   constructor(private room: Room,
-              private storage: StorageService) {
+              private storage: StorageService,
+              private user: UserService) {
     this.store = storage.namespace('p2p-messages.' + this.room.name);
     this.pages = this.store.keys().map(value => parseInt(value)).sort();
     if (this.pages.length == 0) {
       this.pages.push(this.page = 0);
     } else {
       this.page = this.pages[this.pages.length - 1];
+      this.pageContent = this.getItems(this.pages.length - 1);
     }
+    this.pageContent = this.pageContent ? this.pageContent : new Array<MessageHistoryItem>();
   }
 
-  getPageCount() {
+  public getPageCount() {
     return this.pages.length;
   }
 
@@ -187,17 +193,23 @@ class MessageHistory {
    * Returns messages by page.
    * @param page in range [0, MessageHistory.getPageCount()]
    */
-  getItems(page: number): Array<MessageHistoryItem> {
+  public getItems(page: number): Array<MessageHistoryItem> {
     if (page >= 0 && page < this.pages.length) {
       let v = this.store.getString('' + this.pages[page]);
       if (v) {
-        return JSON.parse(v);
+        try {
+          let encrypted = JSON.parse(v);
+          let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
+          return JSON.parse(pageContentStr);
+        } catch (e) {
+          console.log("Error on parse/decrypt message history page");
+        }
       }
     }
     return null;
   }
 
-  put(timestamp: number, fromPeer: string, message: string) {
+  public put(timestamp: number, fromPeer: string, message: string) {
     this.pageContent.push({timestamp: timestamp, fromPeer: fromPeer, message: message});
     this.savePage(this.page, this.pageContent);
     if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
@@ -212,7 +224,7 @@ class MessageHistory {
   }
 
   //using timestamp as message id is not ideal, but it is quick solution
-  remove(timestamp: number) {
+  public remove(timestamp: number) {
     //todo remove message on the remote peers also
     //iterate from end to begin because more likely user removed the recent message
     for (let page = this.pages.length - 1; page >= 0; page--) {
@@ -229,7 +241,8 @@ class MessageHistory {
   private savePage(page: number, pageContent: Array<MessageHistoryItem>) {
     //todo messages encryption
     try {
-      this.store.put('' + page, JSON.stringify(pageContent));
+      let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.user.publicKey, this.user.secretPhrase, false);
+      this.store.put('' + page, JSON.stringify(encrypted));
     } catch (domException) {
       if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
         //todo shrink history of all accounts when reach storage limit

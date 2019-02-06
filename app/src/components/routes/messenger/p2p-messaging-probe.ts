@@ -126,7 +126,7 @@ class P2PMessagingProbeComponent {
       (roomName) => {
         let room = this.rooms.get(roomName);
         if (!room) {
-          room = new Room(roomName, this.p2pconnector, this.storage);
+          room = new Room(roomName, this.p2pconnector, this.storage, this.user);
           this.rooms.set(roomName, room);
           room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
           room.onFailure = e => this.onError(e);
@@ -159,7 +159,7 @@ class P2PMessagingProbeComponent {
   enterRoom() {
     let room = this.rooms.get(this.roomName);
     if (!room) {
-      room = new Room(this.roomName, this.p2pconnector, this.storage);
+      room = new Room(this.roomName, this.p2pconnector, this.storage, this.user);
       this.rooms.set(this.roomName, room);
       room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
       room.onMessage = msg => this.onMessage(msg);
