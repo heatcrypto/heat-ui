@@ -12,7 +12,9 @@ class BtcBlockExplorerService {
   public getBalance = (address: string) => {
     let deferred = this.$q.defer<number>();
     this.getAddressInfo(address).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let parsed = utils.parseResponse(response)
+      if(parsed.heatUtilParsingError)
+        deferred.reject()
       deferred.resolve(parsed.balanceSat + parsed.unconfirmedBalanceSat)
     }, () => {
       deferred.reject()
@@ -24,7 +26,9 @@ class BtcBlockExplorerService {
     let getTransactionsApi = `${BtcBlockExplorerService.endPoint}/addrs/${address}/txs?from=${from}&to=${to}`;
     let deferred = this.$q.defer();
     this.http.get(getTransactionsApi).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let parsed = utils.parseResponse(response)
+      if(parsed.heatUtilParsingError)
+        deferred.reject()
       deferred.resolve(parsed.items)
     }, () => {
       deferred.reject();
@@ -36,7 +40,9 @@ class BtcBlockExplorerService {
     let getTransactionsApi = `${BtcBlockExplorerService.endPoint}/addr/${address}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let parsed = utils.parseResponse(response)
+      if(parsed.heatUtilParsingError)
+        deferred.reject()
       deferred.resolve(parsed);
     }, () => {
       deferred.reject();
@@ -49,7 +55,9 @@ class BtcBlockExplorerService {
     let deferred = this.$q.defer();
     let fee = 20;
     this.http.get(getEstimatedFeeApi).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let parsed = utils.parseResponse(response)
+      if(parsed.heatUtilParsingError)
+        deferred.reject()
       parsed.fees.forEach(feeObject => {
         if (feeObject.maxDelay == 1) {
           fee = feeObject.minFee
@@ -68,7 +76,9 @@ class BtcBlockExplorerService {
     let getTxInfoApi = `${BtcBlockExplorerService.endPoint}/tx/${txId}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let parsed = utils.parseResponse(response)
+      if(parsed.heatUtilParsingError)
+        deferred.reject()
       deferred.resolve(parsed);
     }, () => {
       deferred.reject();

@@ -84,6 +84,20 @@ module utils {
     return false;
   }
 
+  export function parseResponse(response): any {
+    let parsed = {};
+    if(angular.isString(response)) {
+      try {
+        parsed = JSON.parse(response)
+      } catch(e) {
+        parsed = {heatUtilParsingError: response}
+      }
+    } else {
+      parsed = response;
+    }
+    return parsed;
+  }
+
   export function ardorTimestampToDate(timestamp: number) {
     return new Date(Date.UTC(2018, 0, 1, 0, 0, 0, 0) + timestamp * 1000);
   }
