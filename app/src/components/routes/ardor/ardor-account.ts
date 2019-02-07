@@ -23,6 +23,18 @@
             </div>
           </div>
         </div>
+        <div layout="column">
+          <div class="col-item">
+            <div class="title">
+              ARDOR Server:
+            </div>
+            <div class="value">
+              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeSocketAddress()">
+                <md-option ng-repeat="socket in vm.sockets" value="{{socket.name}}">{{socket.name}}</md-option>
+              </md-select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div flex layout="column">
@@ -58,6 +70,7 @@ class ArdorAccountComponent {
   pendingTransactions: Array<{ date: string, txId: string, time: number, address: string, fullHash: string }> = []
   prevIndex = 0
   busy = true
+  sockets: any;
 
   constructor(private $scope: angular.IScope,
               private ardorBlockExplorerService: ArdorBlockExplorerService,
@@ -80,8 +93,26 @@ class ArdorAccountComponent {
       ardorPendingTransactions.removeListener(listener)
       $interval.cancel(promise)
     })
+
+    this.sockets = [
+      {
+        name: 'ArdorBlockExplorer',
+        socketUrl: 'http://176.9.144.171:27876/'
+      },
+      {
+        name: 'Localhost',
+        socketUrl: 'http://localhost:27876/'
+      }
+    ]
+
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.ardorBlockExplorerService.getSocketUrl() == w.socketUrl).name
   }
 
+  changeSocketAddress() {
+    let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
+    console.log("ret", ret);
+    this.ardorBlockExplorerService.setUrl(ret.socketUrl)
+  }
 
   timerHandler() {
     this.refresh()
