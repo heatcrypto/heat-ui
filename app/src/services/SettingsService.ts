@@ -230,7 +230,7 @@ class SettingsService {
     let resolveFailoverDescriptor: Function = function(json: any) {
       if (heat.isTestnet)
         SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
-      if (heat.isBetanet)
+      else if (heat.isBetanet)
         SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
       else
         SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
