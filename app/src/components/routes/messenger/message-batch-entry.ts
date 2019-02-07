@@ -25,7 +25,7 @@
   inputs: ['message'],
   styles: [`
     message-batch-entry md-icon {
-      padding-top: 8px;
+      padding: 0 13px 0 0;
       font-size: 32px !important;
     }
     message-batch-entry .header {
@@ -54,7 +54,7 @@
       </div>
       <div layout="column" flex layout-padding>
         <div layout="row" class="header">
-          <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;</b>{{::vm.message.date}}
+          <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::vm.message.date}}
         </div>
         <!-- look into allowing html messages later on
         <div layout="column" class="message-content" ng-bind-html="vm.message.html"></div>

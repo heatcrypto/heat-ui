@@ -30,10 +30,13 @@ user-contacts {
   md-list {
     overflow-y: scroll;
   }
+  md-list-item:nth-child(even) {
+    background-color: transparent; //turn off the stripes
+  }
   md-list-item {
     height: 21px;
     min-height: 21px;
-    max-height: 21px;
+    max-height: 31px;
     .has-unread-message {
       color: @orange;
       font-size: 14px;

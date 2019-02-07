@@ -36,9 +36,9 @@
       padding-top: 0px;
       padding-bottom: 0px;
     }
-    messenger md-content {
-      padding-top: 2px;
-    }
+    // messenger md-content {
+    //   padding: 0 0 0 12px;
+    // }
     messenger .progress-indicator {
       padding-left: 0px;
       padding-right: 0px;
