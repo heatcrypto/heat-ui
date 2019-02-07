@@ -21,6 +21,16 @@ class FIMKCryptoService {
     });
   }
 
+  getSocket() {
+    return new Promise((resolve, reject) => {
+      let status = this.socket['readyState'];
+      if(status == 1)
+        resolve(status);
+      else
+        reject(0);
+    });
+  }
+
   refreshAdressBalances(wallet: WalletType) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
