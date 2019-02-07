@@ -110,7 +110,6 @@ class NxtAccountComponent {
 
   changeSocketAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    console.log("ret", ret);
     this.nxtBlockExplorerService.setUrl(ret.socketUrl)
   }
 

@@ -110,7 +110,6 @@ class ArdorAccountComponent {
 
   changeSocketAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    console.log("ret", ret);
     this.ardorBlockExplorerService.setUrl(ret.socketUrl)
   }
 
