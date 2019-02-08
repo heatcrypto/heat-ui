@@ -29,7 +29,7 @@
       {
         "host": "https://alpha.heatledger.com",
         "port": 7734,
-        "websocket": "wss://heatwallet.com:7755/ws/",
+        "websocket": "wss://alpha.heatledger.com:7755/ws/",
         "priority": 1
       },
       {
