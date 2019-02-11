@@ -42,7 +42,7 @@
     </div>
   `
 })
-@Inject('$scope','sendmessage','storage','$timeout')
+@Inject('$scope','sendmessage','storage','$timeout', 'user', 'P2PMessaging')
 class EditMessageComponent {
 
   publickey: string; // @inputs
@@ -53,13 +53,29 @@ class EditMessageComponent {
   constructor(private $scope: angular.IScope,
               private sendmessage: SendmessageService,
               storage: StorageService,
-              private $timeout: angular.ITimeoutService) {
+              private $timeout: angular.ITimeoutService,
+              private user: UserService,
+              private p2pMessaging: P2PMessaging) {
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
   }
 
   onKeyPress($event: KeyboardEvent) {
+    if ($event.ctrlKey && ($event.keyCode == 13 || $event.keyCode == 10)) {
+      this.sendP2PMessage($event);
+      return;
+    }
     if ($event.keyCode == 13 && !$event.shiftKey) {
       this.sendMessage($event);
+    }
+  }
+
+  sendP2PMessage($event) {
+    let room = this.p2pMessaging.getRoom(this.publickey);
+    if (room) {
+      let peer = room.getPeer(this.publickey);
+      if (peer && peer.isConnected()) {
+        let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
+      }
     }
   }
 

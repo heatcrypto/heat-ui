@@ -88,12 +88,19 @@ module utils {
     return new Date(Date.UTC(2018, 0, 1, 0, 0, 0, 0) + timestamp * 1000);
   }
 
+  /**
+   * Converts heat transaction timestamp to the real Date.
+   */
   export function timestampToDate(timestamp: number) {
     return new Date(Date.UTC(2013, 10, 24, 12, 0, 0, 0) + timestamp * 1000);
   }
 
-  export function epochTime() {
-    return (Date.now() - 1385294400000 + 500) / 1000;
+  /**
+   * Converts real timestamp to the heat transaction timestamp.
+   */
+  export function epochTime(timestamp?: number) {
+    let t = timestamp ? timestamp : Date.now();
+    return (t - 1385294400000 + 500) / 1000;
   }
 
   export function roundTo(value: string, decimals: number): string {

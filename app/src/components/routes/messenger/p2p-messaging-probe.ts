@@ -179,6 +179,7 @@ class P2PMessagingProbeComponent {
       recentMessages.forEach(item => {
         let fromMe = item.fromPeer.startsWith("=");
         this.messages.push((fromMe ? " >>> " : " <<< ")
+          + "[" + room.name + "] " +
           + (item.timestamp ? dateFormat(new Date(item.timestamp), format) : "?") + "  "
           + (fromMe ? "me" : item.fromPeer)
           + ": " + item.message);
@@ -199,7 +200,14 @@ class P2PMessagingProbeComponent {
     let room = this.rooms.get(this.roomName);
     if (room) {
       let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
-      this.messages.push((count > 0 ? ">>> " : "- not sent - ") + this.messageText);
+      this.messages.push((count > 0 ? ">>> [" : "- not sent - [") + room.name + "] " + this.messageText);
+    }
+  }
+
+  onMessage(msg: any) {
+    if (msg.type == "chat") {
+      this.messages.push(" <<< [" + msg.roomName + "]  " + msg.fromPeerId + ": " + msg.text);
+      this.$scope.$apply();
     }
   }
 
@@ -241,13 +249,6 @@ class P2PMessagingProbeComponent {
     let publicKey = heat.crypto.secretPhraseToPublicKey(this.secret);
     let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(this.secret));
     return {signatureHex: signature, dataHex: dataHex, publicKeyHex: publicKey}
-  }
-
-  onMessage(msg: any) {
-    if (msg.type == "chat") {
-      this.messages.push(" <<< " + msg.roomName + "  " + msg.fromPeerId + ": " + msg.text);
-      this.$scope.$apply();
-    }
   }
 
   private updateWhoIsOnline() {

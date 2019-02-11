@@ -37,7 +37,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$timeout','$location','$rootScope','storage')
+@Inject('$scope','user','heat','$q','$timeout','$location','$rootScope','storage', 'P2PMessaging')
 class UserContactsComponent {
 
   public contacts : Array<IHeatMessageContact> = [];
@@ -52,7 +52,8 @@ class UserContactsComponent {
               private $timeout: angular.ITimeoutService,
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
-              storage: StorageService) {
+              storage: StorageService,
+              private p2pMessaging: P2PMessaging) {
 
     this.refresh = utils.debounce(
       () => {
@@ -75,6 +76,8 @@ class UserContactsComponent {
 
     $rootScope.$on('$locationChangeSuccess', () => { this.setActivePublicKey() });
     this.setActivePublicKey();
+
+    //let myRoom = this.p2pMessaging.register();
   }
 
   getActivePublicKey() {
@@ -84,6 +87,11 @@ class UserContactsComponent {
 
   setActivePublicKey() {
     this.activePublicKey = this.getActivePublicKey();
+
+    if (this.activePublicKey && this.activePublicKey != "0") {
+      let peerRoom = this.p2pMessaging.getRoom(this.activePublicKey);
+    }
+
     if (!this.activePublicKey || this.activePublicKey == "0") {
       if (this.contacts[0] && this.contacts[0].publicKey != "0") {
         this.$location.path(`/messenger/${this.contacts[0].publicKey}`);

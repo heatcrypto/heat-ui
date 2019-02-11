@@ -44,12 +44,13 @@
   `
 })
 @Inject('$scope','$q','$timeout','$document','heat','user','settings',
-        'render','controlCharRender','storage')
+        'render','controlCharRender','storage', 'P2PMessaging')
 class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   private publickey: string; // @input
   private containerId: string; // @input
   private store: Store;
+  private dateFormat;
 
   constructor($scope: angular.IScope,
               $q: angular.IQService,
@@ -60,9 +61,11 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
               private settings: SettingsService,
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
-              storage: StorageService) {
+              storage: StorageService,
+              private p2pMessaging: P2PMessaging) {
     super($scope, $q, $timeout);
     this.store = storage.namespace('contacts.latestTimestamp',$scope);
+    this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
     var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
     heat.subscriber.message({sender:this.user.account}, refresh, $scope);
@@ -72,6 +75,16 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
+    }
+
+    if (this.publickey != '0') {
+      let room = this.p2pMessaging.getRoom(this.publickey);
+      if (room) {
+        room.onMessage = (msg: any) => {
+          this.onMessageAdded();
+          console.log(`<<< ${msg.text}`);
+        }
+      }
     }
   }
 
@@ -126,27 +139,78 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   }
 
   getCount() : angular.IPromise<number> {
-    return this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey));
+    let promise = this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey));
+    let room = this.p2pMessaging.getRoom(this.publickey);
+    if (room) {
+      let p2pItems = room.getMessageHistory().getItems(0);
+      if (p2pItems && p2pItems.length > 0) {
+        return promise.then(count => count + 1);
+      }
+    }
+    return promise;
   }
 
   getItems(firstIndex: number, lastIndex: number) : angular.IPromise<Array<any>> {
     let deferred = this.$q.defer<Array<any>>();
     this.heat.api.getMessagingContactMessages(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey),
                 firstIndex, lastIndex).then((messages) => {
-      var index = firstIndex;
-      deferred.resolve(messages.map((message) => {
+      let index = firstIndex;
+
+      let result = messages.map((message) => {
         var date = utils.timestampToDate(message.timestamp);
-        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-        message['date'] = dateFormat(date, format);
+        message['date'] = dateFormat(date, this.dateFormat);
         message['outgoing'] = this.user.account == message.sender;
         message['contents'] = this.decryptMessage(message);
         message['index'] = index++;
         message['html'] = this.render.render(message['contents'], [this.controlCharRender]);
         this.updateLatestMessageReadTimestamp(message);
         return message;
-      }));
+      });
+
+      //merge heat messages with p2p messages
+      let room = this.p2pMessaging.getRoom(this.publickey);
+      if (room) {
+        let p2pItems = room.getMessageHistory().getItems(0);
+        if (p2pItems) {
+          this.merge(result, p2pItems);
+        }
+      }
+
+      deferred.resolve(result);
     });
     return deferred.promise;
+  }
+
+  private merge(heatMessages: IHeatMessage[], p2pItems: MessageHistoryItem[]): IHeatMessage[] {
+    p2pItems.forEach(p2pItem => {
+      let m: IHeatMessage = {
+        blockId: null,
+        messageBytes: null,
+        messageIsEncrypted: false,
+        messageIsEncryptedToSelf: null,
+        messageIsText: true,
+        recipient: null,
+        recipientPrivateName: null,
+        recipientPublicKey: (p2pItem.fromPeer == this.publickey ? this.user.publicKey : this.publickey),
+        recipientPublicName: "",
+        sender: heat.crypto.getAccountIdFromPublicKey(p2pItem.fromPeer),
+        senderPrivateName: null,
+        senderPublicKey: p2pItem.fromPeer,
+        senderPublicName: "",
+        timestamp: p2pItem.timestamp,
+        transaction: null
+      };
+      m['p2p'] = true;
+      m['date'] = dateFormat(m.timestamp, this.dateFormat);
+      m.timestamp = utils.epochTime(m.timestamp);  //to be compatible with IHeatMessage
+      m['outgoing'] = this.user.account == m.sender;
+      m['contents'] = p2pItem.message;
+      m['html'] = this.render.render(m['contents'], [this.controlCharRender]);
+      //todo this.updateLatestMessageReadTimestamp(message);
+      heatMessages.push(m);
+    });
+    heatMessages.sort((a, b) => a.timestamp - b.timestamp);
+    return heatMessages;
   }
 
   decryptMessage(message: IHeatMessage) {

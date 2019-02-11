@@ -25,7 +25,7 @@
   inputs: ['message'],
   styles: [`
     message-batch-entry md-icon {
-      padding: 0 13px 0 0;
+      padding: 0 13px 7px 0;
       font-size: 32px !important;
     }
     message-batch-entry .header {
@@ -33,6 +33,9 @@
     }
     message-batch-entry .batch-entry {
       padding-left: 0px;
+    }
+    .offchain {
+      color: deepskyblue;
     }
     message-batch-entry .message-content pre {
       white-space: pre-wrap;       /* Since CSS 2.1 */
@@ -50,7 +53,8 @@
   template: `
     <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
       <div layout="column">
-        <md-icon md-font-library="material-icons">{{::vm.icon}}</md-icon>
+        <md-icon md-font-library="material-icons" ng-class="{offchain: vm.offchain}">{{::vm.icon}}</md-icon>
+        <span ng-if="vm.offchain" class="offchain">offchain</span>
       </div>
       <div layout="column" flex layout-padding>
         <div layout="row" class="header">
@@ -68,7 +72,9 @@
 class MessageBatchEntryComponent {
   message: IHeatMessage; // @input
   icon: string;
+  offchain: boolean;
   constructor() {
     this.icon = this.message['outgoing'] ? 'chat_bubble_outline' : 'comment';
+    this.offchain = !!this.message['p2p'];
   }
 }

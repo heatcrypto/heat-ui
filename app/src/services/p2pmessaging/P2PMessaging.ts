@@ -84,12 +84,13 @@ class P2PMessaging {
    * Returns room with single peer.
    */
   getRoom(peerId: string): Room {
-    let room: Room = this.connector.rooms.get(peerId);
-    if (room && room.getAllPeers().size == 1) {
+    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
+    let room: Room = this.connector.rooms.get(roomName);
+    if (room && room.getAllPeers().size <= 1) {
       //todo check is opened channel
       return room;
     }
-    room = new Room(peerId, this.connector, this.storage, this.user);
+    room = new Room(roomName, this.connector, this.storage, this.user);
     return room.enter();
   }
 
@@ -103,16 +104,25 @@ class P2PMessaging {
     return {signatureHex: signature, dataHex: dataHex, publicKeyHex: this.user.publicKey}
   }
 
+  private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
+    let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
+    arr.sort();
+    return arr[0] + "-" + arr[1];
+  }
+
 }
 
-
+/**
+ * Room it is the way to connect peers. When two peers (client apps) will create the room object with the same name
+ * they will get the WebRTC channel between each other (if signaling happened succesfully).
+ * The room property peers may no contains entry of peer until the peer enter the room in his application.
+ */
 class Room {
 
   constructor(public name: string,
               private connector: P2PConnector,
               private storage: StorageService,
               private user: UserService) {
-
   }
 
   state: {approved: boolean, entered: boolean} = {
@@ -263,7 +273,7 @@ class MessageHistory {
   private enabled: boolean;
 
   private store: Store;
-  private db: IDBDatabase;
+  // private db: IDBDatabase;
 
   private page: number; //current page number
   private pageContent: Array<MessageHistoryItem>;
@@ -466,20 +476,22 @@ class P2PConnector {
 
   enter(room: Room) {
     let existingRoom = this.rooms.get(room.name);
-    if (existingRoom) {
+    if (existingRoom && existingRoom.state.entered) {
       return;
     }
-    let enterRoom = () => {
+    let requestEnterRoom = () => {
       room.state.approved = true;
-      this.sendSignalingMessage([{type: "ROOM", room: room.name}]);
+      if (!room.state.entered) {
+        this.sendSignalingMessage([{type: "ROOM", room: room.name}]);
+      }
     };
 
     this.rooms.set(room.name, room);
 
     if (this.identity) {
-      enterRoom();
+      requestEnterRoom();
     } else {
-      this.pendingRooms.push(enterRoom);
+      this.pendingRooms.push(requestEnterRoom);
       this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
       return;
     }
@@ -607,10 +619,6 @@ class P2PConnector {
 
   onSignalingChannelClosed() {
     this.signalingChannelReady = false;
-
-    //will force authentication the next time the socket is opened
-    this.pendingIdentity = this.identity;
-    this.identity = null;
   }
 
   createPeerConnection(roomName: string, peerId: string) {
@@ -773,8 +781,7 @@ class P2PConnector {
   sendMessage(roomName: string, message: P2PMessage) {
     let count = this.send(roomName, JSON.stringify(message));
     if (message.type == "chat") {
-      // in message history prefix "=" means that message from me
-      this.rooms.get(roomName).getMessageHistory().put(message.timestamp, "=" + this.identity, message.text);
+      this.rooms.get(roomName).getMessageHistory().put(message.timestamp, this.identity, message.text);
     }
     return count;
   }
