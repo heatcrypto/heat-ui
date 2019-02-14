@@ -55,14 +55,18 @@
       padding-right: 0px;
     }
     #offchainButton {
-      margin-left: 24px;
+      margin: 7px 0 5px 0px;
       align-self: center;
     }
     #offchainButton.disable span {
       color: grey;
     }
     #offchainButton.active {
-      background-color: green
+      background-color: green;
+    }
+    #newContactButton md-icon {
+      margin-right: 8px;
+      color: white;
     }
   `],
   template: `
@@ -71,15 +75,16 @@
         <div layout="column">
           <user-contacts flex layout="column" ></user-contacts>
           <div layout="row" class="control-panel">
-            <md-button class="md-fab md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
+            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.offchain, 'disable': !vm.offchain}">
+              <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
+              {{vm.offchainLabel}}
+            </md-button>
+            <md-button id="newContactButton" ng-if="!vm.offchain" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
               <md-tooltip md-direction="top">
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
-            </md-button>
-            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.offchain, 'disable': !vm.offchain}">
-              <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
-              offchain
+              New Message
             </md-button>
           </div>
         </div>
@@ -109,6 +114,7 @@ class MessengerComponent {
   publickey: string; // @input
   loading: boolean;
   offchain: boolean = false;
+  offchainLabel: string = "offchain";
 
   constructor(private $scope: angular.IScope,
               private user: UserService,
@@ -123,7 +129,9 @@ class MessengerComponent {
   toggleOffchain($event) {
     this.offchain = !this.offchain;
     if (this.offchain) {
-
+      this.offchainLabel = "offchain  ✔"
+    } else {
+      this.offchainLabel = "offchain"
     }
   }
 }

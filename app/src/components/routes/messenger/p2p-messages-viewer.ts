@@ -32,11 +32,12 @@
       max-width: 85%;
     }
     .message-entry md-icon {
-      color: deepskyblue;
+      color: green;
       margin: 0 12px 0 0;
     }
     .message-entry .header {
       padding-bottom: 6px;
+      color: grey;
     }
     .outgoing {
       align-self: flex-end;

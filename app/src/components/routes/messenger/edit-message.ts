@@ -28,6 +28,9 @@
       margin: 0px;
       min-width: 46px;
     }
+    .edit-message-textarea {
+      border-radius: 5px 5px 0px;
+    }
   `],
   template: `
     <div layout="column" flex="noshrink">
@@ -37,7 +40,7 @@
           <md-icon md-font-library="material-icons">send</md-icon>
         </md-button>
       </form>
-      <textarea hide-xs ng-model="vm.messageText" flex rows="4"
+      <textarea hide-xs ng-model="vm.messageText" flex rows="4" class="edit-message-textarea"
         ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line"></textarea>
     </div>
   `
