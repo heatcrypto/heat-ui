@@ -140,13 +140,13 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
 
   getCount() : angular.IPromise<number> {
     let promise = this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey));
-    let room = this.p2pMessaging.getRoom(this.publickey);
-    if (room) {
-      let p2pItems = room.getMessageHistory().getItems(0);
-      if (p2pItems && p2pItems.length > 0) {
-        return promise.then(count => count + 1);
-      }
-    }
+    // let room = this.p2pMessaging.getRoom(this.publickey);
+    // if (room) {
+    //   let p2pItems = room.getMessageHistory().getItems(0);
+    //   if (p2pItems && p2pItems.length > 0) {
+    //     return promise.then(count => count + 1);
+    //   }
+    // }
     return promise;
   }
 

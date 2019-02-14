@@ -144,10 +144,34 @@ class Room {
 
   /**
    * Sends message to all members of room (all peers in the room).
+   * Returns count of peers to which message sent.
    */
   sendMessage(message: P2PMessage): number {
-    return this.connector.sendMessage(this.name, message);
+    let count = this.connector.sendMessage(this.name, message);
+    if (message.type == "chat") {
+      let item = {timestamp: message.timestamp, fromPeer: this.user.publicKey, message: message.text};
+      this.getMessageHistory().put(item);
+      if (this.onNewMessageHistoryItem) {
+        this.onNewMessageHistoryItem(item);
+      }
+    }
+    return count;
   }
+
+  onMessageInternal(msg: any) {
+    if (msg.type == "chat") {
+      let item = {timestamp: msg.timestamp, fromPeer: msg.fromPeerId, message: msg.text};
+      this.getMessageHistory().put(item);
+      if (this.onNewMessageHistoryItem) {
+        this.onNewMessageHistoryItem(item);
+      }
+    }
+    if (this.onMessage) {
+      this.onMessage(msg);
+    }
+  }
+
+  onNewMessageHistoryItem: (item: MessageHistoryItem) => any;
 
   /**
    * On receiving message callback.
@@ -342,8 +366,8 @@ class MessageHistory {
     return null;
   }
 
-  public put(timestamp: number, fromPeer: string, message: string) {
-    this.pageContent.push({timestamp: timestamp, fromPeer: fromPeer, message: message});
+  public put(item: MessageHistoryItem) {
+    this.pageContent.push(item);
     this.savePage(this.page, this.pageContent);
     if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
       this.pageContent = [];
@@ -779,11 +803,7 @@ class P2PConnector {
    * Sends message to all online members of room.
    */
   sendMessage(roomName: string, message: P2PMessage) {
-    let count = this.send(roomName, JSON.stringify(message));
-    if (message.type == "chat") {
-      this.rooms.get(roomName).getMessageHistory().put(message.timestamp, this.identity, message.text);
-    }
-    return count;
+    return this.send(roomName, JSON.stringify(message));
   }
 
   private send(roomName: string, data, channel?: RTCDataChannel) {
@@ -812,13 +832,10 @@ class P2PConnector {
       let msg = JSON.parse(event.data);
 
       let room: Room = this.rooms.get(roomName);
-      if (room && room.onMessage) {
+      if (room) {
         msg.fromPeerId = peerId;
         msg.roomName = roomName;
-      }
-      if (msg.type == "chat") {
-        room.getMessageHistory().put(msg.timestamp, peerId, msg.text);
-        room.onMessage(msg);
+        room.onMessageInternal(msg);
       }
       if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
         this.sendSignalingMessage([{room: roomName}, msg]);

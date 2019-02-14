@@ -50,26 +50,39 @@
     messenger .edit-message {
       padding-right: 0px;
     }
+    #offchainButton.disable span {
+      color: darkslategrey;
+    }
+    #offchainButton.active {
+      background-color: green
+    }
   `],
   template: `
     <div layout="column" flex layout-padding layout-fill class="outer-container">
       <div layout="row" flex layout-fill>
         <div layout="column">
           <user-contacts flex layout="column" ></user-contacts>
-          <md-button class="md-fab md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
-            <md-tooltip md-direction="top">
-              Send message to new contact
-            </md-tooltip>
-            <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
-          </md-button>
+          <div layout="row">
+            <md-button class="md-fab md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
+              <md-tooltip md-direction="top">
+                Send message to new contact
+              </md-tooltip>
+              <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
+            </md-button>
+            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.offchain, 'disable': !vm.offchain}">offchain</md-button>
+          </div>
         </div>
         <div layout="column" layout-fill>
           <div class="row" class="progress-indicator" flex ng-show="vm.loading">
             <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
           </div>
-          <md-content flex id="message-batch-container">
+          <md-content flex ng-if="!vm.offchain" id="message-batch-container">
             <message-batch-viewer flex layout="column" container-id="message-batch-container"
                     publickey="::vm.publickey"></message-batch-viewer>
+          </md-content>
+          <md-content flex ng-if="vm.offchain" id="offchain-messages-container">
+            <p2p-messages-viewer flex layout="column" container-id="message-batch-container"
+                    publickey="::vm.publickey"></p2p-messages-viewer>
           </md-content>
           <div layout="column" flex="none" class="edit-message">
             <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
@@ -84,6 +97,7 @@ class MessengerComponent {
 
   publickey: string; // @input
   loading: boolean;
+  offchain: boolean = false;
 
   constructor(private $scope: angular.IScope,
               private user: UserService,
@@ -93,5 +107,12 @@ class MessengerComponent {
 
   showSendmessageDialog($event) {
     this.sendmessage.dialog($event).show();
+  }
+
+  toggleOffchain($event) {
+    this.offchain = !this.offchain;
+    if (this.offchain) {
+
+    }
   }
 }

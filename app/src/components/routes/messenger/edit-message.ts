@@ -60,12 +60,12 @@ class EditMessageComponent {
   }
 
   onKeyPress($event: KeyboardEvent) {
-    if ($event.ctrlKey && ($event.keyCode == 13 || $event.keyCode == 10)) {
-      this.sendP2PMessage($event);
-      return;
-    }
     if ($event.keyCode == 13 && !$event.shiftKey) {
-      this.sendMessage($event);
+      if (this.$scope.$parent['vm'].offchain) {
+        this.sendP2PMessage($event);
+      } else {
+        this.sendMessage($event);
+      }
     }
   }
 
@@ -75,6 +75,9 @@ class EditMessageComponent {
       let peer = room.getPeer(this.publickey);
       if (peer && peer.isConnected()) {
         let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
+        this.$scope.$evalAsync(() => {
+          this.messageText = '';
+        });
       }
     }
   }
