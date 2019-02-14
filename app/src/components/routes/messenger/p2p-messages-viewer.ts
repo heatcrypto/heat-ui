@@ -69,7 +69,7 @@ class P2PMessagesViewerComponent {
   private dateFormat;
   items: Array<MessageHistoryItem>;
 
-  constructor($scope: angular.IScope,
+  constructor(private $scope: angular.IScope,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
               private $document: angular.IDocumentService,
@@ -91,10 +91,19 @@ class P2PMessagesViewerComponent {
       let room = this.p2pMessaging.getRoom(this.publickey);
       if (room) {
         room.onNewMessageHistoryItem = (item: MessageHistoryItem) => {
-          console.log(`<<< ${item.message}`);
           this.items.push(this.processItem(item));
+          this.$scope.$evalAsync(() => {
+            console.log(`<<< ${item.message}`);
+          });
         };
-        this.items = room.getMessageHistory().getItems(0).map(v => this.processItem(v));
+        this.items = [];
+        let pageIndex = room.getMessageHistory().getPageCount() - 1;
+        let n = 0;
+        while (pageIndex >= 0 && n < 2) {
+          this.items = this.items.concat(room.getMessageHistory().getItems(pageIndex).map(v => this.processItem(v)));
+          pageIndex--;
+          n++;
+        }
       }
     }
   }

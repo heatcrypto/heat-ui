@@ -29,6 +29,9 @@
       width: 300px;
       min-width: 240px;
     }
+    messenger .control-panel {
+      margin-top: 6px;
+    }
     messenger edit-message {
       min-height: 80px;
     }
@@ -36,9 +39,10 @@
       padding-top: 0px;
       padding-bottom: 0px;
     }
-    // messenger md-content {
-    //   padding: 0 0 0 12px;
-    // }
+    messenger md-content {
+      height: 100%;
+      //padding: 0 0 0 12px;
+    }
     messenger .progress-indicator {
       padding-left: 0px;
       padding-right: 0px;
@@ -50,8 +54,12 @@
     messenger .edit-message {
       padding-right: 0px;
     }
+    #offchainButton {
+      margin-left: 24px;
+      align-self: center;
+    }
     #offchainButton.disable span {
-      color: darkslategrey;
+      color: grey;
     }
     #offchainButton.active {
       background-color: green
@@ -62,14 +70,17 @@
       <div layout="row" flex layout-fill>
         <div layout="column">
           <user-contacts flex layout="column" ></user-contacts>
-          <div layout="row">
+          <div layout="row" class="control-panel">
             <md-button class="md-fab md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
               <md-tooltip md-direction="top">
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
             </md-button>
-            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.offchain, 'disable': !vm.offchain}">offchain</md-button>
+            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.offchain, 'disable': !vm.offchain}">
+              <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
+              offchain
+            </md-button>
           </div>
         </div>
         <div layout="column" layout-fill>

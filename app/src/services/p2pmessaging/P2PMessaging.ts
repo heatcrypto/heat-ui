@@ -363,7 +363,7 @@ class MessageHistory {
         }
       }
     }
-    return null;
+    return [];
   }
 
   public put(item: MessageHistoryItem) {

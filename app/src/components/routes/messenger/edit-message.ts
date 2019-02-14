@@ -42,7 +42,7 @@
     </div>
   `
 })
-@Inject('$scope','sendmessage','storage','$timeout', 'user', 'P2PMessaging')
+@Inject('$scope','sendmessage','storage','$timeout', 'user', 'P2PMessaging', '$mdToast')
 class EditMessageComponent {
 
   publickey: string; // @inputs
@@ -55,7 +55,8 @@ class EditMessageComponent {
               storage: StorageService,
               private $timeout: angular.ITimeoutService,
               private user: UserService,
-              private p2pMessaging: P2PMessaging) {
+              private p2pMessaging: P2PMessaging,
+              private $mdToast: angular.material.IToastService) {
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
   }
 
@@ -70,15 +71,22 @@ class EditMessageComponent {
   }
 
   sendP2PMessage($event) {
+    let sent: boolean = false;
     let room = this.p2pMessaging.getRoom(this.publickey);
     if (room) {
       let peer = room.getPeer(this.publickey);
       if (peer && peer.isConnected()) {
         let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
+        sent = true;
         this.$scope.$evalAsync(() => {
           this.messageText = '';
         });
       }
+    }
+    if (!sent) {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent("Not sent").hideDelay(3000)
+      );
     }
   }
 
