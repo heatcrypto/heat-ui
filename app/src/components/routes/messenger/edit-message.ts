@@ -29,6 +29,7 @@
       min-width: 46px;
     }
     .edit-message-textarea {
+      border: solid 1px;
       border-radius: 5px 5px 0px;
     }
   `],

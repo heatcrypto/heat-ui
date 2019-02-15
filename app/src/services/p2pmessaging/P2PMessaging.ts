@@ -36,10 +36,10 @@ class P2PMessaging {
     this.connector = new P2PConnector(settings);
     this.connector.setup(
       this.user.publicKey,
-      (roomName) => {  /*create room on incoming call*/
+      (roomName, peerId: string) => {  /*create room on incoming call*/
         let room = this.connector.rooms.get(roomName);
         if (!room) {
-          room = new Room(roomName, this.connector, this.storage, this.user);
+          room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
           // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
           // room.onFailure = e => this.onError(e);
           // room.onMessage = msg => this.onMessage(msg);
@@ -60,25 +60,25 @@ class P2PMessaging {
   /**
    * Register me so can be called.
    */
-  register(): Room {
-    let name = this.user.publicKey;
-    let room = this.connector.rooms.get(name);
-    if (!room) {
-      room = new Room(this.user.publicKey, this.connector, this.storage, this.user);
-      // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-      // room.onMessage = msg => this.onMessage(msg);
-      // room.onFailure = e => this.onError(e);
-      // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-      // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-      // room.rejected = (byPeerId, reason) => {
-      //   this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
-      //   this.$scope.$apply();
-      // };
-      room.enter();
-      this.connector.rooms.set(name, room);
-    }
-    return room;
-  }
+  // register(): Room {
+  //   let name = this.user.publicKey;
+  //   let room = this.connector.rooms.get(name);
+  //   if (!room) {
+  //     room = new Room(this.user.publicKey, this.connector, this.storage, this.user);
+  //     // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+  //     // room.onMessage = msg => this.onMessage(msg);
+  //     // room.onFailure = e => this.onError(e);
+  //     // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+  //     // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+  //     // room.rejected = (byPeerId, reason) => {
+  //     //   this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
+  //     //   this.$scope.$apply();
+  //     // };
+  //     room.enter();
+  //     this.connector.rooms.set(name, room);
+  //   }
+  //   return room;
+  // }
 
   /**
    * Returns room with single peer.
@@ -90,7 +90,7 @@ class P2PMessaging {
       //todo check is opened channel
       return room;
     }
-    room = new Room(roomName, this.connector, this.storage, this.user);
+    room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
     return room.enter();
   }
 
@@ -122,7 +122,8 @@ class Room {
   constructor(public name: string,
               private connector: P2PConnector,
               private storage: StorageService,
-              private user: UserService) {
+              private user: UserService,
+              public memberPublicKeys: string[]) {
   }
 
   state: {approved: boolean, entered: boolean} = {
@@ -196,7 +197,7 @@ class Room {
   /**
    * Invoked when peer rejects connection to him.
    */
-  rejected: (byPeerId: string, reason: string) => any;
+  onRejected: (byPeerId: string, reason: string) => any;
 
   /**
    * Invoked on offer from remote peer to establish p2p channel. Needs to resolve promise if user allows call.
@@ -240,6 +241,9 @@ class Room {
   }
 
   createPeer(peerId: string, publicKey: string) {
+    if (this.memberPublicKeys.indexOf(publicKey) == -1) {
+      return;  //do not create peer for not room member
+    }
     let existingPeer = this.peers.get(peerId);
     if (existingPeer) {
       return existingPeer;
@@ -422,7 +426,7 @@ class P2PConnector {
   private signalingMessageAwaitings: Function[] = [];
   private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
-  private createRoom: (name: string) => Room;
+  private createRoom: (name: string, peerId) => Room;
   private allowCaller: (caller: string) => boolean;
   private sign: (dataHex: string) => ProvingData;
   private signalingError: (reason: string) => void;
@@ -447,7 +451,7 @@ class P2PConnector {
    * @param sign Signing delegated to client class because this service class should not to have deal with secret info
    */
   setup(identity: string,
-        createRoom: (name: string) => Room,
+        createRoom: (name: string, peerId) => Room,
         allowCaller: (caller: string) => boolean,
         signalingError: (reason: string) => void,
         sign: (dataHex: string) => ProvingData) {
@@ -574,7 +578,7 @@ class P2PConnector {
     } else if (msg.type === 'CALL') {
       let caller: string = msg.caller;
       if (this.allowCaller(caller)) {
-        let room = this.createRoom(roomName);
+        let room = this.createRoom(roomName, caller);
         this.enter(room);
       }
     } else if (msg.type === 'ERROR') {
@@ -584,17 +588,19 @@ class P2PConnector {
       room.state.entered = true;
       msg.remotePeerIds.forEach((peerId: string) => {
         let peer = room.createPeer(peerId, peerId);
-        if (!peer.peerConnection) {
-          this.createPeerConnection(roomName, peerId);
-        }
-        if (!peer.isConnected()) {
-          this.doOffer(roomName, peerId);
+        if (peer) {
+          if (!peer.peerConnection) {
+            this.createPeerConnection(roomName, peerId);
+          }
+          if (!peer.isConnected()) {
+            this.doOffer(roomName, peerId);
+          }
         }
       });
     } else if (msg.type === 'offer') {
       let peerId: string = msg.fromPeer;
       let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
-      if (!peer.isConnected()) {
+      if (peer && !peer.isConnected()) {
         let room = this.rooms.get(roomName);
         room.confirmIncomingCall(peerId).then(() => {
           let pc = peer.peerConnection;
@@ -819,11 +825,21 @@ class P2PConnector {
   }
 
   private sendInternal(channel: RTCDataChannel, data): number {
+    let notSentReason;
     if (channel.readyState == "open") {
-      channel.send(data);
-      return 1;
+      try {
+        channel.send(data);
+        console.log(`>>> channel ${channel.label} \n ${data}`);
+        return 1;
+      } catch (e) {
+        notSentReason = e.toString();
+      }
+    } else {
+      notSentReason = "Channel state " + channel.readyState;
     }
-    console.log("not sent. channel state=");
+    if (notSentReason) {
+      console.log("Not sent: " + notSentReason);
+    }
     return 0;
   }
 
@@ -837,10 +853,11 @@ class P2PConnector {
         msg.roomName = roomName;
         room.onMessageInternal(msg);
       }
+      console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
       if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
         this.sendSignalingMessage([{room: roomName}, msg]);
-        console.log("CHECK_CHANNEL " + msg.txt);
-        console.log("Checking message received (then sent to signaling server) " + msg.value);
+        //console.log("CHECK_CHANNEL " + msg.txt);
+        //console.log("Checking message received (then sent to signaling server) " + msg.value);
       } else if (msg.type === P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY) {
         let signedData = this.sign(msg.data);
         let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY,
@@ -848,11 +865,23 @@ class P2PConnector {
         this.send(roomName, JSON.stringify(response), dataChannel);
       } else if (msg.type === P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY) {
         if (msg.rejected) {
-          room.rejected(peerId, msg.rejected);
+          if (room.onRejected) {
+            room.onRejected(peerId, msg.rejected);
+          }
+          console.log(`Peer ${peerId} rejected channel to him`);
+          dataChannel.close();
           return;
         }
+        let rejectedReason;
         if (room["proofData"][peerId] !== msg.data) {
-          let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY, rejected: "Received data does not match the sent data"};
+          rejectedReason = "Received data does not match the sent data";
+        } else if (msg.publicKey !== peerId) {
+          rejectedReason = "Received public key does not match the peer's public key";
+        } else if (room.memberPublicKeys.indexOf(msg.publicKey) == -1) {
+          rejectedReason = "Received public key is not allowed";
+        }
+        if (rejectedReason) {
+          let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY, rejected: rejectedReason};
           this.send(roomName, JSON.stringify(response), dataChannel);
           dataChannel.close();
           return;

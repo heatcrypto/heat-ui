@@ -126,14 +126,14 @@ class P2PMessagingProbeComponent {
       (roomName) => {
         let room = this.rooms.get(roomName);
         if (!room) {
-          room = new Room(roomName, this.p2pconnector, this.storage, this.user);
+          room = new Room(roomName, this.p2pconnector, this.storage, this.user, ["todo"]);
           this.rooms.set(roomName, room);
           room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
           room.onFailure = e => this.onError(e);
           room.onMessage = msg => this.onMessage(msg);
           room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
           room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-          room.rejected = (byPeerId, reason) => {
+          room.onRejected = (byPeerId, reason) => {
             this.messages.push("Peer '" + byPeerId + "' rejects me. Reason: " + reason);
             this.$scope.$apply();
           };
@@ -159,14 +159,14 @@ class P2PMessagingProbeComponent {
   enterRoom() {
     let room = this.rooms.get(this.roomName);
     if (!room) {
-      room = new Room(this.roomName, this.p2pconnector, this.storage, this.user);
+      room = new Room(this.roomName, this.p2pconnector, this.storage, this.user, ["todo"]);
       this.rooms.set(this.roomName, room);
       room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
       room.onMessage = msg => this.onMessage(msg);
       room.onFailure = e => this.onError(e);
       room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
       room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-      room.rejected = (byPeerId, reason) => {
+      room.onRejected = (byPeerId, reason) => {
         this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
         this.$scope.$apply();
       };
