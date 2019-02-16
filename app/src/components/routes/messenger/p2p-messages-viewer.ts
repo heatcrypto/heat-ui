@@ -31,6 +31,9 @@
       margin-right: 10px;
       max-width: 85%;
     }
+    .message-entry .message-content {
+      white-space: pre-line;
+    }
     .message-entry md-icon {
       color: green;
       margin: 0 12px 0 0;
@@ -52,7 +55,7 @@
         <div class="header">
           <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
         </div>
-        <div>{{item.message}}</div>
+        <div class="message-content">{{item.message}}</div>
       </div>
     </div>
     
@@ -98,12 +101,11 @@ class P2PMessagesViewerComponent {
           });
         };
         this.items = [];
-        let pageIndex = room.getMessageHistory().getPageCount() - 1;
-        let n = 0;
-        while (pageIndex >= 0 && n < 2) {
+        //just load 2 last history pages (todo right later)
+        let pageIndex = Math.max(0, room.getMessageHistory().getPageCount() - 2);
+        while (pageIndex < room.getMessageHistory().getPageCount()) {
           this.items = this.items.concat(room.getMessageHistory().getItems(pageIndex).map(v => this.processItem(v)));
-          pageIndex--;
-          n++;
+          pageIndex++;
         }
       }
     }
