@@ -22,13 +22,31 @@
  * */
 @Component({
   selector: 'userContacts',
+  styles: [`
+    .unread-symbol {
+      animation: blinker 2s linear infinite;
+      font-size: 22px;
+      color: indianred;
+      margin: 0 6px -6px 0;
+    }
+    @keyframes blinker {
+      80% {opacity: 0.5;}
+    }
+    .online-status-symbol {
+      font-size: 22px; 
+      color: green; 
+      margin: 0 6px 4px 0;
+    }
+  `],
   template: `
     <div layout="column" flex layout-fill>
       <md-list flex layout="column">
         <md-list-item ng-repeat="contact in vm.contacts" aria-label="Entry">
-          <div class="truncate-col unread-col left">
+          <!--<div class="truncate-col unread-col left">
             <md-icon md-font-library="material-icons" ng-class="{'has-unread-message': contact.hasUnreadMessage}">fiber_manual_record</md-icon>
-          </div>
+          </div>-->
+          <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
+          <span ng-if="vm.isConnected(contact.publicKey)" class="online-status-symbol">●</span>
           <div class="truncate-col account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
@@ -44,6 +62,8 @@ class UserContactsComponent {
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
   private store: Store;
+  private rooms: Map<string, Room> = new Map<string, Room>();
+  private onlineStatuses: Map<string, string> = new Map<string, string>();
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -60,7 +80,7 @@ class UserContactsComponent {
         this.getContacts()
       },
     500, true);
-    heat.subscriber.unconfirmedTransaction({recipient:user.account}, ()=>{ this.refresh() })
+    heat.subscriber.unconfirmedTransaction({recipient:user.account}, ()=>{ this.refresh() });
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
@@ -89,7 +109,16 @@ class UserContactsComponent {
     this.activePublicKey = this.getActivePublicKey();
 
     if (this.activePublicKey && this.activePublicKey != "0") {
-      let peerRoom = this.p2pMessaging.getRoom(this.activePublicKey);
+      let room = this.p2pMessaging.enterRoom(this.activePublicKey);
+      this.rooms.set(this.activePublicKey, room);
+      if (!room.onOpenDataChannel) {
+        room.onOpenDataChannel = peerId => {
+          this.refresh();
+        };
+        room.onCloseDataChannel = peerId => {
+          this.refresh();
+        }
+      }
     }
 
     if (!this.activePublicKey || this.activePublicKey == "0") {
@@ -123,6 +152,16 @@ class UserContactsComponent {
         }
       });
     })
+  }
+
+  isConnected(publicKey: string) {
+    let room = this.p2pMessaging.getRoom(publicKey);
+    if (room) {
+      let peer = room.getPeer(publicKey);
+      if (peer) {
+        return peer.isConnected();
+      }
+    }
   }
 
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {

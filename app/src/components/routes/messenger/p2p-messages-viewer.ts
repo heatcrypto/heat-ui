@@ -49,7 +49,7 @@
   template: `
     <div id="messages" layout="column" flex scroll-glue-bottom>
     
-    <div ng-repeat="item in vm.items" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
+    <div ng-repeat="item in vm.items track by $index" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
       <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
       <div layout="column">
         <div class="header">

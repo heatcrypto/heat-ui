@@ -25,7 +25,6 @@
 @Inject('settings', 'user', 'storage')
 class P2PMessaging {
 
-  //todo регистрировать на сигнальном сервере под своим публ ключом, комнату генерить с новым id для каждого входящего звонка, отправлять эту комнату обратно
   //private rooms: Map<string, Room> = new Map<string, Room>();
   private connector: P2PConnector;
 
@@ -85,13 +84,24 @@ class P2PMessaging {
    */
   getRoom(peerId: string): Room {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-    let room: Room = this.connector.rooms.get(roomName);
+    let room = this.connector.rooms.get(roomName);
     if (room && room.getAllPeers().size <= 1) {
       //todo check is opened channel
       return room;
     }
-    room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
-    return room.enter();
+  }
+
+  /**
+   * Create new room and register it on the signaling server.
+   */
+  enterRoom(peerId: string): Room {
+    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
+    let room = this.connector.rooms.get(roomName);
+    if (!room) {
+      room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      room.enter();
+    }
+    return room;
   }
 
   onSignalingError(reason: string) {
@@ -676,7 +686,7 @@ class P2PConnector {
         if (pc.iceConnectionState == 'disconnected') {
           if (peer.dataChannel) {
             peer.dataChannel.close();
-            //this.onCloseDataChannel(roomName, peerId, peer.dataChannel);
+            this.onCloseDataChannel(roomName, peerId, peer.dataChannel);
           }
           console.log('Disconnected');
         }
@@ -712,8 +722,9 @@ class P2PConnector {
     }
 
     let room: Room = this.rooms.get(roomName);
-    if (room && room.onOpenDataChannel)
+    if (room && room.onOpenDataChannel) {
       room.onOpenDataChannel(peerId);
+    }
 
     //request proof of identity - other party must respond by sending the data signed by its public key.
     //In request my party send own proof also.
