@@ -22,7 +22,7 @@
  * */
 
 @Service('P2PMessaging')
-@Inject('settings', 'user', 'storage')
+@Inject('settings', 'user', 'storage', '$interval')
 class P2PMessaging {
 
   //private rooms: Map<string, Room> = new Map<string, Room>();
@@ -30,9 +30,10 @@ class P2PMessaging {
 
   constructor(private settings: SettingsService,
               private user: UserService,
-              private storage: StorageService) {
+              private storage: StorageService,
+              private $interval: angular.IIntervalService) {
 
-    this.connector = new P2PConnector(settings);
+    this.connector = new P2PConnector(settings, $interval);
     this.connector.setup(
       this.user.publicKey,
       (roomName, peerId: string) => {  /*create room on incoming call*/
@@ -424,6 +425,10 @@ class MessageHistory {
 
 }
 
+/**
+ * Provides WebRTC channels through rooms using signaling server.
+ * Keeps websocket connection alive so that other party will can to establish WebRTC channel using signaling websocket connection.
+ */
 class P2PConnector {
 
   rooms: Map<string, Room> = new Map<string, Room>(); // roomName -> room
@@ -445,12 +450,11 @@ class P2PConnector {
   private identity: string;
   private pendingRooms: Function[] = [];
   private pendingOnlineStatus: Function;
-  private signalingChannelReady: boolean = null;
-  private signalingChannel: WebSocket;
+  private signalingReady: boolean = null;
   private config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
+  private pingSignalingInterval;
 
-  constructor(private settings: SettingsService) {
-
+  constructor(private settings: SettingsService, private $interval: angular.IIntervalService) {
   }
 
   /**
@@ -539,16 +543,21 @@ class P2PConnector {
    * Resolves opened websocket.
    */
   getWebSocket() {
-    if (!this.webSocketPromise || this.signalingChannelReady === false) {
+    if (!this.webSocketPromise || this.signalingReady === false) {
       this.webSocketPromise = new Promise((resolve, reject) => {
           let url = this.settings.get(SettingsService.HEAT_WEBSOCKET);
           let socket = new WebSocket(url);
           console.log("new socket, readyState=" + socket.readyState);
           socket.onopen = () => {
-            this.signalingChannel = socket;
             socket.onmessage = (msg) => this.onSignalingMessage(msg);
             socket.onclose = () => this.onSignalingChannelClosed();
-            this.signalingChannelReady = true;
+            this.signalingReady = true;
+            if (this.pingSignalingInterval) {
+              this.$interval.cancel(this.pingSignalingInterval);
+            }
+            this.pingSignalingInterval = this.$interval(() => {
+              this.pingSignalingServer(socket);
+            }, 120 * 1000, 0, false);
             resolve(socket);
           };
           socket.onerror = (error) => {
@@ -559,6 +568,12 @@ class P2PConnector {
       );
     }
     return this.webSocketPromise;
+  }
+
+  private pingSignalingServer(socket: WebSocket) {
+    if (this.signalingReady) {
+      this.sendSignalingMessage([{type: "PING"}]);
+    }
   }
 
   sendSignalingMessage(message: any[]): Promise<any> {
@@ -574,7 +589,9 @@ class P2PConnector {
     let msg = JSON.parse(message.data);
     let roomName: string = msg.room;
 
-    if (msg.type === 'PROVE_IDENTITY') {
+    if (msg.type === 'PONG') {
+      console.log("signaling pong");
+    } else if (msg.type === 'PROVE_IDENTITY') {
       let signedData = this.sign(msg.data);
       signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
       this.sendSignalingMessage([signedData]);
@@ -658,7 +675,8 @@ class P2PConnector {
   }
 
   onSignalingChannelClosed() {
-    this.signalingChannelReady = false;
+    this.signalingReady = false;
+    this.$interval.cancel(this.pingSignalingInterval);
   }
 
   createPeerConnection(roomName: string, peerId: string) {
@@ -935,8 +953,9 @@ class P2PConnector {
     this.pendingRooms = [];
     this.pendingOnlineStatus = null;
     this.rooms.forEach(room => this.closeRoom(room));
-    if (this.signalingChannel)
-      this.signalingChannel.close();
+    if (this.signalingReady) {
+      this.getWebSocket().then(socket => socket.close());
+    }
   }
 
 
