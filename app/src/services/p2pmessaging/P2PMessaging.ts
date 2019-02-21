@@ -631,13 +631,21 @@ class P2PConnector {
         let room = this.rooms.get(roomName);
         room.confirmIncomingCall(peerId).then(() => {
           let pc = peer.peerConnection;
+          if (pc && pc.iceConnectionState != "connected") {
+            pc.close();
+            pc = null;
+          }
           if (!pc) {
             pc = this.createPeerConnection(roomName, peerId);
           }
           if (pc) {
             pc.setRemoteDescription(new RTCSessionDescription(msg))
               .catch(e => {
-                room.onFailure(peerId, e.name);
+                if (room.onFailure) {
+                  room.onFailure(peerId, e.name);
+                } else {
+                  console.log(e.name + "  " + e.message);
+                }
               });
             this.doAnswer(roomName, peerId);
           }
