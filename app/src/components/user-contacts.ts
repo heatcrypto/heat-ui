@@ -46,7 +46,8 @@
             <md-icon md-font-library="material-icons" ng-class="{'has-unread-message': contact.hasUnreadMessage}">fiber_manual_record</md-icon>
           </div>-->
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
-          <span ng-if="vm.isConnected(contact.publicKey)" class="online-status-symbol">●</span>
+          <span ng-if="vm.offchainStatus(contact.publicKey)=='channelOpened'" class="online-status-symbol">●</span>
+          <span ng-if="vm.offchainStatus(contact.publicKey)=='roomRegistered'" class="online-status-symbol">○</span>
           <div class="truncate-col account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
@@ -154,12 +155,14 @@ class UserContactsComponent {
     })
   }
 
-  isConnected(publicKey: string) {
+  offchainStatus(publicKey: string) {
     let room = this.p2pMessaging.getRoom(publicKey);
     if (room) {
       let peer = room.getPeer(publicKey);
-      if (peer) {
-        return peer.isConnected();
+      if (peer && peer.isConnected()) {
+        return "channelOpened";
+      } else {
+        return "roomRegistered";
       }
     }
   }
