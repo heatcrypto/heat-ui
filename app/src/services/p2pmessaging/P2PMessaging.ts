@@ -27,6 +27,7 @@ class P2PMessaging {
 
   //private rooms: Map<string, Room> = new Map<string, Room>();
   private connector: P2PConnector;
+  public p2pContactStore: Store;
 
   constructor(private settings: SettingsService,
               private user: UserService,
@@ -42,6 +43,8 @@ class P2PMessaging {
       reason => this.onSignalingError(reason),
       dataHex => this.sign(dataHex)
     );
+
+    this.p2pContactStore = storage.namespace('p2pContacts');
   }
 
   /**
@@ -132,7 +135,20 @@ class P2PMessaging {
     return new Promise<any>((resolve) => {
       //todo get public name instead account
       let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
-      dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => resolve());
+      dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => {
+        let contact: IHeatMessageContact = this.p2pContactStore.get(peerAccount);
+        if (!contact) {
+          contact = {
+            account: peerAccount,
+            privateName: '',
+            publicKey: peerId,
+            publicName: '',
+            timestamp: Date.now()
+          };
+          this.p2pContactStore.put(peerAccount, contact);
+        }
+        resolve();
+      });
     });
   }
 
@@ -156,7 +172,7 @@ class CallDialog extends GenericDialog {
     super($event);
     this.dialogTitle = 'Call user';
     this.dialogDescription = 'Description on how to lease balance';
-    this.okBtnTitle = 'YES';
+    this.okBtnTitle = 'Call';
   }
 
   /* @override */
@@ -165,7 +181,7 @@ class CallDialog extends GenericDialog {
     return [
       builder
         .account('recipient', this.recipient)
-        .label('Recipient')
+        .label('Callee')
         .required()
         .onchange(newValue => this.onChangeRecipient($scope, newValue))
     ]
@@ -179,6 +195,19 @@ class CallDialog extends GenericDialog {
     this.heat.api.getPublicKey(this.fields['recipient'].value).then(
       (publicKey) => {
         this.p2pmessaging.call(publicKey);
+        //??? todo contact adding must be in onOpenDataChannel
+        let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
+        let contact: IHeatMessageContact = this.p2pmessaging.p2pContactStore.get(peerAccount);
+        if (!contact) {
+          contact = {
+            account: peerAccount,
+            privateName: '',
+            publicKey: publicKey,
+            publicName: '',
+            timestamp: Date.now()
+          };
+          this.p2pmessaging.p2pContactStore.put(peerAccount, contact);
+        }
       }, reason => {
       }
     );

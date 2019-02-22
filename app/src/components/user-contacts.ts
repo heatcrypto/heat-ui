@@ -78,13 +78,15 @@ class UserContactsComponent {
 
     this.refresh = utils.debounce(
       () => {
-        this.getContacts()
+        this.refreshContacts()
       },
     500, true);
     heat.subscriber.unconfirmedTransaction({recipient:user.account}, ()=>{ this.refresh() });
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
+
+    this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, this.refresh);
 
     if (user.unlocked) {
       this.init();
@@ -130,7 +132,7 @@ class UserContactsComponent {
   }
 
   init() {
-    this.getContacts();
+    this.refreshContacts();
     // var topic = new TransactionTopicBuilder().account(this.user.account);
     // var observer = this.engine.socket().observe<TransactionObserver>(topic).
     //   add(this.refresh).
@@ -139,7 +141,7 @@ class UserContactsComponent {
     // this.$scope.$on("$destroy",() => { observer.destroy() });
   }
 
-  getContacts() {
+  refreshContacts() {
     this.heat.api.getMessagingContacts(this.user.account, 0, 100).then((contacts) => {
       this.$scope.$evalAsync(() => {
         this.contacts = contacts.filter((contact)=> {
@@ -151,6 +153,17 @@ class UserContactsComponent {
         if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
           this.setActivePublicKey();
         }
+        //add contacts obtained via p2p messaging
+        let keysToRemove = [];
+        this.p2pMessaging.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => {
+          let duplicate = this.contacts.find(contact => contact.publicKey == p2pContact.publicKey);
+          if (duplicate) {
+            keysToRemove.push(key);
+          } else {
+            this.contacts.push(p2pContact);
+          }
+        });
+        keysToRemove.forEach(key => this.p2pMessaging.p2pContactStore.remove(key))
       });
     })
   }
