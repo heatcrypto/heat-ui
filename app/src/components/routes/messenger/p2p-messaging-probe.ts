@@ -128,7 +128,7 @@ class P2PMessagingProbeComponent {
         if (!room) {
           room = new Room(roomName, this.p2pconnector, this.storage, this.user, ["todo"]);
           this.rooms.set(roomName, room);
-          room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+          // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
           room.onFailure = e => this.onError(e);
           room.onMessage = msg => this.onMessage(msg);
           room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
@@ -144,10 +144,7 @@ class P2PMessagingProbeComponent {
         $scope.$apply();
         return room;
       },
-      caller => {
-        this.messages.push("Call from '" + caller + "' accepted");
-        return true; //accept all income calls
-      },
+      null,
       reason => this.onError(reason),
       dataHex => this.sign(dataHex)
     );
@@ -161,7 +158,7 @@ class P2PMessagingProbeComponent {
     if (!room) {
       room = new Room(this.roomName, this.p2pconnector, this.storage, this.user, ["todo"]);
       this.rooms.set(this.roomName, room);
-      room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+      // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
       room.onMessage = msg => this.onMessage(msg);
       room.onFailure = e => this.onError(e);
       room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);

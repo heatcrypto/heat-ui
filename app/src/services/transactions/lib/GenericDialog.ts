@@ -266,8 +266,9 @@ function GenericDialogCreateController(dialog: GenericDialog) {
       if (dialog.instantSend) {
         this.dialogCancel();
       }
-    }
-    this.okBtn = function () {
+    };
+    let overridedOkBtn = dialog['okBtn'];
+    this.okBtn = overridedOkBtn ? overridedOkBtn : function () {
       this.builder = dialog.getTransactionBuilder();
 
       this.state = GenericDialogState.CREATE;

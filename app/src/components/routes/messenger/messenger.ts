@@ -86,6 +86,13 @@
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               New Message
             </md-button>
+            <md-button id="CallButton" ng-if="vm.offchain" class="md-primary" aria-label="Call" ng-click="vm.showCallDialog($event)">
+              <md-tooltip md-direction="top">
+                Call user to establish the channel
+              </md-tooltip>
+              <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
+              Call
+            </md-button>
           </div>
         </div>
         <div layout="column" layout-fill>
@@ -108,7 +115,7 @@
     </div>
   `
 })
-@Inject('$scope','user','sendmessage')
+@Inject('$scope','user','sendmessage', 'P2PMessaging')
 class MessengerComponent {
 
   publickey: string; // @input
@@ -118,12 +125,17 @@ class MessengerComponent {
 
   constructor(private $scope: angular.IScope,
               private user: UserService,
-              private sendmessage: SendmessageService) {
+              private sendmessage: SendmessageService,
+              private p2pMessaging: P2PMessaging) {
     user.requireLogin();
   }
 
   showSendmessageDialog($event) {
     this.sendmessage.dialog($event).show();
+  }
+
+  showCallDialog($event) {
+    this.p2pMessaging.dialog($event).show();
   }
 
   toggleOffchain($event) {

@@ -22,7 +22,7 @@
  * */
 
 @Service('P2PMessaging')
-@Inject('settings', 'user', 'storage', '$interval')
+@Inject('settings', 'user', 'storage', '$interval', 'heat')
 class P2PMessaging {
 
   //private rooms: Map<string, Room> = new Map<string, Room>();
@@ -31,27 +31,14 @@ class P2PMessaging {
   constructor(private settings: SettingsService,
               private user: UserService,
               private storage: StorageService,
-              private $interval: angular.IIntervalService) {
+              private $interval: angular.IIntervalService,
+              private heat: HeatService) {
 
     this.connector = new P2PConnector(settings, $interval);
     this.connector.setup(
       this.user.publicKey,
-      (roomName, peerId: string) => {  /*create room on incoming call*/
-        let room = this.connector.rooms.get(roomName);
-        if (!room) {
-          room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
-          // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-          // room.onFailure = e => this.onError(e);
-          // room.onMessage = msg => this.onMessage(msg);
-          // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-          // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-          this.connector.rooms.set(roomName, room);
-        }
-        return room;
-      },
-      caller => {
-        return true; //accept all income calls
-      },
+      (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
+      peerId => this.confirmIncomingCall(peerId),
       reason => this.onSignalingError(reason),
       dataHex => this.sign(dataHex)
     );
@@ -93,7 +80,7 @@ class P2PMessaging {
   }
 
   /**
-   * Create new room and register it on the signaling server.
+   * Creates new room and registers it on the signaling server.
    */
   enterRoom(peerId: string): Room {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
@@ -102,6 +89,12 @@ class P2PMessaging {
       room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
       room.enter();
     }
+    return room;
+  }
+
+  call(peerId: string): Room {
+    let room = this.enterRoom(peerId);
+    this.connector.call(peerId, this.user.publicKey, room);
     return room;
   }
 
@@ -119,6 +112,82 @@ class P2PMessaging {
     let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
     arr.sort();
     return arr[0] + "-" + arr[1];
+  }
+
+  private createRoomOnIncomingCall(roomName: string, peerId: string) {
+    let room = this.connector.rooms.get(roomName);
+    if (!room) {
+      room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+      // room.onFailure = e => this.onError(e);
+      // room.onMessage = msg => this.onMessage(msg);
+      // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+      // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+      this.connector.rooms.set(roomName, room);
+    }
+    return room;
+  }
+
+  private confirmIncomingCall(peerId: string): Promise<any> {
+    return new Promise<any>((resolve) => {
+      //todo get public name instead account
+      let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
+      dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => resolve());
+    });
+  }
+
+  dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): CallDialog {
+    return new CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
+  }
+
+}
+
+/**
+ * Dialog for calling other user to establish WebRTC channel.
+ */
+class CallDialog extends GenericDialog {
+
+  constructor($event,
+              private heat: HeatService,
+              private user: UserService,
+              private recipient: string,
+              private recipientPublicKey: string,
+              private p2pmessaging: P2PMessaging) {
+    super($event);
+    this.dialogTitle = 'Call user';
+    this.dialogDescription = 'Description on how to lease balance';
+    this.okBtnTitle = 'YES';
+  }
+
+  /* @override */
+  getFields($scope: angular.IScope) {
+    var builder = new DialogFieldBuilder($scope);
+    return [
+      builder
+        .account('recipient', this.recipient)
+        .label('Recipient')
+        .required()
+        .onchange(newValue => this.onChangeRecipient($scope, newValue))
+    ]
+  }
+
+  getTransactionBuilder(): TransactionBuilder {
+    return undefined;
+  }
+
+  okBtn() {
+    this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+      (publicKey) => {
+        this.p2pmessaging.call(publicKey);
+      }, reason => {
+      }
+    );
+    // room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
+    // this.connector.call(peerId, this.user.publicKey, room);
+  }
+
+  private onChangeRecipient($scope: angular.IScope, newRecipient) {
+
   }
 
 }
@@ -214,9 +283,9 @@ class Room {
    * Invoked on offer from remote peer to establish p2p channel. Needs to resolve promise if user allows call.
    * It is default implementation allowing all calls.
    */
-  confirmIncomingCall: (peerId: string) => Promise<void> = (peerId: string) => {
-    return Promise.resolve();
-  };
+  // confirmIncomingCall: (peerId: string) => Promise<void> = (peerId: string) => {
+  //   return Promise.resolve();
+  // };
 
 
   getMessageHistory() {
@@ -442,7 +511,7 @@ class P2PConnector {
   private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
   private createRoom: (name: string, peerId) => Room;
-  private allowCaller: (caller: string) => boolean;
+  private confirmIncomingCall: (caller: string) => Promise<void>;
   private sign: (dataHex: string) => ProvingData;
   private signalingError: (reason: string) => void;
 
@@ -460,18 +529,18 @@ class P2PConnector {
   /**
    * @param identity
    * @param createRoom function to create the room on incoming call
-   * @param allowCaller function to accept the caller
+   * @param confirmIncomingCall function to accept the caller
    * @param signalingError
    * @param sign Signing delegated to client class because this service class should not to have deal with secret info
    */
   setup(identity: string,
         createRoom: (name: string, peerId) => Room,
-        allowCaller: (caller: string) => boolean,
+        confirmIncomingCall: (caller: string) => Promise<void>,
         signalingError: (reason: string) => void,
         sign: (dataHex: string) => ProvingData) {
     this.pendingIdentity = identity;
     this.createRoom = createRoom;
-    this.allowCaller = allowCaller;
+    this.confirmIncomingCall = confirmIncomingCall;
     this.sign = sign;
     this.signalingError = signalingError;
   }
@@ -604,10 +673,10 @@ class P2PConnector {
       this.pendingOnlineStatus = null;
     } else if (msg.type === 'CALL') {
       let caller: string = msg.caller;
-      if (this.allowCaller(caller)) {
+      this.confirmIncomingCall(caller).then(value => {
         let room = this.createRoom(roomName, caller);
         this.enter(room);
-      }
+      });
     } else if (msg.type === 'ERROR') {
       this.signalingError(msg.reason);
     } else if (msg.type === 'WELCOME') {  //welcome to existing room
@@ -629,35 +698,40 @@ class P2PConnector {
       let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
       if (peer && !peer.isConnected()) {
         let room = this.rooms.get(roomName);
-        room.confirmIncomingCall(peerId).then(() => {
-          let pc = peer.peerConnection;
-          if (pc && pc.iceConnectionState != "connected") {
-            pc.close();
-            pc = null;
-          }
-          if (!pc) {
-            pc = this.createPeerConnection(roomName, peerId);
-          }
-          if (pc) {
-            pc.setRemoteDescription(new RTCSessionDescription(msg))
-              .catch(e => {
-                if (room.onFailure) {
-                  room.onFailure(peerId, e.name);
-                } else {
-                  console.log(e.name + "  " + e.message);
-                }
-              });
-            this.doAnswer(roomName, peerId);
-          }
-        });
+        let pc = peer.peerConnection;
+        if (pc && pc.iceConnectionState != "connected") {
+          pc.close();
+          pc = null;
+        }
+        if (!pc) {
+          pc = this.createPeerConnection(roomName, peerId);
+        }
+        if (pc) {
+          pc.setRemoteDescription(new RTCSessionDescription(msg))
+            .catch(e => {
+              if (room.onFailure) {
+                room.onFailure(peerId, e);
+              } else {
+                console.log(e.name + "  " + e.message);
+              }
+            });
+          this.doAnswer(roomName, peerId);
+        }
       }
     } else if (msg.type === 'answer') {
-      let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
-      pc.setRemoteDescription(new RTCSessionDescription(msg))
-        .catch(e => {
-          this.rooms.get(roomName).onFailure(msg.fromPeer, e.name);
-        });
-      console.log("got answer");
+      let room = this.rooms.get(roomName);
+      let pc = room.getPeer(msg.fromPeer).peerConnection;
+      if (pc) {
+        pc.setRemoteDescription(new RTCSessionDescription(msg))
+          .catch(e => {
+            if (room.onFailure) {
+              room.onFailure(msg.fromPeer, e);
+            } else {
+              console.log(e.name + "  " + e.message);
+            }
+          });
+        console.log("got answer");
+      }
     } else if (msg.type === 'candidate') {
       let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
       let candidate = new RTCIceCandidate({

@@ -118,7 +118,7 @@ class UserContactsComponent {
         };
         room.onCloseDataChannel = peerId => {
           this.refresh();
-        }
+        };
       }
     }
 
@@ -170,4 +170,13 @@ class UserContactsComponent {
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
     return contact.timestamp > this.store.getNumber(contact.account, 0);
   }
+
+  private confirmIncomingCall(peerId: string): Promise<any> {
+    return new Promise<any>((resolve) => {
+      //todo get public name instead account
+      let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
+      dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => resolve());
+    });
+  }
+
 }
