@@ -136,17 +136,7 @@ class P2PMessaging {
       //todo get public name instead account
       let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
       dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => {
-        let contact: IHeatMessageContact = this.p2pContactStore.get(peerAccount);
-        if (!contact) {
-          contact = {
-            account: peerAccount,
-            privateName: '',
-            publicKey: peerId,
-            publicName: '',
-            timestamp: Date.now()
-          };
-          this.p2pContactStore.put(peerAccount, contact);
-        }
+        this.saveContact(peerAccount, peerId);
         resolve();
       });
     });
@@ -154,6 +144,20 @@ class P2PMessaging {
 
   dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): CallDialog {
     return new CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
+  }
+
+  saveContact(account: string, publicKey: string) {
+    let contact: IHeatMessageContact = this.p2pContactStore.get(account);
+    if (!contact) {
+      contact = {
+        account: account,
+        privateName: '',
+        publicKey: publicKey,
+        publicName: '',
+        timestamp: Date.now()
+      };
+      this.p2pContactStore.put(account, contact);
+    }
   }
 
 }
@@ -194,25 +198,22 @@ class CallDialog extends GenericDialog {
   okBtn() {
     this.heat.api.getPublicKey(this.fields['recipient'].value).then(
       (publicKey) => {
-        this.p2pmessaging.call(publicKey);
-        //??? todo contact adding must be in onOpenDataChannel
+        let room = this.p2pmessaging.call(publicKey);
+
         let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
-        let contact: IHeatMessageContact = this.p2pmessaging.p2pContactStore.get(peerAccount);
-        if (!contact) {
-          contact = {
-            account: peerAccount,
-            privateName: '',
-            publicKey: publicKey,
-            publicName: '',
-            timestamp: Date.now()
+        this.p2pmessaging.saveContact(peerAccount, publicKey);
+
+        let peer = room.getPeer(publicKey);
+        if (peer && peer.isConnected()) {
+          this.okBtn['mdDialog'].hide(room);
+        } else {
+          room.onOpenDataChannel = peerId => {
+            this.okBtn['mdDialog'].hide(room);
           };
-          this.p2pmessaging.p2pContactStore.put(peerAccount, contact);
         }
       }, reason => {
       }
     );
-    // room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
-    // this.connector.call(peerId, this.user.publicKey, room);
   }
 
   private onChangeRecipient($scope: angular.IScope, newRecipient) {

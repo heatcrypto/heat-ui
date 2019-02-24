@@ -88,9 +88,8 @@
             </md-button>
             <md-button id="CallButton" ng-if="vm.offchain" class="md-primary" aria-label="Call" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
-                Call user to establish the channel
+                Call user to establish the peer-to-peer channel
               </md-tooltip>
-              <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               Call
             </md-button>
           </div>
@@ -135,7 +134,7 @@ class MessengerComponent {
   }
 
   showCallDialog($event) {
-    this.p2pMessaging.dialog($event).show();
+    this.p2pMessaging.dialog($event).show().then(room => {});
   }
 
   toggleOffchain($event) {

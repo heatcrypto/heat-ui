@@ -268,6 +268,9 @@ function GenericDialogCreateController(dialog: GenericDialog) {
       }
     };
     let overridedOkBtn = dialog['okBtn'];
+    if (overridedOkBtn) {
+      overridedOkBtn['mdDialog'] = $mdDialog;  //todo rework the hack with overridedOkBtn
+    }
     this.okBtn = overridedOkBtn ? overridedOkBtn : function () {
       this.builder = dialog.getTransactionBuilder();
 
