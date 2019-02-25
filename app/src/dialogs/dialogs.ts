@@ -184,7 +184,7 @@ module dialogs {
       },
       template: `
         <!--<md-input-container flex>-->
-        <p>{{vm.content}}</p>
+        <p ng-bind-html="vm.content"></p>
         <!--</md-input-container>-->
       `,
     })

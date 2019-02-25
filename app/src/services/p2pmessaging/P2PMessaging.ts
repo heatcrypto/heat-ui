@@ -132,12 +132,28 @@ class P2PMessaging {
   }
 
   private confirmIncomingCall(peerId: string): Promise<any> {
-    return new Promise<any>((resolve) => {
-      //todo get public name instead account
+    return new Promise<any>((resolve, reject) => {
+      // if peer is connected already confirm silently
+      let room = this.getRoom(peerId);
+      if (room) {
+        let peer = room.getPeer(peerId);
+        if (peer && peer.isConnected()) {
+          resolve();
+          return;
+        }
+      }
+
       let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
-      dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => {
-        this.saveContact(peerAccount, peerId);
-        resolve();
+      this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
+        let expectedAccount = accounts.find(value => value.publicKey == peerId);
+        if (expectedAccount) {
+          dialogs.confirm("Incoming call", `User &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; calls you.`).then(() => {
+            this.saveContact(peerAccount, peerId, expectedAccount.publicName);
+            resolve();
+          });
+        } else {
+          reject();
+        }
       });
     });
   }
@@ -146,14 +162,14 @@ class P2PMessaging {
     return new CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
   }
 
-  saveContact(account: string, publicKey: string) {
+  saveContact(account: string, publicKey: string, publicName: string) {
     let contact: IHeatMessageContact = this.p2pContactStore.get(account);
     if (!contact) {
       contact = {
         account: account,
         privateName: '',
         publicKey: publicKey,
-        publicName: '',
+        publicName: publicName,
         timestamp: Date.now()
       };
       this.p2pContactStore.put(account, contact);
@@ -177,6 +193,7 @@ class CallDialog extends GenericDialog {
     this.dialogTitle = 'Call user';
     this.dialogDescription = 'Description on how to lease balance';
     this.okBtnTitle = 'Call';
+    this.okBtn['disabled'] = false;
   }
 
   /* @override */
@@ -187,7 +204,8 @@ class CallDialog extends GenericDialog {
         .account('recipient', this.recipient)
         .label('Callee')
         .required()
-        .onchange(newValue => this.onChangeRecipient($scope, newValue))
+        .onchange(newValue => this.onChangeRecipient($scope, newValue)),
+      builder.hidden('recipientPublicKey', this.recipientPublicKey)
     ]
   }
 
@@ -196,12 +214,24 @@ class CallDialog extends GenericDialog {
   }
 
   okBtn() {
+    this.okBtn['disabled'] = true;
     this.heat.api.getPublicKey(this.fields['recipient'].value).then(
       (publicKey) => {
+        setTimeout(() => {
+          this.okBtn['scope'].$evalAsync(() => {
+            this.okBtn['disabled'] = false;
+          });
+        }, 4000);
+
         let room = this.p2pmessaging.call(publicKey);
 
         let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
-        this.p2pmessaging.saveContact(peerAccount, publicKey);
+        this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
+          let expectedAccount = accounts.find(value => value.publicKey == publicKey);
+          if (expectedAccount) {
+            this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName);
+          }
+        });
 
         let peer = room.getPeer(publicKey);
         if (peer && peer.isConnected()) {

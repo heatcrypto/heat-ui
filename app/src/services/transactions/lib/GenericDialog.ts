@@ -199,7 +199,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           <!-- EDIT -->
           <div ng-switch-when="0">
             <md-button class="md-warn" ng-click="vm.cancelBtn()">Cancel</md-button>
-            <md-button class="md-primary" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid">{{vm.okBtnTitle}}</md-button>
+            <md-button class="md-primary" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid || vm.okBtn['disabled']">{{vm.okBtnTitle}}</md-button>
           </div>
 
           <!-- CREATE -->
@@ -270,6 +270,7 @@ function GenericDialogCreateController(dialog: GenericDialog) {
     let overridedOkBtn = dialog['okBtn'];
     if (overridedOkBtn) {
       overridedOkBtn['mdDialog'] = $mdDialog;  //todo rework the hack with overridedOkBtn
+      overridedOkBtn['scope'] = $scope;
     }
     this.okBtn = overridedOkBtn ? overridedOkBtn : function () {
       this.builder = dialog.getTransactionBuilder();
