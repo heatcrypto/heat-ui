@@ -90,7 +90,9 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
       })
     });
     deferred.promise.then(() => {
-      this.goTo(this.getFirst().getLast().__id, 0, 1);
+      if (this.batches[0].entries.length > 0) {
+        this.goTo(this.getFirst().getLast().__id, 0, 1);
+      }
     });
     return deferred.promise;
   }

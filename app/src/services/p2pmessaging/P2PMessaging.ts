@@ -25,9 +25,10 @@
 @Inject('settings', 'user', 'storage', '$interval', 'heat')
 class P2PMessaging {
 
-  //private rooms: Map<string, Room> = new Map<string, Room>();
-  private connector: P2PConnector;
   public p2pContactStore: Store;
+  public offchainMode: boolean = false;
+
+  private connector: P2PConnector;
 
   constructor(private settings: SettingsService,
               private user: UserService,
@@ -69,6 +70,14 @@ class P2PMessaging {
   //   }
   //   return room;
   // }
+
+  set onlineStatus(status: OnlineStatus) {
+    this.connector.setOnlineStatus(status);
+  }
+
+  get onlineStatus(): OnlineStatus {
+    return this.connector.onlineStatus;
+  }
 
   /**
    * Returns room with single peer.
@@ -178,6 +187,8 @@ class P2PMessaging {
 
 }
 
+type OnlineStatus = "online" | "offline";
+
 /**
  * Dialog for calling other user to establish WebRTC channel.
  */
@@ -191,7 +202,7 @@ class CallDialog extends GenericDialog {
               private p2pmessaging: P2PMessaging) {
     super($event);
     this.dialogTitle = 'Call user';
-    this.dialogDescription = 'Description on how to lease balance';
+    this.dialogDescription = 'Call other user to establish the peer-to-peer channel';
     this.okBtnTitle = 'Call';
     this.okBtn['disabled'] = false;
   }
@@ -205,6 +216,7 @@ class CallDialog extends GenericDialog {
         .label('Callee')
         .required()
         .onchange(newValue => this.onChangeRecipient($scope, newValue)),
+      // builder.text('note', '').readonly(true),
       builder.hidden('recipientPublicKey', this.recipientPublicKey)
     ]
   }
@@ -217,13 +229,25 @@ class CallDialog extends GenericDialog {
     this.okBtn['disabled'] = true;
     this.heat.api.getPublicKey(this.fields['recipient'].value).then(
       (publicKey) => {
+        let room = this.p2pmessaging.getRoom(publicKey);
+        if (room) {
+          let peer = room.getPeer(publicKey);
+          if (peer && peer.isConnected()) {
+            this.okBtn['mdDialog'].hide(room);
+            return;
+          }
+        }
+
         setTimeout(() => {
           this.okBtn['scope'].$evalAsync(() => {
             this.okBtn['disabled'] = false;
           });
         }, 4000);
 
-        let room = this.p2pmessaging.call(publicKey);
+        room = this.p2pmessaging.call(publicKey);
+        room.onOpenDataChannel = peerId => {
+          this.okBtn['mdDialog'].hide(room);
+        };
 
         let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
         this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
@@ -232,22 +256,15 @@ class CallDialog extends GenericDialog {
             this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName);
           }
         });
-
-        let peer = room.getPeer(publicKey);
-        if (peer && peer.isConnected()) {
-          this.okBtn['mdDialog'].hide(room);
-        } else {
-          room.onOpenDataChannel = peerId => {
-            this.okBtn['mdDialog'].hide(room);
-          };
-        }
       }, reason => {
       }
     );
   }
 
   private onChangeRecipient($scope: angular.IScope, newRecipient) {
-
+    $scope.$evalAsync(() => {
+      // this.fields['note'].value = newRecipient;
+    });
   }
 
 }
@@ -579,6 +596,7 @@ class P2PConnector {
   private identity: string;
   private pendingRooms: Function[] = [];
   private pendingOnlineStatus: Function;
+  private _onlineStatus: OnlineStatus = "offline";
   private signalingReady: boolean = null;
   private config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
   private pingSignalingInterval;
@@ -608,7 +626,7 @@ class P2PConnector {
   /**
    * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
    */
-  setOnlineStatus(status: string) {
+  setOnlineStatus(status: OnlineStatus) {
     let sendOnlineStatus = () => {
       this.sendSignalingMessage([{type: "SET_ONLINE_STATUS", status: status}]);
     };
@@ -618,9 +636,18 @@ class P2PConnector {
       this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
       this.pendingOnlineStatus = sendOnlineStatus;
     }
+    this._onlineStatus = status;
+    if (status == "offline") {
+      this.identity = null;
+      //todo clear rooms?
+    }
   }
 
-  getOnlineStatus(peerId: string): Promise<string> {
+  get onlineStatus(): OnlineStatus {
+    return this._onlineStatus;
+  }
+
+  getPeerOnlineStatus(peerId: string): Promise<string> {
     return this.request(
       () => this.sendSignalingMessage([{type: "GET_ONLINE_STATUS", peerId: peerId}]),
       (msg) => {
@@ -645,10 +672,14 @@ class P2PConnector {
       })
   }
 
-  enter(room: Room) {
+  enter(room: Room, enforce?: boolean) {
     let existingRoom = this.rooms.get(room.name);
     if (existingRoom && existingRoom.state.entered) {
-      return;
+      if (enforce) {
+        existingRoom.state.entered = false;
+      } else {
+        return;
+      }
     }
     let requestEnterRoom = () => {
       room.state.approved = true;
@@ -709,17 +740,20 @@ class P2PConnector {
     return this.getWebSocket().then(websocket => {
       message.splice(0, 0, "webrtc");
       websocket.send(JSON.stringify(message));
-      console.log("sendSignalingMessage \n"+JSON.stringify(message));
+      console.log(">> \n"+JSON.stringify(message));
     }, reason => console.log(reason))
   }
 
   onSignalingMessage(message) {
-    console.log("onSignalingMessage \n"+ message.data);
+    if (this._onlineStatus == "offline") {
+      return;
+    }
+    console.log("<< \n"+ message.data);
     let msg = JSON.parse(message.data);
     let roomName: string = msg.room;
 
     if (msg.type === 'PONG') {
-      console.log("signaling pong");
+      //console.log("signaling pong");
     } else if (msg.type === 'PROVE_IDENTITY') {
       let signedData = this.sign(msg.data);
       signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
@@ -735,7 +769,7 @@ class P2PConnector {
       let caller: string = msg.caller;
       this.confirmIncomingCall(caller).then(value => {
         let room = this.createRoom(roomName, caller);
-        this.enter(room);
+        this.enter(room, true);
       });
     } else if (msg.type === 'ERROR') {
       this.signalingError(msg.reason);
@@ -744,13 +778,9 @@ class P2PConnector {
       room.state.entered = true;
       msg.remotePeerIds.forEach((peerId: string) => {
         let peer = room.createPeer(peerId, peerId);
-        if (peer) {
-          if (!peer.peerConnection) {
-            this.createPeerConnection(roomName, peerId);
-          }
-          if (!peer.isConnected()) {
-            this.doOffer(roomName, peerId);
-          }
+        if (peer && !peer.isConnected()) {
+          this.askPeerConnection(roomName, peerId);
+          this.doOffer(roomName, peerId);
         }
       });
     } else if (msg.type === 'offer') {
@@ -758,14 +788,7 @@ class P2PConnector {
       let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
       if (peer && !peer.isConnected()) {
         let room = this.rooms.get(roomName);
-        let pc = peer.peerConnection;
-        if (pc && pc.iceConnectionState != "connected") {
-          pc.close();
-          pc = null;
-        }
-        if (!pc) {
-          pc = this.createPeerConnection(roomName, peerId);
-        }
+        let pc = this.askPeerConnection(roomName, peerId);
         if (pc) {
           pc.setRemoteDescription(new RTCSessionDescription(msg))
             .catch(e => {
@@ -780,30 +803,46 @@ class P2PConnector {
       }
     } else if (msg.type === 'answer') {
       let room = this.rooms.get(roomName);
-      let pc = room.getPeer(msg.fromPeer).peerConnection;
-      if (pc) {
-        pc.setRemoteDescription(new RTCSessionDescription(msg))
-          .catch(e => {
-            if (room.onFailure) {
-              room.onFailure(msg.fromPeer, e);
-            } else {
-              console.log(e.name + "  " + e.message);
-            }
-          });
-        console.log("got answer");
+      let peer = room.getPeer(msg.fromPeer);
+      if (peer && !peer.isConnected()) {
+        let pc = peer.peerConnection;
+        if (pc) {
+          pc.setRemoteDescription(new RTCSessionDescription(msg))
+            .catch(e => {
+              if (room.onFailure) {
+                room.onFailure(msg.fromPeer, e);
+              } else {
+                console.log(e.name + "  " + e.message);
+              }
+            });
+        }
       }
     } else if (msg.type === 'candidate') {
-      let pc = this.rooms.get(roomName).getPeer(msg.fromPeer).peerConnection;
+      let room = this.rooms.get(roomName);
+      let peer = room.getPeer(msg.fromPeer);
+      let pc = peer.peerConnection;
       let candidate = new RTCIceCandidate({
         sdpMLineIndex: msg.label,
         candidate: msg.candidate
       });
       pc.addIceCandidate(candidate)
         .catch(e => {
-          console.log("Failure during addIceCandidate(): " + e.name);
-          this.rooms.get(roomName).onFailure(msg.fromPeer, e.name);
+          console.log("Failure during addIceCandidate(): " + e.name + "  " + e.message);
+          if (room.onFailure) {
+            room.onFailure(msg.fromPeer, e);
+          }
         });
-      console.log("addIceCandidate");
+
+      //hack
+      if (!peer['noNeedReconnect']) {
+        setTimeout(() => {
+          if (!peer.isConnected() && peer['connectionRole'] == "answer") {
+            peer['noNeedReconnect'] = true;
+            this.askPeerConnection(roomName, msg.fromPeer);
+            this.doOffer(roomName, msg.fromPeer);
+          }
+        }, 2500);
+      }
       // } else if (msg.type === 'GETROOM') {
       //   this.room = msg.value;
       //   this.onRoomReceived(this.room);
@@ -821,9 +860,16 @@ class P2PConnector {
     this.$interval.cancel(this.pingSignalingInterval);
   }
 
-  createPeerConnection(roomName: string, peerId: string) {
+  askPeerConnection(roomName: string, peerId: string) {
     let peer = this.rooms.get(roomName).getPeer(peerId);
-    let pc: RTCPeerConnection;
+
+    //that's rude. Should analyze the connection state and create a new one or use an existing
+    let pc: RTCPeerConnection = peer.peerConnection;
+    if (pc && pc.iceConnectionState != "connected") {
+      pc.close();
+      pc = null;
+    }
+
     try {
       pc = new RTCPeerConnection(this.config);
       pc.onicecandidate = (event) => {
@@ -945,7 +991,9 @@ class P2PConnector {
    */
   doOffer(roomName: string, peerId: string) {
     console.log("do offer");
-    let peerConnection = this.rooms.get(roomName).getPeer(peerId).peerConnection;
+    let peer = this.rooms.get(roomName).getPeer(peerId);
+    peer['connectionRole'] = 'offer';
+    let peerConnection = peer.peerConnection;
     this.createDataChannel(roomName, peerId, peerConnection, "caller");
     peerConnection.createOffer((offer) => {
         peerConnection.setLocalDescription(offer, () => {
@@ -964,7 +1012,9 @@ class P2PConnector {
    */
   doAnswer(roomName: string, peerId: string) {
     console.log("do answer");
-    let peerConnection = this.rooms.get(roomName).getPeer(peerId).peerConnection;
+    let peer = this.rooms.get(roomName).getPeer(peerId);
+    peer['connectionRole'] = peer['connectionRole'] ? 'no need' : 'answer';
+    let peerConnection = peer.peerConnection;
     peerConnection.createAnswer((answer) => {
       peerConnection.setLocalDescription(answer, () => {
         this.sendSignalingMessage([{room: roomName, toPeerId: peerId}, peerConnection.localDescription]);

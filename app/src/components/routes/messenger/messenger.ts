@@ -31,6 +31,7 @@
     }
     messenger .control-panel {
       margin-top: 6px;
+      margin-right: 6px;
     }
     messenger edit-message {
       min-height: 80px;
@@ -54,14 +55,19 @@
     messenger .edit-message {
       padding-right: 0px;
     }
-    #offchainButton {
-      margin: 7px 0 5px 0px;
-      align-self: center;
+    .control-panel button {
+      flex: auto;
     }
     #offchainButton.disable span {
       color: grey;
     }
     #offchainButton.active {
+      background-color: green;
+    }
+    #onlineStatusButton.disable span {
+      color: grey;
+    }
+    #onlineStatusButton.active {
       background-color: green;
     }
     #newContactButton md-icon {
@@ -75,22 +81,28 @@
         <div layout="column">
           <user-contacts flex layout="column" ></user-contacts>
           <div layout="row" class="control-panel">
-            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.offchain, 'disable': !vm.offchain}">
-              <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
-              {{vm.offchainLabel}}
-            </md-button>
-            <md-button id="newContactButton" ng-if="!vm.offchain" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
+            <md-button id="newContactButton" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
               <md-tooltip md-direction="top">
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               New Message
             </md-button>
-            <md-button id="CallButton" ng-if="vm.offchain" class="md-primary" aria-label="Call" ng-click="vm.showCallDialog($event)">
+            <md-button id="CallButton" class="md-primary" aria-label="Call" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
                 Call user to establish the peer-to-peer channel
               </md-tooltip>
               Call
+            </md-button>
+          </div>
+          <div layout="row" class="control-panel">
+            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()" ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
+              <md-tooltip md-direction="top">Online peer-to-peer messaging status</md-tooltip>
+              {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
+            </md-button>
+            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
+              <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
+              {{vm.p2pMessaging.offchainMode ? 'offchain  ✔' : 'offchain'}}
             </md-button>
           </div>
         </div>
@@ -98,15 +110,15 @@
           <div class="row" class="progress-indicator" flex ng-show="vm.loading">
             <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
           </div>
-          <md-content flex ng-if="!vm.offchain" id="message-batch-container">
+          <md-content flex ng-if="!vm.p2pMessaging.offchainMode" id="message-batch-container">
             <message-batch-viewer flex layout="column" container-id="message-batch-container"
                     publickey="::vm.publickey"></message-batch-viewer>
           </md-content>
-          <md-content flex ng-if="vm.offchain" id="offchain-messages-container">
+          <md-content flex ng-if="vm.p2pMessaging.offchainMode" id="offchain-messages-container">
             <p2p-messages-viewer flex layout="column" container-id="message-batch-container"
                     publickey="::vm.publickey"></p2p-messages-viewer>
           </md-content>
-          <div layout="column" flex="none" class="edit-message">
+          <div layout="row" flex="none" class="edit-message">
             <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
           </div>
         </div>
@@ -119,8 +131,6 @@ class MessengerComponent {
 
   publickey: string; // @input
   loading: boolean;
-  offchain: boolean = false;
-  offchainLabel: string = "offchain";
 
   constructor(private $scope: angular.IScope,
               private user: UserService,
@@ -138,11 +148,11 @@ class MessengerComponent {
   }
 
   toggleOffchain($event) {
-    this.offchain = !this.offchain;
-    if (this.offchain) {
-      this.offchainLabel = "offchain  ✔"
-    } else {
-      this.offchainLabel = "offchain"
-    }
+    this.p2pMessaging.offchainMode = !this.p2pMessaging.offchainMode;
   }
+
+  toggleOnline($event) {
+    this.p2pMessaging.onlineStatus = this.p2pMessaging.onlineStatus == "online" ? "offline" : "online";
+  }
+
 }

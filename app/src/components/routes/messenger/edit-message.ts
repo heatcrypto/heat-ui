@@ -67,7 +67,7 @@ class EditMessageComponent {
   onKeyPress($event: KeyboardEvent) {
     if ($event.keyCode == 13 && !$event.shiftKey) {
       if (this.messageText.trim().length != 0) {
-        if (this.$scope.$parent['vm'].offchain) {
+        if (this.p2pMessaging.offchainMode) {
           this.sendP2PMessage($event);
         } else {
           this.sendMessage($event);
