@@ -165,7 +165,7 @@ class DownloadingBlockchainComponent {
         if (server.statusScore >= 0 || !currentServerIsAlive) {
           if ((server.statusScore != null && best.statusScore == null) || server.statusScore > best.statusScore) {
             best = server;
-            causeToSelectBest = "Status code is better";
+            causeToSelectBest = "Status score is better";
           }
           if (server.statusScore == best.statusScore && server.priority < best.priority) {
             best = server;

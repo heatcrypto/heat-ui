@@ -55,6 +55,7 @@ module converters {
   }
 
   export function stringToByteArray(stringValue: string): Array<number> {
+    // @ts-ignore
     var str = unescape(encodeURIComponent(stringValue)); //temporary
     var bytes = new Array(str.length);
     for (var i = 0; i < str.length; ++i) {
@@ -188,6 +189,7 @@ module converters {
       var index = checkBytesToIntInput(bytes, parseInt(length, 10), parseInt(opt_startIndex, 10));
       bytes = bytes.slice(opt_startIndex, opt_startIndex + length);
     }
+    // @ts-ignore
     return decodeURIComponent(escape(String.fromCharCode.apply(null, bytes)));
   }
 
