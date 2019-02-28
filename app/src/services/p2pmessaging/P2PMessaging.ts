@@ -21,6 +21,9 @@
  * SOFTWARE.
  * */
 
+type OnlineStatus = "online" | "offline";
+type EnterRoomState = "not" | "entering" | "entered";
+
 @Service('P2PMessaging')
 @Inject('settings', 'user', 'storage', '$interval', 'heat')
 class P2PMessaging {
@@ -82,7 +85,7 @@ class P2PMessaging {
   /**
    * Returns room with single peer.
    */
-  getRoom(peerId: string): Room {
+  getOneToOneRoom(peerId: string): Room {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (room && room.getAllPeers().size <= 1) {
@@ -95,10 +98,15 @@ class P2PMessaging {
    * Creates new room and registers it on the signaling server.
    */
   enterRoom(peerId: string): Room {
+    if (this.onlineStatus == "offline") {
+      return null;
+    }
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room) {
       room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
+    }
+    if (room.state.entered == "not") {
       room.enter();
     }
     return room;
@@ -143,25 +151,33 @@ class P2PMessaging {
   private confirmIncomingCall(peerId: string): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       // if peer is connected already confirm silently
-      let room = this.getRoom(peerId);
-      if (room) {
-        let peer = room.getPeer(peerId);
-        if (peer && peer.isConnected()) {
-          resolve();
-          return;
-        }
+      if (this.isPeerConnected(peerId)) {
+        resolve();
+        return;
       }
 
       let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
       this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
         let expectedAccount = accounts.find(value => value.publicKey == peerId);
         if (expectedAccount) {
-          dialogs.confirm("Incoming call", `User &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; calls you.`).then(() => {
-            this.saveContact(peerAccount, peerId, expectedAccount.publicName);
-            resolve();
+          let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
+            let interval = this.$interval(() => {
+              if (this.isPeerConnected(peerId)) {
+                mdDialog.cancel("Already connected");
+                this.$interval.cancel(interval);
+              }
+            }, 500, 7, false);
+          };
+          dialogs.confirm(
+            "Incoming call",
+            `User &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; calls you.`,
+            closeDialogOnConnected
+          ).then(() => {
+              this.saveContact(peerAccount, peerId, expectedAccount.publicName);
+              resolve();
           });
         } else {
-          reject();
+          reject("Account not found");
         }
       });
     });
@@ -185,9 +201,16 @@ class P2PMessaging {
     }
   }
 
-}
+  isPeerConnected(peerId: string): boolean {
+    let room = this.getOneToOneRoom(peerId);
+    if (room) {
+      let peer = room.getPeer(peerId);
+      return peer && peer.isConnected();
+    }
+    return false;
+  }
 
-type OnlineStatus = "online" | "offline";
+}
 
 /**
  * Dialog for calling other user to establish WebRTC channel.
@@ -229,13 +252,10 @@ class CallDialog extends GenericDialog {
     this.okBtn['disabled'] = true;
     this.heat.api.getPublicKey(this.fields['recipient'].value).then(
       (publicKey) => {
-        let room = this.p2pmessaging.getRoom(publicKey);
-        if (room) {
-          let peer = room.getPeer(publicKey);
-          if (peer && peer.isConnected()) {
-            this.okBtn['mdDialog'].hide(room);
-            return;
-          }
+        let room = this.p2pmessaging.getOneToOneRoom(publicKey);
+        if (this.p2pmessaging.isPeerConnected(publicKey)) {
+          this.okBtn['mdDialog'].hide(room);
+          return;
         }
 
         setTimeout(() => {
@@ -283,9 +303,9 @@ class Room {
               public memberPublicKeys: string[]) {
   }
 
-  state: {approved: boolean, entered: boolean} = {
+  state: {approved: boolean, entered: EnterRoomState} = {
     approved: false,
-    entered: false
+    entered: "not"
   };
 
   private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>();
@@ -293,7 +313,7 @@ class Room {
 
   /**
    * If room not exists registers the room on the server (signaling server).
-   * Registers user in the room in the server.
+   * Registers user in the room on the server.
    */
   enter() {
     this.connector.enter(this);
@@ -658,7 +678,6 @@ class P2PConnector {
   }
 
   call(toPeerId: string, caller: string, room: Room) {
-    this.enter(room);
     this.sendSignalingMessage([{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.name}]);
   }
 
@@ -674,16 +693,26 @@ class P2PConnector {
 
   enter(room: Room, enforce?: boolean) {
     let existingRoom = this.rooms.get(room.name);
-    if (existingRoom && existingRoom.state.entered) {
+    if (existingRoom && existingRoom.state.entered == "entered") {
       if (enforce) {
-        existingRoom.state.entered = false;
+        existingRoom.state.entered = "not";
       } else {
         return;
       }
     }
     let requestEnterRoom = () => {
       room.state.approved = true;
-      if (!room.state.entered) {
+      if (room.state.entered == "not") {
+        room.state.entered = "entering";
+
+        //will return the state to not entered if will no the response from the server
+        setTimeout(() => {
+          if (room.state.entered != "entered") {
+            room.state.entered = "not";
+          }
+        }, 4000);
+
+        //request entering to the room
         this.sendSignalingMessage([{type: "ROOM", room: room.name}]);
       }
     };
@@ -775,7 +804,7 @@ class P2PConnector {
       this.signalingError(msg.reason);
     } else if (msg.type === 'WELCOME') {  //welcome to existing room
       let room = this.rooms.get(roomName);
-      room.state.entered = true;
+      room.state.entered = "entered";
       msg.remotePeerIds.forEach((peerId: string) => {
         let peer = room.createPeer(peerId, peerId);
         if (peer && !peer.isConnected()) {
@@ -918,7 +947,7 @@ class P2PConnector {
 
   onOpenDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
     if (sendCheckingMessage) {
-      let checkChannelMessage = {"type": P2PConnector.MSG_TYPE_CHECK_CHANNEL, "room": roomName, "value": ("" + Math.random())};
+      let checkChannelMessage = {type: P2PConnector.MSG_TYPE_CHECK_CHANNEL, room: roomName, value: ("" + Math.random())};
       //send checking message to signaling server,
       // then when other peer will send this value also the server will be sure that both ends established channel
       this.sendSignalingMessage([checkChannelMessage]);
@@ -928,9 +957,10 @@ class P2PConnector {
     }
 
     let room: Room = this.rooms.get(roomName);
-    if (room && room.onOpenDataChannel) {
+    if (room.onOpenDataChannel) {
       room.onOpenDataChannel(peerId);
     }
+    room.getPeer(peerId).dataChannel = dataChannel;
 
     //request proof of identity - other party must respond by sending the data signed by its public key.
     //In request my party send own proof also.

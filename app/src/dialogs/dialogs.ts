@@ -172,7 +172,10 @@ module dialogs {
     });
   }
 
-  export function confirm(title, content) {
+  export function confirm(title, content, mdDialog?: (mdDialog: angular.material.IDialogService) => void) {
+    if (mdDialog) {
+      mdDialog($mdDialog());
+    }
     return dialogs.dialog({
       id: 'confirmDialog',
       title: title,
@@ -186,7 +189,7 @@ module dialogs {
         <!--<md-input-container flex>-->
         <p ng-bind-html="vm.content"></p>
         <!--</md-input-container>-->
-      `,
+      `
     })
   }
 

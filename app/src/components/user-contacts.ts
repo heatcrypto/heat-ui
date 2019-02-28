@@ -113,14 +113,16 @@ class UserContactsComponent {
 
     if (this.activePublicKey && this.activePublicKey != "0") {
       let room = this.p2pMessaging.enterRoom(this.activePublicKey);
-      this.rooms.set(this.activePublicKey, room);
-      if (!room.onOpenDataChannel) {
-        room.onOpenDataChannel = peerId => {
-          this.refresh();
-        };
-        room.onCloseDataChannel = peerId => {
-          this.refresh();
-        };
+      if (room) {
+        this.rooms.set(this.activePublicKey, room);
+        if (!room.onOpenDataChannel) {
+          room.onOpenDataChannel = peerId => {
+            this.refresh();
+          };
+          room.onCloseDataChannel = peerId => {
+            this.refresh();
+          };
+        }
       }
     }
 
@@ -169,27 +171,21 @@ class UserContactsComponent {
   }
 
   offchainStatus(publicKey: string) {
-    let room = this.p2pMessaging.getRoom(publicKey);
+    let room = this.p2pMessaging.getOneToOneRoom(publicKey);
     if (room) {
       let peer = room.getPeer(publicKey);
       if (peer && peer.isConnected()) {
         return "channelOpened";
       } else {
-        return "roomRegistered";
+        if (room.state.entered == "entered") {
+          return "roomRegistered";
+        }
       }
     }
   }
 
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
     return contact.timestamp > this.store.getNumber(contact.account, 0);
-  }
-
-  private confirmIncomingCall(peerId: string): Promise<any> {
-    return new Promise<any>((resolve) => {
-      //todo get public name instead account
-      let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
-      dialogs.confirm("Incoming call", `User ${peerAccount} calls you.`).then(() => resolve());
-    });
   }
 
 }

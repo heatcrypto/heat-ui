@@ -92,7 +92,7 @@ class P2PMessagesViewerComponent {
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
     if (this.publickey != '0') {
-      let room = this.p2pMessaging.getRoom(this.publickey);
+      let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
       if (room) {
         room.onNewMessageHistoryItem = (item: MessageHistoryItem) => {
           this.items.push(this.processItem(item));

@@ -78,7 +78,7 @@ class EditMessageComponent {
 
   sendP2PMessage($event) {
     let sent: boolean = false;
-    let room = this.p2pMessaging.getRoom(this.publickey);
+    let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
     if (room) {
       let peer = room.getPeer(this.publickey);
       if (peer && peer.isConnected()) {
