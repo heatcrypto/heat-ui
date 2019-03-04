@@ -83,7 +83,7 @@ class P2PMessagingProbeComponent {
   //   this.publickey = value;
   // }
 
-  connected: boolean = false;
+  /*connected: boolean = false;
   canCall: boolean = false;
   messageText: string;
   messages: string[] = [];
@@ -262,5 +262,5 @@ class P2PMessagingProbeComponent {
     return new Promise<any>((resolve) => {
       dialogs.confirm("Incoming call", `User ${peerId} calls you.`).then(() => resolve());
     });
-  }
+  }*/
 }
