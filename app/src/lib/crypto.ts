@@ -360,7 +360,7 @@ module heat.crypto {
     return ivOut.concat(ciphertextOut);
   }
 
-  interface IEncryptedMessage {
+  export interface IEncryptedMessage {
     isText: boolean;
     data: string;
     nonce: string;

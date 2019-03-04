@@ -42,6 +42,8 @@ module p2p {
     private createRoom: (name: string, peerId) => Room;
     private confirmIncomingCall: (caller: string) => Promise<void>;
     private sign: (dataHex: string) => ProvingData;
+    private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage;
+    private decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string;
     private signalingError: (reason: string) => void;
 
     private pendingIdentity: string;
@@ -62,17 +64,23 @@ module p2p {
      * @param confirmIncomingCall function to accept the caller
      * @param signalingError
      * @param sign Signing delegated to client class because this service class should not to have deal with secret info
+     * @param encrypt Encrypt p2p messages
+     * @param decrypt Decrypt p2p messages
      */
     setup(identity: string,
           createRoom: (name: string, peerId) => Room,
           confirmIncomingCall: (caller: string) => Promise<void>,
           signalingError: (reason: string) => void,
-          sign: (dataHex: string) => ProvingData) {
+          sign: (dataHex: string) => ProvingData,
+          encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
+          decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string) {
       this.pendingIdentity = identity;
       this.createRoom = createRoom;
       this.confirmIncomingCall = confirmIncomingCall;
       this.sign = sign;
       this.signalingError = signalingError;
+      this.encrypt = encrypt;
+      this.decrypt = decrypt;
     }
 
     /**
@@ -495,19 +503,25 @@ module p2p {
       return this.send(roomName, JSON.stringify(message));
     }
 
-    private send(roomName: string, data, channel?: RTCDataChannel) {
-      if (channel) {
-        return this.sendInternal(channel, data);
-      } else {
-        let count = 0;
-        if (roomName && this.rooms.get(roomName)) {
-          this.rooms.get(roomName).getDataChannels().forEach(channel => count = count + this.sendInternal(channel, data));
+    private send(roomName: string, data: string, channel?: RTCDataChannel) {
+      let room = this.rooms.get(roomName);
+      let peers = Array.from(room.getAllPeers().values());
+      let count = 0;
+      for (let peer of peers) {
+        if (channel) {
+          if (peer.dataChannel == channel) {
+            let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey);
+            return this.sendInternal(channel, JSON.stringify(encrypted));
+          }
+        } else {
+          let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey);
+          count = count + this.sendInternal(peer.dataChannel, JSON.stringify(encrypted));
         }
-        return count;
       }
+      return count;
     }
 
-    private sendInternal(channel: RTCDataChannel, data): number {
+    private sendInternal(channel: RTCDataChannel, data: string): number {
       let notSentReason;
       if (channel.readyState == "open") {
         try {
@@ -528,7 +542,10 @@ module p2p {
 
     onMessage(roomName: string, peerId: string, dataChannel: RTCDataChannel, event: MessageEvent) {
       try {
-        let msg = JSON.parse(event.data);
+        let encrypted: heat.crypto.IEncryptedMessage = JSON.parse(event.data);
+        let msg = JSON.parse(this.decrypt(encrypted, peerId));
+
+        console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
 
         let room: Room = this.rooms.get(roomName);
         if (room) {
@@ -536,7 +553,6 @@ module p2p {
           msg.roomName = roomName;
           room.onMessageInternal(msg);
         }
-        console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendSignalingMessage([{room: roomName}, msg]);
           //console.log("CHECK_CHANNEL " + msg.txt);

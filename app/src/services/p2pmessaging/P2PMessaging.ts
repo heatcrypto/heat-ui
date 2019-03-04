@@ -45,11 +45,21 @@ class P2PMessaging {
       (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
       peerId => this.confirmIncomingCall(peerId),
       reason => this.onSignalingError(reason),
-      dataHex => this.sign(dataHex)
+      dataHex => this.sign(dataHex),
+      (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
+      (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
     );
 
     this.p2pContactStore = storage.namespace('p2pContacts');
   }
+
+    private encrypt(message: string, peerPublicKey: string) {
+      return heat.crypto.encryptMessage(message, peerPublicKey, this.user.secretPhrase, false);
+    }
+
+    private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
+      return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
+    }
 
   /**
    * Register me so can be called.
