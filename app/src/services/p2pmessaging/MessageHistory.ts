@@ -22,7 +22,7 @@ module p2p {
     private pageContent: Array<MessageHistoryItem>;
     private pages: number[];
 
-    constructor(private room: p2p.Room,
+    constructor(private room: Room,
                 private storage: StorageService,
                 private user: UserService) {
 

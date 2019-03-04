@@ -8,7 +8,7 @@ module p2p {
   export class Room {
 
     constructor(public name: string,
-                private connector: p2p.P2PConnector,
+                private connector: P2PConnector,
                 private storage: StorageService,
                 private user: UserService,
                 public memberPublicKeys: string[]) {
@@ -22,7 +22,7 @@ module p2p {
     lastIncomingMessageTimestamp: number = 0;
 
     private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>();
-    private messageHistory: p2p.MessageHistory;
+    private messageHistory: MessageHistory;
 
     /**
      * If room not exists registers the room on the server (signaling server).
