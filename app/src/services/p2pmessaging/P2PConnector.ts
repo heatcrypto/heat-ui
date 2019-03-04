@@ -179,7 +179,7 @@ module p2p {
             console.log("new socket, readyState=" + socket.readyState);
             socket.onopen = () => {
               socket.onmessage = (msg) => this.onSignalingMessage(msg);
-              socket.onclose = () => this.onSignalingChannelClosed();
+              socket.onclose = () => this.onSignalingClosed();
               this.signalingReady = true;
               if (this.pingSignalingInterval) {
                 this.$interval.cancel(this.pingSignalingInterval);
@@ -205,20 +205,34 @@ module p2p {
       }
     }
 
-    sendSignalingMessage(message: any[]): Promise<any> {
-      return this.getWebSocket().then(websocket => {
-        message.splice(0, 0, "webrtc");
-        websocket.send(JSON.stringify(message));
-        console.log(">> \n"+JSON.stringify(message));
-      }, reason => console.log(reason))
+    sendSignalingMessage(data: any[]): Promise<any> {
+      return this.getWebSocket()
+        .then(websocket => {
+          data.splice(0, 0, "webrtc");
+          websocket.send(JSON.stringify(data));
+          console.log(">> \n" + JSON.stringify(data));
+        }, reason => console.log(reason))
+        .catch(reason => {
+          console.log("error on get websocket \n" + reason);
+        })
     }
 
-    onSignalingMessage(message) {
+    onSignalingMessage(messageEvent: MessageEvent) {
       if (this._onlineStatus == "offline") {
         return;
       }
-      console.log("<< \n"+ message.data);
-      let msg = JSON.parse(message.data);
+      let data = JSON.parse(messageEvent.data);
+      let msg;
+      if (data.encrypted) {
+        msg = JSON.parse(this.decrypt(data.encrypted, data.fromPeer));
+        msg.fromPeer = data.fromPeer;
+        msg.toPeer = data.toPeer;
+        msg.room = data.room;
+      } else {
+        msg = data;
+      }
+      console.log("<< \n"+ JSON.stringify(msg));
+
       let roomName: string = msg.room;
 
       if (msg.type === 'PONG') {
@@ -326,7 +340,7 @@ module p2p {
       }
     }
 
-    onSignalingChannelClosed() {
+    onSignalingClosed() {
       this.signalingReady = false;
       this.$interval.cancel(this.pingSignalingInterval);
     }
@@ -344,13 +358,19 @@ module p2p {
       try {
         pc = new RTCPeerConnection(this.config);
         pc.onicecandidate = (event) => {
-          if (event.candidate)
-            this.sendSignalingMessage([{room: roomName, toPeerId: peerId}, {
+          if (event.candidate) {
+            let data = {
               type: 'candidate',
               label: event.candidate.sdpMLineIndex,
               id: event.candidate.sdpMid,
               candidate: event.candidate.candidate
-            }]);
+            };
+            let encrypted = this.encrypt(JSON.stringify(data), peerId);
+            this.sendSignalingMessage([
+              {room: roomName, toPeerId: peerId},
+              {room: roomName, fromPeer: this.identity, encrypted: encrypted}
+              ]);
+          }
         };
         pc.ondatachannel = (event) => {
           let dataChannel = event.channel;
@@ -468,7 +488,11 @@ module p2p {
       this.createDataChannel(roomName, peerId, peerConnection, "caller");
       peerConnection.createOffer((offer) => {
           peerConnection.setLocalDescription(offer, () => {
-            this.sendSignalingMessage([{room: roomName, "toPeerId": peerId}, peerConnection.localDescription]);
+            let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
+            this.sendSignalingMessage([
+              {room: roomName, toPeerId: peerId},
+              {room: roomName, fromPeer: this.identity, encrypted: encrypted}
+              ]);
           }, (e) => this.onFailure(roomName, peerId, e));
         }, (e) => this.onFailure(roomName, peerId, e),
         null);
@@ -487,7 +511,11 @@ module p2p {
       peer['connectionRole'] = peer['connectionRole'] ? 'no need' : 'answer';
       peerConnection.createAnswer((answer) => {
         peerConnection.setLocalDescription(answer, () => {
-          this.sendSignalingMessage([{room: roomName, toPeerId: peerId}, peerConnection.localDescription]);
+          let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
+          this.sendSignalingMessage([
+            {room: roomName, toPeerId: peerId},
+            {room: roomName, fromPeer: this.identity, encrypted: encrypted}
+            ]);
         }, (e) => this.onFailure(roomName, peerId, e));
       }, (e) => this.onFailure(roomName, peerId, e));
     }
@@ -555,8 +583,6 @@ module p2p {
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendSignalingMessage([{room: roomName}, msg]);
-          //console.log("CHECK_CHANNEL " + msg.txt);
-          //console.log("Checking message received (then sent to signaling server) " + msg.value);
         } else if (msg.type === P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY) {
           let signedData = this.sign(msg.data);
           let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY,
