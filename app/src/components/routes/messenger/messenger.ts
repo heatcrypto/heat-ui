@@ -135,7 +135,7 @@ class MessengerComponent {
   constructor(private $scope: angular.IScope,
               private user: UserService,
               private sendmessage: SendmessageService,
-              private p2pMessaging: P2PMessaging) {
+              private p2pMessaging: p2p.P2PMessaging) {
     user.requireLogin();
   }
 

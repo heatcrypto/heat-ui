@@ -71,7 +71,7 @@ class P2PMessagesViewerComponent {
   private containerId: string; // @input
   private store: Store;
   private dateFormat;
-  items: Array<MessageHistoryItem>;
+  items: Array<p2p.MessageHistoryItem>;
 
   constructor(private $scope: angular.IScope,
               $q: angular.IQService,
@@ -83,7 +83,7 @@ class P2PMessagesViewerComponent {
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
               private storage: StorageService,
-              private p2pMessaging: P2PMessaging) {
+              private p2pMessaging: p2p.P2PMessaging) {
 
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
@@ -96,7 +96,7 @@ class P2PMessagesViewerComponent {
     if (this.publickey != '0') {
       let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
       if (room) {
-        room.onNewMessageHistoryItem = (item: MessageHistoryItem) => {
+        room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
           this.items.push(this.processItem(item));
           this.$scope.$evalAsync(() => {
             console.log(`<<< ${item.message}`);
@@ -113,7 +113,7 @@ class P2PMessagesViewerComponent {
     }
   }
 
-  private processItem(item: MessageHistoryItem) {
+  private processItem(item: p2p.MessageHistoryItem) {
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['dateFormatted'] = dateFormat(item.timestamp, this.dateFormat);

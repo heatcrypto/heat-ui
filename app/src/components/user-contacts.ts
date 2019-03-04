@@ -74,7 +74,7 @@ class UserContactsComponent {
   private activePublicKey: string;
   private store: Store;
   private seenP2PMessageTimestampStore: Store;
-  private rooms: Map<string, Room> = new Map<string, Room>();
+  private rooms: Map<string, p2p.Room> = new Map<string, p2p.Room>();
   private onlineStatuses: Map<string, string> = new Map<string, string>();
 
   constructor(private $scope: angular.IScope,
@@ -85,7 +85,7 @@ class UserContactsComponent {
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
-              private p2pMessaging: P2PMessaging) {
+              private p2pMessaging: p2p.P2PMessaging) {
 
     this.refresh = utils.debounce(
       () => {
