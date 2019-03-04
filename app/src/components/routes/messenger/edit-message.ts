@@ -59,7 +59,7 @@ class EditMessageComponent {
               storage: StorageService,
               private $timeout: angular.ITimeoutService,
               private user: UserService,
-              private p2pMessaging: p2p.P2PMessaging,
+              private p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService) {
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
   }

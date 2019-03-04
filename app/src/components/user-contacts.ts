@@ -85,7 +85,7 @@ class UserContactsComponent {
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
-              private p2pMessaging: p2p.P2PMessaging) {
+              private p2pMessaging: P2PMessaging) {
 
     this.refresh = utils.debounce(
       () => {

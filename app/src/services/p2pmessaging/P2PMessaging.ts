@@ -21,223 +21,270 @@
  * SOFTWARE.
  * */
 
-module p2p {
+type OnlineStatus = "online" | "offline";
+type EnterRoomState = "not" | "entering" | "entered";
 
-  export type OnlineStatus = "online" | "offline";
-  export type EnterRoomState = "not" | "entering" | "entered";
+@Service('P2PMessaging')
+@Inject('settings', 'user', 'storage', '$interval', 'heat')
+class P2PMessaging {
 
-  @Service('P2PMessaging')
-  @Inject('settings', 'user', 'storage', '$interval', 'heat')
-  export class P2PMessaging {
+  public p2pContactStore: Store;
+  public offchainMode: boolean = false;
 
-    public p2pContactStore: Store;
-    public offchainMode: boolean = false;
+  private connector: p2p.P2PConnector;
 
-    private connector: P2PConnector;
+  constructor(private settings: SettingsService,
+              private user: UserService,
+              private storage: StorageService,
+              private $interval: angular.IIntervalService,
+              private heat: HeatService) {
 
-    constructor(private settings: SettingsService,
-                private user: UserService,
-                private storage: StorageService,
-                private $interval: angular.IIntervalService,
-                private heat: HeatService) {
+    this.connector = new p2p.P2PConnector(settings, $interval);
+    this.connector.setup(
+      this.user.publicKey,
+      (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
+      peerId => this.confirmIncomingCall(peerId),
+      reason => this.onSignalingError(reason),
+      dataHex => this.sign(dataHex)
+    );
 
-      this.connector = new P2PConnector(settings, $interval);
-      this.connector.setup(
-        this.user.publicKey,
-        (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-        peerId => this.confirmIncomingCall(peerId),
-        reason => this.onSignalingError(reason),
-        dataHex => this.sign(dataHex)
-      );
+    this.p2pContactStore = storage.namespace('p2pContacts');
+  }
 
-      this.p2pContactStore = storage.namespace('p2pContacts');
-    }
+  /**
+   * Register me so can be called.
+   */
+  // register(): Room {
+  //   let name = this.user.publicKey;
+  //   let room = this.connector.rooms.get(name);
+  //   if (!room) {
+  //     room = new Room(this.user.publicKey, this.connector, this.storage, this.user);
+  //     // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+  //     // room.onMessage = msg => this.onMessage(msg);
+  //     // room.onFailure = e => this.onError(e);
+  //     // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+  //     // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+  //     // room.rejected = (byPeerId, reason) => {
+  //     //   this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
+  //     //   this.$scope.$apply();
+  //     // };
+  //     room.enter();
+  //     this.connector.rooms.set(name, room);
+  //   }
+  //   return room;
+  // }
 
-    /**
-     * Register me so can be called.
-     */
-    // register(): Room {
-    //   let name = this.user.publicKey;
-    //   let room = this.connector.rooms.get(name);
-    //   if (!room) {
-    //     room = new Room(this.user.publicKey, this.connector, this.storage, this.user);
-    //     // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-    //     // room.onMessage = msg => this.onMessage(msg);
-    //     // room.onFailure = e => this.onError(e);
-    //     // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-    //     // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-    //     // room.rejected = (byPeerId, reason) => {
-    //     //   this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
-    //     //   this.$scope.$apply();
-    //     // };
-    //     room.enter();
-    //     this.connector.rooms.set(name, room);
-    //   }
-    //   return room;
-    // }
+  set onlineStatus(status: OnlineStatus) {
+    this.connector.setOnlineStatus(status);
+  }
 
-    set onlineStatus(status: OnlineStatus) {
-      this.connector.setOnlineStatus(status);
-    }
+  get onlineStatus(): OnlineStatus {
+    return this.connector.onlineStatus;
+  }
 
-    get onlineStatus(): OnlineStatus {
-      return this.connector.onlineStatus;
-    }
-
-    /**
-     * Returns room with single peer.
-     */
-    getOneToOneRoom(peerId: string): Room {
-      let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-      let room = this.connector.rooms.get(roomName);
-      if (room && room.getAllPeers().size <= 1) {
-        //todo check is opened channel
-        return room;
-      }
-    }
-
-    /**
-     * Creates new room and registers it on the signaling server.
-     */
-    enterRoom(peerId: string): Room {
-      if (this.onlineStatus == "offline") {
-        return null;
-      }
-      let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-      let room = this.connector.rooms.get(roomName);
-      if (!room) {
-        room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
-      }
-      if (room.state.entered == "not") {
-        room.enter();
-      }
+  /**
+   * Returns room with single peer.
+   */
+  getOneToOneRoom(peerId: string): p2p.Room {
+    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
+    let room = this.connector.rooms.get(roomName);
+    if (room && room.getAllPeers().size <= 1) {
+      //todo check is opened channel
       return room;
     }
+  }
 
-    call(peerId: string): Room {
-      let room = this.enterRoom(peerId);
-      this.connector.call(peerId, this.user.publicKey, room);
-      return room;
+  /**
+   * Creates new room and registers it on the signaling server.
+   */
+  enterRoom(peerId: string): p2p.Room {
+    if (this.onlineStatus == "offline") {
+      return null;
     }
-
-    onSignalingError(reason: string) {
-      console.log("Signaling error: " + reason);
+    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
+    let room = this.connector.rooms.get(roomName);
+    if (!room) {
+      room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
     }
-
-    sign(dataHex: string): ProvingData {
-      //proof the passed to room public key is owned
-      let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(this.user.secretPhrase));
-      return {signatureHex: signature, dataHex: dataHex, publicKeyHex: this.user.publicKey}
+    if (room.state.entered == "not") {
+      room.enter();
     }
+    return room;
+  }
 
-    private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
-      let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
-      arr.sort();
-      return arr[0] + "-" + arr[1];
+  call(peerId: string): p2p.Room {
+    let room = this.enterRoom(peerId);
+    this.connector.call(peerId, this.user.publicKey, room);
+    return room;
+  }
+
+  onSignalingError(reason: string) {
+    console.log("Signaling error: " + reason);
+  }
+
+  sign(dataHex: string): p2p.ProvingData {
+    //proof the passed to room public key is owned
+    let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(this.user.secretPhrase));
+    return {signatureHex: signature, dataHex: dataHex, publicKeyHex: this.user.publicKey}
+  }
+
+  private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
+    let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
+    arr.sort();
+    return arr[0] + "-" + arr[1];
+  }
+
+  private createRoomOnIncomingCall(roomName: string, peerId: string) {
+    let room = this.connector.rooms.get(roomName);
+    if (!room) {
+      room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
+      // room.onFailure = e => this.onError(e);
+      // room.onMessage = msg => this.onMessage(msg);
+      // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
+      // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
+      this.connector.rooms.set(roomName, room);
     }
+    return room;
+  }
 
-    private createRoomOnIncomingCall(roomName: string, peerId: string) {
-      let room = this.connector.rooms.get(roomName);
-      if (!room) {
-        room = new Room(roomName, this.connector, this.storage, this.user, [peerId]);
-        // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-        // room.onFailure = e => this.onError(e);
-        // room.onMessage = msg => this.onMessage(msg);
-        // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-        // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-        this.connector.rooms.set(roomName, room);
+  private confirmIncomingCall(peerId: string): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
+      // if peer is connected already confirm silently
+      if (this.isPeerConnected(peerId)) {
+        resolve();
+        return;
       }
-      return room;
-    }
 
-    private confirmIncomingCall(peerId: string): Promise<any> {
-      return new Promise<any>((resolve, reject) => {
-        // if peer is connected already confirm silently
-        if (this.isPeerConnected(peerId)) {
-          resolve();
+      let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
+      this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
+        let expectedAccount = accounts.find(value => value.publicKey == peerId);
+        if (expectedAccount) {
+          let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
+            let interval = this.$interval(() => {
+              if (this.isPeerConnected(peerId)) {
+                mdDialog.cancel("Already connected");
+                this.$interval.cancel(interval);
+              }
+            }, 500, 7, false);
+          };
+          dialogs.confirm(
+            "Incoming call",
+            `User &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; calls you.`,
+            closeDialogOnConnected
+          ).then(() => {
+              this.saveContact(peerAccount, peerId, expectedAccount.publicName);
+              resolve();
+          });
+        } else {
+          reject("Account not found");
+        }
+      });
+    });
+  }
+
+  dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): CallDialog {
+    return new CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
+  }
+
+  saveContact(account: string, publicKey: string, publicName: string) {
+    let contact: IHeatMessageContact = this.p2pContactStore.get(account);
+    if (!contact) {
+      contact = {
+        account: account,
+        privateName: '',
+        publicKey: publicKey,
+        publicName: publicName,
+        timestamp: 0
+      };
+      this.p2pContactStore.put(account, contact);
+    }
+  }
+
+  isPeerConnected(peerId: string): boolean {
+    let room = this.getOneToOneRoom(peerId);
+    if (room) {
+      let peer = room.getPeer(peerId);
+      return peer && peer.isConnected();
+    }
+    return false;
+  }
+
+}
+
+/**
+ * Dialog for calling other user to establish WebRTC channel.
+ */
+class CallDialog extends GenericDialog {
+
+  constructor($event,
+              private heat: HeatService,
+              private user: UserService,
+              private recipient: string,
+              private recipientPublicKey: string,
+              private p2pmessaging: P2PMessaging) {
+    super($event);
+    this.dialogTitle = 'Call user';
+    this.dialogDescription = 'Call other user to establish the peer-to-peer channel';
+    this.okBtnTitle = 'Call';
+    this.okBtn['disabled'] = false;
+  }
+
+  /* @override */
+  getFields($scope: angular.IScope) {
+    var builder = new DialogFieldBuilder($scope);
+    return [
+      builder
+        .account('recipient', this.recipient)
+        .label('Callee')
+        .required()
+        .onchange(newValue => this.onChangeRecipient($scope, newValue)),
+      // builder.text('note', '').readonly(true),
+      builder.hidden('recipientPublicKey', this.recipientPublicKey)
+    ]
+  }
+
+  getTransactionBuilder(): TransactionBuilder {
+    return undefined;
+  }
+
+  okBtn() {
+    this.okBtn['disabled'] = true;
+    this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+      (publicKey) => {
+        let room = this.p2pmessaging.getOneToOneRoom(publicKey);
+        if (this.p2pmessaging.isPeerConnected(publicKey)) {
+          this.okBtn['mdDialog'].hide(room);
           return;
         }
 
-        let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
+        setTimeout(() => {
+          this.okBtn['scope'].$evalAsync(() => {
+            this.okBtn['disabled'] = false;
+          });
+        }, 4000);
+
+        room = this.p2pmessaging.call(publicKey);
+        room.onOpenDataChannel = peerId => {
+          this.okBtn['mdDialog'].hide(room);
+        };
+
+        let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
         this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
-          let expectedAccount = accounts.find(value => value.publicKey == peerId);
+          let expectedAccount = accounts.find(value => value.publicKey == publicKey);
           if (expectedAccount) {
-            let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
-              let interval = this.$interval(() => {
-                if (this.isPeerConnected(peerId)) {
-                  mdDialog.cancel("Already connected");
-                  this.$interval.cancel(interval);
-                }
-              }, 500, 7, false);
-            };
-            dialogs.confirm(
-              "Incoming call",
-              `User &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; calls you.`,
-              closeDialogOnConnected
-            ).then(() => {
-              this.saveContact(peerAccount, peerId, expectedAccount.publicName);
-              resolve();
-            });
-          } else {
-            reject("Account not found");
+            this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName);
           }
         });
-      });
-    }
-
-    dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): CallDialog {
-      return new CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
-    }
-
-    saveContact(account: string, publicKey: string, publicName: string) {
-      let contact: IHeatMessageContact = this.p2pContactStore.get(account);
-      if (!contact) {
-        contact = {
-          account: account,
-          privateName: '',
-          publicKey: publicKey,
-          publicName: publicName,
-          timestamp: 0
-        };
-        this.p2pContactStore.put(account, contact);
+      }, reason => {
       }
-    }
-
-    isPeerConnected(peerId: string): boolean {
-      let room = this.getOneToOneRoom(peerId);
-      if (room) {
-        let peer = room.getPeer(peerId);
-        return peer && peer.isConnected();
-      }
-      return false;
-    }
-
+    );
   }
 
-  export interface P2PMessage {
-    timestamp: number,
-    type: "chat" | "",
-    text: string
-  }
-
-  export interface ProvingData {
-    signatureHex: string,
-    dataHex: string,
-    publicKeyHex: string
-  }
-
-  export class RTCPeer {
-    constructor(publicKey: string) {
-      this.publicKey = publicKey;
-    }
-
-    publicKey: string;
-    peerConnection: RTCPeerConnection;
-    dataChannel: RTCDataChannel;
-
-    isConnected() {
-      return this.dataChannel && this.dataChannel.readyState == "open"
-    }
+  private onChangeRecipient($scope: angular.IScope, newRecipient) {
+    $scope.$evalAsync(() => {
+      // this.fields['note'].value = newRecipient;
+    });
   }
 
 }

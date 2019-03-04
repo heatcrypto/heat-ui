@@ -173,4 +173,30 @@ module p2p {
 
   }
 
+  export interface P2PMessage {
+    timestamp: number,
+    type: "chat" | "",
+    text: string
+  }
+
+  export class RTCPeer {
+    constructor(publicKey: string) {
+      this.publicKey = publicKey;
+    }
+
+    publicKey: string;
+    peerConnection: RTCPeerConnection;
+    dataChannel: RTCDataChannel;
+
+    isConnected() {
+      return this.dataChannel && this.dataChannel.readyState == "open"
+    }
+  }
+
+  export interface ProvingData {
+    signatureHex: string,
+    dataHex: string,
+    publicKeyHex: string
+  }
+
 }
