@@ -82,12 +82,14 @@ class P2PMessagesViewerComponent {
               private settings: SettingsService,
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
-              storage: StorageService,
+              private storage: StorageService,
               private p2pMessaging: P2PMessaging) {
 
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
+
+    this.updateSeenTime();
 
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
@@ -116,6 +118,11 @@ class P2PMessagesViewerComponent {
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['dateFormatted'] = dateFormat(item.timestamp, this.dateFormat);
     return item;
+  }
+
+  private updateSeenTime() {
+    let account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
+    this.storage.namespace('contacts.seenP2PMessageTimestamp').put(account, Date.now());
   }
 
 }

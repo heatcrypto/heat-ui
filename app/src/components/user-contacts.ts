@@ -24,17 +24,26 @@
   selector: 'userContacts',
   styles: [`
     .unread-symbol {
-      animation: blinker 2s linear infinite;
       font-size: 22px;
-      color: indianred;
+      color: #ff3301;
+      margin: 0 6px -6px 0;
+    }
+    .p2p-unread-symbol {
+      font-size: 22px;
+      color: green;
       margin: 0 6px -6px 0;
     }
     @keyframes blinker {
       80% {opacity: 0.5;}
     }
-    .online-status-symbol {
+    .channelopened-status-symbol {
       font-size: 22px; 
       color: green; 
+      margin: 0 6px 4px 0;
+    }
+    .roomregistered-status-symbol {
+      font-size: 22px; 
+      color: grey; 
       margin: 0 6px 4px 0;
     }
   `],
@@ -46,8 +55,9 @@
             <md-icon md-font-library="material-icons" ng-class="{'has-unread-message': contact.hasUnreadMessage}">fiber_manual_record</md-icon>
           </div>-->
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
-          <span ng-if="vm.offchainStatus(contact.publicKey)=='channelOpened'" class="online-status-symbol">●</span>
-          <span ng-if="vm.offchainStatus(contact.publicKey)=='roomRegistered'" class="online-status-symbol">○</span>
+          <span ng-if="contact.hasUnreadP2PMessage" class="p2p-unread-symbol">*</span>
+          <span ng-if="vm.offchainStatus(contact)=='channelOpened'" class="channelopened-status-symbol">●</span>
+          <span ng-if="vm.offchainStatus(contact)=='roomRegistered'" class="roomregistered-status-symbol">●</span>
           <div class="truncate-col account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
@@ -63,6 +73,7 @@ class UserContactsComponent {
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
   private store: Store;
+  private seenP2PMessageTimestampStore: Store;
   private rooms: Map<string, Room> = new Map<string, Room>();
   private onlineStatuses: Map<string, string> = new Map<string, string>();
 
@@ -85,6 +96,8 @@ class UserContactsComponent {
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
+    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
+    this.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
 
     this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, this.refresh);
 
@@ -131,6 +144,11 @@ class UserContactsComponent {
         this.$location.path(`/messenger/${this.contacts[0].publicKey}`);
       }
     }
+
+    let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey);
+    if (activeContact) {
+      activeContact["hasUnreadP2PMessage"] = false;
+    }
   }
 
   init() {
@@ -146,38 +164,48 @@ class UserContactsComponent {
   refreshContacts() {
     this.heat.api.getMessagingContacts(this.user.account, 0, 100).then((contacts) => {
       this.$scope.$evalAsync(() => {
-        this.contacts = contacts.filter((contact)=> {
-          return contact.account != this.user.account;
-        }).map((contact) => {
-          contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
-          return contact;
-        });
-        if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
-          this.setActivePublicKey();
-        }
-        //add contacts obtained via p2p messaging
+        this.contacts = contacts;
+
+        //merge contacts obtained via p2p messaging
         let keysToRemove = [];
         this.p2pMessaging.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => {
           let duplicate = this.contacts.find(contact => contact.publicKey == p2pContact.publicKey);
           if (duplicate) {
             keysToRemove.push(key);
           } else {
+            p2pContact['isP2P'] = true;
             this.contacts.push(p2pContact);
           }
         });
         keysToRemove.forEach(key => this.p2pMessaging.p2pContactStore.remove(key))
+
+        this.contacts = this.contacts.filter((contact)=> {
+          return contact.account != this.user.account;
+        }).map((contact) => {
+          if (!contact['isP2P']) {
+            contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
+          }
+          contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
+          // contact['offchainStatus'] = this.offchainStatus(contact);
+          return contact;
+        });
+
+        if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
+          this.setActivePublicKey();
+        }
       });
     })
   }
 
-  offchainStatus(publicKey: string) {
-    let room = this.p2pMessaging.getOneToOneRoom(publicKey);
+  offchainStatus(contact: IHeatMessageContact) {
+    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
     if (room) {
-      let peer = room.getPeer(publicKey);
+      let peer = room.getPeer(contact.publicKey);
       if (peer && peer.isConnected()) {
         return "channelOpened";
       } else {
-        if (room.state.entered == "entered") {
+        //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
+        if (room.state.entered != "not") {
           return "roomRegistered";
         }
       }
@@ -186,6 +214,14 @@ class UserContactsComponent {
 
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
     return contact.timestamp > this.store.getNumber(contact.account, 0);
+  }
+
+  contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
+    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
+    if (room) {
+      return room.lastIncomingMessageTimestamp > this.seenP2PMessageTimestampStore.getNumber(contact.account, 0);
+    }
+    return false;
   }
 
 }

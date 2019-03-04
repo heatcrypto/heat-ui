@@ -195,7 +195,7 @@ class P2PMessaging {
         privateName: '',
         publicKey: publicKey,
         publicName: publicName,
-        timestamp: Date.now()
+        timestamp: 0
       };
       this.p2pContactStore.put(account, contact);
     }
@@ -308,6 +308,8 @@ class Room {
     entered: "not"
   };
 
+  lastIncomingMessageTimestamp: number = 0;
+
   private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>();
   private messageHistory: MessageHistory;
 
@@ -343,6 +345,7 @@ class Room {
       if (this.onNewMessageHistoryItem) {
         this.onNewMessageHistoryItem(item);
       }
+      this.lastIncomingMessageTimestamp = Date.now();
     }
     if (this.onMessage) {
       this.onMessage(msg);
@@ -808,8 +811,8 @@ class P2PConnector {
       msg.remotePeerIds.forEach((peerId: string) => {
         let peer = room.createPeer(peerId, peerId);
         if (peer && !peer.isConnected()) {
-          this.askPeerConnection(roomName, peerId);
-          this.doOffer(roomName, peerId);
+          let pc = this.askPeerConnection(roomName, peerId);
+          this.doOffer(roomName, peerId, pc);
         }
       });
     } else if (msg.type === 'offer') {
@@ -820,6 +823,9 @@ class P2PConnector {
         let pc = this.askPeerConnection(roomName, peerId);
         if (pc) {
           pc.setRemoteDescription(new RTCSessionDescription(msg))
+            .then(() => {
+              this.doAnswer(roomName, peerId, pc);
+            })
             .catch(e => {
               if (room.onFailure) {
                 room.onFailure(peerId, e);
@@ -827,7 +833,6 @@ class P2PConnector {
                 console.log(e.name + "  " + e.message);
               }
             });
-          this.doAnswer(roomName, peerId);
         }
       }
     } else if (msg.type === 'answer') {
@@ -867,8 +872,8 @@ class P2PConnector {
         setTimeout(() => {
           if (!peer.isConnected() && peer['connectionRole'] == "answer") {
             peer['noNeedReconnect'] = true;
-            this.askPeerConnection(roomName, msg.fromPeer);
-            this.doOffer(roomName, msg.fromPeer);
+            let pc = this.askPeerConnection(roomName, msg.fromPeer);
+            this.doOffer(roomName, msg.fromPeer, pc);
           }
         }, 2500);
       }
@@ -1019,11 +1024,10 @@ class P2PConnector {
    * {"type":"offer", "sdp":"v=0\r\no=- 199179691613427 ... webrtc-datachannel 1024\r\n"}
    * ]
    */
-  doOffer(roomName: string, peerId: string) {
+  doOffer(roomName: string, peerId: string, peerConnection: RTCPeerConnection) {
     console.log("do offer");
     let peer = this.rooms.get(roomName).getPeer(peerId);
     peer['connectionRole'] = 'offer';
-    let peerConnection = peer.peerConnection;
     this.createDataChannel(roomName, peerId, peerConnection, "caller");
     peerConnection.createOffer((offer) => {
         peerConnection.setLocalDescription(offer, () => {
@@ -1040,11 +1044,10 @@ class P2PConnector {
    * {"type":"answer", "sdp":"v=0\r\no=- 6490594091461 ... webrtc-datachannel 1024\r\n"}
    * ]
    */
-  doAnswer(roomName: string, peerId: string) {
+  doAnswer(roomName: string, peerId: string, peerConnection: RTCPeerConnection) {
     console.log("do answer");
     let peer = this.rooms.get(roomName).getPeer(peerId);
     peer['connectionRole'] = peer['connectionRole'] ? 'no need' : 'answer';
-    let peerConnection = peer.peerConnection;
     peerConnection.createAnswer((answer) => {
       peerConnection.setLocalDescription(answer, () => {
         this.sendSignalingMessage([{room: roomName, toPeerId: peerId}, peerConnection.localDescription]);
