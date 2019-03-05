@@ -89,6 +89,14 @@ module p2p {
     setOnlineStatus(status: OnlineStatus) {
       let sendOnlineStatus = () => {
         this.sendSignalingMessage([{type: "SET_ONLINE_STATUS", status: status}]);
+        if (status == "online") {
+          this.rooms.forEach(room => {
+            if (room.state.entered == "entered") {
+              //enforce registration on the server because new room members could be entered while was offline
+              room.enter(true);
+            }
+          })
+        }
       };
       if (this.identity) {
         sendOnlineStatus();

@@ -51,8 +51,8 @@ module p2p {
      * If room not exists registers the room on the server (signaling server).
      * Registers user in the room on the server.
      */
-    enter() {
-      this.connector.enter(this);
+    enter(enforce?: boolean) {
+      this.connector.enter(this, enforce);
       return this;
     }
 

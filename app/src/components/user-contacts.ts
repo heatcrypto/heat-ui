@@ -74,7 +74,6 @@ class UserContactsComponent {
   private activePublicKey: string;
   private store: Store;
   private seenP2PMessageTimestampStore: Store;
-  private rooms: Map<string, p2p.Room> = new Map<string, p2p.Room>();
   private onlineStatuses: Map<string, string> = new Map<string, string>();
 
   constructor(private $scope: angular.IScope,
@@ -127,7 +126,6 @@ class UserContactsComponent {
     if (this.activePublicKey && this.activePublicKey != "0") {
       let room = this.p2pMessaging.enterRoom(this.activePublicKey);
       if (room) {
-        this.rooms.set(this.activePublicKey, room);
         if (!room.onOpenDataChannel) {
           room.onOpenDataChannel = peerId => {
             this.refresh();

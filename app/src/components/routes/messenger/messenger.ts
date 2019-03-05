@@ -70,6 +70,9 @@
     #onlineStatusButton.active {
       background-color: green;
     }
+    #newContactButton {
+      max-width: 171px;
+    }
     #newContactButton md-icon {
       margin-right: 8px;
       color: white;
@@ -88,7 +91,8 @@
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               New Message
             </md-button>
-            <md-button id="CallButton" class="md-primary" aria-label="Call" ng-click="vm.showCallDialog($event)">
+            <md-button id="CallButton" class="md-primary" aria-label="Call"
+            ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
                 Call user to establish the peer-to-peer channel
               </md-tooltip>
@@ -96,8 +100,9 @@
             </md-button>
           </div>
           <div layout="row" class="control-panel">
-            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()" ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
-              <md-tooltip md-direction="top">Online peer-to-peer messaging status</md-tooltip>
+            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()" 
+            ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
+              <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
             </md-button>
             <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
@@ -153,6 +158,7 @@ class MessengerComponent {
 
   toggleOnline($event) {
     this.p2pMessaging.onlineStatus = this.p2pMessaging.onlineStatus == "online" ? "offline" : "online";
+    this.p2pMessaging.enterRoom(this.publickey);
   }
 
 }
