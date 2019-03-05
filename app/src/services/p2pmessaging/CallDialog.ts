@@ -94,7 +94,7 @@ module p2p {
 
     private onChangeRecipient($scope: angular.IScope, newRecipient) {
       $scope.$evalAsync(() => {
-        // this.fields['note'].value = newRecipient;
+        this.okBtn['disabled'] = this.user.account == newRecipient;
       });
     }
 
