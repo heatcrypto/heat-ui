@@ -38,7 +38,7 @@ module p2p {
       this.dialogTitle = 'Call user';
       this.dialogDescription = 'Call other user to establish the peer-to-peer channel';
       this.okBtnTitle = 'Call';
-      this.okBtn['disabled'] = false;
+      this.okBtn['processing'] = false;
     }
 
     /* @override */
@@ -60,7 +60,7 @@ module p2p {
     }
 
     okBtn() {
-      this.okBtn['disabled'] = true;
+      this.okBtn['processing'] = true;
       this.heat.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
           let room = this.p2pmessaging.getOneToOneRoom(publicKey);
@@ -71,13 +71,14 @@ module p2p {
 
           setTimeout(() => {
             this.okBtn['scope'].$evalAsync(() => {
-              this.okBtn['disabled'] = false;
+              this.okBtn['processing'] = false;
             });
-          }, 4000);
+          }, 7000);
 
           room = this.p2pmessaging.call(publicKey);
           room.onOpenDataChannel = peerId => {
             this.okBtn['mdDialog'].hide(room);
+            this.okBtn['processing'] = false;
           };
 
           let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
@@ -88,6 +89,7 @@ module p2p {
             }
           });
         }, reason => {
+          this.okBtn['processing'] = false;
         }
       );
     }
