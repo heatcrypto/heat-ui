@@ -47,20 +47,41 @@
     }
   `],
   template: `
-    <div id="messages" layout="column" flex scroll-glue-bottom>
-    
-    <div ng-repeat="item in vm.items track by $index" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
-      <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
-      <div layout="column">
-        <div class="header">
-          <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
-        </div>
-        <div class="message-content">{{item.message}}</div>
+<!--
+<md-virtual-repeat-container id="messages">
+  <div md-virtual-repeat="item in vm.items" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
+    <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
+    <div layout="column">
+      <div class="header">
+        <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
       </div>
+      <div class="message-content">{{item.message}}</div>
     </div>
-    
-    <!--TODO use something for infinity scrolling, e.g. https://github.com/angular-ui/ui-scroll-->
+  </div>
+</md-virtual-repeat-container>
+-->
+
+
+<!--<div class="viewport-wrap" id="viewport-scrollBubblingPrevent-wrap">
+  <div class="viewport viewport-height-fixed" id="viewport-scrollBubblingPrevent" ui-scroll-viewport>
+    <div class="item" ui-scroll="item in datasource"  is-loading="loading">{{item}}</div>
+  </div>
+</div>-->
+
+<div id="messages" ui-scroll-viewport layout="column" flex>
+
+  <div ui-scroll="item in vm.datasource" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
+    <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
+    <div layout="column">
+      <div class="header">
+        <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
+      </div>
+      <div class="message-content">{{item.i}} {{item.message}}</div>
     </div>
+  </div>
+
+<!--TODO use something for infinity scrolling, e.g. https://github.com/angular-ui/ui-scroll-->
+</div>
   `
 })
 @Inject('$scope','$q','$timeout','$document','heat','user','settings',
@@ -71,7 +92,8 @@ class P2PMessagesViewerComponent {
   private containerId: string; // @input
   private store: Store;
   private dateFormat;
-  items: Array<p2p.MessageHistoryItem>;
+  // items: Array<p2p.MessageHistoryItem>;
+  datasource: P2PMessagesDataSource;
 
   constructor(private $scope: angular.IScope,
               $q: angular.IQService,
@@ -94,21 +116,15 @@ class P2PMessagesViewerComponent {
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
     if (this.publickey != '0') {
-      let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
+      let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
       if (room) {
         room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
-          this.items.push(this.processItem(item));
+          // this.items.push(this.processItem(item));
           this.$scope.$evalAsync(() => {
             console.log(`<<< ${item.message}`);
           });
         };
-        this.items = [];
-        //just load 2 last history pages (todo right later)
-        let pageIndex = Math.max(0, room.getMessageHistory().getPageCount() - 2);
-        while (pageIndex < room.getMessageHistory().getPageCount()) {
-          this.items = this.items.concat(room.getMessageHistory().getItems(pageIndex).map(v => this.processItem(v)));
-          pageIndex++;
-        }
+        this.datasource = new P2PMessagesDataSource(room.getMessageHistory(), item => this.processItem(item));
       }
     }
   }
@@ -123,6 +139,31 @@ class P2PMessagesViewerComponent {
   private updateSeenTime() {
     let account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
     this.storage.namespace('contacts.seenP2PMessageTimestamp').put(account, Date.now());
+  }
+
+}
+
+class P2PMessagesDataSource {
+  data = [];
+  first = 1;
+
+  constructor(private messageHistory: p2p.MessageHistory,
+              private processItem: (item: p2p.MessageHistoryItem) => {}) {
+  }
+
+  get(index: number, count: number, success) {
+    let start = index;
+    let end = Math.min(index + count - 1, this.first);
+
+    if (start <= end) {
+      let lastIndex = this.messageHistory.getItemCount() - 1;
+      let items = this.messageHistory.getItemsScroolable(lastIndex + start - this.first, lastIndex + end - this.first + 1)
+        .map(item => this.processItem(item));
+      success(items);
+    } else {
+      success([]);
+    }
+
   }
 
 }

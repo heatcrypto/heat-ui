@@ -115,7 +115,8 @@ module heat {
         'dc.inputAddOn',
         'jsonFormatter',
         'luegg.directives',
-        'angular-popover'
+        'angular-popover',
+        'ui.scroll', 'ui.scroll.grid'
       ]);
     }
 

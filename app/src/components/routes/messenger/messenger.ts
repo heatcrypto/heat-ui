@@ -58,6 +58,9 @@
     .control-panel button {
       flex: auto;
     }
+    .p2p-messages {
+      height: 100%;
+    }
     #offchainButton.disable span {
       color: grey;
     }
@@ -119,8 +122,8 @@
             <message-batch-viewer flex layout="column" container-id="message-batch-container"
                     publickey="::vm.publickey"></message-batch-viewer>
           </md-content>
-          <md-content flex ng-if="vm.p2pMessaging.offchainMode" id="offchain-messages-container">
-            <p2p-messages-viewer flex layout="column" container-id="message-batch-container"
+          <md-content flex ng-if="vm.p2pMessaging.offchainMode" id="p2p-messages-container">
+            <p2p-messages-viewer flex layout="column" class="p2p-messages" container-id="p2p-messages-container"
                     publickey="::vm.publickey"></p2p-messages-viewer>
           </md-content>
           <div layout="row" flex="none" class="edit-message">

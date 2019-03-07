@@ -34,7 +34,7 @@ module p2p {
     //todo migrate from localStorage to IndexedDB
 
     static MAX_PAGES_COUNT = 200; //max number of pages for one room
-    static MAX_PAGE_LENGTH = 100; //it is the count of messages in one item of localStorage
+    static MAX_PAGE_LENGTH = 100; //count of messages in one page of localStorage
 
     private enabled: boolean;
 
@@ -43,7 +43,7 @@ module p2p {
 
     private page: number; //current page number
     private pageContent: Array<MessageHistoryItem>;
-    private pages: number[];
+    private pages: number[][];
 
     constructor(private room: Room,
                 private storage: StorageService,
@@ -74,35 +74,83 @@ module p2p {
       // }
 
       this.store = storage.namespace('p2p-messages.' + this.room.name);
-      this.pages = this.store.keys().map(value => parseInt(value)).sort();
+      this.pages = this.store.keys()
+        .map(key => {
+          let ss = key.split('.');
+          return [
+            parseInt(ss[0]),
+            (ss.length > 1 ? parseInt(ss[1]) : -1)
+          ];
+        })
+        .sort((a, b) => a[0] - b[0]);
+
+      //convert old format of keys to the new format
+      for (var i = 0; i < this.pages.length; i++) {
+        if (this.pages[i][1] == -1) {
+          let items = this.getItemsInternal('' + this.pages[i][0]);
+          this.savePage(i, items);
+        }
+      }
+
       if (this.pages.length == 0) {
-        this.pages.push(this.page = 0);
+        this.page = 0;
+        this.pages.push([0, 0]);
       } else {
-        this.page = this.pages[this.pages.length - 1];
+        this.page = this.pages[this.pages.length - 1][0];
         this.pageContent = this.getItems(this.pages.length - 1);
       }
-      this.pageContent = this.pageContent ? this.pageContent : new Array<MessageHistoryItem>();
+      if (!this.pageContent) {
+        this.pageContent = [];
+      }
     }
 
     public getPageCount() {
       return this.pages.length;
     }
 
+    public getItemCount(): number {
+      return this.pages.map(v => v[1]).reduce((previousValue, currentValue) => previousValue + currentValue);
+    }
+
+    public getItemsScroolable(start: number, end: number) {
+      let n = 0;
+      let result = [];
+      let needingLength = end - start;
+      for (var i = 0; i < this.pages.length; i++) {
+        let page = this.pages[i];
+        n = n + page[1];
+        if (n > start) {
+          let pageItems = this.getItems(i);
+          let pageStartIndex = result.length > 0 ? 0 : start - (n - page[1]);
+          result = result.concat(pageItems.slice(pageStartIndex, pageStartIndex + (needingLength - result.length)));
+        }
+        if (result.length == needingLength) {
+          return result;
+        }
+      }
+      return result;
+    }
+
     /**
      * Returns messages by page.
-     * @param page in range [0, MessageHistory.getPageCount()]
+     * @param pageIndex in range [0, MessageHistory.getPageCount()]
      */
-    public getItems(page: number): Array<MessageHistoryItem> {
-      if (page >= 0 && page < this.pages.length) {
-        let v = this.store.getString('' + this.pages[page]);
-        if (v) {
-          try {
-            let encrypted = JSON.parse(v);
-            let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
-            return JSON.parse(pageContentStr);
-          } catch (e) {
-            console.log("Error on parse/decrypt message history page");
-          }
+    public getItems(pageIndex: number): Array<MessageHistoryItem> {
+      if (pageIndex >= 0 && pageIndex < this.pages.length) {
+        return this.getItemsInternal(this.pageKey(pageIndex));
+      }
+      return [];
+    }
+
+    private getItemsInternal(key: string): Array<MessageHistoryItem> {
+      let v = this.store.getString(key);
+      if (v) {
+        try {
+          let encrypted = JSON.parse(v);
+          let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
+          return JSON.parse(pageContentStr);
+        } catch (e) {
+          console.log("Error on parse/decrypt message history page");
         }
       }
       return [];
@@ -111,11 +159,13 @@ module p2p {
     public put(item: MessageHistoryItem) {
       this.pageContent.push(item);
       this.savePage(this.page, this.pageContent);
+
       if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
         this.pageContent = [];
         this.page++;
-        this.pages.push(this.page);
+        this.pages.push([this.page, 0]);
       }
+
       if (this.pages.length > MessageHistory.MAX_PAGES_COUNT) {
         this.store.remove('' + this.pages[0]);
         this.pages.splice(0, 1);
@@ -131,23 +181,32 @@ module p2p {
         if (items) {
           let newItems = items.filter(item => item.timestamp != timestamp);
           if (items.length != newItems.length) {
-            this.savePage(this.pages[page], newItems);
+            this.savePage(page, newItems);
           }
         }
       }
     }
 
-    private savePage(page: number, pageContent: Array<MessageHistoryItem>) {
-      //todo messages encryption
+    private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
+      let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.user.publicKey, this.user.secretPhrase, false);
+      let page = this.pages[pageIndex];
       try {
-        let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.user.publicKey, this.user.secretPhrase, false);
-        this.store.put('' + page, JSON.stringify(encrypted));
+        //save page under updated key 'pageNumber.itemCount'
+        this.store.remove(this.pageKey(pageIndex));
+        this.store.put(page[0] + '.' + pageContent.length, JSON.stringify(encrypted));
+        page[1] = pageContent.length;
       } catch (domException) {
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
           //todo shrink history of all accounts when reach storage limit
         }
-        this.store.put('' + page, JSON.stringify(pageContent));
+        this.store.put(this.pageKey(pageIndex), encrypted);
       }
+    }
+
+    private pageKey(pageIndex: number) {
+      let page = this.pages[pageIndex];
+      //page[1] == -1  - it is for old format key, e.g. "4", new format is 4.122"
+      return page[0] + (page[1] == -1 ? "" : "." + page[1]);
     }
 
   }

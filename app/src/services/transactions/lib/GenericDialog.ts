@@ -199,6 +199,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           <!-- EDIT -->
           <div ng-switch-when="0">
             <md-button class="md-warn" ng-click="vm.cancelBtn()">Cancel</md-button>
+            <!--<md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.okBtn['processing']"></md-progress-circular>-->
             <span class="text-center" ng-hide="!vm.okBtn['processing']"><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calling...&nbsp;</i></span>
             <md-button class="md-primary" ng-hide="vm.okBtn['processing']" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid || vm.okBtn['processing'] || vm.okBtn['disabled']">
               {{vm.okBtnTitle}}

@@ -95,9 +95,12 @@ class P2PMessaging {
   /**
    * Returns room with single peer.
    */
-  getOneToOneRoom(peerId: string): p2p.Room {
+  getOneToOneRoom(peerId: string, required?: boolean): p2p.Room {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
+    if (!room && required) {
+      room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+    }
     if (room && room.getAllPeers().size <= 1) {
       //todo check is opened channel
       return room;
