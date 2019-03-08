@@ -47,21 +47,6 @@
     }
   `],
   template: `
-<!--
-<md-virtual-repeat-container id="messages">
-  <div md-virtual-repeat="item in vm.items" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
-    <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
-    <div layout="column">
-      <div class="header">
-        <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
-      </div>
-      <div class="message-content">{{item.message}}</div>
-    </div>
-  </div>
-</md-virtual-repeat-container>
--->
-
-
 <!--<div class="viewport-wrap" id="viewport-scrollBubblingPrevent-wrap">
   <div class="viewport viewport-height-fixed" id="viewport-scrollBubblingPrevent" ui-scroll-viewport>
     <div class="item" ui-scroll="item in datasource"  is-loading="loading">{{item}}</div>
@@ -70,7 +55,8 @@
 
 <div id="messages" ui-scroll-viewport layout="column" flex>
 
-  <div ui-scroll="item in vm.datasource" layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
+  <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter" 
+  layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
     <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
     <div layout="column">
       <div class="header">
@@ -119,6 +105,11 @@ class P2PMessagesViewerComponent {
       let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
       if (room) {
         room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+          // @ts-ignore
+          let adapter = $scope.adapter;
+          if (adapter.isEOF()) {
+            adapter.append([this.processItem(item)]);
+          }
           // this.items.push(this.processItem(item));
           this.$scope.$evalAsync(() => {
             console.log(`<<< ${item.message}`);
