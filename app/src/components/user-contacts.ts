@@ -66,7 +66,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$timeout','$location','$rootScope','storage', 'P2PMessaging')
+@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging')
 class UserContactsComponent {
 
   public contacts : Array<IHeatMessageContact> = [];
@@ -81,6 +81,7 @@ class UserContactsComponent {
               private heat: HeatService,
               private $q: angular.IQService,
               private $timeout: angular.ITimeoutService,
+              private $interval: angular.IIntervalService,
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
@@ -113,6 +114,15 @@ class UserContactsComponent {
     this.setActivePublicKey();
 
     //let myRoom = this.p2pMessaging.register();
+
+    this.p2pMessaging.onMessage = (msg, room) => {
+      for (let contact of this.contacts) {
+        if (this.contactHasUnreadP2PMessage(contact)) {
+          this.refreshContacts();
+          return;
+        }
+      }
+    };
   }
 
   getActivePublicKey() {

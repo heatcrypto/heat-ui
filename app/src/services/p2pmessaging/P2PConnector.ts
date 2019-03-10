@@ -23,6 +23,10 @@
 
 module p2p {
 
+  export interface P2PMessenger {
+    onMessage: (msg: {}, room: Room) => any;
+  }
+
   /**
    * Provides WebRTC channels through rooms using signaling server.
    * Keeps websocket connection alive so that other party will can to establish WebRTC channel using signaling websocket connection.
@@ -55,7 +59,7 @@ module p2p {
     private config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
     private pingSignalingInterval;
 
-    constructor(private settings: SettingsService, private $interval: angular.IIntervalService) {
+    constructor(private messenger: p2p.P2PMessenger, private settings: SettingsService, private $interval: angular.IIntervalService) {
     }
 
     /**
@@ -588,6 +592,9 @@ module p2p {
           msg.fromPeerId = peerId;
           msg.roomName = roomName;
           room.onMessageInternal(msg);
+          if (this.messenger.onMessage) {
+            this.messenger.onMessage(msg, room);
+          }
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendSignalingMessage([{room: roomName}, msg]);

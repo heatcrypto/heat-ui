@@ -25,6 +25,9 @@
   selector: 'p2pMessagesViewer',
   inputs: ['publickey','@containerId'],
   styles: [`
+    /*.messages {
+      overflow: auto;
+    }*/
     .message-entry {
       color: white;
       margin-bottom: 14px;
@@ -53,9 +56,9 @@
   </div>
 </div>-->
 
-<div id="messages" ui-scroll-viewport layout="column" flex>
+<div class="messages" ui-scroll-viewport layout="column" flex scroll-glue>
 
-  <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter" 
+  <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter"
   layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
     <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
     <div layout="column">
@@ -66,7 +69,6 @@
     </div>
   </div>
 
-<!--TODO use something for infinity scrolling, e.g. https://github.com/angular-ui/ui-scroll-->
 </div>
   `
 })
@@ -98,6 +100,7 @@ class P2PMessagesViewerComponent {
     }
 
     this.updateSeenTime();
+    $scope.$on('$destroy', () => this.updateSeenTime());
 
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
@@ -127,9 +130,12 @@ class P2PMessagesViewerComponent {
     return item;
   }
 
+  /**
+   * The seen time is needed to display mark for contact when it receives the new unread messages.
+   */
   private updateSeenTime() {
     let account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.storage.namespace('contacts.seenP2PMessageTimestamp').put(account, Date.now());
+    this.storage.namespace('contacts.seenP2PMessageTimestamp').put(account, Date.now() - 500);
   }
 
 }

@@ -26,7 +26,7 @@ type EnterRoomState = "not" | "entering" | "entered";
 
 @Service('P2PMessaging')
 @Inject('settings', 'user', 'storage', '$interval', 'heat')
-class P2PMessaging {
+class P2PMessaging implements p2p.P2PMessenger {
 
   public p2pContactStore: Store;
   public offchainMode: boolean = false;
@@ -39,7 +39,7 @@ class P2PMessaging {
               private $interval: angular.IIntervalService,
               private heat: HeatService) {
 
-    this.connector = new p2p.P2PConnector(settings, $interval);
+    this.connector = new p2p.P2PConnector(this, settings, $interval);
     this.connector.setup(
       this.user.publicKey,
       (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
@@ -60,6 +60,8 @@ class P2PMessaging {
     private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
       return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
     }
+
+  onMessage: (msg: {}, room: p2p.Room) => any;
 
   /**
    * Register me so can be called.

@@ -32,6 +32,9 @@
       border: solid 1px;
       border-radius: 5px 5px 0px;
     }
+    .edit-message-textarea::placeholder {
+      color: rgb(117, 117, 117);
+    }
   `],
   template: `
     <div layout="column" flex="noshrink">
