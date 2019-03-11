@@ -98,6 +98,7 @@ class UserContactsComponent {
     this.store.on(Store.EVENT_PUT, this.refresh);
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
     this.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
+    $scope.$on('$destroy', () => this.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh));
 
     this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, this.refresh);
 
