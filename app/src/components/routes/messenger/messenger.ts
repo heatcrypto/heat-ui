@@ -103,7 +103,7 @@
             </md-button>
           </div>
           <div layout="row" class="control-panel">
-            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()" 
+            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()"
             ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
               <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
@@ -122,7 +122,7 @@
             <message-batch-viewer flex layout="column" container-id="message-batch-container"
                     publickey="::vm.publickey"></message-batch-viewer>
           </md-content>
-          <md-content flex ng-if="vm.p2pMessaging.offchainMode" id="p2p-messages-container">
+          <md-content flex ng-if="vm.p2pMessaging.offchainMode && vm.publickey != 0" id="p2p-messages-container">
             <p2p-messages-viewer flex layout="column" class="p2p-messages" container-id="p2p-messages-container"
                     publickey="::vm.publickey"></p2p-messages-viewer>
           </md-content>
