@@ -25,9 +25,9 @@
   selector: 'p2pMessagesViewer',
   inputs: ['publickey','@containerId'],
   styles: [`
-    /*.messages {
+    .messages {
       overflow: auto;
-    }*/
+    }    
     .message-entry {
       color: white;
       margin-bottom: 14px;
