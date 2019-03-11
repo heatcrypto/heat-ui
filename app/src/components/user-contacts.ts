@@ -56,8 +56,8 @@
           </div>-->
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
           <span ng-if="contact.hasUnreadP2PMessage" class="p2p-unread-symbol">*</span>
-          <span ng-if="vm.offchainStatus(contact)=='channelOpened'" class="channelopened-status-symbol">●</span>
-          <span ng-if="vm.offchainStatus(contact)=='roomRegistered'" class="roomregistered-status-symbol">●</span>
+          <span ng-if="vm.p2pStatus(contact)=='channelOpened'" class="channelopened-status-symbol">●</span>
+          <span ng-if="vm.p2pStatus(contact)=='roomRegistered'" class="roomregistered-status-symbol">●</span>
           <div class="truncate-col account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
@@ -181,7 +181,7 @@ class UserContactsComponent {
           if (duplicate) {
             keysToRemove.push(key);
           } else {
-            p2pContact['isP2P'] = true;
+            p2pContact['isP2POnlyContact'] = true;
             this.contacts.push(p2pContact);
           }
         });
@@ -190,11 +190,13 @@ class UserContactsComponent {
         this.contacts = this.contacts.filter((contact)=> {
           return contact.account != this.user.account;
         }).map((contact) => {
-          if (!contact['isP2P']) {
+          if (!contact['isP2POnlyContact']) {
             contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
           }
-          contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
-          // contact['offchainStatus'] = this.offchainStatus(contact);
+          contact['hasUnreadP2PMessage'] =
+            !(this.p2pMessaging.offchainMode && this.activePublicKey == contact.publicKey)
+            && this.contactHasUnreadP2PMessage(contact);
+          // contact['p2pStatus'] = this.p2pStatus(contact);
           return contact;
         });
 
@@ -205,7 +207,7 @@ class UserContactsComponent {
     })
   }
 
-  offchainStatus(contact: IHeatMessageContact) {
+  p2pStatus(contact: IHeatMessageContact) {
     let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
     if (room) {
       let peer = room.getPeer(contact.publicKey);
