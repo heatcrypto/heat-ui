@@ -74,6 +74,8 @@ module p2p {
       // }
 
       this.store = storage.namespace('p2p-messages.' + this.room.name);
+      //format of key of message history stored item: "pageNumber.messagesCount", e.g. "502.78"
+      //Message count by pages is needing for providing requesting message items from history by range "from" "to"
       this.pages = this.store.keys()
         .map(key => {
           let ss = key.split('.');
@@ -113,12 +115,12 @@ module p2p {
     }
 
     public getItemsScroolable(start: number, end: number) {
-      let n = 0;
+      let n = 0; //messages counter by pages
       let result = [];
       let needingLength = end - start;
       for (var i = 0; i < this.pages.length; i++) {
         let page = this.pages[i];
-        n = n + page[1];
+        n = n + page[1];  //add number of messages on the page
         if (n > start) {
           let pageItems = this.getItems(i);
           let pageStartIndex = result.length > 0 ? 0 : start - (n - page[1]);
