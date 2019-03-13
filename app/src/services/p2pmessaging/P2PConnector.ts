@@ -21,6 +21,25 @@
  * SOFTWARE.
  * */
 
+/*
+technical notes
+
+chrome://webrtc-internals/
+https://testrtc.com/blog/
+https://testrtc.com/webrtc-api-trace/
+https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
+https://tools.ietf.org/html/draft-ietf-rtcweb-ip-handling-01
+https://webrtchacks.com/symmetric-nat/
+https://blog.codeship.com/webrtc-issues-and-how-to-debug-them/
+If you use a STUN or a TURN server, you should see a onicecandidate() event with a candidate that has a ‘typ srflx’.
+if you use a TURN server, you need to check if you get an onicecandidate() event where the candidate has a ‘typ relay’.
+
+STUN and TURN servers list
+https://gist.github.com/yetithefoot/7592580
+https://gist.github.com/sagivo/3a4b2f2c7ac6e1b5267c2f1f59ac6c6b
+ */
+
+
 module p2p {
 
   export interface P2PMessenger {
@@ -56,7 +75,12 @@ module p2p {
     private pendingOnlineStatus: Function;
     private _onlineStatus: OnlineStatus = "offline";
     private signalingReady: boolean = null;
-    private config = {iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}]};
+
+    private config: RTCConfiguration = {
+      iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}],
+      /*iceTransportPolicy: "relay"*/
+    };
+
     private pingSignalingInterval;
 
     constructor(private messenger: p2p.P2PMessenger, private settings: SettingsService, private $interval: angular.IIntervalService) {
@@ -362,7 +386,7 @@ module p2p {
 
       //that's rude. Should analyze the connection state and create a new one or use an existing
       let pc: RTCPeerConnection = peer.peerConnection;
-      if (pc && pc.iceConnectionState != "connected") {
+      if (pc && pc.iceConnectionState != "connected" && pc.iceConnectionState != "completed") {
         pc.close();
         pc = null;
       }
@@ -392,6 +416,9 @@ module p2p {
           peer.dataChannel = dataChannel;
         };
         pc.oniceconnectionstatechange = (event: Event) => {
+          if (pc.iceConnectionState == "failed") {
+            console.log("iceConnectionState failed");
+          }
           if (pc.iceConnectionState == 'disconnected') {
             if (peer.dataChannel) {
               peer.dataChannel.close();
@@ -399,6 +426,9 @@ module p2p {
             }
             console.log('Disconnected');
           }
+        };
+        pc.onicecandidateerror = event => {
+          console.log(`${event.errorCode}  ${event.hostCandidate}  ${event.url}  ${event.errorText}`);
         };
 
         peer.peerConnection = pc;

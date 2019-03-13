@@ -115,7 +115,6 @@ module p2p {
     }
 
     public getItemsScroolable(start: number, end: number) {
-      console.log(`getItemsScroolable  ${start}   ${end}`);
       let n = 0; //messages counter by pages
       let result = [];
       if (end <= 0) {
