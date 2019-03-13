@@ -41,7 +41,7 @@ module p2p {
     private store: Store;
     // private db: IDBDatabase;
 
-    private page: number; //current page number
+    private pageStorageNum: number;  //for ordering pages from storage
     private pageContent: Array<MessageHistoryItem>;
     private pages: number[][];
 
@@ -95,10 +95,10 @@ module p2p {
       }
 
       if (this.pages.length == 0) {
-        this.page = 0;
+        this.pageStorageNum = 0;
         this.pages.push([0, 0]);
       } else {
-        this.page = this.pages[this.pages.length - 1][0];
+        this.pageStorageNum = this.pages[this.pages.length - 1][0];
         this.pageContent = this.getItems(this.pages.length - 1);
       }
       if (!this.pageContent) {
@@ -115,15 +115,19 @@ module p2p {
     }
 
     public getItemsScroolable(start: number, end: number) {
+      console.log(`getItemsScroolable  ${start}   ${end}`);
       let n = 0; //messages counter by pages
       let result = [];
+      if (end <= 0) {
+        return result;
+      }
       let needingLength = end - start;
       for (var i = 0; i < this.pages.length; i++) {
         let page = this.pages[i];
         n = n + page[1];  //add number of messages on the page
         if (n > start) {
           let pageItems = this.getItems(i);
-          let pageStartIndex = result.length > 0 ? 0 : start - (n - page[1]);
+          let pageStartIndex = Math.max(0, result.length > 0 ? 0 : start - (n - page[1]));
           result = result.concat(pageItems.slice(pageStartIndex, pageStartIndex + (needingLength - result.length)));
         }
         if (result.length == needingLength) {
@@ -160,12 +164,12 @@ module p2p {
 
     public put(item: MessageHistoryItem) {
       this.pageContent.push(item);
-      this.savePage(this.page, this.pageContent);
+      this.savePage(this.pages.length - 1, this.pageContent);
 
       if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
         this.pageContent = [];
-        this.page++;
-        this.pages.push([this.page, 0]);
+        this.pageStorageNum++;
+        this.pages.push([this.pageStorageNum, 0]);
       }
 
       if (this.pages.length > MessageHistory.MAX_PAGES_COUNT) {
@@ -178,12 +182,12 @@ module p2p {
     public remove(timestamp: number) {
       //todo remove message on the remote peers also
       //iterate from end to begin because more likely user removed the recent message
-      for (let page = this.pages.length - 1; page >= 0; page--) {
-        let items = this.getItems(page);
+      for (let i = this.pages.length - 1; i >= 0; i--) {
+        let items = this.getItems(i);
         if (items) {
           let newItems = items.filter(item => item.timestamp != timestamp);
           if (items.length != newItems.length) {
-            this.savePage(page, newItems);
+            this.savePage(i, newItems);
           }
         }
       }
@@ -195,8 +199,8 @@ module p2p {
       try {
         //save page under updated key 'pageNumber.itemCount'
         this.store.remove(this.pageKey(pageIndex));
-        this.store.put(page[0] + '.' + pageContent.length, JSON.stringify(encrypted));
         page[1] = pageContent.length;
+        this.store.put(page[0] + '.' + page[1], JSON.stringify(encrypted));
       } catch (domException) {
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
           //todo shrink history of all accounts when reach storage limit
