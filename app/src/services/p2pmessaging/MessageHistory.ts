@@ -29,6 +29,16 @@ module p2p {
     message: string
   }
 
+  /*
+   Messages are stored in the local storage.
+   Messages are stored in bundles called pages:
+   key -> page
+   Page is encrypted array of messages.
+   Key format:  num.messagesCount.timestampOfLastMessage, for example  "301.40.1552578853760"
+   Pages are sorted by keys using substring 'num' in key's value.
+   Count of messages in the key is used for providing scrolling ability, i.e. getting items in some range 'start-end'.
+   Timestamp in the key is used for finding and deleting the oldest page on reaching limit of storage.
+  */
   export class MessageHistory {
 
     //todo migrate from localStorage to IndexedDB
@@ -92,6 +102,9 @@ module p2p {
       return this.pages.map(v => v[1]).reduce((previousValue, currentValue) => previousValue + currentValue);
     }
 
+    /**
+     * Returns history items from 'start' (inclusive) to 'end' (exclusive).
+     */
     public getItemsScrollable(start: number, end: number) {
       let n = 0; //messages counter by pages
       let result = [];
@@ -150,6 +163,7 @@ module p2p {
       }
 
       if (this.pages.length > MessageHistory.MAX_PAGES_COUNT) {
+        console.log("Remove page " + this.pageKey(0));
         this.store.remove(this.pageKey(0));
         this.pages.splice(0, 1);
       }
@@ -178,11 +192,20 @@ module p2p {
         page[2] = pageContent.length > 0 ? pageContent[pageContent.length - 1].timestamp : 0;
         this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
       } catch (domException) {
-        console.log("savePage error" + domException);
+        console.log("Save page error " + domException);
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) >= 0) {
           //shrink history of all accounts when reach storage limit
-          this.shrinkPageStore(1);
-          this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
+          let attempts = 5;
+          while (attempts > 0) {
+            try {
+              this.shrinkPageStore(6 - attempts);
+              this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
+              attempts = 0;
+            } catch (e) {
+              console.log("Error while shrinking message history " + e);
+            }
+            attempts--;
+          }
         }
       }
     }
