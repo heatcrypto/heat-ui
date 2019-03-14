@@ -37,12 +37,6 @@
         "port": 7733,
         "websocket": "ws://localhost:7755/ws/",
         "priority": 1
-      },
-      {
-        "host": "http://185.40.76.143",
-        "port": 7733,
-        "websocket": "ws://185.40.76.143:7755/ws/",
-        "priority": 0
       }
     ]
   },

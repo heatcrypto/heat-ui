@@ -58,6 +58,7 @@ class SettingsService {
   public static HEAT_WEBSOCKET_REMOTE = 'settings.heat_websocket_remote';
   public static HEAT_WEBSOCKET_LOCAL = 'settings.heat_websocket_local';
   public static HEAT_WEBSOCKET = 'settings.heat_websocket';
+  public static HEAT_WEBRTC_WEBSOCKET = 'settings.heat_webrtc_websocket';
   public static LOG_HEAT_ERRORS = 'settings.log_heat_errors';
   public static LOG_HEAT_ALL = 'settings.log_heat_all';
   public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
@@ -154,6 +155,7 @@ class SettingsService {
     this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
     this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
     this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
+    this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = "wss://heatwallet.com:7755/ws/";
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
@@ -189,6 +191,7 @@ class SettingsService {
       this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
       this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
       this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
+      this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = "wss://alpha.heatledger.com:7755/ws/";
     }
 
     /* betanet overrides */

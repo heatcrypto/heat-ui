@@ -219,7 +219,7 @@ module p2p {
     getWebSocket() {
       if (!this.webSocketPromise || this.signalingReady === false) {
         this.webSocketPromise = new Promise((resolve, reject) => {
-            let url = this.settings.get(SettingsService.HEAT_WEBSOCKET);
+            let url = this.settings.get(SettingsService.HEAT_WEBRTC_WEBSOCKET);
             let socket = new WebSocket(url);
             console.log("new socket, readyState=" + socket.readyState);
             socket.onopen = () => {
