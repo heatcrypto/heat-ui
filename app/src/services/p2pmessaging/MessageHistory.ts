@@ -50,29 +50,6 @@ module p2p {
                 private user: UserService) {
 
       this.enabled = true;
-
-      // will use indexeddb later
-      // if (window.indexedDB) {
-      //   let dbRequest = window.indexedDB.open("P2PMessaging", 1);
-      //   dbRequest.onerror = function(event) {
-      //     console.log("IndexedDB request error: " + event.target.errorCode);
-      //   };
-      //   dbRequest.onsuccess = (event) => {
-      //     this.db = dbRequest.result;
-      //     this.db.onerror = (event) => {
-      //       console.log("IndexedDB error: " + event.target.errorCode);
-      //       this.enabled = false;
-      //     };
-      //   };
-      //   dbRequest.onupgradeneeded = (event) => {
-      //     this.db = event.target.result;
-      //     let objectStore = this.db.createObjectStore("name", { keyPath: "myKey" });
-      //   };
-      // } else {
-      //   console.log("Your browser doesn't support a stable version of IndexedDB. So message history is disabled.");
-      //   this.enabled = false;
-      // }
-
       this.store = storage.namespace('p2p-messages.' + this.room.name);
       //format of key of message history stored item: "pageNumber.messagesCount", e.g. "502.78"
       //Message count by pages is needing for providing requesting message items from history by range "from" "to"
@@ -81,15 +58,16 @@ module p2p {
           let ss = key.split('.');
           return [
             parseInt(ss[0]),
-            (ss.length > 1 ? parseInt(ss[1]) : -1)
+            (ss.length > 1 ? parseInt(ss[1]) : -1),
+            (ss.length > 2 ? parseInt(ss[2]) : -1)
           ];
         })
         .sort((a, b) => a[0] - b[0]);
 
       //convert old format of keys to the new format
       for (var i = 0; i < this.pages.length; i++) {
-        if (this.pages[i][1] == -1) {
-          let items = this.getItemsInternal('' + this.pages[i][0]);
+        if (this.pages[i][1] == -1 || this.pages[i][2] == -1) {
+          let items = this.getItemsInternal(this.pageKey(i));
           this.savePage(i, items);
         }
       }
@@ -114,7 +92,7 @@ module p2p {
       return this.pages.map(v => v[1]).reduce((previousValue, currentValue) => previousValue + currentValue);
     }
 
-    public getItemsScroolable(start: number, end: number) {
+    public getItemsScrollable(start: number, end: number) {
       let n = 0; //messages counter by pages
       let result = [];
       if (end <= 0) {
@@ -172,7 +150,7 @@ module p2p {
       }
 
       if (this.pages.length > MessageHistory.MAX_PAGES_COUNT) {
-        this.store.remove('' + this.pages[0]);
+        this.store.remove(this.pageKey(0));
         this.pages.splice(0, 1);
       }
     }
@@ -183,11 +161,9 @@ module p2p {
       //iterate from end to begin because more likely user removed the recent message
       for (let i = this.pages.length - 1; i >= 0; i--) {
         let items = this.getItems(i);
-        if (items) {
-          let newItems = items.filter(item => item.timestamp != timestamp);
-          if (items.length != newItems.length) {
-            this.savePage(i, newItems);
-          }
+        let newItems = items.filter(item => item.timestamp != timestamp);
+        if (items.length != newItems.length) {
+          this.savePage(i, newItems);
         }
       }
     }
@@ -199,19 +175,47 @@ module p2p {
         //save page under updated key 'pageNumber.itemCount'
         this.store.remove(this.pageKey(pageIndex));
         page[1] = pageContent.length;
-        this.store.put(page[0] + '.' + page[1], JSON.stringify(encrypted));
+        page[2] = pageContent.length > 0 ? pageContent[pageContent.length - 1].timestamp : 0;
+        this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
       } catch (domException) {
-        if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) > 0) {
-          //todo shrink history of all accounts when reach storage limit
+        console.log("savePage error" + domException);
+        if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) >= 0) {
+          //shrink history of all accounts when reach storage limit
+          this.shrinkPageStore(1);
+          this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
         }
-        this.store.put(this.pageKey(pageIndex), encrypted);
+      }
+    }
+
+    /**
+     * Deletes the oldest pages among all contacts.
+     */
+    private shrinkPageStore(pageToRemoveNumber: number) {
+      //used 'p2p-messages' instead ('p2p-messages' + this.room.name) to get keys for all rooms.
+      //note 'p2p-messages' without '.'
+      let allRoomStore = this.storage.namespace('p2p-messages');
+      //last integer substring of page's key is timestamp of the page, example "10344812140431697156-5056413637982060108.47.100.7367346346"
+      let keysByTime = allRoomStore.keys()
+        .map(key => {
+          let ss = key.split('.');
+          return [ss[0], parseInt(ss[1]), parseInt(ss[2]), parseInt(ss[3])];
+        })
+        // @ts-ignore
+        .sort((a, b) => a[3] - b[3]);
+
+      //remove oldest pages
+      for (let key of keysByTime) {
+        allRoomStore.remove(key.join('.'));
+        if ((--pageToRemoveNumber) <= 0) {
+          break;
+        }
       }
     }
 
     private pageKey(pageIndex: number) {
       let page = this.pages[pageIndex];
-      //page[1] == -1  - it is for old format key, e.g. "4", new format is 4.122"
-      return page[0] + (page[1] == -1 ? "" : "." + page[1]);
+      //page[1] == -1 page[1] == -2  - it is for old format key, e.g. "4", new format is 4.122.765856765"
+      return page[0] + (page[1] == -1 ? "" : "." + page[1]) + (page[2] == -1 ? "" : "." + page[2]);
     }
 
   }

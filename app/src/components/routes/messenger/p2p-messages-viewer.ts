@@ -144,7 +144,7 @@ class P2PMessagesDataSource {
     let end = Math.min(index + count - 1, this.first);
     if (start <= end) {
       let lastIndex = this.messageHistory.getItemCount() - 1;
-      let items = this.messageHistory.getItemsScroolable(lastIndex + start - this.first, lastIndex + end - this.first + 1)
+      let items = this.messageHistory.getItemsScrollable(lastIndex + start - this.first, lastIndex + end - this.first + 1)
         .map(item => this.processItem(item));
       success(items);
     } else {
