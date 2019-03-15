@@ -9,7 +9,7 @@ class NxtBlockExplorerService {
     this.setUrl()
   }
 
-  public setUrl(url = 'http://176.9.144.171:7876/') {
+  public setUrl(url = 'https://bitnode.heatwallet.com:7876/') {
     this.url = url;
   }
 

@@ -96,7 +96,7 @@ class ArdorAccountComponent {
 
     this.sockets = [
       {
-        name: 'ArdorBlockExplorer',
+        name: 'HEAT_Ardr_node',
         socketUrl: 'https://bitnode.heatwallet.com:27876/'
       },
       {

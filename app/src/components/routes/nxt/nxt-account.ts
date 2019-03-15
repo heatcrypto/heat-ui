@@ -96,8 +96,8 @@ class NxtAccountComponent {
 
     this.sockets = [
       {
-        name: 'NXTBlockExplorer',
-        socketUrl: 'http://176.9.144.171:7876/'
+        name: 'HEAT_NXT_node',
+        socketUrl: 'https://bitnode.heatwallet.com:7876/'
       },
       {
         name: 'Localhost',
