@@ -9,7 +9,7 @@ class ArdorBlockExplorerService {
     this.setUrl()
   }
 
-  public setUrl(url = 'http://176.9.144.171:27876/') {
+  public setUrl(url = 'https://bitnode.heatwallet.com:27876/') {
     console.log("This is url", url);
     this.url = url;
   }
