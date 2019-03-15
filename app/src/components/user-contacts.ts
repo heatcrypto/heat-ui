@@ -66,7 +66,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging')
+@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging', '$mdToast')
 class UserContactsComponent {
 
   public contacts : Array<IHeatMessageContact> = [];
@@ -85,7 +85,8 @@ class UserContactsComponent {
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
-              private p2pMessaging: P2PMessaging) {
+              private p2pMessaging: P2PMessaging,
+              private $mdToast: angular.material.IToastService) {
 
     this.refresh = utils.debounce(
       () => {
@@ -98,7 +99,6 @@ class UserContactsComponent {
     this.store.on(Store.EVENT_PUT, this.refresh);
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
     this.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
-    $scope.$on('$destroy', () => this.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh));
 
     this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, this.refresh);
 
@@ -116,7 +116,8 @@ class UserContactsComponent {
 
     //let myRoom = this.p2pMessaging.register();
 
-    this.p2pMessaging.onMessage = (msg, room) => {
+    this.p2pMessaging.onMessage = (msg: any, room: p2p.Room) => {
+      //this.displayNewMessagePopup(msg, room);  todo must be invoked somewhere (on toolbar?), but not here
       for (let contact of this.contacts) {
         if (this.contactHasUnreadP2PMessage(contact)) {
           this.refreshContacts();
@@ -124,6 +125,20 @@ class UserContactsComponent {
         }
       }
     };
+
+    $scope.$on('$destroy', () => {
+      this.p2pMessaging.onMessage = null;
+      this.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh);
+    });
+  }
+
+  displayNewMessagePopup(msg: any, room: p2p.Room) {
+    let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+    let text: string = msg.text.substring(0, 50);
+    if (msg.text.length > 50) text = text + " ...";
+    this.$mdToast.show(
+      this.$mdToast.simple().textContent(`New message from ${account} "${text}"`).hideDelay(4000)
+    );
   }
 
   getActivePublicKey() {
