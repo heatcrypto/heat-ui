@@ -86,7 +86,16 @@ module p2p {
     private signalingReady: boolean = null;
 
     private config: RTCConfiguration = {
-      iceServers: [{urls: 'stun:23.21.150.121'}, {urls: 'stun:stun.l.google.com:19302'}],
+      iceServers: [
+        {urls: "stun:stun.l.google.com:19302"},
+        {urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302", "stun:stun4.l.google.com:19302"]},
+        {urls: "stun:23.21.150.121"},
+        {urls: "stun:stun01.sipphone.com"},
+        {urls: "stun:stun.iptel.org"},
+        {urls: "stun:stun.ekiga.net"},
+        {urls: "stun:stun.fwdnet.net"},
+        {urls: "stun:stun.xten.com"}
+      ],
       /*iceTransportPolicy: "relay"*/
     };
 
