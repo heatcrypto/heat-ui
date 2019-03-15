@@ -41,17 +41,10 @@
     <link rel="stylesheet" href="styles/index.css">
 
     <div layout="column" flex layout-fill class="application-content" ng-if="showApp">
-      <div layout="column" flex layout-fill hide-gt-xs layout-align="start center" layout-padding class="mobile-notice">
-        <p>The HEAT desktop wallet is optimized for desktop/tablet use only.</p>
-        <p>Please check back later when our mobile apps (IOS/Android) have been released.</p>
-        <p><a href="http://heatledger.com">heatledger.com</a></p>
-      </div>
-      <div layout="row" flex  layout-fill hide show-gt-xs>
-        <div flex layout-fill layout="column">
-          <downloading-blockchain></downloading-blockchain>
-          <toolbar></toolbar>
-          <div ng-viewport flex layout-fill layout="column"></div>
-        </div>
+      <div flex layout-fill layout="column">
+        <downloading-blockchain></downloading-blockchain>
+        <toolbar></toolbar>
+        <div ng-viewport flex layout-fill layout="column"></div>
       </div>
     </div>
 

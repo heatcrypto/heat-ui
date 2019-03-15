@@ -61,6 +61,7 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
   protected feeFormatted: string;
   protected dialogDescription: string;
   protected okBtnTitle: string = 'OK';
+  protected customFeeTitle: string;
 
   /* Available for extending class - set from dialog controller */
   public fields: IStringHashMap<AbstractDialogField> = {};
@@ -193,14 +194,15 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           </div>
         </md-dialog-content>
         <md-dialog-actions layout="row" ng-switch="vm.state">
-          <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee {{vm.feeFormatted}} HEAT</md-button>
+          <md-button ng-if="!vm.customFeeTitle" ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee {{vm.feeFormatted}} HEAT</md-button>
+          <md-button ng-if="vm.customFeeTitle" ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">{{vm.customFeeTitle}}</md-button>
           <span flex></span>
 
           <!-- EDIT -->
           <div ng-switch-when="0">
             <md-button class="md-warn" ng-click="vm.cancelBtn()">Cancel</md-button>
             <!--<md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.okBtn['processing']"></md-progress-circular>-->
-            <span class="text-center" ng-hide="!vm.okBtn['processing']"><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calling...&nbsp;</i></span>
+            <span class="text-center" ng-hide="!vm.okBtn['processing']"><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;contacting...&nbsp;</i></span>
             <md-button class="md-primary" ng-hide="vm.okBtn['processing']" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid || vm.okBtn['processing'] || vm.okBtn['disabled']">
               {{vm.okBtnTitle}}
             </md-button>

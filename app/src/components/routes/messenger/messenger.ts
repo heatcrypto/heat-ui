@@ -92,14 +92,14 @@
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
-              New Message
+              New CONTACT
             </md-button>
             <md-button id="CallButton" class="md-primary" aria-label="Call"
             ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
-                Call user to establish the peer-to-peer channel
+                Connect user to establish the peer-to-peer channel
               </md-tooltip>
-              Call
+              CONNECT
             </md-button>
           </div>
           <div layout="row" class="control-panel">

@@ -35,10 +35,12 @@ module p2p {
                 private recipientPublicKey: string,
                 private p2pmessaging: P2PMessaging) {
       super($event);
-      this.dialogTitle = 'Call user';
-      this.dialogDescription = 'Call other user to establish the peer-to-peer channel';
-      this.okBtnTitle = 'Call';
+      this.dialogTitle = 'Send offchain connect request';
+      this.dialogDescription = 'Connect other user to establish the peer-to-peer channel';
+      this.okBtnTitle = 'Connect';
       this.okBtn['processing'] = false;
+      this.feeFormatted = 'NO'
+      this.customFeeTitle = 'NO FEE'
     }
 
     /* @override */
@@ -47,7 +49,7 @@ module p2p {
       return [
         builder
           .account('recipient', this.recipient)
-          .label('Callee')
+          .label('Counterparty HEAT account id')
           .required()
           .onchange(newValue => this.onChangeRecipient($scope, newValue)),
         // builder.text('note', '').readonly(true),
