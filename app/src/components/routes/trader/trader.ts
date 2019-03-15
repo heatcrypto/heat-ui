@@ -45,7 +45,6 @@ declare var Big: any;
         <div class="sidenav-container">
           <trader-balances currency-info="vm.currencyInfo" asset-info="vm.assetInfo" ng-if="vm.user.unlocked"></trader-balances>
           <trader-markets></trader-markets>
-          <trader-trollbox></trader-trollbox>
         </div>
       </md-sidenav>
       <div layout="column" flex layout-fill class="main-display">
