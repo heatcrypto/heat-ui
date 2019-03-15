@@ -111,6 +111,7 @@ module p2p {
       if (end <= 0) {
         return result;
       }
+      start = Math.max(0, start);
       let needingLength = end - start;
       for (var i = 0; i < this.pages.length; i++) {
         let page = this.pages[i];
