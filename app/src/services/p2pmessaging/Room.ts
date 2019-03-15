@@ -74,7 +74,7 @@ module p2p {
 
     onMessageInternal(msg: any) {
       if (msg.type == "chat") {
-        let item = {timestamp: msg.timestamp, fromPeer: msg.fromPeerId, content: msg.text};
+        let item: MessageHistoryItem = {timestamp: msg.timestamp, fromPeer: msg.fromPeerId, content: msg.text};
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
           this.onNewMessageHistoryItem(item);

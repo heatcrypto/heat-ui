@@ -230,7 +230,7 @@ module p2p {
         this.webSocketPromise = new Promise((resolve, reject) => {
             let url = this.settings.get(SettingsService.HEAT_WEBRTC_WEBSOCKET);
             let socket = new WebSocket(url);
-            console.log("new socket, readyState=" + socket.readyState);
+            // console.log("new socket, readyState=" + socket.readyState);
             socket.onopen = () => {
               socket.onmessage = (msg) => this.onSignalingMessage(msg);
               socket.onclose = () => this.onSignalingClosed();
@@ -264,7 +264,7 @@ module p2p {
         .then(websocket => {
           data.splice(0, 0, "webrtc");
           websocket.send(JSON.stringify(data));
-          console.log(">> \n" + JSON.stringify(data));
+          // console.log(">> \n" + JSON.stringify(data));
         }, reason => console.log(reason))
         .catch(reason => {
           console.log("error on get websocket \n" + reason);
@@ -632,8 +632,9 @@ module p2p {
       try {
         let encrypted: heat.crypto.IEncryptedMessage = JSON.parse(event.data);
         let msg = JSON.parse(this.decrypt(encrypted, peerId));
+        //todo consider if needing to remove all special symbols from msg.text
 
-        console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
+        // console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
 
         let room: Room = this.rooms.get(roomName);
         if (room) {
