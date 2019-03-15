@@ -102,6 +102,7 @@ class P2PMessaging implements p2p.P2PMessenger {
     let room = this.connector.rooms.get(roomName);
     if (!room && required) {
       room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      this.connector.rooms.set(roomName, room);
     }
     if (room && room.getAllPeers().size <= 1) {
       //todo check is opened channel
@@ -120,6 +121,7 @@ class P2PMessaging implements p2p.P2PMessenger {
     let room = this.connector.rooms.get(roomName);
     if (!room) {
       room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      this.connector.rooms.set(roomName, room);
     }
     if (room.state.entered == "not") {
       room.enter();

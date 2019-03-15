@@ -10,7 +10,12 @@ class ArdorBlockExplorerService {
   }
 
   public setUrl(url = 'http://176.9.144.171:27876/') {
+    console.log("This is url", url);
     this.url = url;
+  }
+
+  getSocketUrl = () => {
+    return this.url
   }
 
   public getBlockchainStatus = () => {

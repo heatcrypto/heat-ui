@@ -50,12 +50,6 @@
     }
   `],
   template: `
-<!--<div class="viewport-wrap" id="viewport-scrollBubblingPrevent-wrap">
-  <div class="viewport viewport-height-fixed" id="viewport-scrollBubblingPrevent" ui-scroll-viewport>
-    <div class="item" ui-scroll="item in datasource"  is-loading="loading">{{item}}</div>
-  </div>
-</div>-->
-
 <div class="messages" ui-scroll-viewport layout="column" flex scroll-glue>
 
   <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter"
@@ -107,18 +101,15 @@ class P2PMessagesViewerComponent {
     if (this.publickey != '0') {
       let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
       if (room) {
+        this.datasource = new P2PMessagesDataSource(room.getMessageHistory(), item => this.processItem(item));
         room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+          this.datasource.first++;
           // @ts-ignore
           let adapter = $scope.adapter;
           if (adapter.isEOF()) {
             adapter.append([this.processItem(item)]);
           }
-          // this.items.push(this.processItem(item));
-          this.$scope.$evalAsync(() => {
-            console.log(`<<< ${item.message}`);
-          });
         };
-        this.datasource = new P2PMessagesDataSource(room.getMessageHistory(), item => this.processItem(item));
       }
     }
   }
@@ -142,7 +133,7 @@ class P2PMessagesViewerComponent {
 
 class P2PMessagesDataSource {
   data = [];
-  first = 1;
+  first = 1;  //index pointed to the head of datasource's list of items. Increased on adding item.
 
   constructor(private messageHistory: p2p.MessageHistory,
               private processItem: (item: p2p.MessageHistoryItem) => {}) {
@@ -151,16 +142,14 @@ class P2PMessagesDataSource {
   get(index: number, count: number, success) {
     let start = index;
     let end = Math.min(index + count - 1, this.first);
-
     if (start <= end) {
       let lastIndex = this.messageHistory.getItemCount() - 1;
-      let items = this.messageHistory.getItemsScroolable(lastIndex + start - this.first, lastIndex + end - this.first + 1)
+      let items = this.messageHistory.getItemsScrollable(lastIndex + start - this.first, lastIndex + end - this.first + 1)
         .map(item => this.processItem(item));
       success(items);
     } else {
       success([]);
     }
-
   }
 
 }

@@ -711,10 +711,12 @@ class WalletComponent {
     })
 
     this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
-      fimkCurrencyAddressLoading.visible = walletEntry.expanded
-      fimkCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(fimkCurrencyAddressLoading)
+      this.fimkCryptoService.getSocket().then(() => {
+        let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
+        fimkCurrencyAddressLoading.visible = walletEntry.expanded
+        fimkCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(fimkCurrencyAddressLoading)
+      })
 
       let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
       fimkCurrencyAddressCreate.visible = walletEntry.expanded
@@ -739,27 +741,28 @@ class WalletComponent {
         nxtCurrencyAddressLoading.visible = walletEntry.expanded
         nxtCurrencyAddressLoading.wallet = wallet
         walletEntry.currencies.push(nxtCurrencyAddressLoading)
+        if (walletEntry.expanded) {
+          this.loadNXTAddresses(walletEntry)
+        }
       })
-      if (walletEntry.expanded) {
-        this.loadNXTAddresses(walletEntry)
-      }
     })
+
     this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
       let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
       ardorCurrencyAddressCreate.visible = walletEntry.expanded
       ardorCurrencyAddressCreate.parent = walletEntry
       ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
       walletEntry.currencies.push(ardorCurrencyAddressCreate)
+
       this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
         let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
         ardorCurrencyAddressLoading.visible = walletEntry.expanded
         ardorCurrencyAddressLoading.wallet = wallet
         walletEntry.currencies.push(ardorCurrencyAddressLoading)
+        if (walletEntry.expanded) {
+          this.loadARDORAddresses(walletEntry)
+        }
       })
-
-      if (walletEntry.expanded) {
-        this.loadARDORAddresses(walletEntry)
-      }
     })
   }
 

@@ -1,13 +1,12 @@
 @Service('bitcoreService')
-@Inject('$window', 'http')
+@Inject('$window')
 class BitcoreService {
 
   static readonly BIP44 = "m/44'/0'/0'/0/";
   private bitcore;
   private bip39;
 
-  constructor($window: angular.IWindowService,
-    private http: HttpService) {
+  constructor($window: angular.IWindowService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
   }
@@ -60,23 +59,25 @@ class BitcoreService {
 
         /* look up its data on btcBlockExplorerService */
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getAddressInfo(address).then(info => {
+        btcBlockExplorerService.refresh().then(() => {
+          btcBlockExplorerService.getAddressInfo(address).then(info => {
 
-          /* lookup the 'real' WalletAddress */
-          let walletAddress = wallet.addresses.find(x => x.address == address)
-          if (!walletAddress)
-            return
+            /* lookup the 'real' WalletAddress */
+            let walletAddress = wallet.addresses.find(x => x.address == address)
+            if (!walletAddress)
+              return
 
-          walletAddress.inUse = info.txApperances != 0
-          if (!walletAddress.inUse) {
+            walletAddress.inUse = info.txApperances != 0
+            if (!walletAddress.inUse) {
+              resolve(false)
+              return
+            }
+
+            walletAddress.balance = info.balanceSat / 100000000 + ""
+            resolve(true)
+          }, () => {
             resolve(false)
-            return
-          }
-
-          walletAddress.balance = info.balanceSat / 100000000 + ""
-          resolve(true)
-        }, () => {
-          resolve(false)
+          })
         })
       })
     }
@@ -102,8 +103,9 @@ class BitcoreService {
   }
 
   signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
+    let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     return new Promise((resolve, reject) => {
-      this.getUnspentUtxos(txObject.from).then(
+      btcBlockExplorerService.getUnspentUtxos(txObject.from).then(
         utxos => {
           try {
             let tx = this.bitcore.Transaction();
@@ -131,9 +133,10 @@ class BitcoreService {
   }
 
   sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
+    let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     return new Promise((resolve, reject) => {
       this.signTransaction(txObject).then(rawTx => {
-        this.broadcast(rawTx).then(
+        btcBlockExplorerService.broadcast(rawTx).then(
           txId => {
             resolve({txId : txId.txId, message: ''})
           },
@@ -159,45 +162,4 @@ class BitcoreService {
       privateKey: privateKey.toString()
     }
   }
-
-  getUnspentUtxos(addresses) {
-    const Address = this.bitcore.Address;
-    const Transaction = this.bitcore.Transaction;
-    const UnspentOutput = Transaction.UnspentOutput;
-    return new Promise((resolve, reject) => {
-      if (!Array.isArray(addresses)) {
-        addresses = [addresses];
-      }
-      addresses = addresses.map((address) => new Address(address));
-      this.http.post(`${BtcBlockExplorerService.endPoint}/addrs/utxo`, {
-        addrs: addresses.map((address) => address.toString()).join(',')
-      }).then(
-        response => {
-          try {
-            resolve((<[any]>response).map(unspent => new UnspentOutput(unspent)))
-          } catch (ex) {
-            reject(ex);
-          }
-        },
-        error => {
-          reject(error)
-        }
-      )
-    })
-  }
-
-  broadcast(rawTx: string) {
-    return new Promise<{ txId: string }>((resolve, reject) => {
-      this.http.post(`${BtcBlockExplorerService.endPoint}/tx/send`, { rawtx: rawTx }).then(
-        response => {
-          let txId = response ? response['txid'] : null
-          resolve({ txId: txId })
-        },
-        error => {
-          reject(error)
-        }
-      )
-    })
-  }
-
 }

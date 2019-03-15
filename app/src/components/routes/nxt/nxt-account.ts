@@ -23,6 +23,18 @@
             </div>
           </div>
         </div>
+        <div layout="column">
+          <div class="col-item">
+            <div class="title">
+              NXT Server:
+            </div>
+            <div class="value">
+              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeSocketAddress()">
+                <md-option ng-repeat="socket in vm.sockets" value="{{socket.name}}">{{socket.name}}</md-option>
+              </md-select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div flex layout="column">
@@ -58,6 +70,7 @@ class NxtAccountComponent {
   pendingTransactions: Array<{ date: string, txId: string, time: number, address: string }> = []
   prevIndex = 0
   busy = true
+  sockets: any
 
   constructor(private $scope: angular.IScope,
               private nxtBlockExplorerService: NxtBlockExplorerService,
@@ -80,6 +93,24 @@ class NxtAccountComponent {
       nxtPendingTransactions.removeListener(listener)
       $interval.cancel(promise)
     })
+
+    this.sockets = [
+      {
+        name: 'NXTBlockExplorer',
+        socketUrl: 'http://176.9.144.171:7876/'
+      },
+      {
+        name: 'Localhost',
+        socketUrl: 'http://localhost:7876/'
+      }
+    ]
+
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.nxtBlockExplorerService.getSocketUrl() == w.socketUrl).name
+  }
+
+  changeSocketAddress() {
+    let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
+    this.nxtBlockExplorerService.setUrl(ret.socketUrl)
   }
 
 

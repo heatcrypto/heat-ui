@@ -17,6 +17,7 @@ class MofoSocketService {
       return
     }
     this.createSocket(url)
+    return this.socket;
   }
 
   getSocketUrl = () => {
