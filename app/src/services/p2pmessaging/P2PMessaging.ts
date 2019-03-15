@@ -187,7 +187,7 @@ class P2PMessaging implements p2p.P2PMessenger {
           };
           dialogs.confirm(
             "Incoming connect request",
-            `Account &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; wants to connect with you. Accepting connection will share your current IP address. Accept or decline?`,
+            `Account &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; wants to connect with you. Accepting connection will share your current IP address. Accept or decline? Click OK to accept, Cancel to decline.`,
             closeDialogOnConnected
           ).then(() => {
               this.saveContact(peerAccount, peerId, expectedAccount.publicName);
