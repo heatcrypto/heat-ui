@@ -46,7 +46,7 @@
       color: grey;
     }
     .message-entry .menu-button {
-      color: grey;
+      color: grey !important;
     }
     .message-entry div.message {
       width: 100%;
@@ -54,6 +54,18 @@
     // .outgoing {
     //   align-self: flex-end;
     // }
+    .message-entry.ng-enter, .message-entry.ng-leave {
+      -webkit-transition: 0.5s linear all;
+      transition: 0.5s linear all;
+    }
+    .message-entry.ng-enter, .message-entry.ng-leave.ng-leave-active {
+      opacity: 0;
+      height: 0px;
+    }
+    .message-entry.ng-leave, .message-entry.ng-enter.ng-enter-active {
+      opacity: 1;
+      height: 40px;
+    }
   `],
   template: `
 <div class="messages" ui-scroll-viewport layout="column" flex scroll-glue>
