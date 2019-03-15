@@ -26,7 +26,7 @@ module p2p {
   export interface MessageHistoryItem {
     timestamp: number,
     fromPeer: string,
-    message: string
+    content: string
   }
 
   /*
@@ -169,8 +169,11 @@ module p2p {
       }
     }
 
+    /**
+     * Removes message in the history. Returns number of deleted messages.
+     */
     //using timestamp as message id is not ideal, but it is quick solution
-    public remove(timestamp: number) {
+    public remove(timestamp: number): number {
       //todo remove message on the remote peers also
       //iterate from end to begin because more likely user removed the recent message
       for (let i = this.pages.length - 1; i >= 0; i--) {
@@ -178,8 +181,10 @@ module p2p {
         let newItems = items.filter(item => item.timestamp != timestamp);
         if (items.length != newItems.length) {
           this.savePage(i, newItems);
+          return items.length - newItems.length;
         }
       }
+      return 0;
     }
 
     private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
