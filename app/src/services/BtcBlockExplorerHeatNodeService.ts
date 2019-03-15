@@ -9,7 +9,7 @@ class BtcBlockExplorerHeatNodeService implements IBitcoinAPIList {
   constructor(private http: HttpService,
               private $q: angular.IQService,
               private $window: angular.IWindowService) {
-    BtcBlockExplorerHeatNodeService.endPoint = 'http://176.9.144.171:3001/insight-api';
+    BtcBlockExplorerHeatNodeService.endPoint = 'https://bitnode.heatwallet.com/insight-api';
     this.bitcore = $window.heatlibs.bitcore;
   }
 
