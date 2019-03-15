@@ -32,7 +32,7 @@
       color: white;
       margin-bottom: 14px;
       margin-right: 10px;
-      max-width: 85%;
+      // max-width: 85%;
     }
     .message-entry .message-content {
       white-space: pre-line;
@@ -45,24 +45,45 @@
       padding-bottom: 6px;
       color: grey;
     }
-    .outgoing {
-      align-self: flex-end;
+    .message-entry .menu-button {
+      color: grey;
     }
+    .message-entry div.message {
+      width: 100%;
+    }
+    // .outgoing {
+    //   align-self: flex-end;
+    // }
   `],
   template: `
 <div class="messages" ui-scroll-viewport layout="column" flex scroll-glue>
 
   <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter"
   layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
+  
     <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
-    <div layout="column">
+    <div layout="column" class="message">
       <div class="header">
         <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
       </div>
-      <div class="message-content">{{item.i}} {{item.message}}</div>
+      <div class="message-content">{{item.content}}</div>
     </div>
+    
+    <md-menu>
+      <md-button aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
+        <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
+        ...
+      </md-button>
+      <md-menu-content width="4">
+        <md-menu-item>
+          <md-button ng-click="vm.removeMessage($event, item)">
+            Remove
+          </md-button>
+        </md-menu-item>
+      </md-menu-content>
+    </md-menu>
+    
   </div>
-
 </div>
   `
 })
@@ -114,6 +135,26 @@ class P2PMessagesViewerComponent {
     }
   }
 
+  openMenu($mdMenu, event) {
+    $mdMenu.open(event);
+  }
+
+  removeMessage(event, item: p2p.MessageHistoryItem) {
+    dialogs.confirm(
+      "Remove message",
+      `Do you want to remove the message ?`
+    ).then(() => {
+      this.datasource.remove(item);
+      // @ts-ignore
+      let adapter = this.$scope.adapter;
+      adapter.applyUpdates(function (item2) {
+        if (item2 == item) {
+          return [];
+        }
+      });
+    });
+  }
+
   private processItem(item: p2p.MessageHistoryItem) {
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['outgoing'] = this.user.account == item['senderAccount'];
@@ -150,6 +191,10 @@ class P2PMessagesDataSource {
     } else {
       success([]);
     }
+  }
+
+  remove(item: p2p.MessageHistoryItem) {
+    this.messageHistory.remove(item.timestamp);
   }
 
 }
