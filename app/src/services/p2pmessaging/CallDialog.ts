@@ -39,7 +39,6 @@ module p2p {
       this.dialogDescription = 'Connect other user to establish the peer-to-peer channel';
       this.okBtnTitle = 'Connect';
       this.okBtn['processing'] = false;
-      this.feeFormatted = 'NO'
       this.customFeeTitle = 'NO FEE'
     }
 

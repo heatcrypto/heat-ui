@@ -103,12 +103,12 @@
             </md-button>
           </div>
           <div layout="row" class="control-panel">
-            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()"
+            <md-button class="online" id="onlineStatusButton" ng-click="vm.toggleOnline()"
             ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
               <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
             </md-button>
-            <md-button id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
+            <md-button class="offchain" id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
               <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
               {{vm.p2pMessaging.offchainMode ? 'offchain  ✔' : 'offchain'}}
             </md-button>
