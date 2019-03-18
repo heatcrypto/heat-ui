@@ -21,15 +21,22 @@
  * SOFTWARE.
  * */
 
+import has = Reflect.has;
+
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 
 @Service('P2PMessaging')
-@Inject('settings', 'user', 'storage', '$interval', 'heat')
-class P2PMessaging implements p2p.P2PMessenger {
+@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast')
+class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
+
+  public static EVENT_NEW_MESSAGE = 'EVENT_NEW_MESSAGE';
+  public static EVENT_HAS_UNREAD_CHANGED = 'EVENT_HAS_UNREAD_CHANGED';
 
   public p2pContactStore: Store;
+  public seenP2PMessageTimestampStore: Store;
   public offchainMode: boolean = false;
+  public hasUnreadMessage: boolean = false;
 
   private connector: p2p.P2PConnector;
 
@@ -37,7 +44,9 @@ class P2PMessaging implements p2p.P2PMessenger {
               private user: UserService,
               private storage: StorageService,
               private $interval: angular.IIntervalService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              private $mdToast: angular.material.IToastService) {
+    super();
 
     this.connector = new p2p.P2PConnector(this, settings, $interval);
     this.connector.setup(
@@ -51,17 +60,34 @@ class P2PMessaging implements p2p.P2PMessenger {
     );
 
     this.p2pContactStore = storage.namespace('p2pContacts');
+    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
   }
 
-    private encrypt(message: string, peerPublicKey: string) {
-      return heat.crypto.encryptMessage(message, peerPublicKey, this.user.secretPhrase, false);
-    }
+  private encrypt(message: string, peerPublicKey: string) {
+    return heat.crypto.encryptMessage(message, peerPublicKey, this.user.secretPhrase, false);
+  }
 
-    private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
-      return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
-    }
+  private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
+    return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
+  }
 
-  onMessage: (msg: {}, room: p2p.Room) => any;
+  onMessage(msg: {}, room: p2p.Room) {
+    this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
+    this.updateSeenTime(null);
+    this.displayNewMessagePopup(msg, room);
+  }
+
+  private displayNewMessagePopup(msg: any, room: p2p.Room) {
+    let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+    let text: string = msg.text.substring(0, 50);
+    if (msg.text.length > 50) {
+      let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
+      text = text.substring(0, lastSpaceIndex) + " ...";
+    }
+    this.$mdToast.show(
+      this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
+    );
+  }
 
   /**
    * Register me so can be called.
@@ -190,8 +216,8 @@ class P2PMessaging implements p2p.P2PMessenger {
             `Account &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; wants to connect with you. Accepting connection will share your current IP address. Accept or decline? Click OK to accept, Cancel to decline.`,
             closeDialogOnConnected
           ).then(() => {
-              this.saveContact(peerAccount, peerId, expectedAccount.publicName);
-              resolve();
+            this.saveContact(peerAccount, peerId, expectedAccount.publicName);
+            resolve();
           });
         } else {
           reject("Account not found");
@@ -225,6 +251,32 @@ class P2PMessaging implements p2p.P2PMessenger {
       return peer && peer.isConnected();
     }
     return false;
+  }
+
+  roomHasUnreadMessage(room: p2p.Room): boolean {
+    return room.lastIncomingMessageTimestamp > this.seenP2PMessageTimestampStore.getNumber(room.name, 0);
+  }
+
+  /**
+   * The seen time is needed to display mark for contact when it receives the new unread messages.
+   */
+  updateSeenTime(roomName: string, timestamp?: number) {
+    if (roomName) {
+      this.seenP2PMessageTimestampStore.put(roomName, timestamp ? timestamp : Date.now() - 500);
+    }
+
+    //update read status on all rooms
+    let unreadRooms = [];
+    this.connector.rooms.forEach(room => {
+      if (this.roomHasUnreadMessage(room)) {
+        unreadRooms.push(room);
+      }
+    });
+    let nowHasUnreadMessage = unreadRooms.length > 0;
+    if (nowHasUnreadMessage != this.hasUnreadMessage) {
+      this.hasUnreadMessage = nowHasUnreadMessage;
+      this.emit(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadRooms);
+    }
   }
 
 }

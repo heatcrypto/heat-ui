@@ -641,9 +641,7 @@ module p2p {
           msg.fromPeerId = peerId;
           msg.roomName = roomName;
           room.onMessageInternal(msg);
-          if (this.messenger.onMessage) {
-            this.messenger.onMessage(msg, room);
-          }
+          this.messenger.onMessage(msg, room);
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendSignalingMessage([{room: roomName}, msg]);

@@ -126,14 +126,15 @@ class P2PMessagesViewerComponent {
       throw Error("Same public key as logged in user");
     }
 
-    this.updateSeenTime();
-    $scope.$on('$destroy', () => this.updateSeenTime());
-
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
     if (this.publickey != '0') {
       let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
       if (room) {
+        /* set seen time to future, so no need to update seen time on each new incoming message.
+        The seen time will be updated to the real value on destroying this component*/
+        this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
+
         this.datasource = new P2PMessagesDataSource(room.getMessageHistory(), item => this.processItem(item));
         room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
           this.datasource.first++;
@@ -143,6 +144,11 @@ class P2PMessagesViewerComponent {
             adapter.append([this.processItem(item)]);
           }
         };
+
+        $scope.$on('$destroy', () => {
+          this.p2pMessaging.updateSeenTime(room.name, Date.now());
+          room.onNewMessageHistoryItem = null;
+        });
       }
     }
   }
@@ -172,14 +178,6 @@ class P2PMessagesViewerComponent {
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['dateFormatted'] = dateFormat(item.timestamp, this.dateFormat);
     return item;
-  }
-
-  /**
-   * The seen time is needed to display mark for contact when it receives the new unread messages.
-   */
-  private updateSeenTime() {
-    let account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.storage.namespace('contacts.seenP2PMessageTimestamp').put(account, Date.now() - 500);
   }
 
 }

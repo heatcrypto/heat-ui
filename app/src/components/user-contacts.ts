@@ -73,7 +73,6 @@ class UserContactsComponent {
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
   private store: Store;
-  private seenP2PMessageTimestampStore: Store;
   private onlineStatuses: Map<string, string> = new Map<string, string>();
 
   constructor(private $scope: angular.IScope,
@@ -97,8 +96,7 @@ class UserContactsComponent {
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
-    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
-    this.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
+    this.p2pMessaging.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
 
     this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, this.refresh);
 
@@ -116,8 +114,7 @@ class UserContactsComponent {
 
     //let myRoom = this.p2pMessaging.register();
 
-    this.p2pMessaging.onMessage = (msg: any, room: p2p.Room) => {
-      //this.displayNewMessagePopup(msg, room);  todo must be invoked somewhere (on toolbar?), but not here
+    let messageListener = (msg: any, room: p2p.Room) => {
       for (let contact of this.contacts) {
         if (this.contactHasUnreadP2PMessage(contact)) {
           this.refreshContacts();
@@ -125,20 +122,12 @@ class UserContactsComponent {
         }
       }
     };
+    this.p2pMessaging.on(P2PMessaging.EVENT_NEW_MESSAGE, messageListener);
 
     $scope.$on('$destroy', () => {
-      this.p2pMessaging.onMessage = null;
-      this.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh);
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_NEW_MESSAGE, messageListener);
+      this.p2pMessaging.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh);
     });
-  }
-
-  displayNewMessagePopup(msg: any, room: p2p.Room) {
-    let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
-    let text: string = msg.text.substring(0, 50);
-    if (msg.text.length > 50) text = text + " ...";
-    this.$mdToast.show(
-      this.$mdToast.simple().textContent(`New message from ${account} "${text}"`).hideDelay(4000)
-    );
   }
 
   getActivePublicKey() {
@@ -245,7 +234,7 @@ class UserContactsComponent {
   contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
     let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
     if (room) {
-      return room.lastIncomingMessageTimestamp > this.seenP2PMessageTimestampStore.getNumber(contact.account, 0);
+      return this.p2pMessaging.roomHasUnreadMessage(room);
     }
     return false;
   }

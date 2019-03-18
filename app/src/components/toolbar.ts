@@ -43,6 +43,13 @@
   toolbar .beta-net-color {
     background-color: #bf112f !important;
   }
+  .unread-message-mark {
+    position: absolute;
+    top: 22px;
+    left: 32px;
+    color: green;
+    font-size: 35px;
+  }
   `],
   template: `
     <md-toolbar class="main-toolbar" ng-class="{'test-net-color':vm.isTestnet,'beta-net-color':vm.isBetanet}">
@@ -110,7 +117,10 @@
               </md-button>
               <md-button aria-label="messages" class="md-icon-button" ng-click="vm.goToMessenger()">
                 <md-tooltip md-direction="bottom">Messages</md-tooltip>
-                <i><img src="assets/messageIcon.png"></i>
+                <i>
+                  <img src="assets/messageIcon.png">
+                </i>
+                <div class="unread-message-mark" ng-if="vm.hasUnreadP2PMessage">*</div>
               </md-button>
               <md-button aria-label="home" class="md-icon-button" href="#/wallet">
                 <md-tooltip md-direction="bottom">Wallet</md-tooltip>
@@ -287,13 +297,14 @@
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
   'assetIssue', 'whitelistMarket', 'balanceLease', 'storage', '$window', '$mdToast',
-  'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard')
+  'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
 class ToolbarComponent {
 
   isNodeEnv = false;
   isTestnet = heat.isTestnet;
   isBetanet = heat.isBetanet;
   heatServerLocation;
+  hasUnreadP2PMessage = false;
 
   localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
@@ -315,7 +326,8 @@ class ToolbarComponent {
               private localKeyStore: LocalKeyStoreService,
               private panel: PanelService,
               private $location: angular.ILocationService,
-              private clipboard: ClipboardService) {
+              private clipboard: ClipboardService,
+              private p2pMessaging: P2PMessaging) {
     this.isNodeEnv = env.type == EnvType.NODEJS;
 
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
@@ -325,6 +337,14 @@ class ToolbarComponent {
     $rootScope.$on('HEAT_SERVER_LOCATION', (event, location) => {
       this.heatServerLocation = location;
     });
+
+    let unreadChangedListener = (rooms: p2p.Room[]) => {
+      this.$scope.$evalAsync(() => {
+        this.hasUnreadP2PMessage = rooms.length > 0;
+      });
+    };
+    this.p2pMessaging.on(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener);
+    $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener));
   }
 
   copyAddress() {
