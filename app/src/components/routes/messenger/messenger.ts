@@ -54,18 +54,13 @@
     }
     messenger .edit-message {
       padding-right: 0px;
+      padding-top: 8px;
     }
     .control-panel button {
       flex: auto;
     }
     .p2p-messages {
       height: 100%;
-    }
-    #offchainButton.disable span {
-      color: grey;
-    }
-    #offchainButton.active {
-      background-color: green;
     }
     #onlineStatusButton.disable span {
       color: grey;
@@ -108,10 +103,6 @@
               <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
             </md-button>
-            <md-button class="offchain" id="offchainButton" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
-              <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
-              {{vm.p2pMessaging.offchainMode ? 'offchain  ✔' : 'offchain'}}
-            </md-button>
           </div>
         </div>
         <div layout="column" layout-fill>
@@ -153,10 +144,6 @@ class MessengerComponent {
 
   showCallDialog($event) {
     this.p2pMessaging.dialog($event).show().then(room => {});
-  }
-
-  toggleOffchain($event) {
-    this.p2pMessaging.offchainMode = !this.p2pMessaging.offchainMode;
   }
 
   toggleOnline($event) {
