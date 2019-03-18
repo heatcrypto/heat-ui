@@ -90,11 +90,38 @@ class BtcBlockExplorerHeatNodeService implements IBitcoinAPIList {
     return deferred.promise
   }
 
-  public getGenesisBlock = () => {
-    let getGenesisBlock = `${BtcBlockExplorerHeatNodeService.endPoint}/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f`
+  public getLatestBlockHash = () => {
+    let getLatestBlockHash = `${BtcBlockExplorerHeatNodeService.endPoint}/status?q=getLastBlockHash`
     let deferred = this.$q.defer<any>();
-    this.http.get(getGenesisBlock).then(response => {
-      deferred.resolve();
+    this.http.get(getLatestBlockHash).then(response => {
+      let parsed = utils.parseResponse(response)
+      deferred.resolve(parsed.lastblockhash);
+    }, () => {
+      deferred.reject();
+    })
+    return deferred.promise
+  }
+
+  public isBlockchainSyncing = () => {
+    let deferred = this.$q.defer<any>();
+    this.getLatestBlockHash().then(blockHash => {
+      this.getBlockByHash(blockHash).then(response => {
+        let parsed = utils.parseResponse(response)
+        if(utils.isTimeWithinThreasholdLimit(parsed.time))
+          deferred.resolve()
+        else
+          deferred.reject()
+      })
+    })
+    return deferred.promise
+  }
+
+  public getBlockByHash = (blockHash) => {
+    let getBlockByHash = `${BtcBlockExplorerHeatNodeService.endPoint}/block/${blockHash}`
+    let deferred = this.$q.defer<any>();
+    this.http.get(getBlockByHash).then(response => {
+      let parsed = utils.parseResponse(response)
+      deferred.resolve(parsed);
     }, () => {
       deferred.reject();
     })

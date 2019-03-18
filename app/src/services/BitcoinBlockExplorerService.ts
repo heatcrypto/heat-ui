@@ -13,7 +13,7 @@ class BtcBlockExplorerService {
   }
 
   public refresh = () => {
-    return this.btcBlockExplorerHeatNodeService.getGenesisBlock().then(() => {
+    return this.btcBlockExplorerHeatNodeService.isBlockchainSyncing().then(() => {
       this.btcProvider = this.btcBlockExplorerHeatNodeService;
     }, () => {
       this.btcProvider = this.btcBlockExplorer3rdPartyService;
