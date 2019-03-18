@@ -414,7 +414,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDOR', disabled: true }];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }];
   selectedChain = '';
 
   constructor(private $scope: angular.IScope,
@@ -444,7 +444,7 @@ class WalletComponent {
     })
 
     ardorBlockExplorerService.getBlockchainStatus().then(() => {
-      let ardorChain = { name: 'ARDOR', disabled: false }
+      let ardorChain = { name: 'ARDR', disabled: false }
       let index = this.chains.findIndex((entry) => entry.name === ardorChain.name);
       this.chains[index] = ardorChain
     })
