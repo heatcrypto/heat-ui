@@ -65,6 +65,10 @@ module utils {
     return angular.isString(value) && (/^[0-9a-fA-F]+$/.test(value))
   }
 
+  export function isTimeWithinThreasholdLimit(inputTime) {
+    return ((inputTime  * 1000) + 6 * 60 * 60 * 1000) > new Date().getTime()
+  }
+
   /**
    * Very forgiving test to determine if the number of fractional parts
    * exceeds @decimals param.
