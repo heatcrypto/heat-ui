@@ -55,10 +55,10 @@ class BtcBlockExplorerService {
   }
 
   public broadcast = (rawTx: string) : any => {
-    return this.btcProvider.getTxInfo(rawTx)
+    return this.btcProvider.broadcast(rawTx)
   }
 
   public getUnspentUtxos = (from: string) :  any => {
-    return this.btcProvider.getTxInfo(from)
+    return this.btcProvider.getUnspentUtxos(from)
   }
 }
