@@ -55,17 +55,30 @@ class AssetWithdrawService extends AbstractTransaction {
   getWithdrawFeeInfo(asset:string): angular.IPromise<IHeatAssetWithdrawInfo> {
 
     // for now this will do.
+    // for now this will do.
     let localCache = heat.isTestnet ? {} : {
       "5592059897546023466": { // btc
         feePercentage: 0.4,
-        minimumQuantity: "150000",
-        notice1: 'Bitcoin withdrawals are usually processed within 1-24 hours from requests.',
+        minimumQuantity: "40000",
+        notice1: 'Bitcoin withdrawals are usually processed within 1 hour from request.',
         notice2: 'Occasionally longer delays on non-banking days are possible.'
       },
-      "8593933499455210945": {
+       "12723185826655406325": { // nxt
         feePercentage: 0.4,
         minimumQuantity: "500000000",
-        notice1: 'FIMK withdrawals are usually processed with 3-12 hours from requests.',
+        notice1: 'NXT withdrawals are usually processed within 24 hour from requests.',
+        notice2: 'Occasionally longer delays on non-banking days are possible.'
+      },
+        "17622812277075597103": { // ardr
+        feePercentage: 0.4,
+        minimumQuantity: "500000000",
+        notice1: 'ARDOR withdrawals are usually processed within 24 hours from requests.',
+        notice2: 'Occasionally longer delays on non-banking days are possible.'
+      },
+      "8593933499455210945": { // fimk
+        feePercentage: 0.4,
+        minimumQuantity: "500000000",
+        notice1: 'FIMK withdrawals are usually processed with 1-12 hours from requests.',
         notice2: 'Occasionally longer delays due to network issues are possible.'
       }
     };
