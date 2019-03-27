@@ -83,7 +83,7 @@ class BTCCurrency implements ICurrency {
           from: addressPrivateKeyPair.address,
           to: to,
           amount: amountInSatoshi,
-          fee: feeInSatoshi,
+          fee: Math.ceil(feeInSatoshi),
           changeAddress: addressPrivateKeyPair.address,
           privateKey: addressPrivateKeyPair.privateKey
         }
