@@ -26,6 +26,7 @@
     "@types/jsbn": "^1.2.28",
     "@types/long": "^3.0.31",
     "@types/webrtc": "~0.0.23",
+    "clipboard": "^2.0.4",
     "connect": "3.4.1",
     "del": "2.2.2",
     "electron": "2.0.8",
@@ -52,8 +53,7 @@
     "open": "0.0.5",
     "random-hash": "^4.0.1",
     "serve-static": "1.11.1",
-    "typescript": "^2.3.4",
-    "clipboard": "^2.0.4"
+    "typescript": "^2.3.4"
   },
   "dependencies": {
     "angular": "1.5.8",
