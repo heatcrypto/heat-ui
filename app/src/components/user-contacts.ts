@@ -182,28 +182,27 @@ class UserContactsComponent {
         //merge contacts obtained via p2p messaging
         let keysToRemove = [];
         this.p2pMessaging.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => {
-          let duplicate = this.contacts.find(contact => contact.publicKey == p2pContact.publicKey);
-          if (duplicate) {
+          let needRemove = this.contacts.find(contact => !p2pContact.publicKey || contact.publicKey == p2pContact.publicKey);
+          if (needRemove) {
             keysToRemove.push(key);
           } else {
             p2pContact['isP2POnlyContact'] = true;
             this.contacts.push(p2pContact);
           }
         });
-        keysToRemove.forEach(key => this.p2pMessaging.p2pContactStore.remove(key))
+        keysToRemove.forEach(key => this.p2pMessaging.p2pContactStore.remove(key));
 
-        this.contacts = this.contacts.filter((contact)=> {
-          return contact.account != this.user.account;
-        }).map((contact) => {
-          if (!contact['isP2POnlyContact']) {
-            contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
-          }
-          contact['hasUnreadP2PMessage'] =
-            !(this.p2pMessaging.offchainMode && this.activePublicKey == contact.publicKey)
-            && this.contactHasUnreadP2PMessage(contact);
-          // contact['p2pStatus'] = this.p2pStatus(contact);
-          return contact;
-        });
+        this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.user.account)
+          .map((contact) => {
+            if (!contact['isP2POnlyContact']) {
+              contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
+            }
+            contact['hasUnreadP2PMessage'] =
+              !(this.p2pMessaging.offchainMode && this.activePublicKey == contact.publicKey)
+              && this.contactHasUnreadP2PMessage(contact);
+            // contact['p2pStatus'] = this.p2pStatus(contact);
+            return contact;
+          });
 
         if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
           this.setActivePublicKey();
@@ -213,6 +212,7 @@ class UserContactsComponent {
   }
 
   p2pStatus(contact: IHeatMessageContact) {
+    if (!contact.publicKey) return;
     let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
     if (room) {
       let peer = room.getPeer(contact.publicKey);

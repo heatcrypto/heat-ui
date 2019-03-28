@@ -264,7 +264,7 @@ module p2p {
         .then(websocket => {
           data.splice(0, 0, "webrtc");
           websocket.send(JSON.stringify(data));
-          // console.log(">> \n" + JSON.stringify(data));
+          console.log(">> \n" + JSON.stringify(data));
         }, reason => console.log(reason))
         .catch(reason => {
           console.log("error on get websocket \n" + reason);
@@ -276,6 +276,7 @@ module p2p {
         return;
       }
       let data = JSON.parse(messageEvent.data);
+      console.log("<< \n"+ JSON.stringify(data));
       let msg;
       if (data.encrypted) {
         msg = JSON.parse(this.decrypt(data.encrypted, data.fromPeer));
@@ -285,7 +286,6 @@ module p2p {
       } else {
         msg = data;
       }
-      console.log("<< \n"+ JSON.stringify(msg));
 
       let roomName: string = msg.room;
 
@@ -550,9 +550,8 @@ module p2p {
           peerConnection.setLocalDescription(offer, () => {
             let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
             this.sendSignalingMessage([
-              {room: roomName, toPeerId: peerId},
-              {room: roomName, fromPeer: this.identity, encrypted: encrypted}
-              ]);
+              {room: roomName, toPeerId: peerId, fromPeer: this.identity, encrypted: encrypted}
+            ]);
           }, (e) => this.onFailure(roomName, peerId, e));
         }, (e) => this.onFailure(roomName, peerId, e),
         null);
@@ -573,9 +572,8 @@ module p2p {
         peerConnection.setLocalDescription(answer, () => {
           let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
           this.sendSignalingMessage([
-            {room: roomName, toPeerId: peerId},
-            {room: roomName, fromPeer: this.identity, encrypted: encrypted}
-            ]);
+            {room: roomName, toPeerId: peerId, fromPeer: this.identity, encrypted: encrypted}
+          ]);
         }, (e) => this.onFailure(roomName, peerId, e));
       }, (e) => this.onFailure(roomName, peerId, e));
     }

@@ -21,8 +21,6 @@
  * SOFTWARE.
  * */
 
-import has = Reflect.has;
-
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 
@@ -48,16 +46,19 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private $mdToast: angular.material.IToastService) {
     super();
 
-    this.connector = new p2p.P2PConnector(this, settings, $interval);
-    this.connector.setup(
-      this.user.publicKey,
-      (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-      peerId => this.confirmIncomingCall(peerId),
-      reason => this.onSignalingError(reason),
-      dataHex => this.sign(dataHex),
-      (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
-      (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
-    );
+    let listener = () => {
+      this.connector = new p2p.P2PConnector(this, settings, $interval);
+      this.connector.setup(
+        this.user.publicKey,
+        (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
+        peerId => this.confirmIncomingCall(peerId),
+        reason => this.onSignalingError(reason),
+        dataHex => this.sign(dataHex),
+        (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
+        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
+      );
+    };
+    user.on(UserService.EVENT_UNLOCKED, listener);
 
     this.p2pContactStore = storage.namespace('p2pContacts');
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
@@ -78,15 +79,17 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
-    let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
-    let text: string = msg.text.substring(0, 50);
-    if (msg.text.length > 50) {
-      let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
-      text = text.substring(0, lastSpaceIndex) + " ...";
+    if (msg.type == "chat" && msg.text) {
+      let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+      let text: string = msg.text.substring(0, 50);
+      if (msg.text.length > 50) {
+        let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
+        text = text.substring(0, lastSpaceIndex) + " ...";
+      }
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
+      );
     }
-    this.$mdToast.show(
-      this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
-    );
   }
 
   /**
@@ -231,6 +234,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   saveContact(account: string, publicKey: string, publicName: string) {
+    if (!publicKey) return;
     let contact: IHeatMessageContact = this.p2pContactStore.get(account);
     if (!contact) {
       contact = {
