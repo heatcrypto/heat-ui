@@ -165,7 +165,7 @@ declare var saveAs: any;
           </div>
 
           <!-- CREATE page (3 - success page) -->
-          <div layout="column" flex ng-show="vm.pageCreateSuccess">
+          <div layout="column" flex ng-show="vm.page=='createSuccess'">
             <div layout="column" flex layout-align="start center">
               <h2>Congratulations, it worked!</h2>
               <div>We advise you print or write down your HEAT secret passprase, if lost you will loose access to your HEAT.<br>
@@ -322,7 +322,6 @@ class LoginComponent {
   pageCreateRecaptchaResponse: string;
   pageCreateRecaptchaWindow: Window;
   pageCreateLoading: boolean = false;
-  pageCreateSuccess: boolean = false;
   pageCreateError: string;
   pageCreateTransaction: string;
 
@@ -476,7 +475,7 @@ class LoginComponent {
       (transaction: string) => {
         this.$scope.$evalAsync(()=>{
           this.pageCreateLoading = false;
-          this.pageCreateSuccess = true;
+          this.page = 'createSuccess';
         });
       },
       (error: ServerEngineError) => {
