@@ -43,19 +43,14 @@ module dialogs {
           }
         `,
         template: `
-          <div ng-if="vm.isBtc">
-            Transfer the desired amount of Bitcoins to your Heatwallet's Bitcoin address:<br>
-            <b id="deposit-dialog-btc-address-element">{{vm.address}}</b>&nbsp;
-            <a ng-click="vm.copyAddress()">[copy]</a>&nbsp;
-            <div class="qrcodeBox" id="depositeAddressQRCode"></div>
-            (This address changes after single deposit).<br><br>
-            When the transfer has 1 confirmation in the Bitcoin network, your HEAT account will receive the Bitcoin Assets (id: 5592059897546023466) shortly and you can trade them in any market they're accepted at.<br><br>
-            Bitcoin Deposit fee is 0%. Bitcoin redemption (withdrawal) fee is 0.40%, minimum fee 0.0015 Bitcoin due to Bitcoin network tx fees. To mitigate the risks of early phase decentralized blockchain rollbacks, The Heat Ledger Bitcoin gateway does not currently use automated hot wallets. Standard processing time is 0-12 hours, sometimes longer on non-business days.<br><br>
-            Please do NOT send Bitcoin directly from another 3rd party exchange as deposits to Heat Wallet need to have an unique txid associated.
+          <div>
+            <p>{{vm.symbol}} Deposit address <b id="deposit-dialog-btc-address-element">{{vm.address}}</b>&nbsp;<a ng-click="vm.copyAddress()">[copy]</a></p>
+            <p><div class="qrcodeBox" id="depositeAddressQRCode"></div></p>
+            <p></p>
+            <p>
+              <div ng-bind-html="vm.dialogue"></div>
+            </p>
           </div>
-
-          <div ng-if="!vm.isBtc" ng-bind-html="vm.dialogue"></div>
-
         `,
         locals: {
           dialogue: parsed.deposit.dialogue,
@@ -66,7 +61,8 @@ module dialogs {
           }(),
           copyAddress: function () {
             clipboard.copyWithUI(document.getElementById('deposit-dialog-btc-address-element'), 'Copied address to clipboard');
-          }
+          },
+          symbol: assetInfo.symbol
         }
       }).then(deferred.resolve, deferred.reject);
     });
