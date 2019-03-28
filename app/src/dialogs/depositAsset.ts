@@ -26,6 +26,7 @@ module dialogs {
     var http = <HttpService> heat.$inject.get('http');
     var user = <UserService> heat.$inject.get('user');
     var $q = <angular.IQService> heat.$inject.get('$q');
+    var clipboard = <ClipboardService> heat.$inject.get('clipboard');
     var env = <EnvService> heat.$inject.get('env');
     var url = `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}`;
     var deferred = $q.defer();
@@ -44,7 +45,8 @@ module dialogs {
         template: `
           <div ng-if="vm.isBtc">
             Transfer the desired amount of Bitcoins to your Heatwallet's Bitcoin address:<br>
-            <b>{{vm.address}}</b><a href='https://blocktrail.com/BTC/address/{{vm.address}}/transactions' target='_blank'>click to view pending</a><br>
+            <b id="deposit-dialog-btc-address-element">{{vm.address}}</b>&nbsp;
+            <a ng-click="vm.copyAddress()">[copy]</a>&nbsp;
             <div class="qrcodeBox" id="depositeAddressQRCode"></div>
             (This address changes after single deposit).<br><br>
             When the transfer has 1 confirmation in the Bitcoin network, your HEAT account will receive the Bitcoin Assets (id: 5592059897546023466) shortly and you can trade them in any market they're accepted at.<br><br>
@@ -56,9 +58,15 @@ module dialogs {
 
         `,
         locals: {
-          dialogue: parsed.deposit.dialogue, isBtc: parsed.deposit.dialogue.includes('5592059897546023466'), address:parsed.deposit.address, shorQR: function() {
+          dialogue: parsed.deposit.dialogue,
+          isBtc: parsed.deposit.dialogue.includes('5592059897546023466'),
+          address:parsed.deposit.address,
+          shorQR: function() {
             showQrCodeOnDialogLoad(parsed.deposit.address);
-          }()
+          }(),
+          copyAddress: function () {
+            clipboard.copyWithUI(document.getElementById('deposit-dialog-btc-address-element'), 'Copied address to clipboard');
+          }
         }
       }).then(deferred.resolve, deferred.reject);
     });
