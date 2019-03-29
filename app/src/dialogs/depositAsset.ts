@@ -27,8 +27,16 @@ module dialogs {
     var user = <UserService> heat.$inject.get('user');
     var $q = <angular.IQService> heat.$inject.get('$q');
     var clipboard = <ClipboardService> heat.$inject.get('clipboard');
+    var localKeyStore = <LocalKeyStoreService> heat.$inject.get('localKeyStore');
     var env = <EnvService> heat.$inject.get('env');
-    var url = `https://heatwallet.com/getaddr.cgi?heataccount=${user.account}&publickey=${user.publicKey}&aid=${assetInfo.id}`;
+
+    var account = user.account, publicKey = user.publicKey
+    if (user.currency.symbol != 'HEAT') {
+      account = localKeyStore.list()[0]
+      publicKey = 'xx-yy-zz'
+    }
+
+    var url = `https://heatwallet.com/getaddr.cgi?heataccount=${account}&publickey=${publicKey}&aid=${assetInfo.id}`;
     var deferred = $q.defer();
     http.get(url).then((response)=>{
       var parsed = angular.isString(response) ? JSON.parse(response) : response;
