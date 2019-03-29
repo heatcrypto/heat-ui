@@ -97,6 +97,7 @@
     
   </div>
 </div>
+<md-button id="generateTestMessagesBtn" ng-click="vm.generateTestMessages($event)"></md-button>
   `
 })
 @Inject('$scope','$q','$timeout','$document','heat','user','settings',
@@ -178,6 +179,28 @@ class P2PMessagesViewerComponent {
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['dateFormatted'] = dateFormat(item.timestamp, this.dateFormat);
     return item;
+  }
+
+  generateTestMessages(event) {
+    let running = this["runningTest"];
+    if (running) {
+      clearInterval(this["runningTest"]);
+      this["runningTest"] = null;
+      return;
+    }
+    let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
+    if (room) {
+      let n = 0;
+      this["runningTest"] = setInterval(() => {
+        if (Math.random() > 0.1) return;
+        let s = "";
+        for (let i = 0; i < Math.random()*150; i++) {
+          s = s + " " + Math.random().toString(36).substring(2);
+        }
+        room.sendMessage({timestamp: Date.now(), type: "chat", text: `${n}  ${s}`});
+        n++;
+      }, 150);
+    }
   }
 
 }
