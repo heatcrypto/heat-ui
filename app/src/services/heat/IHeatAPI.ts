@@ -1019,6 +1019,7 @@ interface IHeatMessageContact {
   publicName: string;
   publicKey: string;
   timestamp: number;
+  activityTimestamp?: number;
 }
 interface IHeatMessage {
   transaction: string;

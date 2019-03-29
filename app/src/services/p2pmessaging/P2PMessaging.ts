@@ -30,6 +30,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public static EVENT_NEW_MESSAGE = 'EVENT_NEW_MESSAGE';
   public static EVENT_HAS_UNREAD_CHANGED = 'EVENT_HAS_UNREAD_CHANGED';
+  public static EVENT_ON_OPEN_DATA_CHANNEL = 'EVENT_ON_OPEN_DATA_CHANNEL';
+  public static EVENT_ON_CLOSE_DATA_CHANNEL = 'EVENT_ON_CLOSE_DATA_CHANNEL';
 
   public p2pContactStore: Store;
   public seenP2PMessageTimestampStore: Store;
@@ -130,7 +132,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room && required) {
-      room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
       this.connector.rooms.set(roomName, room);
     }
     if (room && room.getAllPeers().size <= 1) {
@@ -149,7 +151,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room) {
-      room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
       this.connector.rooms.set(roomName, room);
     }
     if (room.state.entered == "not") {
@@ -174,6 +176,16 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return {signatureHex: signature, dataHex: dataHex, publicKeyHex: this.user.publicKey}
   }
 
+  private setupRoom(room: p2p.Room): p2p.Room {
+    room.onOpenDataChannel = peerId => {
+      this.emit(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, room, peerId);
+    };
+    room.onCloseDataChannel = peerId => {
+      this.emit(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, room, peerId);
+    };
+    return room;
+  }
+
   private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
     let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
     arr.sort();
@@ -183,7 +195,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   private createRoomOnIncomingCall(roomName: string, peerId: string) {
     let room = this.connector.rooms.get(roomName);
     if (!room) {
-      room = new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]);
+      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
       // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
       // room.onFailure = e => this.onError(e);
       // room.onMessage = msg => this.onMessage(msg);
@@ -202,6 +214,11 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         return;
       }
 
+      let updateContactCallTime = (account: string, publicKey: string, publicName: string) => {
+        //save negative time to force to select contact in contact list
+        this.saveContact(peerAccount, peerId, publicName, -Date.now());
+      };
+
       let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
       this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
         let expectedAccount = accounts.find(value => value.publicKey == peerId);
@@ -211,6 +228,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               if (this.isPeerConnected(peerId)) {
                 mdDialog.cancel("Already connected");
                 this.$interval.cancel(interval);
+                updateContactCallTime(peerAccount, peerId, expectedAccount.publicName);
               }
             }, 500, 7, false);
           };
@@ -219,7 +237,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
             `Account &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; wants to connect with you. Accepting connection will share your current IP address. Accept or decline? Click OK to accept, Cancel to decline.`,
             closeDialogOnConnected
           ).then(() => {
-            this.saveContact(peerAccount, peerId, expectedAccount.publicName);
+            updateContactCallTime(peerAccount, peerId, expectedAccount.publicName);
             resolve();
           });
         } else {
@@ -233,16 +251,21 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
   }
 
-  saveContact(account: string, publicKey: string, publicName: string) {
+  saveContact(account: string, publicKey: string, publicName: string, calledTimestamp?: number) {
     if (!publicKey) return;
     let contact: IHeatMessageContact = this.p2pContactStore.get(account);
+    if (contact && calledTimestamp && calledTimestamp != contact.activityTimestamp) {
+      contact.activityTimestamp = calledTimestamp;
+      this.p2pContactStore.put(account, contact);
+    }
     if (!contact) {
       contact = {
         account: account,
         privateName: '',
         publicKey: publicKey,
         publicName: publicName,
-        timestamp: 0
+        timestamp: 0,
+        activityTimestamp: calledTimestamp
       };
       this.p2pContactStore.put(account, contact);
     }

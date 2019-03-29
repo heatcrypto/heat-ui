@@ -28,6 +28,8 @@ module p2p {
    */
   export class CallDialog extends GenericDialog {
 
+    private channelListener: IEventListenerFunction;
+
     constructor($event,
                 private heat: HeatService,
                 private user: UserService,
@@ -39,7 +41,8 @@ module p2p {
       this.dialogDescription = 'Connect other user to establish the peer-to-peer channel';
       this.okBtnTitle = 'Connect';
       this.okBtn['processing'] = false;
-      this.customFeeTitle = 'NO FEE'
+      this.customFeeTitle = 'NO FEE';
+      this.okBtn['disabled'] = !recipient;
     }
 
     /* @override */
@@ -61,6 +64,10 @@ module p2p {
     }
 
     okBtn() {
+      if (this.channelListener) {
+        this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+      }
+
       this.okBtn['processing'] = true;
       this.heat.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
@@ -77,16 +84,21 @@ module p2p {
           }, 7000);
 
           room = this.p2pmessaging.call(publicKey);
-          room.onOpenDataChannel = peerId => {
-            this.okBtn['mdDialog'].hide(room);
-            this.okBtn['processing'] = false;
+
+          this.channelListener = (roomParam: p2p.Room, peerId: string) => {
+            if (roomParam.name == room.name) {
+              this.okBtn['mdDialog'].hide(room);
+              this.okBtn['processing'] = false;
+              this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+            }
           };
+          this.p2pmessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
 
           let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
           this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
             let expectedAccount = accounts.find(value => value.publicKey == publicKey);
             if (expectedAccount) {
-              this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName);
+              this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName, -Date.now());
             }
           });
         }, reason => {
