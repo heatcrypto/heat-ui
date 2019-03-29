@@ -91,14 +91,26 @@ class UserContactsComponent {
       () => {
         this.refreshContacts()
       },
-    500, true);
+      500, true);
     heat.subscriber.unconfirmedTransaction({recipient:user.account}, ()=>{ this.refresh() });
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
     this.p2pMessaging.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
 
-    this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, this.refresh);
+    let contactListener: IEventListenerFunction = fullKey => {
+      let contactKey = fullKey.substr(fullKey.lastIndexOf('.') + 1);
+      let contact: IHeatMessageContact = this.p2pMessaging.p2pContactStore.get(contactKey);
+      if (contact && contact.activityTimestamp) {
+        if (contact.activityTimestamp < 0) {
+          contact.activityTimestamp = - contact.activityTimestamp;
+          this.$location.path(`/messenger/${contact.publicKey}`);
+        }
+      } else {
+        this.refresh();
+      }
+    };
+    this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, contactListener);
 
     if (user.unlocked) {
       this.init();
@@ -124,9 +136,18 @@ class UserContactsComponent {
     };
     this.p2pMessaging.on(P2PMessaging.EVENT_NEW_MESSAGE, messageListener);
 
+    let channelListener: IEventListenerFunction = (room: p2p.Room, peerId: string) => {
+      this.refresh();
+    };
+    this.p2pMessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, channelListener);
+    this.p2pMessaging.on(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, channelListener);
+
     $scope.$on('$destroy', () => {
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_NEW_MESSAGE, messageListener);
       this.p2pMessaging.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh);
+      this.p2pMessaging.p2pContactStore.removeListener(Store.EVENT_PUT, contactListener);
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, channelListener);
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, channelListener)
     });
   }
 
@@ -140,16 +161,6 @@ class UserContactsComponent {
 
     if (this.activePublicKey && this.activePublicKey != "0") {
       let room = this.p2pMessaging.enterRoom(this.activePublicKey);
-      if (room) {
-        if (!room.onOpenDataChannel) {
-          room.onOpenDataChannel = peerId => {
-            this.refresh();
-          };
-          room.onCloseDataChannel = peerId => {
-            this.refresh();
-          };
-        }
-      }
     }
 
     if (!this.activePublicKey || this.activePublicKey == "0") {
@@ -180,17 +191,15 @@ class UserContactsComponent {
         this.contacts = contacts;
 
         //merge contacts obtained via p2p messaging
-        let keysToRemove = [];
         this.p2pMessaging.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => {
-          let needRemove = this.contacts.find(contact => !p2pContact.publicKey || contact.publicKey == p2pContact.publicKey);
-          if (needRemove) {
-            keysToRemove.push(key);
+          let existingHeatContact = this.contacts.find(contact => !p2pContact.publicKey || contact.publicKey == p2pContact.publicKey);
+          if (existingHeatContact) {
+            existingHeatContact.activityTimestamp = p2pContact.activityTimestamp;
           } else {
             p2pContact['isP2POnlyContact'] = true;
             this.contacts.push(p2pContact);
           }
         });
-        keysToRemove.forEach(key => this.p2pMessaging.p2pContactStore.remove(key));
 
         this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.user.account)
           .map((contact) => {
@@ -202,7 +211,8 @@ class UserContactsComponent {
               && this.contactHasUnreadP2PMessage(contact);
             // contact['p2pStatus'] = this.p2pStatus(contact);
             return contact;
-          });
+          })
+          .sort((c1, c2) => (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));
 
         if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
           this.setActivePublicKey();
