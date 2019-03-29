@@ -18,11 +18,11 @@
     "dist": "build"
   },
   "devDependencies": {
-    "@types/angular": "^1.6.18",
+    "@types/angular": "^1.6.54",
     "@types/angular-animate": "^1.5.6",
-    "@types/angular-material": "^1.1.51",
+    "@types/angular-material": "^1.1.67",
     "@types/angular-scroll": "0.0.30",
-    "@types/bytebuffer": "^5.0.33",
+    "@types/bytebuffer": "^5.0.40",
     "@types/jsbn": "^1.2.28",
     "@types/long": "^3.0.31",
     "@types/webrtc": "~0.0.23",
