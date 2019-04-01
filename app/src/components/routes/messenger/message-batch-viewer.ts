@@ -120,6 +120,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   goTo(id: string, offset?: number, duration?: number) : angular.IPromise<any> {
     var container = this.getScrollContainer();
     var element = angular.element(document.getElementById(id));
+    if (!element) return;
     var _offset = offset || 30;
     var _duration = duration || 2000;
     return container.duScrollToElement(element, _offset, _duration, heat.easing.easeOutCubic);
