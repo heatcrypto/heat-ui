@@ -64,10 +64,6 @@ module p2p {
     }
 
     okBtn() {
-      if (this.channelListener) {
-        this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-      }
-
       this.okBtn['processing'] = true;
       this.heat.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
@@ -85,6 +81,13 @@ module p2p {
 
           room = this.p2pmessaging.call(publicKey);
 
+          /*
+          listen WebRTC channel to close this dialog on connected event
+          */
+          //remove previous listener
+          if (this.channelListener) {
+            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+          }
           this.channelListener = (roomParam: p2p.Room, peerId: string) => {
             if (roomParam.name == room.name) {
               this.okBtn['mdDialog'].hide(room);
@@ -93,6 +96,10 @@ module p2p {
             }
           };
           this.p2pmessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+          //todo it is not good way to remove the listener. It is better to do it in the  dialog.show.finally(...)
+          setTimeout(() => {
+            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+          }, 60 * 1000);
 
           let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
           this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
