@@ -24,6 +24,10 @@
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 
+/**
+ * This class is bridge between heat-ui components and p2p connector low level components (which intended to be independent of heat-ui).
+ * So this service is intended to provide p2p connector to the heat-ui functions.
+ */
 @Service('P2PMessaging')
 @Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast')
 class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
@@ -76,6 +80,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   onMessage(msg: {}, room: p2p.Room) {
     this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
+    this.seenP2PMessageTimestampStore.put(room.name + "_last-message-time", Date.now());
     this.updateSeenTime(null);
     this.displayNewMessagePopup(msg, room);
   }
@@ -183,6 +188,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     room.onCloseDataChannel = peerId => {
       this.emit(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, room, peerId);
     };
+    room.lastIncomingMessageTimestamp = this.seenP2PMessageTimestampStore.getNumber(room.name + "_last-message-time", 0);
     return room;
   }
 

@@ -52,6 +52,9 @@ http://webrtc-security.github.io/
 module p2p {
 
   export interface P2PMessenger {
+    /**
+     * Invoked on incoming message.
+     */
     onMessage: (msg: {}, room: Room) => any;
   }
 

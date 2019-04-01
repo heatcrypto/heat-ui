@@ -96,7 +96,10 @@ class UserContactsComponent {
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
-    this.p2pMessaging.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, this.refresh);
+    this.p2pMessaging.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, (key: string) => {
+      if (key.indexOf("_last-message-time") > -1) return;
+      this.refresh();
+    });
 
     let contactListener: IEventListenerFunction = fullKey => {
       let contactKey = fullKey.substr(fullKey.lastIndexOf('.') + 1);
@@ -242,7 +245,7 @@ class UserContactsComponent {
   }
 
   contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
-    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
+    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey, true);
     if (room) {
       return this.p2pMessaging.roomHasUnreadMessage(room);
     }
