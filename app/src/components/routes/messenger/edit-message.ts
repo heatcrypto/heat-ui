@@ -117,21 +117,24 @@ class EditMessageComponent {
   }
 
   sendP2PMessage($event) {
-    let sent: boolean = false;
+    let notSentReason: string;
     let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
     if (room) {
       let peer = room.getPeer(this.publickey);
       if (peer && peer.isConnected()) {
         let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
-        sent = true;
         this.$scope.$evalAsync(() => {
           this.messageText = '';
         });
+      } else {
+        notSentReason = "Peer is not connected";
       }
+    } else {
+      notSentReason = "Chat 'room' for contact is not created";
     }
-    if (!sent) {
+    if (notSentReason) {
       this.$mdToast.show(
-        this.$mdToast.simple().textContent("Not sent").hideDelay(3000)
+        this.$mdToast.simple().textContent(`Not sent. ${notSentReason}`).hideDelay(3000)
       );
     }
   }

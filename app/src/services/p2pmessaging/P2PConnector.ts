@@ -264,7 +264,7 @@ module p2p {
         .then(websocket => {
           data.splice(0, 0, "webrtc");
           websocket.send(JSON.stringify(data));
-          console.log(">> \n" + JSON.stringify(data));
+          //console.log(">> \n" + JSON.stringify(data));
         }, reason => console.log(reason))
         .catch(reason => {
           console.log("error on get websocket \n" + reason);
@@ -276,7 +276,7 @@ module p2p {
         return;
       }
       let data = JSON.parse(messageEvent.data);
-      console.log("<< \n"+ JSON.stringify(data));
+      //console.log("<< \n"+ JSON.stringify(data));
       let msg;
       if (data.encrypted) {
         msg = JSON.parse(this.decrypt(data.encrypted, data.fromPeer));
@@ -428,9 +428,9 @@ module p2p {
         };
         pc.ondatachannel = (event) => {
           let dataChannel = event.channel;
-          console.log('Received data channel creating request');  //calee do
+          //console.log('Received data channel creating request');  //calee do
           this.initDataChannel(roomName, peerId, dataChannel, true);
-          console.log("init Data Channel");
+          //console.log("init Data Channel");
           peer.dataChannel = dataChannel;
         };
         pc.oniceconnectionstatechange = (event: Event) => {
@@ -442,7 +442,7 @@ module p2p {
               peer.dataChannel.close();
               this.onCloseDataChannel(roomName, peerId, peer.dataChannel);
             }
-            console.log('Disconnected');
+            console.log('Peer is disconnected');
           }
         };
         pc.onicecandidateerror = event => {
@@ -464,7 +464,7 @@ module p2p {
       dataChannel.onclose = (event) => this.onCloseDataChannel(roomName, peerId, dataChannel);
       dataChannel.onmessage = (event) => this.onMessage(roomName, peerId, dataChannel, event);
       this.rooms.get(roomName).getPeer(peerId).dataChannel = dataChannel;
-      console.log(`initDataChannel ${roomName} ${peerId} ${dataChannel.label}`);
+      //console.log(`initDataChannel ${roomName} ${peerId} ${dataChannel.label}`);
     }
 
     onOpenDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel, sendCheckingMessage?: boolean) {
@@ -475,7 +475,7 @@ module p2p {
         this.sendSignalingMessage([checkChannelMessage]);
         //send checking message to peer
         this.send(roomName, JSON.stringify(checkChannelMessage), dataChannel);
-        console.log("Checking message sent " + checkChannelMessage.value);
+        //console.log("Checking message sent " + checkChannelMessage.value);
       }
 
       let room: Room = this.rooms.get(roomName);
@@ -496,11 +496,11 @@ module p2p {
         signature: signedData.signatureHex, data: signedData.dataHex, publicKey: signedData.publicKeyHex};
       this.send(roomName, JSON.stringify(proofRequest), dataChannel);
 
-      console.log(`Data channel is opened ${dataChannel.label}`);
+      //console.log(`Data channel is opened ${dataChannel.label}`);
     }
 
     onCloseDataChannel(roomName: string, peerId: string, dataChannel: RTCDataChannel) {
-      console.log(`onCloseDataChannel ${roomName} ${peerId}`);
+      //console.log(`onCloseDataChannel ${roomName} ${peerId}`);
       let room: Room = this.rooms.get(roomName);
 
       room.getPeer(peerId).dataChannel = null;
@@ -612,7 +612,7 @@ module p2p {
       if (channel.readyState == "open") {
         try {
           channel.send(data);
-          console.log(`>>> channel ${channel.label} \n ${data}`);
+          //console.log(`>>> channel ${channel.label} \n ${data}`);
           return 1;
         } catch (e) {
           notSentReason = e.toString();
