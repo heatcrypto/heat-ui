@@ -3,13 +3,11 @@
 class FIMKCryptoService {
 
   private nxtCrypto;
-  private socket;
 
   constructor(private $window: angular.IWindowService,
     private mofoSocketService: MofoSocketService,
     private $rootScope: angular.IRootScopeService) {
     this.nxtCrypto = $window.heatlibs.nxtCrypto;
-    this.socket = this.mofoSocketService.mofoSocket();
   }
 
   /* Sets the seed to this wallet */
@@ -21,15 +19,6 @@ class FIMKCryptoService {
     });
   }
 
-  getSocket() {
-    return new Promise((resolve, reject) => {
-      let status = this.socket['readyState'];
-      if(status == 1)
-        resolve(status);
-      else
-        reject(0);
-    });
-  }
 
   refreshAdressBalances(wallet: WalletType) {
     let address = wallet.addresses[0].address

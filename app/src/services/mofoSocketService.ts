@@ -16,21 +16,22 @@ class MofoSocketService {
     if(this.url == url && this.socket !== undefined) {
       return
     }
-    this.createSocket(url)
-    return this.socket;
+    return this.createSocket(url)
   }
 
   getSocketUrl = () => {
     return this.url
   }
 
-  createSocket = (url) => {
-    this.url = url;
-    this.socket = new WebSocket(url);
-    this.socket.onclose = (evt) => { this.onclose(evt) };
-    this.socket.onopen = (evt) => { this.onopen(evt) };
-    this.socket.onerror = (evt) => { this.onmessage(evt) };
-    this.socket.onmessage = (evt) => { this.onmessage(evt) };
+  private createSocket = (url) => {
+    return new Promise((resolve, reject) => {
+      this.url = url;
+      this.socket = new WebSocket(url);
+      this.socket.onclose = (evt) => { this.onclose(evt); reject() };
+      this.socket.onopen = (evt) => { this.onopen(evt); resolve(this.socket) };
+      this.socket.onerror = (evt) => { this.onmessage(evt) };
+      this.socket.onmessage = (evt) => { this.onmessage(evt) };
+    })
   }
 
 
