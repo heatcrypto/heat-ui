@@ -68,21 +68,24 @@ class BTCCurrency implements ICurrency {
 
       let createTx = function(isForFeeEstimation: boolean = false) {
         let user = <UserService> heat.$inject.get('user')
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-
-        let amountInSatoshi = $scope['vm'].data.amount * 100000000;
         let feeInSatoshi
-        if(!isForFeeEstimation)
-          feeInSatoshi = $scope['vm'].data.fee * 100000000;
-        else
-          feeInSatoshi = 0
+        let amountInSatoshi
+        let to
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
-        let to = $scope['vm'].data.recipient
+        if(!isForFeeEstimation) {
+          feeInSatoshi = ($scope['vm'].data.fee * 100000000).toFixed(0);
+          amountInSatoshi = ($scope['vm'].data.amount * 100000000).toFixed(0);
+          to = $scope['vm'].data.recipient
+        } else {
+          feeInSatoshi = $scope['vm'].data.fee? ($scope['vm'].data.fee * 100000000).toFixed(0): 0
+          amountInSatoshi = $scope['vm'].data.amount? ($scope['vm'].data.amount * 100000000).toFixed(0) : "0.0001";
+          to = addressPrivateKeyPair.address
+        }
 
         let txObject = {
           from: addressPrivateKeyPair.address,
           to: to,
-          amount: amountInSatoshi,
+          amount: parseInt(amountInSatoshi),
           fee: Math.ceil(feeInSatoshi),
           changeAddress: addressPrivateKeyPair.address,
           privateKey: addressPrivateKeyPair.privateKey
@@ -113,7 +116,8 @@ class BTCCurrency implements ICurrency {
         recipient: '',
         recipientInfo: '',
         fee: '0.00004540',
-        message: ''
+        message: '',
+        userInputFee: false
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -140,7 +144,8 @@ class BTCCurrency implements ICurrency {
         $scope['vm'].data.txBytes = []
         bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
           $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+          if(!$scope['vm'].data.userInputFee)
+            $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
         })
       }
 
@@ -149,14 +154,25 @@ class BTCCurrency implements ICurrency {
         $scope['vm'].data.txBytes = []
         bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
           $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+          if(!$scope['vm'].data.userInputFee)
+            $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+        })
+      }
+      $scope['vm'].feeChanged = function () {
+        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+        $scope['vm'].data.txBytes = []
+        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
+          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+          $scope['vm'].data.estimatedFee = ($scope['vm'].data.fee / $scope['vm'].data.txBytes.length * 100000000).toFixed(0)
+          $scope['vm'].data.userInputFee = true
         })
       }
 
       function getEstimatedFee() {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
         btcBlockExplorerService.getEstimatedFee().then(data => {
-          $scope['vm'].data.estimatedFee = data;
+          if(!$scope['vm'].data.userInputFee)
+            $scope['vm'].data.estimatedFee = data;
         })
       }
       getEstimatedFee();
@@ -199,7 +215,7 @@ class BTCCurrency implements ICurrency {
 
                 <md-input-container flex>
                   <label>Fee in BTC</label>
-                  <input ng-model="vm.data.fee" required name="fee">
+                  <input ng-model="vm.data.fee" ng-keypress="vm.feeChanged($event)" required name="fee">
                 </md-input-container>
               </div>
             </md-dialog-content>

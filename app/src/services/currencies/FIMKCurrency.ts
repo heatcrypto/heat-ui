@@ -72,7 +72,6 @@ class FIMKCurrency implements ICurrency {
       }
       $scope['vm'].okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
-        let fimkCryptoService = <FIMKCryptoService> heat.$inject.get('fimkCryptoService')
         let mofoSocketService = <MofoSocketService> heat.$inject.get('mofoSocketService')
         let to = $scope['vm'].data.recipient
         let recipientPublicKey;

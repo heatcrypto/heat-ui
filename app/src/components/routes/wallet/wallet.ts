@@ -405,7 +405,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService')
 class WalletComponent {
 
   selectAll = true;
@@ -435,7 +435,8 @@ class WalletComponent {
     private nxtCryptoService: NXTCryptoService,
     private ardorCryptoService: ARDORCryptoService,
     private nxtBlockExplorerService: NxtBlockExplorerService,
-    private ardorBlockExplorerService: ArdorBlockExplorerService) {
+    private ardorBlockExplorerService: ArdorBlockExplorerService,
+    private mofoSocketService: MofoSocketService) {
 
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
@@ -711,22 +712,23 @@ class WalletComponent {
     })
 
     this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      this.fimkCryptoService.getSocket().then(() => {
-        let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
-        fimkCurrencyAddressLoading.visible = walletEntry.expanded
-        fimkCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(fimkCurrencyAddressLoading)
-      })
-
       let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
       fimkCurrencyAddressCreate.visible = walletEntry.expanded
       fimkCurrencyAddressCreate.parent = walletEntry
       fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
       walletEntry.currencies.push(fimkCurrencyAddressCreate)
-      /* Only if this node is expanded will we load the addresses */
-      if (walletEntry.expanded) {
-        this.loadFIMKAddresses(walletEntry)
-      }
+
+      this.mofoSocketService.mofoSocket().then(() => {
+        let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
+        fimkCurrencyAddressLoading.visible = walletEntry.expanded
+        fimkCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(fimkCurrencyAddressLoading)
+
+        /* Only if this node is expanded will we load the addresses */
+        if (walletEntry.expanded) {
+          this.loadFIMKAddresses(walletEntry)
+        }
+      })
     })
 
     this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
