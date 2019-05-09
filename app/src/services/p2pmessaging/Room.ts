@@ -175,7 +175,7 @@ module p2p {
 
   export interface P2PMessage {
     timestamp: number,
-    type: "chat" | "",
+    type: "chat" | "contactUpdate" | "",
     text: string
   }
 
