@@ -52,12 +52,12 @@ class StorageService {
     if (!angular.isDefined(globalScope) || !globalScope) {
       this.user = this.user || <UserService> heat.$inject.get('user'); // causes circular dependency if done through DI.
       if (this.user.unlocked) {
-        store.enable(this.user.account);
+        store.enable(this.user.key.account);
       }
       else {
         var closure = () => {
           this.user.removeListener(UserService.EVENT_UNLOCKED, closure);
-          store.enable(this.user.account);
+          store.enable(this.user.key.account);
         }
         this.user.on(UserService.EVENT_UNLOCKED, closure);
       }
