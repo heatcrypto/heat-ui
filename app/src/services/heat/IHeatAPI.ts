@@ -1013,6 +1013,10 @@ interface IHeatBlock {
   height: number;
   timestamp: number;
 }
+interface currencyAddressMap {
+  name: string;
+  address: string;
+}
 interface IHeatMessageContact {
   account: string;
   privateName: string;
@@ -1020,6 +1024,7 @@ interface IHeatMessageContact {
   publicKey: string;
   timestamp: number;
   activityTimestamp?: number;
+  cryptoAddresses?: currencyAddressMap[];
 }
 interface IHeatMessage {
   transaction: string;
