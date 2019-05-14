@@ -11,9 +11,30 @@ class P2pContactUtils {
     this.p2pContactStore = storage.namespace('p2pContacts')
   }
 
-  updateContactCurrencyAddress(account: string, currency: string, address: string) {
+  saveContact(account: string, publicKey: string, publicName: string, calledTimestamp?: number) {
+    if (!publicKey) return;
     let contact: IHeatMessageContact = this.p2pContactStore.get(account);
-    if (!contact) return;
+    if (contact && calledTimestamp && calledTimestamp != contact.activityTimestamp) {
+      contact.activityTimestamp = calledTimestamp;
+      this.p2pContactStore.put(account, contact);
+    }
+    if (!contact) {
+      contact = {
+        account: account,
+        privateName: '',
+        publicKey: publicKey,
+        publicName: publicName,
+        timestamp: 0,
+        activityTimestamp: calledTimestamp
+      };
+      this.p2pContactStore.put(account, contact);
+    }
+  }
+
+  updateContactCurrencyAddress(account: string, currency: string, address: string, publicKey: string, publicName: string, calledTimeStamp?:number) {
+    if (!publicKey) return;
+    let contact: IHeatMessageContact = this.p2pContactStore.get(account);
+    if (!contact) this.saveContact(account, publicKey, publicName, calledTimeStamp);
     let currencyAddressMap: currencyAddressMap = {
       name: currency,
       address
@@ -33,7 +54,7 @@ class P2pContactUtils {
     if (isNumbersOnly) {
       deferred.resolve(this.searchContactByNumericId(query));
     } else {
-      this.searchContactByPublicName(query).then(contacts => deferred.resolve(contacts))
+      deferred.resolve(this.searchContactByPublicName(query));
     }
     return deferred.promise;
   }
@@ -46,16 +67,14 @@ class P2pContactUtils {
   }
 
   searchContactByPublicName(query: string) {
-    return new Promise<IHeatMessageContact[]>((resolve, reject) => {
-      let contacts: IHeatMessageContact[] = [];
-      this.heat.api.searchPublicNames(query, 0, 100).then(accounts => {
-        accounts.forEach(account => {
-          if (this.p2pContactStore.get(account.id)) {
-            contacts.push(this.p2pContactStore.get(account.id))
-          }
-        })
-        resolve(contacts);
-      })
+    let contacts: IHeatMessageContact[] = [];
+    let keys = this.p2pContactStore.keys()
+    keys.forEach(key => {
+      let contact = this.p2pContactStore.get(key)
+      if(contact.publicName.indexOf(query) > -1){
+        contacts.push(contact)
+      }
     })
+    return contacts;
   }
 }
