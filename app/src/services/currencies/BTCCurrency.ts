@@ -79,7 +79,7 @@ class BTCCurrency implements ICurrency {
         } else {
           feeInSatoshi = $scope['vm'].data.fee? ($scope['vm'].data.fee * 100000000).toFixed(0): 0
           amountInSatoshi = $scope['vm'].data.amount? ($scope['vm'].data.amount * 100000000).toFixed(0) : "0.0001";
-          to = addressPrivateKeyPair.address
+          to = $scope['vm'].data.recipient ? $scope['vm'].data.recipient : addressPrivateKeyPair.address
         }
 
         let txObject = {
@@ -149,6 +149,25 @@ class BTCCurrency implements ICurrency {
         })
       }
 
+      $scope['vm'].selectedItemChange = function(item: IHeatMessageContact) {
+        $scope['vm'].value = $scope['vm'].selectedItem ? $scope['vm'].selectedItem.id : '';
+        $scope['vm'].data.recipient = item.cryptoAddresses ? item.cryptoAddresses.find( i => i.name === 'BTC').address : ''
+
+        if($scope['vm'].data.recipient && $scope['vm'].data.recipient !== '')
+          $scope['vm'].recipientChanged()
+
+      }
+
+      $scope['vm'].search = function(){
+        let p = <P2pContactUtils> heat.$inject.get('p2pContactUtils');
+        return p.lookupContact($scope['vm'].searchText.trim())
+      }
+
+      $scope['vm'].searchTextChange = function() {
+        $scope['vm'].value = $scope['vm'].searchText;
+        $scope['vm'].data.recipient = $scope['vm'].searchText;
+      }
+
       $scope['vm'].amountChanged = function () {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].data.txBytes = []
@@ -195,13 +214,28 @@ class BTCCurrency implements ICurrency {
               <div class="md-toolbar-tools"><h2>Send BTC</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-
-                <md-input-container flex >
-                  <label>Recipient</label>
-                  <input ng-model="vm.data.recipient" ng-change="vm.recipientChanged()" required name="recipient">
-                  <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
-                </md-input-container>
+            <div flex layout="column">
+                <md-autocomplete flex
+                  ng-required="true"
+                  ng-readonly="false"
+                  md-input-name="recipientBtcAddress"
+                  md-floating-label="Recipient"
+                  md-min-length="1"
+                  md-items="item in vm.search(vm.searchText)"
+                  md-item-text="item.publicName||item.id"
+                  md-search-text="vm.searchText"
+                  md-selected-item-change="vm.selectedItemChange(item)"
+                  md-search-text-change="vm.searchTextChange()"
+                  md-selected-item="vm.selectedItem">
+                    <md-item-template>
+                      <div layout="row" flex class="monospace-font">
+                        <span>{{item.publicName||''}}</span>
+                        <span flex></span>
+                        <span>{{item.id}}</span>
+                      </div>
+                    </md-item-template>
+                </md-autocomplete>
+                <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
 
                 <md-input-container flex >
                   <label>Amount in BTC</label>
