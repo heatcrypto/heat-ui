@@ -42,7 +42,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   public offchainMode: boolean = false;
   public hasUnreadMessage: boolean = false;
 
-  private connector: p2p.P2PConnector;
+  public connector: p2p.P2PConnector;
 
   constructor(private settings: SettingsService,
               private user: UserService,
@@ -96,31 +96,20 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       this.$mdToast.show(
         this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
       );
+    } else if(msg.type == "contactUpdate") {
+      let parsedMessage = JSON.parse(msg.text);
+      let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+      let publicKey = msg.fromPeerId
+      console.log(msg.text)
+      this.heat.api.searchPublicNames(account, 0, 100).then((accounts)=> {
+        let expectedAccount = accounts.find(value => value.publicKey == publicKey);
+          if (expectedAccount) {
+            let contactUtils = <P2pContactUtils>heat.$inject.get('p2pContactUtils');
+            contactUtils.updateContactCurrencyAddress(account, parsedMessage.name, parsedMessage.address, publicKey, expectedAccount.publicName, -Date.now())
+          }
+      })
     }
   }
-
-  /**
-   * Register me so can be called.
-   */
-  // register(): Room {
-  //   let name = this.user.publicKey;
-  //   let room = this.connector.rooms.get(name);
-  //   if (!room) {
-  //     room = new Room(this.user.publicKey, this.connector, this.storage, this.user);
-  //     // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-  //     // room.onMessage = msg => this.onMessage(msg);
-  //     // room.onFailure = e => this.onError(e);
-  //     // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-  //     // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-  //     // room.rejected = (byPeerId, reason) => {
-  //     //   this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
-  //     //   this.$scope.$apply();
-  //     // };
-  //     room.enter();
-  //     this.connector.rooms.set(name, room);
-  //   }
-  //   return room;
-  // }
 
   set onlineStatus(status: OnlineStatus) {
     this.connector.setOnlineStatus(status);
@@ -144,6 +133,10 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       //todo check is opened channel
       return room;
     }
+  }
+
+  sendKeys = (room: p2p.Room, text: string) => {
+    room.sendMessage({timestamp: Date.now(), type: "contactUpdate", text});
   }
 
   /**
@@ -202,11 +195,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     let room = this.connector.rooms.get(roomName);
     if (!room) {
       room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
-      // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-      // room.onFailure = e => this.onError(e);
-      // room.onMessage = msg => this.onMessage(msg);
-      // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-      // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
       this.connector.rooms.set(roomName, room);
     }
     return room;
