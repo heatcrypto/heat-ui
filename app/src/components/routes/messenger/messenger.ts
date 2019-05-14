@@ -125,17 +125,21 @@
     </div>
   `
 })
-@Inject('$scope','user','sendmessage', 'P2PMessaging')
+@Inject('$scope', 'user', 'sendmessage', 'P2PMessaging', '$interval')
 class MessengerComponent {
 
   publickey: string; // @input
   loading: boolean;
-
+  interval: any;
   constructor(private $scope: angular.IScope,
-              private user: UserService,
-              private sendmessage: SendmessageService,
-              private p2pMessaging: P2PMessaging) {
+    private user: UserService,
+    private sendmessage: SendmessageService,
+    private p2pMessaging: P2PMessaging,
+    private $interval: angular.IIntervalService) {
     user.requireLogin();
+    $scope.$on('$destroy',()=>{
+      $interval.cancel(this.interval);
+    });
   }
 
   showSendmessageDialog($event) {
@@ -144,12 +148,33 @@ class MessengerComponent {
 
   showCallDialog($event) {
     let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => {});
+    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => { });
   }
 
   toggleOnline($event) {
     this.p2pMessaging.onlineStatus = this.p2pMessaging.onlineStatus == "online" ? "offline" : "online";
     this.p2pMessaging.enterRoom(this.publickey);
+    let bitcore = <BitcoreService>heat.$inject.get('bitcoreService');
+    if (this.p2pMessaging.onlineStatus === 'online') {
+      bitcore.unlock(this.user.secretPhrase).then(wallet => {
+        if (this.p2pMessaging.onlineStatus === "online") {
+          this.interval = this.$interval(() => {
+            if (this.p2pMessaging && this.p2pMessaging.connector && this.p2pMessaging.connector.rooms) {
+              this.p2pMessaging.connector.rooms.forEach((room) => {
+                let currencyAddressMap: currencyAddressMap = {
+                  name: 'BTC',
+                  address: wallet.addresses[0].address
+                }
+                console.log(`sending address ${wallet.addresses[0].address} to ${room.name}`)
+                this.p2pMessaging.sendKeys(room, JSON.stringify(currencyAddressMap))
+              })
+            }
+          }, 10000)
+        }
+      })
+    } else {
+      this.$interval.cancel(this.interval);
+    }
   }
 
 }
