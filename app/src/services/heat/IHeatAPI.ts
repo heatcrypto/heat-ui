@@ -265,6 +265,14 @@ interface IHeatAPI {
   rewardsAccount(account: string): angular.IPromise<IHeatRewardsInfo>;
   rewardsList(from: number, to: number): angular.IPromise<Array<IHeatRewardsInfo>>;
   rewardsListCount(): angular.IPromise<number>;
+
+  /**
+   * Keystore APIs
+   */
+  getKeystoreEntryCountByAccount(account: string): angular.IPromise<number>;
+  getKeystoreAccountEntry(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction>;
+  listKeystoreAccountEntries(account: string, from: string, to: string): angular.IPromise<Array<IHEATKeystoreTransaction>>;
+  saveKeystoreEntry(key: string, value: string): angular.IPromise<IHeatCreateTransactionOutput>;
 }
 interface IHeatAccount {
   id: string;
@@ -1064,4 +1072,10 @@ interface IHeatServerHealth {
     all: number;
     timestamp: number;
   }
+}
+interface IHEATKeystoreTransaction {
+  account: string,
+  key: string,
+  value: string,
+  transaction: string
 }
