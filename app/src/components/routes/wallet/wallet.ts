@@ -496,6 +496,7 @@ class WalletComponent {
       }
     })
     this.flatten()
+    this.fetchCryptoAddresses('BTC')
   }
 
   initCreatedAddresses() {
@@ -532,6 +533,24 @@ class WalletComponent {
           }
         })
       })
+    })
+  }
+
+  shareCurrencyAddressesWithP2pContacts(currency: string, address: string) {
+    let p2pContactsUtils = <P2pContactUtils> heat.$inject.get('p2pContactUtils')
+    let p2pMessaging = <P2PMessaging> heat.$inject.get('P2PMessaging')
+    p2pMessaging.p2pContactStore.forEach((key, contact) => {
+      console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
+      p2pContactsUtils.shareCryptoAddress(contact, currency, address)
+    })
+  }
+
+  fetchCryptoAddresses(currency: string) {
+    let p2pContactsUtils = <P2pContactUtils> heat.$inject.get('p2pContactUtils')
+    let p2pMessaging = <P2PMessaging> heat.$inject.get('P2PMessaging')
+    p2pMessaging.p2pContactStore.forEach((key, contact) => {
+      console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
+      p2pContactsUtils.fetchCryptoAddress(contact, currency)
     })
   }
 
@@ -582,6 +601,13 @@ class WalletComponent {
         if (pin == entry.pin) {
           this.localKeyStore.remove(entry.account)
           this.initLocalKeyStore()
+          if(entry.account === this.user.key.account) {
+            this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
+              if(count > 0) {
+                this.shareCurrencyAddressesWithP2pContacts('BTC', '')
+              }
+            })
+          }
         }
       }
       );
@@ -681,6 +707,7 @@ class WalletComponent {
         walletEntry.currencies.push(btcCurrencyAddressCreate)
 
         this.flatten()
+        this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
 
         /* Only if this node is expanded will we load the addresses */
         if (walletEntry.expanded) {
