@@ -1,5 +1,5 @@
 @Service('p2pContactUtils')
-@Inject('storage', 'heat', '$q')
+@Inject('storage', 'heat', '$q', 'user')
 class P2pContactUtils {
   private static numbersOnly = /^[0-9]+$/;
   private p2pContactStore: Store;
@@ -7,7 +7,8 @@ class P2pContactUtils {
   constructor(
     private storage: StorageService,
     private heat: HeatService,
-    private $q: angular.IQService) {
+    private $q: angular.IQService,
+    private user: UserService) {
     this.p2pContactStore = storage.namespace('p2pContacts')
   }
 
@@ -31,7 +32,7 @@ class P2pContactUtils {
     }
   }
 
-  updateContactCurrencyAddress(account: string, currency: string, address: string, publicKey: string, publicName: string, calledTimeStamp?:number) {
+  updateContactCurrencyAddress(account: string, currency: string, address: string, publicKey: string, publicName: string, calledTimeStamp?: number) {
     if (!publicKey) return;
     let contact: IHeatMessageContact = this.p2pContactStore.get(account);
     if (!contact) this.saveContact(account, publicKey, publicName, calledTimeStamp);
@@ -71,10 +72,29 @@ class P2pContactUtils {
     let keys = this.p2pContactStore.keys()
     keys.forEach(key => {
       let contact = this.p2pContactStore.get(key)
-      if(contact.publicName.indexOf(query) > -1){
+      if (contact.publicName.indexOf(query) > -1) {
         contacts.push(contact)
       }
     })
     return contacts;
+  }
+
+  shareCryptoAddress(contact: IHeatMessageContact, currency: string, value: string) {
+    this.heat.api.getKeystoreAccountEntry(this.user.key.account, `${contact.account}-${currency}`).then(response => {
+      let parsed = utils.parseResponse(response);
+      if (parsed.errorDescription === 'Unknown key') {
+        let encrypted = heat.crypto.encryptMessage(value, contact.publicKey, this.user.key.secretPhrase)
+        this.heat.api.saveKeystoreEntry(`${contact.account}-${currency}`, `${encrypted.data}-${encrypted.nonce}`, this.user.key.secretPhrase)
+      } else {
+        let split = parsed.value.split("-");
+        let decrypted = heat.crypto.decryptMessage(split[0], split[1], contact.publicKey, this.user.key.secretPhrase)
+        // check if this is the intended key
+      }
+    }).catch(e => {
+      let parsed = utils.parseResponse(e);
+      if (parsed.description === 'Unknown key') {
+        let encrypted = heat.crypto.encryptMessage(value, contact.publicKey, this.user.key.secretPhrase)
+        this.heat.api.saveKeystoreEntry(`${contact.account}-${currency}`, `${encrypted.data}-${encrypted.nonce}`, this.user.key.secretPhrase)      }
+    })
   }
 }
