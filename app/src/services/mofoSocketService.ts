@@ -14,7 +14,9 @@ class MofoSocketService {
 
   mofoSocket = (url = 'wss://cloud.mofowallet.org:7986/ws/') => {
     if(this.url == url && this.socket !== undefined) {
-      return
+      return new Promise((resolve, reject) => {
+        resolve(this.socket)
+      })
     }
     return this.createSocket(url)
   }
