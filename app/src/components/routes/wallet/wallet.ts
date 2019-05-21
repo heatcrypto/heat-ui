@@ -707,7 +707,8 @@ class WalletComponent {
         walletEntry.currencies.push(btcCurrencyAddressCreate)
 
         this.flatten()
-        this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+        if(this.user.key.account === walletEntry.account)
+          this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
 
         /* Only if this node is expanded will we load the addresses */
         if (walletEntry.expanded) {
