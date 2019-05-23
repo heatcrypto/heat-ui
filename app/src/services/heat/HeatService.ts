@@ -299,11 +299,13 @@ class HeatService {
         var byteArray = converters.hexStringToByteArray(message.messageBytes);
         var nonce = converters.byteArrayToHexString(byteArray.slice(0, 32));
         var data = converters.byteArrayToHexString(byteArray.slice(32));
-        if (message.recipient == this.user.account) {
-          return heat.crypto.decryptMessage(data, nonce, message.senderPublicKey, this.user.secretPhrase);
+        let secretPhrase = this.user.key? this.user.key.secretPhrase : this.user.secretPhrase;
+        let account = this.user.key? this.user.key.account : this.user.account;
+        if (message.recipient == account) {
+          return heat.crypto.decryptMessage(data, nonce, message.senderPublicKey, secretPhrase);
         }
-        else if (message.sender == this.user.account) {
-          return heat.crypto.decryptMessage(data, nonce, message.recipientPublicKey, this.user.secretPhrase);
+        else if (message.sender == account) {
+          return heat.crypto.decryptMessage(data, nonce, message.recipientPublicKey, secretPhrase);
         }
       }
       else if (message.messageIsText) {
