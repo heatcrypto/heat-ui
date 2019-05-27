@@ -115,7 +115,6 @@ class CurrencyAddressCreate {
       let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
       return true
     }
@@ -163,7 +162,6 @@ class CurrencyAddressCreate {
       let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
       return true
     }
@@ -211,7 +209,6 @@ class CurrencyAddressCreate {
       let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
       return true
     }
@@ -226,7 +223,6 @@ class CurrencyAddressCreate {
       let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
       return true
     }
@@ -240,7 +236,6 @@ class CurrencyAddressCreate {
       let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
       return true
     }
