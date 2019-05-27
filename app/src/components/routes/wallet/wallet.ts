@@ -481,6 +481,7 @@ class WalletComponent {
     else if (this.$scope['vm'].selectedChain === 'ARDR') {
       this.createARDRAccount($event)
     }
+    this.$scope['vm'].selectedChain = null
   }
 
   initLocalKeyStore() {
