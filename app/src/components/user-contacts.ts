@@ -212,7 +212,7 @@ class UserContactsComponent {
           })
           .sort((c1, c2) => (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));
 
-        if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
+        if (this.getActivePublicKey()=="0") {
           this.setActivePublicKey();
         }
       });
