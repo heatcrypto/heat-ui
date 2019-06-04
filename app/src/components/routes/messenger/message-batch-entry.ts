@@ -28,11 +28,17 @@
       padding: 0 13px 7px 0;
       font-size: 32px !important;
     }
-    message-batch-entry .header {
-      font-size: 15px;
+    message-batch-entry .footer {
+      font-size: 10px;
     }
     message-batch-entry .batch-entry {
       padding-left: 0px;
+    }
+    message-batch-entry .outgoing {
+      text-align: right;
+    }
+    message-batch-entry .incoming {
+      text-align: left;
     }
     message-batch-entry .message-content pre {
       white-space: pre-wrap;       /* Since CSS 2.1 */
@@ -45,21 +51,16 @@
       -moz-hyphens: auto;
       -webkit-hyphens: auto;
       hyphens: auto;
+      font-size: 14px;
     }
   `],
   template: `
     <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
-      <div layout="column">
-        <md-icon md-font-library="material-icons">{{::vm.icon}}</md-icon>
-      </div>
-      <div layout="column" flex layout-padding>
-        <div layout="row" class="header">
-          <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::vm.message.date}}
+      <div layout="column" flex layout-padding ng-class="vm.io">
+        <div layout="column" class="message-content"><pre>{{vm.message.content}}</pre></div>
+        <div layout="column" class="footer">
+          {{::vm.message.date}}
         </div>
-        <!-- look into allowing html messages later on
-        <div layout="column" class="message-content" ng-bind-html="vm.message.html"></div>
-        -->
-        <div layout="column" class="message-content"><pre>{{vm.message.contents}}</pre></div>
       </div>
     </div>
   `
@@ -67,8 +68,8 @@
 //@Inject('$scope','$q','$timeout')
 class MessageBatchEntryComponent {
   message: IHeatMessage; // @input
-  icon: string;
+  io: string;
   constructor() {
-    this.icon = this.message['outgoing'] ? 'chat_bubble_outline' : 'comment';
+    this.io = this.message['outgoing'] === true? 'outgoing' : 'incoming';
   }
 }
