@@ -7,7 +7,7 @@
         <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
       </div>
       <div layout="column" flex>
-        <div class="scroll-up" layout="row" flex ng-hide="vm.loading || vm.displayMessages.messages.length === vm.allMessages.length" layout-align="center">
+        <div class="scroll-up" layout="row" flex ng-hide="vm.loading || vm.displayMessages.messages.length === vm.messagesCount" layout-align="center">
           <md-button ng-click="vm.scrollUp()" aria-label="Go up">Go up</md-button>
         </div>
         <div layout="column">
@@ -19,28 +19,27 @@
     </div>
   `
 })
-@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$anchorScroll', '$location', '$timeout')
+@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout')
 class MsgViewerComponent {
   private publickey: string; //input
   private account: string;
-  private allMessages = [];
-  private onchainMessagesCount = 0;
+  private allMessages;
+  private onchainMessagesCount;
   private dateFormat;
   private messageHistory: p2p.MessageHistory;
-  private displayMessages = { index: 0, messages: [] };
-  private offchainPages: number = 0;
+  private displayMessages;
+  private offchainPages: number;
   private scrollElement;
   private loading: boolean;
   private static count: number;
   private containerId;
+  private messagesCount: number;
 
   constructor(private heat: HeatService,
     private user: UserService,
     private $scope: angular.IScope,
     private p2pMessaging: P2PMessaging,
     private settings: SettingsService,
-    private $anchorScroll: angular.IAnchorScrollService,
-    private $location: angular.ILocationService,
     private $timeout: angular.ITimeoutService) {
     let publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey;
 
@@ -57,15 +56,23 @@ class MsgViewerComponent {
   }
 
   private initMessages() {
+    this.offchainPages = 0;
+    this.onchainMessagesCount = 0;
+    this.messagesCount = 0;
+    this.displayMessages = { index: 0, messages: [] };
+    this.allMessages = [];
+
     this.heat.api.getMessagingContactMessagesCount(this.account, heat.crypto.getAccountIdFromPublicKey(this.publickey)).then(count => {
       if (count > 0) {
         this.onchainMessagesCount = count;
+        this.messagesCount += count;
       }
       let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
       if (room) {
         this.messageHistory = room.getMessageHistory()
         this.offchainPages = this.messageHistory.getPageCount() - 1;
         room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => { this.onMessageAdded(item, true) }
+        this.messagesCount += this.messageHistory.getItemCount();
       }
       this.loadMessages();
     })
@@ -74,7 +81,7 @@ class MsgViewerComponent {
   private loadMessages() {
     let promises: Promise<any>[] = [];
     let to = this.onchainMessagesCount;
-    let from = this.onchainMessagesCount - 10 > 0 ? this.onchainMessagesCount : 0;
+    let from = this.onchainMessagesCount - 10 > 0 ? this.onchainMessagesCount - 10 : 0;
     promises.push(this.loadOnchainMessages(from, to));
     promises.push(this.loadOffchainMessages());
     // can improvise sorting --> currently sorting the already sorted elements too
@@ -82,15 +89,13 @@ class MsgViewerComponent {
       this.allMessages = this.allMessages.concat(...messages)
       this.allMessages.sort((a, b) => (Date.parse(a.date) < Date.parse(b.date)) ? 1 : ((Date.parse(b.date) < Date.parse(a.date)) ? -1 : 0));
       this.displayMessages.messages = this.displayMessages.messages.concat(this.allMessages.slice(this.displayMessages.index, this.displayMessages.index + 10))
-      this.scrollElement = this.displayMessages.messages[this.displayMessages.index];
 
-      this.displayMessages.index = this.displayMessages.index + 10;
-      angular.element(this.scrollElement).ready(()=>{
-        this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
-      })
-    }).then(() => {
-      this.$timeout(0).then(() => {
-
+      this.$scope.$evalAsync(() => { // ensure contents are rendered
+        this.$timeout(0).then(() => { // resolve promise in next event loop
+          this.scrollElement = document.getElementById(this.displayMessages.messages[this.displayMessages.index].__id);
+          this.displayMessages.index = this.displayMessages.index + 10 <= this.messagesCount ? this.displayMessages.index + 10 : this.messagesCount;
+          this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+        });
       })
     })
   }
@@ -143,15 +148,21 @@ class MsgViewerComponent {
   }
 
   private onMessageAdded(data, isoffchain = false) {
+    let newMessage;
     if (isoffchain)
-      this.scrollElement = this.processOffchainItem(data);
+      newMessage = this.processOffchainItem(data);
     else
-      this.scrollElement = this.processOnchainItem(data);
+      newMessage = this.processOnchainItem(data);
 
-    this.displayMessages.messages.splice(0, 0, this.scrollElement);
+    this.displayMessages.messages.splice(0, 0, newMessage);
     this.displayMessages.index++;
-    this.$location.hash(this.scrollElement.__id);
-    this.$anchorScroll();
+    this.messagesCount++;
+    this.$scope.$evalAsync(() => { // ensure contents are rendered
+      this.$timeout(0).then(() => {
+        this.scrollElement = document.getElementById(newMessage.__id);
+        this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+      })
+    })
   }
 
   private scrollUp() {
