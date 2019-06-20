@@ -56,6 +56,9 @@ class CurrencyBalance {
     else if (this.name == 'NXT') {
       currency = new NXTCurrency(this.secretPhrase, this.address)
     }
+    else if (this.name == 'Iota') {
+      currency = new IOTACurrency(this.secretPhrase, this.address)
+    }
     else if (this.name == 'ARDOR') {
       currency = new ARDRCurrency(this.secretPhrase, this.address)
     }
@@ -270,6 +273,7 @@ class WalletEntry {
       this.component.loadFIMKAddresses(this);
       this.component.loadNXTAddresses(this);
       this.component.loadARDORAddresses(this);
+      this.component.loadIotaAddresses(this);
     }
   }
 
@@ -405,7 +409,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService')
 class WalletComponent {
 
   selectAll = true;
@@ -436,7 +440,8 @@ class WalletComponent {
     private ardorCryptoService: ARDORCryptoService,
     private nxtBlockExplorerService: NxtBlockExplorerService,
     private ardorBlockExplorerService: ArdorBlockExplorerService,
-    private mofoSocketService: MofoSocketService) {
+    private mofoSocketService: MofoSocketService,
+    private iotaCoreService: IotaCoreService) {
 
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
@@ -711,6 +716,27 @@ class WalletComponent {
       }
     })
 
+    this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
+      let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
+      iotaCurrencyAddressLoading.visible = walletEntry.expanded
+      iotaCurrencyAddressLoading.wallet = wallet
+      walletEntry.currencies.push(iotaCurrencyAddressLoading)
+
+      let iotaCurrencyAddressCreate = new CurrencyAddressCreate('Iota', wallet)
+      iotaCurrencyAddressCreate.visible = walletEntry.expanded
+      iotaCurrencyAddressCreate.parent = walletEntry
+      iotaCurrencyAddressCreate.flatten = this.flatten.bind(this)
+
+      walletEntry.currencies.push(iotaCurrencyAddressCreate)
+
+      this.flatten()
+
+      /* Only if this node is expanded will we load the addresses */
+      if (walletEntry.expanded) {
+        this.loadIotaAddresses(walletEntry)
+      }
+    })
+
     this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
       let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
       fimkCurrencyAddressCreate.visible = walletEntry.expanded
@@ -929,6 +955,38 @@ class WalletComponent {
 
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != ethCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
+
+  public loadIotaAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let iotaCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Iota')
+    if (!iotaCurrencyAddressLoading)
+      return
+
+    this.iotaCoreService.refreshAdressBalances(iotaCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(iotaCurrencyAddressLoading)
+      iotaCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey)
+          iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
+          iotaCurrencyBalance.visible = walletEntry.expanded
+          iotaCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, iotaCurrencyBalance)
+          index++;
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != iotaCurrencyAddressLoading)
       this.flatten()
     })
   }
