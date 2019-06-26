@@ -155,7 +155,6 @@ class SettingsService {
     this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
     this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
     this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
-    this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = "wss://heatwallet.com:7755/ws/";
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
@@ -185,13 +184,12 @@ class SettingsService {
 
     /* Override with test endpoints */
     if (heat.isTestnet) {
-      this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://alpha.heatledger.com"; // testnet
-      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
+      this.settings[SettingsService.HEAT_HOST_REMOTE] = "http://185.40.76.143"; // testnet
+      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7733"; // testnet
       this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
       this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
       this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
-      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
-      this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = "wss://alpha.heatledger.com:7755/ws/";
+      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "ws://185.40.76.143:7763/ws/";
     }
 
     /* betanet overrides */
@@ -230,13 +228,15 @@ class SettingsService {
   }
 
   public applyFailoverConfig() {
-    let resolveFailoverDescriptor: Function = function(json: any) {
+    let resolveFailoverDescriptor = (json: any) => {
       if (heat.isTestnet)
         SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
       else if (heat.isBetanet)
         SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
       else
         SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
+
+      this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
     };
     if (this.env.type == EnvType.BROWSER) {
       this.http.get('failover-config.json').then((json: any) => {
@@ -277,4 +277,5 @@ interface FailoverDescriptor {
   balancesEqualityThreshold: number;  // 0 - 1
   connectedPeersThreshold: number;  // 0 - 1
   knownServers: ServerDescriptor[];
+  signalingUrl?: string;  //central WebRTC signaling server, regardless the choosed server
 }
