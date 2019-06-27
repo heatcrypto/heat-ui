@@ -43,9 +43,9 @@ class IotaBlockExplorerService {
     this.cachedGetCachedAccountInfo.set(seed, deferred.promise)
     this.getTransactions(seed).then(deferred.resolve, deferred.reject)
     this.cachedGetCachedAccountInfo.get(seed).finally(() => {
-      setTimeout(()=> {
+      setTimeout(() => {
         this.cachedGetCachedAccountInfo.set(seed, null);
-      }, 30*1000)
+      }, 30 * 1000)
     })
     return this.cachedGetCachedAccountInfo.get(seed)
   }
@@ -82,6 +82,37 @@ class IotaBlockExplorerService {
       .catch(err => {
         deferred.reject(err)
       })
+    return deferred.promise;
+  }
+
+  public getAddressBundles = (address: string) => {
+    let deferred = this.$q.defer<any>();
+    this.api.getBundlesFromAddresses([address])
+      .then(ret => {
+        let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
+        deferred.resolve(data)
+      })
+      .catch(err => {
+        deferred.reject(err)
+      })
+    return deferred.promise;
+  }
+
+  public checkAddressReuse = (address: string) => {
+    let deferred = this.$q.defer<any>();
+    this.getAddressBundles(address).then(bundles => {
+      bundles.forEach(transactions => {
+        transactions.forEach(tx => {
+          if (tx.address === address && tx.value < 0) {
+            deferred.resolve(true)
+            return true;
+          }
+        });
+      });
+      deferred.resolve(false)
+    }).catch(err => {
+      deferred.reject(err)
+    })
     return deferred.promise;
   }
 }

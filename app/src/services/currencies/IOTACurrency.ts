@@ -96,6 +96,7 @@ class IOTACurrency implements ICurrency {
         value: '',
         recipient: '',
         recipientInfo: '',
+        addressReuse: true
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -115,9 +116,16 @@ class IOTACurrency implements ICurrency {
           }
         )
       }, 1000, false)
+
+      let checkAddressValidity = function(address: string) {
+        let iotaBlockExplorerService = <IotaBlockExplorerService>heat.$inject.get('iotaBlockExplorerService')
+        iotaBlockExplorerService.checkAddressReuse(address).then(reuse => $scope['vm'].data.addressReuse = reuse);
+      }
+
       $scope['vm'].recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
+        checkAddressValidity($scope['vm'].data.recipient)
       }
     }
 
@@ -154,7 +162,7 @@ class IOTACurrency implements ICurrency {
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.recipient || !vm.data.value || vm.disableOKBtn"
+              <md-button ng-disabled="!vm.data.recipient || !vm.data.value || vm.disableOKBtn || vm.data.addressReuse"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>
