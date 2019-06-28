@@ -1013,7 +1013,7 @@ class WalletComponent {
       iotaCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey)
+          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey, walletEntry.secretPhrase)
           iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
           iotaCurrencyBalance.visible = walletEntry.expanded
           iotaCurrencyBalance.inUse = wasCreated ? false : true
