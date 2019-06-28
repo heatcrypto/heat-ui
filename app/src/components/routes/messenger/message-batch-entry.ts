@@ -24,21 +24,39 @@
   selector: 'messageBatchEntry',
   inputs: ['message'],
   styles: [`
-    message-batch-entry md-icon {
-      padding: 0 13px 7px 0;
-      font-size: 32px !important;
-    }
-    message-batch-entry .footer {
-      font-size: 10px;
+    message-batch-entry .header {
+      font-size: 12px;
     }
     message-batch-entry .batch-entry {
       padding-left: 0px;
     }
+
+    message-batch-entry .column {
+      border-radius: 15px;
+      min-width: 120px;
+      padding-top: 5px;
+    }
     message-batch-entry .outgoing {
       text-align: right;
+      float: right;
+      background-color: #0c5f68;
+      color: white;
+      padding-left: 10px;
+      padding-top: 10px;
+      padding-right: 10px;
+      padding-botton: 0px;
+      border-radius: .4em;
     }
     message-batch-entry .incoming {
       text-align: left;
+      float: left;
+      background-color: #52a7b1;
+      color: black;
+      padding-left: 10px;
+      padding-top: 10px;
+      padding-right: 10px;
+      padding-botton: 0px;
+      border-radius: .4em;
     }
     message-batch-entry .message-content pre {
       white-space: pre-wrap;       /* Since CSS 2.1 */
@@ -51,17 +69,14 @@
       -moz-hyphens: auto;
       -webkit-hyphens: auto;
       hyphens: auto;
-      font-size: 14px;
     }
   `],
   template: `
-    <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
-      <div layout="column" flex layout-padding ng-class="vm.io">
-        <div layout="column" class="message-content"><pre>{{vm.message.content}}</pre></div>
-        <div layout="column" class="footer">
-          {{::vm.message.date}}
-        </div>
+    <div ng-class="vm.io">
+      <div class="header">
+        {{::vm.message.date}}
       </div>
+      <div class="message-content"><pre>{{vm.message.content}}</pre></div>
     </div>
   `
 })
@@ -70,6 +85,6 @@ class MessageBatchEntryComponent {
   message: IHeatMessage; // @input
   io: string;
   constructor() {
-    this.io = this.message['outgoing'] === true? 'outgoing' : 'incoming';
+    this.io = this.message['outgoing'] ? 'outgoing' : 'incoming';
   }
 }
