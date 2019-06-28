@@ -106,16 +106,9 @@
           </div>
         </div>
         <div layout="column" layout-fill>
-          <div class="row" class="progress-indicator" flex ng-show="vm.loading">
-            <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
-          </div>
-          <md-content flex ng-if="!vm.p2pMessaging.offchainMode" id="message-batch-container">
-            <message-batch-viewer flex layout="column" container-id="message-batch-container"
-                    publickey="::vm.publickey"></message-batch-viewer>
-          </md-content>
-          <md-content flex ng-if="vm.p2pMessaging.offchainMode && vm.publickey != 0" id="p2p-messages-container">
-            <p2p-messages-viewer flex layout="column" class="p2p-messages" container-id="p2p-messages-container"
-                    publickey="::vm.publickey"></p2p-messages-viewer>
+          <md-content flex id="message-batch-container">
+            <msg-viewer flex layout="column" container-id="message-batch-container"
+                    publickey="::vm.publickey"></msg-viewer>
           </md-content>
           <div layout="row" flex="none" class="edit-message">
             <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
@@ -125,17 +118,21 @@
     </div>
   `
 })
-@Inject('$scope','user','sendmessage', 'P2PMessaging')
+@Inject('$scope', 'user', 'sendmessage', 'P2PMessaging', '$interval')
 class MessengerComponent {
 
   publickey: string; // @input
   loading: boolean;
-
+  interval: any;
   constructor(private $scope: angular.IScope,
-              private user: UserService,
-              private sendmessage: SendmessageService,
-              private p2pMessaging: P2PMessaging) {
+    private user: UserService,
+    private sendmessage: SendmessageService,
+    private p2pMessaging: P2PMessaging,
+    private $interval: angular.IIntervalService) {
     user.requireLogin();
+    $scope.$on('$destroy',()=>{
+      $interval.cancel(this.interval);
+    });
   }
 
   showSendmessageDialog($event) {
@@ -144,7 +141,7 @@ class MessengerComponent {
 
   showCallDialog($event) {
     let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => {});
+    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => { });
   }
 
   toggleOnline($event) {

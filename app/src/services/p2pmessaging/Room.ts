@@ -63,7 +63,8 @@ module p2p {
     sendMessage(message: P2PMessage): number {
       let count = this.connector.sendMessage(this.name, message);
       if (message.type == "chat") {
-        let item = {timestamp: message.timestamp, fromPeer: this.user.publicKey, content: message.text};
+        let publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey
+        let item = {timestamp: message.timestamp, fromPeer: publicKey, content: message.text};
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
           this.onNewMessageHistoryItem(item);
@@ -175,7 +176,7 @@ module p2p {
 
   export interface P2PMessage {
     timestamp: number,
-    type: "chat" | "",
+    type: "chat" | "contactUpdate" | "",
     text: string
   }
 
