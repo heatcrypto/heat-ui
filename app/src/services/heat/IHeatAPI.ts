@@ -417,6 +417,7 @@ interface IHeatCreateTransactionInput {
 
   // attachements
   EffectiveBalanceLeasing?: IHeatCreateEffectiveBalanceLeasing;
+  InternetAddress?: IHeatRegisterInternetAddress;
   AskOrderCancellation?: IHeatCreateAskOrderCancellation;
   BidOrderCancellation?: IHeatCreateBidOrderCancellation;
   AskOrderPlacement?: IHeatCreateAskOrderPlacement;
@@ -430,6 +431,9 @@ interface IHeatCreateTransactionInput {
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
+}
+interface IHeatRegisterInternetAddress {
+  internetAddress: string;
 }
 interface IHeatCreateAskOrderCancellation {
   orderId: string;

@@ -241,6 +241,12 @@
                 <span>Lease Balance</span>
               </md-button>
             </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="register internet address" ng-click="vm.registerInternetAddress($event)">
+                <md-icon md-font-library="material-icons">spellcheck</md-icon>
+                <span>Register Internet address</span>
+              </md-button>
+            </md-menu-item>
             <md-menu-item ng-show="vm.isNodeEnv">
               <md-button aria-label="dev-tools" ng-click="vm.opendevTools($event)">
                 <md-icon md-font-library="material-icons">developer_board</md-icon>
@@ -296,7 +302,7 @@
   `
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
-  'assetIssue', 'whitelistMarket', 'balanceLease', 'storage', '$window', '$mdToast',
+  'assetIssue', 'whitelistMarket', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
 class ToolbarComponent {
 
@@ -319,6 +325,7 @@ class ToolbarComponent {
               private assetIssue: AssetIssueService,
               private whitelistMarket: WhitelistMarketService,
               private balanceLease: BalanceLeaseService,
+              private masternodeService: MasternodeService,
               private storage: StorageService,
               private $window: angular.IWindowService,
               private $mdToast: angular.material.IToastService,
@@ -477,7 +484,11 @@ class ToolbarComponent {
   }
 
   showLeaseBalanceDialog($event) {
-    this.balanceLease.dialog(1440, null).show()
+    this.balanceLease.dialog(1440, null).show();
+  }
+
+  registerInternetAddress($event) {
+    this.masternodeService.dialog(null).show();
   }
 
   signout() {

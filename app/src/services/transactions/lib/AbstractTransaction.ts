@@ -252,4 +252,9 @@ abstract class AbstractTransaction {
     Array.prototype.splice.apply(tmp1, [64,64].concat(tmp2));
     return converters.byteArrayToHexString(tmp1);
   }
+
+  protected static checkType(transaction: any, type: number, subtype: number) {
+    return transaction.type === type && transaction.subtype === subtype;
+  }
+
 }
