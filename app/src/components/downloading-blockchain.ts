@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2019 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -147,10 +147,9 @@ class DownloadingBlockchainComponent {
         let balancesEqualityEstimation = this.calculateBalancesEqualityEstimation(currentServerHealth, health);
         let peerEstimation = this.calculatePeerEstimation(currentServerHealth, health);
 
-        if (blocksEstimation == 1 && balancesEqualityEstimation >= 0 && peerEstimation >= 0)
-          server.statusScore = blocksEstimation + balancesEqualityEstimation + peerEstimation;
-        else
-          server.statusScore = 0;
+        server.statusScore = (blocksEstimation == 1 && balancesEqualityEstimation >= 0 && peerEstimation >= 0)
+          ? blocksEstimation + balancesEqualityEstimation + peerEstimation
+          : 0;
       });
 
       let best: ServerDescriptor = currentServer;
@@ -167,7 +166,7 @@ class DownloadingBlockchainComponent {
             best = server;
             causeToSelectBest = "Status score is better";
           }
-          if (server.statusScore == best.statusScore && server.priority < best.priority) {
+          if (server.statusScore == best.statusScore && server.priority < best.priority && best != currentServer) {
             best = server;
             causeToSelectBest = "Server priority";
           }
