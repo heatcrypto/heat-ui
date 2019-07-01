@@ -51,7 +51,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   private containerId: string; // @input
   private store: Store;
   private dateFormat;
-
+  private account: string;
   constructor($scope: angular.IScope,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
@@ -65,14 +65,14 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
     super($scope, $q, $timeout);
     this.store = storage.namespace('contacts.latestTimestamp',$scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-
+    this.account = this.user.key ? this.user.key.account : this.user.account;
     var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
-    heat.subscriber.message({sender:this.user.account}, refresh, $scope);
-    heat.subscriber.message({recipient:this.user.account}, refresh, $scope);
+    heat.subscriber.message({sender:this.account}, refresh, $scope);
+    heat.subscriber.message({recipient:this.account}, refresh, $scope);
 
     this.loadInitial();
-
-    if (this.publickey == this.user.publicKey) {
+    let publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey;
+    if (this.publickey == publicKey) {
       throw Error("Same public key as logged in user");
     }
   }
@@ -131,19 +131,19 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   }
 
   getCount() : angular.IPromise<number> {
-    return this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey));
+    return this.heat.api.getMessagingContactMessagesCount(this.account, heat.crypto.getAccountIdFromPublicKey(this.publickey));
   }
 
   getItems(firstIndex: number, lastIndex: number) : angular.IPromise<Array<any>> {
     let deferred = this.$q.defer<Array<any>>();
-    this.heat.api.getMessagingContactMessages(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey),
+    this.heat.api.getMessagingContactMessages(this.account, heat.crypto.getAccountIdFromPublicKey(this.publickey),
                 firstIndex, lastIndex).then((messages) => {
       let index = firstIndex;
 
       let result = messages.map((message) => {
         var date = utils.timestampToDate(message.timestamp);
         message['date'] = dateFormat(date, this.dateFormat);
-        message['outgoing'] = this.user.account == message.sender;
+        message['outgoing'] = this.account == message.sender;
         message['contents'] = this.decryptMessage(message);
         message['index'] = index++;
         message['html'] = this.render.render(message['contents'], [this.controlCharRender]);
@@ -161,7 +161,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   }
 
   updateLatestMessageReadTimestamp(message: IHeatMessage) {
-    var account = this.user.account == message.sender ? message.recipient : message.sender;
+    var account = this.account == message.sender ? message.recipient : message.sender;
     var latestTimestamp = this.store.getNumber(account, 0);
     if (message.timestamp > latestTimestamp) {
       this.store.put(account, message.timestamp);

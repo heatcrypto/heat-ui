@@ -17,6 +17,10 @@
     "pack": "build --dir",
     "dist": "build"
   },
+  "engines": {
+    "npm": "5.6.0",
+    "node": "8.10.0"
+  },
   "devDependencies": {
     "@types/angular": "^1.6.54",
     "@types/angular-animate": "^1.5.6",
@@ -74,7 +78,7 @@
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
     "filesaver.js": "0.2.0",
-    "heat-libs": "0.5.0",
+    "heat-libs": "Heat-Ledger-Ltd/heat-libs#iota",
     "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",

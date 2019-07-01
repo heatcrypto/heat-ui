@@ -37,13 +37,13 @@
       80% {opacity: 0.5;}
     }
     .channelopened-status-symbol {
-      font-size: 22px; 
-      color: green; 
+      font-size: 22px;
+      color: green;
       margin: 0 6px 4px 0;
     }
     .roomregistered-status-symbol {
-      font-size: 22px; 
-      color: grey; 
+      font-size: 22px;
+      color: grey;
       margin: 0 6px 4px 0;
     }
   `],
@@ -73,7 +73,7 @@ class UserContactsComponent {
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
   private store: Store;
-  private onlineStatuses: Map<string, string> = new Map<string, string>();
+  private account: string;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -86,13 +86,14 @@ class UserContactsComponent {
               storage: StorageService,
               private p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService) {
+    this.account = this.user.key ? this.user.key.account : this.user.account
 
     this.refresh = utils.debounce(
       () => {
         this.refreshContacts()
       },
       500, true);
-    heat.subscriber.unconfirmedTransaction({recipient:user.account}, ()=>{ this.refresh() });
+    heat.subscriber.unconfirmedTransaction({recipient: this.account}, ()=>{ this.refresh() });
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
@@ -180,16 +181,10 @@ class UserContactsComponent {
 
   init() {
     this.refreshContacts();
-    // var topic = new TransactionTopicBuilder().account(this.user.account);
-    // var observer = this.engine.socket().observe<TransactionObserver>(topic).
-    //   add(this.refresh).
-    //   remove(this.refresh).
-    //   confirm(this.refresh);
-    // this.$scope.$on("$destroy",() => { observer.destroy() });
   }
 
   refreshContacts() {
-    this.heat.api.getMessagingContacts(this.user.account, 0, 100).then((contacts) => {
+    this.heat.api.getMessagingContacts(this.account, 0, 100).then((contacts) => {
       this.$scope.$evalAsync(() => {
         this.contacts = contacts;
 
@@ -204,7 +199,7 @@ class UserContactsComponent {
           }
         });
 
-        this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.user.account)
+        this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.account)
           .map((contact) => {
             if (!contact['isP2POnlyContact']) {
               contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
@@ -217,7 +212,7 @@ class UserContactsComponent {
           })
           .sort((c1, c2) => (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));
 
-        if (!this.getActivePublicKey() || this.getActivePublicKey()=="0") {
+        if (this.getActivePublicKey()=="0") {
           this.setActivePublicKey();
         }
       });
