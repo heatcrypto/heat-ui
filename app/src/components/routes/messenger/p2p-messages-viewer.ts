@@ -27,7 +27,7 @@
   styles: [`
     .messages {
       overflow: auto;
-    }    
+    }
     .message-entry {
       color: white;
       margin-bottom: 14px;
@@ -72,7 +72,7 @@
 
   <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter"
   layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
-  
+
     <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
     <div layout="column" class="message">
       <div class="header">
@@ -80,7 +80,7 @@
       </div>
       <div class="message-content">{{item.content}}</div>
     </div>
-    
+
     <md-menu>
       <md-button aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
         <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
@@ -94,7 +94,7 @@
         </md-menu-item>
       </md-menu-content>
     </md-menu>
-    
+
   </div>
 </div>
   `
@@ -121,8 +121,8 @@ class P2PMessagesViewerComponent {
               private controlCharRender: ControlCharRenderService,
               private storage: StorageService,
               private p2pMessaging: P2PMessaging) {
-
-    if (this.publickey == this.user.publicKey) {
+    let publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey;
+    if (this.publickey == publicKey) {
       throw Error("Same public key as logged in user");
     }
 
