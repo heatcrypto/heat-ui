@@ -15,10 +15,10 @@ class IotaBlockExplorerService {
     this.setUrl()
   }
 
-  public setUrl(url = 'https://nodes.spamnet.iota.org:443') {
+  public setUrl(url = 'https://nodes.thetangle.org:443') {
     this.url = url;
     this.api = this.iotaCore.composeAPI({
-      provider: 'https://nodes.spamnet.iota.org:443'
+      provider: 'https://nodes.thetangle.org:443'
     });
   }
 
