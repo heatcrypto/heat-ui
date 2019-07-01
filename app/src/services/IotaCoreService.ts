@@ -47,13 +47,13 @@ class IotaCoreService {
       iotaBlockExplorerService.getAccountInfo(walletAddress.privateKey).then(info => {
         walletAddress.inUse = info.transactions.length > 0;
         if (!walletAddress.inUse) {
-          reject()
+          resolve(false)
         } else {
           walletAddress.balance = info.balance + ""
-          resolve()
+          resolve(true)
         }
       }, () => {
-        reject()
+        resolve(false)
       })
     })
   }
