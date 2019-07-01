@@ -26,6 +26,7 @@ interface ILocalKey {
   pincode: string;
   secretPhrase: string;
   name: string;
+  publicKey: string;
 }
 
 interface ILocalKeyEntry {
@@ -116,7 +117,8 @@ class LocalKeyStoreService {
       account: json['account'],
       secretPhrase: json['secretPhrase'],
       pincode: json['pincode'],
-      name: json['name']
+      name: json['name'],
+      publicKey: heat.crypto.secretPhraseToPublicKey(json['secretPhrase'])
     }
   }
 

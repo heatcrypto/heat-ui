@@ -101,11 +101,12 @@ class UserService extends EventEmitter {
 
     /* wrap this in evalasync so that any component based on ng-if="vn.user.unlocked"
        will be reloaded */
-    this.lock(true)
+    // this.lock(true) // should be removed with the depricated eth stuff from UserService?
     this.$rootScope.$evalAsync(()=> {
       /* Now all ng-if="vn.user.unlocked" are destroyed */
       this.$rootScope.$evalAsync(()=> {
-        this.key = key;
+        if(key)
+          this.key = key;
 
         /* We either receive a fully setup ICurrency from the caller or we need to create
           one ourselves. The situation in which we create one is all the cases apart from those

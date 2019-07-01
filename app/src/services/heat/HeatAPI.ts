@@ -344,4 +344,20 @@ class HeatAPI implements IHeatAPI {
   rewardsListCount(): angular.IPromise<number> {
     return this.heat.get('/mining/rewards/list/count','count');
   }
+
+  getKeystoreEntryCountByAccount(account: string): angular.IPromise<number> {
+    return this.heat.get(`/keystore/count/${account}`, 'count');
+  }
+
+  getKeystoreAccountEntry(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction> {
+    return this.heat.get(`/keystore/get/${account}/${key}`);
+  }
+
+  listKeystoreAccountEntries(account: string, from: string, to: string): angular.IPromise<Array<IHEATKeystoreTransaction>> {
+    return this.heat.get(`/keystore/list/${account}/${from}/${to}`);
+  }
+
+  saveKeystoreEntry(key: string, value: string, secretPhrase: string): angular.IPromise<IHeatCreateTransactionOutput> {
+    return this.heat.post(`/keystore/put`, {key, value, fee: 1000000, deadline: 1440, secretPhrase});
+  }
 }

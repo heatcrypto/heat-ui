@@ -402,7 +402,8 @@ class LoginComponent {
       account: this.pageAddAccount,
       secretPhrase: this.pageAddSecretPhrase,
       pincode: this.pageAddPincode,
-      name: ''
+      name: '',
+      publicKey: heat.crypto.secretPhraseToPublicKey(this.pageAddSecretPhrase)
     };
     this.localKeyStore.add(key);
     this.user.unlock(this.pageAddSecretPhrase, key, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
@@ -567,7 +568,8 @@ class LoginComponent {
       account: this.pageCreateAccount,
       secretPhrase: this.pageCreateSecretPhrase,
       pincode: this.pageCreatePincode,
-      name: this.pageCreateUserName
+      name: this.pageCreateUserName,
+      publicKey: heat.crypto.secretPhraseToPublicKey(this.pageAddSecretPhrase)
     };
     this.localKeyStore.add(key);
     this.user.unlock(this.pageCreateSecretPhrase, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
