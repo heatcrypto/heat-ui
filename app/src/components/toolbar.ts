@@ -244,7 +244,7 @@
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="register internet address" ng-click="vm.registerInternetAddress($event)">
                 <md-icon md-font-library="material-icons">spellcheck</md-icon>
-                <span>Register Internet address</span>
+                <span>Register Masternode Address</span>
               </md-button>
             </md-menu-item>
             <md-menu-item ng-show="vm.isNodeEnv">
