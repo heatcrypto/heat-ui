@@ -45,13 +45,9 @@ class IotaCoreService {
       let walletAddress = wallet.addresses[0];
       let iotaBlockExplorerService: IotaBlockExplorerService = heat.$inject.get('iotaBlockExplorerService')
       iotaBlockExplorerService.getAccountInfo(walletAddress.privateKey).then(info => {
-        walletAddress.inUse = info.transactions.length > 0;
-        if (!walletAddress.inUse) {
-          resolve(false)
-        } else {
-          walletAddress.balance = info.balance + ""
-          resolve(true)
-        }
+        walletAddress.inUse = true;
+        walletAddress.balance = info.balance + ""
+        resolve(true)
       }, () => {
         resolve(false)
       })
