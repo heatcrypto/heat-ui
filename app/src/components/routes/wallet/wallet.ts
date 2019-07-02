@@ -68,7 +68,7 @@ class CurrencyBalance {
     }
     let publicKey = heat.crypto.secretPhraseToPublicKey(this.parentAccountSecretPhrase);
     let account = heat.crypto.getAccountIdFromPublicKey(publicKey)
-    let localKeyStore = <LocalKeyStoreService> heat.$inject.get('localKeyStore')
+    let localKeyStore = <LocalKeyStoreService>heat.$inject.get('localKeyStore')
     key = {
       secretPhrase: this.parentAccountSecretPhrase,
       publicKey,
@@ -103,7 +103,7 @@ class CurrencyAddressCreate {
   public flatten: () => void
   constructor(public name: string, public wallet: WalletType) { }
 
-  private getStore(){
+  private getStore() {
     let storage = <StorageService>heat.$inject.get('storage')
     let $rootScope = heat.$inject.get('$rootScope');
     return storage.namespace('wallet', $rootScope, true)
@@ -111,7 +111,7 @@ class CurrencyAddressCreate {
 
   private getCurrencies(account: string) {
     let currencies = this.getStore().get(account)
-    if(!currencies)
+    if (!currencies)
       currencies = []
     return currencies;
   }
@@ -585,8 +585,8 @@ class WalletComponent {
   }
 
   shareCurrencyAddressesWithP2pContacts(currency: string, address: string) {
-    let p2pContactsUtils = <P2pContactUtils> heat.$inject.get('p2pContactUtils')
-    let p2pMessaging = <P2PMessaging> heat.$inject.get('P2PMessaging')
+    let p2pContactsUtils = <P2pContactUtils>heat.$inject.get('p2pContactUtils')
+    let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
     p2pMessaging.p2pContactStore.forEach((key, contact) => {
       console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
       p2pContactsUtils.shareCryptoAddress(contact, currency, address)
@@ -594,8 +594,8 @@ class WalletComponent {
   }
 
   fetchCryptoAddresses(currency: string) {
-    let p2pContactsUtils = <P2pContactUtils> heat.$inject.get('p2pContactUtils')
-    let p2pMessaging = <P2PMessaging> heat.$inject.get('P2PMessaging')
+    let p2pContactsUtils = <P2pContactUtils>heat.$inject.get('p2pContactUtils')
+    let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
     p2pMessaging.p2pContactStore.forEach((key, contact) => {
       console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
       p2pContactsUtils.fetchCryptoAddress(contact, currency)
@@ -647,19 +647,19 @@ class WalletComponent {
     dialogs.prompt($event, 'Remove Wallet Entry',
       `This completely removes the wallet entry from your device.
        Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
-      pin => {
-        if (pin == entry.pin) {
-          this.localKeyStore.remove(entry.account)
-          this.initLocalKeyStore()
-          if(entry.account === this.user.key.account) {
-            this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
-              if(count > 0) {
-                this.shareCurrencyAddressesWithP2pContacts('BTC', '')
-              }
-            })
+        pin => {
+          if (pin == entry.pin) {
+            this.localKeyStore.remove(entry.account)
+            this.initLocalKeyStore()
+            if (entry.account === this.user.key.account) {
+              this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
+                if (count > 0) {
+                  this.shareCurrencyAddressesWithP2pContacts('BTC', '')
+                }
+              })
+            }
           }
         }
-      }
       );
   }
 
@@ -743,129 +743,129 @@ class WalletComponent {
 
     /* Bitcoin and Ethereum integration start here */
     let selectedCurrencies = this.store.get(walletEntry.account)
-    if(!selectedCurrencies || selectedCurrencies.includes('BTC'))
-    this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
-      if (wallet !== undefined) {
-        let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
-        btcCurrencyAddressLoading.visible = walletEntry.expanded;
-        btcCurrencyAddressLoading.wallet = wallet;
-        walletEntry.currencies.push(btcCurrencyAddressLoading);
+    if (!selectedCurrencies || selectedCurrencies.includes('BTC'))
+      this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
+        if (wallet !== undefined) {
+          let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
+          btcCurrencyAddressLoading.visible = walletEntry.expanded;
+          btcCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(btcCurrencyAddressLoading);
 
-        let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
-        btcCurrencyAddressCreate.visible = walletEntry.expanded
-        btcCurrencyAddressCreate.parent = walletEntry
-        btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(btcCurrencyAddressCreate)
+          let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
+          btcCurrencyAddressCreate.visible = walletEntry.expanded
+          btcCurrencyAddressCreate.parent = walletEntry
+          btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(btcCurrencyAddressCreate)
+
+          this.flatten()
+          if (this.user.key.account === walletEntry.account)
+            this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadBitcoinAddresses(walletEntry)
+          }
+        }
+      })
+    if (!selectedCurrencies || selectedCurrencies.includes('ETH'))
+      this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
+
+        let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
+        ethCurrencyAddressLoading.visible = walletEntry.expanded
+        ethCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(ethCurrencyAddressLoading)
+
+        let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
+        ethCurrencyAddressCreate.visible = walletEntry.expanded
+        ethCurrencyAddressCreate.parent = walletEntry
+        ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
+
+        walletEntry.currencies.push(ethCurrencyAddressCreate)
 
         this.flatten()
-        if(this.user.key.account === walletEntry.account)
-          this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
 
         /* Only if this node is expanded will we load the addresses */
         if (walletEntry.expanded) {
-          this.loadBitcoinAddresses(walletEntry)
+          this.loadEthereumAddresses(walletEntry)
         }
-      }
-    })
-    if(!selectedCurrencies || selectedCurrencies.includes('ETH'))
-    this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
+      })
+    if (!selectedCurrencies || selectedCurrencies.includes('IOTA'))
+      this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
+        let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
+        iotaCurrencyAddressLoading.visible = walletEntry.expanded
+        iotaCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(iotaCurrencyAddressLoading)
 
-      let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
-      ethCurrencyAddressLoading.visible = walletEntry.expanded
-      ethCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(ethCurrencyAddressLoading)
+        let iotaCurrencyAddressCreate = new CurrencyAddressCreate('Iota', wallet)
+        iotaCurrencyAddressCreate.visible = walletEntry.expanded
+        iotaCurrencyAddressCreate.parent = walletEntry
+        iotaCurrencyAddressCreate.flatten = this.flatten.bind(this)
 
-      let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
-      ethCurrencyAddressCreate.visible = walletEntry.expanded
-      ethCurrencyAddressCreate.parent = walletEntry
-      ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(iotaCurrencyAddressCreate)
 
-      walletEntry.currencies.push(ethCurrencyAddressCreate)
-
-      this.flatten()
-
-      /* Only if this node is expanded will we load the addresses */
-      if (walletEntry.expanded) {
-        this.loadEthereumAddresses(walletEntry)
-      }
-    })
-    if(!selectedCurrencies || selectedCurrencies.includes('IOTA'))
-    this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
-      iotaCurrencyAddressLoading.visible = walletEntry.expanded
-      iotaCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(iotaCurrencyAddressLoading)
-
-      let iotaCurrencyAddressCreate = new CurrencyAddressCreate('Iota', wallet)
-      iotaCurrencyAddressCreate.visible = walletEntry.expanded
-      iotaCurrencyAddressCreate.parent = walletEntry
-      iotaCurrencyAddressCreate.flatten = this.flatten.bind(this)
-
-      walletEntry.currencies.push(iotaCurrencyAddressCreate)
-
-      this.flatten()
-
-      /* Only if this node is expanded will we load the addresses */
-      if (walletEntry.expanded) {
-        this.loadIotaAddresses(walletEntry)
-      }
-    })
-    if(!selectedCurrencies || selectedCurrencies.includes('FIM'))
-    this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
-      fimkCurrencyAddressCreate.visible = walletEntry.expanded
-      fimkCurrencyAddressCreate.parent = walletEntry
-      fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(fimkCurrencyAddressCreate)
-
-      this.mofoSocketService.mofoSocket().then(() => {
-        let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
-        fimkCurrencyAddressLoading.visible = walletEntry.expanded
-        fimkCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(fimkCurrencyAddressLoading)
+        this.flatten()
 
         /* Only if this node is expanded will we load the addresses */
         if (walletEntry.expanded) {
-          this.loadFIMKAddresses(walletEntry)
+          this.loadIotaAddresses(walletEntry)
         }
       })
-    })
-    if(!selectedCurrencies || selectedCurrencies.includes('NXT'))
-    this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
-      nxtCurrencyAddressCreate.visible = walletEntry.expanded
-      nxtCurrencyAddressCreate.parent = walletEntry
-      nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(nxtCurrencyAddressCreate)
+    if (!selectedCurrencies || selectedCurrencies.includes('FIM'))
+      this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
+        fimkCurrencyAddressCreate.visible = walletEntry.expanded
+        fimkCurrencyAddressCreate.parent = walletEntry
+        fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(fimkCurrencyAddressCreate)
 
-      this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
-        let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
-        nxtCurrencyAddressLoading.visible = walletEntry.expanded
-        nxtCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(nxtCurrencyAddressLoading)
-        if (walletEntry.expanded) {
-          this.loadNXTAddresses(walletEntry)
-        }
-      })
-    })
-    if(!selectedCurrencies || selectedCurrencies.includes('ARDR'))
-    this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
-      ardorCurrencyAddressCreate.visible = walletEntry.expanded
-      ardorCurrencyAddressCreate.parent = walletEntry
-      ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(ardorCurrencyAddressCreate)
+        this.mofoSocketService.mofoSocket().then(() => {
+          let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
+          fimkCurrencyAddressLoading.visible = walletEntry.expanded
+          fimkCurrencyAddressLoading.wallet = wallet
+          walletEntry.currencies.push(fimkCurrencyAddressLoading)
 
-      this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
-        let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
-        ardorCurrencyAddressLoading.visible = walletEntry.expanded
-        ardorCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(ardorCurrencyAddressLoading)
-        if (walletEntry.expanded) {
-          this.loadARDORAddresses(walletEntry)
-        }
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadFIMKAddresses(walletEntry)
+          }
+        })
       })
-    })
+    if (!selectedCurrencies || selectedCurrencies.includes('NXT'))
+      this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
+        nxtCurrencyAddressCreate.visible = walletEntry.expanded
+        nxtCurrencyAddressCreate.parent = walletEntry
+        nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(nxtCurrencyAddressCreate)
+
+        this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
+          let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
+          nxtCurrencyAddressLoading.visible = walletEntry.expanded
+          nxtCurrencyAddressLoading.wallet = wallet
+          walletEntry.currencies.push(nxtCurrencyAddressLoading)
+          if (walletEntry.expanded) {
+            this.loadNXTAddresses(walletEntry)
+          }
+        })
+      })
+    if (!selectedCurrencies || selectedCurrencies.includes('ARDR'))
+      this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
+        ardorCurrencyAddressCreate.visible = walletEntry.expanded
+        ardorCurrencyAddressCreate.parent = walletEntry
+        ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(ardorCurrencyAddressCreate)
+
+        this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
+          let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
+          ardorCurrencyAddressLoading.visible = walletEntry.expanded
+          ardorCurrencyAddressLoading.wallet = wallet
+          walletEntry.currencies.push(ardorCurrencyAddressLoading)
+          if (walletEntry.expanded) {
+            this.loadARDORAddresses(walletEntry)
+          }
+        })
+      })
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -1196,7 +1196,7 @@ class WalletComponent {
       let store = storage.namespace('wallet', $rootScope, true);
       let accountId = heat.crypto.getAccountId(secret)
       let currencies = store.get(accountId)
-      if(!currencies)
+      if (!currencies)
         currencies = []
       currencies.push(selectedImport)
       store.put(accountId, currencies.filter(distinctValues));
@@ -1269,17 +1269,35 @@ class WalletComponent {
 
       $scope['vm'].okButtonClick = function ($event) {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
-        let success = false
         if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-          success = node.createAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          let walletEntry = $scope['vm'].data.selectedWalletEntry
+          let success = false
+          if (walletEntry) {
+            let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
+            if (!node) {
+              let storage = <StorageService>heat.$inject.get('storage')
+              let $rootScope = heat.$inject.get('$rootScope');
+              let store = storage.namespace('wallet', $rootScope, true)
+              let currencies = store.get(walletEntry.account)
+              if (!currencies)
+                currencies = []
+              currencies.push('ETH')
+              store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+              self.initWalletEntry(walletEntry)
+            }
+            // load in next event loop to load currency addresses first
+            setTimeout(() => {
+              node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
+              success = node.createBtcAddress(self)
+              walletEntry.toggle(true)
+              $mdDialog.hide(null).then(() => {
+                if (!success) {
+                  dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+                }
+              })
+            }, 0)
           }
-        })
+        }
       }
 
       $scope['vm'].data = {
@@ -1407,14 +1425,29 @@ class WalletComponent {
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
-          success = node.createBtcAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('BTC')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
           }
-        })
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
+            success = node.createBtcAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+              }
+            })
+          }, 0)
+        }
       }
 
       $scope['vm'].data = {
@@ -1556,14 +1589,29 @@ class WalletComponent {
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
-          success = node.createFIMKAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('FIM')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
           }
-        })
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
+            success = node.createBtcAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
+              }
+            })
+          }, 0)
+        }
       }
 
       $scope['vm'].data = {
@@ -1661,14 +1709,29 @@ class WalletComponent {
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
-          success = node.createNXTAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('NXT')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
           }
-        })
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
+            success = node.createBtcAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
+              }
+            })
+          }, 0)
+        }
       }
 
       $scope['vm'].data = {
@@ -1765,15 +1828,30 @@ class WalletComponent {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
         let success = false
         if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
-          success = node.createARDRAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('ARDR')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
           }
-        })
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
+            success = node.createBtcAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
+              }
+            })
+          }, 0)
+        }
       }
 
       $scope['vm'].data = {
