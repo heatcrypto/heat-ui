@@ -105,7 +105,8 @@ class CurrencyAddressCreate {
 
   private getStore(){
     let storage = <StorageService>heat.$inject.get('storage')
-    return storage.namespace('wallet')
+    let $rootScope = heat.$inject.get('$rootScope');
+    return storage.namespace('wallet', $rootScope, true)
   }
 
   private getCurrencies(account: string) {
@@ -442,7 +443,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
 
   selectAll = true;
@@ -476,9 +477,10 @@ class WalletComponent {
     private ardorBlockExplorerService: ArdorBlockExplorerService,
     private mofoSocketService: MofoSocketService,
     private iotaCoreService: IotaCoreService,
-    private storage: StorageService) {
+    private storage: StorageService,
+    private $rootScope: angular.IScope) {
 
-    this.store = this.storage.namespace('wallet')
+    this.store = this.storage.namespace('wallet', $rootScope, true)
 
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
@@ -1190,7 +1192,8 @@ class WalletComponent {
         return self.indexOf(value) === index;
       }
       let storage = <StorageService>heat.$inject.get('storage');
-      let store = storage.namespace('wallet');
+      let $rootScope = heat.$inject.get('$rootScope');
+      let store = storage.namespace('wallet', $rootScope, true);
       let accountId = heat.crypto.getAccountId(secret)
       let currencies = store.get(accountId)
       if(!currencies)
@@ -1216,7 +1219,7 @@ class WalletComponent {
               <div flex layout="column">
                 <p>Select currency to import</p>
                 <md-input-container flex>
-                  <md-select ng-model="vm.data.selectedImport">
+                  <md-select ng-model="vm.data.selectedImport" placeholder="Select currency">
                     <md-option ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
                   </md-select>
                 </md-input-container>
@@ -1239,7 +1242,7 @@ class WalletComponent {
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2" class="md-primary"
+              <md-button ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2 || vm.data.selectedImport === ''" class="md-primary"
                   ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>
