@@ -103,6 +103,27 @@ class CurrencyAddressCreate {
   public flatten: () => void
   constructor(public name: string, public wallet: WalletType) { }
 
+  private getStore(){
+    let storage = <StorageService>heat.$inject.get('storage')
+    let $rootScope = heat.$inject.get('$rootScope');
+    return storage.namespace('wallet', $rootScope, true)
+  }
+
+  private getCurrencies(account: string) {
+    let currencies = this.getStore().get(account)
+    if(!currencies)
+      currencies = []
+    return currencies;
+  }
+  private distinctValues = (value, index, self) => {
+    return self.indexOf(value) === index;
+  }
+  private addCurrency(account: string, currency: string) {
+    let store = this.getStore()
+    let currencies = this.getCurrencies(account)
+    currencies.push(currency)
+    store.put(account, currencies.filter(this.distinctValues));
+  }
   /* Handler for creating a new address, this method is declared here (on the node so to say)
     still after an architectural change where we dont display the CREATE node anymore.
     We'll be leaving it in place where all you need to do is set this.hidden=false to
@@ -119,6 +140,7 @@ class CurrencyAddressCreate {
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
+      this.addCurrency(this.parent.account, 'ETH')
       return true
     }
 
@@ -147,6 +169,7 @@ class CurrencyAddressCreate {
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
         this.flatten()
+        this.addCurrency(this.parent.account, 'ETH')
         return true
       }
     }
@@ -166,6 +189,7 @@ class CurrencyAddressCreate {
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
+      this.addCurrency(this.parent.account, 'BTC')
       return true
     }
 
@@ -194,6 +218,7 @@ class CurrencyAddressCreate {
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
         this.flatten()
+        this.addCurrency(this.parent.account, 'BTC')
         return true
       }
     }
@@ -213,6 +238,7 @@ class CurrencyAddressCreate {
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
+      this.addCurrency(this.parent.account, 'FIM')
       return true
     }
 
@@ -227,6 +253,7 @@ class CurrencyAddressCreate {
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
+      this.addCurrency(this.parent.account, 'NXT')
       return true
     }
     return false
@@ -240,6 +267,7 @@ class CurrencyAddressCreate {
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
+      this.addCurrency(this.parent.account, 'ARDR')
       return true
     }
     return false
@@ -415,7 +443,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
 
   selectAll = true;
@@ -424,8 +452,9 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }];
   selectedChain = '';
+  store: any;
 
   constructor(private $scope: angular.IScope,
     private $q: angular.IQService,
@@ -447,7 +476,11 @@ class WalletComponent {
     private nxtBlockExplorerService: NxtBlockExplorerService,
     private ardorBlockExplorerService: ArdorBlockExplorerService,
     private mofoSocketService: MofoSocketService,
-    private iotaCoreService: IotaCoreService) {
+    private iotaCoreService: IotaCoreService,
+    private storage: StorageService,
+    private $rootScope: angular.IScope) {
+
+    this.store = this.storage.namespace('wallet', $rootScope, true)
 
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
@@ -480,6 +513,9 @@ class WalletComponent {
     }
     else if (this.$scope['vm'].selectedChain === 'ARDR') {
       this.createARDRAccount($event)
+    }
+    else if (this.$scope['vm'].selectedChain === 'IOTA') {
+      this.createIotaAccount($event)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -706,7 +742,8 @@ class WalletComponent {
     });
 
     /* Bitcoin and Ethereum integration start here */
-
+    let selectedCurrencies = this.store.get(walletEntry.account)
+    if(!selectedCurrencies || selectedCurrencies.includes('BTC'))
     this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
       if (wallet !== undefined) {
         let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
@@ -730,7 +767,7 @@ class WalletComponent {
         }
       }
     })
-
+    if(!selectedCurrencies || selectedCurrencies.includes('ETH'))
     this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
 
       let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
@@ -752,7 +789,7 @@ class WalletComponent {
         this.loadEthereumAddresses(walletEntry)
       }
     })
-
+    if(!selectedCurrencies || selectedCurrencies.includes('IOTA'))
     this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
       let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
       iotaCurrencyAddressLoading.visible = walletEntry.expanded
@@ -773,7 +810,7 @@ class WalletComponent {
         this.loadIotaAddresses(walletEntry)
       }
     })
-
+    if(!selectedCurrencies || selectedCurrencies.includes('FIM'))
     this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
       let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
       fimkCurrencyAddressCreate.visible = walletEntry.expanded
@@ -793,7 +830,7 @@ class WalletComponent {
         }
       })
     })
-
+    if(!selectedCurrencies || selectedCurrencies.includes('NXT'))
     this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
       let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
       nxtCurrencyAddressCreate.visible = walletEntry.expanded
@@ -811,7 +848,7 @@ class WalletComponent {
         }
       })
     })
-
+    if(!selectedCurrencies || selectedCurrencies.includes('ARDR'))
     this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
       let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
       ardorCurrencyAddressCreate.visible = walletEntry.expanded
@@ -1135,6 +1172,7 @@ class WalletComponent {
           password: $scope['vm'].data.password1,
           secretPhrase: $scope['vm'].data.secretPhrase,
         })
+        importWallet($scope['vm'].data.secretPhrase, $scope['vm'].data.selectedImport)
       }
       $scope['vm'].secretChanged = function () {
         $scope['vm'].data.bip44Compatible = self.lightwalletService.validSeed($scope['vm'].data.secretPhrase)
@@ -1143,8 +1181,25 @@ class WalletComponent {
         password1: '',
         password2: '',
         secretPhrase: '',
-        bip44Compatible: false
+        bip44Compatible: false,
+        selectedImport: ''
       }
+      $scope['vm'].currencyList = [{ name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }];
+    }
+
+    function importWallet(secret: string, selectedImport: string) {
+      let distinctValues = (value, index, self) => {
+        return self.indexOf(value) === index;
+      }
+      let storage = <StorageService>heat.$inject.get('storage');
+      let $rootScope = heat.$inject.get('$rootScope');
+      let store = storage.namespace('wallet', $rootScope, true);
+      let accountId = heat.crypto.getAccountId(secret)
+      let currencies = store.get(accountId)
+      if(!currencies)
+        currencies = []
+      currencies.push(selectedImport)
+      store.put(accountId, currencies.filter(distinctValues));
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -1162,6 +1217,12 @@ class WalletComponent {
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column">
+                <p>Select currency to import</p>
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selectedImport" placeholder="Select currency">
+                    <md-option ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
+                  </md-select>
+                </md-input-container>
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
                 <md-input-container flex>
                   <label>HEAT Secret Phrase / Seed / Private Key</label>
@@ -1181,7 +1242,7 @@ class WalletComponent {
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2" class="md-primary"
+              <md-button ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2 || vm.data.selectedImport === ''" class="md-primary"
                   ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>
@@ -1423,6 +1484,50 @@ class WalletComponent {
               <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
                   class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createIotaAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create IOTA Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <p>Create your IOTA seed from
+                <a target="_blank" href="https://ipfs.io/ipfs/QmdqTgEdyKVQAVnfT5iV4ULzTbkV4hhkDkMqGBuot8egfA">here</a>
+              </p>
+              <span flex></span>
+            </md-dialog-content>
+            <md-dialog-actions>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>
