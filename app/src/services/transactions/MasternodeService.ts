@@ -73,6 +73,8 @@ class RegisterInternetAddressDialog extends GenericDialog {
         .text('internetAddress', this.internetAddress)
         .label('IP address or domain name')
         .required(),
+      builder.staticText('note1', "MASTERNODE REGISTRATION WILL BECOME AVAILABLE AT BLOCK 2700000 (approx. 2019-08-10)"),
+      builder.staticText('note2', "Minimum stake for Masternode to receive POP reward at block generation is 1000 HEAT"),
       builder.staticText('feeText', "NOTICE: Masternode registration will expire after 311040  blocks (~90 days). To keep receiving POP rewards you will need to re-register at that time"),
     ]
   }
