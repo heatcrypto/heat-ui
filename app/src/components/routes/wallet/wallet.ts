@@ -1225,15 +1225,15 @@ class WalletComponent {
                 </md-input-container>
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
                 <md-input-container flex>
-                  <label>HEAT Secret Phrase / Seed / Private Key</label>
+                  <label>Private key / secret phrase</label>
                   <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false" ng-change="vm.secretChanged() "></textarea>
                 </md-input-container>
                 <md-input-container flex>
-                  <label>Password</label>
+                  <label>Desired Heatwallet PIN / password</label>
                   <input type="password" ng-model="vm.data.password1" required name="password1">
                 </md-input-container>
                 <md-input-container flex>
-                  <label>Password (confirm)</label>
+                  <label>Desired Heatwallet PIN / password (confirm)</label>
                   <input type="password" ng-model="vm.data.password2" required name="password2">
                 </md-input-container>
                 <span>BIP44 compatible = <b>{{vm.data.bip44Compatible?'TRUE':'FALSE'}}</b></span>
