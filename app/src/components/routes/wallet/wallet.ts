@@ -571,6 +571,12 @@ class WalletComponent {
       this.entries = []
       this.walletEntries.forEach(walletEntry => {
         this.entries.push(walletEntry)
+        walletEntry.currencies = walletEntry.currencies.filter((currency, index, self) => {
+          return index === self.findIndex((t) => (
+            //@ts-ignore
+            t.name === currency.name && t.address === currency.address
+          ))
+        });
         walletEntry.currencies.forEach(curr => {
           let currencyBalance = <CurrencyBalance>curr
           this.entries.push(currencyBalance)
