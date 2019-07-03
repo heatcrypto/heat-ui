@@ -40,7 +40,7 @@
         "priority": 1
       }
     ],
-    "signalingUrl": "ws://185.40.76.143:7763/ws/"
+    "signalingUrl": "ws://185.40.76.143:7755/ws/"
   },
  
   "betanet": {}
