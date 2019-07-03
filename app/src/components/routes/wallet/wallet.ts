@@ -356,7 +356,7 @@ class WalletEntry {
         </md-button>
 
         <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
-          <md-option ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
+          <md-option style="height: 30px;"ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
       </div>
 
@@ -1226,7 +1226,7 @@ class WalletComponent {
                 <p>Select currency to import</p>
                 <md-input-container flex>
                   <md-select ng-model="vm.data.selectedImport" placeholder="Select currency">
-                    <md-option ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
+                    <md-option style="height: 30px;" ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
                   </md-select>
                 </md-input-container>
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
