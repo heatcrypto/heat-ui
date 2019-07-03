@@ -1190,7 +1190,7 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }];
+      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
