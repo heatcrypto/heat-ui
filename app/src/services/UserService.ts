@@ -49,10 +49,6 @@ class UserService extends EventEmitter {
   /* Compatible with Ethereum and Bitcoin */
   public bip44Compatible: boolean;
 
-  /* List of ethereum bip44 addresses, the first being the master address */
-  // TODO deprecate
-  public ethAddresses: string[] = []
-
   /* Prevents circular depency */
   // TODO deprecate
   public ethWallet: LightwalletService
@@ -154,7 +150,6 @@ class UserService extends EventEmitter {
   lock(noreload?:boolean) {
     this.key = null
     this.ethWallet = null
-    this.ethAddresses = []
     this.secretPhrase = null;
     this.unlocked = false;
     this.account = null;
