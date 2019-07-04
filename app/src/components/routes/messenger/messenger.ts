@@ -149,6 +149,9 @@ class MessengerComponent {
 
   showCallDialog($event) {
     this.p2pMessaging.dialog($event).show().then(room => {});
+    let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
+    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => {});
+    //this.p2pMessaging.dialog($event).show().then(room => {});
   }
 
   toggleOnline($event) {
