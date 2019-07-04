@@ -31,20 +31,56 @@ class UserService extends EventEmitter {
   public unlocked: boolean = false;
 
   /* Secret phrase as regular string (the master seed - holds ethereum and heat) */
-  public secretPhrase: string;
+  //public secretPhrase: string;
+  private __secretPhrase: string
+  get secretPhrase() {
+    return this.__secretPhrase
+  }
+  set secretPhrase(s) {
+    this.__secretPhrase = s
+  }
 
   /* Public key as HEX string, obtained from secretphrase (this is a HEAT public key!!)*/
-  public publicKey: string;
+  //public publicKey: string;
+  public __publicKey: string;
+  get publicKey() {
+    return this.__publicKey
+  }
+  set publicKey(p) {
+    this.__publicKey = p
+  }
 
   /* HEAT Account in numeric format */
-  public account: string;
+  //public account: string;
+  public __acount: string
+  get account() {
+    return this.__acount
+  }
+  set account(a) {
+    this.__acount = a
+  }
 
   /* HEAT Public or private email identifier */
   public accountName: string;
   public accountNameIsPrivate: boolean;
 
-  /* Local key storage key */
-  public key: ILocalKey;
+  /* Local key storage key contains the
+      - secret phrase
+      - account
+      - name
+      - public key
+     Of the master HEAT account but only in case a login is done with from the drop down menu
+     and after entering the pin code. In case the user enters his private key directly no
+     key object is provided.
+  */
+  //public key: ILocalKey;
+  public __key: ILocalKey;
+  get key() {
+    return this.__key
+  }
+  set key(k) {
+    this.__key = k
+  }
 
   /* Compatible with Ethereum and Bitcoin */
   public bip44Compatible: boolean;
