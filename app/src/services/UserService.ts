@@ -49,10 +49,6 @@ class UserService extends EventEmitter {
   /* Compatible with Ethereum and Bitcoin */
   public bip44Compatible: boolean;
 
-  /* Prevents circular depency */
-  // TODO deprecate
-  public ethWallet: LightwalletService
-
   /* ICurrency implementation in use currently, the currency used is determined when we
      unlock an account (provide secret phrase + selected address + currency type) */
   public currency: ICurrency = null
@@ -127,19 +123,8 @@ class UserService extends EventEmitter {
 
         /* The other parts are on the blockchain */
         this.refresh().then(() => {
-
-          /* Only if we are a bip44 will we load the eth wallet */
-          if (bip44Compatible) {
-            this.ethWallet = heat.$inject.get('lightwalletService');
-            this.ethWallet.unlock(secretPhrase, "").then(() => {
-              deferred.resolve();
-              this.emit(UserService.EVENT_UNLOCKED);
-            })
-          }
-          else {
-            deferred.resolve();
-            this.emit(UserService.EVENT_UNLOCKED);
-          }
+          deferred.resolve();
+          this.emit(UserService.EVENT_UNLOCKED);
         });
       })
     })
@@ -149,7 +134,6 @@ class UserService extends EventEmitter {
 
   lock(noreload?:boolean) {
     this.key = null
-    this.ethWallet = null
     this.secretPhrase = null;
     this.unlocked = false;
     this.account = null;
