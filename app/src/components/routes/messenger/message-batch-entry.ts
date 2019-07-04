@@ -27,8 +27,14 @@
     message-batch-entry .header {
       font-size: 12px;
     }
+    message-batch-entry .outgoing .header {
+      text-align: right;
+    }
     message-batch-entry .batch-entry {
       padding-left: 0px;
+    }
+    message-batch-entry .message-content {
+      font-size: 16px;
     }
 
     message-batch-entry .column {
@@ -37,15 +43,16 @@
       padding-top: 5px;
     }
     message-batch-entry .outgoing {
-      text-align: right;
       float: right;
       background-color: #0c5f68;
       color: white;
       padding-left: 10px;
       padding-top: 10px;
       padding-right: 10px;
-      padding-botton: 0px;
+      padding-bottom: 0px;
       border-radius: .4em;
+      max-width: 75%;
+      min-width: 20%;
     }
     message-batch-entry .incoming {
       text-align: left;
@@ -57,6 +64,8 @@
       padding-right: 10px;
       padding-botton: 0px;
       border-radius: .4em;
+      max-width: 75%;
+      min-width: 20%;
     }
     message-batch-entry .message-content pre {
       white-space: pre-wrap;       /* Since CSS 2.1 */
@@ -76,7 +85,7 @@
       <div class="header">
         {{::vm.message.date}}
       </div>
-      <div class="message-content"><pre>{{vm.message.content}}</pre></div>
+      <div class="message-content"><pre>{{vm.message.contents}}</pre></div>
     </div>
   `
 })
