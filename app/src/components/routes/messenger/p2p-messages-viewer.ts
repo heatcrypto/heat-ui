@@ -27,6 +27,7 @@
   styles: [`
     .messages {
       overflow: auto;
+      font-size: 14px;
     }
     .message-entry {
       color: white;

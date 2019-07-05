@@ -356,7 +356,7 @@ class WalletEntry {
         </md-button>
 
         <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
-          <md-option ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
+          <md-option style="height: 30px;"ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
       </div>
 
@@ -1190,7 +1190,7 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }];
+      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
@@ -1226,7 +1226,7 @@ class WalletComponent {
                 <p>Select currency to import</p>
                 <md-input-container flex>
                   <md-select ng-model="vm.data.selectedImport" placeholder="Select currency">
-                    <md-option ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
+                    <md-option style="height: 30px;" ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
                   </md-select>
                 </md-input-container>
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
