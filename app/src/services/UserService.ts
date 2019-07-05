@@ -30,7 +30,10 @@ class UserService extends EventEmitter {
 
   public unlocked: boolean = false;
 
-  /* Secret phrase as regular string (the master seed - holds ethereum and heat) */
+  /* Secret phrase as regular string (the master seed - holds ethereum and heat)
+     This is ALWAYS the secretPhrase to the master HEAT account that was used to
+     unlock the wallet. This never holds the Bitcoin or Ethereum private key since
+     those are in userService.currency.secretPhrase. */
   //public secretPhrase: string;
   private __secretPhrase: string
   get secretPhrase() {
@@ -61,8 +64,23 @@ class UserService extends EventEmitter {
   }
 
   /* HEAT Public or private email identifier */
-  public accountName: string;
-  public accountNameIsPrivate: boolean;
+  //public accountName: string;
+  public __accountName: string
+  get accountName() {
+    return this.__accountName
+  }
+  set accountName(a) {
+    this.__accountName = a
+  }
+
+  //public accountNameIsPrivate: boolean;
+  public __accountNameIsPrivate: boolean;
+  get accountNameIsPrivate() {
+    return this.__accountNameIsPrivate
+  }
+  set accountNameIsPrivate(a) {
+    this.__accountNameIsPrivate = a
+  }
 
   /* Local key storage key contains the
       - secret phrase
@@ -87,7 +105,14 @@ class UserService extends EventEmitter {
 
   /* ICurrency implementation in use currently, the currency used is determined when we
      unlock an account (provide secret phrase + selected address + currency type) */
-  public currency: ICurrency = null
+  //public currency: ICurrency = null
+  public __currency: ICurrency
+  get currency() {
+    return this.__currency
+  }
+  set currency(c) {
+    this.__currency = c
+  }
 
   constructor(private $q,
               private $window: angular.IWindowService,
@@ -136,26 +161,36 @@ class UserService extends EventEmitter {
         if(key)
           this.key = key;
 
+        this.unlocked = true;
+        this.accountName = '[no name]';
+
         /* We either receive a fully setup ICurrency from the caller or we need to create
           one ourselves. The situation in which we create one is all the cases apart from those
           where we explicitly want some other currency and address than standard HEAT */
-        if (!currency) {
+        if (!currency || currency.symbol=='HEAT') {
           let address = heat.crypto.getAccountId(secretPhrase);
           currency = new HEATCurrency(secretPhrase, address)
+
+          /* Store the currency */
+          this.currency = currency
+
+          /* Circular dependencies force this */
+          this.bip44Compatible = bip44Compatible || false
+
+          /* Everything obtained from the secret phrase - These are all for the master HEAT account */
+          this.secretPhrase = secretPhrase;
+          this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
+          this.account = heat.crypto.getAccountId(secretPhrase);
         }
+        /* In case we do receive a currency we can expect secretPhrase to be null which is
+         * to be expected since the currency will be something else than HEATCurrency and
+         * the currency object carries its own secretPhrase.
+         */
+        else {
 
-        /* Store the currency */
-        this.currency = currency
-
-        /* Circular dependencies force this */
-        this.bip44Compatible = bip44Compatible || false
-
-        /* Everything obtained from the secret phrase - These are all for the master HEAT account */
-        this.secretPhrase = secretPhrase;
-        this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
-        this.account = heat.crypto.getAccountId(secretPhrase);
-        this.unlocked = true;
-        this.accountName = '[no name]';
+          /* Store the currency */
+          this.currency = currency
+        }
 
         /* The other parts are on the blockchain */
         this.refresh().then(() => {
@@ -164,7 +199,6 @@ class UserService extends EventEmitter {
         });
       })
     })
-
     return deferred.promise;
   }
 
