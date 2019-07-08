@@ -59,7 +59,7 @@ class RegisterInternetAddressDialog extends GenericDialog {
               private heat: HeatService,
               private internetAddress: string) {
     super($event);
-    this.dialogTitle = 'Register Internet Address';
+    this.dialogTitle = 'Register Masternode Address';
     this.dialogDescription = 'Register Internet Address to be Masternode';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.registerInternetAddressFee, 8).replace(/000000$/, '');
@@ -71,8 +71,11 @@ class RegisterInternetAddressDialog extends GenericDialog {
     return [
       builder
         .text('internetAddress', this.internetAddress)
-        .label('Internet Address (domain name)')
-        .required()
+        .label('IP address or domain name')
+        .required(),
+      builder.staticText('note1', "MASTERNODE REGISTRATION WILL BECOME AVAILABLE AT BLOCK 2700000 (approx. 2019-08-10)"),
+      builder.staticText('note2', "Minimum stake for Masternode to receive POP reward at block generation is 1000 HEAT"),
+      builder.staticText('feeText', "NOTICE: Masternode registration will expire after 311040  blocks (~90 days). To keep receiving POP rewards you will need to re-register at that time"),
     ]
   }
 

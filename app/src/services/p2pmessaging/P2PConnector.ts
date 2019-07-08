@@ -249,6 +249,7 @@ module p2p {
             socket.onerror = (error) => {
               console.log(error);
               reject(error);
+              this.webSocketPromise = null;
             };
           }
         );

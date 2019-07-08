@@ -54,13 +54,18 @@
     }
     messenger .edit-message {
       padding-right: 0px;
-      padding-top: 8px;
     }
     .control-panel button {
       flex: auto;
     }
     .p2p-messages {
       height: 100%;
+    }
+    #offchainButton.disable span {
+      color: grey;
+    }
+    #offchainButton.active {
+      background-color: green;
     }
     #onlineStatusButton.disable span {
       color: grey;
@@ -87,18 +92,18 @@
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
-              New CONTACT
+              New Message
             </md-button>
             <md-button id="CallButton" class="md-primary" aria-label="Call"
             ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
-                Connect user to establish the peer-to-peer channel
+                Call user to establish the peer-to-peer channel
               </md-tooltip>
-              CONNECT
+              Call
             </md-button>
           </div>
           <div layout="row" class="control-panel">
-            <md-button class="online" id="onlineStatusButton" ng-click="vm.toggleOnline()"
+            <md-button id="onlineStatusButton" ng-click="vm.toggleOnline()"
             ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
               <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
@@ -106,9 +111,16 @@
           </div>
         </div>
         <div layout="column" layout-fill>
-          <md-content flex id="message-batch-container">
-            <msg-viewer flex layout="column" container-id="message-batch-container"
-                    publickey="::vm.publickey"></msg-viewer>
+          <div class="row" class="progress-indicator" flex ng-show="vm.loading">
+            <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
+          </div>
+          <md-content flex ng-if="!vm.p2pMessaging.offchainMode" id="message-batch-container">
+            <message-batch-viewer flex layout="column" container-id="message-batch-container"
+                    publickey="::vm.publickey"></message-batch-viewer>
+          </md-content>
+          <md-content flex ng-if="vm.p2pMessaging.offchainMode && vm.publickey != 0" id="p2p-messages-container">
+            <p2p-messages-viewer flex layout="column" class="p2p-messages" container-id="p2p-messages-container"
+                    publickey="::vm.publickey"></p2p-messages-viewer>
           </md-content>
           <div layout="row" flex="none" class="edit-message">
             <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
@@ -118,21 +130,17 @@
     </div>
   `
 })
-@Inject('$scope', 'user', 'sendmessage', 'P2PMessaging', '$interval')
+@Inject('$scope','user','sendmessage', 'P2PMessaging')
 class MessengerComponent {
 
   publickey: string; // @input
   loading: boolean;
-  interval: any;
+
   constructor(private $scope: angular.IScope,
-    private user: UserService,
-    private sendmessage: SendmessageService,
-    private p2pMessaging: P2PMessaging,
-    private $interval: angular.IIntervalService) {
+              private user: UserService,
+              private sendmessage: SendmessageService,
+              private p2pMessaging: P2PMessaging) {
     user.requireLogin();
-    $scope.$on('$destroy',()=>{
-      $interval.cancel(this.interval);
-    });
   }
 
   showSendmessageDialog($event) {
@@ -140,8 +148,10 @@ class MessengerComponent {
   }
 
   showCallDialog($event) {
+    this.p2pMessaging.dialog($event).show().then(room => {});
     let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => { });
+    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => {});
+    //this.p2pMessaging.dialog($event).show().then(room => {});
   }
 
   toggleOnline($event) {

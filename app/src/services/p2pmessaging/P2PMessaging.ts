@@ -43,8 +43,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   public hasUnreadMessage: boolean = false;
 
   public connector: p2p.P2PConnector;
-  private publicKey: string;
-  private secretPhrase: string;
 
   constructor(private settings: SettingsService,
               private user: UserService,
@@ -54,32 +52,40 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private $mdToast: angular.material.IToastService) {
     super();
 
-    let listener = () => {
-      this.publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey;
-      this.secretPhrase = this.user.key ? this.user.key.secretPhrase : this.user.secretPhrase;
-      this.connector = new p2p.P2PConnector(this, settings, $interval);
-      this.connector.setup(
-        this.publicKey,
-        (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-        peerId => this.confirmIncomingCall(peerId),
-        reason => this.onSignalingError(reason),
-        dataHex => this.sign(dataHex),
-        (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
-        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
-      );
+    user.on(UserService.EVENT_UNLOCKED, () => {
+      if (!this.connector) {
+        this.connector = new p2p.P2PConnector(this, settings, $interval);
+        this.connector.setup(
+          this.user.publicKey,
+          (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
+          peerId => this.confirmIncomingCall(peerId),
+          reason => this.onSignalingError(reason),
+          dataHex => this.sign(dataHex),
+          (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
+          (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
+        );
+      }
+    });
+
+    let closeListener = () => {
+      if (this.connector) {
+        this.connector.close();
+        this.connector = null;
+      }
     };
-    user.on(UserService.EVENT_UNLOCKED, listener);
+
+    user.on(UserService.EVENT_LOCKED, closeListener);
 
     this.p2pContactStore = storage.namespace('p2pContacts');
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
   }
 
   private encrypt(message: string, peerPublicKey: string) {
-    return heat.crypto.encryptMessage(message, peerPublicKey, this.secretPhrase, false);
+    return heat.crypto.encryptMessage(message, peerPublicKey, this.user.secretPhrase, false);
   }
 
   private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
-    return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.secretPhrase, false);
+    return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
   }
 
   onMessage(msg: {}, room: p2p.Room) {
@@ -127,7 +133,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
    * Returns room with single peer.
    */
   getOneToOneRoom(peerId: string, required?: boolean): p2p.Room {
-    let roomName = this.generateOneToOneRoomName(this.publicKey, peerId);
+    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room && required) {
       room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
@@ -150,7 +156,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     if (this.onlineStatus == "offline") {
       return null;
     }
-    let roomName = this.generateOneToOneRoomName(this.publicKey, peerId);
+    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room) {
       room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
@@ -164,7 +170,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   call(peerId: string): p2p.Room {
     let room = this.enterRoom(peerId);
-    this.connector.call(peerId, this.publicKey, room);
+    this.connector.call(peerId, this.user.publicKey, room);
     return room;
   }
 
@@ -174,8 +180,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   sign(dataHex: string): p2p.ProvingData {
     //proof the passed to room public key is owned
-    let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(this.secretPhrase));
-    return {signatureHex: signature, dataHex: dataHex, publicKeyHex: this.publicKey}
+    let signature = heat.crypto.signBytes(dataHex, converters.stringToHexString(this.user.secretPhrase));
+    return {signatureHex: signature, dataHex: dataHex, publicKeyHex: this.user.publicKey}
   }
 
   private setupRoom(room: p2p.Room): p2p.Room {

@@ -59,7 +59,7 @@ class ETHCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendEther($event).then(
       data => {
-        let address = this.user.account
+        let address = this.user.currency.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txHash, timestamp)
       },

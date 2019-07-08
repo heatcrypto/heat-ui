@@ -150,7 +150,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         transaction['time'] = dateFormat(date, format);
         transaction['heightDisplay'] = 'no height'
         if (this.personalize) {
-          transaction['outgoing'] = this.user.account == transaction.from;
+          transaction['outgoing'] = this.user.currency.address == transaction.from;
 
           //transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
           let amountVal = this.renderer.renderAmount(transaction);

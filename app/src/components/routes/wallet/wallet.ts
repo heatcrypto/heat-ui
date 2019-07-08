@@ -34,7 +34,7 @@ class CurrencyBalance {
   public inUse = false
   public tokens: Array<TokenBalance> = []
   public visible = false
-  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public parentAccountSecretPhrase: string) { }
+  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) { }
 
   public unlock(noPathChange?: boolean) {
     let user = <UserService>heat.$inject.get('user')
@@ -44,7 +44,6 @@ class CurrencyBalance {
 
     /* Create the ICurrency based on the currency type */
     let currency: ICurrency = null
-    let key: ILocalKey = null;
     if (this.name == 'Ethereum') {
       currency = new ETHCurrency(this.secretPhrase, this.address)
     }
@@ -66,18 +65,7 @@ class CurrencyBalance {
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
-    let publicKey = heat.crypto.secretPhraseToPublicKey(this.parentAccountSecretPhrase);
-    let account = heat.crypto.getAccountIdFromPublicKey(publicKey)
-    let localKeyStore = <LocalKeyStoreService>heat.$inject.get('localKeyStore')
-    key = {
-      secretPhrase: this.parentAccountSecretPhrase,
-      publicKey,
-      account,
-      pincode: localKeyStore.getPasswordForAccount(account),
-      name: localKeyStore.keyName(account)
-    }
-
-    user.unlock(this.secretPhrase, key, bip44Compatible, currency).then(
+    user.unlock(this.secretPhrase, null, bip44Compatible, currency).then(
       () => {
         if (!noPathChange) {
           $location.path(currency.homePath)
@@ -136,7 +124,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -163,7 +151,7 @@ class CurrencyAddressCreate {
           return
 
         let nextAddress = this.wallet.addresses[i + 1]
-        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -185,7 +173,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -212,7 +200,7 @@ class CurrencyAddressCreate {
           return
 
         let nextAddress = this.wallet.addresses[i + 1]
-        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -234,7 +222,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -249,7 +237,7 @@ class CurrencyAddressCreate {
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -263,7 +251,7 @@ class CurrencyAddressCreate {
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -657,7 +645,7 @@ class WalletComponent {
           if (pin == entry.pin) {
             this.localKeyStore.remove(entry.account)
             this.initLocalKeyStore()
-            if (entry.account === this.user.key.account) {
+            if (entry.account === this.user.account) {
               this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
                 if (count > 0) {
                   this.shareCurrencyAddressesWithP2pContacts('BTC', '')
@@ -720,7 +708,7 @@ class WalletComponent {
   initWalletEntry(walletEntry: WalletEntry) {
     this.allLocked = false
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
-    let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase, walletEntry.secretPhrase)
+    let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
     heatCurrencyBalance.visible = walletEntry.expanded
     walletEntry.currencies.push(heatCurrencyBalance)
     this.flatten()
@@ -764,7 +752,7 @@ class WalletComponent {
           walletEntry.currencies.push(btcCurrencyAddressCreate)
 
           this.flatten()
-          if (this.user.key.account === walletEntry.account)
+          if (this.user.account === walletEntry.account)
             this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
 
           /* Only if this node is expanded will we load the addresses */
@@ -795,7 +783,7 @@ class WalletComponent {
           this.loadEthereumAddresses(walletEntry)
         }
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('IOTA'))
+    if (selectedCurrencies && selectedCurrencies.includes('IOTA')) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
       this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
         iotaCurrencyAddressLoading.visible = walletEntry.expanded
@@ -818,13 +806,13 @@ class WalletComponent {
       })
     if (!selectedCurrencies || selectedCurrencies.includes('FIM'))
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
-        fimkCurrencyAddressCreate.visible = walletEntry.expanded
-        fimkCurrencyAddressCreate.parent = walletEntry
-        fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(fimkCurrencyAddressCreate)
-
         this.mofoSocketService.mofoSocket().then(() => {
+          let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
+          fimkCurrencyAddressCreate.visible = walletEntry.expanded
+          fimkCurrencyAddressCreate.parent = walletEntry
+          fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(fimkCurrencyAddressCreate)
+
           let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
           fimkCurrencyAddressLoading.visible = walletEntry.expanded
           fimkCurrencyAddressLoading.wallet = wallet
@@ -838,17 +826,18 @@ class WalletComponent {
       })
     if (!selectedCurrencies || selectedCurrencies.includes('NXT'))
       this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
-        nxtCurrencyAddressCreate.visible = walletEntry.expanded
-        nxtCurrencyAddressCreate.parent = walletEntry
-        nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(nxtCurrencyAddressCreate)
-
         this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
           let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
           nxtCurrencyAddressLoading.visible = walletEntry.expanded
           nxtCurrencyAddressLoading.wallet = wallet
           walletEntry.currencies.push(nxtCurrencyAddressLoading)
+
+          let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
+          nxtCurrencyAddressCreate.visible = walletEntry.expanded
+          nxtCurrencyAddressCreate.parent = walletEntry
+          nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(nxtCurrencyAddressCreate)
+
           if (walletEntry.expanded) {
             this.loadNXTAddresses(walletEntry)
           }
@@ -856,17 +845,18 @@ class WalletComponent {
       })
     if (!selectedCurrencies || selectedCurrencies.includes('ARDR'))
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
-        ardorCurrencyAddressCreate.visible = walletEntry.expanded
-        ardorCurrencyAddressCreate.parent = walletEntry
-        ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(ardorCurrencyAddressCreate)
-
         this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
           let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
           ardorCurrencyAddressLoading.visible = walletEntry.expanded
           ardorCurrencyAddressLoading.wallet = wallet
           walletEntry.currencies.push(ardorCurrencyAddressLoading)
+
+          let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
+          ardorCurrencyAddressCreate.visible = walletEntry.expanded
+          ardorCurrencyAddressCreate.parent = walletEntry
+          ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(ardorCurrencyAddressCreate)
+
           if (walletEntry.expanded) {
             this.loadARDORAddresses(walletEntry)
           }
@@ -891,7 +881,7 @@ class WalletComponent {
       nxtCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('NXT', 'NXT', address.address, address.privateKey, walletEntry.secretPhrase)
+          let nxtCurrencyBalance = new CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
           nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           nxtCurrencyBalance.visible = walletEntry.expanded
           nxtCurrencyBalance.inUse = wasCreated ? false : true
@@ -931,7 +921,7 @@ class WalletComponent {
       ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey, walletEntry.secretPhrase)
+          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
           nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           nxtCurrencyBalance.visible = walletEntry.expanded
           nxtCurrencyBalance.inUse = wasCreated ? false : true
@@ -973,7 +963,7 @@ class WalletComponent {
       fimkCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let fimkCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey, walletEntry.secretPhrase)
+          let fimkCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey)
           fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           fimkCurrencyBalance.visible = walletEntry.expanded
           fimkCurrencyBalance.inUse = wasCreated ? false : true
@@ -1015,7 +1005,7 @@ class WalletComponent {
       ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey, walletEntry.secretPhrase)
+          let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
           ethCurrencyBalance.balance = Number(address.balance + "").toFixed(18)
           ethCurrencyBalance.visible = walletEntry.expanded
           ethCurrencyBalance.inUse = wasCreated ? false : true
@@ -1056,7 +1046,7 @@ class WalletComponent {
       iotaCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey, walletEntry.secretPhrase)
+          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey)
           iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
           iotaCurrencyBalance.visible = walletEntry.expanded
           iotaCurrencyBalance.inUse = wasCreated ? false : true
@@ -1090,7 +1080,7 @@ class WalletComponent {
       btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey, walletEntry.secretPhrase)
+          let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
           btcCurrencyBalance.balance = address.balance + ""
           btcCurrencyBalance.visible = walletEntry.expanded
           btcCurrencyBalance.inUse = wasCreated ? false : true
@@ -1231,15 +1221,15 @@ class WalletComponent {
                 </md-input-container>
                 <p>Enter your Secret Seed and provide a Password (or Pin)</p>
                 <md-input-container flex>
-                  <label>HEAT Secret Phrase / Seed / Private Key</label>
+                  <label>Private key / secret phrase</label>
                   <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false" ng-change="vm.secretChanged() "></textarea>
                 </md-input-container>
                 <md-input-container flex>
-                  <label>Password</label>
+                  <label>Desired Heatwallet PIN / password</label>
                   <input type="password" ng-model="vm.data.password1" required name="password1">
                 </md-input-container>
                 <md-input-container flex>
-                  <label>Password (confirm)</label>
+                  <label>Desired Heatwallet PIN / password (confirm)</label>
                   <input type="password" ng-model="vm.data.password2" required name="password2">
                 </md-input-container>
                 <span>BIP44 compatible = <b>{{vm.data.bip44Compatible?'TRUE':'FALSE'}}</b></span>
@@ -1294,7 +1284,7 @@ class WalletComponent {
             // load in next event loop to load currency addresses first
             setTimeout(() => {
               node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-              success = node.createBtcAddress(self)
+              success = node.createAddress(self)
               walletEntry.toggle(true)
               $mdDialog.hide(null).then(() => {
                 if (!success) {
@@ -1544,6 +1534,7 @@ class WalletComponent {
       $scope['vm'].cancelButtonClick = function () {
         $mdDialog.cancel()
       }
+
       $scope['vm'].generateSeed = function () {
         var length = 81;
         var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ9";
@@ -1571,11 +1562,11 @@ class WalletComponent {
       targetEvent: $event,
       clickOutsideToClose: false,
       controllerAs: 'vm',
-      style: `
+      /*style: `
         .iota-address {
           line-height: 1.5em;
           height: 3em;
-        }`,
+        }`,*/
       template: `
         <md-dialog>
           <form name="dialogForm">
@@ -1633,7 +1624,7 @@ class WalletComponent {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
-            success = node.createBtcAddress(self)
+            success = node.createFIMKAddress(self)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {
@@ -1753,7 +1744,7 @@ class WalletComponent {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
-            success = node.createBtcAddress(self)
+            success = node.createNXTAddress(self)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {
@@ -1873,7 +1864,7 @@ class WalletComponent {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
-            success = node.createBtcAddress(self)
+            success = node.createARDRAddress(self)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {

@@ -78,6 +78,8 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     private bitcoinMessagesService: BitcoinMessagesService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+
+    /* privateKey and publicKey should be HEAT keys */
     let privateKey = this.user.secretPhrase;
     let publicKey = this.user.publicKey;
     this.getBitcoinMessages(privateKey, publicKey)

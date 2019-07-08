@@ -304,7 +304,9 @@ class TransactionRenderer {
   private SUBTYPE_COLORED_COINS_WHITELIST_ACCOUNT_ADDITION = 7;
   private SUBTYPE_COLORED_COINS_WHITELIST_ACCOUNT_REMOVAL = 8;
   private SUBTYPE_COLORED_COINS_WHITELIST_MARKET = 9;
+  private SUBTYPE_COLORED_COINS_ATOMIC_MULTI_TRANSFER = 10;
   private SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
+  private SUBTYPE_ACCOUNT_CONTROL_INTERNET_ADDRESS = 1;
 
   private heat: HeatService;
   private assetInfo: AssetInfoService;
@@ -408,6 +410,7 @@ class TransactionRenderer {
         }
       }
     );
+
     key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASK_ORDER_CANCELLATION;
     this.transactionTypes[key] = 'CANCEL SELL';
     this.renderers[key] = new TransactionRenderHelper(
@@ -427,6 +430,7 @@ class TransactionRenderer {
         }
       }
     );
+
     key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_BID_ORDER_CANCELLATION;
     this.transactionTypes[key] = 'CANCEL BUY';
     this.renderers[key] = new TransactionRenderHelper(
@@ -446,6 +450,20 @@ class TransactionRenderer {
         }
       }
     );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_ATOMIC_MULTI_TRANSFER;
+    this.transactionTypes[key] = 'MULTI TRANSFER';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>MULTI TRANSFER</b> From $sender'
+      },
+      (t) => {
+        return {
+          sender: this.account(t.sender, t.senderPublicName)
+        }
+      }
+    );
+
     key = this.TYPE_ACCOUNT_CONTROL+":"+this.SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING;
     this.transactionTypes[key] = 'BALANCE LEASE';
     this.renderers[key] = new TransactionRenderHelper(
@@ -457,6 +475,22 @@ class TransactionRenderer {
           sender: this.account(t.sender, t.senderPublicName),
           recipient: this.account(t.recipient, t.recipientPublicName),
           period: utils.commaFormat(t.attachment['period'].toString())
+        }
+      }
+    );
+
+    key = this.TYPE_ACCOUNT_CONTROL + ":" + this.SUBTYPE_ACCOUNT_CONTROL_INTERNET_ADDRESS;
+    this.transactionTypes[key] = 'INTERNET ADDRESS';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize
+          ? 'internet address $a'
+          : '<b>REGISTER INTERNET ADDRESS</b> $sender registered internet address "$a"'
+      },
+      (t) => {
+        return {
+          sender: this.account(t.sender, t.senderPublicName),
+          a: t.attachment['internetAddress']
         }
       }
     );

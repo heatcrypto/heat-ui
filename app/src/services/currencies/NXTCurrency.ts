@@ -45,7 +45,7 @@ class NXTCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendNxt($event).then(
       data => {
-        let address = this.user.account
+        let address = this.user.currency.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp)
       },
@@ -84,7 +84,7 @@ class NXTCurrency implements ICurrency {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
-          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
           txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true`;
         }
         else {

@@ -30,36 +30,89 @@ class UserService extends EventEmitter {
 
   public unlocked: boolean = false;
 
-  /* Secret phrase as regular string (the master seed - holds ethereum and heat) */
-  public secretPhrase: string;
+  /* Secret phrase as regular string (the master seed - holds ethereum and heat)
+     This is ALWAYS the secretPhrase to the master HEAT account that was used to
+     unlock the wallet. This never holds the Bitcoin or Ethereum private key since
+     those are in userService.currency.secretPhrase. */
+  //public secretPhrase: string;
+  private __secretPhrase: string
+  get secretPhrase() {
+    return this.__secretPhrase
+  }
+  set secretPhrase(s) {
+    this.__secretPhrase = s
+  }
 
   /* Public key as HEX string, obtained from secretphrase (this is a HEAT public key!!)*/
-  public publicKey: string;
+  //public publicKey: string;
+  public __publicKey: string;
+  get publicKey() {
+    return this.__publicKey
+  }
+  set publicKey(p) {
+    this.__publicKey = p
+  }
 
   /* HEAT Account in numeric format */
-  public account: string;
+  //public account: string;
+  public __acount: string
+  get account() {
+    return this.__acount
+  }
+  set account(a) {
+    this.__acount = a
+  }
 
   /* HEAT Public or private email identifier */
-  public accountName: string;
-  public accountNameIsPrivate: boolean;
+  //public accountName: string;
+  public __accountName: string
+  get accountName() {
+    return this.__accountName
+  }
+  set accountName(a) {
+    this.__accountName = a
+  }
 
-  /* Local key storage key */
-  public key: ILocalKey;
+  //public accountNameIsPrivate: boolean;
+  public __accountNameIsPrivate: boolean;
+  get accountNameIsPrivate() {
+    return this.__accountNameIsPrivate
+  }
+  set accountNameIsPrivate(a) {
+    this.__accountNameIsPrivate = a
+  }
+
+  /* Local key storage key contains the
+      - secret phrase
+      - account
+      - name
+      - public key
+     Of the master HEAT account but only in case a login is done with from the drop down menu
+     and after entering the pin code. In case the user enters his private key directly no
+     key object is provided.
+  */
+  //public key: ILocalKey;
+  public __key: ILocalKey;
+  get key() {
+    return this.__key
+  }
+  set key(k) {
+    this.__key = k
+  }
 
   /* Compatible with Ethereum and Bitcoin */
   public bip44Compatible: boolean;
 
-  /* List of ethereum bip44 addresses, the first being the master address */
-  // TODO deprecate
-  public ethAddresses: string[] = []
-
-  /* Prevents circular depency */
-  // TODO deprecate
-  public ethWallet: LightwalletService
-
   /* ICurrency implementation in use currently, the currency used is determined when we
      unlock an account (provide secret phrase + selected address + currency type) */
-  public currency: ICurrency = null
+  //public currency: ICurrency = null
+  public __currency: ICurrency
+  get currency() {
+    return this.__currency
+  }
+  set currency(c) {
+    this.__currency = c
+  }
 
   constructor(private $q,
               private $window: angular.IWindowService,
@@ -108,53 +161,49 @@ class UserService extends EventEmitter {
         if(key)
           this.key = key;
 
-        /* We either receive a fully setup ICurrency from the caller or we need to create
-          one ourselves. The situation in which we create one is all the cases apart from those
-          where we explicitly want some other currency and address than standard HEAT */
-        if (!currency) {
-          let address = heat.crypto.getAccountId(secretPhrase);
-          currency = new HEATCurrency(secretPhrase, address)
-        }
-
-        /* Store the currency */
-        this.currency = currency
-
-        /* Circular dependencies force this */
-        this.bip44Compatible = bip44Compatible || false
-
-        /* Everything obtained from the secret phrase - These are all for the master HEAT account */
-        this.secretPhrase = secretPhrase;
-        this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
-        this.account = heat.crypto.getAccountId(secretPhrase);
         this.unlocked = true;
         this.accountName = '[no name]';
 
+        /* We either receive a fully setup ICurrency from the caller or we need to create
+          one ourselves. The situation in which we create one is all the cases apart from those
+          where we explicitly want some other currency and address than standard HEAT */
+        if (!currency || currency.symbol=='HEAT') {
+          let address = heat.crypto.getAccountId(secretPhrase);
+          currency = new HEATCurrency(secretPhrase, address)
+
+          /* Store the currency */
+          this.currency = currency
+
+          /* Circular dependencies force this */
+          this.bip44Compatible = bip44Compatible || false
+
+          /* Everything obtained from the secret phrase - These are all for the master HEAT account */
+          this.secretPhrase = secretPhrase;
+          this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
+          this.account = heat.crypto.getAccountId(secretPhrase);
+        }
+        /* In case we do receive a currency we can expect secretPhrase to be null which is
+         * to be expected since the currency will be something else than HEATCurrency and
+         * the currency object carries its own secretPhrase.
+         */
+        else {
+
+          /* Store the currency */
+          this.currency = currency
+        }
+
         /* The other parts are on the blockchain */
         this.refresh().then(() => {
-
-          /* Only if we are a bip44 will we load the eth wallet */
-          if (bip44Compatible) {
-            this.ethWallet = heat.$inject.get('lightwalletService');
-            this.ethWallet.unlock(secretPhrase, "").then(() => {
-              deferred.resolve();
-              this.emit(UserService.EVENT_UNLOCKED);
-            })
-          }
-          else {
-            deferred.resolve();
-            this.emit(UserService.EVENT_UNLOCKED);
-          }
+          deferred.resolve();
+          this.emit(UserService.EVENT_UNLOCKED);
         });
       })
     })
-
     return deferred.promise;
   }
 
   lock(noreload?:boolean) {
     this.key = null
-    this.ethWallet = null
-    this.ethAddresses = []
     this.secretPhrase = null;
     this.unlocked = false;
     this.account = null;

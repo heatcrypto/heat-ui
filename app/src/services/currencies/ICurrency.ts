@@ -36,6 +36,9 @@ interface ICurrency {
   /* Returns the native address */
   address: string;
 
+  /* Returns the private key / secret phrase */
+  secretPhrase: string;
+
   /* Returns the currency symbol */
   symbol: string;
 

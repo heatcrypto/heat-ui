@@ -4,15 +4,15 @@ class BTCCurrency implements ICurrency {
   public symbol = 'BTC'
   public homePath
   private pendingTransactions: BitcoinPendingTransactionsService
-  private user: UserService
   private bitcoinMessagesService: BitcoinMessagesService;
+  private user: UserService
 
   constructor(public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-    this.user = heat.$inject.get('user')
     this.homePath = `/bitcoin-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
     this.bitcoinMessagesService = heat.$inject.get('bitcoinMessagesService')
+    this.user = heat.$inject.get('user')
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
@@ -39,13 +39,10 @@ class BTCCurrency implements ICurrency {
   invokeSendDialog = ($event) => {
     this.sendBtc($event).then(
       data => {
-        let address = this.user.account
-        let privateKey = this.user.secretPhrase
-        let publicKey = this.user.publicKey
-        let encryptedMessage = heat.crypto.encryptMessage(data.message, publicKey, privateKey)
+        let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
         let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txId, timestamp)
-        this.bitcoinMessagesService.add(address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
+        this.pendingTransactions.add(this.address, data.txId, timestamp)
+        this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
       },
       err => {
         if (err) {
@@ -71,7 +68,7 @@ class BTCCurrency implements ICurrency {
         let feeInSatoshi
         let amountInSatoshi
         let to
-        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
+        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.currency.secretPhrase}
         if(!isForFeeEstimation) {
           feeInSatoshi = ($scope['vm'].data.fee * 100000000).toFixed(0);
           amountInSatoshi = ($scope['vm'].data.amount * 100000000).toFixed(0);

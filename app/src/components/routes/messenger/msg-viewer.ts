@@ -22,7 +22,6 @@
 @Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout')
 class MsgViewerComponent {
   private publickey: string; //input
-  private account: string;
   private allMessages;
   private onchainMessagesCount;
   private dateFormat;
@@ -41,16 +40,14 @@ class MsgViewerComponent {
     private p2pMessaging: P2PMessaging,
     private settings: SettingsService,
     private $timeout: angular.ITimeoutService) {
-    let publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey;
 
-    if (this.publickey == publicKey) {
+    if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    this.account = user.key ? user.key.account : user.account;
     var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
-    heat.subscriber.message({ sender: this.account }, refresh, $scope);
-    heat.subscriber.message({ recipient: this.account }, refresh, $scope);
+    heat.subscriber.message({ sender: this.user.account }, refresh, $scope);
+    heat.subscriber.message({ recipient: this.user.account }, refresh, $scope);
     MsgViewerComponent.count = 10000;
     this.initMessages()
   }
@@ -62,7 +59,7 @@ class MsgViewerComponent {
     this.displayMessages = { index: 0, messages: [] };
     this.allMessages = [];
 
-    this.heat.api.getMessagingContactMessagesCount(this.account, heat.crypto.getAccountIdFromPublicKey(this.publickey)).then(count => {
+    this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey)).then(count => {
       if (count > 0) {
         this.onchainMessagesCount = count;
         this.messagesCount += count;
@@ -106,7 +103,7 @@ class MsgViewerComponent {
       if (from < 0 || to < 0)
         resolve(onchainMessages)
       else {
-        this.heat.api.getMessagingContactMessages(this.account, heat.crypto.getAccountIdFromPublicKey(this.publickey), from, to).then(messages => {
+        this.heat.api.getMessagingContactMessages(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey), from, to).then(messages => {
           messages.forEach(message => onchainMessages.push(this.processOnchainItem(message)));
           resolve(onchainMessages)
         }).catch(() => resolve(onchainMessages));
@@ -131,7 +128,7 @@ class MsgViewerComponent {
     return {
       'content': this.heat.getHeatMessageContents(message),
       'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
-      'outgoing': this.account === message.sender,
+      'outgoing': this.user.account === message.sender,
       'onchain': true,
       'timestamp': message.timestamp,
       '__id': ++MsgViewerComponent.count
@@ -139,7 +136,7 @@ class MsgViewerComponent {
   }
   private processOffchainItem(item: p2p.MessageHistoryItem) {
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
-    item['outgoing'] = this.account == item['senderAccount'];
+    item['outgoing'] = this.user.account == item['senderAccount'];
     item['date'] = dateFormat(item.timestamp, this.dateFormat);
     item['onchain'] = false;
     item['content'] = item['content'] || item['message'];
