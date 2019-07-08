@@ -34,7 +34,7 @@ class CurrencyBalance {
   public inUse = false
   public tokens: Array<TokenBalance> = []
   public visible = false
-  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public parentAccountSecretPhrase: string) { }
+  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) { }
 
   public unlock(noPathChange?: boolean) {
     let user = <UserService>heat.$inject.get('user')
@@ -44,7 +44,6 @@ class CurrencyBalance {
 
     /* Create the ICurrency based on the currency type */
     let currency: ICurrency = null
-    let key: ILocalKey = null;
     if (this.name == 'Ethereum') {
       currency = new ETHCurrency(this.secretPhrase, this.address)
     }
@@ -66,18 +65,7 @@ class CurrencyBalance {
     else {
       currency = new HEATCurrency(this.secretPhrase, this.address)
     }
-    let publicKey = heat.crypto.secretPhraseToPublicKey(this.parentAccountSecretPhrase);
-    let account = heat.crypto.getAccountIdFromPublicKey(publicKey)
-    let localKeyStore = <LocalKeyStoreService>heat.$inject.get('localKeyStore')
-    key = {
-      secretPhrase: this.parentAccountSecretPhrase,
-      publicKey,
-      account,
-      pincode: localKeyStore.getPasswordForAccount(account),
-      name: localKeyStore.keyName(account)
-    }
-
-    user.unlock(this.secretPhrase, key, bip44Compatible, currency).then(
+    user.unlock(this.secretPhrase, null, bip44Compatible, currency).then(
       () => {
         if (!noPathChange) {
           $location.path(currency.homePath)
@@ -136,7 +124,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -163,7 +151,7 @@ class CurrencyAddressCreate {
           return
 
         let nextAddress = this.wallet.addresses[i + 1]
-        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -185,7 +173,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -212,7 +200,7 @@ class CurrencyAddressCreate {
           return
 
         let nextAddress = this.wallet.addresses[i + 1]
-        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -234,7 +222,7 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -249,7 +237,7 @@ class CurrencyAddressCreate {
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -263,7 +251,7 @@ class CurrencyAddressCreate {
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey, this.parent.secretPhrase)
+      let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -720,7 +708,7 @@ class WalletComponent {
   initWalletEntry(walletEntry: WalletEntry) {
     this.allLocked = false
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
-    let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase, walletEntry.secretPhrase)
+    let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
     heatCurrencyBalance.visible = walletEntry.expanded
     walletEntry.currencies.push(heatCurrencyBalance)
     this.flatten()
@@ -891,7 +879,7 @@ class WalletComponent {
       nxtCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('NXT', 'NXT', address.address, address.privateKey, walletEntry.secretPhrase)
+          let nxtCurrencyBalance = new CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
           nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           nxtCurrencyBalance.visible = walletEntry.expanded
           nxtCurrencyBalance.inUse = wasCreated ? false : true
@@ -931,7 +919,7 @@ class WalletComponent {
       ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey, walletEntry.secretPhrase)
+          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
           nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           nxtCurrencyBalance.visible = walletEntry.expanded
           nxtCurrencyBalance.inUse = wasCreated ? false : true
@@ -973,7 +961,7 @@ class WalletComponent {
       fimkCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let fimkCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey, walletEntry.secretPhrase)
+          let fimkCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey)
           fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           fimkCurrencyBalance.visible = walletEntry.expanded
           fimkCurrencyBalance.inUse = wasCreated ? false : true
@@ -1015,7 +1003,7 @@ class WalletComponent {
       ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey, walletEntry.secretPhrase)
+          let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
           ethCurrencyBalance.balance = Number(address.balance + "").toFixed(18)
           ethCurrencyBalance.visible = walletEntry.expanded
           ethCurrencyBalance.inUse = wasCreated ? false : true
@@ -1056,7 +1044,7 @@ class WalletComponent {
       iotaCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey, walletEntry.secretPhrase)
+          let iotaCurrencyBalance = new CurrencyBalance('Iota', 'i', address.address, address.privateKey)
           iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
           iotaCurrencyBalance.visible = walletEntry.expanded
           iotaCurrencyBalance.inUse = wasCreated ? false : true
@@ -1090,7 +1078,7 @@ class WalletComponent {
       btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey, walletEntry.secretPhrase)
+          let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
           btcCurrencyBalance.balance = address.balance + ""
           btcCurrencyBalance.visible = walletEntry.expanded
           btcCurrencyBalance.inUse = wasCreated ? false : true
