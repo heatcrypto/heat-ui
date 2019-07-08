@@ -1534,6 +1534,24 @@ class WalletComponent {
       $scope['vm'].cancelButtonClick = function () {
         $mdDialog.cancel()
       }
+      $scope['vm'].generateSeed = function () {
+        var length = 81;
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ9";
+        var randomValues = new Uint32Array(length);
+        var result = new Array(length);
+        window.crypto.getRandomValues(randomValues);
+        var cursor = 0;
+        for (var i = 0; i < randomValues.length; i++) {
+          cursor += randomValues[i];
+          result[i] = chars[cursor % chars.length];
+        }
+        $scope['vm'].iotaSeed =  result.join('');
+      };
+      $scope['vm'].generateSeed();
+      $scope['vm'].copyContent = function (id: string) {
+        let clipboard = <ClipboardService>heat.$inject.get('clipboard')
+        clipboard.copyWithUI(document.getElementById(id), 'Copied to clipboard');
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -1543,6 +1561,11 @@ class WalletComponent {
       targetEvent: $event,
       clickOutsideToClose: false,
       controllerAs: 'vm',
+      style: `
+        .iota-address {
+          line-height: 1.5em;
+          height: 3em;
+        }`,
       template: `
         <md-dialog>
           <form name="dialogForm">
@@ -1550,12 +1573,13 @@ class WalletComponent {
               <div class="md-toolbar-tools"><h2>Create IOTA Address</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <p>Create your IOTA seed from
-                <a target="_blank" href="https://ipfs.io/ipfs/QmdqTgEdyKVQAVnfT5iV4ULzTbkV4hhkDkMqGBuot8egfA">here</a>
-              </p>
-              <span flex></span>
+              <div class="iota-address">
+                Your IOTA Seed is: <span id="iota-seed">{{vm.iotaSeed}}</span>
+                &nbsp;<a ng-click="vm.copyContent('iota-seed')">[copy seed]</a>
+              </div>
             </md-dialog-content>
             <md-dialog-actions>
+              <md-button class="md-primary" ng-click="vm.generateSeed($event)" aria-label="Generate New">Generate New</md-button>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
             </md-dialog-actions>
           </form>
