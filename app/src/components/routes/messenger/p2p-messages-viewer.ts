@@ -122,8 +122,7 @@ class P2PMessagesViewerComponent {
               private controlCharRender: ControlCharRenderService,
               private storage: StorageService,
               private p2pMessaging: P2PMessaging) {
-    let publicKey = this.user.key ? this.user.key.publicKey : this.user.publicKey;
-    if (this.publickey == publicKey) {
+    if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
 
