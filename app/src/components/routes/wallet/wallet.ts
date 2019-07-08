@@ -1282,7 +1282,7 @@ class WalletComponent {
             // load in next event loop to load currency addresses first
             setTimeout(() => {
               node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-              success = node.createBtcAddress(self)
+              success = node.createAddress(self)
               walletEntry.toggle(true)
               $mdDialog.hide(null).then(() => {
                 if (!success) {
@@ -1597,7 +1597,7 @@ class WalletComponent {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
-            success = node.createBtcAddress(self)
+            success = node.createFIMKAddress(self)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {
@@ -1717,7 +1717,7 @@ class WalletComponent {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
-            success = node.createBtcAddress(self)
+            success = node.createNXTAddress(self)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {
@@ -1837,7 +1837,7 @@ class WalletComponent {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
-            success = node.createBtcAddress(self)
+            success = node.createARDRAddress(self)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {
