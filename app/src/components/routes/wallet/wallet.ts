@@ -783,7 +783,7 @@ class WalletComponent {
           this.loadEthereumAddresses(walletEntry)
         }
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('IOTA'))
+    if (selectedCurrencies && selectedCurrencies.includes('IOTA')) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
       this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
         iotaCurrencyAddressLoading.visible = walletEntry.expanded
