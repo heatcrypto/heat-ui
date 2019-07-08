@@ -515,7 +515,7 @@ class ToolbarComponent {
         </md-input-container>
       </div>
     `, {
-      secretPhrase: this.user.secretPhrase
+      secretPhrase: this.user.currency.secretPhrase
     })
   }
 
