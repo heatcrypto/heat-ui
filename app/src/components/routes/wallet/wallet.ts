@@ -806,13 +806,13 @@ class WalletComponent {
       })
     if (!selectedCurrencies || selectedCurrencies.includes('FIM'))
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
-        fimkCurrencyAddressCreate.visible = walletEntry.expanded
-        fimkCurrencyAddressCreate.parent = walletEntry
-        fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(fimkCurrencyAddressCreate)
-
         this.mofoSocketService.mofoSocket().then(() => {
+          let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
+          fimkCurrencyAddressCreate.visible = walletEntry.expanded
+          fimkCurrencyAddressCreate.parent = walletEntry
+          fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(fimkCurrencyAddressCreate)
+
           let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
           fimkCurrencyAddressLoading.visible = walletEntry.expanded
           fimkCurrencyAddressLoading.wallet = wallet
@@ -826,17 +826,18 @@ class WalletComponent {
       })
     if (!selectedCurrencies || selectedCurrencies.includes('NXT'))
       this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
-        nxtCurrencyAddressCreate.visible = walletEntry.expanded
-        nxtCurrencyAddressCreate.parent = walletEntry
-        nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(nxtCurrencyAddressCreate)
-
         this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
           let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
           nxtCurrencyAddressLoading.visible = walletEntry.expanded
           nxtCurrencyAddressLoading.wallet = wallet
           walletEntry.currencies.push(nxtCurrencyAddressLoading)
+
+          let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
+          nxtCurrencyAddressCreate.visible = walletEntry.expanded
+          nxtCurrencyAddressCreate.parent = walletEntry
+          nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(nxtCurrencyAddressCreate)
+
           if (walletEntry.expanded) {
             this.loadNXTAddresses(walletEntry)
           }
@@ -844,17 +845,18 @@ class WalletComponent {
       })
     if (!selectedCurrencies || selectedCurrencies.includes('ARDR'))
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
-        ardorCurrencyAddressCreate.visible = walletEntry.expanded
-        ardorCurrencyAddressCreate.parent = walletEntry
-        ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(ardorCurrencyAddressCreate)
-
         this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
           let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
           ardorCurrencyAddressLoading.visible = walletEntry.expanded
           ardorCurrencyAddressLoading.wallet = wallet
           walletEntry.currencies.push(ardorCurrencyAddressLoading)
+
+          let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
+          ardorCurrencyAddressCreate.visible = walletEntry.expanded
+          ardorCurrencyAddressCreate.parent = walletEntry
+          ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(ardorCurrencyAddressCreate)
+
           if (walletEntry.expanded) {
             this.loadARDORAddresses(walletEntry)
           }
