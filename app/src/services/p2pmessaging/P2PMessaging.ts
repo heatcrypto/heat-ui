@@ -52,19 +52,29 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private $mdToast: angular.material.IToastService) {
     super();
 
-    let listener = () => {
-      this.connector = new p2p.P2PConnector(this, settings, $interval);
-      this.connector.setup(
-        this.user.publicKey,
-        (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-        peerId => this.confirmIncomingCall(peerId),
-        reason => this.onSignalingError(reason),
-        dataHex => this.sign(dataHex),
-        (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
-        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
-      );
+    user.on(UserService.EVENT_UNLOCKED, () => {
+      if (!this.connector) {
+        this.connector = new p2p.P2PConnector(this, settings, $interval);
+        this.connector.setup(
+          this.user.publicKey,
+          (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
+          peerId => this.confirmIncomingCall(peerId),
+          reason => this.onSignalingError(reason),
+          dataHex => this.sign(dataHex),
+          (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
+          (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
+        );
+      }
+    });
+
+    let closeListener = () => {
+      if (this.connector) {
+        this.connector.close();
+        this.connector = null;
+      }
     };
-    user.on(UserService.EVENT_UNLOCKED, listener);
+
+    user.on(UserService.EVENT_LOCKED, closeListener);
 
     this.p2pContactStore = storage.namespace('p2pContacts');
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
