@@ -645,7 +645,7 @@ class WalletComponent {
           if (pin == entry.pin) {
             this.localKeyStore.remove(entry.account)
             this.initLocalKeyStore()
-            if (entry.account === this.user.key.account) {
+            if (entry.account === this.user.account) {
               this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
                 if (count > 0) {
                   this.shareCurrencyAddressesWithP2pContacts('BTC', '')
@@ -752,7 +752,7 @@ class WalletComponent {
           walletEntry.currencies.push(btcCurrencyAddressCreate)
 
           this.flatten()
-          if (this.user.key.account === walletEntry.account)
+          if (this.user.account === walletEntry.account)
             this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
 
           /* Only if this node is expanded will we load the addresses */

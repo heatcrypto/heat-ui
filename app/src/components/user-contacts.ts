@@ -73,7 +73,6 @@ class UserContactsComponent {
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
   private store: Store;
-  private account: string;
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -86,14 +85,13 @@ class UserContactsComponent {
               storage: StorageService,
               private p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService) {
-    this.account = this.user.key ? this.user.key.account : this.user.account
 
     this.refresh = utils.debounce(
       () => {
         this.refreshContacts()
       },
       500, true);
-    heat.subscriber.unconfirmedTransaction({recipient: this.account}, ()=>{ this.refresh() });
+    heat.subscriber.unconfirmedTransaction({recipient: this.user.account}, ()=>{ this.refresh() });
 
     this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.store.on(Store.EVENT_PUT, this.refresh);
@@ -184,7 +182,7 @@ class UserContactsComponent {
   }
 
   refreshContacts() {
-    this.heat.api.getMessagingContacts(this.account, 0, 100).then((contacts) => {
+    this.heat.api.getMessagingContacts(this.user.account, 0, 100).then((contacts) => {
       this.$scope.$evalAsync(() => {
         this.contacts = contacts;
 
@@ -199,7 +197,7 @@ class UserContactsComponent {
           }
         });
 
-        this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.account)
+        this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.user.account)
           .map((contact) => {
             if (!contact['isP2POnlyContact']) {
               contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);

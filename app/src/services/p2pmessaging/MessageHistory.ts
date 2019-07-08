@@ -54,15 +54,11 @@ module p2p {
     private pageStorageNum: number;  //for ordering pages from storage
     private pageContent: Array<MessageHistoryItem>;
     private pages: number[][];
-    private secretPhrase: string;
-    private publicKey: string;
     constructor(private room: Room,
                 private storage: StorageService,
                 private user: UserService) {
 
       this.enabled = true;
-      this.secretPhrase = this.user.key? this.user.key.secretPhrase : this.user.secretPhrase;
-      this.publicKey = this.user.key? this.user.key.publicKey : this.user.publicKey;
       this.store = storage.namespace('p2p-messages.' + this.room.name);
       //format of key of message history stored item: "pageNumber.messagesCount", e.g. "502.78"
       //Message count by pages is needing for providing requesting message items from history by range "from" "to"
@@ -147,7 +143,7 @@ module p2p {
       if (v) {
         try {
           let encrypted = JSON.parse(v);
-          let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.publicKey, this.secretPhrase);
+          let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
           return JSON.parse(pageContentStr);
         } catch (e) {
           console.log("Error on parse/decrypt message history page");
@@ -192,7 +188,7 @@ module p2p {
     }
 
     private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
-      let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.publicKey, this.secretPhrase, false);
+      let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.user.publicKey, this.user.secretPhrase, false);
       let page = this.pages[pageIndex];
       try {
         //save page under updated key 'pageNumber.itemCount'
