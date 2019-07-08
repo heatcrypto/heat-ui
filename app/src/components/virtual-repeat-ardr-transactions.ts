@@ -92,7 +92,7 @@ class VirtualRepeatArdrTransactionsComponent extends VirtualRepeatComponent {
 
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    let secretPhrase = this.user.secretPhrase;
+    let secretPhrase = this.user.currency.secretPhrase;
     this.initializeVirtualRepeat(
       this.ardorTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */

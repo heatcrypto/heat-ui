@@ -109,7 +109,7 @@ class EthereumAccountComponent {
               private settings: SettingsService,
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService) {
-    this.personalize = this.account == this.user.account
+    this.personalize = this.account == this.user.currency.address
     this.refresh();
 
     // TODO register some refresh interval
@@ -154,7 +154,7 @@ class EthereumAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.ethereumPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);

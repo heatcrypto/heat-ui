@@ -48,7 +48,7 @@ class FIMKCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendFim($event).then(
       data => {
-        let address = this.user.account
+        let address = this.user.currency.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp)
       },
@@ -84,7 +84,7 @@ class FIMKCurrency implements ICurrency {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
-          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
           txObject = {
             recipient: to,
             amountNQT: utils.convertToNQT(String($scope['vm'].data.amountNQT)),

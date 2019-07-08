@@ -138,7 +138,7 @@ class ArdorAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.ardorPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);

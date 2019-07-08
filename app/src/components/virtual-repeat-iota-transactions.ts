@@ -17,10 +17,10 @@
           <div class="truncate-col bundle-col left">Bundle ID</div>
 
           <!-- FROM -->
-          <div class="truncate-col info-col left">FROM</div>
+          <div class="truncate-col bundle-col left">FROM</div>
 
           <!-- TO -->
-          <div class="truncate-col info-col left">TO</div>
+          <div class="truncate-col bundle-col left">TO</div>
 
           <!-- AMOUNT -->
           <div class="truncate-col amount-col left">Amount</div>
@@ -43,12 +43,12 @@
             </div>
 
             <!-- FROM -->
-            <div class="truncate-col info-col left">
+            <div class="truncate-col bundle-col left">
              <span>{{item.displayFromAddress}}</span>
             </div>
 
             <!-- TO -->
-            <div class="truncate-col info-col left">
+            <div class="truncate-col bundle-col left">
               <span>{{item.displayToAddress}}</span>
             </div>
 
@@ -87,7 +87,7 @@ class VirtualRepeatIotaTransactionsComponent extends VirtualRepeatComponent {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
-      this.iotaTransactionsProviderFactory.createProvider(this.user.secretPhrase),
+      this.iotaTransactionsProviderFactory.createProvider(this.user.currency.secretPhrase),
       /* decorator function */
       (bundle: any) => {
         bundle.dateTime = dateFormat(new Date(bundle[0].timestamp * 1000), this.settings.get(SettingsService.DATEFORMAT_DEFAULT));
@@ -105,9 +105,9 @@ class VirtualRepeatIotaTransactionsComponent extends VirtualRepeatComponent {
           }
         });
 
-        bundle.displayFromAddress = bundle.from.substring(0, 55).concat('...')
-        bundle.displayToAddress = bundle.to.substring(0, 55).concat('...')
-        bundle.displayBundleAddress = bundle.bundleId.substring(0, 50).concat('...')
+        bundle.displayFromAddress = bundle.from.substring(0, 42).concat('...')
+        bundle.displayToAddress = bundle.to.substring(0, 42).concat('...')
+        bundle.displayBundleAddress = bundle.bundleId.substring(0, 42).concat('...')
 
 
         bundle.json = {

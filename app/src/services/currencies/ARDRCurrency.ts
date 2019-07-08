@@ -3,7 +3,6 @@ class ARDRCurrency implements ICurrency {
   private ardorBlockExplorerService: ArdorBlockExplorerService;
   public symbol = 'ARDR'
   public homePath
-  private user: UserService;
   private pendingTransactions: ArdorPendingTransactionsService
 
   private $rootScope;
@@ -11,7 +10,6 @@ class ARDRCurrency implements ICurrency {
 
   constructor(public secretPhrase: string,
               public address: string) {
-    this.user = heat.$inject.get('user')
     this.homePath = `/ardor-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('ardorPendingTransactions')
     this.ardorBlockExplorerService = heat.$inject.get('ardorBlockExplorerService')
@@ -45,7 +43,7 @@ class ARDRCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendArdr($event).then(
       data => {
-        let address = this.user.account
+        let address = this.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp, data.fullHash)
       },
@@ -84,11 +82,11 @@ class ARDRCurrency implements ICurrency {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
-          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
-          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
+          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
         }
         else {
-          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
+          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
         }
         $scope['vm'].disableOKBtn = true
         ardorBlockExplorerService.sendTransactionWithSecret(txObject).then(

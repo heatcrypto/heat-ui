@@ -86,7 +86,7 @@ class IotaAccountComponent {
   timerHandler() {
     this.refresh()
     if (this.pendingTransactions.length) {
-      this.iotaBlockExplorerService.getAccountInfo(this.user.secretPhrase).then(recentTransactions => {
+      this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(recentTransactions => {
         for(let i = 0; i < this.pendingTransactions.length; i++) {
           let isPending = true;
           for(let j = 0; j < recentTransactions.transfers.length; j++) {
@@ -109,7 +109,7 @@ class IotaAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.iotaPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
@@ -129,7 +129,7 @@ class IotaAccountComponent {
   refresh() {
     this.busy = true;
     this.balanceUnconfirmed = "";
-    this.iotaBlockExplorerService.getAccountInfo(this.user.secretPhrase).then(info => {
+    this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(info => {
       this.$scope.$evalAsync(() => {
         this.balanceUnconfirmed = info ? info.balance : 0;
         this.busy = false;

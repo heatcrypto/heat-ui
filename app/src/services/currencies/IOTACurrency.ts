@@ -46,7 +46,7 @@ class IOTACurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendIota($event).then(
       data => {
-        let address = this.user.account
+        let address = this.user.currency.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data[0].hash, timestamp)
       },
@@ -77,7 +77,7 @@ class IOTACurrency implements ICurrency {
             address: $scope['vm'].data.recipient,
             value: parseInt($scope['vm'].data.value)
           }]
-        iotaBlockExplorerService.sendIota(user.secretPhrase, transfers).then(
+        iotaBlockExplorerService.sendIota(user.currency.secretPhrase, transfers).then(
           data => {
             $mdDialog.hide(data).then(() => {
               dialogs.alert(event, 'Success', `Bundle: ${data[0].hash}`);

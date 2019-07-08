@@ -90,7 +90,7 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
     private user: UserService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    let secretPhrase = this.user.secretPhrase;
+    let secretPhrase = this.user.currency.secretPhrase;
     this.initializeVirtualRepeat(
       this.fimkTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */

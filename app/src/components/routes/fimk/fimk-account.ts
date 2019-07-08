@@ -119,7 +119,7 @@ class FimkAccountComponent {
   timerHandler() {
     this.refresh()
     if (this.pendingTransactions.length) {
-      this.mofoSocketService.getRecentTx(this.user.account).then(recentTransactions => {
+      this.mofoSocketService.getRecentTx(this.user.currency.address).then(recentTransactions => {
         for(let i = 0; i < this.pendingTransactions.length; i++) {
           let isPending = false;
           for(let j = 0; j < recentTransactions.length; j++) {
@@ -142,7 +142,7 @@ class FimkAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.fimkPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);

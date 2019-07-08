@@ -139,7 +139,7 @@ class NxtAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.nxtPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
