@@ -1561,11 +1561,6 @@ class WalletComponent {
       targetEvent: $event,
       clickOutsideToClose: false,
       controllerAs: 'vm',
-      style: `
-        .iota-address {
-          line-height: 1.5em;
-          height: 3em;
-        }`,
       template: `
         <md-dialog>
           <form name="dialogForm">
@@ -1573,7 +1568,7 @@ class WalletComponent {
               <div class="md-toolbar-tools"><h2>Create IOTA Address</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div class="iota-address">
+              <div>
                 Your IOTA Seed is: <span id="iota-seed">{{vm.iotaSeed}}</span>
                 &nbsp;<a ng-click="vm.copyContent('iota-seed')">[copy seed]</a>
               </div>
