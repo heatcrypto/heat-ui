@@ -46,7 +46,7 @@ class HeatAPI implements IHeatAPI {
   getServerHealth(host?: string, port?: number):angular.IPromise<IHeatServerHealth> {
     if (!host)
       return this.heat.get('/tools/telemetry/health');
-    return this.heat.getRaw(host, port, '/tools/telemetry/health');
+    return this.heat.getRaw(host, port, '/tools/telemetry/health', null, true);
   }
 
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
