@@ -98,7 +98,7 @@ class Store extends EventEmitter {
   public static EVENT_REMOVE = 'remove';
 
   private prefix: string;
-  private enabled: boolean = false;
+  private _enabled: boolean = false;
 
   constructor(public namespace: string, private storage: StorageService) {
     super();
@@ -106,20 +106,24 @@ class Store extends EventEmitter {
       throw new Error('Illegal argument, namespace must be a non-empty string');
   }
 
+  get enabled(): boolean {
+    return this._enabled;
+  }
+
   public enable(userScope?: string) {
     this.prefix = this.namespace + ".";
     if (angular.isDefined(userScope)) {
       this.prefix = userScope + "." + this.prefix;
     }
-    this.enabled = true;
+    this._enabled = true;
   }
 
   public disable() {
-    this.enabled = false;
+    this._enabled = false;
   }
 
   private ensureIsEnabled() {
-    if (!this.enabled) {
+    if (!this._enabled) {
       throw new Error('Store not enabled. Are you accessing a user scoped Store without a user being signed in?');
     }
   }
