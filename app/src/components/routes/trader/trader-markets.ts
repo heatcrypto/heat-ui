@@ -124,7 +124,8 @@ class TraderMarketsComponent {
 
         /* PATCHUP IN AWAITING OF SERVER FUNCTIONALITY - also cleanup toolbar.ts */
 
-        var mymarkets = this.storage.namespace('trader').get('my-markets');
+        let traderStorage = this.storage.namespace('trader');
+        let mymarkets = traderStorage.enabled ? traderStorage.get('my-markets') : null;
         if (angular.isArray(mymarkets)) {
           mymarkets = mymarkets.filter((m)=>!this.markets.find((_m)=>_m.currency==m.currency.id&&_m.asset==m.asset.id));
           this.storage.namespace('trader').put('my-markets', mymarkets);

@@ -14,7 +14,7 @@
       {
         "host": "http://localhost",
         "port": 7733,
-        "websocket": "ws://localhost:7737/ws/",
+        "websocket": "ws://localhost:7755/ws/",
         "priority": 2
       }
     ],

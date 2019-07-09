@@ -86,7 +86,7 @@ class HeatService {
       this.settings.get(SettingsService.HEAT_PORT), route, returns);
   }
 
-  getRaw(host: string, port: number, route: string, returns?: string): angular.IPromise<any> {
+  getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     if (this.env.type == EnvType.BROWSER) {
@@ -98,7 +98,9 @@ class HeatService {
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
         },(response)=>{
-          this.logErrorResponse(route, null, response);
+          if (ignoreErrorResponse === undefined || !ignoreErrorResponse) {
+            this.logErrorResponse(route, null, response);
+          }
           deferred.reject(new ServerEngineError(response.data));
         }
       );
