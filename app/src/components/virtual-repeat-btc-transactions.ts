@@ -190,7 +190,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   getBitcoinMessages = (privateKey: string, publicKey: string) => {
     this.btcMessages = []
-    let addr = this.user.account
+    let addr = this.user.currency.address
     let messages = this.bitcoinMessagesService.messages[addr]
     if (messages) {
       messages.forEach(entry => {

@@ -163,6 +163,7 @@ class BTCCurrency implements ICurrency {
       $scope['vm'].searchTextChange = function() {
         $scope['vm'].value = $scope['vm'].searchText;
         $scope['vm'].data.recipient = $scope['vm'].searchText;
+        $scope['vm'].recipientChanged()
       }
 
       $scope['vm'].amountChanged = function () {
