@@ -489,6 +489,7 @@ class LoginComponent {
   }
 
   isValidPincode(pincode) {
+    if (!pincode || pincode.trim().length == 0) return false;
     return /^[a-zA-Z0-9_.-]{4,15}$/.test(pincode);
   }
 
