@@ -1256,7 +1256,7 @@ class WalletComponent {
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
       $scope['vm'].cancelButtonClick = function () {
@@ -1379,9 +1379,9 @@ class WalletComponent {
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                    <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                    <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>
@@ -1409,7 +1409,7 @@ class WalletComponent {
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
       $scope['vm'].cancelButtonClick = function () {
@@ -1499,9 +1499,9 @@ class WalletComponent {
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                    <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                    <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>
@@ -1549,7 +1549,7 @@ class WalletComponent {
       };
       $scope['vm'].generateSeed();
       $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
     }
 
@@ -1581,10 +1581,10 @@ class WalletComponent {
                 Proceed to <b>IMPORT SEED/ PRIVATE KEY</b> to import this seed to your wallet.
               </p>
               <md-input-container flex>
-                <textarea rows="3" flex ng-model="vm.iotaSeed" readonly ng-trim="false"
+                <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.iotaSeed" readonly ng-trim="false"
                     style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
               </md-input-container>
-              <span id="wallet-secret-textarea" ng-hide="true">{{vm.iotaSeed}}</span>
+              <span style="display:none">{{vm.iotaSeed}}</span>
             </div>
           </md-dialog-content>
           <md-dialog-actions>
@@ -1607,7 +1607,7 @@ class WalletComponent {
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
       $scope['vm'].cancelButtonClick = function () {
@@ -1697,9 +1697,9 @@ class WalletComponent {
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                    <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                    <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>
@@ -1727,7 +1727,7 @@ class WalletComponent {
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
       $scope['vm'].cancelButtonClick = function () {
@@ -1817,9 +1817,9 @@ class WalletComponent {
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                    <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                    <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>
@@ -1847,7 +1847,7 @@ class WalletComponent {
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
       $scope['vm'].cancelButtonClick = function () {
@@ -1937,9 +1937,9 @@ class WalletComponent {
                       <a ng-click="vm.copySeed()">Copy Seed</a></p>
 
                   <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                    <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                    <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>

@@ -58,7 +58,7 @@ class ClipboardService {
     return deferred.promise;
   }
 
-  copyText(text: string) {
+  copyText(text: string, successMessage?: string) {
     var tempInput = <any> document.createElement("input");
     tempInput.style = "position: absolute; left: -1000px; top: -1000px";
     tempInput.value = text;
@@ -66,6 +66,11 @@ class ClipboardService {
     tempInput.select();
     document.execCommand("copy");
     document.body.removeChild(tempInput);
+    if (successMessage) {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent(successMessage).hideDelay(5000)
+      )
+    }
   }
 
   /**
