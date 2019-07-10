@@ -403,7 +403,6 @@ class ToolbarComponent {
   unlock(secretPhrase: string) {
     this.user.unlock(secretPhrase, null).then(
       () => {
-        this.$location.path(`/explorer-account/${this.user.account}/transactions`)
         heat.fullApplicationScopeReload()
       }
     )
