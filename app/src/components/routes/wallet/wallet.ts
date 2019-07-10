@@ -1142,9 +1142,9 @@ class WalletComponent {
           publicKey
         };
         this.localKeyStore.add(key);
-        let message = `Seed was successfully imported to your wallet`;
+        let message = `Seed was successfully imported under HEAT account ${account}`;
         this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        heat.fullApplicationScopeReload()
+        this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase)).then(() => heat.fullApplicationScopeReload())
       }
     )
   }
