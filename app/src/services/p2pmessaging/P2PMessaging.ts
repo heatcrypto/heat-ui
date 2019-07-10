@@ -52,29 +52,29 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private $mdToast: angular.material.IToastService) {
     super();
 
-    user.on(UserService.EVENT_UNLOCKED, () => {
-      if (!this.connector) {
-        this.connector = new p2p.P2PConnector(this, settings, $interval);
-        this.connector.setup(
-          this.user.publicKey,
-          (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-          peerId => this.confirmIncomingCall(peerId),
-          reason => this.onSignalingError(reason),
-          dataHex => this.sign(dataHex),
-          (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
-          (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
-        );
-      }
-    });
-
-    let closeListener = () => {
+    let closeConnector = () => {
       if (this.connector) {
-        this.connector.close();
+        this.connector.close(false);
         this.connector = null;
       }
     };
 
-    user.on(UserService.EVENT_LOCKED, closeListener);
+    user.on(UserService.EVENT_UNLOCKED, () => {
+      closeConnector();
+
+      this.connector = new p2p.P2PConnector(this, settings, $interval);
+      this.connector.setup(
+        this.user.publicKey,
+        (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
+        peerId => this.confirmIncomingCall(peerId),
+        reason => this.onSignalingError(reason),
+        dataHex => this.sign(dataHex),
+        (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
+        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
+      );
+    });
+
+    user.on(UserService.EVENT_LOCKED, closeConnector);
 
     this.p2pContactStore = storage.namespace('p2pContacts');
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
