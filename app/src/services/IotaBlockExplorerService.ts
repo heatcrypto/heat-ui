@@ -38,7 +38,7 @@ class IotaBlockExplorerService {
   private getCachedAccountInfo = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
     if (this.cachedGetCachedAccountInfo.get(seed))
       return this.cachedGetCachedAccountInfo.get(seed)
-
+    this.getInputs(seed)
     let deferred = this.$q.defer<IotaGetAccount>();
     this.cachedGetCachedAccountInfo.set(seed, deferred.promise)
     this.getTransactions(seed).then(deferred.resolve, deferred.reject)
@@ -88,6 +88,19 @@ class IotaBlockExplorerService {
   public getAddressBundles = (address: string) => {
     let deferred = this.$q.defer<any>();
     this.api.getBundlesFromAddresses([address])
+      .then(ret => {
+        let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
+        deferred.resolve(data)
+      })
+      .catch(err => {
+        deferred.reject(err)
+      })
+    return deferred.promise;
+  }
+
+  public getInputs = (seed: string) => {
+    let deferred = this.$q.defer<any>();
+    this.api.getInputs(seed, {start: 0, security: 2})
       .then(ret => {
         let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
         deferred.resolve(data)

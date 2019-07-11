@@ -3,15 +3,9 @@
 class IotaCoreService {
 
   private iotaCore;
-  private converter;
-  private signing;
-  private bip39;
 
   constructor($window: angular.IWindowService) {
               this.iotaCore = $window.heatlibs.IotaCore;
-              this.converter = $window.heatlibs.IotaConverter;
-              this.signing = $window.heatlibs.IotaSigning;
-              this.bip39 = $window.heatlibs.bip39;
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
@@ -42,11 +36,16 @@ class IotaCoreService {
 
   refreshAdressBalances(wallet: WalletType) {
     return new Promise((resolve, reject) => {
-      let walletAddress = wallet.addresses[0];
       let iotaBlockExplorerService: IotaBlockExplorerService = heat.$inject.get('iotaBlockExplorerService')
-      iotaBlockExplorerService.getAccountInfo(walletAddress.privateKey).then(info => {
-        walletAddress.inUse = true;
-        walletAddress.balance = info.balance + ""
+      iotaBlockExplorerService.getInputs(wallet.addresses[0].privateKey).then(info => {
+        info.inputs.forEach(input => {
+          let walletAddress: any = {};
+          walletAddress.inUse = true;
+          walletAddress.balance = input.balance + ""
+          walletAddress.address = input.address
+          walletAddress.privateKey = wallet.addresses[0].privateKey // keep same private key (should be treated as seed) until iota offline signing is done
+          wallet.addresses.push(walletAddress)
+      })
         resolve(true)
       }, () => {
         resolve(false)
