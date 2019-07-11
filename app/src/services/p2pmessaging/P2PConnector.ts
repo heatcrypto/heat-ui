@@ -707,13 +707,13 @@ module p2p {
     /**
      * Clear all data. Close websocket of signaling channel.
      */
-    close() {
+    close(closeWebsocket?: boolean) {
       this.identity = null;
       this.pendingIdentity = null;
       this.pendingRooms = [];
       this.pendingOnlineStatus = null;
       this.rooms.forEach(room => this.closeRoom(room));
-      if (this.signalingReady) {
+      if ((closeWebsocket === undefined || closeWebsocket) && this.signalingReady) {
         this.getWebSocket().then(socket => socket.close());
       }
     }
