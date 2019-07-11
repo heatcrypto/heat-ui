@@ -694,13 +694,20 @@ class WalletComponent {
 
           /* Try and find another CurrencyBalance */
           for (let i = 0; i < this.entries.length; i++) {
-            let balance = <CurrencyBalance>selectedWalletEntry.currencies[i]
-            if (balance.isCurrencyBalance) {
-              balance.unlock(true)
-              return
+            let entry = <WalletEntry>this.entries[i];
+            if (entry.unlocked) {
+              for (let k = 0; k < entry.currencies.length; k++) {
+                let balance = <CurrencyBalance>entry.currencies[k];
+                if (balance.isCurrencyBalance) {
+                  balance.unlock(true);
+                  return
+                }
+              }
             }
           }
+
         }
+
       }
     )
   }
