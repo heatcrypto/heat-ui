@@ -108,24 +108,31 @@ class LocalKeyStoreService {
     return message.encode();
   }
 
-  decode(encoded: string, passphrase: string): ILocalKey {
-    var message = heat.crypto.PassphraseEncryptedMessage.decode(encoded);
-    var json_str = heat.crypto.passphraseDecrypt(message, passphrase);
-    var json = JSON.parse(json_str);
-    return {
-      account: json['account'],
-      secretPhrase: json['secretPhrase'],
-      pincode: json['pincode'],
-      name: json['name']
+  decode(encoded: string, passphrase: string, account?: string): ILocalKey {
+    let message = heat.crypto.PassphraseEncryptedMessage.decode(encoded);
+    let json_str = heat.crypto.passphraseDecrypt(message, passphrase);
+    if (json_str) {
+      let json = JSON.parse(json_str);
+      console.log(`decrypting is success for account ${account}`);
+      return {
+        account: json['account'],
+        secretPhrase: json['secretPhrase'],
+        pincode: json['pincode'],
+        name: json['name']
+      }
+    } else {
+      console.log(`decrypting is not success for account ${account}`);
     }
   }
 
   load(account: string, passphrase: string): ILocalKey {
-    var contents = this.store.get(`key.${account}${this.testnet()}`);
+    let contents = this.store.get(`key.${account}${this.testnet()}`);
     try {
-      let result = this.decode(contents, passphrase);
-      this.rememberPassword(account, passphrase)
-      return result
+      let result = this.decode(contents, passphrase, account);
+      if (result) {
+        this.rememberPassword(account, passphrase);
+        return result;
+      }
     } catch (e) {
       console.log(e);
     }
