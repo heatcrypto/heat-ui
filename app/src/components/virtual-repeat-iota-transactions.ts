@@ -38,7 +38,7 @@
             <!-- Bundle ID -->
             <div class="truncate-col bundle-col left" >
               <span>
-                <a target="_blank" href="https://thetangle.org/bundle/{{item.bundleId}}">{{item.displayBundleAddress}}</a>
+                <a target="_blank" href="https://thetangle.org/transaction/{{item.bundleId}}">{{item.displayBundleAddress}}</a>
               </span>
             </div>
 
