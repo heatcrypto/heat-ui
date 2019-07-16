@@ -74,7 +74,7 @@ class IOTACurrency implements ICurrency {
 
         $scope['vm'].disableOKBtn = true
         const transfers = [{
-            address: $scope['vm'].data.recipient,
+            address: $scope['vm'].data.recipient.length === 90? $scope['vm'].data.recipient.slice(0,81) : $scope['vm'].data.recipient,
             value: parseInt($scope['vm'].data.value)
           }]
         iotaBlockExplorerService.sendIota(user.currency.secretPhrase, transfers).then(
