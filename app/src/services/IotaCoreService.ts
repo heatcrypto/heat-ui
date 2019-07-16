@@ -47,7 +47,7 @@ class IotaCoreService {
             walletAddress.inUse = true;
             walletAddress.balance = input.balance + ""
             walletAddress.privateKey = secretPhrase // keep same private key (should be treated as seed) until iota offline signing is done
-            walletAddress.address = this.getWallet(secretPhrase, input.keyIndex) // using address from getWallet instead of api returned address since users need address with cehcksum
+            walletAddress.address = this.getWallet(secretPhrase, input.keyIndex).address // using address from getWallet instead of api returned address since users need address with cehcksum
             wallet.addresses.push(walletAddress)
           })
           let zeroBalanceAccount = this.getWallet(secretPhrase, ++index)
