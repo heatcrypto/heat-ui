@@ -61,7 +61,7 @@ class IotaBlockExplorerService {
   public sendIota = (seed: string, transfers: any[]) => {
     let deferred = this.$q.defer<any>();
     const depth = 3
-    const minWeightMagnitude = 9
+    const minWeightMagnitude = 14
 
     this.api.prepareTransfers(seed, transfers)
       .then(trytes => this.api.sendTrytes(trytes, depth, minWeightMagnitude))
