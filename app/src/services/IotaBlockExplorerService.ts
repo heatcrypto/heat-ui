@@ -73,6 +73,8 @@ class IotaBlockExplorerService {
   }
 
   public getBalance = (address: string) => {
+    if (address.length === 90)
+      address = address.slice(0, 81)
     let deferred = this.$q.defer<any>();
     this.api.getBalances([address], 100)
       .then(ret => {
@@ -86,6 +88,8 @@ class IotaBlockExplorerService {
   }
 
   public getAddressBundles = (address: string) => {
+    if (address.length === 90)
+      address = address.slice(0, 81)
     let deferred = this.$q.defer<any>();
     this.api.getBundlesFromAddresses([address])
       .then(ret => {
@@ -112,6 +116,8 @@ class IotaBlockExplorerService {
   }
 
   public checkAddressReuse = (address: string) => {
+    if (address.length === 90)
+      address = address.slice(0, 81)
     let deferred = this.$q.defer<any>();
     this.getAddressBundles(address).then(bundles => {
       bundles.forEach(transactions => {

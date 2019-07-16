@@ -26,7 +26,7 @@ class IotaCoreService {
   }
 
   getWallet(mnemonic: string, index: Number = 0, securityLevel: number = 2): any {
-    const address = this.iotaCore.generateAddress(mnemonic, index, securityLevel, false)
+    const address = this.iotaCore.generateAddress(mnemonic, index, securityLevel, true)
     return {
       address,
       privateKey: mnemonic
@@ -39,16 +39,15 @@ class IotaCoreService {
       let secretPhrase = wallet.addresses[0].privateKey;
       let iotaBlockExplorerService: IotaBlockExplorerService = heat.$inject.get('iotaBlockExplorerService')
       iotaBlockExplorerService.getInputs(wallet.addresses[0].privateKey).then(info => {
-        if (info.inputs !== []) {
+        if (info.inputs && info.inputs.length !== 0) {
           let index = 0;
           wallet.addresses = [];
           info.inputs.forEach(input => {
             let walletAddress: any = {};
             walletAddress.inUse = true;
             walletAddress.balance = input.balance + ""
-            walletAddress.address = input.address
             walletAddress.privateKey = secretPhrase // keep same private key (should be treated as seed) until iota offline signing is done
-            index = input.keyIndex;
+            walletAddress.address = this.getWallet(secretPhrase, input.keyIndex) // using address from getWallet instead of api returned address since users need address with cehcksum
             wallet.addresses.push(walletAddress)
           })
           let zeroBalanceAccount = this.getWallet(secretPhrase, ++index)
