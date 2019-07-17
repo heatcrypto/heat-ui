@@ -51,6 +51,18 @@ interface IWizardPage {
   okBtnLabel?: string;
 }
 
+heat.Loader.directive('autoFocus', function ($timeout) {
+  'use strict';
+  return {
+    restrict: 'A',
+    link: function (_scope, _element) {
+      $timeout(function () {
+        _element[0].focus();
+      }, 500);
+    }
+  };
+});
+
 module dialogs {
   export function $mdDialog(): angular.material.IDialogService {
     return <angular.material.IDialogService> heat.$inject.get('$mdDialog');

@@ -37,7 +37,7 @@ module dialogs {
       template: `
         <p>{{vm.description}}</p>
         <md-input-container flex>
-          <input type="password" ng-model="vm.v.value" autocomplete="off"></input><br>
+          <input id="pwd" type="password" ng-model="vm.v.value" autocomplete="off" auto-focus/><br>
         </md-input-container>
       `,
       locals: locals

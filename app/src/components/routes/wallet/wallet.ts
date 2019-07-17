@@ -1222,7 +1222,7 @@ class WalletComponent {
               <div flex layout="column">
                 <p>Select currency to import</p>
                 <md-input-container flex>
-                  <md-select ng-model="vm.data.selectedImport" placeholder="Select currency">
+                  <md-select ng-model="vm.data.selectedImport" placeholder="Select currency" auto-focus>
                     <md-option style="height: 30px;" ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
                   </md-select>
                 </md-input-container>
