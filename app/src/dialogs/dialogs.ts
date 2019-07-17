@@ -107,7 +107,7 @@ module dialogs {
           <md-dialog-actions layout="row">
             <span flex></span>
             <md-button ng-if="vm.cancelButton" class="md-warn" ng-click="vm.cancelButtonClick ? vm.cancelButtonClick() : vm.$mdDialog.cancel()" aria-label="Cancel">Cancel</md-button>
-            <md-button ng-disabled="dialogForm.$invalid" ng-if="vm.okButton" class="md-primary"
+            <md-button type="submit" ng-disabled="dialogForm.$invalid" ng-if="vm.okButton" class="md-primary"
               ng-click="vm.okButtonClick ? vm.okButtonClick() : vm.$mdDialog.hide()" aria-label="OK">{{vm.okButtonLabel?vm.okButtonLabel:'OK'}}</md-button>
           </md-dialog-actions>
         </form>

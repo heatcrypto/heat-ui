@@ -1245,7 +1245,7 @@ class WalletComponent {
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2 || vm.data.selectedImport === ''" class="md-primary"
+              <md-button type="submit" ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2 || vm.data.selectedImport === ''" class="md-primary"
                   ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>
