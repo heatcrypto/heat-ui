@@ -6,7 +6,6 @@ class IOTACurrency implements ICurrency {
   private user: UserService;
   private pendingTransactions: IotaPendingTransactionsService
 
-  private $rootScope;
   private $q;
 
   constructor(public secretPhrase: string,
@@ -16,7 +15,6 @@ class IOTACurrency implements ICurrency {
     this.homePath = `/iota-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('iotaPendingTransactions')
 
-    this.$rootScope = heat.$inject.get('$rootScope')
     this.$q = heat.$inject.get('$q')
   }
 
@@ -46,9 +44,7 @@ class IOTACurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendIota($event).then(
       data => {
-        let address = this.user.currency.address
-        let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data[0].hash, timestamp)
+
       },
       err => {
         if (err) {
@@ -79,16 +75,22 @@ class IOTACurrency implements ICurrency {
           }]
         iotaBlockExplorerService.sendIota(user.currency.secretPhrase, transfers).then(
           data => {
-            $mdDialog.hide(data).then(() => {
-              dialogs.alert(event, 'Success', `Bundle: ${data[0].hash}`);
-            })
+            dialogs.alert(event, 'Success', `Bundle: ${data[0].hash}`);
+            let address = user.currency.address
+            let timestamp = new Date().getTime()
+            let pendingTransactions = <IotaPendingTransactionsService>heat.$inject.get('iotaPendingTransactions')
+            pendingTransactions.add(address, data[0].hash, timestamp)
           },
           err => {
-            $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err);
-            })
+            dialogs.alert(event, 'Error', err);
           }
         )
+        $mdDialog.hide(null)
+
+
+        let $mdToast = <angular.material.IToastService>heat.$inject.get('$mdToast')
+        $mdToast.show($mdToast.simple().textContent("Send transaction is in process.\n" +
+          "Please wait for the dialog to view transaction id").hideDelay(5000));
       }
       $scope['vm'].disableOKBtn = false
 
