@@ -522,7 +522,7 @@ class EthTransactionRenderer {
       str = utils.formatQNT(amount, tokenInfo.decimals) + ' ' + tokenInfo.symbol
     }
     else {
-      str = utils.commaFormat(Number(amount).toFixed(18)).replace(/(\.\d*?[1-9])0+$/g, "$1" ) + ' ETH'
+      str = utils.commaFormat(amount).replace(/(\.\d*?[1-9])0+$/g, "$1" ) + ' ETH'
     }
     return `<span>${str}</span>`;
   }
