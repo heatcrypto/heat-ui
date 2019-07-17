@@ -193,14 +193,18 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     let addr = this.user.currency.address
     let messages = this.bitcoinMessagesService.messages[addr]
     if (messages) {
-      messages.forEach(entry => {
-        let parts = entry.message.split(':'), data = parts[0], nonce = parts[1]
-        let message = heat.crypto.decryptMessage(data, nonce, publicKey, privateKey)
-        this.btcMessages.push({
-          txId: entry.txId,
-          message: message
+      try {
+        messages.forEach(entry => {
+          let parts = entry.message.split(':'), data = parts[0], nonce = parts[1]
+          let message = heat.crypto.decryptMessage(data, nonce, publicKey, privateKey)
+          this.btcMessages.push({
+            txId: entry.txId,
+            message: message
+          })
         })
-      })
+      } catch (e) {
+        console.log(e)
+      }
     }
   }
 }
