@@ -86,7 +86,7 @@ class UserBalanceComponent {
         this.formattedBalance = "0";
         this.formattedFraction = ".00000000";
         this.showError = true;
-        this.errorDescription = error.description;
+        this.errorDescription = error ? error.description : "-";
         this.loading = false;
       });
     })
