@@ -233,8 +233,9 @@ class BTCCurrency implements ICurrency {
                       </div>
                     </md-item-template>
                 </md-autocomplete>
-                <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
-
+                <md-input-container flex >
+                  <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
+                </md-input-container>
                 <md-input-container flex >
                   <label>Amount in BTC</label>
                   <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
