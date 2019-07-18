@@ -29,7 +29,7 @@ class ETHCurrency implements ICurrency {
   private pendingTransactions: EthereumPendingTransactionsService
   private user: UserService
 
-  constructor(public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.ethplorer = heat.$inject.get('ethplorer')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`

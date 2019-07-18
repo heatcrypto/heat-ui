@@ -33,6 +33,8 @@ interface ICurrency {
   /* Manually invoke the balance changed observers */
   notifyBalanceChanged();
 
+  masterSecretPhrase: string;
+
   /* Returns the native address */
   address: string;
 

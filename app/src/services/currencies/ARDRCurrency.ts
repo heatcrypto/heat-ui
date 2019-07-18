@@ -8,7 +8,8 @@ class ARDRCurrency implements ICurrency {
   private $rootScope;
   private $q;
 
-  constructor(public secretPhrase: string,
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
               public address: string) {
     this.homePath = `/ardor-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('ardorPendingTransactions')

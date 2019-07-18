@@ -34,6 +34,7 @@ class CurrencyBalance {
   public inUse = false
   public tokens: Array<TokenBalance> = []
   public visible = false
+  walletEntry: WalletEntry
   constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) { }
 
   public unlock(noPathChange?: boolean) {
@@ -45,25 +46,29 @@ class CurrencyBalance {
     /* Create the ICurrency based on the currency type */
     let currency: ICurrency = null
     if (this.name == 'Ethereum') {
-      currency = new ETHCurrency(this.secretPhrase, this.address)
+      currency = new ETHCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
     else if (this.name == 'Bitcoin') {
-      currency = new BTCCurrency(this.secretPhrase, this.address)
+      currency = new BTCCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
     else if (this.name == 'FIMK') {
-      currency = new FIMKCurrency(this.secretPhrase, this.address)
+      currency = new FIMKCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
     else if (this.name == 'NXT') {
-      currency = new NXTCurrency(this.secretPhrase, this.address)
+      currency = new NXTCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
     else if (this.name == 'Iota') {
-      currency = new IOTACurrency(this.secretPhrase, this.address)
+      currency = new IOTACurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
     else if (this.name == 'ARDOR') {
-      currency = new ARDRCurrency(this.secretPhrase, this.address)
+      currency = new ARDRCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
     else {
-      currency = new HEATCurrency(this.secretPhrase, this.address)
+      currency = new HEATCurrency(
+        this.walletEntry ? this.walletEntry.secretPhrase : this.secretPhrase,
+        this.secretPhrase,
+        this.address
+      )
     }
     user.unlock(this.secretPhrase, null, bip44Compatible, currency).then(
       () => {
@@ -892,6 +897,7 @@ class WalletComponent {
           nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           nxtCurrencyBalance.visible = walletEntry.expanded
           nxtCurrencyBalance.inUse = wasCreated ? false : true
+          nxtCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
           index++;
 
@@ -932,6 +938,7 @@ class WalletComponent {
           nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           nxtCurrencyBalance.visible = walletEntry.expanded
           nxtCurrencyBalance.inUse = wasCreated ? false : true
+          nxtCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
           index++;
 
@@ -974,6 +981,7 @@ class WalletComponent {
           fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
           fimkCurrencyBalance.visible = walletEntry.expanded
           fimkCurrencyBalance.inUse = wasCreated ? false : true
+          fimkCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, fimkCurrencyBalance)
           index++;
 
@@ -1016,6 +1024,7 @@ class WalletComponent {
           ethCurrencyBalance.balance = Number(address.balance + "").toFixed(18)
           ethCurrencyBalance.visible = walletEntry.expanded
           ethCurrencyBalance.inUse = wasCreated ? false : true
+          ethCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
           index++;
 
@@ -1057,6 +1066,7 @@ class WalletComponent {
           iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
           iotaCurrencyBalance.visible = walletEntry.expanded
           iotaCurrencyBalance.inUse = wasCreated ? false : true
+          iotaCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, iotaCurrencyBalance)
           index++;
         }
@@ -1091,6 +1101,7 @@ class WalletComponent {
           btcCurrencyBalance.balance = address.balance + ""
           btcCurrencyBalance.visible = walletEntry.expanded
           btcCurrencyBalance.inUse = wasCreated ? false : true
+          btcCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
           index++;
         }

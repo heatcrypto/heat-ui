@@ -9,7 +9,8 @@ class NXTCurrency implements ICurrency {
   private $rootScope;
   private $q;
 
-  constructor(public secretPhrase: string,
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
               public address: string) {
     this.user = heat.$inject.get('user')
     this.homePath = `/nxt-account/${this.address}`

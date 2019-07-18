@@ -167,29 +167,23 @@ class UserService extends EventEmitter {
         /* We either receive a fully setup ICurrency from the caller or we need to create
           one ourselves. The situation in which we create one is all the cases apart from those
           where we explicitly want some other currency and address than standard HEAT */
+
+        let masterSecret;
         if (!currency || currency.symbol=='HEAT') {
-          let address = heat.crypto.getAccountId(secretPhrase);
-          currency = new HEATCurrency(secretPhrase, address)
-
-          /* Store the currency */
-          this.currency = currency
-
-          /* Circular dependencies force this */
-          this.bip44Compatible = bip44Compatible || false
-
-          /* Everything obtained from the secret phrase - These are all for the master HEAT account */
-          this.secretPhrase = secretPhrase;
-          this.publicKey = heat.crypto.secretPhraseToPublicKey(secretPhrase);
-          this.account = heat.crypto.getAccountId(secretPhrase);
+          masterSecret = secretPhrase;
+          let address = heat.crypto.getAccountId(masterSecret);
+          this.currency = new HEATCurrency(masterSecret, masterSecret, address);
+        } else {
+          masterSecret = currency.masterSecretPhrase;
+          this.currency = currency;
         }
-        /* In case we do receive a currency we can expect secretPhrase to be null which is
-         * to be expected since the currency will be something else than HEATCurrency and
-         * the currency object carries its own secretPhrase.
-         */
-        else {
-
-          /* Store the currency */
-          this.currency = currency
+        if (masterSecret && this.secretPhrase !== masterSecret) {
+          /* Circular dependencies force this */
+          this.bip44Compatible = bip44Compatible || false;
+          /* Everything obtained from the secret phrase - These are all for the master HEAT account */
+          this.secretPhrase = masterSecret;
+          this.publicKey = heat.crypto.secretPhraseToPublicKey(masterSecret);
+          this.account = heat.crypto.getAccountId(masterSecret);
         }
 
         /* The other parts are on the blockchain */

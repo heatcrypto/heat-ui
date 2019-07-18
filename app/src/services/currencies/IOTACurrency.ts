@@ -8,7 +8,8 @@ class IOTACurrency implements ICurrency {
 
   private $q;
 
-  constructor(public secretPhrase: string,
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
               public address: string) {
     this.iotaBlockExplorerService = heat.$inject.get('iotaBlockExplorerService')
     this.user = heat.$inject.get('user')

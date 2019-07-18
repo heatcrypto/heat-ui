@@ -28,7 +28,7 @@ class HEATCurrency implements ICurrency {
   public symbol = 'HEAT'
   public homePath
 
-  constructor(public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.heat = heat.$inject.get('heat')
     this.sendmoney = heat.$inject.get('sendmoney')
     this.homePath = `/explorer-account/${this.address}/transactions`

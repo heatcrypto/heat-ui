@@ -7,7 +7,7 @@ class BTCCurrency implements ICurrency {
   private bitcoinMessagesService: BitcoinMessagesService;
   private user: UserService
 
-  constructor(public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     this.homePath = `/bitcoin-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
