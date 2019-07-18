@@ -164,26 +164,29 @@ class UserService extends EventEmitter {
         this.unlocked = true;
         this.accountName = '[no name]';
 
-        /* We either receive a fully setup ICurrency from the caller or we need to create
-          one ourselves. The situation in which we create one is all the cases apart from those
-          where we explicitly want some other currency and address than standard HEAT */
+        /*
+        Currency has link to its master secret phrase that is used for unlocking this service
+        when is choosed currency of different HEAT account.
+        For example: currently unlocked is master account#1, user chooses currency#X associated with master account#2,
+        so we need to do currently unlocked account#2.
+        */
 
-        let masterSecret;
+        let masterSecretPhrase;
         if (!currency || currency.symbol=='HEAT') {
-          masterSecret = secretPhrase;
-          let address = heat.crypto.getAccountId(masterSecret);
-          this.currency = new HEATCurrency(masterSecret, masterSecret, address);
+          masterSecretPhrase = secretPhrase;
+          let address = heat.crypto.getAccountId(masterSecretPhrase);
+          this.currency = new HEATCurrency(masterSecretPhrase, masterSecretPhrase, address);
         } else {
-          masterSecret = currency.masterSecretPhrase;
+          masterSecretPhrase = currency.masterSecretPhrase;
           this.currency = currency;
         }
-        if (masterSecret && this.secretPhrase !== masterSecret) {
+        if (masterSecretPhrase && this.secretPhrase !== masterSecretPhrase) {
           /* Circular dependencies force this */
           this.bip44Compatible = bip44Compatible || false;
           /* Everything obtained from the secret phrase - These are all for the master HEAT account */
-          this.secretPhrase = masterSecret;
-          this.publicKey = heat.crypto.secretPhraseToPublicKey(masterSecret);
-          this.account = heat.crypto.getAccountId(masterSecret);
+          this.secretPhrase = masterSecretPhrase;
+          this.publicKey = heat.crypto.secretPhraseToPublicKey(masterSecretPhrase);
+          this.account = heat.crypto.getAccountId(masterSecretPhrase);
         }
 
         /* The other parts are on the blockchain */

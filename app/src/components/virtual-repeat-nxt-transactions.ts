@@ -23,7 +23,7 @@
           <div class="truncate-col info-col left">TO</div>
 
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left">Amount</div>
+          <div class="truncate-col amount-col">Amount</div>
 
           <!-- MESSAGE -->
           <div class="truncate-col message-col left">Message</div>
@@ -54,7 +54,7 @@
             </div>
 
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left">
+            <div class="truncate-col amount-col">
               <span>{{item.amount}}</span>
             </div>
 

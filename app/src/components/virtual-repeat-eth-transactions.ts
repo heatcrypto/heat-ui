@@ -47,7 +47,7 @@
           <!-- <div class="truncate-col transaction-col left" ng-if="vm.personalize">Transaction</div> -->
 
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left" ng-if="vm.personalize">Amount</div>
+          <div class="truncate-col amount-col" ng-if="vm.personalize">Amount</div>
 
           <!-- TOFROM -->
           <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To/From</div>
@@ -92,7 +92,7 @@
             </div> -->
 
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left" ng-if="vm.personalize">
+            <div class="truncate-col amount-col" ng-if="vm.personalize">
               <span ng-bind-html="item.renderedAmount"></span>
             </div>
 

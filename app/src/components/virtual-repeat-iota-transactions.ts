@@ -23,7 +23,7 @@
           <div class="truncate-col bundle-col left">TO</div>
 
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left">Amount</div>
+          <div class="truncate-col amount-col">Amount</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -53,7 +53,7 @@
             </div>
 
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left">
+            <div class="truncate-col amount-col">
               <span>{{item.amount}}</span>
             </div>
 
