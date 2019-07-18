@@ -38,7 +38,6 @@ class IotaBlockExplorerService {
   private getCachedAccountInfo = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
     if (this.cachedGetCachedAccountInfo.get(seed))
       return this.cachedGetCachedAccountInfo.get(seed)
-    this.getInputs(seed)
     let deferred = this.$q.defer<IotaGetAccount>();
     this.cachedGetCachedAccountInfo.set(seed, deferred.promise)
     this.getTransactions(seed).then(deferred.resolve, deferred.reject)
@@ -139,5 +138,6 @@ class IotaBlockExplorerService {
 interface IotaGetAccount {
   transactions: any[],
   transfers: any[],
-  balance: number
+  balance: number,
+  addresses: string[]
 }
