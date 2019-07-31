@@ -27,8 +27,11 @@
     message-batch-entry .header {
       font-size: 12px;
     }
-    message-batch-entry .outgoing .header {
+    message-batch-entry .outgoing {
       text-align: right;
+    }
+    message-batch-entry .incoming {
+      text-align: left;
     }
     message-batch-entry .batch-entry {
       padding-left: 0px;
@@ -89,7 +92,6 @@
     </div>
   `
 })
-//@Inject('$scope','$q','$timeout')
 class MessageBatchEntryComponent {
   message: IHeatMessage; // @input
   io: string;

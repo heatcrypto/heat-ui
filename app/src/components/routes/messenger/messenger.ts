@@ -114,13 +114,9 @@
           <div class="row" class="progress-indicator" flex ng-show="vm.loading">
             <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
           </div>
-          <md-content flex ng-if="!vm.p2pMessaging.offchainMode" id="message-batch-container">
-            <message-batch-viewer flex layout="column" container-id="message-batch-container"
-                    publickey="::vm.publickey"></message-batch-viewer>
-          </md-content>
-          <md-content flex ng-if="vm.p2pMessaging.offchainMode && vm.publickey != 0" id="p2p-messages-container">
-            <p2p-messages-viewer flex layout="column" class="p2p-messages" container-id="p2p-messages-container"
-                    publickey="::vm.publickey"></p2p-messages-viewer>
+          <md-content flex id="message-batch-container">
+            <msg-viewer flex layout="column" container-id="message-batch-container"
+                    publickey="::vm.publickey"></msg-viewer>
           </md-content>
           <div layout="row" flex="none" class="edit-message">
             <edit-message publickey="vm.publickey" layout="row" flex></edit-message>
