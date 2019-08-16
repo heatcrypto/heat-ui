@@ -45,11 +45,11 @@
           <div class="he truncate-col height-col left">Height</div>
           <div class="truncate-col date-col left">Time</div>
           <div class="truncate-col block-col block left">Block</div>
-          <div class="truncate-col generator-col block left" ng-if="!vm.account">Miner (2 HEAT)</div>
+          <div class="truncate-col generator-col block left" ng-if="!vm.account">{{vm.minerHeader}}</div>
           <div class="tx truncate-col transactions-col">Tx</div>
           <div class="truncate-col amount-col">Amount</div>
           <div class="fee truncate-col fee-col">Fees</div>
-          <div class="truncate-col pop-col left" flex>POP reward (2 HEAT)</div>
+          <div class="truncate-col pop-col left" flex>{{vm.popHeader}}</div>
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
         </md-list-item>
@@ -84,6 +84,8 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
   blockObject: IHeatBlock; // @input
   account: string; // @input
+  minerHeader: string = "Miner";
+  popHeader: string = "POP reward";
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -93,6 +95,7 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
     super($scope, $q);
 
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let headerInitialized = false;
     this.initializeVirtualRepeat(
       this.latestBlocksProviderFactory.createProvider(this.blockObject, this.account),
       /* decorator function */
@@ -103,6 +106,11 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
         block.fee = utils.trimDecimals(utils.formatQNT(block.totalFeeHQT, 8),2) + " HEAT";
         block.pos = utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2) + " HEAT";
         block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2) + " HEAT";
+        if (!headerInitialized) {
+          this.minerHeader = `Miner (${utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2)} HEAT)`;
+          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2)} HEAT)`;
+          headerInitialized = true;
+        }
       }
     );
 
