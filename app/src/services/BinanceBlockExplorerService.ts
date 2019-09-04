@@ -141,4 +141,17 @@ class BnbBlockExplorerService {
     return deferred.promise
   }
 
+  public getTxInfo = (txId: string) => {
+    let deferred = this.$q.defer<any>();
+    let url = this.binanceDex + 'api/v1/tx/' + txId + '?format=json'
+    this.http.get(url).then(info => {
+      let data = JSON.parse(typeof info === "string" ? info : JSON.stringify(info))
+      if (data) {
+        deferred.resolve(data)
+      }
+    }, ()=> {
+      deferred.reject('Unable to obtain acoount sequence value');      
+    })
+    return deferred.promise
+  }
 }

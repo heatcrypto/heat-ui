@@ -65,7 +65,7 @@
 	`
 })
   
-@Inject('$scope', '$q', 'bnbTransactionsProviderFactory', 'settings', 'user')
+@Inject('$scope', '$q', 'bnbTransactionsProviderFactory', 'settings', 'binancePendingTransactions', 'user')
 class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 
 	account: string; // @input
@@ -73,6 +73,7 @@ class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 		protected $q: angular.IQService,
 		private bnbTransactionsProviderFactory: BnbTransactionsProviderFactory,
 		private settings: SettingsService,
+		private binancePendingTransactions: BinancePendingTransactionsService,
 		private user: UserService) {
 		super($scope, $q);
 		var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
@@ -123,11 +124,14 @@ class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 		);
 
 		var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-		let timeout = setTimeout(refresh, 10 * 1000)
-
+		let timeout = setTimeout(refresh, 15 * 1000)
+		
+		let listener = this.determineLength.bind(this)
 		this.PAGE_SIZE = 25;
+		binancePendingTransactions.addListener(listener)
 
 		$scope.$on('$destroy', () => {
+			binancePendingTransactions.removeListener(listener)
 			clearTimeout(timeout)
 		})
 	}

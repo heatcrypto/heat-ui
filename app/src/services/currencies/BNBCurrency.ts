@@ -3,11 +3,13 @@ class BNBCurrency implements ICurrency {
   private bnbBlockExplorerService: BnbBlockExplorerService
   public symbol = 'BNB'
   public homePath
+  private pendingTransactions: BinancePendingTransactionsService
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.bnbBlockExplorerService = heat.$inject.get('bnbBlockExplorerService')
     this.homePath = `/binance-account/${this.address}`
+    this.pendingTransactions = heat.$inject.get('binancePendingTransactions')
     this.user = heat.$inject.get('user')
   }
 
@@ -35,6 +37,7 @@ class BNBCurrency implements ICurrency {
     this.send($event).then(
       data => {
         let timestamp = new Date().getTime()
+        this.pendingTransactions.add(this.address, data.txId, timestamp)
       },
       err => {
         if (err) {
