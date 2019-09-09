@@ -60,7 +60,7 @@ class UserBalanceComponent {
       this.user.removeListener(UserService.EVENT_UNLOCKED, refresh)
     })
 
-    let interval = $interval(refresh, 10*1000)
+    let interval = $interval(() => this.refresh(), 5*1000)
     $scope.$on('$destroy', () => { $interval.cancel(interval) })
 
     this.refresh();
@@ -72,7 +72,6 @@ class UserBalanceComponent {
     this.$scope.$evalAsync(() => {
       this.loading = true;
     });
-    let address = this.user.currency.address
     this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
         var formatted = balance.split(".");

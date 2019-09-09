@@ -95,7 +95,7 @@ class BitcoinAccountComponent {
     bitcoinPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 30000)
+    let promise = $interval(this.timerHandler.bind(this), 1000)
     this.timerHandler()
 
     $scope.$on('$destroy', () => {

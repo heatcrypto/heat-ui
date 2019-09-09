@@ -11,8 +11,25 @@
           <md-button ng-click="vm.scrollUp()" aria-label="Go up">Go up</md-button>
         </div>
         <div layout="column">
-          <div layout="column" ng-repeat="message in vm.displayMessages.messages | orderBy:'date'">
-            <message-batch-entry id="{{::message.__id}}" message="message" flex="none" class="message-item"></message-batch-entry>
+          <div layout="row" flex layout-fill ng-repeat="message in vm.displayMessages.messages | orderBy:'date'">
+            <div layout="column" flex>
+              <message-batch-entry id="{{::message.__id}}" message="message" flex="none" class="message-item"></message-batch-entry>
+            </div>
+            <div layout="column">
+              <md-menu>
+                <md-button ng-disabled="message.onchain" aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
+                  <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
+                  ...
+                </md-button>
+                <md-menu-content width="4">
+                  <md-menu-item>
+                    <md-button ng-click="vm.removeOffchainMessage($event, message)">
+                      Remove
+                    </md-button>
+                  </md-menu-item>
+                </md-menu-content>
+              </md-menu>
+            </div>
           </div>
         </div>
       </div>
@@ -66,10 +83,15 @@ class MsgViewerComponent {
       }
       let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
       if (room) {
+        this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
         this.messageHistory = room.getMessageHistory()
         this.offchainPages = this.messageHistory.getPageCount() - 1;
         room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => { this.onMessageAdded(item, true) }
         this.messagesCount += this.messageHistory.getItemCount();
+        this.$scope.$on('$destroy', () => {
+          this.p2pMessaging.updateSeenTime(room.name, Date.now());
+          room.onNewMessageHistoryItem = null;
+        });
       }
       this.loadMessages();
     })
@@ -126,7 +148,7 @@ class MsgViewerComponent {
 
   private processOnchainItem(message) {
     return {
-      'content': this.heat.getHeatMessageContents(message),
+      'contents': this.heat.getHeatMessageContents(message),
       'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
       'outgoing': this.user.account === message.sender,
       'onchain': true,
@@ -136,10 +158,11 @@ class MsgViewerComponent {
   }
   private processOffchainItem(item: p2p.MessageHistoryItem) {
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
+    item['timestamp'] = item.timestamp;
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['date'] = dateFormat(item.timestamp, this.dateFormat);
     item['onchain'] = false;
-    item['content'] = item['content'] || item['message'];
+    item['contents'] = item['content'] || item['message'];
     item['__id'] = ++MsgViewerComponent.count;
     return item;
   }
@@ -148,9 +171,11 @@ class MsgViewerComponent {
     let newMessage;
     if (isoffchain)
       newMessage = this.processOffchainItem(data);
-    else
+    else {
+      if (data.recipientPublicKey !== this.publickey)
+        return;
       newMessage = this.processOnchainItem(data);
-
+    }
     this.displayMessages.messages.splice(0, 0, newMessage);
     this.displayMessages.index++;
     this.messagesCount++;
@@ -166,6 +191,22 @@ class MsgViewerComponent {
     --this.offchainPages;
     this.onchainMessagesCount -= 11;
     this.loadMessages();
+  }
+
+  public openMenu($mdMenu, event) {
+    $mdMenu.open(event);
+  }
+
+  public removeOffchainMessage($event: any, item: p2p.MessageHistoryItem) {
+    dialogs.confirm(
+      "Remove message",
+      `Do you want to remove the message ?`
+    ).then(() => {
+      this.messageHistory.remove(item.timestamp)
+      this.displayMessages.messages = this.displayMessages.messages.filter(i => i.timestamp != item.timestamp);
+      this.displayMessages.index--;
+      this.allMessages = this.allMessages.filter(i => i.timestamp != item.timestamp);
+    });
   }
 
   getScrollContainer(): duScroll.IDocumentService {

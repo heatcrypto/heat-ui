@@ -1,15 +1,14 @@
 
 @Service('btcBlockExplorerService')
-@Inject('http', '$q', 'btcBlockExplorerHeatNodeService', 'btcBlockExplorer3rdPartyService', '$interval')
+@Inject('http', '$q', 'btcBlockExplorerHeatNodeService', 'btcBlockExplorer3rdPartyService')
 class BtcBlockExplorerService {
 
   private btcProvider: IBitcoinAPIList;
+  private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
   constructor(private http: HttpService,
               private $q: angular.IQService,
               private btcBlockExplorerHeatNodeService: BtcBlockExplorerHeatNodeService,
-              private btcBlockExplorer3rdPartyService: BtcBlockExplorer3rdPartyService,
-              private $interval: angular.IIntervalService) {
-    let interval = $interval(() => { this.refresh() }, 60 * 1000, 0, false);
+              private btcBlockExplorer3rdPartyService: BtcBlockExplorer3rdPartyService) {
   }
 
   public refresh = () => {
@@ -20,8 +19,26 @@ class BtcBlockExplorerService {
     })
   }
 
+  private getCachedAccountBalance = (address: string) => {
+    if (this.cachedGetCachedAccountBalance.get(address))
+      return this.cachedGetCachedAccountBalance.get(address)
+    let deferred = this.$q.defer<number>();
+    this.cachedGetCachedAccountBalance.set(address, deferred.promise)
+    this.btcProvider.getBalance(address).then(deferred.resolve, deferred.reject)
+    this.cachedGetCachedAccountBalance.get(address).finally(() => {
+      setTimeout(() => {
+        this.cachedGetCachedAccountBalance.set(address, null);
+      }, 30 * 1000)
+    })
+    return this.cachedGetCachedAccountBalance.get(address)
+  }
+
   public getBalance = (address: string) => {
-    return this.btcProvider.getBalance(address)
+    let deferred = this.$q.defer<number>();
+    this.getCachedAccountBalance(address).then(info => {
+      deferred.resolve(info)
+    }, deferred.reject)
+    return deferred.promise;
   }
 
   public getTransactions = (address: string, from: number, to: number): angular.IPromise<any> => {

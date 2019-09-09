@@ -63,6 +63,9 @@ class CurrencyBalance {
     else if (this.name == 'ARDOR') {
       currency = new ARDRCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
+    else if (this.name == 'EOS') {
+      currency = new EOSCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
+    }
     else if (this.name == 'Binance') {
       currency = new BNBCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
@@ -353,6 +356,7 @@ class WalletEntry {
       this.component.loadNXTAddresses(this);
       this.component.loadARDORAddresses(this);
       this.component.loadIotaAddresses(this);
+      this.component.loadEOSAddresses(this);
       this.component.loadBNBAddresses(this);
     }
   }
@@ -489,7 +493,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
 
   selectAll = true;
@@ -516,6 +520,7 @@ class WalletComponent {
     private clipboard: ClipboardService,
     private user: UserService,
     private bitcoreService: BitcoreService,
+    private eosCryptoService: EOSCryptoService,
     private fimkCryptoService: FIMKCryptoService,
     private nxtCryptoService: NXTCryptoService,
     private ardorCryptoService: ARDORCryptoService,
@@ -827,6 +832,28 @@ class WalletComponent {
           /* Only if this node is expanded will we load the addresses */
           if (walletEntry.expanded) {
             this.loadBitcoinAddresses(walletEntry)
+          }
+        }
+      })
+
+      if (!selectedCurrencies || selectedCurrencies.includes('EOS'))
+      this.eosCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        if (wallet !== undefined) {
+          let eosCurrencyAddressLoading = new CurrencyAddressLoading('EOS')
+          eosCurrencyAddressLoading.visible = walletEntry.expanded;
+          eosCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(eosCurrencyAddressLoading);
+
+          let eosCurrencyAddressCreate = new CurrencyAddressCreate('EOS', wallet)
+          eosCurrencyAddressCreate.visible = walletEntry.expanded
+          eosCurrencyAddressCreate.parent = walletEntry
+          eosCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(eosCurrencyAddressCreate)
+
+          this.flatten()
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadEOSAddresses(walletEntry)
           }
         }
       })
@@ -1192,7 +1219,41 @@ class WalletComponent {
     })
   }
 
-  // /* Only when we expand a wallet entry do we lookup its balances */
+  /* Only when we expand a wallet entry do we lookup its balances */
+  public loadEOSAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let eosCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'EOS')
+    if (!eosCurrencyAddressLoading)
+      return
+
+    this.eosCryptoService.refreshAdressBalances(eosCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(eosCurrencyAddressLoading)
+      eosCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let eosCurrencyBalance = new CurrencyBalance('EOS', 'EOS', address.address, address.privateKey)
+          eosCurrencyBalance.balance = address.balance + ""
+          eosCurrencyBalance.visible = walletEntry.expanded
+          eosCurrencyBalance.inUse = wasCreated ? false : true
+          eosCurrencyBalance.walletEntry = walletEntry
+          walletEntry.currencies.splice(index, 0, eosCurrencyBalance)
+          index++;
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != eosCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
+
+  /* Only when we expand a wallet entry do we lookup its balances */
   public loadBNBAddresses(walletEntry: WalletEntry) {
 
     /* Find the Loading node, if thats not available we can exit */

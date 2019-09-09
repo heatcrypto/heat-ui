@@ -1,6 +1,6 @@
-@RouteConfig('/nxt-account/:account')
+@RouteConfig('/eos-account/:account')
 @Component({
-  selector: 'nxtAccount',
+  selector: 'eosAccount',
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill>
@@ -11,7 +11,7 @@
               Address:
             </div>
             <div class="value">
-              <a href="#/nxt-account/{{vm.account}}">{{vm.account}}</a>
+              <a href="#/eos-account/{{vm.account}}">{{vm.account}}</a>
             </div>
           </div>
           <div class="col-item">
@@ -19,19 +19,7 @@
               Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
-              {{vm.balanceUnconfirmed}} NXT
-            </div>
-          </div>
-        </div>
-        <div layout="column">
-          <div class="col-item">
-            <div class="title">
-              NXT Server:
-            </div>
-            <div class="value">
-              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeSocketAddress()">
-                <md-option ng-repeat="socket in vm.sockets" value="{{socket.name}}">{{socket.name}}</md-option>
-              </md-select>
+              {{vm.balanceUnconfirmed}} EOS
             </div>
           </div>
         </div>
@@ -44,75 +32,55 @@
             <md-list-item class="header">
               <div class="truncate-col date-col left">Time</div>
               <div class="truncate-col id-col left">Status</div>
-              <div class="truncate-col info-col left" flex>Transaction Id</div>
+              <div class="truncate-col tx-col left" flex>Transaction Id</div>
             </md-list-item>
             <md-list-item ng-repeat="item in vm.pendingTransactions" class="row">
               <div class="truncate-col date-col left">{{item.date}}</div>
               <div class="truncate-col id-col left">
                 Pending&nbsp;<elipses-loading></elipses-loading>
               </div>
-              <div class="truncate-col info-col left" flex>
-                <span>{{item.txId}}</span>
+              <div class="truncate-col tx-col left" flex>
+                <a target="_blank" href="">{{item.txId}}</a>
               </div>
             </md-list-item>
           </md-list>
           <p></p>
         </div>
-        <virtual-repeat-nxt-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-nxt-transactions>
+        <virtual-repeat-eos-transactions layout="column" flex layout-fill account="vm.account"></virtual-repeat-eos-transactions>
       </div>
     </div>
   `
 })
-@Inject('$scope', 'nxtBlockExplorerService', 'nxtPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
-class NxtAccountComponent {
+@Inject('$scope', 'eosBlockExplorerService', 'eosPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
+class EosAccountComponent {
   account: string; // @input
   balanceUnconfirmed: any;
   pendingTransactions: Array<{ date: string, txId: string, time: number, address: string }> = []
   prevIndex = 0
   busy = true
-  sockets: any
 
   constructor(private $scope: angular.IScope,
-              private nxtBlockExplorerService: NxtBlockExplorerService,
-              private nxtPendingTransactions: NxtPendingTransactionsService,
-              private $interval: angular.IIntervalService,
-              private $mdToast: angular.material.IToastService,
-              private settings: SettingsService,
-              private user: UserService) {
+    private eosBlockExplorerService: EosBlockExplorerService,
+    private eosPendingTransactions: EosPendingTransactionsService,
+    private $interval: angular.IIntervalService,
+    private $mdToast: angular.material.IToastService,
+    private settings: SettingsService,
+    private user: UserService) {
 
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    nxtPendingTransactions.addListener(listener)
+    eosPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 1000)
+    let promise = $interval(this.timerHandler.bind(this), 10*1000)
     this.timerHandler()
 
     $scope.$on('$destroy', () => {
-      nxtPendingTransactions.removeListener(listener)
+      eosPendingTransactions.removeListener(listener)
       $interval.cancel(promise)
     })
-
-    this.sockets = [
-      {
-        name: 'HEAT_NXT_node',
-        socketUrl: 'https://bitnode.heatwallet.com:7876/'
-      },
-      {
-        name: 'Localhost',
-        socketUrl: 'http://localhost:7876/'
-      }
-    ]
-
-    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.nxtBlockExplorerService.getSocketUrl() == w.socketUrl).name
   }
-
-  changeSocketAddress() {
-    let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.nxtBlockExplorerService.setUrl(ret.socketUrl)
-  }
-
 
   timerHandler() {
     this.refresh()
@@ -122,11 +90,11 @@ class NxtAccountComponent {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
-      this.nxtBlockExplorerService.getTransactionStatus(pendingTxn.txId).then(
+      this.eosBlockExplorerService.getTransactionStatus(pendingTxn.txId).then(
         data => {
-          if (data.confirmations) {
+          if (data.execution_trace.block_num !== -1) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
-            this.nxtPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
+            this.eosPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
         },
         err => {
@@ -140,14 +108,14 @@ class NxtAccountComponent {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
       let addr = this.user.currency.address
-      let txns = this.nxtPendingTransactions.pending[addr]
+      let txns = this.eosPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
           this.pendingTransactions.push({
-            date: dateFormat(new Date(tx.time), format),
-            time: tx.time,
-            txId: tx.txId,
+            date: dateFormat(new Date(tx.timestamp), format),
+            time: tx.timestamp,
+            txId: tx.txHash,
             address: addr
           })
         })
@@ -159,9 +127,9 @@ class NxtAccountComponent {
   refresh() {
     this.busy = true;
     this.balanceUnconfirmed = "";
-    this.nxtBlockExplorerService.getAccount(this.account).then(info => {
+    this.eosBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(utils.convertToQNTf(info.balanceNQT)).toFixed(8);
+        this.balanceUnconfirmed = info;
         this.busy = false;
       })
     })

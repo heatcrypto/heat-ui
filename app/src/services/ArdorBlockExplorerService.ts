@@ -2,6 +2,7 @@
 @Inject('$q', 'http')
 class ArdorBlockExplorerService {
   private url: string;
+  private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
 
   constructor(
     private $q: angular.IQService,
@@ -106,8 +107,30 @@ class ArdorBlockExplorerService {
     return deferred.promise;
   }
 
+  private getCachedAccountBalance = (address: string, chain: number = 1) => {
+    if (this.cachedGetCachedAccountBalance.get(address))
+      return this.cachedGetCachedAccountBalance.get(address)
+    let deferred = this.$q.defer<string>();
+    this.cachedGetCachedAccountBalance.set(address, deferred.promise)
+    this.getBalanceFromChain(address, chain).then(deferred.resolve, deferred.reject)
+    this.cachedGetCachedAccountBalance.get(address).finally(() => {
+      setTimeout(() => {
+        this.cachedGetCachedAccountBalance.set(address, null);
+      }, 30 * 1000)
+    })
+    return this.cachedGetCachedAccountBalance.get(address)
+  }
+
   public getBalance = (account: string, chain: number = 1) => {
-    let deferred = this.$q.defer<any>();
+    let deferred = this.$q.defer<string>();
+    this.getCachedAccountBalance(account).then(info => {
+      deferred.resolve(info)
+    }, deferred.reject)
+    return deferred.promise;
+  }
+
+  private getBalanceFromChain = (account: string, chain: number = 1) => {
+    let deferred = this.$q.defer<string>();
     this.http.get(`${this.url}nxt?requestType=getBalance&account=${account}&chain=${chain}`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
       if (data.unconfirmedBalanceNQT)
