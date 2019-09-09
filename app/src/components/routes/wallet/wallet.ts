@@ -136,6 +136,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -163,6 +164,7 @@ class CurrencyAddressCreate {
 
         let nextAddress = this.wallet.addresses[i + 1]
         let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -185,6 +187,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -212,6 +215,7 @@ class CurrencyAddressCreate {
 
         let nextAddress = this.wallet.addresses[i + 1]
         let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -234,6 +238,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -249,6 +254,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -263,6 +269,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -280,6 +287,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('Binance', 'BNB', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
       this.flatten()
@@ -307,6 +315,7 @@ class CurrencyAddressCreate {
 
         let nextAddress = this.wallet.addresses[i + 1]
         let newCurrencyBalance = new CurrencyBalance('Binance', 'BNB', nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
         component.rememberAdressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -811,7 +820,7 @@ class WalletComponent {
 
     /* Bitcoin and Ethereum integration start here */
     let selectedCurrencies = this.store.get(walletEntry.account)
-    if (!selectedCurrencies || selectedCurrencies.includes('BTC'))
+    if (selectedCurrencies.indexOf('BTC') > -1)
       this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
           let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
@@ -836,7 +845,7 @@ class WalletComponent {
         }
       })
 
-      if (!selectedCurrencies || selectedCurrencies.includes('EOS'))
+    if (selectedCurrencies.indexOf('EOS') > -1)
       this.eosCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
           let eosCurrencyAddressLoading = new CurrencyAddressLoading('EOS')
@@ -857,7 +866,7 @@ class WalletComponent {
           }
         }
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('ETH'))
+    if (selectedCurrencies.indexOf('ETH') > -1)
       this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
 
         let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
@@ -879,7 +888,7 @@ class WalletComponent {
           this.loadEthereumAddresses(walletEntry)
         }
       })
-    if (selectedCurrencies && selectedCurrencies.includes('IOTA')) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
+    if (selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
       this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
         iotaCurrencyAddressLoading.visible = walletEntry.expanded
@@ -900,7 +909,7 @@ class WalletComponent {
           this.loadIotaAddresses(walletEntry)
         }
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('FIM'))
+    if (selectedCurrencies.indexOf('FIM') > -1)
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         this.mofoSocketService.mofoSocket().then(() => {
           let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
@@ -920,7 +929,7 @@ class WalletComponent {
           }
         })
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('NXT'))
+    if (selectedCurrencies.indexOf('NXT') > -1)
       this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
           let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
@@ -939,7 +948,7 @@ class WalletComponent {
           }
         })
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('ARDR'))
+    if (selectedCurrencies.indexOf('ARDR')> -1)
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
           let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
@@ -958,7 +967,7 @@ class WalletComponent {
           }
         })
       })
-    if (!selectedCurrencies || selectedCurrencies.includes('BNB'))
+    if (selectedCurrencies.indexOf('BNB') > -1)
       this.bnbCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
           let bnbCurrencyAddressLoading = new CurrencyAddressLoading('Binance')
@@ -1381,7 +1390,7 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }];
+      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
