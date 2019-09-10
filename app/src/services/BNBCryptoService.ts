@@ -1,18 +1,27 @@
 @Service('bnbCryptoService')
-@Inject('$window')
+@Inject('$window','storage', '$rootScope')
 class BNBCryptoService {
   private bnb: any;
+  private store: Store;
 
-  constructor(private $window: angular.IWindowService) {
+  constructor(private $window: angular.IWindowService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.bnb = $window.heatlibs.bnb;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      if (this.bnb.crypto.validateMnemonic(seedOrPrivateKey)) {
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`BNB-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else if (this.bnb.crypto.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
+          this.store.put(`BNB-${heatAddress}`, walletType);
           resolve(walletType);
         }
       } else {

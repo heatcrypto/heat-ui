@@ -1,18 +1,29 @@
 @Service('iotaCoreService')
-@Inject('$window')
+@Inject('$window', 'storage', '$rootScope')
 class IotaCoreService {
 
   private iotaCore;
+  private store: Store;
 
-  constructor($window: angular.IWindowService) {
+  constructor($window: angular.IWindowService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.iotaCore = $window.heatlibs.IotaCore;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(seed: string): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      let walletType = this.getNWalletsFromMnemonics(seed, 1)
-      resolve(walletType);
+      let heatAddress = heat.crypto.getAccountId(seed);
+      let walletAddresses = this.store.get(`IOTA-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else {
+        let walletType = this.getNWalletsFromMnemonics(seed, 1)
+        this.store.put(`IOTA-${heatAddress}`, walletType);
+        resolve(walletType);  
+      }
     });
   }
 

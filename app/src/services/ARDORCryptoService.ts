@@ -1,23 +1,34 @@
 @Service('ardorCryptoService')
-@Inject('$window', 'user')
+@Inject('$window', 'user', 'storage', '$rootScope')
 class ARDORCryptoService {
 
   private nxtCrypto;
+  private store: Store;
 
   constructor(private $window: angular.IWindowService,
-    private user: UserService) {
+    private user: UserService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.nxtCrypto = $window.heatlibs.nxtCrypto;
+      this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the seed to this wallet */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      let walletType = { addresses: [] }
-      let publicKey = this.nxtCrypto.getPublicKey(seedOrPrivateKey)
-      let address = this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR')
-      let accountId = this.nxtCrypto.getAccountId(publicKey)
-      walletType.addresses[0] = { address: address, privateKey: seedOrPrivateKey, accountId: accountId }
-      resolve(walletType);
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`ARDR-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else {
+        let walletType = { addresses: [] }
+        let publicKey = this.nxtCrypto.getPublicKey(seedOrPrivateKey)
+        let address = this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR')
+        let accountId = this.nxtCrypto.getAccountId(publicKey)
+        walletType.addresses[0] = { address: address, privateKey: seedOrPrivateKey, accountId: accountId }
+          this.store.put(`ARDR-${heatAddress}`, walletType);
+        resolve(walletType);
+      }
     });
   }
 

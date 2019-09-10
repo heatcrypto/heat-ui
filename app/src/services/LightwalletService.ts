@@ -57,20 +57,23 @@ declare type WalletType = {
 }
 
 @Service('lightwalletService')
-@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer', '$window')
+@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer', '$window', 'storage')
 class LightwalletService {
 
   //public wallet: WalletType
   static readonly BIP44 = "m/44'/60'/0'/0";
   private lightwallet;
+  private store: Store;
 
   constructor(private web3Service: Web3Service,
     private userService: UserService,
     private settingsService: SettingsService,
     private $rootScope: angular.IRootScopeService,
     private ethplorer: EthplorerService,
-    private $window: angular.IWindowService,) {
+    private $window: angular.IWindowService,
+    storage: StorageService) {
       this.lightwallet = $window.heatlibs.lightwallet;
+      this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   generateRandomSeed() {
@@ -88,22 +91,28 @@ class LightwalletService {
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(seedOrPrivateKey: string, password?: string): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      let promise:Promise<WalletType>;
-      if (this.validSeed(seedOrPrivateKey)) {
-        promise = this.getEtherWallet(seedOrPrivateKey, password || "")
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`ETH-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else {
+        let promise:Promise<WalletType>;
+        if (this.validSeed(seedOrPrivateKey)) {
+          promise = this.getEtherWallet(seedOrPrivateKey, password || "")
+        }
+        else if (this.validPrivateKey(seedOrPrivateKey)) {
+          promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
+        }
+        else {
+          reject()
+        }
+        promise.then(wallet => {
+          this.store.put(`ETH-${heatAddress}`, wallet);
+          resolve(wallet)
+        }).catch(() => {
+          reject()
+        })  
       }
-      else if (this.validPrivateKey(seedOrPrivateKey)) {
-        promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
-      }
-      else {
-        reject()
-      }
-      promise.then(wallet => {
-        // console.log('wallet', wallet)
-        resolve(wallet)
-      }).catch(() => {
-        reject()
-      })
     });
   }
 

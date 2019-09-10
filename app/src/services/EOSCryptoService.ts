@@ -1,5 +1,5 @@
 @Service('eosCryptoService')
-@Inject('$window')
+@Inject('$window', 'storage', '$rootScope')
 class EOSCryptoService {
 
   static readonly BIP44 = "m/44'/194'/0'/0/";
@@ -8,21 +8,29 @@ class EOSCryptoService {
   private wif;
   private ecc;
   private safeBuffer;
+  private store: Store;
 
-  constructor($window: angular.IWindowService) {
+  constructor($window: angular.IWindowService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.hdkey = $window.heatlibs.hdkey;
     this.bip39 = $window.heatlibs.bip39;
     this.wif = $window.heatlibs.wif;
     this.ecc = $window.heatlibs.ecc;
     this.safeBuffer = $window.heatlibs.safeBuffer;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
-    this.getWallet(seedOrPrivateKey)
     return new Promise((resolve, reject) => {
-      if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`EOS-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
+        this.store.put(`EOS-${heatAddress}`, walletType);
         resolve(walletType)
       }
       else {

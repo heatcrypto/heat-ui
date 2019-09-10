@@ -1,19 +1,30 @@
 @Service('nxtCryptoService')
-@Inject('$window')
+@Inject('$window', 'storage', '$rootScope')
 class NXTCryptoService {
 
   private nxtCrypto;
+  private store: Store;
 
-  constructor(private $window: angular.IWindowService) {
+  constructor(private $window: angular.IWindowService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.nxtCrypto = $window.heatlibs.nxtCrypto;
+      this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the seed to this wallet */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      let walletType = { addresses: [] }
-      walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'NXT'), privateKey: seedOrPrivateKey }
-      resolve(walletType);
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`NXT-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else {
+        let walletType = { addresses: [] }
+        walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'NXT'), privateKey: seedOrPrivateKey }
+          this.store.put(`NXT-${heatAddress}`, walletType);
+        resolve(walletType);  
+      }
     });
   }
 

@@ -1,21 +1,31 @@
 @Service('fimkCryptoService')
-@Inject('$window', 'mofoSocketService', '$rootScope')
+@Inject('$window', 'mofoSocketService', '$rootScope', 'storage')
 class FIMKCryptoService {
 
   private nxtCrypto;
+  private store: Store;
 
   constructor(private $window: angular.IWindowService,
     private mofoSocketService: MofoSocketService,
-    private $rootScope: angular.IRootScopeService) {
+    private $rootScope: angular.IRootScopeService,
+    storage: StorageService) {
     this.nxtCrypto = $window.heatlibs.nxtCrypto;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the seed to this wallet */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      let walletType = { addresses: [] }
-      walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'FIM'), privateKey: seedOrPrivateKey }
-      resolve(walletType);
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`FIM-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else {
+        let walletType = { addresses: [] }
+        walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'FIM'), privateKey: seedOrPrivateKey }
+        this.store.put(`FIM-${heatAddress}`, walletType);
+        resolve(walletType);
+      }
     });
   }
 

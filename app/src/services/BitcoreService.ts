@@ -1,22 +1,31 @@
 @Service('bitcoreService')
-@Inject('$window')
+@Inject('$window', 'storage', '$rootScope')
 class BitcoreService {
 
   static readonly BIP44 = "m/44'/0'/0'/0/";
   private bitcore;
   private bip39;
+  private store: Store;
 
-  constructor($window: angular.IWindowService) {
+  constructor($window: angular.IWindowService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`BTC-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
+          this.store.put(`BTC-${heatAddress}`, walletType);
           resolve(walletType);
         }
       } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
@@ -25,6 +34,7 @@ class BitcoreService {
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
+          this.store.put(`BTC-${heatAddress}`, walletType);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
