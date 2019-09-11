@@ -67,7 +67,7 @@
         <div class="wrapper">
           <div>
             <div class="user">
-              <div class="small-logo" ng-if="!vm.isBetanet"></div>
+              <div class="small-logo" ng-if="!vm.isBetanet" ng-click="vm.checkLogin()" ></div>
               <h2 ng-if="vm.user.unlocked">
                 <div class="account-name">{{vm.user.accountName}}</div>
                 <div>
@@ -360,6 +360,14 @@ class ToolbarComponent {
 
   goToHome() {
     this.$location.path(this.user.currency.homePath)
+  }
+
+  checkLogin() {
+    if (this.user.unlocked) {
+      this.goToHome()
+    } else {
+      this.$location.path('login')
+    }
   }
 
   goToExchange() {
