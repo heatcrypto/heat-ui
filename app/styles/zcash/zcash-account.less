@@ -1,0 +1,78 @@
+zcash-account {
+    .widget();
+    .list();
+    md-list-item.md-no-proxy {
+      flex-grow: 0;
+    }
+    .truncate-col {
+      margin-right: 10px;
+      &.left {
+        text-align: left;
+      }
+      &.block {
+        max-width: 160px;
+      }
+      &.render-col {
+        max-width: inherit;
+      }
+      &.height-col {
+        max-width: 40px;
+        padding-right: 0px;
+      }
+      &.generator-col {
+        padding-right: 0px;
+      }
+      &.pop-col {
+        max-width: initial;
+      }
+      &.info-col {
+        max-width: 260px !important;
+        margin-top:-5px;
+        a, a * {
+          color: @link-yellow;
+          cursor: pointer;
+          text-decoration: underline;
+        }
+      }
+      &.tx-col {
+        max-width: 460px;
+        a, a * {
+          color: @link-yellow;
+          cursor: pointer;
+          text-decoration: underline;
+        }
+      }
+      &.amount-col {
+        max-width: 110px;
+      }
+  
+      &.message-col {
+        max-width: 80px;
+      }
+  
+      &.date-col {
+        width: 130px;
+      }
+      &.json-col {
+        min-width: 30px;
+        max-width: 30px;
+        a, a * {
+          font-size: 14px;
+          color: @link-yellow;
+          cursor: pointer;
+        }
+        md-icon {
+          padding-top: 8px;
+        }
+      }
+    }
+    .type-row {
+      .md-button:first-child {
+        margin-left: 0px;
+      }
+    }
+    .fee {
+      color: @gray3 !important;
+      margin-left: 0px !important
+    }
+  }

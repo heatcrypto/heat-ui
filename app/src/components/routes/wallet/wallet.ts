@@ -69,6 +69,9 @@ class CurrencyBalance {
     else if (this.name == 'Binance') {
       currency = new BNBCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
+    else if (this.name == 'Zcash') {
+      currency = new ZECCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(
         this.walletEntry ? this.walletEntry.secretPhrase : this.secretPhrase,
@@ -367,6 +370,7 @@ class WalletEntry {
       this.component.loadIotaAddresses(this);
       this.component.loadEOSAddresses(this);
       this.component.loadBNBAddresses(this);
+      this.component.loadZECAddresses(this);
     }
   }
 
@@ -502,7 +506,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','zecCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
 
   selectAll = true;
@@ -511,7 +515,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, , { name: 'ZEC', disabled: false }];
   selectedChain = '';
   store: any;
 
@@ -534,6 +538,7 @@ class WalletComponent {
     private nxtCryptoService: NXTCryptoService,
     private ardorCryptoService: ARDORCryptoService,
     private bnbCryptoService: BNBCryptoService,
+    private zecCryptoService: ZECCryptoService,
     private nxtBlockExplorerService: NxtBlockExplorerService,
     private ardorBlockExplorerService: ArdorBlockExplorerService,
     private mofoSocketService: MofoSocketService,
@@ -989,6 +994,28 @@ class WalletComponent {
           }
         }
       })
+    if (selectedCurrencies.indexOf('ZEC') > -1)
+      this.zecCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        if (wallet !== undefined) {
+          let zecCurrencyAddressLoading = new CurrencyAddressLoading('Zcash')
+          zecCurrencyAddressLoading.visible = walletEntry.expanded;
+          zecCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(zecCurrencyAddressLoading);
+
+          let zecCurrencyAddressCreate = new CurrencyAddressCreate('Zcash', wallet)
+          zecCurrencyAddressCreate.visible = walletEntry.expanded
+          zecCurrencyAddressCreate.parent = walletEntry
+          zecCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(zecCurrencyAddressCreate)
+
+          this.flatten()
+
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadZECAddresses(walletEntry)
+          }
+        }
+      })
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -1295,6 +1322,41 @@ class WalletComponent {
             })
           }
           walletEntry.currencies.splice(index, 0, bnbCurrencyBalance)
+          index++;
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != CurrencyAddressLoading)
+      this.flatten()
+    })
+  }
+
+  /* Only when we expand a wallet entry do we lookup its balances */
+  public loadZECAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let CurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Zcash')
+    if (!CurrencyAddressLoading)
+      return
+
+    this.zecCryptoService.refreshAdressBalances(CurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(CurrencyAddressLoading)
+      CurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let zecCurrencyBalance = new CurrencyBalance('Zcash', 'ZEC', address.address, address.privateKey)
+          zecCurrencyBalance.balance = address.balance + ""
+          zecCurrencyBalance.visible = walletEntry.expanded
+          zecCurrencyBalance.inUse = wasCreated ? false : true
+          zecCurrencyBalance.walletEntry = walletEntry
+
+          walletEntry.currencies.splice(index, 0, zecCurrencyBalance)
           index++;
         }
       })
