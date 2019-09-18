@@ -50,7 +50,7 @@
     "gulp-typescript": "3.1.7",
     "gulp-uglify": "2.0.0",
     "gulp-usemin": "0.3.24",
-    "open": "0.0.5",
+    "open": "6.0.0",
     "random-hash": "^4.0.1",
     "serve-static": "1.11.1",
     "typescript": "^2.3.4"
