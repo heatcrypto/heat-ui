@@ -330,8 +330,57 @@ class CurrencyAddressCreate {
     }
 
     return false
-  }  
+  }
 
+  createZECAddress(component: WalletComponent) {
+    // collect all CurrencyBalance of 'our' same currency type
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+
+    // if there is no address in use yet we use the first one
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('Zcash', 'ZEC', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.flatten()
+      this.addCurrency(this.parent.account, 'ZEC')
+      return true
+    }
+
+    // determine the first 'nxt' address based of the last currencyBalance displayed
+    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
+
+    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
+    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
+      return false
+    }
+
+    // look up the following address
+    for (let i = 0; i < this.wallet.addresses.length; i++) {
+
+      // we've found the address
+      if (this.wallet.addresses[i].address == lastAddress) {
+
+        // next address is the one - but if no more addresses we exit since not possible
+        if (i == this.wallet.addresses.length - 1)
+          return
+
+        let nextAddress = this.wallet.addresses[i + 1]
+        let newCurrencyBalance = new CurrencyBalance('Zcash', 'ZEC', nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        newCurrencyBalance.visible = this.parent.expanded
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
+        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        this.flatten()
+        this.addCurrency(this.parent.account, 'ZEC')
+        return true
+      }
+    }
+
+    return false
+  }  
 }
 
 class WalletEntry {
@@ -515,7 +564,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, , { name: 'ZEC', disabled: false }];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }];
   selectedChain = '';
   store: any;
 
@@ -585,6 +634,9 @@ class WalletComponent {
     }
     else if (this.$scope['vm'].selectedChain === 'BNB') {
       this.createBNBAccount($event)
+    }
+    else if (this.$scope['vm'].selectedChain === 'ZEC') {
+      this.createZECAccount($event)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -1452,7 +1504,7 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }];
+      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }, { name: 'Zcash', symbol: 'ZEC' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
@@ -2350,4 +2402,125 @@ class WalletComponent {
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
   }
+
+  createZECAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Zcash')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('ZEC')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
+          }
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Zcash')
+            success = node.createZECAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+              }
+            })
+          }, 0)
+        }
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+      <md-dialog>
+        <form name="dialogForm">
+          <md-toolbar>
+            <div class="md-toolbar-tools"><h2>Create Zcash Address</h2></div>
+          </md-toolbar>
+          <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+            <div flex layout="column">
+              <p>To create a new Zcash address, please choose the master HEAT account you want to attach the new Zcash address to:</p>
+      
+              <!-- Select Master Account -->
+      
+              <md-input-container flex>
+                <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                  <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                </md-select>
+              </md-input-container>
+      
+              <!-- Invalid Non BIP44 Seed-->
+      
+              <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                Zec wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+              </p>
+      
+              <!-- Valid BIP44 Seed -->
+              <div flex layout="column"
+                ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+      
+                <p>This is your Zcash address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                    Please store it in a safe place or you may lose access to your Zcash.
+                    <a ng-click="vm.copySeed()">Copy Seed</a></p>
+      
+                <md-input-container flex>
+                  <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                      style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                  <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                </md-input-container>
+      
+              </div>
+            </div>
+      
+          </md-dialog-content>
+          <md-dialog-actions layout="row">
+            <span flex></span>
+            <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+            <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+          </md-dialog-actions>
+        </form>
+      </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
 }
