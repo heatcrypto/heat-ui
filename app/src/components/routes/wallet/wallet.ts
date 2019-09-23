@@ -969,16 +969,18 @@ class WalletComponent {
     if (selectedCurrencies.indexOf('FIM') > -1)
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         this.mofoSocketService.mofoSocket().then(() => {
+          let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
+          fimkCurrencyAddressLoading.visible = walletEntry.expanded
+          fimkCurrencyAddressLoading.wallet = wallet
+          walletEntry.currencies.push(fimkCurrencyAddressLoading)
+
           let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
           fimkCurrencyAddressCreate.visible = walletEntry.expanded
           fimkCurrencyAddressCreate.parent = walletEntry
           fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
           walletEntry.currencies.push(fimkCurrencyAddressCreate)
 
-          let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
-          fimkCurrencyAddressLoading.visible = walletEntry.expanded
-          fimkCurrencyAddressLoading.wallet = wallet
-          walletEntry.currencies.push(fimkCurrencyAddressLoading)
+          this.flatten()
 
           /* Only if this node is expanded will we load the addresses */
           if (walletEntry.expanded) {
