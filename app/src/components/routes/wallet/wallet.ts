@@ -693,6 +693,12 @@ class WalletComponent {
       this.walletEntries.forEach(walletEntry => {
         this.entries.push(walletEntry)
         walletEntry.currencies = walletEntry.currencies.filter((currency, index, self) => {
+          //For currencyAddressCreate and currencyAddressLoading obj
+          if (!currency.hasOwnProperty('address') && (currency.hasOwnProperty('isCurrencyAddressCreate') || currency.hasOwnProperty('isCurrencyAddressLoading'))) {
+            return true
+          }
+
+          //For currencyBalance obj
           return index === self.findIndex((t) => (
             //@ts-ignore
             t.name === currency.name && t.address === currency.address
