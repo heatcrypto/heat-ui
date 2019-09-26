@@ -40,7 +40,7 @@
                 Pending&nbsp;<elipses-loading></elipses-loading>
               </div>
               <div class="truncate-col tx-col left" flex>
-                <a target="_blank" href="https://live.blockcypher.com/ltc/tx/{{item.txId}}">{{item.txId}}</a>
+                <a target="_blank" href="https://ltc1.heatwallet.com/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
             </md-list-item>
           </md-list>
@@ -92,7 +92,7 @@ class LtcAccountComponent {
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.ltcBlockExplorerService.getTxInfo(pendingTxn.txId).then(
         data => {
-          if (data.block_height !== -1) {
+          if (data.blockHeight !== -1) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
             this.ltcPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
@@ -127,9 +127,9 @@ class LtcAccountComponent {
   refresh() {
     this.busy = true;
     this.balanceUnconfirmed = "";
-    this.ltcBlockExplorerService.getAddressInfo(this.account).then(info => {
+    this.ltcBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(info.final_balance / 100000000).toFixed(8);
+        this.balanceUnconfirmed = new Big(parseFloat(info) / 100000000).toFixed(8);
         this.busy = false;
       })
     })

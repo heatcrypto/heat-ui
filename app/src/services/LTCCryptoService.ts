@@ -64,13 +64,13 @@ class LTCCryptoService {
           if (!walletAddress)
             return
 
-          walletAddress.inUse = info.final_n_tx != 0
+          walletAddress.inUse = info.txs != 0
           if (!walletAddress.inUse) {
             resolve(false)
             return
           }
 
-          walletAddress.balance = info.final_balance / 100000000 + ""
+          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
           resolve(true)
         }, () => {
           resolve(false)
@@ -101,50 +101,57 @@ class LTCCryptoService {
   signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
     let ltcBlockExplorerService = <LtcBlockExplorerService>heat.$inject.get('ltcBlockExplorerService')
     return new Promise((resolve, reject) => {
-      ltcBlockExplorerService.newTransaction(txObject.tx).then(
-        data => {
-          let unspent = [];
-          data.tx.inputs.forEach(input => {
-            let utxo = {
-              txid: input.prev_hash,
-              vout: input.output_index,
-              satoshis: input.output_value,
-              script: ''
+      ltcBlockExplorerService.getUnspentUtxos(txObject.sender).then(utxos => {
+        if (utxos.length === 0) {
+          reject(new Error('No utxo found'));
+        }
+        ltcBlockExplorerService.getTxInfo(utxos[0].txid).then(txData => {
+          let script = ""
+          for (let i = 0; i < txData.vout.length; i += 1) {
+            if (txData.vout[i].addresses[0] === txObject.sender) {
+              script = txData.vout[i].hex
+              break
             }
-            data.tx.outputs.forEach(output => {
-              output.addresses.forEach(address => {
-                if(address == txObject.sender) {
-                  utxo.script = output.script
-                }
-              });
-            });
-            unspent.push(utxo)
-          });
+          }
 
+          let unspent = [];
+          let availableSatoshis = 0;
+          for (let i = 0; i < utxos.length; i += 1) {
+            let utxo = {
+              txid: utxos[i].txid,
+              vout: utxos[i].vout,
+              satoshis: parseInt(utxos[i].value),
+              script
+            }
+            unspent.push(utxo)
+            availableSatoshis += parseInt(utxos[i].value);
+            if (availableSatoshis >= txObject.value) break;
+          }
+
+          if (availableSatoshis < txObject.value) {
+            reject(new Error('Insufficient balance to broadcast transaction'))
+          }
+  
           try {
             let tx = this.litecore.Transaction();
             tx.from(unspent)
-            tx.to(txObject.recipient, txObject.value)
+            tx.to(txObject.recipient, txObject.value - txObject.fee)
             tx.change(txObject.sender)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)
-            let rawTx;
-            if (uncheckedSerialize)
-              rawTx = tx.uncheckedSerialize()
-            else
-              rawTx = tx.serialize()
-            data.signatures = [rawTx]
-            data.pubkeys = [txObject.publicKey]
-            resolve(data)
-
+            let rawTx = uncheckedSerialize ? tx.uncheckedSerialize() : tx.serialize()
+            resolve(rawTx)
           } catch (err) {
             reject(err)
           }
         },
         err => {
           reject(err)
-        }
-      )
+        })
+      },
+      err => {
+        reject(err)
+      })
     })
   }
 

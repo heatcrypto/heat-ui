@@ -2,31 +2,31 @@
 @Service('ltcBlockExplorerService')
 @Inject('http', '$q', '$http')
 class LtcBlockExplorerService {
+  static endPoint: string;
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
               private $http: angular.IHttpService) {
+    LtcBlockExplorerService.endPoint = 'https://ltc1.heatwallet.com/api/v2';
   }
 
   public getBalance(address: string) {
     let deferred = this.$q.defer<string>();
-    let balancesApi = `https://api.blockcypher.com/v1/ltc/main/addrs/${address}/balance?token=d9a8ee8755a5481fa5b595d401e6fc65`;
-    this.http.get(balancesApi)
-      .then(response => {
-        let parsed = angular.isString(response) ? JSON.parse(response) : response;
-        deferred.resolve(parsed.final_balance)
-      }, () => {
-        deferred.reject()
-      })
+    this.getAddressInfo(address).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      deferred.resolve(parsed.balance)
+    }, () => {
+      deferred.reject()
+    })
     return deferred.promise
   }
 
-  public getTransactions(address: string, blockNum: string): angular.IPromise<any> {
-    let getTransactionsApi = blockNum ? `https://api.blockcypher.com/v1/ltc/main/addrs/${address}/full?before=${blockNum}&limit=10&confirmations=0` : `https://api.blockcypher.com/v1/ltc/main/addrs/${address}/full?limit=10&confirmations=0`;
+  public getTransactions(address: string, pageNum: number, pageSize: number): angular.IPromise<any> {
+    let getTransactionsApi = `${LtcBlockExplorerService.endPoint}/address/${address}?details=txs&page=${pageNum}&pageSize=${pageSize}`;
     let deferred = this.$q.defer();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      deferred.resolve(parsed.txs)
+      deferred.resolve(parsed.transactions)
     }, () => {
       deferred.reject();
     })
@@ -34,7 +34,7 @@ class LtcBlockExplorerService {
   }
 
   public getAddressInfo(address: string): angular.IPromise<any> {
-    let getTransactionsApi = `https://api.blockcypher.com/v1/ltc/main/addrs/${address}?token=d9a8ee8755a5481fa5b595d401e6fc65`;
+    let getTransactionsApi = `${LtcBlockExplorerService.endPoint}/address/${address}?details=basic`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -60,7 +60,7 @@ class LtcBlockExplorerService {
   }
 
   public getTxInfo(txId: string) {
-    let getTxInfoApi = `https://api.blockcypher.com/v1/ltc/main/txs/${txId}?token=d9a8ee8755a5481fa5b595d401e6fc65`;
+    let getTxInfoApi = `${LtcBlockExplorerService.endPoint}/tx/${txId}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -72,44 +72,21 @@ class LtcBlockExplorerService {
   }
 
   public getUnspentUtxos(account: string) {
-    let getTxInfoApi = `https://api.blockcypher.com/v1/ltc/main/addrs/${account}/full?unspent=true`;
+    let getTxInfoApi = `${LtcBlockExplorerService.endPoint}/utxo/${account}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let unspent = [];
-      parsed.txs.forEach(tx => {
-        tx.outputs.forEach((output, i) => {
-          output.addresses.forEach(address => {
-            if (address == account) {
-              unspent.push({ txid: tx.hash, vout: i, satoshis: output.value, scriptPubKey: output.script })
-            }
-          });
-        });
-
-      });
-      deferred.resolve(unspent);
+      deferred.resolve(parsed);
     }, () => {
       deferred.reject();
     })
     return deferred.promise
   }
 
-  public newTransaction(txObject) {
-    let sendTxApi = `https://api.blockcypher.com/v1/ltc/main/txs/new`;
-    let deferred = this.$q.defer<any>();
-    this.$http.post(sendTxApi, txObject).then((response) => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      deferred.resolve(parsed.data);
-    }, (error) =>  {
-      deferred.reject(error)
-    })
-    return deferred.promise
-  }
-
   public broadcast(txObject) {
-    let sendTxApi = `https://api.blockcypher.com/v1/ltc/main/txs/push?token=d9a8ee8755a5481fa5b595d401e6fc65`;
+    let sendTxApi = `${LtcBlockExplorerService.endPoint}/sendtx`;
     let deferred = this.$q.defer<any>();
-    this.$http.post(sendTxApi, {tx: txObject.signatures[0]}).then(response => {
+    this.$http.post(sendTxApi, {tx: txObject}).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.data);
     }, (error) => {

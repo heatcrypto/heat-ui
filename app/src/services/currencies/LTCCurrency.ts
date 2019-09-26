@@ -62,28 +62,13 @@ class LTCCurrency implements ICurrency {
 
       let createTx = function (isForFeeEstimation: boolean = false) {
         let user = <UserService>heat.$inject.get('user')
-        let ltcCryptoService = <LTCCryptoService>heat.$inject.get('ltcCryptoService')
         let addressPrivateKeyPair = { address: user.currency.address, privateKey: user.secretPhrase, publicKey: user.publicKey }
         let amountInSatoshi = $scope['vm'].data.amount * 100000000 === 0 ? 10000 : $scope['vm'].data.amount * 100000000;
-        let feeInSatoshi
-        if (!isForFeeEstimation)
-          feeInSatoshi = $scope['vm'].data.fee * 100000000;
-        else
-          feeInSatoshi = 0
+        let feeInSatoshi = $scope['vm'].data.fee * 100000000 === 0 ? 10000 : $scope['vm'].data.fee * 100000000;
         let to = $scope['vm'].data.recipient
         let txObject = {
-          tx: {
-            inputs: [
-              {
-                addresses: [addressPrivateKeyPair.address]
-              }],
-            outputs: [{
-              addresses: [to], value: amountInSatoshi
-            }],
-            fees: 2260
-          },
           privateKey: addressPrivateKeyPair.privateKey,
-          fee: 2260,
+          fee: feeInSatoshi,
           sender: addressPrivateKeyPair.address,
           recipient: to,
           value: amountInSatoshi,
@@ -97,28 +82,35 @@ class LTCCurrency implements ICurrency {
         $scope['vm'].disableOKBtn = true
         let txObject = createTx(false)
         let ltcCryptoService = <LTCCryptoService>heat.$inject.get('ltcCryptoService');
-        ltcCryptoService.signTransaction(txObject).then(signedTx => {
-          ltcBlockExplorerService.broadcast(signedTx).then(
-            data => {
-              $mdDialog.hide(data).then(() => {
-                dialogs.alert(event, 'Success', `TxId: ${data.tx.hash}`);
-              })
-            },
-            err => {
-              $mdDialog.hide(null).then(() => {
-                dialogs.alert(event, 'Error', err.message);
-              })
-            }
-          )
-        })
-
+        ltcCryptoService.signTransaction(txObject).then(
+          signedTx => {
+            ltcBlockExplorerService.broadcast(signedTx).then(
+              data => {
+                $mdDialog.hide(data).then(() => {
+                  dialogs.alert(event, 'Success', `TxId: ${data.tx.hash}`);
+                })
+              },
+              err => {
+                $mdDialog.hide(null).then(() => {
+                  dialogs.alert(event, 'Error', err.message);
+                })
+              }
+            )
+          },
+          error => {
+            $mdDialog.hide(null).then(() => {
+              dialogs.alert(event, 'Error', error.message);
+            })
+          }
+        )
       }
       $scope['vm'].disableOKBtn = false
       $scope['vm'].data = {
         amount: '',
         recipient: '',
         recipientInfo: '',
-        fee: '0.0000226'
+        fee: '0.0001',
+        estimatedFee: '0.0001'
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -127,7 +119,7 @@ class LTCCurrency implements ICurrency {
         ltcBlockExplorerService.getAddressInfo($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = (info.final_balance / 100000000).toFixed(8)
+              let balance = (info.balance / 100000000).toFixed(8)
               $scope['vm'].data.recipientInfo = `Balance: ${balance} LTC`
             })
           },
@@ -142,11 +134,11 @@ class LTCCurrency implements ICurrency {
         let ltcCryptoService = <LTCCryptoService>heat.$inject.get('ltcCryptoService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
-        $scope['vm'].data.txBytes = []
-        ltcCryptoService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
-        })
+        // $scope['vm'].data.txBytes = []
+        // ltcCryptoService.signTransaction(createTx(true), true).then(rawTx => {
+        //   $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+        //   $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+        // })
       }
 
       $scope['vm'].amountChanged = function () {
@@ -165,7 +157,7 @@ class LTCCurrency implements ICurrency {
             $scope['vm'].data.estimatedFee = data / 1000;
         })
       }
-      getEstimatedFee();
+      // getEstimatedFee();
     }
 
     let $q = heat.$inject.get('$q')
@@ -195,7 +187,7 @@ class LTCCurrency implements ICurrency {
 
                 <md-input-container flex >
                   <label>Amount in Ltc</label>
-                  <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
+                  <input ng-model="vm.data.amount" required name="amount">
                 </md-input-container>
 
                 <md-input-container flex>
@@ -205,7 +197,7 @@ class LTCCurrency implements ICurrency {
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
-              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee/Byte {{vm.data.estimatedFee}} Sat</md-button>
+              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee {{vm.data.fee}} LTC</md-button>
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
@@ -217,6 +209,5 @@ class LTCCurrency implements ICurrency {
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
   }
-
 
 }

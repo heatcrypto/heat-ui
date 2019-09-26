@@ -7,11 +7,6 @@
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
       </div>
-      <md-button class="md-primary md-raised load-more" ng-click="vm.prefetchNextLot()" ng-show="vm.moreTransactions">
-        <label for="walet-input-file">
-          Load More
-        </label>
-      </md-button>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
           <!-- DATE -->
@@ -23,28 +18,32 @@
           <!-- TO -->
           <div class="truncate-col info-col left">TO</div>
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left">Amount</div>
+          <div class="truncate-col amount-col right">Amount</div>
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
-          <md-list-item md-virtual-repeat="item in vm.transactions" aria-label="Entry" class="row">
+          <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
             <!-- DATE -->
             <div class="truncate-col date-col left">{{item.dateTime}}</div>
             <!-- TX ID -->
             <div class="truncate-col tx-col left">
-              <span>{{item.txid}}</span>
+              <span>
+                <a target="_blank" href="https://ltc1.heatwallet.com/tx/{{item.txid}}">{{item.txid}}</a>
+              </span>
             </div>
             <!-- FROM -->
             <div class="truncate-col info-col left">
-             <span>{{item.from}}</span>
+              <span ng-show = "item.from !== 'Multiple Inputs'">{{item.from}}</span>
+              <a ng-show = "item.from === 'Multiple Inputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.from}}</a>
             </div>
             <!-- TO -->
             <div class="truncate-col info-col left">
-              <span>{{item.to}}</span>
+              <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
+              <a ng-show = "item.to === 'Multiple Outputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
             </div>
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left">
+            <div class="truncate-col amount-col right">
               <span>{{item.amount}}</span>
             </div>
             <!-- JSON -->
@@ -60,74 +59,107 @@
   `
 })
 
-@Inject('$scope', '$q', 'settings', 'ltcPendingTransactions', 'ltcBlockExplorerService', 'ltcCryptoService')
+@Inject('$scope', '$q', 'ltcTransactionsProviderFactory', 'settings', 'ltcPendingTransactions', 'user')
 class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
-  transactions: Array<any> = [];
-  prefetchedTransactions: Array<any> = [];
-  blockNum: string
-  moreTransactions: boolean = true;
-
   constructor(protected $scope: angular.IScope,
     protected $q: angular.IQService,
+    private ltcTransactionsProviderFactory: LtcTransactionsProviderFactory,
     private settings: SettingsService,
     private ltcPendingTransactions: LtcPendingTransactionsService,
-    private ltcBlockExplorerService: LtcBlockExplorerService,
-    private ltcCryptoService: LTCCryptoService) {
+    private user: UserService) {
 
     super($scope, $q);
-    this.fetchTransactions().then(() => {
-      this.prefetchNextLot();
-    })
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+
+    /* privateKey and publicKey should be HEAT keys */
+    let privateKey = this.user.secretPhrase;
+    let publicKey = this.user.publicKey;
+    this.initializeVirtualRepeat(
+      this.ltcTransactionsProviderFactory.createProvider(this.account),
+      /* decorator function */
+      (transaction: any) => {
+        transaction.txid = transaction.txid;
+        transaction.dateTime = dateFormat(new Date(transaction.blockTime*1000), format);
+
+        let totalInputs = transaction.vin.length; //Total number of inputs
+        let totalOutputs = transaction.vout.length;
+
+        let inputAmount = 0; //Total amount in input for current address
+        let inputs = '';
+        for (let i = 0; i < transaction.vin.length; i++) {
+          if (transaction.vin[i].addresses[0] === this.account) {
+            inputAmount += parseFloat(transaction.vin[i].value)
+          }
+          inputs += `
+          ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value)/100000000).toFixed(8)})`;
+        }
+
+        transaction.from = transaction.vin.length === 1? transaction.vin[0].addresses[0] : 'Multiple Inputs';
+
+        let outputAmount = 0; //Total amount in output for current address
+        let outputs = '';
+        for (let i = 0; i < transaction.vout.length; i++) {
+          if (transaction.vout[i].addresses[0] === this.account) {
+            outputAmount += parseFloat(transaction.vout[i].value)
+          }
+          outputs += `
+          ${transaction.vout[i].addresses[0]} (${(parseFloat(transaction.vout[i].value) / 100000000).toFixed(8)})`;
+        }
+
+        if (transaction.vout.length == 1) {
+          transaction.to = transaction.vout[0].addresses[0]
+        } else {
+          if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
+            if (inputs.indexOf(this.account) > -1) {
+              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+              transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
+            } else {
+              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+              transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
+            }
+          } else {
+            transaction.to =  'Multiple Outputs';
+          }
+        }
+
+        // if ZEC were transferred from the unlocked account address then show it as "-Amount"
+        if (inputs.indexOf(this.account) > -1) {
+          transaction.amount = `-${ (inputAmount / 100000000).toFixed(8)}`;
+        } else {
+          transaction.amount = `${(outputAmount / 100000000).toFixed(8)}`;
+        }
+
+        transaction.json = {
+          txid: transaction.txid,
+          time: transaction.dateTime,
+          block: transaction.blockHeight,
+          totalInputs,
+          totalOutputs,
+          confirmations: transaction.confirmations,
+          fees: (parseFloat(transaction.fees) / 10000000).toFixed(8) ,
+          inputs: inputs.trim(),
+          outputs: outputs.trim()
+        }
+      }
+    );
+
+    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
+    this.PAGE_SIZE = 10;
     ltcPendingTransactions.addListener(listener)
 
     $scope.$on('$destroy', () => {
       ltcPendingTransactions.removeListener(listener)
+      clearTimeout(timeout)
     })
   }
 
   jsonDetails($event, item) {
     dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
-  }
-
-  prefetchNextLot = () => {
-    this.transactions = angular.copy(this.prefetchedTransactions);
-    if (this.prefetchedTransactions.length % 10 == 0) {
-      this.fetchTransactions();
-    } else {
-      this.moreTransactions = false;
-    }
-  }
-
-  fetchTransactions = () => {
-    return new Promise((resolve, reject) => {
-      let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-      this.ltcBlockExplorerService.getTransactions(this.account, this.blockNum).then(txns => {
-        txns.forEach(entry => {
-          entry.dateTime = dateFormat(new Date(entry.received), format);
-          entry.from = entry.inputs[0].addresses[0]
-          entry.to = entry.outputs[0].addresses[0]
-          entry.amount = entry.outputs[0].value / 100000000
-          entry.txid = entry.hash
-          this.blockNum = entry.block_height
-          entry.json = {
-            from: entry.from,
-            to: entry.to,
-            time: entry.dateTime,
-            amount: entry.amount
-          }
-          this.prefetchedTransactions.push(entry)
-        });
-        resolve()
-      })
-    })
-  }
-
-  truncateTxId = (txId) => {
-    return txId.substr(0, 50).concat('..')
   }
 
   onSelect(selectedTransaction) { }
