@@ -72,6 +72,9 @@ class CurrencyBalance {
     else if (this.name == 'Zcash') {
       currency = new ZECCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
+    else if (this.name == 'Litecoin') {
+      currency = new LTCCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(
         this.walletEntry ? this.walletEntry.secretPhrase : this.secretPhrase,
@@ -380,7 +383,21 @@ class CurrencyAddressCreate {
     }
 
     return false
-  }  
+  }
+
+  createLtcAddress(component: WalletComponent) {
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+    return false
+  }
 }
 
 class WalletEntry {
@@ -420,6 +437,7 @@ class WalletEntry {
       this.component.loadEOSAddresses(this);
       this.component.loadBNBAddresses(this);
       this.component.loadZECAddresses(this);
+      this.component.loadLtcAddresses(this);
     }
   }
 
@@ -555,16 +573,15 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','zecCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','zecCryptoService', 'ltcCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
-
   selectAll = true;
   allLocked = true
 
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }, {name: 'Litecoin', disabled: false}];
   selectedChain = '';
   store: any;
 
@@ -588,15 +605,14 @@ class WalletComponent {
     private ardorCryptoService: ARDORCryptoService,
     private bnbCryptoService: BNBCryptoService,
     private zecCryptoService: ZECCryptoService,
+    private ltcCryptoService: LTCCryptoService,
     private nxtBlockExplorerService: NxtBlockExplorerService,
     private ardorBlockExplorerService: ArdorBlockExplorerService,
     private mofoSocketService: MofoSocketService,
     private iotaCoreService: IotaCoreService,
     private storage: StorageService,
     private $rootScope: angular.IScope) {
-
     this.store = this.storage.namespace('wallet', $rootScope, true)
-
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
       let index = this.chains.findIndex((entry) => entry.name === nxtChain.name);
@@ -637,6 +653,9 @@ class WalletComponent {
     }
     else if (this.$scope['vm'].selectedChain === 'ZEC') {
       this.createZECAccount($event)
+    }
+    else if (this.$scope['vm'].selectedChain === 'Litecoin') {
+      this.createLtcAccount($event)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -1076,6 +1095,28 @@ class WalletComponent {
           }
         }
       })
+    if (selectedCurrencies.indexOf('LTC') > -1)
+      this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        if (wallet !== undefined) {
+          let ltcCurrencyAddressLoading = new CurrencyAddressLoading('Litecoin')
+          ltcCurrencyAddressLoading.visible = walletEntry.expanded;
+          ltcCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(ltcCurrencyAddressLoading);
+
+          let ltcCurrencyAddressCreate = new CurrencyAddressCreate('Litecoin', wallet)
+          ltcCurrencyAddressCreate.visible = walletEntry.expanded
+          ltcCurrencyAddressCreate.parent = walletEntry
+          ltcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(ltcCurrencyAddressCreate)
+
+          this.flatten()
+
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadLtcAddresses(walletEntry)
+          }
+        }
+      })
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -1426,6 +1467,37 @@ class WalletComponent {
       this.flatten()
     })
   }
+
+  public loadLtcAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let ltcCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Litecoin')
+    if (!ltcCurrencyAddressLoading)
+      return
+
+    this.ltcCryptoService.refreshAdressBalances(ltcCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+        let index = walletEntry.currencies.indexOf(ltcCurrencyAddressLoading)
+        ltcCurrencyAddressLoading.wallet.addresses.forEach(address => {
+          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+          if (address.inUse || wasCreated) {
+            let ltcCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey)
+            ltcCurrencyBalance.balance = address.balance + ""
+            ltcCurrencyBalance.visible = walletEntry.expanded
+            ltcCurrencyBalance.inUse = wasCreated ? false : true
+            walletEntry.currencies.splice(index, 0, ltcCurrencyBalance)
+            index++;
+          }
+        })
+
+        walletEntry.currencies = walletEntry.currencies.filter(c => c != ltcCurrencyAddressLoading)
+        this.flatten()
+      })
+    }
 
   private getAccountAssets(account: string): angular.IPromise<Array<AssetInfo>> {
     let deferred = this.$q.defer<Array<AssetInfo>>();
@@ -2272,6 +2344,111 @@ class WalletComponent {
                     <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
                         style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
                     <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createLtcAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
+          success = node.createLtcAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          }
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create Litecoin Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new Litecoin address, please choose the master HEAT account you want to attach the new Litecoin address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  LTC wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your Litecoin address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your Litecoin.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
                   </md-input-container>
 
                 </div>
