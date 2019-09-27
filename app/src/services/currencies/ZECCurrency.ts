@@ -3,11 +3,13 @@ class ZECCurrency implements ICurrency {
   private zecBlockExplorerService: ZecBlockExplorerService
   public symbol = 'ZEC'
   public homePath
+  private pendingTransactions: ZcashPendingTransactionsService
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.zecBlockExplorerService = heat.$inject.get('zecBlockExplorerService')
     this.homePath = `/zcash-account/${this.address}`
+    this.pendingTransactions = heat.$inject.get('zcashPendingTransactions')
     this.user = heat.$inject.get('user')
   }
 
@@ -35,6 +37,7 @@ class ZECCurrency implements ICurrency {
     this.send($event).then(
       data => {
         let timestamp = new Date().getTime()
+        this.pendingTransactions.add(this.address, data.txId, timestamp)
       },
       err => {
         if (err) {

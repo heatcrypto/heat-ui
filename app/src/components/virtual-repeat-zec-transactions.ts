@@ -59,7 +59,7 @@
   `
 })
   
-@Inject('$scope', '$q', 'zecTransactionsProviderFactory', 'settings', 'user')
+@Inject('$scope', '$q', 'zecTransactionsProviderFactory', 'settings', 'zcashPendingTransactions', 'user')
 class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -67,6 +67,7 @@ class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
     protected $q: angular.IQService,
     private zecTransactionsProviderFactory: ZecTransactionsProviderFactory,
     private settings: SettingsService,
+    private zcashPendingTransactions: ZcashPendingTransactionsService,
     private user: UserService) {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
@@ -110,8 +111,13 @@ class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
           transaction.to = transaction.vout[0].scriptPubKey.addresses[0]
         } else {
           if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
-            transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ? 
-              transaction.vout[1].scriptPubKey.addresses[0] : transaction.vout[0].scriptPubKey.addresses[0];
+            if (inputs.indexOf(this.account) > -1) {
+              transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ? 
+                transaction.vout[1].scriptPubKey.addresses[0] : transaction.vout[0].scriptPubKey.addresses[0];
+            } else {
+              transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ? 
+                transaction.vout[0].scriptPubKey.addresses[0] : transaction.vout[1].scriptPubKey.addresses[0];
+            }
           } else {
             transaction.to =  'Multiple Outputs';
           }
@@ -144,8 +150,10 @@ class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
+    zcashPendingTransactions.addListener(listener)
 
     $scope.$on('$destroy', () => {
+      zcashPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

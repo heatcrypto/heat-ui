@@ -123,4 +123,17 @@ class ZecBlockExplorerService {
     })
   }
 
+  public getTxInfo = (txId: string) => {
+    let deferred = this.$q.defer<any>();
+    let url = `${this.zcashExplorer}/tx/${txId}`
+    this.http.get(url).then(info => {
+      let data = JSON.parse(typeof info === "string" ? info : JSON.stringify(info))
+      if (data) {
+        deferred.resolve(data)
+      }
+    }, ()=> {
+      deferred.reject('Unable to obtain acoount sequence value');      
+    })
+    return deferred.promise
+  }
 }
