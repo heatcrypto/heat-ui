@@ -386,16 +386,52 @@ class CurrencyAddressCreate {
   }
 
   createLtcAddress(component: WalletComponent) {
+    // collect all CurrencyBalance of 'our' same currency type
     let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+
+    // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
+      this.addCurrency(this.parent.account, 'LTC')
       return true
     }
+
+    // determine the first 'nxt' address based of the last currencyBalance displayed
+    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
+
+    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
+    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
+      return false
+    }
+
+    // look up the following address
+    for (let i = 0; i < this.wallet.addresses.length; i++) {
+
+      // we've found the address
+      if (this.wallet.addresses[i].address == lastAddress) {
+
+        // next address is the one - but if no more addresses we exit since not possible
+        if (i == this.wallet.addresses.length - 1)
+          return
+
+        let nextAddress = this.wallet.addresses[i + 1]
+        let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        newCurrencyBalance.visible = this.parent.expanded
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
+        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        this.flatten()
+        this.addCurrency(this.parent.account, 'LTC')
+        return true
+      }
+    }
+
     return false
   }
 }
@@ -581,7 +617,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }, {name: 'Litecoin', disabled: false}];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }, {name: 'LTC', disabled: false}];
   selectedChain = '';
   store: any;
 
@@ -654,7 +690,7 @@ class WalletComponent {
     else if (this.$scope['vm'].selectedChain === 'ZEC') {
       this.createZECAccount($event)
     }
-    else if (this.$scope['vm'].selectedChain === 'Litecoin') {
+    else if (this.$scope['vm'].selectedChain === 'LTC') {
       this.createLtcAccount($event)
     }
     this.$scope['vm'].selectedChain = null
@@ -901,7 +937,7 @@ class WalletComponent {
     });
 
     /* Bitcoin and Ethereum integration start here */
-    let selectedCurrencies = this.store.get(walletEntry.account)
+    let selectedCurrencies = this.store.get(walletEntry.account) || []
     if (selectedCurrencies.indexOf('BTC') > -1)
       this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
@@ -1489,6 +1525,8 @@ class WalletComponent {
             ltcCurrencyBalance.balance = address.balance + ""
             ltcCurrencyBalance.visible = walletEntry.expanded
             ltcCurrencyBalance.inUse = wasCreated ? false : true
+            ltcCurrencyBalance.walletEntry = walletEntry
+
             walletEntry.currencies.splice(index, 0, ltcCurrencyBalance)
             index++;
           }
@@ -1584,7 +1622,7 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }, { name: 'Zcash', symbol: 'ZEC' }];
+      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }, { name: 'Zcash', symbol: 'ZEC' }, { name: 'Litecoin', symbol: 'LTC' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
@@ -2383,14 +2421,29 @@ class WalletComponent {
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
-          success = node.createLtcAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('LTC')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
           }
-        })
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
+            success = node.createLtcAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+              }
+            })
+          }, 0)
+        }
       }
 
       $scope['vm'].data = {

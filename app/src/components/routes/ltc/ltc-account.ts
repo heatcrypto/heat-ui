@@ -92,7 +92,7 @@ class LtcAccountComponent {
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.ltcBlockExplorerService.getTxInfo(pendingTxn.txId).then(
         data => {
-          if (data.blockHeight !== -1) {
+          if (data.blockHeight > 0) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
             this.ltcPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
@@ -107,7 +107,7 @@ class LtcAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.ltcPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);

@@ -1,22 +1,30 @@
 @Service('ltcCryptoService')
-@Inject('$window', 'http')
+@Inject('$window', 'storage', '$rootScope')
 class LTCCryptoService {
 
   static readonly BIP44 = "m/44'/2'/0'/0/";
   private litecore;
   private bip39;
+  private store: Store;
 
   constructor($window: angular.IWindowService,
-    private http: HttpService) {
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.litecore = $window.heatlibs.litecore;
     this.bip39 = $window.heatlibs.bip39;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
-      if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let walletAddresses = this.store.get(`LTC-${heatAddress}`)
+      if (walletAddresses) {
+        resolve(walletAddresses);
+      } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
+        this.store.put(`LTC-${heatAddress}`, walletType);
         resolve(walletType);
       } else if (this.litecore.PrivateKey.isValid(seedOrPrivateKey)) {
         try {
@@ -24,6 +32,7 @@ class LTCCryptoService {
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
+          this.store.put(`LTC-${heatAddress}`, walletType);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes

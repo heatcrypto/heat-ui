@@ -6,7 +6,9 @@ class LTCCurrency implements ICurrency {
   private pendingTransactions: LtcPendingTransactionsService
   private user: UserService
 
-  constructor(public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
+              public address: string) {
     this.ltcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ltc-account/${this.address}`
@@ -37,9 +39,8 @@ class LTCCurrency implements ICurrency {
   invokeSendDialog = ($event) => {
     this.sendLtc($event).then(
       data => {
-        let address = this.user.account
         let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txId, timestamp)
+        this.pendingTransactions.add(this.address, data.result, timestamp)
       },
       err => {
         if (err) {
@@ -62,7 +63,7 @@ class LTCCurrency implements ICurrency {
 
       let createTx = function (isForFeeEstimation: boolean = false) {
         let user = <UserService>heat.$inject.get('user')
-        let addressPrivateKeyPair = { address: user.currency.address, privateKey: user.secretPhrase, publicKey: user.publicKey }
+        let addressPrivateKeyPair = { address: user.currency.address, privateKey: user.currency.secretPhrase }
         let amountInSatoshi = $scope['vm'].data.amount * 100000000 === 0 ? 10000 : $scope['vm'].data.amount * 100000000;
         let feeInSatoshi = $scope['vm'].data.fee * 100000000 === 0 ? 10000 : $scope['vm'].data.fee * 100000000;
         let to = $scope['vm'].data.recipient
@@ -71,8 +72,7 @@ class LTCCurrency implements ICurrency {
           fee: feeInSatoshi,
           sender: addressPrivateKeyPair.address,
           recipient: to,
-          value: amountInSatoshi,
-          publicKey: addressPrivateKeyPair.publicKey
+          value: amountInSatoshi
         }
         return txObject
       }
@@ -87,12 +87,13 @@ class LTCCurrency implements ICurrency {
             ltcBlockExplorerService.broadcast(signedTx).then(
               data => {
                 $mdDialog.hide(data).then(() => {
-                  dialogs.alert(event, 'Success', `TxId: ${data.tx.hash}`);
+                  dialogs.alert(event, 'Success', `TxId: ${data.result}`);
                 })
               },
               err => {
                 $mdDialog.hide(null).then(() => {
                   dialogs.alert(event, 'Error', err.message);
+                  console.log('Error in broadcast: ', err)
                 })
               }
             )
@@ -163,7 +164,7 @@ class LTCCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService>heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId: string }>()
+    let deferred = $q.defer<{ result: string }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),

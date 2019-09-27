@@ -114,10 +114,10 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
           if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
             if (inputs.indexOf(this.account) > -1) {
               transaction.to = transaction.vout[0].addresses[0] === this.account ? 
-              transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
+                transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
             } else {
               transaction.to = transaction.vout[0].addresses[0] === this.account ? 
-              transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
+                transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
             }
           } else {
             transaction.to =  'Multiple Outputs';
@@ -138,7 +138,7 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
           totalInputs,
           totalOutputs,
           confirmations: transaction.confirmations,
-          fees: (parseFloat(transaction.fees) / 10000000).toFixed(8) ,
+          fees: (parseFloat(transaction.fees) / 100000000).toFixed(8) ,
           inputs: inputs.trim(),
           outputs: outputs.trim()
         }

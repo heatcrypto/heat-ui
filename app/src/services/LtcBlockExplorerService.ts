@@ -84,9 +84,9 @@ class LtcBlockExplorerService {
   }
 
   public broadcast(txObject) {
-    let sendTxApi = `${LtcBlockExplorerService.endPoint}/sendtx`;
+    let sendTxApi = `${LtcBlockExplorerService.endPoint}/sendtx/${txObject}`;
     let deferred = this.$q.defer<any>();
-    this.$http.post(sendTxApi, {tx: txObject}).then(response => {
+    this.$http.get(sendTxApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.data);
     }, (error) => {
