@@ -106,6 +106,10 @@ module utils {
     return new Date(Date.UTC(2018, 0, 1, 0, 0, 0, 0) + timestamp * 1000);
   }
 
+  export function nemTimestampToDate(timestamp: number) {
+    return new Date(Date.UTC(2015, 2, 29, 0, 5, 36, 25) + timestamp * 1000);
+  }
+
   /**
    * Converts heat transaction timestamp to the real Date.
    */

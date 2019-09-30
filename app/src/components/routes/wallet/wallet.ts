@@ -75,6 +75,12 @@ class CurrencyBalance {
     else if (this.name == 'Litecoin') {
       currency = new LTCCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
     }
+    // else if (this.name == 'NEM') {
+    //   currency = new NEMCurrency(this.secretPhrase, this.address)
+    // }
+    else if (this.name == 'BitcoinCash') {
+      currency = new BCHCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
+    }
     else {
       currency = new HEATCurrency(
         this.walletEntry ? this.walletEntry.secretPhrase : this.secretPhrase,
@@ -434,6 +440,68 @@ class CurrencyAddressCreate {
 
     return false
   }
+
+  createNEMAddress(component: WalletComponent) {
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('NEM', 'XEM', nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address)
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+    return false
+  }
+
+  createBchAddress(component: WalletComponent) {
+
+    // collect all CurrencyBalance of 'our' same currency type
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+
+    // if there is no address in use yet we use the first one
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+
+    // determine the first 'nxt' address based of the last currencyBalance displayed
+    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
+
+    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
+    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
+      return false
+    }
+
+    // look up the following address
+    for (let i = 0; i < this.wallet.addresses.length; i++) {
+
+      // we've found the address
+      if (this.wallet.addresses[i].address == lastAddress) {
+
+        // next address is the one - but if no more addresses we exit since not possible
+        if (i == this.wallet.addresses.length - 1)
+          return
+
+        let nextAddress = this.wallet.addresses[i + 1]
+        let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
+        newCurrencyBalance.visible = this.parent.expanded
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
+        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        this.flatten()
+        return true
+      }
+    }
+
+    return false
+  }
 }
 
 class WalletEntry {
@@ -474,6 +542,8 @@ class WalletEntry {
       this.component.loadBNBAddresses(this);
       this.component.loadZECAddresses(this);
       this.component.loadLtcAddresses(this);
+      // this.component.loadNEMAddresses(this)
+      this.component.loadBitcoinCashAddresses(this)
     }
   }
 
@@ -609,7 +679,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','zecCryptoService', 'ltcCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'eosCryptoService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bnbCryptoService','zecCryptoService', 'ltcCryptoService', 'bchCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
   selectAll = true;
   allLocked = true
@@ -617,7 +687,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }, {name: 'LTC', disabled: false}];
+  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'BNB', disabled: false }, { name: 'ZEC', disabled: false }, {name: 'LTC', disabled: false}, {name: 'BCH', disabled: false}];
   selectedChain = '';
   store: any;
 
@@ -642,6 +712,7 @@ class WalletComponent {
     private bnbCryptoService: BNBCryptoService,
     private zecCryptoService: ZECCryptoService,
     private ltcCryptoService: LTCCryptoService,
+    private bchCryptoService: BCHCryptoService,
     private nxtBlockExplorerService: NxtBlockExplorerService,
     private ardorBlockExplorerService: ArdorBlockExplorerService,
     private mofoSocketService: MofoSocketService,
@@ -660,7 +731,6 @@ class WalletComponent {
       let index = this.chains.findIndex((entry) => entry.name === ardorChain.name);
       this.chains[index] = ardorChain
     })
-
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
@@ -692,6 +762,12 @@ class WalletComponent {
     }
     else if (this.$scope['vm'].selectedChain === 'LTC') {
       this.createLtcAccount($event)
+    }
+    // else if(this.$scope['vm'].selectedChain === 'NEM') {
+    //   this.createNEMAccount($event)
+    // }
+    else if(this.$scope['vm'].selectedChain === 'BCH') {
+      this.createBCHAccount($event)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -1153,6 +1229,45 @@ class WalletComponent {
           }
         }
       })
+    if (selectedCurrencies.indexOf('BCH') > -1)
+      this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        if (wallet !== undefined) {
+          let bchCurrencyAddressLoading = new CurrencyAddressLoading('BitcoinCash')
+          bchCurrencyAddressLoading.visible = walletEntry.expanded;
+          bchCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(bchCurrencyAddressLoading);
+  
+          let bchCurrencyAddressCreate = new CurrencyAddressCreate('BitcoinCash', wallet)
+          bchCurrencyAddressCreate.visible = walletEntry.expanded
+          bchCurrencyAddressCreate.parent = walletEntry
+          bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(bchCurrencyAddressCreate)
+  
+          this.flatten()
+  
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadBitcoinCashAddresses(walletEntry)
+          }
+        }
+      })
+
+    // this.nemCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+    //   let nemCurrencyAddressLoading = new CurrencyAddressLoading('NEM')
+    //   nemCurrencyAddressLoading.visible = walletEntry.expanded
+    //   nemCurrencyAddressLoading.wallet = wallet
+    //   walletEntry.currencies.push(nemCurrencyAddressLoading)
+
+    //   let nemCurrencyAddressCreate = new CurrencyAddressCreate('NEM', wallet)
+    //   nemCurrencyAddressCreate.visible = walletEntry.expanded
+    //   nemCurrencyAddressCreate.parent = walletEntry
+    //   nemCurrencyAddressCreate.flatten = this.flatten.bind(this)
+    //   walletEntry.currencies.push(nemCurrencyAddressCreate)
+    //   /* Only if this node is expanded will we load the addresses */
+    //   if (walletEntry.expanded) {
+    //     this.loadNEMAddresses(walletEntry)
+    //   }
+    // })
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -1237,6 +1352,47 @@ class WalletComponent {
       this.flatten()
     })
   }
+
+  // public loadNEMAddresses(walletEntry: WalletEntry) {
+
+  //   /* Find the Loading node, if thats not available we can exit */
+  //   let nemCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NEM')
+  //   if (!nemCurrencyAddressLoading)
+  //     return
+
+  //   this.nemCryptoService.refreshAdressBalances(nemCurrencyAddressLoading.wallet).then(() => {
+
+  //     /* Make sure we exit if no loading node exists */
+  //     if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+  //       return
+
+  //     let index = walletEntry.currencies.indexOf(nemCurrencyAddressLoading)
+  //     nemCurrencyAddressLoading.wallet.addresses.forEach(address => {
+  //       let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+  //       if (address.inUse || wasCreated) {
+  //         let nemCurrencyBalance = new CurrencyBalance('NEM', 'XEM', address.address, address.privateKey)
+  //         nemCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+  //         nemCurrencyBalance.visible = walletEntry.expanded
+  //         nemCurrencyBalance.inUse = wasCreated ? false : true
+  //         walletEntry.currencies.splice(index, 0, nemCurrencyBalance)
+  //         index++;
+
+  //         if (address.tokensBalances) {
+  //           address.tokensBalances.forEach(balance => {
+  //             let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+  //             tokenBalance.balance = utils.commaFormat(balance.balance)
+  //             tokenBalance.visible = walletEntry.expanded
+  //             nemCurrencyBalance.tokens.push(tokenBalance)
+  //           })
+  //         }
+  //       }
+  //     })
+
+  //     // we can remove the loading entry
+  //     walletEntry.currencies = walletEntry.currencies.filter(c => c != nemCurrencyAddressLoading)
+  //     this.flatten()
+  //   })
+  // }
 
   /* Only when we expand a wallet entry do we lookup its balances */
   public loadFIMKAddresses(walletEntry: WalletEntry) {
@@ -1427,6 +1583,39 @@ class WalletComponent {
   }
 
   /* Only when we expand a wallet entry do we lookup its balances */
+  public loadBitcoinCashAddresses(walletEntry: WalletEntry) {
+
+    /* Find the Loading node, if thats not available we can exit */
+    let bchCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'BitcoinCash')
+    if (!bchCurrencyAddressLoading)
+      return
+
+    this.bchCryptoService.refreshAdressBalances(bchCurrencyAddressLoading.wallet).then(() => {
+
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+        return
+
+      let index = walletEntry.currencies.indexOf(bchCurrencyAddressLoading)
+      bchCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address.split(":")[1]) != -1
+        if (address.inUse || wasCreated) {
+          let bchCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
+          bchCurrencyBalance.balance = address.balance + ""
+          bchCurrencyBalance.visible = walletEntry.expanded
+          bchCurrencyBalance.inUse = wasCreated ? false : true
+          walletEntry.currencies.splice(index, 0, bchCurrencyBalance)
+          index++;
+        }
+      })
+
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != bchCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
+
+  /* Only when we expand a wallet entry do we lookup its balances */
   public loadBNBAddresses(walletEntry: WalletEntry) {
 
     /* Find the Loading node, if thats not available we can exit */
@@ -1517,25 +1706,25 @@ class WalletComponent {
       if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
         return
 
-        let index = walletEntry.currencies.indexOf(ltcCurrencyAddressLoading)
-        ltcCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let ltcCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey)
-            ltcCurrencyBalance.balance = address.balance + ""
-            ltcCurrencyBalance.visible = walletEntry.expanded
-            ltcCurrencyBalance.inUse = wasCreated ? false : true
-            ltcCurrencyBalance.walletEntry = walletEntry
+      let index = walletEntry.currencies.indexOf(ltcCurrencyAddressLoading)
+      ltcCurrencyAddressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        if (address.inUse || wasCreated) {
+          let ltcCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey)
+          ltcCurrencyBalance.balance = address.balance + ""
+          ltcCurrencyBalance.visible = walletEntry.expanded
+          ltcCurrencyBalance.inUse = wasCreated ? false : true
+          ltcCurrencyBalance.walletEntry = walletEntry
 
-            walletEntry.currencies.splice(index, 0, ltcCurrencyBalance)
-            index++;
-          }
-        })
-
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != ltcCurrencyAddressLoading)
-        this.flatten()
+          walletEntry.currencies.splice(index, 0, ltcCurrencyBalance)
+          index++;
+        }
       })
-    }
+
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != ltcCurrencyAddressLoading)
+      this.flatten()
+    })
+  }
 
   private getAccountAssets(account: string): angular.IPromise<Array<AssetInfo>> {
     let deferred = this.$q.defer<Array<AssetInfo>>();
@@ -1622,7 +1811,7 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }, { name: 'Zcash', symbol: 'ZEC' }, { name: 'Litecoin', symbol: 'LTC' }];
+      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'EOS', symbol: 'EOS' }, { name: 'Binance', symbol: 'BNB' }, { name: 'Zcash', symbol: 'ZEC' }, { name: 'Litecoin', symbol: 'LTC' }, { name: 'BitcoinCash', symbol: 'BCH' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
@@ -2641,6 +2830,111 @@ class WalletComponent {
     return deferred.promise
   }
 
+  createNEMAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NEM')
+          success = node.createNEMAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'NEM address already created for this account')
+          }
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create NEM Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new NEM address, please choose the master HEAT account you want to attach the new NEM address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  NEM wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your NEM address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your NEM.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
   createZECAccount($event) {
     let walletEntries = this.walletEntries
     let self = this
@@ -2756,6 +3050,112 @@ class WalletComponent {
           </md-dialog-actions>
         </form>
       </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createBCHAccount($event) {
+    let walletEntries = this.walletEntries
+    let self = this
+    if (walletEntries.length == 0)
+      return
+
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
+      }
+
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+
+      $scope['vm'].okButtonClick = function ($event) {
+        let walletEntry = $scope['vm'].data.selectedWalletEntry
+        let success = false
+        if (walletEntry) {
+
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'BitcoinCash')
+          success = node.createBchAddress(self)
+          walletEntry.toggle(true)
+        }
+        $mdDialog.hide(null).then(() => {
+          if (!success) {
+            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          }
+        })
+      }
+
+      $scope['vm'].data = {
+        selectedWalletEntry: walletEntries[0],
+        selected: walletEntries[0].account,
+        walletEntries: walletEntries,
+        password: ''
+      }
+
+      $scope['vm'].selectedWalletEntryChanged = function () {
+        $scope['vm'].data.password = ''
+        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create Bitcoin Cash Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new Bitcoin Cash address, please choose the master HEAT account you want to attach the new Bitcoin Cash address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  Btc wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your Bitcoin Cash address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your Bitcoin Cash.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
       `
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise

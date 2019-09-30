@@ -2,7 +2,7 @@
 @Inject('$window', 'storage', '$rootScope')
 class BitcoreService {
 
-  static readonly BIP44 = "m/44'/0'/0'/0/";
+  static readonly BIP44 = "m/44'/1'/0'/0/";
   private bitcore;
   private bip39;
   private store: Store;
