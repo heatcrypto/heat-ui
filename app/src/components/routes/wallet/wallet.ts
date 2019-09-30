@@ -464,6 +464,7 @@ class CurrencyAddressCreate {
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
       let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
+      newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
       newCurrencyBalance.visible = this.parent.expanded
       this.parent.currencies.push(newCurrencyBalance)
@@ -491,6 +492,7 @@ class CurrencyAddressCreate {
 
         let nextAddress = this.wallet.addresses[i + 1]
         let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
         component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
@@ -1604,6 +1606,8 @@ class WalletComponent {
           bchCurrencyBalance.balance = address.balance + ""
           bchCurrencyBalance.visible = walletEntry.expanded
           bchCurrencyBalance.inUse = wasCreated ? false : true
+          bchCurrencyBalance.walletEntry = walletEntry
+
           walletEntry.currencies.splice(index, 0, bchCurrencyBalance)
           index++;
         }
@@ -3074,16 +3078,30 @@ class WalletComponent {
         let walletEntry = $scope['vm'].data.selectedWalletEntry
         let success = false
         if (walletEntry) {
-
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'BitcoinCash')
-          success = node.createBchAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies)
+              currencies = []
+            currencies.push('BCH')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
           }
-        })
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'BitcoinCash')
+            success = node.createBchAddress(self)
+            walletEntry.toggle(true)
+            $mdDialog.hide(null).then(() => {
+              if (!success) {
+                dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+              }
+            })
+          }, 0)
+        }
       }
 
       $scope['vm'].data = {

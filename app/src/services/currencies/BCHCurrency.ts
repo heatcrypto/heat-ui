@@ -37,9 +37,8 @@ class BCHCurrency implements ICurrency {
   invokeSendDialog = ($event) => {
     this.sendBch($event).then(
       data => {
-        let address = this.user.account
         let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txId, timestamp)
+        this.pendingTransactions.add(this.address, data.txId, timestamp)
       },
       err => {
         if (err) {
@@ -62,7 +61,7 @@ class BCHCurrency implements ICurrency {
 
       let createTx = function(isForFeeEstimation: boolean = false) {
         let user = <UserService> heat.$inject.get('user')
-        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
+        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.currency.secretPhrase}
         let amountInSatoshi = $scope['vm'].data.amount * 100000000 === 0 ? 10000 : parseInt(($scope['vm'].data.amount * 100000000).toFixed(0));
         let feeInSatoshi = $scope['vm'].data.fee * 100000000 === 0 ? 1000 : parseInt(($scope['vm'].data.fee * 100000000).toFixed(0));
         let to = $scope['vm'].data.recipient
