@@ -2,66 +2,54 @@
 @Service('bchBlockExplorerService')
 @Inject('http', '$q')
 class BchBlockExplorerService {
+  static endPoint: string;
 
   constructor(private http: HttpService,
               private $q: angular.IQService) {
+    BchBlockExplorerService.endPoint = 'https://bch1.heatwallet.com/api/v2';
   }
 
   public getBalance(address: string): angular.IPromise<string> {
     let deferred = this.$q.defer<string>();
-    let balancesApi = `https://chain.api.btc.com/v3/address/${address}`;
-    this.http.get(balancesApi)
-        .then(response => {
-          let parsed = angular.isString(response) ? JSON.parse(response) : response;
-          let balance = parsed.data ? parsed.data.balance : 0
-          deferred.resolve(balance)
-        }, () => {
-          deferred.reject()
-        })
+    this.getAddressInfo(address).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      deferred.resolve(parsed.balance)
+    }, () => {
+      deferred.resolve("0")
+    })
     return deferred.promise
   }
 
-  public getTransactions(address: string, pageNum: number): angular.IPromise<any> {
-    let getTransactionsApi = `https://chain.api.btc.com/v3/address/${address}/tx?page=${pageNum}&pagesize=50`;
+  public getTransactions(address: string, pageNum: number, pageSize: number): angular.IPromise<any> {
+    let getTransactionsApi = `${BchBlockExplorerService.endPoint}/address/${address}?details=txs&page=${pageNum}&pageSize=${pageSize}`;
     let deferred = this.$q.defer();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let txs = parsed.data ? parsed.data.list : [];
-      deferred.resolve(txs)
-    }, ()=> {
+      deferred.resolve(parsed.transactions)
+    }, () => {
       deferred.reject();
     })
     return deferred.promise;
   }
 
   public getAddressInfo(address: string): angular.IPromise<any> {
-    let getTransactionsApi = `https://chain.api.btc.com/v3/address/${address}`;
-    let deferred = this.$q.defer();
+    let getTransactionsApi = `${BchBlockExplorerService.endPoint}/address/${address}?details=basic`;
+    let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let txCount = parsed.data ? parsed.data.tx_count : 0;
-      deferred.resolve(txCount)
-    }, ()=> {
+      deferred.resolve(parsed);
+    }, () => {
       deferred.reject();
     })
     return deferred.promise;
   }
 
   public getEstimatedFee() {
-    let getEstimatedFeeApi = `https://bitcoinfees.earn.com/api/v1/fees/list`;
+    let getEstimatedFeeApi = `${BchBlockExplorerService.endPoint}/estimatefee/1`;
     let deferred = this.$q.defer();
     this.http.get(getEstimatedFeeApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let fee;
-      parsed.fees.forEach(feeObject => {
-        if(feeObject.maxDelay == 1) {
-          fee = feeObject.minFee
-        }
-      });
-     if(!fee)
-      fee = 20
-
-      deferred.resolve(fee);
+      deferred.resolve(parsed.result);
     }, () => {
       deferred.reject();
     })
@@ -69,14 +57,37 @@ class BchBlockExplorerService {
   }
 
   public getTxInfo(txId: string) {
-    let getTxInfoApi = `https://chain.api.btc.com/v3/tx/${txId}?verbose=3`;
+    let getTxInfoApi = `${BchBlockExplorerService.endPoint}/tx/${txId}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let tx = parsed.data ? parsed.data : {}
-      deferred.resolve(tx);
+      deferred.resolve(parsed);
     }, () => {
       deferred.reject();
+    })
+    return deferred.promise
+  }
+
+  public getUnspentUtxos(account: string) {
+    let getTxInfoApi = `${BchBlockExplorerService.endPoint}/utxo/${account}`;
+    let deferred = this.$q.defer<any>();
+    this.http.get(getTxInfoApi).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      deferred.resolve(parsed);
+    }, () => {
+      deferred.reject();
+    })
+    return deferred.promise
+  }
+
+  public broadcast(rawTx) {
+    let sendTxApi = `${BchBlockExplorerService.endPoint}/sendtx/${rawTx}`;
+    let deferred = this.$q.defer<any>();
+    this.http.get(sendTxApi).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      deferred.resolve(parsed.data);
+    }, (error) => {
+      deferred.reject(error);
     })
     return deferred.promise
   }

@@ -62,15 +62,9 @@ class BCHCurrency implements ICurrency {
 
       let createTx = function(isForFeeEstimation: boolean = false) {
         let user = <UserService> heat.$inject.get('user')
-        let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
-
-        let amountInSatoshi = $scope['vm'].data.amount * 100000000;
-        let feeInSatoshi
-        if(!isForFeeEstimation)
-          feeInSatoshi = $scope['vm'].data.fee * 100000000;
-        else
-          feeInSatoshi = 0
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
+        let amountInSatoshi = $scope['vm'].data.amount * 100000000 === 0 ? 10000 : parseInt(($scope['vm'].data.amount * 100000000).toFixed(0));
+        let feeInSatoshi = $scope['vm'].data.fee * 100000000 === 0 ? 1000 : parseInt(($scope['vm'].data.fee * 100000000).toFixed(0));
         let to = $scope['vm'].data.recipient
 
         let txObject = {
@@ -85,14 +79,27 @@ class BCHCurrency implements ICurrency {
       }
 
       $scope['vm'].okButtonClick = function ($event) {
-
+        let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
+        $scope['vm'].disableOKBtn = true
+        bchCryptoService.sendBitcoinCash(createTx()).then(
+          data => {
+            $mdDialog.hide(data).then(() => {
+              dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
+            })
+          },
+          err => {
+            $mdDialog.hide(null).then(() => {
+              dialogs.alert(event, 'Error', err.message);
+            })
+          }
+        )
       }
       $scope['vm'].disableOKBtn = false
       $scope['vm'].data = {
         amount: '',
         recipient: '',
         recipientInfo: '',
-        fee: '0.0005'
+        fee: '0.00001'
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -113,14 +120,14 @@ class BCHCurrency implements ICurrency {
         )
       }, 1000, false)
       $scope['vm'].recipientChanged = function () {
-        let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
+        // let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
-        $scope['vm'].data.txBytes = []
-        bchCryptoService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
-        })
+        // $scope['vm'].data.txBytes = []
+        // bchCryptoService.signTransaction(createTx(true), true).then(rawTx => {
+        //   $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+        //   $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+        // })
       }
 
       $scope['vm'].amountChanged = function () {
@@ -134,9 +141,8 @@ class BCHCurrency implements ICurrency {
 
       function getEstimatedFee() {
         let bchBlockExplorerService = <BchBlockExplorerService> heat.$inject.get('bchBlockExplorerService')
-        bchBlockExplorerService.getEstimatedFee().then(data => {
-          if(data != -1)
-            $scope['vm'].data.estimatedFee = data;
+        bchBlockExplorerService.getEstimatedFee().then(fee => {
+          $scope['vm'].data.fee = fee || $scope['vm'].data.fee;
         })
       }
       getEstimatedFee();
@@ -169,7 +175,7 @@ class BCHCurrency implements ICurrency {
 
                 <md-input-container flex >
                   <label>Amount in BCH</label>
-                  <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
+                  <input ng-model="vm.data.amount" required name="amount">
                 </md-input-container>
 
                 <md-input-container flex>
@@ -179,7 +185,7 @@ class BCHCurrency implements ICurrency {
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
-              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee/Byte {{vm.data.estimatedFee}} Sat</md-button>
+              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee {{vm.data.fee}} BCH</md-button>
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
@@ -191,6 +197,5 @@ class BCHCurrency implements ICurrency {
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
   }
-
 
 }

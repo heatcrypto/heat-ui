@@ -59,9 +59,9 @@ class CurrencyBalance {
     else if (this.name == 'ARDOR') {
       currency = new ARDRCurrency(this.secretPhrase, this.address)
     }
-    else if (this.name == 'NEM') {
-      currency = new NEMCurrency(this.secretPhrase, this.address)
-    }
+    // else if (this.name == 'NEM') {
+    //   currency = new NEMCurrency(this.secretPhrase, this.address)
+    // }
     else if (this.name == 'BitcoinCash') {
       currency = new BCHCurrency(this.secretPhrase, this.address)
     }
@@ -255,6 +255,54 @@ class CurrencyAddressCreate {
     }
     return false
   }
+
+  createBchAddress(component: WalletComponent) {
+
+    // collect all CurrencyBalance of 'our' same currency type
+    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+
+    // if there is no address in use yet we use the first one
+    if (currencyBalances.length == 0) {
+      let nextAddress = this.wallet.addresses[0]
+      let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
+      newCurrencyBalance.visible = this.parent.expanded
+      this.parent.currencies.push(newCurrencyBalance)
+      this.flatten()
+      return true
+    }
+
+    // determine the first 'nxt' address based of the last currencyBalance displayed
+    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
+
+    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
+    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
+      return false
+    }
+
+    // look up the following address
+    for (let i = 0; i < this.wallet.addresses.length; i++) {
+
+      // we've found the address
+      if (this.wallet.addresses[i].address == lastAddress) {
+
+        // next address is the one - but if no more addresses we exit since not possible
+        if (i == this.wallet.addresses.length - 1)
+          return
+
+        let nextAddress = this.wallet.addresses[i + 1]
+        let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
+        newCurrencyBalance.visible = this.parent.expanded
+        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
+        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        this.flatten()
+        return true
+      }
+    }
+
+    return false
+  }
 }
 
 class WalletEntry {
@@ -290,7 +338,7 @@ class WalletEntry {
       this.component.loadFIMKAddresses(this);
       this.component.loadNXTAddresses(this);
       this.component.loadARDORAddresses(this);
-      this.component.loadNEMAddresses(this)
+      // this.component.loadNEMAddresses(this)
       this.component.loadBitcoinCashAddresses(this)
     }
   }
@@ -429,7 +477,7 @@ class WalletEntry {
 })
 @Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window',
   'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
-  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nemCryptoService', 'bchCryptoService')
+  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'bchCryptoService')
 class WalletComponent {
 
   selectAll = true;
@@ -438,7 +486,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = ['ETH', 'BTC', 'FIMK', 'NXT', 'ARDR', 'NEM', 'BCH'];
+  chains = ['ETH', 'BTC', 'FIMK', 'NXT', 'ARDR', 'BCH'];
   selectedChain = '';
 
   constructor(private $scope: angular.IScope,
@@ -458,7 +506,7 @@ class WalletComponent {
     private fimkCryptoService: FIMKCryptoService,
     private nxtCryptoService: NXTCryptoService,
     private ardorCryptoService: ARDORCryptoService,
-    private nemCryptoService: NEMCryptoService,
+    // private nemCryptoService: NEMCryptoService,
     private bchCryptoService: BCHCryptoService) {
 
     this.initLocalKeyStore()
@@ -480,9 +528,9 @@ class WalletComponent {
     else if(this.$scope['vm'].selectedChain === 'ARDR') {
       this.createARDRAccount($event)
     }
-    else if(this.$scope['vm'].selectedChain === 'NEM') {
-      this.createNEMAccount($event)
-    }
+    // else if(this.$scope['vm'].selectedChain === 'NEM') {
+    //   this.createNEMAccount($event)
+    // }
     else if(this.$scope['vm'].selectedChain === 'BCH') {
       this.createBCHAccount($event)
     }
@@ -722,7 +770,7 @@ class WalletComponent {
 
         /* Only if this node is expanded will we load the addresses */
         if (walletEntry.expanded) {
-          this.loadBitcoinAddresses(walletEntry)
+          this.loadBitcoinCashAddresses(walletEntry)
         }
       }
     })
@@ -800,22 +848,22 @@ class WalletComponent {
       }
     })
 
-    this.nemCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let nemCurrencyAddressLoading = new CurrencyAddressLoading('NEM')
-      nemCurrencyAddressLoading.visible = walletEntry.expanded
-      nemCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(nemCurrencyAddressLoading)
+    // this.nemCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+    //   let nemCurrencyAddressLoading = new CurrencyAddressLoading('NEM')
+    //   nemCurrencyAddressLoading.visible = walletEntry.expanded
+    //   nemCurrencyAddressLoading.wallet = wallet
+    //   walletEntry.currencies.push(nemCurrencyAddressLoading)
 
-      let nemCurrencyAddressCreate = new CurrencyAddressCreate('NEM', wallet)
-      nemCurrencyAddressCreate.visible = walletEntry.expanded
-      nemCurrencyAddressCreate.parent = walletEntry
-      nemCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(nemCurrencyAddressCreate)
-      /* Only if this node is expanded will we load the addresses */
-      if (walletEntry.expanded) {
-        this.loadNEMAddresses(walletEntry)
-      }
-    })
+    //   let nemCurrencyAddressCreate = new CurrencyAddressCreate('NEM', wallet)
+    //   nemCurrencyAddressCreate.visible = walletEntry.expanded
+    //   nemCurrencyAddressCreate.parent = walletEntry
+    //   nemCurrencyAddressCreate.flatten = this.flatten.bind(this)
+    //   walletEntry.currencies.push(nemCurrencyAddressCreate)
+    //   /* Only if this node is expanded will we load the addresses */
+    //   if (walletEntry.expanded) {
+    //     this.loadNEMAddresses(walletEntry)
+    //   }
+    // })
   }
 
   public loadNXTAddresses(walletEntry: WalletEntry) {
@@ -900,46 +948,46 @@ class WalletComponent {
     })
   }
 
-  public loadNEMAddresses(walletEntry: WalletEntry) {
+  // public loadNEMAddresses(walletEntry: WalletEntry) {
 
-    /* Find the Loading node, if thats not available we can exit */
-    let nemCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NEM')
-    if (!nemCurrencyAddressLoading)
-      return
+  //   /* Find the Loading node, if thats not available we can exit */
+  //   let nemCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NEM')
+  //   if (!nemCurrencyAddressLoading)
+  //     return
 
-    this.nemCryptoService.refreshAdressBalances(nemCurrencyAddressLoading.wallet).then(() => {
+  //   this.nemCryptoService.refreshAdressBalances(nemCurrencyAddressLoading.wallet).then(() => {
 
-      /* Make sure we exit if no loading node exists */
-      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-        return
+  //     /* Make sure we exit if no loading node exists */
+  //     if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
+  //       return
 
-      let index = walletEntry.currencies.indexOf(nemCurrencyAddressLoading)
-      nemCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-        if (address.inUse || wasCreated) {
-          let nemCurrencyBalance = new CurrencyBalance('NEM', 'XEM', address.address, address.privateKey)
-          nemCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-          nemCurrencyBalance.visible = walletEntry.expanded
-          nemCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, nemCurrencyBalance)
-          index++;
+  //     let index = walletEntry.currencies.indexOf(nemCurrencyAddressLoading)
+  //     nemCurrencyAddressLoading.wallet.addresses.forEach(address => {
+  //       let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+  //       if (address.inUse || wasCreated) {
+  //         let nemCurrencyBalance = new CurrencyBalance('NEM', 'XEM', address.address, address.privateKey)
+  //         nemCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+  //         nemCurrencyBalance.visible = walletEntry.expanded
+  //         nemCurrencyBalance.inUse = wasCreated ? false : true
+  //         walletEntry.currencies.splice(index, 0, nemCurrencyBalance)
+  //         index++;
 
-          if (address.tokensBalances) {
-            address.tokensBalances.forEach(balance => {
-              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = utils.commaFormat(balance.balance)
-              tokenBalance.visible = walletEntry.expanded
-              nemCurrencyBalance.tokens.push(tokenBalance)
-            })
-          }
-        }
-      })
+  //         if (address.tokensBalances) {
+  //           address.tokensBalances.forEach(balance => {
+  //             let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
+  //             tokenBalance.balance = utils.commaFormat(balance.balance)
+  //             tokenBalance.visible = walletEntry.expanded
+  //             nemCurrencyBalance.tokens.push(tokenBalance)
+  //           })
+  //         }
+  //       }
+  //     })
 
-      // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != nemCurrencyAddressLoading)
-      this.flatten()
-    })
-  }
+  //     // we can remove the loading entry
+  //     walletEntry.currencies = walletEntry.currencies.filter(c => c != nemCurrencyAddressLoading)
+  //     this.flatten()
+  //   })
+  // }
 
   /* Only when we expand a wallet entry do we lookup its balances */
   public loadFIMKAddresses(walletEntry: WalletEntry) {
@@ -1074,7 +1122,7 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(bchCurrencyAddressLoading)
       bchCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address.split(":")[1]) != -1
         if (address.inUse || wasCreated) {
           let bchCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
           bchCurrencyBalance.balance = address.balance + ""
@@ -1898,7 +1946,7 @@ class WalletComponent {
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'BitcoinCash')
-          success = node.createBtcAddress(self)
+          success = node.createBchAddress(self)
           walletEntry.toggle(true)
         }
         $mdDialog.hide(null).then(() => {
@@ -1982,4 +2030,5 @@ class WalletComponent {
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
   }
+
 }

@@ -1,6 +1,6 @@
 @RouteConfig('/bitcoin-cash-account/:account')
 @Component({
-  selector: 'bchAccount',
+  selector: 'bitcoinCashAccount',
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill>
@@ -129,7 +129,7 @@ class BitcoinCashAccountComponent {
     this.balanceUnconfirmed = "";
     this.bchBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = (parseFloat(info) / 100000000).toFixed(8);
+        this.balanceUnconfirmed = new Big(parseFloat(info) / 100000000).toFixed(8);
         this.busy = false;
       })
     })

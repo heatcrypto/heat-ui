@@ -23,10 +23,7 @@
           <div class="truncate-col info-col left">TO</div>
 
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left">Amount</div>
-
-          <!-- MESSAGE -->
-          <div class="truncate-col message-col left">Message</div>
+          <div class="truncate-col amount-col right">Amount</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -43,7 +40,8 @@
 
             <!-- FROM -->
             <div class="truncate-col info-col left">
-             <span>{{item.from}}</span>
+              <span ng-show = "item.from !== 'Multiple Inputs'">{{item.from}}</span>
+              <a ng-show = "item.from === 'Multiple Inputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.from}}</a>
             </div>
 
             <!-- TO -->
@@ -53,13 +51,8 @@
             </div>
 
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left">
+            <div class="truncate-col amount-col right">
               <span>{{item.amount}}</span>
-            </div>
-
-            <!-- MESSAGE -->
-            <div class="truncate-col message-col left">
-              <span>{{item.displayMessage}}</span>
             </div>
 
             <!-- JSON -->
@@ -93,74 +86,78 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
       this.bchTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any) => {
-        transaction.amount = transaction.vout[0].value;
-        transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
-        transaction.from = transaction.vin[0].addr;
-        let totalInputs = 0;
+        transaction.txid = transaction.txid;
+        transaction.dateTime = dateFormat(new Date(transaction.blockTime*1000), format);
+
+        let totalInputs = transaction.vin.length; //Total number of inputs
+        let totalOutputs = transaction.vout.length;
+
+        let inputAmount = 0; //Total amount in input for current address
         let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {
-          totalInputs += parseFloat(transaction.vin[i].value);
-          inputs += `
-          ${transaction.vin[i].addr} (${transaction.vin[i].value})`;
-          if (transaction.vin[i].addr === this.account) {
-            transaction.from = transaction.vin[i].addr;
+          if (transaction.vin[i].isAddress) {
+            if (transaction.vin[i].addresses[0] === this.account) {
+              inputAmount += parseFloat(transaction.vin[i].value)
+            }
+            inputs += `
+            ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value)/100000000).toFixed(8)})`;  
           }
         }
 
-        let totalOutputs = 0;
+        if (transaction.vin.length === 1) {
+          if (transaction.vin[0].isAddress) {
+            transaction.from = transaction.vin[0].addresses[0].substr(0, 40).concat('...')
+          } else {
+            transaction.from = 'Block Mined'
+          }
+        } else {
+          transaction.from = 'Multiple Inputs'
+        }
+
+        let outputAmount = 0; //Total amount in output for current address
         let outputs = '';
         for (let i = 0; i < transaction.vout.length; i++) {
-          totalOutputs += parseFloat(transaction.vout[i].value);
-          if (transaction.vout[i].scriptPubKey.addresses) {
-            outputs += `
-            ${transaction.vout[i].scriptPubKey.addresses[0]} (${transaction.vout[i].value})`;
+          if (transaction.vout[i].addresses[0] === this.account) {
+            outputAmount += parseFloat(transaction.vout[i].value)
           }
+          outputs += `
+          ${transaction.vout[i].addresses[0]} (${(parseFloat(transaction.vout[i].value) / 100000000).toFixed(8)})`;
         }
-        // by default assign To field to zeroth address
-        for (let i = 0; i < transaction.vout.length && transaction.vout[i].scriptPubKey.addresses; i++) {
-          if (transaction.vout[i].scriptPubKey.addresses) {
-            transaction.to = transaction.vout[0].scriptPubKey.addresses[0];
-            break;
-          }
-        }
-        // if change address is same and API returns change address as zeroth address then point To field and volume to some other address
-        if (transaction.from === transaction.to) {
-          for (let i = 1; i < transaction.vout.length && transaction.vout[i].scriptPubKey.addresses; i++) {
-            transaction.to = transaction.vout[i].scriptPubKey.addresses[0];
-            transaction.amount = transaction.vout[i].value;
-            break;
+
+        if (transaction.vout.length == 1) {
+          transaction.to = transaction.vout[0].addresses[0].substr(0, 40).concat('...')
+        } else {
+          if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
+            if (inputs.indexOf(this.account) > -1) {
+              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+                transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
+            } else {
+              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+                transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
+            }
+            transaction.to = transaction.to.substr(0, 40).concat('...')
+          } else {
+            transaction.to =  'Multiple Outputs';
           }
         }
 
-        // if BCH were transferred from the unlocked account address then show it as "-Amount"
-        if (inputs.includes(this.account)) {
-          transaction.amount = `-${transaction.amount}`;
+        // if ZEC were transferred from the unlocked account address then show it as "-Amount"
+        if (inputs.indexOf(this.account) > -1) {
+          transaction.amount = `-${ (inputAmount / 100000000).toFixed(8)}`;
         } else {
-          // if input does not include the current unlocked account address then output will always have it
-          for (let i = 0; i < transaction.vout.length; i++) {
-            if (transaction.vout[i].scriptPubKey.addresses && transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
-              transaction.to = this.account;
-              transaction.amount = transaction.vout[i].value;
-            }
-          }
-        }
-        // if change address was different then show hardcoded output
-        if (!outputs.includes(this.account)) {
-          transaction.to = 'Multiple Outputs';
+          transaction.amount = `${(outputAmount / 100000000).toFixed(8)}`;
         }
 
         transaction.json = {
           txid: transaction.txid,
           time: transaction.dateTime,
-          block: transaction.blockheight,
+          block: transaction.blockHeight,
           totalInputs,
           totalOutputs,
           confirmations: transaction.confirmations,
-          fees: transaction.fees,
+          fees: (parseFloat(transaction.fees) / 100000000).toFixed(8) ,
           inputs: inputs.trim(),
-          outputs: outputs.trim(),
-          size: transaction.size,
-          message: transaction.message ? transaction.message : ''
+          outputs: outputs.trim()
         }
       }
     );

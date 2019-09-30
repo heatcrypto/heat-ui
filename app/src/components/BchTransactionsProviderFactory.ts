@@ -1,4 +1,4 @@
-@Service('btcTransactionsProviderFactory')
+@Service('bchTransactionsProviderFactory')
 @Inject('http','$q', 'bchBlockExplorerService')
 class BchTransactionsProviderFactory  {
   constructor(private http: HttpService,
@@ -24,7 +24,7 @@ class BchTransactionsProvider implements IPaginatedDataProvider {
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
     this.bchBlockExplorerService.getAddressInfo(this.account).then(result => {
-      deferred.resolve(result.final_n_tx)
+      deferred.resolve(result.txs)
     }, () => {
       deferred.reject()
     })
@@ -34,9 +34,9 @@ class BchTransactionsProvider implements IPaginatedDataProvider {
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<any>> {
-    let pageNum = 0;
-    pageNum = (lastIndex / 10) - 1;
-    return this.bchBlockExplorerService.getTransactions(this.account, pageNum)
+    let pageNum = (lastIndex / 10) || 0;
+    let pageSize = (lastIndex - firstIndex) || 10;
+    return this.bchBlockExplorerService.getTransactions(this.account, pageNum, pageSize)
   }
 
 }

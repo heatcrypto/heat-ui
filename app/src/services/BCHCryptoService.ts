@@ -5,11 +5,13 @@ class BCHCryptoService {
   static readonly BIP44 = "m/44'/145'/0'/0/";
   private bitcore;
   private bip39;
+  private bitcoreCash;
 
   constructor($window: angular.IWindowService,
     private http: HttpService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
+    this.bitcoreCash = $window.heatlibs.bitcoreCash;
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
@@ -17,7 +19,7 @@ class BCHCryptoService {
     return new Promise((resolve, reject) => {
       if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
-        if (walletType.addresses.length === 1) {
+        if (walletType.addresses.length === 20) {
           resolve(walletType);
         }
       } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
@@ -41,8 +43,8 @@ class BCHCryptoService {
   getNWalletsFromMnemonics(mnemonic: string, keyCount: number) {
     let walletType = { addresses: [] }
     for (let i = 0; i < keyCount; i++) {
-      let wallet = this.getBitcoinWallet(mnemonic, i)
-      walletType.addresses[0] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
+      let wallet = this.getBitcoinCashWallet(mnemonic, i)
+      walletType.addresses[i] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
     }
     return walletType;
   }
@@ -60,20 +62,20 @@ class BCHCryptoService {
 
         /* look up its data on btcBlockExplorerService */
         let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
-        bchBlockExplorerService.getBalance(address).then(info => {
+        bchBlockExplorerService.getAddressInfo(address).then(info => {
 
           /* lookup the 'real' WalletAddress */
           let walletAddress = wallet.addresses.find(x => x.address == address)
           if (!walletAddress)
             return
 
-          walletAddress.inUse = parseFloat(info) != 0
+          walletAddress.inUse = info.txs != 0
           if (!walletAddress.inUse) {
             resolve(false)
             return
           }
 
-          walletAddress.balance = parseFloat(info) / 100000000 + ""
+          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
           resolve(true)
         }, () => {
           resolve(false)
@@ -101,8 +103,7 @@ class BCHCryptoService {
     })
   }
 
-  getBitcoinWallet(mnemonic: string, index: Number = 0) {
-
+  getBitcoinCashWallet(mnemonic: string, index: Number = 0) {
     let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
     let HDPrivateKey = this.bitcore.HDPrivateKey;
     let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
@@ -110,78 +111,78 @@ class BCHCryptoService {
     let derived = hdPrivateKey.derive(BCHCryptoService.BIP44 + index);
     let address = derived.privateKey.toAddress();
     let privateKey = derived.privateKey.toWIF();
+    var cashAddress = this.bitcoreCash.Address.fromObject(address.toObject()).toCashAddress();
     return {
-      address: address.toString(),
+      address: cashAddress,
       privateKey: privateKey.toString()
     }
   }
 
   signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
+    let bitcoreCash = this.bitcoreCash
+    let bchBlockExplorerService = <BchBlockExplorerService>heat.$inject.get('bchBlockExplorerService')
     return new Promise((resolve, reject) => {
-      this.getUnspentUtxos(txObject.from).then(
-        utxos => {
-          try {
-            let tx = this.bitcore.Transaction();
-            tx.from(utxos)
-            tx.to(txObject.to, txObject.amount)
-            tx.change(txObject.from)
-            tx.fee(txObject.fee)
-            tx.sign(txObject.privateKey)
-            let rawTx;
-            if(uncheckedSerialize)
-              rawTx = tx.uncheckedSerialize()
-            else
-              rawTx = tx.serialize()
-            resolve(rawTx)
-          } catch (err) {
-            reject(err)
+      bchBlockExplorerService.getUnspentUtxos(txObject.from).then(utxos => {
+        if (utxos.length === 0) {
+          reject(new Error('No utxo found for input address'));
+        }
+        const script = bitcoreCash.Script.buildPublicKeyHashOut(txObject.from);
+        const UnspentOutput = this.bitcoreCash.Transaction.UnspentOutput;
+        let unspent = [];
+
+        let availableSatoshis = 0;
+        for (let i = 0; i < utxos.length; i += 1) {
+          let utxo = {
+            address: txObject.from,
+            txId: utxos[i].txid,
+            outputIndex: utxos[i].vout,
+            satoshis: parseInt(utxos[i].value),
+            script
           }
-        },
-        err => {
+          unspent.push(new UnspentOutput(utxo))
+          availableSatoshis += parseInt(utxos[i].value);
+          if (availableSatoshis >= txObject.amount) break;
+        }
+
+        if (availableSatoshis < txObject.amount) {
+          reject(new Error('Insufficient balance to broadcast transaction'))
+        }
+
+        try {
+          let tx = this.bitcoreCash.Transaction();
+          tx.from(unspent)
+          tx.to(txObject.to, txObject.amount - txObject.fee)
+          tx.change(txObject.from)
+          tx.fee(txObject.fee)
+          tx.sign(txObject.privateKey)
+          let rawTx = uncheckedSerialize ? tx.uncheckedSerialize() : tx.serialize()
+          resolve(rawTx)
+        } catch (err) {
           reject(err)
         }
-      )
+      },
+      err => {
+        reject(err)
+      })
     })
   }
 
-  getUnspentUtxos(addresses) {
-    const Address = this.bitcore.Address;
-    const Transaction = this.bitcore.Transaction;
-    const UnspentOutput = Transaction.UnspentOutput;
+  sendBitcoinCash(txObject: any): Promise<{ txId: string }> {
+    let bchBlockExplorerService = <BchBlockExplorerService>heat.$inject.get('bchBlockExplorerService')
     return new Promise((resolve, reject) => {
-      if (!Array.isArray(addresses)) {
-        addresses = [addresses];
-      }
-      addresses = addresses.map((address) => new Address(address));
-      this.http.post('https://insight.bitpay.com/api/addrs/utxo', {
-        addrs: addresses.map((address) => address.toString()).join(',')
-      }).then(
-        response => {
-          try {
-            resolve((<[any]>response).map(unspent => new UnspentOutput(unspent)))
-          } catch (ex) {
-            reject(ex);
+      this.signTransaction(txObject).then(rawTx => {
+        bchBlockExplorerService.broadcast(rawTx).then(
+          data => {
+            resolve({txId : data.tx.hash})
+          },
+          error => {
+            reject(error)
           }
-        },
-        error => {
-          reject(error)
-        }
-      )
+        )
+      },
+      error => {
+        reject(error)
+      })
     })
   }
-
-  broadcast(rawTx: string) {
-    return new Promise<{ txId: string }>((resolve, reject) => {
-      this.http.post('https://bch.coin.space/api/tx/send', { rawtx: rawTx }).then(
-        response => {
-          let txId = response ? response['txid'] : null
-          resolve({ txId: txId })
-        },
-        error => {
-          reject(error)
-        }
-      )
-    })
-  }
-
 }
