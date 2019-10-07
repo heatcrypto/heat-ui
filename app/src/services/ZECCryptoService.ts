@@ -134,15 +134,15 @@ class ZECCryptoService {
               tx.addInput(utxo.txId, utxo.outputIndex);
               availableSatoshis += utxo.satoshis;
               nInputs += 1;
-              if (availableSatoshis >= txObject.amount) break;
+              if (availableSatoshis >= txObject.amount + txObject.fee) break;
             }
 
-            const change = availableSatoshis - txObject.amount;
-            if (availableSatoshis < txObject.amount) {
+            const change = availableSatoshis - txObject.amount - txObject.fee;
+            if (availableSatoshis < txObject.amount + txObject.fee) {
               throw new Error('Insufficient balance to broadcast transaction');
             }
 
-            tx.addOutput(txObject.to, txObject.amount - txObject.fee);
+            tx.addOutput(txObject.to, txObject.amount);
             if (change > 0) tx.addOutput(txObject.from, change);
 
             let keyPair = this.bitgoUtxo.ECPair.fromWIF(txObject.privateKey, zecNetwork);

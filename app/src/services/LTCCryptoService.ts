@@ -134,17 +134,17 @@ class LTCCryptoService {
             }
             unspent.push(utxo)
             availableSatoshis += parseInt(utxos[i].value);
-            if (availableSatoshis >= txObject.value) break;
+            if (availableSatoshis >= txObject.value + txObject.fee) break;
           }
 
-          if (availableSatoshis < txObject.value) {
+          if (availableSatoshis < txObject.value + txObject.fee) {
             reject(new Error('Insufficient balance to broadcast transaction'))
           }
   
           try {
             let tx = this.litecore.Transaction();
             tx.from(unspent)
-            tx.to(txObject.recipient, txObject.value - txObject.fee)
+            tx.to(txObject.recipient, txObject.value)
             tx.change(txObject.sender)
             tx.fee(txObject.fee)
             tx.sign(txObject.privateKey)

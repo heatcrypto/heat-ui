@@ -151,17 +151,17 @@ class BCHCryptoService {
           }
           unspent.push(new UnspentOutput(utxo))
           availableSatoshis += parseInt(utxos[i].value);
-          if (availableSatoshis >= txObject.amount) break;
+          if (availableSatoshis >= txObject.amount + txObject.fee) break;
         }
 
-        if (availableSatoshis < txObject.amount) {
+        if (availableSatoshis < txObject.amount + txObject.fee) {
           reject(new Error('Insufficient balance to broadcast transaction'))
         }
 
         try {
           let tx = this.bitcoreCash.Transaction();
           tx.from(unspent)
-          tx.to(txObject.to, txObject.amount - txObject.fee)
+          tx.to(txObject.to, txObject.amount)
           tx.change(txObject.from)
           tx.fee(txObject.fee)
           tx.sign(txObject.privateKey)
