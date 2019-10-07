@@ -98,6 +98,8 @@ class BtcBlockExplorerHeatNodeService implements IBitcoinAPIList {
       deferred.resolve(parsed.lastblockhash);
     }, () => {
       deferred.reject();
+    }).catch(()=> {
+      deferred.reject()
     })
     return deferred.promise
   }
