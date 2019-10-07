@@ -58,7 +58,7 @@
     </div>
   `
 })
-  
+
 @Inject('$scope', '$q', 'zecTransactionsProviderFactory', 'settings', 'zcashPendingTransactions', 'user')
 class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
 
@@ -72,9 +72,6 @@ class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
-    /* privateKey and publicKey should be HEAT keys */
-    let privateKey = this.user.secretPhrase;
-    let publicKey = this.user.publicKey;
     this.initializeVirtualRepeat(
       this.zecTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -112,10 +109,10 @@ class VirtualRepeatZecTransactionsComponent extends VirtualRepeatComponent {
         } else {
           if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
             if (inputs.indexOf(this.account) > -1) {
-              transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ? 
+              transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ?
                 transaction.vout[1].scriptPubKey.addresses[0] : transaction.vout[0].scriptPubKey.addresses[0];
             } else {
-              transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ? 
+              transaction.to = transaction.vout[0].scriptPubKey.addresses[0] === this.account ?
                 transaction.vout[0].scriptPubKey.addresses[0] : transaction.vout[1].scriptPubKey.addresses[0];
             }
           } else {

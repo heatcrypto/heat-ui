@@ -73,9 +73,6 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
     super($scope, $q);
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
-    /* privateKey and publicKey should be HEAT keys */
-    let privateKey = this.user.secretPhrase;
-    let publicKey = this.user.publicKey;
     this.initializeVirtualRepeat(
       this.ltcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -113,10 +110,10 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
         } else {
           if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
             if (inputs.indexOf(this.account) > -1) {
-              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+              transaction.to = transaction.vout[0].addresses[0] === this.account ?
                 transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
             } else {
-              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+              transaction.to = transaction.vout[0].addresses[0] === this.account ?
                 transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
             }
           } else {

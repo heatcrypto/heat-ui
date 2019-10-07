@@ -64,7 +64,7 @@
 		</div>
 	`
 })
-  
+
 @Inject('$scope', '$q', 'bnbTransactionsProviderFactory', 'settings', 'binancePendingTransactions', 'user')
 class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 
@@ -78,9 +78,6 @@ class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 		super($scope, $q);
 		var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
-		/* privateKey and publicKey should be HEAT keys */
-		let privateKey = this.user.secretPhrase;
-		let publicKey = this.user.publicKey;
 		this.initializeVirtualRepeat(
 			this.bnbTransactionsProviderFactory.createProvider(this.account),
 			/* decorator function */
@@ -105,7 +102,7 @@ class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 				if(transaction.displayMessage.length > 13) {
 				  transaction.displayMessage = transaction.displayMessage.substr(0, 10).concat('...')
 				}
-		
+
 				// if BTC were transferred from the unlocked account address then show it as "-Amount"
 				if (inputs.includes(this.account)) {
 					transaction.amount = `-${transaction.amount}`;
@@ -125,7 +122,7 @@ class VirtualRepeatBnbTransactionsComponent extends VirtualRepeatComponent {
 
 		var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
 		let timeout = setTimeout(refresh, 15 * 1000)
-		
+
 		let listener = this.determineLength.bind(this)
 		this.PAGE_SIZE = 25;
 		binancePendingTransactions.addListener(listener)
