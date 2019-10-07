@@ -36,7 +36,11 @@
             <div class="truncate-col date-col left">{{item.dateTime}}</div>
 
             <!-- TX ID -->
-            <div class="truncate-col tx-col left" >{{item.txid}}</div>
+            <div class="truncate-col tx-col left" >
+              <span>
+                <a target="_blank" href="https://bch1.heatwallet.com/tx/{{item.txid}}">{{item.txid}}</a>
+              </span>
+            </div>
 
             <!-- FROM -->
             <div class="truncate-col info-col left">
@@ -100,7 +104,7 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
               inputAmount += parseFloat(transaction.vin[i].value)
             }
             inputs += `
-            ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value)/100000000).toFixed(8)})`;  
+            ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value)/100000000).toFixed(8)})`;
           }
         }
 
@@ -129,10 +133,10 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
         } else {
           if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
             if (inputs.indexOf(this.account) > -1) {
-              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+              transaction.to = transaction.vout[0].addresses[0] === this.account ?
                 transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
             } else {
-              transaction.to = transaction.vout[0].addresses[0] === this.account ? 
+              transaction.to = transaction.vout[0].addresses[0] === this.account ?
                 transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
             }
             transaction.to = transaction.to.substr(0, 40).concat('...')

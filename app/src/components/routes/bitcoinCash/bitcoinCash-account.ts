@@ -92,7 +92,7 @@ class BitcoinCashAccountComponent {
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.bchBlockExplorerService.getTxInfo(pendingTxn.txId).then(
         data => {
-          if (data.block_height !== -1) {
+          if (data.blockHeight > 0) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
             this.bchPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }

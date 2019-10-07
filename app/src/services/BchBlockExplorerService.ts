@@ -85,7 +85,7 @@ class BchBlockExplorerService {
     let deferred = this.$q.defer<any>();
     this.http.get(sendTxApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      deferred.resolve(parsed.data);
+      deferred.resolve(parsed);
     }, (error) => {
       deferred.reject(error);
     })

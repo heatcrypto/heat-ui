@@ -183,7 +183,7 @@ class BCHCryptoService {
       this.signTransaction(txObject).then(rawTx => {
         bchBlockExplorerService.broadcast(rawTx).then(
           data => {
-            resolve({txId : data.tx.hash})
+            resolve({txId : data.result})
           },
           error => {
             reject(error)
