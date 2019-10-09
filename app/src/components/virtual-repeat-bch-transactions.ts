@@ -91,7 +91,7 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
       /* decorator function */
       (transaction: any) => {
         transaction.txid = transaction.txid;
-        transaction.dateTime = dateFormat(new Date(transaction.blockTime*1000), format);
+        transaction.dateTime = dateFormat(new Date(transaction.blockTime * 1000), format);
 
         let totalInputs = transaction.vin.length; //Total number of inputs
         let totalOutputs = transaction.vout.length;
@@ -104,7 +104,7 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
               inputAmount += parseFloat(transaction.vin[i].value)
             }
             inputs += `
-            ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value)/100000000).toFixed(8)})`;
+            ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value) / 100000000).toFixed(8)})`;
           }
         }
 
@@ -141,13 +141,12 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
             }
             transaction.to = transaction.to.substr(0, 40).concat('...')
           } else {
-            transaction.to =  'Multiple Outputs';
+            transaction.to = 'Multiple Outputs';
           }
         }
 
-        // if ZEC were transferred from the unlocked account address then show it as "-Amount"
         if (inputs.indexOf(this.account) > -1) {
-          transaction.amount = `-${ (inputAmount / 100000000).toFixed(8)}`;
+          transaction.amount = `-${(inputAmount / 100000000).toFixed(8)}`;
         } else {
           transaction.amount = `${(outputAmount / 100000000).toFixed(8)}`;
         }
@@ -159,7 +158,7 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
           totalInputs,
           totalOutputs,
           confirmations: transaction.confirmations,
-          fees: (parseFloat(transaction.fees) / 100000000).toFixed(8) ,
+          fees: (parseFloat(transaction.fees) / 100000000).toFixed(8),
           inputs: inputs.trim(),
           outputs: outputs.trim()
         }

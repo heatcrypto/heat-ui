@@ -121,7 +121,6 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
           }
         }
 
-        // if ZEC were transferred from the unlocked account address then show it as "-Amount"
         if (inputs.indexOf(this.account) > -1) {
           transaction.amount = `-${ (inputAmount / 100000000).toFixed(8)}`;
         } else {
