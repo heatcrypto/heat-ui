@@ -45,12 +45,11 @@
           <div class="he truncate-col height-col left">Height</div>
           <div class="truncate-col date-col left">Time</div>
           <div class="truncate-col block-col block left">Block</div>
-          <div class="truncate-col generator-col block left" ng-if="!vm.account">Generator</div>
+          <div class="truncate-col generator-col block left" ng-if="!vm.account">{{vm.minerHeader}}</div>
           <div class="tx truncate-col transactions-col">Tx</div>
           <div class="truncate-col amount-col">Amount</div>
-          <div class="fee truncate-col fee-col">Fee</div>
-          <div class="truncate-col pos-col left">POS Reward</div>
-          <div class="truncate-col pop-col left" flex>POP Reward</div>
+          <div class="fee truncate-col fee-col">Fees</div>
+          <div class="truncate-col pop-col left" flex>{{vm.popHeader}}</div>
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
         </md-list-item>
@@ -59,12 +58,15 @@
             <div class="he truncate-col height-col left">{{item.height}}</div>
             <div class="truncate-col date-col left">{{item.time}}</div>
             <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
-            <div class="truncate-col generator-col block left" ng-if="!vm.account"><a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a></div>
+            <div class="truncate-col generator-col block left" ng-if="!vm.account">
+                <a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a>
+            </div>
             <div class="tx truncate-col transactions-col">{{item.numberOfTransactions}}</div>
             <div class="truncate-col amount-col">{{item.amount}}</div>
             <div class="fee truncate-col fee-col">{{item.fee}}</div>
-            <div class="truncate-col pos-col left">{{item.pos}}</div>
-            <div class="truncate-col pop-col left" flex>{{item.pop}}</div>
+            <div class="truncate-col pop-col left" flex>
+                <a ng-if="item.popRewardHQT != '0'" href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a>
+            </div>
             <!-- JSON -->
             <div class="truncate-col json-col">
               <a ng-click="vm.jsonDetails($event, item)">
@@ -82,6 +84,9 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
   blockObject: IHeatBlock; // @input
   account: string; // @input
+  minerHeader: string = "Miner";
+  popHeaderOrig: string = "POP reward";
+  popHeader: string = this.popHeaderOrig;
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -91,6 +96,7 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
     super($scope, $q);
 
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let headerInitialized = false;
     this.initializeVirtualRepeat(
       this.latestBlocksProviderFactory.createProvider(this.blockObject, this.account),
       /* decorator function */
@@ -101,6 +107,13 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
         block.fee = utils.trimDecimals(utils.formatQNT(block.totalFeeHQT, 8),2) + " HEAT";
         block.pos = utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2) + " HEAT";
         block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2) + " HEAT";
+        if (!headerInitialized) {
+          this.minerHeader = `Miner (${utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2)} HEAT)`;
+          headerInitialized = true;
+        }
+        if (this.popHeader == this.popHeaderOrig && block.popRewardHQT != '0') {
+          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2)} HEAT)`;
+        }
       }
     );
 
