@@ -85,7 +85,8 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
   blockObject: IHeatBlock; // @input
   account: string; // @input
   minerHeader: string = "Miner";
-  popHeader: string = "POP reward";
+  popHeaderOrig: string = "POP reward";
+  popHeader: string = this.popHeaderOrig;
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -108,8 +109,10 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
         block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2) + " HEAT";
         if (!headerInitialized) {
           this.minerHeader = `Miner (${utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2)} HEAT)`;
-          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2)} HEAT)`;
           headerInitialized = true;
+        }
+        if (this.popHeader == this.popHeaderOrig && block.popRewardHQT != '0') {
+          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2)} HEAT)`;
         }
       }
     );
