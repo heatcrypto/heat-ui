@@ -78,53 +78,52 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
       /* decorator function */
       (transaction: any) => {
         transaction.txid = transaction.txid;
-        transaction.dateTime = dateFormat(new Date(transaction.blockTime*1000), format);
+        transaction.dateTime = dateFormat(new Date(transaction.blockTime * 1000), format);
+        transaction.from = transaction.vin[0].addresses[0];
+        transaction.amount = transaction.vout[0].value / 100000000;
 
-        let totalInputs = transaction.vin.length; //Total number of inputs
-        let totalOutputs = transaction.vout.length;
-
-        let inputAmount = 0; //Total amount in input for current address
+        let totalInputs = 0;
         let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {
-          if (transaction.vin[i].addresses[0] === this.account) {
-            inputAmount += parseFloat(transaction.vin[i].value)
-          }
+          totalInputs += parseFloat(transaction.vin[i].value);
           inputs += `
-          ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value)/100000000).toFixed(8)})`;
+          ${transaction.vin[i].addresses[0]} (${(parseFloat(transaction.vin[i].value) / 100000000).toFixed(8)})`;
         }
 
-        transaction.from = transaction.vin.length === 1? transaction.vin[0].addresses[0] : 'Multiple Inputs';
-
-        let outputAmount = 0; //Total amount in output for current address
+        let totalOutputs = 0;
         let outputs = '';
         for (let i = 0; i < transaction.vout.length; i++) {
-          if (transaction.vout[i].addresses[0] === this.account) {
-            outputAmount += parseFloat(transaction.vout[i].value)
-          }
+          totalOutputs += parseFloat(transaction.vout[i].value);
           outputs += `
           ${transaction.vout[i].addresses[0]} (${(parseFloat(transaction.vout[i].value) / 100000000).toFixed(8)})`;
         }
 
-        if (transaction.vout.length == 1) {
-          transaction.to = transaction.vout[0].addresses[0]
-        } else {
-          if (transaction.vout.length === 2 && outputs.indexOf(this.account) > -1) {
-            if (inputs.indexOf(this.account) > -1) {
-              transaction.to = transaction.vout[0].addresses[0] === this.account ?
-                transaction.vout[1].addresses[0] : transaction.vout[0].addresses[0];
-            } else {
-              transaction.to = transaction.vout[0].addresses[0] === this.account ?
-                transaction.vout[0].addresses[0] : transaction.vout[1].addresses[0];
-            }
-          } else {
-            transaction.to =  'Multiple Outputs';
+        for (let i = 0; i < transaction.vout.length && transaction.vout[i].addresses; i++) {
+          if (transaction.vout[i].addresses) {
+            transaction.to = transaction.vout[0].addresses[0];
+            break;
+          }
+        }
+        if (transaction.from === transaction.to) {
+          for (let i = 1; i < transaction.vout.length && transaction.vout[i].addresses; i++) {
+            transaction.to = transaction.vout[i].addresses[0];
+            transaction.amount = transaction.vout[i].value / 100000000;
+            break;
           }
         }
 
-        if (inputs.indexOf(this.account) > -1) {
-          transaction.amount = `-${ (inputAmount / 100000000).toFixed(8)}`;
+        if (inputs.includes(this.account)) {
+          transaction.amount = `-${transaction.amount}`;
         } else {
-          transaction.amount = `${(outputAmount / 100000000).toFixed(8)}`;
+          for (let i = 0; i < transaction.vout.length; i++) {
+            if (transaction.vout[i].addresses && transaction.vout[i].addresses[0] === this.account) {
+              transaction.to = this.account;
+              transaction.amount = transaction.vout[i].value / 100000000;
+            }
+          }
+        }
+        if (!outputs.includes(this.account) && transaction.vout.length > 1) {
+          transaction.to = 'Multiple Outputs';
         }
 
         transaction.json = {
@@ -134,7 +133,7 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
           totalInputs,
           totalOutputs,
           confirmations: transaction.confirmations,
-          fees: (parseFloat(transaction.fees) / 100000000).toFixed(8) ,
+          fees: transaction.fees / 100000000,
           inputs: inputs.trim(),
           outputs: outputs.trim()
         }
