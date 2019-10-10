@@ -78,7 +78,7 @@
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
     "filesaver.js": "0.2.0",
-    "heat-libs": "Heat-Ledger-Ltd/heat-libs#binance-coin",
+    "heat-libs": "Heat-Ledger-Ltd/heat-libs#release-coins",
     "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
