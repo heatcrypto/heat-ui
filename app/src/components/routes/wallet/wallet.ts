@@ -782,6 +782,8 @@ class WalletComponent {
                 }
               })
             }
+          } else {
+            this.$mdToast.show(this.$mdToast.simple().textContent('Incorrect Password (or Pin Code). Wallet Entry not removed.').hideDelay(5000));
           }
         }
       );
