@@ -36,7 +36,7 @@
     </div>
   `
 })
-@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout', 'storage')
+@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout', 'storage', '$mdToast')
 class MsgViewerComponent {
   private publickey: string; //input
   private allMessages;
@@ -58,13 +58,14 @@ class MsgViewerComponent {
     private p2pMessaging: P2PMessaging,
     private settings: SettingsService,
     private $timeout: angular.ITimeoutService,
-    private storage: StorageService) {
+    private storage: StorageService,
+    private $mdToast: angular.material.IToastService, ) {
 
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
 
-    this.store = storage.namespace('contacts.latestTimestamp',$scope);
+    this.store = storage.namespace('contacts.latestTimestamp', $scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
     heat.subscriber.message({ sender: this.user.account }, refresh, $scope);
@@ -153,6 +154,7 @@ class MsgViewerComponent {
   private processOnchainItem(message) {
     this.updateLatestMessageReadTimestamp(message);
     return {
+      'senderAccount': heat.crypto.getAccountIdFromPublicKey(message.senderPublicKey),
       'contents': this.heat.getHeatMessageContents(message),
       'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
       'outgoing': this.user.account === message.sender,
@@ -174,12 +176,18 @@ class MsgViewerComponent {
 
   private onMessageAdded(data, isoffchain = false) {
     let newMessage;
-    if (isoffchain)
+    if (isoffchain) {
       newMessage = this.processOffchainItem(data);
+    }
     else {
-      if (data.recipientPublicKey !== this.publickey)
+      if (data.senderPublicKey !== this.publickey)
         return;
       newMessage = this.processOnchainItem(data);
+      if (!newMessage['outgoing']) {
+        this.$mdToast.show(
+          this.$mdToast.simple().textContent(`New message from ${newMessage['senderAccount']}: "${newMessage['contents']}"`).hideDelay(6000)
+        );
+      }
     }
     this.displayMessages.messages.splice(0, 0, newMessage);
     this.displayMessages.index++;
