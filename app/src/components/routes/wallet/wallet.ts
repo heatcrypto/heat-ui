@@ -559,7 +559,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'LTC', disabled: false }, { name: 'BCH', disabled: false }];
+  chains = [{ name: 'HEAT', disabled: false }, { name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'LTC', disabled: false }, { name: 'BCH', disabled: false }];
   selectedChain = '';
   store: any;
 
@@ -628,6 +628,9 @@ class WalletComponent {
     }
     else if (this.$scope['vm'].selectedChain === 'BCH') {
       this.createBCHAccount($event)
+    }
+    else if (this.$scope['vm'].selectedChain === 'HEAT') {
+      this.createHEATAccount($event)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -2333,6 +2336,83 @@ class WalletComponent {
             </md-dialog-actions>
           </form>
         </md-dialog>
+      `
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
+
+  createHEATAccount($event) {
+    let self = this;
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      $scope['vm'].cancelButtonClick = function () {
+        $mdDialog.cancel()
+      }
+      $scope['vm'].okButtonClick = function () {
+        const mnemonic = $scope['vm'].heatSeed;
+        const pin  = $scope['vm'].pin;
+
+        let account = heat.crypto.getAccountId(mnemonic)
+        let publicKey = heat.crypto.secretPhraseToPublicKey(mnemonic)
+        let key = {
+          account: account,
+          secretPhrase: mnemonic,
+          pincode: pin,
+          name: '',
+          publicKey
+        };
+        self.localKeyStore.add(key);
+        $scope.$evalAsync(() => {
+          self.initLocalKeyStore()
+        })
+
+        $mdDialog.cancel()
+      }
+      $scope['vm'].generateSeed = function () {
+        $scope['vm'].heatSeed = self.lightwalletService.generateRandomSeed()
+      };
+      $scope['vm'].generateSeed();
+      $scope['vm'].copySeed = function () {
+        self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
+      }
+    }
+
+    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
+    this.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
+      <md-dialog>
+        <form name="dialogForm">
+          <md-toolbar>
+            <div class="md-toolbar-tools"><h2>Create HEAT Address</h2></div>
+          </md-toolbar>
+          <md-dialog-content style="min-width:500px;max-width:700px" layout="column" layout-padding>
+            <div flex layout="column">
+              <p>This is your HEAT address seed.
+                Please store it in a safe place or you may lose access to your HEAT.
+                <a ng-click="vm.copySeed()">Copy Seed</a>
+              </p>
+              <md-input-container flex>
+                <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.heatSeed" readonly ng-trim="false"
+                    style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+              </md-input-container>
+              <span style="display:none">{{vm.heatSeed}}</span>
+              <md-input-container flex>
+                <label>Desired Heatwallet PIN / password</label>
+                <input type="password" ng-model="vm.pin" required name="pin">
+              </md-input-container>
+            </div>
+          </md-dialog-content>
+          <md-dialog-actions>
+            <md-button class="md-primary md-raised" ng-disabled="!vm.pin" ng-click="vm.okButtonClick($event)" aria-label="=Ok">Ok</md-button>
+            <md-button class="md-primary md-raised" ng-click="vm.generateSeed($event)" aria-label="Generate New">Generate New</md-button>
+            <md-button class="md-warn md-raised" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+          </md-dialog-actions>
+        </form>
+      </md-dialog>
       `
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
