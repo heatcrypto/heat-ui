@@ -36,7 +36,7 @@
     </div>
   `
 })
-@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout')
+@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout', 'storage')
 class MsgViewerComponent {
   private publickey: string; //input
   private allMessages;
@@ -50,17 +50,21 @@ class MsgViewerComponent {
   private static count: number;
   private containerId;
   private messagesCount: number;
+  private store: Store;
 
   constructor(private heat: HeatService,
     private user: UserService,
     private $scope: angular.IScope,
     private p2pMessaging: P2PMessaging,
     private settings: SettingsService,
-    private $timeout: angular.ITimeoutService) {
+    private $timeout: angular.ITimeoutService,
+    private storage: StorageService) {
 
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
+
+    this.store = storage.namespace('contacts.latestTimestamp',$scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
     heat.subscriber.message({ sender: this.user.account }, refresh, $scope);
@@ -147,6 +151,7 @@ class MsgViewerComponent {
   }
 
   private processOnchainItem(message) {
+    this.updateLatestMessageReadTimestamp(message);
     return {
       'contents': this.heat.getHeatMessageContents(message),
       'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
@@ -211,6 +216,14 @@ class MsgViewerComponent {
 
   getScrollContainer(): duScroll.IDocumentService {
     return <duScroll.IDocumentService>angular.element(document.getElementById(this.containerId))
+  }
+
+  updateLatestMessageReadTimestamp(message: IHeatMessage) {
+    var account = this.user.account == message.sender ? message.recipient : message.sender;
+    var latestTimestamp = this.store.getNumber(account, 0);
+    if (message.timestamp > latestTimestamp) {
+      this.store.put(account, message.timestamp);
+    }
   }
 
 }
