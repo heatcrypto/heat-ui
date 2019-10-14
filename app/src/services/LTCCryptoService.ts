@@ -19,12 +19,19 @@ class LTCCryptoService {
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let walletAddresses = this.store.get(`LTC-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`LTC-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`LTC-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
       } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
-        this.store.put(`LTC-${heatAddress}`, walletType);
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+        this.store.put(`LTC-${heatAddress}`, encryptedWallet);
         resolve(walletType);
       } else if (this.litecore.PrivateKey.isValid(seedOrPrivateKey)) {
         try {
@@ -32,7 +39,8 @@ class LTCCryptoService {
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
-          this.store.put(`LTC-${heatAddress}`, walletType);
+          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+          this.store.put(`LTC-${heatAddress}`, encryptedWallet);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
@@ -140,7 +148,7 @@ class LTCCryptoService {
           if (availableSatoshis < txObject.value + txObject.fee) {
             reject(new Error('Insufficient balance to broadcast transaction'))
           }
-  
+
           try {
             let tx = this.litecore.Transaction();
             tx.from(unspent)

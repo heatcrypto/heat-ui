@@ -16,13 +16,20 @@ class IotaCoreService {
   unlock(seed: string): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seed);
-      let walletAddresses = this.store.get(`IOTA-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`IOTA-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`IOTA-${heatAddress}`)
+          this.unlock(seed)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seed)
+        resolve(JSON.parse(decryptedWallet));
       } else {
         let walletType = this.getNWalletsFromMnemonics(seed, 1)
-        this.store.put(`IOTA-${heatAddress}`, walletType);
-        resolve(walletType);  
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seed)
+        this.store.put(`IOTA-${heatAddress}`, encryptedWallet);
+        resolve(walletType);
       }
     });
   }

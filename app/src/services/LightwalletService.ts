@@ -92,9 +92,15 @@ class LightwalletService {
   unlock(seedOrPrivateKey: string, password?: string): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let walletAddresses = this.store.get(`ETH-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`ETH-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`ETH-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
       } else {
         let promise:Promise<WalletType>;
         if (this.validSeed(seedOrPrivateKey)) {
@@ -107,11 +113,12 @@ class LightwalletService {
           reject()
         }
         promise.then(wallet => {
-          this.store.put(`ETH-${heatAddress}`, wallet);
+          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(wallet), heatAddress, seedOrPrivateKey)
+          this.store.put(`ETH-${heatAddress}`, encryptedWallet);
           resolve(wallet)
         }).catch(() => {
           reject()
-        })  
+        })
       }
     });
   }

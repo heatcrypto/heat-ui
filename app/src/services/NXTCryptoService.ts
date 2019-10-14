@@ -16,14 +16,21 @@ class NXTCryptoService {
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let walletAddresses = this.store.get(`NXT-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`NXT-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`NXT-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
       } else {
         let walletType = { addresses: [] }
         walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'NXT'), privateKey: seedOrPrivateKey }
-          this.store.put(`NXT-${heatAddress}`, walletType);
-        resolve(walletType);  
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+        this.store.put(`NXT-${heatAddress}`, encryptedWallet);
+        resolve(walletType);
       }
     });
   }

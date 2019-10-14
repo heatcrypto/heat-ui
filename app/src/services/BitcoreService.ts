@@ -19,13 +19,20 @@ class BitcoreService {
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let walletAddresses = this.store.get(`BTC-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`BTC-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`BTC-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
       } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
-          this.store.put(`BTC-${heatAddress}`, walletType);
+          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+          this.store.put(`BTC-${heatAddress}`, encryptedWallet);
           resolve(walletType);
         }
       } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
@@ -34,7 +41,8 @@ class BitcoreService {
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
-          this.store.put(`BTC-${heatAddress}`, walletType);
+          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+          this.store.put(`BTC-${heatAddress}`, encryptedWallet);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes

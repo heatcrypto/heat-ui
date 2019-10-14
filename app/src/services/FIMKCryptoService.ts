@@ -17,13 +17,20 @@ class FIMKCryptoService {
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let walletAddresses = this.store.get(`FIM-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`FIM-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`FIM-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
       } else {
         let walletType = { addresses: [] }
         walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'FIM'), privateKey: seedOrPrivateKey }
-        this.store.put(`FIM-${heatAddress}`, walletType);
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+        this.store.put(`FIM-${heatAddress}`, encryptedWallet);
         resolve(walletType);
       }
     });

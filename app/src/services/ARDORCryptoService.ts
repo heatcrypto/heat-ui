@@ -17,16 +17,23 @@ class ARDORCryptoService {
   unlock(seedOrPrivateKey: any): Promise<WalletType> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let walletAddresses = this.store.get(`ARDR-${heatAddress}`)
-      if (walletAddresses) {
-        resolve(walletAddresses);
+      let encryptedWallet = this.store.get(`ARDR-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`ARDR-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
       } else {
         let walletType = { addresses: [] }
         let publicKey = this.nxtCrypto.getPublicKey(seedOrPrivateKey)
         let address = this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR')
         let accountId = this.nxtCrypto.getAccountId(publicKey)
         walletType.addresses[0] = { address: address, privateKey: seedOrPrivateKey, accountId: accountId }
-          this.store.put(`ARDR-${heatAddress}`, walletType);
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+        this.store.put(`ARDR-${heatAddress}`, encryptedWallet);
         resolve(walletType);
       }
     });
