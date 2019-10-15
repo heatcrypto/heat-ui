@@ -199,12 +199,10 @@ class UserContactsComponent {
 
         this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.user.account)
           .map((contact) => {
-            if (!contact['isP2POnlyContact']) {
-              contact['hasUnreadMessage'] = this.contactHasUnreadMessage(contact);
+            if (this.activePublicKey != contact.publicKey) {
+              contact['hasUnreadMessage'] = !contact['isP2POnlyContact'] && this.contactHasUnreadMessage(contact);
+              contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
             }
-            contact['hasUnreadP2PMessage'] =
-              !(this.p2pMessaging.offchainMode && this.activePublicKey == contact.publicKey)
-              && this.contactHasUnreadP2PMessage(contact);
             // contact['p2pStatus'] = this.p2pStatus(contact);
             return contact;
           })

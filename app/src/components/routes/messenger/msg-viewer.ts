@@ -180,8 +180,6 @@ class MsgViewerComponent {
       newMessage = this.processOffchainItem(data);
     }
     else {
-      if (data.senderPublicKey !== this.publickey)
-        return;
       newMessage = this.processOnchainItem(data);
       if (!newMessage['outgoing']) {
         this.$mdToast.show(
