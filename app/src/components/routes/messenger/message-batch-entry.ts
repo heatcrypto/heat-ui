@@ -82,9 +82,12 @@
       -webkit-hyphens: auto;
       hyphens: auto;
     }
+    message-batch-entry .offchain {
+      border-left: solid 7px green;
+    }
   `],
   template: `
-    <div ng-class="vm.io">
+    <div class="{{vm.io}}" ng-class="{'offchain': !vm.message.onchain}">
       <div class="header">
         {{::vm.message.date}}
       </div>
