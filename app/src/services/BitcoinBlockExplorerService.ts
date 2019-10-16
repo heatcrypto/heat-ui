@@ -16,6 +16,8 @@ class BtcBlockExplorerService {
       this.btcProvider = this.btcBlockExplorerHeatNodeService;
     }, () => {
       this.btcProvider = this.btcBlockExplorer3rdPartyService;
+    }).catch(()=> {
+      this.btcProvider = this.btcBlockExplorer3rdPartyService;
     })
   }
 
