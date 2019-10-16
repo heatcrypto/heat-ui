@@ -41,19 +41,6 @@
     .send-button-container {
       padding-left: 10px;
     }
-    edit-message .offchain-button {
-      width: 110px;
-      height: 30px;
-    }
-    edit-message .offchain-button.disable span {
-      color: grey;
-    }
-    edit-message .offchain-button.active {
-      background-color: green;
-    }
-    edit-message .send-button {
-      margin-top: 6px;
-    }
   `],
   template: `
     <div layout="row" flex>
@@ -65,14 +52,14 @@
           </md-button>
         </form>
         <textarea hide-xs ng-model="vm.messageText" flex rows="4" class="edit-message-textarea"
-          ng-class="{'offchain': vm.p2pMessaging.offchainMode}"
+          ng-class="{'offchain': vm.p2pMessaging.onlineStatus == 'online'}"
           ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line"></textarea>
       </div>
       <div layout="column" class="send-button-container">
-        <md-button class="offchain-button" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
+        <!--<md-button class="offchain-button" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
           <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
           {{vm.p2pMessaging.offchainMode ? 'offchain  ✔' : 'offchain'}}
-        </md-button>
+        </md-button>-->
         <md-button class="md-primary send-button" flex ng-click="vm.send($event)">
           Send
         </md-button>
@@ -108,7 +95,7 @@ class EditMessageComponent {
   send($event) {
     if (this.messageText && this.messageText.trim().length != 0) {
       if($event.preventDefault) $event.preventDefault();
-      if (this.p2pMessaging.offchainMode) {
+      if (this.p2pMessaging.onlineStatus == "online") {
         this.sendP2PMessage($event);
       } else {
         this.sendMessage($event);
@@ -157,10 +144,6 @@ class EditMessageComponent {
         this.store.put(account, latestTimestamp + 1);
       })
     });
-  }
-
-  toggleOffchain($event) {
-    this.p2pMessaging.offchainMode = !this.p2pMessaging.offchainMode;
   }
 
 }

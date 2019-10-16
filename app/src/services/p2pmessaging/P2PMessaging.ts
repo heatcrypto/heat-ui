@@ -39,7 +39,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public p2pContactStore: Store;
   public seenP2PMessageTimestampStore: Store;
-  public offchainMode: boolean = false;
   public hasUnreadMessage: boolean = false;
 
   public connector: p2p.P2PConnector;
