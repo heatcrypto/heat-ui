@@ -337,10 +337,9 @@ class CurrencyAddressCreate {
     // if there is no address in use yet we use the first one
     if (currencyBalances.length == 0) {
       let nextAddress = this.wallet.addresses[0]
-      let formattedAddress = nextAddress.address.replace('bitcoincash:', '');
-      let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', formattedAddress, nextAddress.privateKey)
+      let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-      component.rememberAdressCreated(this.parent.account, formattedAddress)
+      component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
       newCurrencyBalance.visible = this.parent.expanded
       this.parent.currencies.push(newCurrencyBalance)
       this.flatten()
@@ -349,7 +348,7 @@ class CurrencyAddressCreate {
 
     // determine the first 'nxt' address based of the last currencyBalance displayed
     let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
-    lastAddress = `bitcoincash:${lastAddress}`
+
     // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
     if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
       return false
@@ -366,10 +365,9 @@ class CurrencyAddressCreate {
           return
 
         let nextAddress = this.wallet.addresses[i + 1]
-        let formattedAddress = nextAddress.address.replace('bitcoincash:', '');
-        let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', formattedAddress, nextAddress.privateKey)
+        let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, formattedAddress)
+        component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
@@ -1307,10 +1305,9 @@ class WalletComponent {
 
       let index = walletEntry.currencies.indexOf(bchCurrencyAddressLoading)
       bchCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address.split(":")[1]) != -1
         if (address.inUse || wasCreated) {
-          let formattedAddress = address.address.replace('bitcoincash:', '');
-          let bchCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', formattedAddress, address.privateKey)
+          let bchCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
           bchCurrencyBalance.balance = address.balance + ""
           bchCurrencyBalance.visible = walletEntry.expanded
           bchCurrencyBalance.inUse = wasCreated ? false : true
@@ -1896,27 +1893,16 @@ class WalletComponent {
             self.initWalletEntry(walletEntry)
           }
           // load in next event loop to load currency addresses first
-          var interval = setInterval(() => {
-            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
-            if (node) {
-              success = node.createFIMKAddress(self)
-              walletEntry.toggle(true)
-              $mdDialog.hide(null).then(() => {
-                if (!success) {
-                  dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
-                }
-              })
-              clearInterval(interval);
-            }
-          }, 0)
           setTimeout(() => {
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
+            success = node.createFIMKAddress(self)
+            walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {
-                dialogs.alert($event, 'Unable to Create Address', 'Something went wrong. Please try again later.')
+                dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
               }
             })
-            clearInterval(interval)
-          }, 5000)
+          }, 0)
         }
       }
 
@@ -2363,7 +2349,7 @@ class WalletComponent {
       }
       $scope['vm'].okButtonClick = function () {
         const mnemonic = $scope['vm'].heatSeed;
-        const pin = $scope['vm'].pin;
+        const pin  = $scope['vm'].pin;
 
         let account = heat.crypto.getAccountId(mnemonic)
         let publicKey = heat.crypto.secretPhraseToPublicKey(mnemonic)

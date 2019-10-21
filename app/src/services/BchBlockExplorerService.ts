@@ -9,14 +9,9 @@ class BchBlockExplorerService {
     BchBlockExplorerService.endPoint = 'https://bch1.heatwallet.com/api/v2';
   }
 
-  private attachPrefixToAddresses(address: string) {
-    return (address && address.startsWith('q')) ? `bitcoincash:${address}` : address;
-  }
-
   public getBalance(address: string): angular.IPromise<string> {
-    let formattedAddress = this.attachPrefixToAddresses(address)
     let deferred = this.$q.defer<string>();
-    this.getAddressInfo(formattedAddress).then(response => {
+    this.getAddressInfo(address).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.balance)
     }, () => {
@@ -26,8 +21,7 @@ class BchBlockExplorerService {
   }
 
   public getTransactions(address: string, pageNum: number, pageSize: number): angular.IPromise<any> {
-    let formattedAddress = this.attachPrefixToAddresses(address)
-    let getTransactionsApi = `${BchBlockExplorerService.endPoint}/address/${formattedAddress}?details=txs&page=${pageNum}&pageSize=${pageSize}`;
+    let getTransactionsApi = `${BchBlockExplorerService.endPoint}/address/${address}?details=txs&page=${pageNum}&pageSize=${pageSize}`;
     let deferred = this.$q.defer();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -39,8 +33,7 @@ class BchBlockExplorerService {
   }
 
   public getAddressInfo(address: string): angular.IPromise<any> {
-    let formattedAddress = this.attachPrefixToAddresses(address)
-    let getTransactionsApi = `${BchBlockExplorerService.endPoint}/address/${formattedAddress}?details=basic`;
+    let getTransactionsApi = `${BchBlockExplorerService.endPoint}/address/${address}?details=basic`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -76,8 +69,7 @@ class BchBlockExplorerService {
   }
 
   public getUnspentUtxos(account: string) {
-    let formattedAddress = this.attachPrefixToAddresses(account)
-    let getTxInfoApi = `${BchBlockExplorerService.endPoint}/utxo/${formattedAddress}`;
+    let getTxInfoApi = `${BchBlockExplorerService.endPoint}/utxo/${account}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;

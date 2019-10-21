@@ -38,9 +38,9 @@ class BCHCryptoService {
           this.store.put(`BCH-${heatAddress}`, encryptedWallet);
           resolve(walletType);
         }
-      } else if (this.bitcoreCash.PrivateKey.isValid(seedOrPrivateKey)) {
+      } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
         try {
-          let privateKey = this.bitcoreCash.PrivateKey.fromWIF(seedOrPrivateKey)
+          let privateKey = this.bitcore.PrivateKey.fromWIF(seedOrPrivateKey)
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
@@ -97,8 +97,6 @@ class BCHCryptoService {
           resolve(true)
         }, () => {
           resolve(false)
-        }).catch(() => {
-          reject()
         })
       })
     }
