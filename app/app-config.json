@@ -49,10 +49,15 @@
       "currencyName": "BTC",
       "nodes": [
         {
-          "host": "1.2.3.4",
-          "port": 123,
+          "host": "https://bitnode.heatwallet.com/insight-api",
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "https://api.blockcypher.com/v1/btc/main",
           "priority": 1,
-          "status": "",
+          "status": "ACTIVE",
           "timeout": 5000
         }
       ]
@@ -60,6 +65,92 @@
     {
       "currencyName": "NXT",
       "nodes": [
+        {
+          "host": "https://bitnode.heatwallet.com",
+          "port": 7876,
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "http://localhost",
+          "port": 7876,
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "ARDR",
+      "nodes": [
+        {
+          "host": "https://bitnode.heatwallet.com",
+          "port": 27876,
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "http://localhost",
+          "port": 27876,
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "FIM",
+      "nodes": [
+        {
+          "host": "wss://cloud.mofowallet.org",
+          "port": 7986,
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "ws://localhost:7986/ws/",
+          "port": 7986,
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "LTC",
+      "nodes": [
+        {
+          "host": "https://ltc1.heatwallet.com",
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "BCH",
+      "nodes": [
+        {
+          "host": "https://bch1.heatwallet.com",
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "IOTA",
+      "nodes": [
+        {
+          "host": "https://nodes.thetangle.org",
+          "port": 443,
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
       ]
     }
   ]

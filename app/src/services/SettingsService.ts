@@ -86,6 +86,8 @@ class SettingsService {
 
   public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
+  public static CRYPTO_NODES: CryptoNodesDescriptorMap
+
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
       SettingsService.FAILOVER_DESCRIPTOR =  {
@@ -237,6 +239,7 @@ class SettingsService {
         SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.mainnet;
 
       this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
+      SettingsService.CRYPTO_NODES = json.cryptoNodes;
     };
     if (this.env.type == EnvType.BROWSER) {
       this.http.get('app-config.json').then((json: any) => {
@@ -278,4 +281,17 @@ interface FailoverDescriptor {
   connectedPeersThreshold: number;  // 0 - 1
   knownServers: ServerDescriptor[];
   signalingUrl?: string;  //central WebRTC signaling server, regardless the choosed server
+}
+
+interface CryptoNodesDescriptorMap {
+  currencyName: string;
+  nodes: CryptoNodesDescriptor[];
+}
+
+interface CryptoNodesDescriptor {
+  host: string;
+  port?: number;
+  priority: number;
+  status?: string;
+  timeout?: number;
 }
