@@ -6,7 +6,7 @@ class BchBlockExplorerService {
 
   constructor(private http: HttpService,
               private $q: angular.IQService) {
-    BchBlockExplorerService.endPoint = 'https://bch1.heatwallet.com/api/v2';
+    BchBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('BCH');
   }
 
   public getBalance(address: string): angular.IPromise<string> {

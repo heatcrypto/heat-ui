@@ -7,11 +7,10 @@ class ArdorBlockExplorerService {
   constructor(
     private $q: angular.IQService,
     private http: HttpService) {
-    this.setUrl()
+    this.setUrl(SettingsService.getCryptoServerEndpoint('ARDR'))
   }
 
-  public setUrl(url = 'https://bitnode.heatwallet.com:27876/') {
-    console.log("This is url", url);
+  public setUrl(url) {
     this.url = url;
   }
 
@@ -21,7 +20,7 @@ class ArdorBlockExplorerService {
 
   public getBlockchainStatus = () => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getBlockchainStatus`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getBlockchainStatus`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
       if (data) {
         deferred.resolve(data)
@@ -34,7 +33,7 @@ class ArdorBlockExplorerService {
 
   public getTransactions = (account, firstIndex, lastIndex) => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getBlockchainTransactions&account=${account}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&chain=1`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getBlockchainTransactions&account=${account}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&chain=1`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
       if (data.transactions) {
         deferred.resolve(data.transactions)
@@ -47,7 +46,7 @@ class ArdorBlockExplorerService {
 
   public getTransactionsCount = (account) => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getBlockchainTransactions&account=${account}&lastIndex=-1&chain=1`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getBlockchainTransactions&account=${account}&lastIndex=-1&chain=1`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
       if (data.transactions)
         deferred.resolve(data.transactions.length)
@@ -70,7 +69,7 @@ class ArdorBlockExplorerService {
       let attachment = JSON.stringify(data.transactionJSON.attachment);
       var signature = heat.crypto.signBytes(data.unsignedTransactionBytes, converters.stringToHexString(userService.secretPhrase))
       var payload = data.unsignedTransactionBytes.substr(0, 192) + signature + data.unsignedTransactionBytes.substr(320);
-      this.http.post(`${this.url}nxt?requestType=broadcastTransaction&transactionBytes=${payload}&prunableAttachmentJSON=${attachment}`, {}).then(ret => {
+      this.http.post(`${this.url}/nxt?requestType=broadcastTransaction&transactionBytes=${payload}&prunableAttachmentJSON=${attachment}`, {}).then(ret => {
         let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
         if(data.errorDescription) {
           deferred.reject(data.errorDescription)
@@ -85,7 +84,7 @@ class ArdorBlockExplorerService {
 
   public getTransactionStatus = (fullHash) => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getTransaction&fullHash=${fullHash}&chain=1`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getTransaction&fullHash=${fullHash}&chain=1`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
       if (!data.errorDescription)
         deferred.resolve(data)
@@ -97,7 +96,7 @@ class ArdorBlockExplorerService {
 
   public getAccountAssets = (tx) => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getAccountAssets&account=${tx}`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getAccountAssets&account=${tx}`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
       if (data.accountAssets)
         deferred.resolve(data.accountAssets)
@@ -131,7 +130,7 @@ class ArdorBlockExplorerService {
 
   private getBalanceFromChain = (account: string, chain: number = 1) => {
     let deferred = this.$q.defer<string>();
-    this.http.get(`${this.url}nxt?requestType=getBalance&account=${account}&chain=${chain}`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getBalance&account=${account}&chain=${chain}`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
       if (data.unconfirmedBalanceNQT)
         deferred.resolve(data.unconfirmedBalanceNQT)
@@ -143,7 +142,7 @@ class ArdorBlockExplorerService {
 
   public getPublicKeyFromAddress = (account: string) => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getAccountPublicKey&account=${account}`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getAccountPublicKey&account=${account}`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
       if (data.publicKey)
         deferred.resolve(data.publicKey)
@@ -155,7 +154,7 @@ class ArdorBlockExplorerService {
 
   public getAssetInfo = (asset: string) => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}nxt?requestType=getAsset&asset=${asset}`).then(ret => {
+    this.http.get(`${this.url}/nxt?requestType=getAsset&asset=${asset}`).then(ret => {
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
       if (data.name)
         deferred.resolve(data)
@@ -167,7 +166,7 @@ class ArdorBlockExplorerService {
 
   public getTradesCount(ardorAsset: string, account?: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    let url = account ? `${this.url}nxt?requestType=getTrades&chain=2&ardorAsset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}` : `${this.url}nxt?requestType=getTrades&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
+    let url = account ? `${this.url}/nxt?requestType=getTrades&chain=2&ardorAsset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}` : `${this.url}/nxt?requestType=getTrades&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.trades)
@@ -181,7 +180,7 @@ class ArdorBlockExplorerService {
 
   public getTrades(ardorAsset: string, firstIndex: number, lastIndex: number, account?: string): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = account ? `${this.url}nxt?requestType=getTrades&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}` : `${this.url}nxt?requestType=getTrades&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
+    let url = account ? `${this.url}/nxt?requestType=getTrades&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}` : `${this.url}/nxt?requestType=getTrades&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.trades)
@@ -194,7 +193,7 @@ class ArdorBlockExplorerService {
 
   public getAskOrdersCount(ardorAsset: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    let url = `${this.url}nxt?requestType=getAskOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
+    let url = `${this.url}/nxt?requestType=getAskOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.askOrders)
@@ -207,7 +206,7 @@ class ArdorBlockExplorerService {
 
   public getAskOrders(ardorAsset: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = `${this.url}nxt?requestType=getAskOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
+    let url = `${this.url}/nxt?requestType=getAskOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.askOrders)
@@ -220,7 +219,7 @@ class ArdorBlockExplorerService {
 
   public getBidOrdersCount(ardorAsset: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    let url = `${this.url}nxt?requestType=getBidOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
+    let url = `${this.url}/nxt?requestType=getBidOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.bidOrders)
@@ -233,7 +232,7 @@ class ArdorBlockExplorerService {
 
   public getBidOrders(ardorAsset: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = `${this.url}nxt?requestType=getBidOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
+    let url = `${this.url}/nxt?requestType=getBidOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.bidOrders)
@@ -278,7 +277,7 @@ class ArdorBlockExplorerService {
 
   public getAccountCurrentBidOrders(account: string, ardorAsset: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = `${this.url}nxt?requestType=getAccountCurrentBidOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}`
+    let url = `${this.url}/nxt?requestType=getAccountCurrentBidOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.bidOrders)
@@ -291,7 +290,7 @@ class ArdorBlockExplorerService {
 
   public getAccountCurrentBidOrdersCount(account: string, ardorAsset: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    let url = `${this.url}nxt?requestType=getAccountCurrentBidOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}`
+    let url = `${this.url}/nxt?requestType=getAccountCurrentBidOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.bidOrders)
@@ -304,7 +303,7 @@ class ArdorBlockExplorerService {
 
   public getAccountCurrentAskOrders(account: string, ardorAsset: string, firstIndex: number, lastIndex: number): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = `${this.url}nxt?requestType=getAccountCurrentAskOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}`
+    let url = `${this.url}/nxt?requestType=getAccountCurrentAskOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.askOrders)
@@ -317,7 +316,7 @@ class ArdorBlockExplorerService {
 
   public getAccountCurrentAskOrdersCount(account: string, ardorAsset: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    let url = `${this.url}nxt?requestType=getAccountCurrentAskOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}`
+    let url = `${this.url}/nxt?requestType=getAccountCurrentAskOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.askOrders)
@@ -330,7 +329,7 @@ class ArdorBlockExplorerService {
 
   public getAllAssets(): angular.IPromise<any> {
     let deferred = this.$q.defer<any>();
-    let url = `${this.url}nxt?requestType=getAllAssets&firstIndex=0&lastIndex=-1`
+    let url = `${this.url}/nxt?requestType=getAllAssets&firstIndex=0&lastIndex=-1`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
       if (data.assets)
@@ -343,7 +342,7 @@ class ArdorBlockExplorerService {
 
   public sendTransactionWithSecret = (endpoint) => {
     let deferred = this.$q.defer<any>();
-    this.http.post(`${this.url}nxt?requestType=${endpoint}`, {}).then(ret => {
+    this.http.post(`${this.url}/nxt?requestType=${endpoint}`, {}).then(ret => {
       let data = JSON.parse(JSON.stringify(ret))
       if (data.errorDescription) {
         deferred.reject(data.errorDescription)

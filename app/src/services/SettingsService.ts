@@ -86,7 +86,7 @@ class SettingsService {
 
   public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
-  public static CRYPTO_NODES: CryptoNodesDescriptorMap
+  public static CRYPTO_NODES: CryptoNodesDescriptorMap[];
 
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
@@ -98,6 +98,14 @@ class SettingsService {
         knownServers: []
       };
     return SettingsService.FAILOVER_DESCRIPTOR;
+  }
+
+  static getCryptoServerEndpoint(currency: string): string {
+    if(!SettingsService.CRYPTO_NODES) return "";
+
+    let nodes = SettingsService.CRYPTO_NODES.find((descriptor) => descriptor.currencyName === currency).nodes;
+    let node = nodes.sort((n1, n2) => n1.priority < n2.priority ? -1 : 1)[0]
+    return node.port ? `${node.host}:${node.port}` : `${node.host}`;
   }
 
   /**

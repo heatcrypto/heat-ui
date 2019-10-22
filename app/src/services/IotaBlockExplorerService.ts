@@ -1,7 +1,6 @@
 @Service('iotaBlockExplorerService')
 @Inject('$q', 'http', '$window')
 class IotaBlockExplorerService {
-  private url: string;
   private iotaCore;
   private api;
   private cachedGetCachedAccountInfo: Map<string, any> = new Map<string, any>();
@@ -12,13 +11,12 @@ class IotaBlockExplorerService {
     private $window: angular.IWindowService) {
 
     this.iotaCore = $window.heatlibs.IotaCore;
-    this.setUrl()
+    this.setUrl(SettingsService.getCryptoServerEndpoint('IOTA'))
   }
 
-  public setUrl(url = 'https://nodes.thetangle.org:443') {
-    this.url = url;
+  public setUrl(url) {
     this.api = this.iotaCore.composeAPI({
-      provider: 'https://nodes.thetangle.org:443'
+      provider: url
     });
   }
 

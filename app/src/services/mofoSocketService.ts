@@ -12,7 +12,7 @@ class MofoSocketService {
     private $rootScope: angular.IScope) {
   }
 
-  mofoSocket = (url = 'wss://cloud.mofowallet.org:7986/ws/') => {
+  mofoSocket = (url = SettingsService.getCryptoServerEndpoint('FIM')) => {
     if(this.url == url && this.socket !== undefined) {
       return new Promise((resolve, reject) => {
         resolve(this.socket)

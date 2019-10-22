@@ -7,7 +7,7 @@ class LtcBlockExplorerService {
   constructor(private http: HttpService,
               private $q: angular.IQService,
               private $http: angular.IHttpService) {
-    LtcBlockExplorerService.endPoint = 'https://ltc1.heatwallet.com/api/v2';
+    LtcBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('LTC');
   }
 
   public getBalance(address: string) {

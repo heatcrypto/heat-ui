@@ -104,15 +104,13 @@
       "currencyName": "FIM",
       "nodes": [
         {
-          "host": "wss://cloud.mofowallet.org",
-          "port": 7986,
+          "host": "wss://cloud.mofowallet.org:7986/ws",
           "priority": 0,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
-          "host": "ws://localhost:7986/ws/",
-          "port": 7986,
+          "host": "ws://localhost:7986/ws",
           "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
@@ -123,7 +121,7 @@
       "currencyName": "LTC",
       "nodes": [
         {
-          "host": "https://ltc1.heatwallet.com",
+          "host": "https://ltc1.heatwallet.com/api/v2",
           "priority": 0,
           "status": "ACTIVE",
           "timeout": 5000
@@ -134,7 +132,7 @@
       "currencyName": "BCH",
       "nodes": [
         {
-          "host": "https://bch1.heatwallet.com",
+          "host": "https://bch1.heatwallet.com/api/v2",
           "priority": 0,
           "status": "ACTIVE",
           "timeout": 5000
@@ -147,6 +145,17 @@
         {
           "host": "https://nodes.thetangle.org",
           "port": 443,
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "ETH",
+      "nodes": [
+        {
+          "host": "https://api.ethplorer.io",
           "priority": 0,
           "status": "ACTIVE",
           "timeout": 5000

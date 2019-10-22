@@ -241,7 +241,7 @@ class EthplorerService {
 
   public tokenInfoCache: {[key:string]: EthplorerTokenInfo} = {}
   private cachedGetCachedAddressInfo = null
-
+  private static endPoint: string;
   constructor(public $q: angular.IQService,
               private http: HttpService,
               private settingsService: SettingsService,
@@ -258,6 +258,8 @@ class EthplorerService {
         }
       })
     })
+
+    EthplorerService.endPoint = SettingsService.getCryptoServerEndpoint('ETH')
   }
 
   createPaginator(address: string) : EthplorerTransactionPaginator {
@@ -311,7 +313,7 @@ class EthplorerService {
 
   public getAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
     let deferred = this.$q.defer<EthplorerAddressInfo>();
-    let url = `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=lwA5173TDKj60`
+    let url = `${EthplorerService.endPoint}/getAddressInfo/${address}?apiKey=lwA5173TDKj60`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -354,7 +356,7 @@ class EthplorerService {
   public getAddressTransactions(address: string, timestamp: number, showZeroValues?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>();
     showZeroValues = showZeroValues || 1
-    let url = `https://api.ethplorer.io/getAddressTransactions/${address}?apiKey=lwA5173TDKj60&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
+    let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?apiKey=lwA5173TDKj60&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -386,7 +388,7 @@ class EthplorerService {
    */
   public getAddressHistory(address: string, timestamp: number): angular.IPromise<Array<EthplorerAddressHistoryOperation>> {
     let deferred = this.$q.defer<Array<EthplorerAddressHistoryOperation>>();
-    let url = `https://api.ethplorer.io/getAddressHistory/${address}?apiKey=lwA5173TDKj60&limit=10&timestamp=${timestamp}`
+    let url = `${EthplorerService.endPoint}/getAddressHistory/${address}?apiKey=lwA5173TDKj60&limit=10&timestamp=${timestamp}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -406,7 +408,7 @@ class EthplorerService {
 
   public getTxInfo(txHash: string): angular.IPromise<EthplorerTxInfo> {
     let deferred = this.$q.defer<EthplorerTxInfo>();
-    let url = `https://api.ethplorer.io/getTxInfo/${txHash}?apiKey=lwA5173TDKj60`
+    let url = `${EthplorerService.endPoint}/getTxInfo/${txHash}?apiKey=lwA5173TDKj60`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
