@@ -169,10 +169,10 @@ class ServerComponent {
   editFailoverConfig() {
     // @ts-ignore
     const fs = require('fs');
-    let filePath = 'failover-config.json';
+    let filePath = 'app-config.json';
     fs.readFile(filePath, (err, data) => {
       if (err) {
-        console.log("Cannot load 'failover-config.json': " + err);
+        console.log("Cannot load 'app-config.json': " + err);
         throw err;
       }
       dialogs.textEditor("Failover Config", data, (editedData) => {

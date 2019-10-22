@@ -53,7 +53,7 @@ class DownloadingBlockchainComponent {
     });
 
     //Check servers health to choose the right
-    //wait for loading  failover-config.json
+    //wait for loading  app-config.json
     setTimeout(() => {
       if (SettingsService.getFailoverDescriptor())
         this.checkServerHealth(this.settings, true);

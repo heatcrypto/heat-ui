@@ -100,8 +100,8 @@
     ],
     "extraFiles": [
       {
-        "from": "./dist/failover-config.json",
-        "to": "failover-config.json"
+        "from": "./dist/app-config.json",
+        "to": "app-config.json"
       }
     ],
     "win": {

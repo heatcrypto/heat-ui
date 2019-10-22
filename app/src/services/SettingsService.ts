@@ -230,26 +230,26 @@ class SettingsService {
   public applyFailoverConfig() {
     let resolveFailoverDescriptor = (json: any) => {
       if (heat.isTestnet)
-        SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
+        SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.testnet;
       else if (heat.isBetanet)
-        SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
+        SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.betanet;
       else
-        SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
+        SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.mainnet;
 
       this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
     };
     if (this.env.type == EnvType.BROWSER) {
-      this.http.get('failover-config.json').then((json: any) => {
+      this.http.get('app-config.json').then((json: any) => {
         resolveFailoverDescriptor(json);
       }, (reason) => {
-        console.log("Cannot load 'failover-config.json': " + reason ? reason : "");
+        console.log("Cannot load 'app-config.json': " + reason ? reason : "");
       });
     } else if (this.env.type == EnvType.NODEJS) {
       // @ts-ignore
       const fs = require('fs');
-      fs.readFile('failover-config.json', (err, data) => {
+      fs.readFile('app-config.json', (err, data) => {
         if (err) {
-          console.log("Cannot load 'failover-config.json': " + err);
+          console.log("Cannot load 'app-config.json': " + err);
           throw err;
         }
         let json = JSON.parse(data);
