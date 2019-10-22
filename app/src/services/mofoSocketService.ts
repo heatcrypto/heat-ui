@@ -13,7 +13,7 @@ class MofoSocketService {
   }
 
   mofoSocket = (url = SettingsService.getCryptoServerEndpoint('FIM')) => {
-    if(this.url == url && this.socket !== undefined) {
+    if (this.url == url && this.socket !== undefined && this.socket.readyState === 1) {
       return new Promise((resolve, reject) => {
         resolve(this.socket)
       })
@@ -46,7 +46,7 @@ class MofoSocketService {
 
   onopen = (event) => {
     console.log('WEBSOCKET - onopen ' + new Date(), { socket: this.socket, event: event })
-    if(this.alive_cb)
+    if (this.alive_cb)
       this.$interval.cancel(this.alive_cb)
 
     this.alive_cb = this.$interval(this._createKeepAliveIntervalHandler(), 10000);
@@ -94,10 +94,10 @@ class MofoSocketService {
     let deferred = this.$q.defer<any>();
     this._send(['call', 'getTransactions', 'getActivity', { account }])
     this.$rootScope.$on('getTransactions', (event, opts) => {
-      if(opts.transactions)
+      if (opts.transactions)
         deferred.resolve(opts.transactions)
       else
-      deferred.reject()
+        deferred.reject()
     });
     return deferred.promise;
   }
@@ -118,7 +118,7 @@ class MofoSocketService {
     this.$rootScope.$on('getFIMKAccount', (event, opts) => {
       if (opts.unconfirmedBalanceNQT) {
         deferred.resolve(opts)
-      } else if(opts.errorDescription == "Unknown account") {
+      } else if (opts.errorDescription == "Unknown account") {
         deferred.resolve("0.00000000")
       } else {
         deferred.reject(opts.errorDescription)
@@ -131,7 +131,7 @@ class MofoSocketService {
     let deferred = this.$q.defer<any>();
     this._send(['call', 'sendMoney', 'callAPIFunction', txObject])
     this.$rootScope.$on('sendMoney', (event, opts) => {
-      if(!opts.unsignedTransactionBytes) {
+      if (!opts.unsignedTransactionBytes) {
         deferred.reject(opts.errorDescription)
       }
       let userService: UserService = heat.$inject.get('user')
@@ -165,7 +165,7 @@ class MofoSocketService {
 
   public getAccountAssets = (account) => {
     let deferred = this.$q.defer<any>();
-    this._send(['call', 'getAccountAssets', 'callAPIFunction', {requestType:'getAccountAssets',account:account}])
+    this._send(['call', 'getAccountAssets', 'callAPIFunction', { requestType: 'getAccountAssets', account: account }])
     this.$rootScope.$on('getAccountAssets', (event, opts) => {
       if (!opts.errorCode) {
         deferred.resolve(opts.accountAssets);

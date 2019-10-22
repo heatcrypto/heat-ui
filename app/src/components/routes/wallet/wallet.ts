@@ -1893,16 +1893,27 @@ class WalletComponent {
             self.initWalletEntry(walletEntry)
           }
           // load in next event loop to load currency addresses first
-          setTimeout(() => {
+          var interval = setInterval(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
-            success = node.createFIMKAddress(self)
-            walletEntry.toggle(true)
+            if (node) {
+              success = node.createFIMKAddress(self)
+              walletEntry.toggle(true)
+              $mdDialog.hide(null).then(() => {
+                if (!success) {
+                  dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
+                }
+              })
+              clearInterval(interval);
+            }
+          }, 0)
+          setTimeout(() => {
             $mdDialog.hide(null).then(() => {
               if (!success) {
-                dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
+                dialogs.alert($event, 'Unable to Create Address', 'Something went wrong. Please try again later.')
               }
             })
-          }, 0)
+            clearInterval(interval)
+          }, 5000)
         }
       }
 
@@ -2013,16 +2024,27 @@ class WalletComponent {
             self.initWalletEntry(walletEntry)
           }
           // load in next event loop to load currency addresses first
-          setTimeout(() => {
+          var interval = setInterval(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
-            success = node.createNXTAddress(self)
-            walletEntry.toggle(true)
+            if (node) {
+              success = node.createNXTAddress(self)
+              walletEntry.toggle(true)
+              $mdDialog.hide(null).then(() => {
+                if (!success) {
+                  dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
+                }
+              })
+              clearInterval(interval);
+            }
+          }, 0)
+          setTimeout(() => {
             $mdDialog.hide(null).then(() => {
               if (!success) {
-                dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
+                dialogs.alert($event, 'Unable to Create Address', 'Something went wrong. Please try again later.')
               }
             })
-          }, 0)
+            clearInterval(interval)
+          }, 5000)
         }
       }
 
@@ -2133,16 +2155,27 @@ class WalletComponent {
             self.initWalletEntry(walletEntry)
           }
           // load in next event loop to load currency addresses first
-          setTimeout(() => {
+          var interval = setInterval(() => {
             node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
-            success = node.createARDRAddress(self)
-            walletEntry.toggle(true)
+            if (node) {
+              success = node.createARDRAddress(self)
+              walletEntry.toggle(true)
+              $mdDialog.hide(null).then(() => {
+                if (!success) {
+                  dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
+                }
+              })
+              clearInterval(interval);
+            }
+          }, 0)
+          setTimeout(() => {
             $mdDialog.hide(null).then(() => {
               if (!success) {
-                dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
+                dialogs.alert($event, 'Unable to Create Address', 'Something went wrong. Please try again later.')
               }
             })
-          }, 0)
+            clearInterval(interval)
+          }, 5000)
         }
       }
 
@@ -2349,7 +2382,7 @@ class WalletComponent {
       }
       $scope['vm'].okButtonClick = function () {
         const mnemonic = $scope['vm'].heatSeed;
-        const pin  = $scope['vm'].pin;
+        const pin = $scope['vm'].pin;
 
         let account = heat.crypto.getAccountId(mnemonic)
         let publicKey = heat.crypto.secretPhraseToPublicKey(mnemonic)

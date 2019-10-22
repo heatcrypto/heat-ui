@@ -29,7 +29,7 @@
               ARDOR Server:
             </div>
             <div class="value">
-              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeSocketAddress()">
+              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeHostAddress()">
                 <md-option ng-repeat="socket in vm.sockets" value="{{socket.name}}">{{socket.name}}</md-option>
               </md-select>
             </div>
@@ -97,20 +97,21 @@ class ArdorAccountComponent {
     this.sockets = [
       {
         name: 'HEAT_Ardr_node',
-        socketUrl: 'https://bitnode.heatwallet.com:27876/'
+        hostUrl: 'https://bitnode.heatwallet.com:27876'
       },
       {
         name: 'Localhost',
-        socketUrl: 'http://localhost:27876/'
+        hostUrl: 'http://localhost:27876'
       }
     ]
-
-    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.ardorBlockExplorerService.getSocketUrl() == w.socketUrl).name
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.ardorBlockExplorerService.getHostUrl() == w.hostUrl).name
   }
 
-  changeSocketAddress() {
+  changeHostAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.ardorBlockExplorerService.setUrl(ret.socketUrl)
+    this.ardorBlockExplorerService.setUrl(ret.hostUrl)
+    let host = ret.hostUrl.split(':27876')[0]
+    SettingsService.changeCryptoNodeProperty('ARDR', host, 'priority', 0)
   }
 
   timerHandler() {

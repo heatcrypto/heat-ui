@@ -14,7 +14,7 @@ class ArdorBlockExplorerService {
     this.url = url;
   }
 
-  getSocketUrl = () => {
+  getHostUrl = () => {
     return this.url
   }
 

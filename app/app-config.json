@@ -68,14 +68,14 @@
         {
           "host": "https://bitnode.heatwallet.com",
           "port": 7876,
-          "priority": 0,
+          "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
           "host": "http://localhost",
           "port": 7876,
-          "priority": 1,
+          "priority": 2,
           "status": "ACTIVE",
           "timeout": 5000
         }
@@ -87,14 +87,14 @@
         {
           "host": "https://bitnode.heatwallet.com",
           "port": 27876,
-          "priority": 0,
+          "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
           "host": "http://localhost",
           "port": 27876,
-          "priority": 1,
+          "priority": 2,
           "status": "ACTIVE",
           "timeout": 5000
         }
@@ -105,13 +105,13 @@
       "nodes": [
         {
           "host": "wss://cloud.mofowallet.org:7986/ws",
-          "priority": 0,
+          "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
           "host": "ws://localhost:7986/ws",
-          "priority": 1,
+          "priority": 2,
           "status": "ACTIVE",
           "timeout": 5000
         }
