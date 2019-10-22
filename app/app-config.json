@@ -1,0 +1,66 @@
+{
+  "heatNodes": {
+    "mainnet": {
+      "heightDeltaThreshold": 2,
+      "balancesMismatchesThreshold": 0.9,
+      "balancesEqualityThreshold": 0.8,
+      "connectedPeersThreshold": 0.8,
+      "knownServers": [
+        {
+          "host": "https://heatwallet.com",
+          "port": 7734,
+          "websocket": "wss://heatwallet.com:7755/ws/",
+          "priority": 1
+        },
+        {
+          "host": "http://localhost",
+          "port": 7733,
+          "websocket": "ws://localhost:7755/ws/",
+          "priority": 2
+        }
+      ],
+      "signalingUrl": "wss://heatwallet.com:7755/ws/"
+    },
+    "testnet": {
+      "heightDeltaThreshold": 2,
+      "balancesMismatchesThreshold": 0.9,
+      "balancesEqualityThreshold": 0.8,
+      "connectedPeersThreshold": 0.8,
+      "knownServers": [
+        {
+          "host": "https://alpha.heatledger.com",
+          "port": 7734,
+          "websocket": "wss://alpha.heatledger.com:7755/ws/",
+          "priority": 2
+        },
+        {
+          "host": "http://localhost",
+          "port": 7733,
+          "websocket": "ws://localhost:7755/ws/",
+          "priority": 1
+        }
+      ],
+      "signalingUrl": "wss://alpha.heatledger.com:7755/ws/"
+    },
+    "betanet": {}
+  },
+  "cryptoNodes": [
+    {
+      "currencyName": "BTC",
+      "nodes": [
+        {
+          "host": "1.2.3.4",
+          "port": 123,
+          "priority": 1,
+          "status": "",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "NXT",
+      "nodes": [
+      ]
+    }
+  ]
+}
