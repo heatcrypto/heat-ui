@@ -100,11 +100,28 @@ class SettingsService {
     return SettingsService.FAILOVER_DESCRIPTOR;
   }
 
+  /**
+   *
+   * @param currency currency name- BTC, NXT etc
+   * @param host hostname to be searched for in app-config.json
+   * @param property name of the property of node to be updated- status, priotity
+   * @param value value of property of node to be updated
+   */
+  static changeCryptoNodeProperty(currency: string, host: string, property: string, value: any) {
+    if(!SettingsService.CRYPTO_NODES) return;
+    let node = SettingsService.CRYPTO_NODES.find((descriptor) => descriptor.currencyName === currency).nodes.find(node => node.host === host)
+    if(!node) return;
+    node[property] = value;
+  }
+
+  static getCryptoServer(currency: string): CryptoNodesDescriptor {
+    let nodes = SettingsService.CRYPTO_NODES.find((descriptor) => descriptor.currencyName === currency).nodes.filter(node => node.status === 'ACTIVE');
+    return nodes.sort((n1, n2) => n1.priority < n2.priority ? -1 : 1)[0]
+  }
   static getCryptoServerEndpoint(currency: string): string {
     if(!SettingsService.CRYPTO_NODES) return "";
 
-    let nodes = SettingsService.CRYPTO_NODES.find((descriptor) => descriptor.currencyName === currency).nodes;
-    let node = nodes.sort((n1, n2) => n1.priority < n2.priority ? -1 : 1)[0]
+    let node = this.getCryptoServer(currency);
     return node.port ? `${node.host}:${node.port}` : `${node.host}`;
   }
 
