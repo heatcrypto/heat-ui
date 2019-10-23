@@ -551,7 +551,7 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'ltcCryptoService', 'bchCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'ltcCryptoService', 'ltcBlockExplorerService', 'bchCryptoService', 'bchBlockExplorerService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
   selectAll = true;
   allLocked = true
@@ -581,7 +581,9 @@ class WalletComponent {
     private nxtCryptoService: NXTCryptoService,
     private ardorCryptoService: ARDORCryptoService,
     private ltcCryptoService: LTCCryptoService,
+    private ltcBlockExplorerService: LtcBlockExplorerService,
     private bchCryptoService: BCHCryptoService,
+    private bchBlockExplorerService: BchBlockExplorerService,
     private nxtBlockExplorerService: NxtBlockExplorerService,
     private ardorBlockExplorerService: ArdorBlockExplorerService,
     private mofoSocketService: MofoSocketService,
@@ -967,7 +969,7 @@ class WalletComponent {
             this.loadFIMKAddresses(walletEntry)
           }
         }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('"Error. Cannot connect to FIMK server.').hideDelay(5000));
+          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to FIMK server.').hideDelay(5000));
         })
       })
     if (selectedCurrencies.indexOf('NXT') > -1)
@@ -988,7 +990,7 @@ class WalletComponent {
             this.loadNXTAddresses(walletEntry)
           }
         }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('"Error. Cannot connect to NXT server.').hideDelay(5000));
+          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to NXT server.').hideDelay(5000));
         })
       })
     if (selectedCurrencies.indexOf('ARDR') > -1)
@@ -1009,52 +1011,60 @@ class WalletComponent {
             this.loadARDORAddresses(walletEntry)
           }
         }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('"Error. Cannot connect to ARDR server.').hideDelay(5000));
+          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to ARDR server.').hideDelay(5000));
         })
       })
     if (selectedCurrencies.indexOf('LTC') > -1)
       this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          let ltcCurrencyAddressLoading = new CurrencyAddressLoading('Litecoin')
-          ltcCurrencyAddressLoading.visible = walletEntry.expanded;
-          ltcCurrencyAddressLoading.wallet = wallet;
-          walletEntry.currencies.push(ltcCurrencyAddressLoading);
+        this.ltcBlockExplorerService.isSyncing().then(() => {
+          if (wallet !== undefined) {
+            let ltcCurrencyAddressLoading = new CurrencyAddressLoading('Litecoin')
+            ltcCurrencyAddressLoading.visible = walletEntry.expanded;
+            ltcCurrencyAddressLoading.wallet = wallet;
+            walletEntry.currencies.push(ltcCurrencyAddressLoading);
 
-          let ltcCurrencyAddressCreate = new CurrencyAddressCreate('Litecoin', wallet)
-          ltcCurrencyAddressCreate.visible = walletEntry.expanded
-          ltcCurrencyAddressCreate.parent = walletEntry
-          ltcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(ltcCurrencyAddressCreate)
+            let ltcCurrencyAddressCreate = new CurrencyAddressCreate('Litecoin', wallet)
+            ltcCurrencyAddressCreate.visible = walletEntry.expanded
+            ltcCurrencyAddressCreate.parent = walletEntry
+            ltcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+            walletEntry.currencies.push(ltcCurrencyAddressCreate)
 
-          this.flatten()
+            this.flatten()
 
-          /* Only if this node is expanded will we load the addresses */
-          if (walletEntry.expanded) {
-            this.loadLtcAddresses(walletEntry)
+            /* Only if this node is expanded will we load the addresses */
+            if (walletEntry.expanded) {
+              this.loadLtcAddresses(walletEntry)
+            }
           }
-        }
+        }).catch(() => {
+          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to LTC server.').hideDelay(5000));
+        })
       })
     if (selectedCurrencies.indexOf('BCH') > -1)
       this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          let bchCurrencyAddressLoading = new CurrencyAddressLoading('BitcoinCash')
-          bchCurrencyAddressLoading.visible = walletEntry.expanded;
-          bchCurrencyAddressLoading.wallet = wallet;
-          walletEntry.currencies.push(bchCurrencyAddressLoading);
+        this.bchBlockExplorerService.isSyncing().then(() => {
+          if (wallet !== undefined) {
+            let bchCurrencyAddressLoading = new CurrencyAddressLoading('BitcoinCash')
+            bchCurrencyAddressLoading.visible = walletEntry.expanded;
+            bchCurrencyAddressLoading.wallet = wallet;
+            walletEntry.currencies.push(bchCurrencyAddressLoading);
 
-          let bchCurrencyAddressCreate = new CurrencyAddressCreate('BitcoinCash', wallet)
-          bchCurrencyAddressCreate.visible = walletEntry.expanded
-          bchCurrencyAddressCreate.parent = walletEntry
-          bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(bchCurrencyAddressCreate)
+            let bchCurrencyAddressCreate = new CurrencyAddressCreate('BitcoinCash', wallet)
+            bchCurrencyAddressCreate.visible = walletEntry.expanded
+            bchCurrencyAddressCreate.parent = walletEntry
+            bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
+            walletEntry.currencies.push(bchCurrencyAddressCreate)
 
-          this.flatten()
+            this.flatten()
 
-          /* Only if this node is expanded will we load the addresses */
-          if (walletEntry.expanded) {
-            this.loadBitcoinCashAddresses(walletEntry)
+            /* Only if this node is expanded will we load the addresses */
+            if (walletEntry.expanded) {
+              this.loadBitcoinCashAddresses(walletEntry)
+            }
           }
-        }
+        }).catch(() => {
+          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to BCH server.').hideDelay(5000));
+        })
       })
   }
 

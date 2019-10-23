@@ -10,6 +10,20 @@ class LtcBlockExplorerService {
     LtcBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('LTC');
   }
 
+  public isSyncing() {
+    let deferred = this.$q.defer();
+    this.http.get(LtcBlockExplorerService.endPoint).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      if(parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Litecoin')
+        deferred.resolve()
+      else
+        deferred.reject()
+    }, () => {
+      deferred.reject();
+    })
+    return deferred.promise;
+  }
+
   public getBalance(address: string) {
     let deferred = this.$q.defer<string>();
     this.getAddressInfo(address).then(response => {
