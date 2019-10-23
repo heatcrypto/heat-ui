@@ -41,6 +41,7 @@ class BtcBlockExplorer3rdPartyService implements IBitcoinAPIList {
   public getAddressInfo = (address: string): angular.IPromise<any> => {
     let getTransactionsApi = `${BtcBlockExplorer3rdPartyService.endPoint}/addrs/${address}?token=${BtcBlockExplorer3rdPartyService.token}`;
     let deferred = this.$q.defer<any>();
+    if(!address) deferred.reject();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed);

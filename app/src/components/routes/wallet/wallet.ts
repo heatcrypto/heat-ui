@@ -966,6 +966,8 @@ class WalletComponent {
           if (walletEntry.expanded) {
             this.loadFIMKAddresses(walletEntry)
           }
+        }).catch(() => {
+          this.$mdToast.show(this.$mdToast.simple().textContent('"Error. Cannot connect to FIMK server.').hideDelay(5000));
         })
       })
     if (selectedCurrencies.indexOf('NXT') > -1)
@@ -985,6 +987,8 @@ class WalletComponent {
           if (walletEntry.expanded) {
             this.loadNXTAddresses(walletEntry)
           }
+        }).catch(() => {
+          this.$mdToast.show(this.$mdToast.simple().textContent('"Error. Cannot connect to NXT server.').hideDelay(5000));
         })
       })
     if (selectedCurrencies.indexOf('ARDR') > -1)
@@ -1004,6 +1008,8 @@ class WalletComponent {
           if (walletEntry.expanded) {
             this.loadARDORAddresses(walletEntry)
           }
+        }).catch(() => {
+          this.$mdToast.show(this.$mdToast.simple().textContent('"Error. Cannot connect to ARDR server.').hideDelay(5000));
         })
       })
     if (selectedCurrencies.indexOf('LTC') > -1)
