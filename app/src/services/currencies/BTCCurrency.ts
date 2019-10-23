@@ -188,8 +188,10 @@ class BTCCurrency implements ICurrency {
       function getEstimatedFee() {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
         btcBlockExplorerService.getEstimatedFee().then(data => {
-          if(!$scope['vm'].data.userInputFee)
+          if(!$scope['vm'].data.userInputFee) {
             $scope['vm'].data.estimatedFee = data;
+            $scope['vm'].data.fee = $scope['vm'].data.txBytes ? $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000 : 227 * $scope['vm'].data.estimatedFee / 100000000
+          }
         })
       }
       getEstimatedFee();
@@ -248,7 +250,7 @@ class BTCCurrency implements ICurrency {
 
                 <md-input-container flex>
                   <label>Fee in BTC</label>
-                  <input ng-model="vm.data.fee" ng-keypress="vm.feeChanged($event)" required name="fee">
+                  <input ng-model="vm.data.fee" ng-keydown="vm.feeChanged($event)" required name="fee">
                 </md-input-container>
               </div>
             </md-dialog-content>
