@@ -38,8 +38,8 @@
         </md-button>
 
         <md-button ng-click="vm.editFailoverConfig()">
-          <md-tooltip md-direction="bottom">Edit failover config</md-tooltip>
-          Failover Config
+          <md-tooltip md-direction="bottom">Edit application config</md-tooltip>
+          Config
         </md-button>
 
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
@@ -175,7 +175,7 @@ class ServerComponent {
         console.log("Cannot load 'app-config.json': " + err);
         throw err;
       }
-      dialogs.textEditor("Failover Config", data, (editedData) => {
+      dialogs.textEditor("Application Config", data, (editedData) => {
         fs.writeFile(filePath, editedData, (err) => {
           if (err) throw err;
           this.settings.applyFailoverConfig();
