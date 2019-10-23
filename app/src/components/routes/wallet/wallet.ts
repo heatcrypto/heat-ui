@@ -1901,6 +1901,8 @@ class WalletComponent {
               $mdDialog.hide(null).then(() => {
                 if (!success) {
                   dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
+                  // Refactor: set now so that the setTimeout dialog does not appear
+                  success = true;
                 }
               })
               clearInterval(interval);
@@ -2032,6 +2034,7 @@ class WalletComponent {
               $mdDialog.hide(null).then(() => {
                 if (!success) {
                   dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
+                  success = true;
                 }
               })
               clearInterval(interval);
@@ -2163,6 +2166,7 @@ class WalletComponent {
               $mdDialog.hide(null).then(() => {
                 if (!success) {
                   dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
+                  success = true;
                 }
               })
               clearInterval(interval);
