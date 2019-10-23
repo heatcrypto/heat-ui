@@ -114,7 +114,8 @@ class BTCCurrency implements ICurrency {
         recipientInfo: '',
         fee: '0.00004540',
         message: '',
-        userInputFee: false
+        userInputFee: false,
+        estimatedFee: 20
       }
 
       /* Lookup recipient info and display this in the dialog */
