@@ -1638,7 +1638,7 @@ class WalletComponent {
                   </p>
                   <md-input-container flex >
                     <label>Password</label>
-                    <input ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
                   </md-input-container>
                 </div>
 
