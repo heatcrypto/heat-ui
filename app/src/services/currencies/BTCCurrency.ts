@@ -115,7 +115,7 @@ class BTCCurrency implements ICurrency {
         fee: '0.00004540',
         message: '',
         userInputFee: false,
-        estimatedFee: 20
+        estimatedFee: 0
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -186,16 +186,13 @@ class BTCCurrency implements ICurrency {
         })
       }
 
-      function getEstimatedFee() {
-        let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getEstimatedFee().then(data => {
-          if(!$scope['vm'].data.userInputFee) {
-            $scope['vm'].data.estimatedFee = data;
-            $scope['vm'].data.fee = $scope['vm'].data.txBytes ? $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000 : 227 * $scope['vm'].data.estimatedFee / 100000000
-          }
-        })
-      }
-      getEstimatedFee();
+      //get Estimated Fee
+      let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService');
+      btcBlockExplorerService.getEstimatedFee().then(data => {
+        if(!$scope['vm'].data.userInputFee) {
+          $scope['vm'].data.fee = 227 * data / 100000000;
+        }
+      }).then(value => $scope['vm'].feeChanged()) //to initialize data.estimatedFee FEE/BYTE
     }
 
     let $q = heat.$inject.get('$q')
@@ -256,7 +253,7 @@ class BTCCurrency implements ICurrency {
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
-              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee/Byte {{vm.data.estimatedFee}} Sat</md-button>
+              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:150px !important">Fee/Byte <b>&nbsp;{{vm.data.estimatedFee == 0 ? '?' : vm.data.estimatedFee}}&nbsp;</b> Sat</md-button>
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
