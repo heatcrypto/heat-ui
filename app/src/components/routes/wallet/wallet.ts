@@ -522,6 +522,19 @@ class WalletEntry {
                 <div class="name">{{entry.name}}</div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
+                <md-menu md-position-mode="target-right target" md-offset="34px 34px">
+                  <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
+                    <md-icon md-font-library="material-icons">more_horiz</md-icon>
+                  </md-button>
+                  <md-menu-content width="4">
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.showPrivateKey(entry)">
+                        <md-icon md-font-library="material-icons">file_copy</md-icon>
+                        Show private key
+                      </md-button>
+                    </md-menu-item>
+                </md-menu-content>
+              </md-menu>
               </div>
 
               <!-- Currency Address Loading -->
@@ -605,6 +618,19 @@ class WalletComponent {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
+  }
+
+  showPrivateKey(entry) {
+    let panel: PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea rows="2" flex ng-bind="vm.privateKey" readonly ng-trim="false"></textarea>
+        </md-input-container>
+      </div>
+    `, {
+        privateKey: entry.secretPhrase
+      })
   }
 
   createAccount($event) {
