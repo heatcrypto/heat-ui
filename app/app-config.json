@@ -104,13 +104,13 @@
       "currencyName": "FIM",
       "nodes": [
         {
-          "host": "wss://cloud.mofowallet.org:7986/ws",
+          "host": "wss://cloud.mofowallet.org:7986/ws/",
           "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
-          "host": "ws://localhost:7986/ws",
+          "host": "ws://localhost:7986/ws/",
           "priority": 2,
           "status": "ACTIVE",
           "timeout": 5000
