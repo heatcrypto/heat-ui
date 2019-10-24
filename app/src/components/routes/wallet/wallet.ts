@@ -976,121 +976,101 @@ class WalletComponent {
       })
     if (selectedCurrencies.indexOf('FIM') > -1)
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        this.mofoSocketService.mofoSocket().then(() => {
-          let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
-          fimkCurrencyAddressLoading.visible = walletEntry.expanded
-          fimkCurrencyAddressLoading.wallet = wallet
-          walletEntry.currencies.push(fimkCurrencyAddressLoading)
+        let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
+        fimkCurrencyAddressLoading.visible = walletEntry.expanded
+        fimkCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(fimkCurrencyAddressLoading)
 
-          let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
-          fimkCurrencyAddressCreate.visible = walletEntry.expanded
-          fimkCurrencyAddressCreate.parent = walletEntry
-          fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(fimkCurrencyAddressCreate)
+        let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
+        fimkCurrencyAddressCreate.visible = walletEntry.expanded
+        fimkCurrencyAddressCreate.parent = walletEntry
+        fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(fimkCurrencyAddressCreate)
+
+        this.flatten()
+
+        /* Only if this node is expanded will we load the addresses */
+        if (walletEntry.expanded) {
+          this.loadFIMKAddresses(walletEntry)
+        }
+      })
+    if (selectedCurrencies.indexOf('NXT') > -1)
+      this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
+        nxtCurrencyAddressLoading.visible = walletEntry.expanded
+        nxtCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(nxtCurrencyAddressLoading)
+
+        let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
+        nxtCurrencyAddressCreate.visible = walletEntry.expanded
+        nxtCurrencyAddressCreate.parent = walletEntry
+        nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(nxtCurrencyAddressCreate)
+
+        if (walletEntry.expanded) {
+          this.loadNXTAddresses(walletEntry)
+        }
+      })
+    if (selectedCurrencies.indexOf('ARDR') > -1)
+      this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
+        ardorCurrencyAddressLoading.visible = walletEntry.expanded
+        ardorCurrencyAddressLoading.wallet = wallet
+        walletEntry.currencies.push(ardorCurrencyAddressLoading)
+
+        let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
+        ardorCurrencyAddressCreate.visible = walletEntry.expanded
+        ardorCurrencyAddressCreate.parent = walletEntry
+        ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
+        walletEntry.currencies.push(ardorCurrencyAddressCreate)
+
+        if (walletEntry.expanded) {
+          this.loadARDORAddresses(walletEntry)
+        }
+      })
+    if (selectedCurrencies.indexOf('LTC') > -1)
+      this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
+        if (wallet !== undefined) {
+          let ltcCurrencyAddressLoading = new CurrencyAddressLoading('Litecoin')
+          ltcCurrencyAddressLoading.visible = walletEntry.expanded;
+          ltcCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(ltcCurrencyAddressLoading);
+
+          let ltcCurrencyAddressCreate = new CurrencyAddressCreate('Litecoin', wallet)
+          ltcCurrencyAddressCreate.visible = walletEntry.expanded
+          ltcCurrencyAddressCreate.parent = walletEntry
+          ltcCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(ltcCurrencyAddressCreate)
 
           this.flatten()
 
           /* Only if this node is expanded will we load the addresses */
           if (walletEntry.expanded) {
-            this.loadFIMKAddresses(walletEntry)
+            this.loadLtcAddresses(walletEntry)
           }
-        }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to FIMK server.').hideDelay(5000));
-        })
-      })
-    if (selectedCurrencies.indexOf('NXT') > -1)
-      this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
-          let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
-          nxtCurrencyAddressLoading.visible = walletEntry.expanded
-          nxtCurrencyAddressLoading.wallet = wallet
-          walletEntry.currencies.push(nxtCurrencyAddressLoading)
-
-          let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
-          nxtCurrencyAddressCreate.visible = walletEntry.expanded
-          nxtCurrencyAddressCreate.parent = walletEntry
-          nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(nxtCurrencyAddressCreate)
-
-          if (walletEntry.expanded) {
-            this.loadNXTAddresses(walletEntry)
-          }
-        }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to NXT server.').hideDelay(5000));
-        })
-      })
-    if (selectedCurrencies.indexOf('ARDR') > -1)
-      this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
-          let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
-          ardorCurrencyAddressLoading.visible = walletEntry.expanded
-          ardorCurrencyAddressLoading.wallet = wallet
-          walletEntry.currencies.push(ardorCurrencyAddressLoading)
-
-          let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
-          ardorCurrencyAddressCreate.visible = walletEntry.expanded
-          ardorCurrencyAddressCreate.parent = walletEntry
-          ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(ardorCurrencyAddressCreate)
-
-          if (walletEntry.expanded) {
-            this.loadARDORAddresses(walletEntry)
-          }
-        }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to ARDR server.').hideDelay(5000));
-        })
-      })
-    if (selectedCurrencies.indexOf('LTC') > -1)
-      this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        this.ltcBlockExplorerService.isSyncing().then(() => {
-          if (wallet !== undefined) {
-            let ltcCurrencyAddressLoading = new CurrencyAddressLoading('Litecoin')
-            ltcCurrencyAddressLoading.visible = walletEntry.expanded;
-            ltcCurrencyAddressLoading.wallet = wallet;
-            walletEntry.currencies.push(ltcCurrencyAddressLoading);
-
-            let ltcCurrencyAddressCreate = new CurrencyAddressCreate('Litecoin', wallet)
-            ltcCurrencyAddressCreate.visible = walletEntry.expanded
-            ltcCurrencyAddressCreate.parent = walletEntry
-            ltcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-            walletEntry.currencies.push(ltcCurrencyAddressCreate)
-
-            this.flatten()
-
-            /* Only if this node is expanded will we load the addresses */
-            if (walletEntry.expanded) {
-              this.loadLtcAddresses(walletEntry)
-            }
-          }
-        }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to LTC server.').hideDelay(5000));
-        })
+        }
       })
     if (selectedCurrencies.indexOf('BCH') > -1)
       this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        this.bchBlockExplorerService.isSyncing().then(() => {
-          if (wallet !== undefined) {
-            let bchCurrencyAddressLoading = new CurrencyAddressLoading('BitcoinCash')
-            bchCurrencyAddressLoading.visible = walletEntry.expanded;
-            bchCurrencyAddressLoading.wallet = wallet;
-            walletEntry.currencies.push(bchCurrencyAddressLoading);
+        if (wallet !== undefined) {
+          let bchCurrencyAddressLoading = new CurrencyAddressLoading('BitcoinCash')
+          bchCurrencyAddressLoading.visible = walletEntry.expanded;
+          bchCurrencyAddressLoading.wallet = wallet;
+          walletEntry.currencies.push(bchCurrencyAddressLoading);
 
-            let bchCurrencyAddressCreate = new CurrencyAddressCreate('BitcoinCash', wallet)
-            bchCurrencyAddressCreate.visible = walletEntry.expanded
-            bchCurrencyAddressCreate.parent = walletEntry
-            bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
-            walletEntry.currencies.push(bchCurrencyAddressCreate)
+          let bchCurrencyAddressCreate = new CurrencyAddressCreate('BitcoinCash', wallet)
+          bchCurrencyAddressCreate.visible = walletEntry.expanded
+          bchCurrencyAddressCreate.parent = walletEntry
+          bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
+          walletEntry.currencies.push(bchCurrencyAddressCreate)
 
-            this.flatten()
+          this.flatten()
 
-            /* Only if this node is expanded will we load the addresses */
-            if (walletEntry.expanded) {
-              this.loadBitcoinCashAddresses(walletEntry)
-            }
+          /* Only if this node is expanded will we load the addresses */
+          if (walletEntry.expanded) {
+            this.loadBitcoinCashAddresses(walletEntry)
           }
-        }).catch(() => {
-          this.$mdToast.show(this.$mdToast.simple().textContent('Error. Cannot connect to BCH server.').hideDelay(5000));
-        })
+        }
       })
   }
 
@@ -1133,6 +1113,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != nxtCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, nxtCurrencyAddressLoading, 'NXT', 'NXT')
     })
   }
 
@@ -1152,12 +1134,12 @@ class WalletComponent {
       ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
-          nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-          nxtCurrencyBalance.visible = walletEntry.expanded
-          nxtCurrencyBalance.inUse = wasCreated ? false : true
-          nxtCurrencyBalance.walletEntry = walletEntry
-          walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
+          let ardrCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
+          ardrCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+          ardrCurrencyBalance.visible = walletEntry.expanded
+          ardrCurrencyBalance.inUse = wasCreated ? false : true
+          ardrCurrencyBalance.walletEntry = walletEntry
+          walletEntry.currencies.splice(index, 0, ardrCurrencyBalance)
           index++;
 
           if (address.tokensBalances) {
@@ -1165,7 +1147,7 @@ class WalletComponent {
               let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
               tokenBalance.balance = utils.commaFormat(balance.balance)
               tokenBalance.visible = walletEntry.expanded
-              nxtCurrencyBalance.tokens.push(tokenBalance)
+              ardrCurrencyBalance.tokens.push(tokenBalance)
             })
           }
         }
@@ -1174,6 +1156,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, ardorCurrencyAddressLoading, 'ARDOR', 'ARDR')
     })
   }
 
@@ -1217,6 +1201,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != fimkCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, fimkCurrencyAddressLoading, 'FIMK', 'FIM')
     })
   }
 
@@ -1260,6 +1246,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != ethCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, ethCurrencyAddressLoading, 'Ethereum', 'ETH')
     })
   }
 
@@ -1293,6 +1281,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != iotaCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, iotaCurrencyAddressLoading, 'IOTA', 'IOTA')
     })
   }
 
@@ -1328,6 +1318,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != btcCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, btcCurrencyAddressLoading, 'Bitcoin', 'BTC')
     })
   }
 
@@ -1363,6 +1355,8 @@ class WalletComponent {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != bchCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, bchCurrencyAddressLoading, 'BitcoinCash', 'BCH')
     })
   }
 
@@ -1396,8 +1390,25 @@ class WalletComponent {
 
       walletEntry.currencies = walletEntry.currencies.filter(c => c != ltcCurrencyAddressLoading)
       this.flatten()
+    }).catch(() => {
+      this.handleFailedCryptoRequests(walletEntry, ltcCurrencyAddressLoading, 'Litecoin', 'LTC')
     })
   }
+
+  private handleFailedCryptoRequests(walletEntry, currencyAddressLoading, currencyName, currencySymbol) {
+    this.$mdToast.show(this.$mdToast.simple().textContent(`Error. Cannot connect to ${currencySymbol} server.`).hideDelay(5000));
+    let index = walletEntry.currencies.indexOf(currencyAddressLoading)
+    let currencyBalance = new CurrencyBalance(currencyName, '', '', '')
+    currencyBalance.balance = "No Connection"
+    currencyBalance.visible = walletEntry.expanded
+    currencyBalance.inUse = true
+    currencyBalance.walletEntry = walletEntry
+    walletEntry.currencies.splice(index, 0, currencyBalance)
+
+    walletEntry.currencies = walletEntry.currencies.filter(c => c != currencyAddressLoading)
+    this.flatten()
+  }
+
 
   private getAccountAssets(account: string): angular.IPromise<Array<AssetInfo>> {
     let deferred = this.$q.defer<Array<AssetInfo>>();

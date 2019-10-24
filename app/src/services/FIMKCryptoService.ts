@@ -41,30 +41,32 @@ class FIMKCryptoService {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
       let mofoSocketService: MofoSocketService = heat.$inject.get('mofoSocketService')
-      mofoSocketService.getTransactions(address).then(transactions => {
-        mofoSocketService.getAccount(address).then(info => {
-          wallet.addresses[0].inUse = true;
-          let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
-          let formattedBalance = new Big(balance + "")
-          let balanceUnconfirmed = new Big(formattedBalance).toFixed(8);
-          wallet.addresses[0].balance = balanceUnconfirmed
-          mofoSocketService.getAccountAssets(address).then(accountAssets => {
-            wallet.addresses[0].tokensBalances = []
-            accountAssets.forEach(asset => {
-              wallet.addresses[0].tokensBalances.push({
-                symbol: asset?asset.name:'',
-                name: asset?asset.name:'',
-                decimals: asset.decimals,
-                balance: utils.formatQNT(asset.unconfirmedQuantityQNT,asset.decimals),
-                address: asset.asset
-              })
-            });
-            resolve(true)
+      mofoSocketService.mofoSocket().then(()=> {
+        mofoSocketService.getTransactions(address).then(transactions => {
+          mofoSocketService.getAccount(address).then(info => {
+            wallet.addresses[0].inUse = true;
+            let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
+            let formattedBalance = new Big(balance + "")
+            let balanceUnconfirmed = new Big(formattedBalance).toFixed(8);
+            wallet.addresses[0].balance = balanceUnconfirmed
+            mofoSocketService.getAccountAssets(address).then(accountAssets => {
+              wallet.addresses[0].tokensBalances = []
+              accountAssets.forEach(asset => {
+                wallet.addresses[0].tokensBalances.push({
+                  symbol: asset?asset.name:'',
+                  name: asset?asset.name:'',
+                  decimals: asset.decimals,
+                  balance: utils.formatQNT(asset.unconfirmedQuantityQNT,asset.decimals),
+                  address: asset.asset
+                })
+              });
+              resolve(true)
+            })
           })
+        }, err => {
+            resolve(false)
         })
-      }, err => {
-          resolve(false)
-      })
+      }).catch(reject)
     })
   }
 }

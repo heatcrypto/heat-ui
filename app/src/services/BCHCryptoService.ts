@@ -68,8 +68,9 @@ class BCHCryptoService {
   }
 
   refreshAdressBalances(wallet: WalletType) {
-    /* list all addresses in bip44 order */
+    /* list all addresses in bip44 ordrecurseToNextrecurseToNexter */
     let addresses = wallet.addresses.map(a => a.address)
+    let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
 
     function processNext() {
       return new Promise((resolve, reject) => {
@@ -79,7 +80,6 @@ class BCHCryptoService {
         addresses.shift()
 
         /* look up its data on btcBlockExplorerService */
-        let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
         bchBlockExplorerService.getAddressInfo(address).then(info => {
 
           /* lookup the 'real' WalletAddress */
@@ -116,8 +116,8 @@ class BCHCryptoService {
       )
     }
 
-    return new Promise(resolve => {
-      recurseToNext(resolve)
+    return new Promise((resolve, reject) => {
+      bchBlockExplorerService.isSyncing().then(() => {recurseToNext(resolve)}).catch(reject)
     })
   }
 

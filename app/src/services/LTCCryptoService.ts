@@ -66,6 +66,7 @@ class LTCCryptoService {
 
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)
+    let ltcBlockExplorerService: LtcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
 
     function processNext() {
       return new Promise((resolve, reject) => {
@@ -74,7 +75,6 @@ class LTCCryptoService {
         let address = addresses[0]
         addresses.shift()
 
-        let ltcBlockExplorerService: LtcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
         ltcBlockExplorerService.getAddressInfo(address).then(info => {
 
           let walletAddress = wallet.addresses.find(x => x.address == address)
@@ -110,8 +110,8 @@ class LTCCryptoService {
       )
     }
 
-    return new Promise(resolve => {
-      recurseToNext(resolve)
+    return new Promise((resolve, reject) => {
+      ltcBlockExplorerService.isSyncing().then(() => {recurseToNext(resolve)}).catch(reject)
     })
   }
 
