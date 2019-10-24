@@ -429,4 +429,17 @@ class EthplorerService {
     return deferred.promise
   }
 
+  /* This is just a temporory fix to see if Ethplorer APIs are functional */
+  public getTopTokens() {
+    let deferred = this.$q.defer();
+    let url = `${EthplorerService.endPoint}/getTop?apiKey=lwA5173TDKj60`;
+    this.http.get(url).then((response) => {
+      deferred.resolve();
+    }, error => {
+      deferred.reject()
+    }).catch(() => deferred.reject())
+
+    return deferred.promise;
+  }
+
 }

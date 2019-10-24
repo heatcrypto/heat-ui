@@ -126,6 +126,7 @@ class LightwalletService {
   refreshAdressBalances(wallet:WalletType) {
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)
+    let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
 
     function processNext() {
       return new Promise((resolve, reject) => {
@@ -135,7 +136,6 @@ class LightwalletService {
         addresses.shift()
 
         /* look up its data on ethplorer */
-        let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
         ethplorer.getAddressInfo(address).then(info => {
 
           /* lookup the 'real' WalletAddress */
@@ -188,8 +188,8 @@ class LightwalletService {
       )
     }
 
-    return new Promise(resolve => {
-      recurseToNext(resolve)
+    return new Promise((resolve, reject) => {
+      ethplorer.getTopTokens().then(() => recurseToNext(resolve)).catch(() => reject)
     })
   }
 
