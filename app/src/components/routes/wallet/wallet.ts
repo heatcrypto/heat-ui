@@ -1225,7 +1225,7 @@ class WalletComponent {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
           let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
-          ethCurrencyBalance.balance = Number(address.balance + "").toFixed(18)
+          ethCurrencyBalance.balance = Big(address.balance + "").toFixed(18)
           ethCurrencyBalance.visible = walletEntry.expanded
           ethCurrencyBalance.inUse = wasCreated ? false : true
           ethCurrencyBalance.walletEntry = walletEntry
