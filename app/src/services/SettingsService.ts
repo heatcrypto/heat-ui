@@ -87,6 +87,7 @@ class SettingsService {
   public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
   public static CRYPTO_NODES: CryptoNodesDescriptorMap[];
+  public initialized: Promise<any>;
 
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
@@ -266,24 +267,32 @@ class SettingsService {
       this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
       SettingsService.CRYPTO_NODES = json.cryptoNodes;
     };
-    if (this.env.type == EnvType.BROWSER) {
-      this.http.get('app-config.json').then((json: any) => {
-        resolveFailoverDescriptor(json);
-      }, (reason) => {
-        console.log("Cannot load 'app-config.json': " + reason ? reason : "");
-      });
-    } else if (this.env.type == EnvType.NODEJS) {
-      // @ts-ignore
-      const fs = require('fs');
-      fs.readFile('app-config.json', (err, data) => {
-        if (err) {
-          console.log("Cannot load 'app-config.json': " + err);
-          throw err;
-        }
-        let json = JSON.parse(data);
-        resolveFailoverDescriptor(json);
-      });
-    }
+    this.initialized = new Promise<any>((resolve, reject) => {
+      if (this.env.type == EnvType.BROWSER) {
+        this.http.get('app-config.json').then((json: any) => {
+          resolveFailoverDescriptor(json);
+          resolve();
+        }, (reason) => {
+          let message = "Cannot load 'app-config.json': " + reason ? reason : "";
+          console.log(message);
+          reject(message);
+        });
+      } else if (this.env.type == EnvType.NODEJS) {
+        // @ts-ignore
+        const fs = require('fs');
+        fs.readFile('app-config.json', (err, data) => {
+          if (err) {
+            let message = "Cannot load 'app-config.json': " + err;
+            console.log(message);
+            reject(message);
+            throw err;
+          }
+          let json = JSON.parse(data);
+          resolveFailoverDescriptor(json);
+          resolve();
+        });
+      }
+    });
   }
 
 }

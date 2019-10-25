@@ -1,5 +1,5 @@
 @Service('iotaBlockExplorerService')
-@Inject('$q', 'http', '$window')
+@Inject('$q', 'http', '$window', 'settings')
 class IotaBlockExplorerService {
   private iotaCore;
   private api;
@@ -8,10 +8,15 @@ class IotaBlockExplorerService {
   constructor(
     private $q: angular.IQService,
     private http: HttpService,
-    private $window: angular.IWindowService) {
+    private $window: angular.IWindowService,
+    private settingsService: SettingsService) {
 
     this.iotaCore = $window.heatlibs.IotaCore;
-    this.setUrl(SettingsService.getCryptoServerEndpoint('IOTA'))
+    this.settingsService.initialized.then(
+      () => this.setUrl(SettingsService.getCryptoServerEndpoint('IOTA'))
+    );
+
+
   }
 
   public setUrl(url) {

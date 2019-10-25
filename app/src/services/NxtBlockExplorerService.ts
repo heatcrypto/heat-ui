@@ -1,13 +1,17 @@
 @Service('nxtBlockExplorerService')
-@Inject('$q', 'http')
+@Inject('$q', 'http', 'settings')
 class NxtBlockExplorerService {
   private url: string;
   private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
 
   constructor(
     private $q: angular.IQService,
-    private http: HttpService) {
-    this.setUrl(SettingsService.getCryptoServerEndpoint('NXT'))
+    private http: HttpService,
+    private settingsService: SettingsService) {
+
+    this.settingsService.initialized.then(
+      () => this.setUrl(SettingsService.getCryptoServerEndpoint('NXT'))
+    );
   }
 
   public setUrl(url) {

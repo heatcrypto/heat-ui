@@ -1,12 +1,15 @@
 
 @Service('bchBlockExplorerService')
-@Inject('http', '$q')
+@Inject('http', '$q', 'settings')
 class BchBlockExplorerService {
   static endPoint: string;
 
   constructor(private http: HttpService,
-              private $q: angular.IQService) {
-    BchBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('BCH');
+              private $q: angular.IQService,
+              private settingsService: SettingsService) {
+    this.settingsService.initialized.then(
+      () => BchBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('BCH')
+    );
   }
 
   public isSyncing() {

@@ -1,5 +1,5 @@
 @Service('mofoSocketService')
-@Inject('$q', '$timeout', '$interval', '$rootScope')
+@Inject('$q', '$timeout', '$interval', '$rootScope', 'settings')
 class MofoSocketService {
   private socket: any;
   private url: string;
@@ -9,10 +9,16 @@ class MofoSocketService {
     private $q: angular.IQService,
     private $timeout: angular.ITimeoutService,
     private $interval: angular.IIntervalService,
-    private $rootScope: angular.IScope) {
+    private $rootScope: angular.IScope,
+    private settingsService: SettingsService) {
+
+    this.settingsService.initialized.then(
+      () => this.url = SettingsService.getCryptoServerEndpoint('FIM')
+    );
+
   }
 
-  mofoSocket = (url = SettingsService.getCryptoServerEndpoint('FIM')) => {
+  mofoSocket = (url = this.url) => {
     if (this.url == url && this.socket !== undefined && this.socket.readyState === 1) {
       return new Promise((resolve, reject) => {
         resolve(this.socket)

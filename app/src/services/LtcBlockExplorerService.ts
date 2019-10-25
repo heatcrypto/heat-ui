@@ -1,13 +1,17 @@
 
 @Service('ltcBlockExplorerService')
-@Inject('http', '$q', '$http')
+@Inject('http', '$q', '$http', 'settings')
 class LtcBlockExplorerService {
   static endPoint: string;
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private $http: angular.IHttpService) {
-    LtcBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('LTC');
+              private $http: angular.IHttpService,
+              private settingsService: SettingsService) {
+    this.settingsService.initialized.then(
+      () => LtcBlockExplorerService.endPoint = SettingsService.getCryptoServerEndpoint('LTC')
+    );
+
   }
 
   public isSyncing() {

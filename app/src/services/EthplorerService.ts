@@ -259,10 +259,10 @@ class EthplorerService {
       })
     })
 
-    // give SettingsService time to read the config file, otherwise need to do all settings invoking async
-    setTimeout(() => {
-      EthplorerService.endPoint = SettingsService.getCryptoServerEndpoint('ETH')
-    }, 100);
+    // get settings after it is initialized (read config files)
+    this.settingsService.initialized.then(
+      () => EthplorerService.endPoint = SettingsService.getCryptoServerEndpoint('ETH')
+    );
   }
 
   createPaginator(address: string) : EthplorerTransactionPaginator {

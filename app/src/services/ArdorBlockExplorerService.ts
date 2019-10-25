@@ -1,13 +1,18 @@
 @Service('ardorBlockExplorerService')
-@Inject('$q', 'http')
+@Inject('$q', 'http', 'settings')
 class ArdorBlockExplorerService {
   private url: string;
   private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
 
   constructor(
     private $q: angular.IQService,
-    private http: HttpService) {
-    this.setUrl(SettingsService.getCryptoServerEndpoint('ARDR'))
+    private http: HttpService,
+    private settingsService: SettingsService) {
+
+    this.settingsService.initialized.then(
+      () => this.setUrl(SettingsService.getCryptoServerEndpoint('ARDR'))
+    );
+
   }
 
   public setUrl(url) {
