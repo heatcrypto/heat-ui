@@ -62,7 +62,7 @@ var PATHS = {
     'app/src/tshelpers.js'
   ],
   electron: [
-    'app/electron.js',
+    'app/electron/electron.js',
     'app/package.json'
   ],
   etc: [
@@ -168,12 +168,20 @@ gulp.task('less', function () {
     .pipe(gulp.dest('./dist/styles/'));
 });
 
+gulp.task('copy:dice_words', () => gulp.src(PATHS.dice_words).pipe(gulp.dest('dist/dice-words')))
+gulp.task('copy:assets', () => gulp.src(PATHS.assets).pipe(gulp.dest('dist/assets')))
+gulp.task('copy:loading', () => gulp.src(PATHS.loading).pipe(gulp.dest('dist/loading')))
+gulp.task('copy:html', () => gulp.src(PATHS.html).pipe(gulp.dest('dist')))
+gulp.task('copy:electron', () => gulp.src(PATHS.electron).pipe(gulp.dest('dist')))
+gulp.task('copy:etc', () => gulp.src(PATHS.etc).pipe(gulp.dest('dist')))
+gulp.task('copy:dist', gulp.series('copy:assets','copy:dice_words','copy:loading','copy:html','copy:electron','copy:etc'))
+
 /**
  * Updates the script refs in dist/index.html to use the hashed names for
  * lib.js, tshelpers.js and heat-ui.js.
  * Must run after those files have been created and renamed.
  */
-gulp.task('updatescriptrefs', ['less', 'copy:dist', 'usemin', 'libjs', 'tshelpers', 'ts2js'], function () {
+gulp.task('updatescriptrefs', gulp.series('less', 'copy:dist', 'usemin', 'libjs', 'tshelpers', 'ts2js', function () {
   var replace = require('gulp-replace');
   return gulp.src('dist/index.html')
     .pipe(replace('<script src="node_modules-', '<script defer src="node_modules-'))
@@ -183,18 +191,11 @@ gulp.task('updatescriptrefs', ['less', 'copy:dist', 'usemin', 'libjs', 'tshelper
     .pipe(replace('<script src="tshelpers.js', '<script defer src="'+TSHELPERS_HASHED_NAME))
     .pipe(replace('<link rel="stylesheet" href="styles/index.css', '<link rel="stylesheet" href="styles/'+LESS_HASHED_NAME))
     .pipe(gulp.dest('dist'));
-})
+}))
 
-gulp.task('copy:dist', ['copy:assets','copy:dice_words','copy:loading','copy:html','copy:electron','copy:etc'])
+gulp.task('build', gulp.series('updatescriptrefs'));
 
-gulp.task('copy:assets', () => gulp.src(PATHS.assets).pipe(gulp.dest('dist/assets')))
-gulp.task('copy:dice_words', () => gulp.src(PATHS.dice_words).pipe(gulp.dest('dist/dice-words')))
-gulp.task('copy:loading', () => gulp.src(PATHS.loading).pipe(gulp.dest('dist/loading')))
-gulp.task('copy:html', () => gulp.src(PATHS.html).pipe(gulp.dest('dist')))
-gulp.task('copy:electron', () => gulp.src(PATHS.electron).pipe(gulp.dest('dist')))
-gulp.task('copy:etc', () => gulp.src(PATHS.etc).pipe(gulp.dest('dist')))
-
-gulp.task('play', ['build'], function () {
+gulp.task('play', gulp.series('build', function () {
   var http = require('http');
   var connect = require('connect');
   var serveStatic = require('serve-static');
@@ -204,19 +205,17 @@ gulp.task('play', ['build'], function () {
   var port, app;
   port = process.env.PORT || 9001;
 
-  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), ['updatescriptrefs']);
+  gulp.watch(PATHS.src.concat(PATHS.html, 'styles/**/*.less', 'styles/*.less'), gulp.series('updatescriptrefs'));
 
   app = connect().use(serveStatic(__dirname));
   http.createServer(app).listen(port, function () {
     //open('http://localhost:' + port + '/dist');
   });
-});
+}));
 
-gulp.task('build', ['updatescriptrefs']);
-
-gulp.task('electron', ['copy:electron1','copy:electron2'])
 gulp.task('copy:electron1', () => gulp.src('app/electron/*').pipe(gulp.dest('dist/electron')) )
 gulp.task('copy:electron2', () => gulp.src(['app/node_modules/**/*']).pipe(gulp.dest('dist/node_modules')) )
+gulp.task('electron', gulp.series('copy:electron1','copy:electron2'))
 
 // gulp.task('lint', function () {
 //   return gulp.src('app/styles/**/*.less')
