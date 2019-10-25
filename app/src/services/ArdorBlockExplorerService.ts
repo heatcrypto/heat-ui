@@ -25,14 +25,19 @@ class ArdorBlockExplorerService {
 
   public getBlockchainStatus = () => {
     let deferred = this.$q.defer<any>();
-    this.http.get(`${this.url}/nxt?requestType=getBlockchainStatus`).then(ret => {
-      let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
-      if (data) {
-        deferred.resolve(data)
+    this.settingsService.initialized.then(
+      () => {
+        this.setUrl(SettingsService.getCryptoServerEndpoint('ARDR'));
+        this.http.get(`${this.url}/nxt?requestType=getBlockchainStatus`).then(ret => {
+          let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
+          if (data) {
+            deferred.resolve(data)
+          }
+          else
+            deferred.reject()
+        }).catch(() => deferred.reject());
       }
-      else
-        deferred.reject()
-    }).catch(() => deferred.reject());
+    );
     return deferred.promise;
   }
 
