@@ -463,7 +463,7 @@ class WalletEntry {
           Export Wallet File
         </md-button>
 
-        <md-select ng-disabled="!vm.walletEntries || vm.walletEntries.length === 0" class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
+        <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
           <md-option style="height: 30px;"ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
       </div>
