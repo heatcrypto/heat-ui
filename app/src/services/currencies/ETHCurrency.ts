@@ -85,7 +85,7 @@ class ETHCurrency implements ICurrency {
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
         let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
-        let from = user.currency.secretPhrase
+        let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
         let to = $scope['vm'].data.recipient
         $scope['vm'].disableOKBtn = true
         web3.sendEther(from, to, amountInWei).then(
