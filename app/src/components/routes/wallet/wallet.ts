@@ -1772,6 +1772,24 @@ class WalletComponent {
         $scope['vm'].data.password = ''
         $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account == account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) { }
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -1798,6 +1816,18 @@ class WalletComponent {
                     <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
                   </md-select>
                 </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
 
                 <!-- Invalid Non BIP44 Seed-->
 
@@ -1983,6 +2013,24 @@ class WalletComponent {
         $scope['vm'].data.password = ''
         $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account == account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) { }
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -2009,6 +2057,18 @@ class WalletComponent {
                     <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
                   </md-select>
                 </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
 
                 <!-- Invalid Non BIP44 Seed-->
 
@@ -2115,6 +2175,24 @@ class WalletComponent {
         $scope['vm'].data.password = ''
         $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account == account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) { }
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -2141,6 +2219,18 @@ class WalletComponent {
                     <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
                   </md-select>
                 </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
 
                 <!-- Invalid Non BIP44 Seed-->
 
@@ -2247,6 +2337,24 @@ class WalletComponent {
         $scope['vm'].data.password = ''
         $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account == account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) { }
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -2273,6 +2381,18 @@ class WalletComponent {
                     <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
                   </md-select>
                 </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
 
                 <!-- Invalid Non BIP44 Seed-->
 
@@ -2367,6 +2487,24 @@ class WalletComponent {
         $scope['vm'].data.password = ''
         $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account == account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) { }
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -2393,6 +2531,18 @@ class WalletComponent {
                     <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
                   </md-select>
                 </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
 
                 <!-- Invalid Non BIP44 Seed-->
 
@@ -2564,6 +2714,24 @@ class WalletComponent {
         $scope['vm'].data.password = ''
         $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
       }
+
+      $scope['vm'].passwordChanged = function () {
+        let password = $scope['vm'].data.password
+        let account = $scope['vm'].data.selected
+        let walletEntry = walletEntries.find(w => w.account == account)
+        try {
+          var key = self.localKeyStore.load(account, password);
+          if (key) {
+            self.localKeyStore.rememberPassword(walletEntry.account, password)
+            walletEntry.pin = password
+            walletEntry.secretPhrase = key.secretPhrase
+            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
+            walletEntry.unlocked = true
+            self.initWalletEntry(walletEntry)
+            walletEntry.toggle(true)
+          }
+        } catch (e) { }
+      }
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -2590,6 +2758,18 @@ class WalletComponent {
                     <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
                   </md-select>
                 </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
 
                 <!-- Invalid Non BIP44 Seed-->
 
