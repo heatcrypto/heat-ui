@@ -90,7 +90,7 @@ class Web3Service {
       gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
       gasPrice: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE)),
       to:       to,
-      value:    value.toString('hex')
+      value:    '0x' + parseInt(value).toString(16)
     }
     // @ts-ignore
     let tx = new ethereumjs.Tx(txParams)
