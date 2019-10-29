@@ -84,22 +84,25 @@ class ETHCurrency implements ICurrency {
       $scope['vm'].okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
+        let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
         let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
         let to = $scope['vm'].data.recipient
         $scope['vm'].disableOKBtn = true
-        web3.sendEther(from, to, amountInWei).then(
-          data => {
-            $mdDialog.hide(data).then(() => {
-              dialogs.alert(event, 'Success', `TxHash: ${data.txHash}`);
-            })
-          },
-          err => {
-            $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err ? err.message : "Error, see details in the console output");
-            })
-          }
-        )
+        web3.createRawTx2(from, to, amountInWei).then((rawTx) => {
+          ethBlockExplorerService.broadcast(rawTx).then(
+            data => {
+              $mdDialog.hide(data).then(() => {
+                dialogs.alert(event, 'Success', `TxHash: ${data.txHash}`);
+              })
+            },
+            err => {
+              $mdDialog.hide(null).then(() => {
+                dialogs.alert(event, 'Error', err ? err.message : "Error, see details in the console output");
+              })
+            }
+          )
+        })
       }
       $scope['vm'].disableOKBtn = false
       $scope['vm'].data = {
