@@ -59,7 +59,7 @@ class Web3Service {
 
   sendEther(account: any,_to: string, _value: any): Promise<{ txHash:string }> {
     return new Promise((resolve, reject) => {
-      this.web3.eth.sendRawTransaction(this.createRawTx(_to, _value, account), (err, res) => {
+      this.web3.eth.sendRawTransaction(this.createRawTx2(_to, _value, account), (err, res) => {
         if(err) reject(err)
         resolve(res)
       });
@@ -72,7 +72,7 @@ class Web3Service {
 			gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
 			gasPrice: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE)),
 			value,
-			nonce: this.web3.toHex(this.web3.eth.getTransactionCount(account.address))
+			nonce: 0 // this.web3.toHex(this.web3.eth.getTransactionCount(account.address))
     }
     let Transaction = this.ethereumTx.Transaction;
     var tx = new Transaction(rawTx);
@@ -83,4 +83,20 @@ class Web3Service {
 
 		return serializedTx;
 	}
+
+  createRawTx2 = (to, value, account) => {
+    let txParams = {
+      nonce:    '0x00',
+      gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
+      gasPrice: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE)),
+      to:       to,
+      value:    value.toString('hex')
+    }
+    // @ts-ignore
+    let tx = new ethereumjs.Tx(txParams)
+    // @ts-ignore
+    tx.sign(new ethereumjs.Buffer.Buffer(account.privateKey, 'hex'))
+    return '0x' + tx.serialize().toString('hex')
+  }
+
 }
