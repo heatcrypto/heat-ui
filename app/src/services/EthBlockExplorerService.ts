@@ -21,7 +21,7 @@ class EthBlockExplorerService implements IEthereumAPIList {
         this.ethApiProvider = this.ethBlockExplorerHeatNodeService;
         resolve()
       }).catch(() => {
-        this.ethApiProvider = this.ethBlockExplorerHeatNodeService;
+        this.ethApiProvider = this.ethplorer;
         resolve()
       }).finally(() => {
         this.tokenInfoCache = this.ethApiProvider.tokenInfoCache;
