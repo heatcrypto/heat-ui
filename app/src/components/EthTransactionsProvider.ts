@@ -85,7 +85,7 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
         deferred.reject
       )
     } else {
-      let pageNum = (lastIndex / 10) || 0;
+      let pageNum = (lastIndex / 20) || 0;
       this.ethBlockExplorerService.getAddressTransactions(this.account, pageNum).then(
         transactions => {
           deferred.resolve(this.ethTransactionParser.parse(transactions))

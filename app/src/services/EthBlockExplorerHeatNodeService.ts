@@ -119,7 +119,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
 
   public getAddressTransactions(address: string, pageNum?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>();
-    let getTransactionsApi = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=txs&page=${pageNum}&pageSize=10`;
+    let getTransactionsApi = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=txs&page=${pageNum}&pageSize=20`;
     this.http.get(getTransactionsApi).then((response) => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       if(parsed.transactions && parsed.transactions.length > 0)
