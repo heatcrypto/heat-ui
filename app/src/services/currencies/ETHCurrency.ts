@@ -96,7 +96,7 @@ class ETHCurrency implements ICurrency {
           },
           err => {
             $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err.message);
+              dialogs.alert(event, 'Error', err ? err.message : "Error, see details in the console output");
             })
           }
         )

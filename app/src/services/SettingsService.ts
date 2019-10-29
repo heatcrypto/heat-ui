@@ -115,7 +115,7 @@ class SettingsService {
     node[property] = value;
   }
 
-  static getCryptoServer(currency: string): CryptoNodesDescriptor {
+  static getCryptoServer(currency: string): CryptoNodeDescriptor {
     let nodes = SettingsService.CRYPTO_NODES.find((descriptor) => descriptor.currencyName === currency).nodes.filter(node => node.status === 'ACTIVE');
     return nodes.sort((n1, n2) => n1.priority < n2.priority ? -1 : 1)[0]
   }
@@ -319,10 +319,10 @@ interface FailoverDescriptor {
 
 interface CryptoNodesDescriptorMap {
   currencyName: string;
-  nodes: CryptoNodesDescriptor[];
+  nodes: CryptoNodeDescriptor[];
 }
 
-interface CryptoNodesDescriptor {
+interface CryptoNodeDescriptor {
   host: string;
   port?: number;
   priority: number;

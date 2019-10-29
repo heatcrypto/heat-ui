@@ -158,7 +158,8 @@
           "host": "https://api.ethplorer.io",
           "priority": 0,
           "status": "ACTIVE",
-          "timeout": 5000
+          "timeout": 5000,
+          "blockbook": "https://eth1.heatwallet.com/api/v2"
         }
       ]
     }
