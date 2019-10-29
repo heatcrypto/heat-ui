@@ -4,6 +4,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
 
   private static endPoint: string;
   public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
+  private providerName = 'HEAT';
 
   constructor(public $q: angular.IQService,
     private http: HttpService,
@@ -24,6 +25,8 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
       })
     })
   }
+
+  public getProviderName() {return this.providerName;}
 
   public isSyncing() {
     let deferred = this.$q.defer();

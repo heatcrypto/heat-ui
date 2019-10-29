@@ -13,6 +13,8 @@ interface IEthereumAPIList {
 
   getAddressInfo(address: string)
 
+  getProviderName(): string
+
 }
 
 interface EthplorerTokenInfo {
