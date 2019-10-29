@@ -1,11 +1,11 @@
 interface IEthereumAPIList {
   tokenInfoCache: { [key: string]: EthplorerTokenInfo };
 
-  getAddressTransactions(address: string): angular.IPromise<any>
+  getAddressTransactions(address: string, pageNum?: number)
 
   getTxInfo(txId: string)
 
-  getBalance(address: string): angular.IPromise<string>
+  getBalance(address: string)
 
   broadcast(rawTx: string)
 

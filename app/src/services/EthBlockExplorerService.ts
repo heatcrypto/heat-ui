@@ -13,7 +13,7 @@ class EthBlockExplorerService implements IEthereumAPIList {
     setInterval(() => this.refresh(), 5 * 60 * 1000)
   }
 
-  public getProviderName() {return this.ethApiProvider.getProviderName();}
+  public getProviderName() { return this.ethApiProvider.getProviderName(); }
 
   public refresh() {
     return new Promise((resolve, reject) => {
@@ -45,12 +45,33 @@ class EthBlockExplorerService implements IEthereumAPIList {
     return this.ethApiProvider.getTransactionCount(address);
   }
 
-  public getAddressTransactions(address: string) {
-    return this.ethplorer.getAddressTransactions(address)
+  public getAddressTransactions(address: string, pageNum: number) {
+    let deferred = this.$q.defer<any>();
+    if (this.ethApiProvider.getProviderName() === 'HEAT') {
+      this.ethApiProvider.getAddressTransactions(address, pageNum).then((response) => {
+        this.convertAddressTransactions(response)
+        deferred.resolve(response)
+      })
+    } else {
+      this.ethApiProvider.getAddressTransactions(address).then((response) => deferred.resolve(response))
+    }
+    return deferred.promise;
+
   }
 
   public getAddressInfo(address: string) {
     return this.ethApiProvider.getAddressInfo(address);
+  }
+
+  private convertAddressTransactions(transactions) {
+    transactions.forEach(tx => {
+      tx.from = tx.vin[0].addresses[0];
+      tx.to = tx.vout[0].addresses[0];
+      tx.hash = tx.txid;
+      tx.value = tx.vout[0].value;
+      tx.input = '';
+      tx.success = ''
+    });
   }
 
 }

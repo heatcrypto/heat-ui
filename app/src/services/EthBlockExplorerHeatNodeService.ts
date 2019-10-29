@@ -55,13 +55,14 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
   }
 
   public getTransactionCount(address: string) {
-    let getTxInfoApi = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}/details=basics`;
+    let getTxInfoApi = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=basics`;
     let deferred = this.$q.defer<number>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.txs);
-    }, () => {
-      deferred.reject();
+    }, (e) => {
+      console.log(e)
+      deferred.reject(e);
     })
     return deferred.promise
   }
@@ -121,7 +122,9 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     let getTransactionsApi = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=txs&page=${pageNum}&pageSize=10`;
     this.http.get(getTransactionsApi).then((response) => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      deferred.resolve(parsed.transactions)
+      if(parsed.transactions && parsed.transactions.length > 0)
+        deferred.resolve(parsed.transactions)
+      deferred.resolve([])
     }, () => {
       deferred.reject();
     });
