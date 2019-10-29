@@ -23,14 +23,14 @@
 
 class ETHCurrency implements ICurrency {
 
-  private ethplorer: EthplorerService
+  private ethBlockExplorerService: EthBlockExplorerService
   public symbol = 'ETH'
   public homePath
   private pendingTransactions: EthereumPendingTransactionsService
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
-    this.ethplorer = heat.$inject.get('ethplorer')
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('ethereumPendingTransactions')
@@ -38,7 +38,7 @@ class ETHCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
-    return this.ethplorer.getBalance(this.address).then(
+    return this.ethBlockExplorerService.getBalance(this.address).then(
       balance => {
         return utils.commaFormat(new Big(balance+"").toFixed(18))
       }
@@ -111,11 +111,11 @@ class ETHCurrency implements ICurrency {
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
-        let ethplorer = <EthplorerService> heat.$inject.get('ethplorer')
-        ethplorer.getAddressInfo($scope['vm'].data.recipient).then(
+        let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
+        ethBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = Number.parseFloat(info.ETH.balance).toFixed(18)
+              let balance = Number.parseFloat(info).toFixed(18)
               $scope['vm'].data.recipientInfo = `Balance: ${balance} ETH`
             })
           },

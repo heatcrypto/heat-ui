@@ -156,7 +156,13 @@
       "nodes": [
         {
           "host": "https://api.ethplorer.io",
-          "priority": 0,
+          "priority": 10,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "https://eth1.heatwallet.com/api/v2",
+          "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000,
           "blockbook": "https://eth1.heatwallet.com/api/v2"

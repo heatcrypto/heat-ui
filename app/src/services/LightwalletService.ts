@@ -57,7 +57,7 @@ declare type WalletType = {
 }
 
 @Service('lightwalletService')
-@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer', '$window', 'storage')
+@Inject('web3', 'user', 'settings', '$rootScope', '$window', 'storage')
 class LightwalletService {
 
   //public wallet: WalletType
@@ -69,11 +69,10 @@ class LightwalletService {
     private userService: UserService,
     private settingsService: SettingsService,
     private $rootScope: angular.IRootScopeService,
-    private ethplorer: EthplorerService,
     private $window: angular.IWindowService,
     storage: StorageService) {
-      this.lightwallet = $window.heatlibs.lightwallet;
-      this.store = storage.namespace('wallet-address', $rootScope, true);
+    this.lightwallet = $window.heatlibs.lightwallet;
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   generateRandomSeed() {
@@ -94,7 +93,7 @@ class LightwalletService {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
       let encryptedWallet = this.store.get(`ETH-${heatAddress}`)
       if (encryptedWallet) {
-        if(!encryptedWallet.data) {
+        if (!encryptedWallet.data) {
           // Temporary fix. To remove unusable data from local storage
           this.store.remove(`ETH-${heatAddress}`)
           this.unlock(seedOrPrivateKey)
@@ -102,7 +101,7 @@ class LightwalletService {
         let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
         resolve(JSON.parse(decryptedWallet));
       } else {
-        let promise:Promise<WalletType>;
+        let promise: Promise<WalletType>;
         if (this.validSeed(seedOrPrivateKey)) {
           promise = this.getEtherWallet(seedOrPrivateKey, password || "")
         }
@@ -123,10 +122,10 @@ class LightwalletService {
     });
   }
 
-  refreshAdressBalances(wallet:WalletType) {
+  refreshAdressBalances(wallet: WalletType) {
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)
-    let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
+    let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
 
     function processNext() {
       return new Promise((resolve, reject) => {
@@ -134,41 +133,42 @@ class LightwalletService {
         /* get the first element from the list */
         let address = addresses[0]
         addresses.shift()
+        /* look up its data on ethBlockExplorerService */
+        ethBlockExplorerService.refresh().then(() => {
+          ethBlockExplorerService.getAddressInfo(address).then(info => {
 
-        /* look up its data on ethplorer */
-        ethplorer.getAddressInfo(address).then(info => {
+            /* lookup the 'real' WalletAddress */
+            let walletAddress = wallet.addresses.find(x => x.address == address)
+            if (!walletAddress)
+              return
 
-          /* lookup the 'real' WalletAddress */
-          let walletAddress = wallet.addresses.find(x => x.address == address)
-          if (!walletAddress)
-            return
+            walletAddress.inUse = info.countTxs != 0
+            if (!walletAddress.inUse) {
+              resolve(false)
+              return
+            }
 
-          walletAddress.inUse = info.countTxs!=0
-          if (!walletAddress.inUse) {
-            resolve(false)
-            return
-          }
+            walletAddress.balance = info.ETH.balance + ""
+            walletAddress.tokensBalances = []
 
-          walletAddress.balance = info.ETH.balance+""
-          walletAddress.tokensBalances = []
-
-          if (info.tokens) {
-            info.tokens.forEach(token => {
-              let tokenInfo = ethplorer.tokenInfoCache[token.tokenInfo.address]
-              let decimals = tokenInfo?tokenInfo.decimals:8
-              let amount = token.balance ? new Big(token.balance+"").toFixed() : "0"
-              walletAddress.tokensBalances.push({
-                symbol: tokenInfo?tokenInfo.symbol:'',
-                name: tokenInfo?tokenInfo.name:'',
-                decimals: decimals,
-                balance: utils.formatQNT(amount,decimals),
-                address: token.tokenInfo.address
+            if (info.tokens) {
+              info.tokens.forEach(token => {
+                let tokenInfo = ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
+                let decimals = tokenInfo ? tokenInfo.decimals : 8
+                let amount = token.balance ? new Big(token.balance + "").toFixed() : "0"
+                walletAddress.tokensBalances.push({
+                  symbol: tokenInfo ? tokenInfo.symbol : '',
+                  name: tokenInfo ? tokenInfo.name : '',
+                  decimals: decimals,
+                  balance: utils.formatQNT(amount, decimals),
+                  address: token.tokenInfo.address
+                })
               })
-            })
-          }
-          resolve(true)
-        }, () => {
-          resolve(false)
+            }
+            resolve(true)
+          }, () => {
+            resolve(false)
+          })
         })
       })
     }
@@ -189,7 +189,7 @@ class LightwalletService {
     }
 
     return new Promise((resolve, reject) => {
-      ethplorer.getTopTokens().then(() => recurseToNext(resolve)).catch(() => reject)
+      recurseToNext(resolve)
     })
   }
 
@@ -223,12 +223,12 @@ class LightwalletService {
             return;
           }
 
-          var HookedWeb3Provider = this.$window.heatlibs.HookedWeb3Provider;
-          var web3Provider = new HookedWeb3Provider({
-            host: this.settingsService.get(SettingsService.WEB3PROVIDER),
-            transaction_signer: ks
-          });
-          this.web3Service.web3.setProvider(web3Provider);
+          // var HookedWeb3Provider = this.$window.heatlibs.HookedWeb3Provider;
+          // var web3Provider = new HookedWeb3Provider({
+          //   host: this.settingsService.get(SettingsService.WEB3PROVIDER),
+          //   transaction_signer: ks
+          // });
+          // this.web3Service.web3.setProvider(web3Provider);
           ks.passwordProvider = function (callback) {
             callback(null, password);
           }
@@ -240,7 +240,7 @@ class LightwalletService {
             }
 
             try {
-              let keyCount = 20
+              let keyCount = 1
               ks.generateNewAddress(pwDerivedKey, keyCount);
               var addresses = ks.getAddresses();
 
@@ -248,7 +248,7 @@ class LightwalletService {
               for (let i = 0; i < keyCount; i++) {
                 let walletAddress = addresses[i];
                 let privateKey = ks.exportPrivateKey(walletAddress, pwDerivedKey);
-                wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "0", inUse: false }
+                wallet.addresses[i] = { address: '0xebb948075bc344a6e3ccc6fe91ac8b933aef1018', privateKey, index: i, balance: "0", inUse: false }
               }
               resolve(wallet);
             } catch (e) {

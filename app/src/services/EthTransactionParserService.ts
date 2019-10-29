@@ -35,7 +35,7 @@ interface EthplorerAddressTransactionExtended extends EthplorerAddressTransactio
 
 declare type JSONTokenMap = {[address:string]:{symbol:string,decimal:number}}
 @Service('ethTransactionParser')
-@Inject('$q','abiDecoder','http','settings','ethplorer')
+@Inject('$q','abiDecoder','http','settings','ethBlockExplorerService')
 class EthTransactionParserService {
 
   /* The ERC-20 standard ABI */
@@ -48,7 +48,7 @@ class EthTransactionParserService {
               private abiDecoder: AbiDecoderService,
               private http: HttpService,
               private settings: SettingsService,
-              private ethplorer: EthplorerService) {
+              private ethBlockExplorerService: EthBlockExplorerService) {
     this.abiDecoder.addABI(this.erc20Abi)
     this.abiDecoder.addABI(this.etherDeltaAbi)
   }
@@ -63,7 +63,7 @@ class EthTransactionParserService {
       result.push(extended)
 
       /* Is recipient a token contract address ? */
-      let tokenInfo = this.ethplorer.tokenInfoCache[transaction.to]
+      let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[transaction.to]
       if (tokenInfo) {
         extended.abi = {
           symbol: tokenInfo.symbol,
@@ -83,57 +83,4 @@ class EthTransactionParserService {
     })
     return result
   }
-
-  // /* This loads the ABI from etherscan but is needed only in case the token is non erc20 */
-  // loadAbi(contractAddress: string) {
-  //   if (this.abiDataPromises[contractAddress])
-  //     return this.abiDataPromises[contractAddress]
-
-  //   let deferred = this.$q.defer<{}>()
-  //   this.abiDataPromises[contractAddress] = deferred.promise
-
-  //   let url = this.settings.get(SettingsService.ETHERSCAN_CONTRACT_ABI)
-  //     .replace(":addresses", contractAddress)
-  //     .replace(":apiToken", this.settings.get(SettingsService.ETHERSCAN_API_TOKEN))
-  //   this.http.get(url).then(
-  //     response => {
-  //       if (response['status']=='1') {
-  //         deferred.resolve(JSON.parse(response['result']))
-  //       }
-  //       else {
-  //         console.log(`Could not load ABI for ${contractAddress}`)
-  //         deferred.resolve([])
-  //       }
-  //     },
-  //     (err) => {
-  //       console.log(err)
-  //       delete this.abiDataPromises[contractAddress] // we delete the promise in case of failure which means we try again later
-  //     }
-  //   )
-  //   return this.abiDataPromises[contractAddress]
-  // }
-
-  // loadEthTokens(): angular.IPromise<JSONTokenMap> {
-  //   if (this.jsonTokensPromise)
-  //     return this.jsonTokensPromise
-
-  //   let deferred = this.$q.defer<any>()
-  //   this.jsonTokensPromise = deferred.promise
-  //   this.http.get('https://raw.githubusercontent.com/kvhnuke/etherwallet/mercury/app/scripts/tokens/ethTokens.json').then(
-  //     json => {
-  //       let arr = angular.isString(json) ? JSON.parse(json) : json
-  //       let map = {}
-  //       arr.forEach(e => {
-  //         map[e.address] = {
-  //           symbol: e.symbol,
-  //           decimal: e.decimal
-  //         }
-  //       })
-  //       deferred.resolve(map)
-  //     },
-  //     deferred.reject
-  //   )
-  //   return this.jsonTokensPromise
-  // }
-
 }
