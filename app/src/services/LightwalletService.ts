@@ -240,7 +240,7 @@ class LightwalletService {
             }
 
             try {
-              let keyCount = 1
+              let keyCount = 20
               ks.generateNewAddress(pwDerivedKey, keyCount);
               var addresses = ks.getAddresses();
 
@@ -248,7 +248,7 @@ class LightwalletService {
               for (let i = 0; i < keyCount; i++) {
                 let walletAddress = addresses[i];
                 let privateKey = ks.exportPrivateKey(walletAddress, pwDerivedKey);
-                wallet.addresses[i] = { address: '0xebb948075bc344a6e3ccc6fe91ac8b933aef1018', privateKey, index: i, balance: "0", inUse: false }
+                wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "0", inUse: false }
               }
               resolve(wallet);
             } catch (e) {
