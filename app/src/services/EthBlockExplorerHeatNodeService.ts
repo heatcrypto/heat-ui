@@ -38,7 +38,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
         deferred.reject()
     }, () => {
       deferred.reject();
-    })
+    }).catch(() => deferred.reject())
     return deferred.promise;
   }
 

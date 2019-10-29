@@ -138,7 +138,7 @@ class EthplorerService implements IEthereumAPIList{
               private settingsService: SettingsService,
               private web3: Web3Service) {
 
-    EthplorerService.endPoint = 'https://eth1.heatwallet.com/api/v2'
+    EthplorerService.endPoint = 'https://api.ethplorer.io'
 
     http.get('https://raw.githubusercontent.com/dmdeklerk/ethereum-lists/master/dist/tokens/eth/tokens-eth.min.json').then(response => {
       let array = angular.isString(response) ? JSON.parse(response) : response
