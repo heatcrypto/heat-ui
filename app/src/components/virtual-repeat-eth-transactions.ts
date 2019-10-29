@@ -147,7 +147,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
       (transaction: EthplorerAddressTransactionExtended) => {
         var date = new Date(0); // 0 sets date to epoch time
         date.setUTCSeconds(<any>transaction.timestamp);
-        // transaction['time'] = dateFormat(date, format);
+        transaction['time'] = dateFormat(date, format);
         transaction['heightDisplay'] = 'no height'
         if (this.personalize) {
           transaction['outgoing'] = this.user.currency.address == transaction.from;

@@ -19,12 +19,11 @@ class EthBlockExplorerService implements IEthereumAPIList {
     return new Promise((resolve, reject) => {
       this.ethBlockExplorerHeatNodeService.isSyncing().then(() => {
         this.ethApiProvider = this.ethBlockExplorerHeatNodeService;
-        resolve()
       }).catch(() => {
         this.ethApiProvider = this.ethplorer;
-        resolve()
       }).finally(() => {
         this.tokenInfoCache = this.ethApiProvider.tokenInfoCache;
+        resolve()
       })
     })
   }
@@ -68,9 +67,10 @@ class EthBlockExplorerService implements IEthereumAPIList {
       tx.from = tx.vin[0].addresses[0];
       tx.to = tx.vout[0].addresses[0];
       tx.hash = tx.txid;
-      tx.value = tx.vout[0].value;
+      tx.value = tx.vout[0].value / 1000000000000000000;
       tx.input = '';
-      tx.success = ''
+      tx.success = '';
+      tx.timestamp = tx.blockTime;
     });
   }
 

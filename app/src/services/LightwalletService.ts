@@ -133,6 +133,10 @@ class LightwalletService {
         /* get the first element from the list */
         let address = addresses[0]
         addresses.shift()
+        if(!address) {
+          resolve(false)
+          return
+        }
         /* look up its data on ethBlockExplorerService */
         ethBlockExplorerService.refresh().then(() => {
           ethBlockExplorerService.getAddressInfo(address).then(info => {

@@ -45,7 +45,7 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
     private ethTransactionParser: EthTransactionParserService,
     private account: string) {
     if (ethBlockExplorerService.getProviderName() === 'Ethplorer') {
-      let ethplorer = <EthplorerService>heat.$inject.get('ethBlockExplorerService');
+      let ethplorer = <EthplorerService>heat.$inject.get('ethplorer');
       this.paginator = ethplorer.createPaginator(account)
     }
   }
