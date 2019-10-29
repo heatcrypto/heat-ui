@@ -17,6 +17,7 @@ class Web3Service {
     const Web3 = $window.heatlibs.Web3
     this.safeBuffer = $window.heatlibs.safeBuffer
     this.ethereumTx = $window.heatlibs.ethereumTx
+    this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
   }
 
   parseInput(input: string) {
