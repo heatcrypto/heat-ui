@@ -22,7 +22,7 @@
  * */
 
 @Service('ethereumPendingTransactions')
-@Inject('$q', 'http', 'settings','web3','ethplorer')
+@Inject('$q', 'http', 'settings','web3','ethBlockExplorerService')
 class EthereumPendingTransactionsService {
 
   public pending: {[address:string]:Array<{txHash:string,timestamp:number}>} = {}
@@ -32,7 +32,7 @@ class EthereumPendingTransactionsService {
               private http: HttpService,
               private settings: SettingsService,
               private web3: Web3Service,
-              private ethplorer: EthplorerService) {
+              private ethBlockExplorerService: EthBlockExplorerService) {
     this.readLocalStorage()
   }
 

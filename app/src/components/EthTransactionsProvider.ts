@@ -22,15 +22,15 @@
  * */
 
 @Service('ethTransactionsProviderFactory')
-@Inject('http','$q','ethplorer','ethTransactionParser')
+@Inject('http','$q','ethBlockExplorerService','ethTransactionParser')
 class EthTransactionsProviderFactory  {
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private ethplorer: EthplorerService,
+              private ethBlockExplorerService: EthBlockExplorerService,
               private ethTransactionParser: EthTransactionParserService) {}
 
   public createProvider(account: string): IPaginatedDataProvider {
-    return new EthTransactionsProvider(this.http, this.$q, this.ethplorer, this.ethTransactionParser, account);
+    return new EthTransactionsProvider(this.http, this.$q, this.ethBlockExplorerService, this.ethTransactionParser, account);
   }
 }
 
@@ -41,10 +41,13 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
-              private ethplorer: EthplorerService,
+              private ethBlockExplorerService: EthBlockExplorerService,
               private ethTransactionParser: EthTransactionParserService,
               private account: string) {
-    this.paginator = ethplorer.createPaginator(account)
+    if(ethBlockExplorerService.getProviderName() === 'Ethplorer'){
+      let ethplorer = <EthplorerService> heat.$inject.get('ethBlockExplorerService');
+      this.paginator = ethplorer.createPaginator(account)
+    }
   }
 
   /* Be notified this provider got destroyed */

@@ -278,13 +278,13 @@ class EthTransactionRenderer {
   private renderers: IStringHashMap<EthTransactionRenderHelper> = {};
   private transactionTypes: IStringHashMap<string> = {};
   private ethTransactionParser: EthTransactionParserService
-  private ethplorer: EthplorerService
+  private ethBlockExplorerService: EthBlockExplorerService
 
   constructor(private provider?: {account?: string, personalize: boolean}) {
     let key;
     this.$q = <angular.IQService> heat.$inject.get('$q');
     this.ethTransactionParser = <EthTransactionParserService> heat.$inject.get('ethTransactionParser');
-    this.ethplorer = heat.$inject.get('ethplorer')
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     key = this.TYPE_ETHEREUM_TRANSFER;
     this.transactionTypes[key] = 'TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
@@ -336,7 +336,7 @@ class EthTransactionRenderer {
           token: this.token(t.to),
           from: this.account(t.from),
           to: this.account(t.abi.decodedData.params[0].value),
-          value: this.amount(t.abi.decodedData.params[1].value, this.ethplorer.tokenInfoCache[t.to])
+          value: this.amount(t.abi.decodedData.params[1].value, this.ethBlockExplorerService.tokenInfoCache[t.to])
         }
       }
     );
@@ -351,7 +351,7 @@ class EthTransactionRenderer {
           asset: this.token(t.to),
           sender: this.account(t.abi.decodedData.params[0].value),
           recipient: this.account(t.abi.decodedData.params[1].value),
-          amount: this.amount(t.abi.decodedData.params[2].value, this.ethplorer.tokenInfoCache[t.to])
+          amount: this.amount(t.abi.decodedData.params[2].value, this.ethBlockExplorerService.tokenInfoCache[t.to])
         }
       }
     );
@@ -508,7 +508,7 @@ class EthTransactionRenderer {
   }
 
   token(address: string) {
-    let tokenInfo = this.ethplorer.tokenInfoCache[address]
+    let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[address]
     if (tokenInfo) {
       return `<a target="_blank" href="https://ethplorer.io/address/${address}">${tokenInfo.symbol}</a>`;
     }
