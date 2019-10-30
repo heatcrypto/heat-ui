@@ -39,6 +39,9 @@ declare type WalletAddress = {
 
   accountId: string;
 
+  /* Allow user to soft delete address from wallet */
+  isDeleted: boolean;
+
   /* ERC20 token balances */
   tokensBalances: Array<{
     symbol: string;
