@@ -575,8 +575,8 @@ class WalletEntry {
                     </md-menu-item>
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.deleteEntry(entry)">
-                        <md-icon md-font-library="material-icons">file_copy</md-icon>
-                        Delete Entry
+                        <md-icon md-font-library="material-icons">delete_forever</md-icon>
+                        Remove address
                       </md-button>
                     </md-menu-item>
                 </md-menu-content>
