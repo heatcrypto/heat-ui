@@ -61,7 +61,7 @@ class ETHCurrency implements ICurrency {
       data => {
         let address = this.user.currency.address
         let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txHash, timestamp)
+        this.pendingTransactions.add(address, data.txId, timestamp)
       },
       err => {
         if (err) {
@@ -93,7 +93,7 @@ class ETHCurrency implements ICurrency {
           ethBlockExplorerService.broadcast(rawTx).then(
             data => {
               $mdDialog.hide(data).then(() => {
-                dialogs.alert(event, 'Success', `TxHash: ${data.txHash}`);
+                dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
               })
             },
             err => {
@@ -138,7 +138,7 @@ class ETHCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txHash:string }>()
+    let deferred = $q.defer<{ txId:string }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
