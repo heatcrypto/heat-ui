@@ -18,6 +18,10 @@ class Web3Service {
     this.safeBuffer = $window.heatlibs.safeBuffer
     this.ethereumTx = $window.heatlibs.ethereumTx
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
+
+    this.settingsService.initialized.then(
+      () => this.blockbookEndpoint = SettingsService.getCryptoServerEndpoint('ETH')
+    );
   }
 
   parseInput(input: string) {
@@ -34,7 +38,7 @@ class Web3Service {
   }
   sendEther(account: any, _to: string, _value: any): Promise<{ txHash: string }> {
     return new Promise((resolve, reject) => {
-      this.createRawTx2(_to, _value, account).then(
+      this.createRawTx2(account, _to, _value).then(
         rawTx => {
           this.http.get(this.blockbookEndpoint + "/sendtx/" + rawTx).then(
             resp => resolve({txHash: resp}),
@@ -45,7 +49,7 @@ class Web3Service {
     })
   }
 
-  createRawTx2 = (to, value, account) => {
+  createRawTx2 = (account, to, value) => {
     return this.getTransactionCount2(account.address).then(
       txCount => {
         let txParams = {

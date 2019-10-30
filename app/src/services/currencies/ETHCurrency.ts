@@ -124,7 +124,7 @@ class ETHCurrency implements ICurrency {
           },
           error => {
             $scope.$evalAsync(() => {
-              $scope['vm'].data.recipientInfo = error.message||'Invalid'
+              $scope['vm'].data.recipientInfo = error ? (error.message || error) : 'Invalid'
             })
           }
         )
