@@ -146,7 +146,7 @@ class LightwalletService {
             if (!walletAddress)
               return
 
-            walletAddress.inUse = info.countTxs != 0
+            walletAddress.inUse = info.txs != 0
             if (!walletAddress.inUse) {
               resolve(false)
               return
