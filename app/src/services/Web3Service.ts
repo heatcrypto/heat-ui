@@ -57,7 +57,8 @@ class Web3Service {
     return new Promise<number>((resolve) => {
       this.http.get(this.blockbookEndpoint + "/estimatefee/5").then(
         response => {
-          resolve(this.web3.toWei(response["result"], 'ether'))
+          let r = angular.isString(response) ? JSON.parse(response) : response
+          resolve(this.web3.toWei(r.result, 'ether'))
         },
         reason => {
           resolve(20000000000)
