@@ -1,6 +1,6 @@
 ![Heat Ledger logo](http://i.imgur.com/rvQ8XR4.png "Heat Ledger logo")
 
-# Heat Ledger Client Framework
+# HEAT Client Framework
 In this `README` you will find step by step instructions to get up and running developing **heat-ui** applications.
 Heat-ui framework is a complete end to end development setup.
 
@@ -18,7 +18,7 @@ In heat-ui you find:
   3. byte/binary support (**object mappers**)
   4. **user/key** management
   5. **settings** framework (with ui bindings)
-  6. create, inspect or verify **HEAT Ledger transactions**
+  6. create, inspect or verify **HEATtransactions**
 - UI components
   1. **real-time update** on web socket events
   2. **advanced dialog support** (standard, input, multi page wizard)
@@ -30,7 +30,7 @@ In heat-ui you find:
 
 ## Note
 
-At Heat Ledger Ltd we currently do our client and server development on Debian/Ubuntu desktops, we find it to be an excellent open source free! and secure platform. While we try and help new developers coming to heat-ui as best as possible, it is unfortunately not possible to include detailed step by step instructions for platforms that are not Debian based. Looking at you here Windows and Mac.
+At HEAT we currently do our client and server development on Debian/Ubuntu desktops, as we find it to be an excellent open source secure platform. While we try and help new developers coming to heat-ui as best as possible, it is unfortunately not feasible to include detailed step by step instructions for platforms that are not Debian based. Looking at you here Windows and Mac.
 
 In time it is our goal to include detailed step by step instructions for all platforms. So if you are using heat-ui and you are on Windows or Mac? Please be so kind to record the steps that it involved and provide those to us so we can share them with any other new user/developer that comes after you.
 
@@ -42,7 +42,7 @@ To get started developing heat-ui applications you really need your own copy of 
 
 To clone heat-ui to your own machine open a terminal and `cd` to where you want your heat-ui folder to appear. Now type the following to clone heat-ui.
 
-`git clone https://github.com/Heat-Ledger-Ltd/heat-ui.git`
+`git clone https://github.com/heatcrypto/heat-ui.git`
 
 ### Visual Studio Code
 
