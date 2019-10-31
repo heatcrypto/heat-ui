@@ -135,6 +135,10 @@ class ETHCurrency implements ICurrency {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
+      let web3 = <Web3Service> heat.$inject.get('web3')
+      web3.getGasPrice().then((gasprice) => {
+        $scope['vm'].data.fee = 21000 * gasprice / 1000000000000000000;
+      })
     }
 
     let $q = heat.$inject.get('$q')
