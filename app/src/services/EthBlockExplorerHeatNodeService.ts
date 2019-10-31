@@ -83,7 +83,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     let sendTxApi = `${EthBlockExplorerHeatNodeService.endPoint}/sendtx/${txObject}`;
     let deferred = this.$q.defer<any>();
     this.http.get(sendTxApi).then((response: any) => {
-      deferred.resolve({txId: response.result});
+      deferred.resolve({txId: (angular.isString(response) ? JSON.parse(response) : response).result});
     }, (error) => {
       deferred.reject(error);
     })

@@ -31,7 +31,7 @@ class Web3Service {
   getTransactionCount2 = (address: string) => {
     return new Promise<number>((resolve, reject) => {
       this.http.get(this.blockbookEndpoint + "/address/" + address).then(
-        resp => resolve(resp["nonce"]),
+        resp => resolve((angular.isString(resp) ? JSON.parse(resp) : resp).nonce),
         reason => reject(reason)
       );
     })
