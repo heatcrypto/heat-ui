@@ -21,116 +21,6 @@
  * SOFTWARE.
  * */
 
-interface EthplorerTokenInfo {
-  address: string;
-  totalSupply: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  // token price (false, if not available)
-  price: {
-    rate: string;
-    currency: string;
-    diff: number;
-    ts: number;
-  };
-  owner: string;
-  countOps: string;
-  totalIn: number;
-  totalOut: number;
-  holdersCount: number;
-  issuancesCount: number;
-}
-
-interface EthplorerAddressInfo {
-  address: string;
-  ETH: {
-    balance: string;
-    totalIn: string;
-    totalOut: string;
-  };
-  // exists if specified address is a contract
-  contractInfo: {
-    creatorAddress: string;
-    transactionHash: string;
-    timestamp: number;
-  };
-  // exists if specified address is a token contract address (same format as token info),
-  tokenInfo: EthplorerTokenInfo;
-  // exists if specified address has any token balances
-  tokens: Array<{
-    tokenInfo: EthplorerTokenInfo;
-    // token balance (as is, not reduced to a floating point value)
-    balance: string;
-    totalIn: string;
-    totalOut: string;
-  }>;
-  // Total count of incoming and outcoming transactions (including creation one)
-  countTxs: number;
-}
-
-/* These are all address transactions including 0x txns  */
-interface EthplorerAddressTransaction {
-  // operation timestamp
-  timestamp: number
-  // source address (if two addresses involved)
-  from: string
-  // destination address (if two addresses involved)
-  to: string
-  // transaction hash
-  hash: string
-  // ETH value (as is, not reduced to a floating point value)
-  value: string
-  // input data
-  input: string
-  // true if transactions was completed, false if failed
-  success: boolean
-}
-
-/* These are all address operations, these contain parsed input data turned into operations */
-interface EthplorerAddressHistoryOperation {
-  // operation timestamp
-  timestamp: number
-  transactionHash: string;
-  // token data (same format as token info)
-  tokenInfo: EthplorerTokenInfo
-  // operation type (transfer, approve, issuance, mint, burn, etc)
-  type: string
-  // operation target address (if one)
-  address: string
-  // source address (if two addresses involved),
-  from: string
-  // destination address (if two addresses involved),
-  to: string
-  // operation value (as is, not reduced to a floating point value),
-  value: string
-}
-
-interface EthplorerTxInfo {
-  // transaction hash
-  hash: string
-  // transaction block time
-  timestamp: number
-  // transaction block number
-  blockNumber: number
-  // number of confirmations
-  confirmations: number
-  // true if there were no errors during tx execution
-  success: boolean
-  // source address
-  from: string
-  // destination address
-  to: string
-  // ETH send value
-  value: string
-  // transaction input data (hex)
-  input: string
-  // gas limit set to this transaction
-  gasLimit: string
-  // gas used for this transaction
-  gasUsed: string
-}
-
 class EthplorerTransactionPaginator {
   private $q: angular.IQService
   private pool: Array<EthplorerAddressTransaction> = []
@@ -214,7 +104,7 @@ class EthplorerTransactionPaginator {
   /* Transaction count is hardcoded to return max 150 results */
   getCount(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    this.ethplorer.getEthplorerTransactionCount(this.address).then(
+    this.ethplorer.getTransactionCount(this.address).then(
       count => {
         deferred.resolve(Math.min(count, 1000))
       }, deferred.reject
@@ -237,8 +127,9 @@ class EthplorerTransactionPaginator {
 
 @Service('ethplorer')
 @Inject('$q', 'http', 'settings','web3')
-class EthplorerService {
+class EthplorerService implements IEthereumAPIList{
 
+  private providerName = 'Ethplorer'
   public tokenInfoCache: {[key:string]: EthplorerTokenInfo} = {}
   private cachedGetCachedAddressInfo = null
   private static endPoint: string;
@@ -246,10 +137,13 @@ class EthplorerService {
               private http: HttpService,
               private settingsService: SettingsService,
               private web3: Web3Service) {
+
+    EthplorerService.endPoint = 'https://api.ethplorer.io'
+
     http.get('https://raw.githubusercontent.com/dmdeklerk/ethereum-lists/master/dist/tokens/eth/tokens-eth.min.json').then(response => {
       let array = angular.isString(response) ? JSON.parse(response) : response
       array.forEach(x => {
-        this.tokenInfoCache[x.address] = <any> {
+        this.tokenInfoCache[x.address] = <any>{
           address: x.address,
           totalSupply: 0,
           name: x.name,
@@ -258,29 +152,15 @@ class EthplorerService {
         }
       })
     })
-
-    // get settings after it is initialized (read config files)
-    this.settingsService.initialized.then(
-      () => EthplorerService.endPoint = SettingsService.getCryptoServerEndpoint('ETH')
-    );
   }
+
+  public getProviderName() {return this.providerName;}
 
   createPaginator(address: string) : EthplorerTransactionPaginator {
     return new EthplorerTransactionPaginator(address, this);
   }
 
-  public getErc20Tokens(address: string): angular.IPromise<any> {
-    let deferred = this.$q.defer<any>();
-    this.getCachedAddressInfo(address).then(response => {
-      deferred.resolve(response)
-    }, err => {
-      console.log(err)
-      deferred.resolve([])
-    })
-    return deferred.promise
-  }
-
-  public getEthplorerTransactionCount(address: string): angular.IPromise<number> {
+  public getTransactionCount(address: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
     this.getCachedAddressInfo(address).then(info => {
       deferred.resolve(info.countTxs)
@@ -356,7 +236,7 @@ class EthplorerService {
    *
    *    var ts = Math.round((new Date()).getTime() / 1000);
    */
-  public getAddressTransactions(address: string, timestamp: number, showZeroValues?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
+  public getAddressTransactions(address: string, timestamp?: number, showZeroValues?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>();
     showZeroValues = showZeroValues || 1
     let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?apiKey=lwA5173TDKj60&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
@@ -377,36 +257,16 @@ class EthplorerService {
     return deferred.promise
   }
 
-  /**
-   * [[
-   *    THIS IS NOT USED AT THIS TIME, WE USE RAW TRANSACTIONS INSTEAD WHICH WE PARSE.
-   *    TOKEN NAMES, SYMBOLS AND DECIMALS ARE OBTAINED THROUGH getAddressInfo AND
-   *    ARE CACHED FOR SYNCED ACCESS FROM TXN RENDER SERVICE
-   * ]]
-   *
-   * These are our token operations, these are constructed by parsing the transactions inputs
-   * and are collected by ethplorer.
-   *
-   * Pagination happens through timestamp param.
-   */
-  public getAddressHistory(address: string, timestamp: number): angular.IPromise<Array<EthplorerAddressHistoryOperation>> {
-    let deferred = this.$q.defer<Array<EthplorerAddressHistoryOperation>>();
-    let url = `${EthplorerService.endPoint}/getAddressHistory/${address}?apiKey=lwA5173TDKj60&limit=10&timestamp=${timestamp}`
-    this.http.get(url)
-        .then((response) => {
-          var parsed = angular.isString(response) ? JSON.parse(response) : response;
-          if (parsed.error) {
-            console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
-            deferred.resolve([])
-          }
-          else {
-            deferred.resolve(parsed.operations);
-          }
-        }, () => {
-          console.log(`HTTP reject for ${url}`)
-          deferred.resolve([]);
-        });
-    return deferred.promise
+  public broadcast(rawTx: string) {
+    let deferred = this.$q.defer();
+    let url = `https://api.blockcypher.com/v1/eth/main/txs/push?token=d7995959366d4369976aabb3355c7216`
+    this.http.post(url, {tx: rawTx}).then((response: any) => {
+      response.txId = response.hash;
+      deferred.resolve(response)
+    }, (e) => {
+      deferred.reject('Error broadcasting transaction')
+    })
+    return deferred.promise;
   }
 
   public getTxInfo(txHash: string): angular.IPromise<EthplorerTxInfo> {

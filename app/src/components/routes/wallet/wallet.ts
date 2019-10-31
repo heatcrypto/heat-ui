@@ -123,6 +123,24 @@ class CurrencyAddressCreate {
     currencies.push(currency)
     store.put(account, currencies.filter(this.distinctValues));
   }
+
+  removeIsDeleted(entry) {
+    const storage = <StorageService>heat.$inject.get('storage')
+    const $rootScope = heat.$inject.get('$rootScope');
+    let currency = entry.symbol;
+    let heatAddress = entry.walletEntry.account;
+    let store = storage.namespace('wallet-address', $rootScope, true);
+    let encryptedWallet = store.get(`${currency}-${heatAddress}`)
+    let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
+    let walletType = JSON.parse(decryptedWallet)
+    walletType.addresses.forEach(walletAddress => {
+      if (walletAddress.address === entry.address)
+        delete walletAddress['isDeleted'];
+    });
+    let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
+    store.put(`${currency}-${heatAddress}`, encrypted);
+
+  }
   /* Handler for creating a new address, this method is declared here (on the node so to say)
     still after an architectural change where we dont display the CREATE node anymore.
     We'll be leaving it in place where all you need to do is set this.hidden=false to
@@ -241,6 +259,8 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'FIM')
       return true
@@ -257,6 +277,8 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'NXT')
       return true
@@ -272,6 +294,8 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'ARDR')
       return true
@@ -522,7 +546,7 @@ class WalletEntry {
                 <div class="name">{{entry.name}}</div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
-                <md-menu md-position-mode="target-right target" md-offset="34px 34px">
+                <md-menu ng-hide="entry.symbol==='HEAT'" md-position-mode="target-right target" md-offset="34px 34px">
                   <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>
                   </md-button>
@@ -531,6 +555,12 @@ class WalletEntry {
                       <md-button aria-label="explorer" ng-click="vm.showPrivateKey(entry)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
+                      </md-button>
+                    </md-menu-item>
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.deleteEntry(entry)">
+                        <md-icon md-font-library="material-icons">delete_forever</md-icon>
+                        Remove address
                       </md-button>
                     </md-menu-item>
                 </md-menu-content>
@@ -631,6 +661,31 @@ class WalletComponent {
     `, {
         privateKey: entry.secretPhrase
       })
+  }
+
+  deleteEntry(entry) {
+    dialogs.confirm(`Remove ${entry.symbol} Address`,
+      `This will remove ${entry.symbol} ${entry.address} from your device.
+      Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
+        let remainingCurrencyBalances = this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account)
+          .currencies.filter((currency) => currency instanceof CurrencyBalance && entry.address !== currency.address);
+        this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account).currencies = remainingCurrencyBalances;
+        let currency = entry.symbol;
+        let heatAddress = entry.walletEntry.account;
+        let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+        let encryptedWallet = store.get(`${currency}-${heatAddress}`)
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
+        let walletType = JSON.parse(decryptedWallet)
+        if (['FIM', 'NXT', 'ARDR'].indexOf(entry.symbol) !== -1) {
+          walletType.addresses[0].isDeleted = true;
+        } else {
+          walletType.addresses = walletType.addresses.filter(address => address.address !== entry.address)
+        }
+        let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
+        store.put(`${currency}-${heatAddress}`, encrypted);
+
+        this.flatten()
+      });
   }
 
   createAccount($event) {

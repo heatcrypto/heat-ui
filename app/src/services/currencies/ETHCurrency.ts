@@ -23,14 +23,14 @@
 
 class ETHCurrency implements ICurrency {
 
-  private ethplorer: EthplorerService
+  private ethBlockExplorerService: EthBlockExplorerService
   public symbol = 'ETH'
   public homePath
   private pendingTransactions: EthereumPendingTransactionsService
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
-    this.ethplorer = heat.$inject.get('ethplorer')
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('ethereumPendingTransactions')
@@ -38,7 +38,7 @@ class ETHCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
-    return this.ethplorer.getBalance(this.address).then(
+    return this.ethBlockExplorerService.getBalance(this.address).then(
       balance => {
         return utils.commaFormat(new Big(balance+"").toFixed(18))
       }
@@ -59,9 +59,11 @@ class ETHCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendEther($event).then(
       data => {
-        let address = this.user.currency.address
-        let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txHash, timestamp)
+        if (data) {
+          let address = this.user.currency.address
+          let timestamp = new Date().getTime()
+          this.pendingTransactions.add(address, data.txId, timestamp)
+        }
       },
       err => {
         if (err) {
@@ -84,22 +86,25 @@ class ETHCurrency implements ICurrency {
       $scope['vm'].okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
+        let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
         let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
         let to = $scope['vm'].data.recipient
         $scope['vm'].disableOKBtn = true
-        web3.sendEther(from, to, amountInWei).then(
-          data => {
-            $mdDialog.hide(data).then(() => {
-              dialogs.alert(event, 'Success', `TxHash: ${data.txHash}`);
-            })
-          },
-          err => {
-            $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err ? err.message : "Error, see details in the console output");
-            })
-          }
-        )
+        web3.createRawTx2(from, to, amountInWei).then((rawTx) => {
+          ethBlockExplorerService.broadcast(rawTx).then(
+            data => {
+              $mdDialog.hide(data).then(() => {
+                dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
+              })
+            },
+            err => {
+              $mdDialog.hide(null).then(() => {
+                dialogs.alert(event, 'Error', err ? (err.message || err.error ||  err) : "Error, see details in the console output");
+              })
+            }
+          )
+        })
       }
       $scope['vm'].disableOKBtn = false
       $scope['vm'].data = {
@@ -111,17 +116,17 @@ class ETHCurrency implements ICurrency {
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
-        let ethplorer = <EthplorerService> heat.$inject.get('ethplorer')
-        ethplorer.getAddressInfo($scope['vm'].data.recipient).then(
+        let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
+        ethBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = Number.parseFloat(info.ETH.balance).toFixed(18)
+              let balance = Number.parseFloat(info).toFixed(18)
               $scope['vm'].data.recipientInfo = `Balance: ${balance} ETH`
             })
           },
           error => {
             $scope.$evalAsync(() => {
-              $scope['vm'].data.recipientInfo = error.message||'Invalid'
+              $scope['vm'].data.recipientInfo = error ? (error.message || error) : 'Invalid'
             })
           }
         )
@@ -130,12 +135,16 @@ class ETHCurrency implements ICurrency {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
+      let web3 = <Web3Service> heat.$inject.get('web3')
+      web3.getGasPrice().then((gasprice) => {
+        $scope['vm'].data.fee = 21000 * gasprice / 1000000000000000000;
+      })
     }
 
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txHash:string }>()
+    let deferred = $q.defer<{ txId:string }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),

@@ -20,113 +20,75 @@ class Web3Service {
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
 
     this.settingsService.initialized.then(
-      () => this.blockbookEndpoint = SettingsService.getCryptoServer('ETH')["blockbook"]
+      () => this.blockbookEndpoint = SettingsService.getCryptoServerEndpoint('ETH')
     );
-
   }
 
   parseInput(input: string) {
     return this.web3.toAscii(input)
   }
 
-  getBalanceOf(address: any): angular.IPromise<string> {
-    let deferred = this.$q.defer<string>()
-    this.web3.eth.getBalance(address, (err, balance) => {
-      if (err) deferred.reject(err)
-      else deferred.resolve(this.web3.fromWei(balance))
-    })
-    return deferred.promise
-  }
-
-  getTransactionCount = (from: string) => {
-    return new Promise((resolve, reject) => {
-      this.web3.eth.getTransactionCount(from, (error, result) => {
-        if (error) reject(error);
-        resolve(this.web3.toHex(result));
-      })
-    })
-  }
-
   getTransactionCount2 = (address: string) => {
     return new Promise<number>((resolve, reject) => {
       this.http.get(this.blockbookEndpoint + "/address/" + address).then(
-        resp => resolve(resp["txs"]),
+        resp => resolve((angular.isString(resp) ? JSON.parse(resp) : resp).nonce),
         reason => reject(reason)
       );
     })
   }
-
-  getGasEstimate = (_from: string, _to: string, _data: string) => {
+  sendEther(account: any, _to: string, _value: any): Promise<{ txHash: string }> {
     return new Promise((resolve, reject) => {
-      this.web3.eth.estimateGas({from: _from, data: _data, to: _to}, (error, result) => {
-        if (error) reject(error)
-        resolve(this.web3.toHex(result));
-      })
+      this.createRawTx2(account, _to, _value).then(
+        rawTx => {
+          this.http.get(this.blockbookEndpoint + "/sendtx/" + rawTx).then(
+            resp => {
+              resolve({ txHash: resp })
+            },
+            reason => {
+              reject(reason)
+            }
+          );
+        }
+      )
     })
   }
 
   getGasPrice = () => {
+    return new Promise<number>((resolve) => {
+      this.http.get(this.blockbookEndpoint + "/estimatefee/5").then(
+        response => {
+          let r = angular.isString(response) ? JSON.parse(response) : response
+          resolve(this.web3.toWei(r.result, 'ether'))
+        },
+        reason => {
+          resolve(20000000000)
+        }
+      );
+    })
+  }
+
+  createRawTx2 = (account, to, value) => {
     return new Promise((resolve, reject) => {
-      this.web3.eth.getGasPrice((error, result) => {
-        if (error) reject(error);
-        resolve(result.toString());
+      this.getGasPrice().then((gasPrice) => {
+        this.getTransactionCount2(account.address).then(
+          txCount => {
+            let txParams = {
+              nonce: '0x' + txCount.toString(16),
+              gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
+              gasPrice: this.web3.toHex(String(gasPrice)),
+              to: to,
+              value: '0x' + parseInt(value).toString(16)
+            };
+            // @ts-ignore
+            let tx = new ethereumjs.Tx(txParams);
+            // @ts-ignore
+            tx.sign(new ethereumjs.Buffer.Buffer(account.privateKey, 'hex'));
+            resolve('0x' + tx.serialize().toString('hex'))
+          },
+          reason => reject(reason)
+        )
       })
     })
-  }
-
-  sendEther(account: any, _to: string, _value: any): Promise<{ txHash: string }> {
-    return new Promise((resolve, reject) => {
-      this.createRawTx2(_to, _value, account).then(
-        rawTx => {
-          this.http.get(this.blockbookEndpoint + "/sendtx/" + rawTx).then(
-            resp => resolve({txHash: resp}),
-            reason => reject(reason)
-          );
-        }
-      )
-      /*this.web3.eth.sendRawTransaction(rawTx, (err, res) => {
-        if(err) reject(err);
-        resolve(res)
-      });*/
-    })
-  }
-
-  createRawTx = (to, value, account) => {
-    var rawTx = {
-      to,
-      gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
-      gasPrice: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE)),
-      value,
-      nonce: this.web3.toHex(this.web3.eth.getTransactionCount(account.address))
-    }
-    let Transaction = this.ethereumTx.Transaction;
-    var tx = new Transaction(rawTx);
-    let Buffer = this.safeBuffer.Buffer;
-    let bufferedKey = new Buffer(account.privateKey, 'hex')
-    tx.sign(bufferedKey)
-    var serializedTx = '0x' + tx.serialize().toString('hex')
-
-    return serializedTx;
-  }
-
-  createRawTx2 = (to, value, account) => {
-    return this.getTransactionCount2(account.address).then(
-      txCount => {
-        let txParams = {
-          nonce: '0x' + txCount.toString(16),
-          gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
-          gasPrice: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_PRICE)),
-          to: to,
-          value: '0x' + parseInt(value).toString(16)
-        };
-        // @ts-ignore
-        let tx = new ethereumjs.Tx(txParams);
-        // @ts-ignore
-        tx.sign(new ethereumjs.Buffer.Buffer(account.privateKey, 'hex'));
-        return '0x' + tx.serialize().toString('hex')
-      },
-      reason => console.error(reason)
-    );
   }
 
 

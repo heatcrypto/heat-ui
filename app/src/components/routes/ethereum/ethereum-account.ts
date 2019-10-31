@@ -87,7 +87,7 @@
     </div>
   `
 })
-@Inject('$scope','web3','assetInfo','$q','user','ethplorer',
+@Inject('$scope','web3','assetInfo','$q','user','ethBlockExplorerService',
   'ethereumPendingTransactions','settings','$interval','$mdToast')
 class EthereumAccountComponent {
   account: string; // @input
@@ -104,7 +104,7 @@ class EthereumAccountComponent {
               private assetInfo: AssetInfoService,
               private $q: angular.IQService,
               private user: UserService,
-              private ethplorer: EthplorerService,
+              private ethBlockExplorerService: EthBlockExplorerService,
               private ethereumPendingTransactions: EthereumPendingTransactionsService,
               private settings: SettingsService,
               private $interval: angular.IIntervalService,
@@ -139,10 +139,12 @@ class EthereumAccountComponent {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
-      this.ethplorer.getTxInfo(pendingTxn.txHash).then(
+      this.ethBlockExplorerService.getTxInfo(pendingTxn.txHash).then(
         data => {
-          this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with hash ${pendingTxn.txHash} found`).hideDelay(2000));
-          this.ethereumPendingTransactions.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+          if(data.confirmations && data.confirmations > 0) {
+            this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with hash ${pendingTxn.txHash} found`).hideDelay(2000));
+            this.ethereumPendingTransactions.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+          }
         },
         err => {
           console.log('Transaction not found', err)
@@ -173,12 +175,12 @@ class EthereumAccountComponent {
 
   refresh() {
     this.balanceUnconfirmed = "*";
-    this.ethplorer.getAddressInfo(this.account).then(info => {
+    this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(()=>{
         this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
         if (info.tokens) {
           this.erc20Tokens = info.tokens.map(token => {
-            let tokenInfo = this.ethplorer.tokenInfoCache[token.tokenInfo.address]
+            let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
             return {
               balance: utils.formatQNT(new Big(token.balance+"").toFixed(), tokenInfo?tokenInfo.decimals:18),
               symbol: token.tokenInfo.symbol,
