@@ -31,7 +31,7 @@ class Web3Service {
   getTransactionCount2 = (address: string) => {
     return new Promise<number>((resolve, reject) => {
       this.http.get(this.blockbookEndpoint + "/address/" + address).then(
-        resp => resolve(resp["txs"]),
+        resp => resolve(resp["nonce"]),
         reason => reject(reason)
       );
     })
@@ -41,8 +41,12 @@ class Web3Service {
       this.createRawTx2(account, _to, _value).then(
         rawTx => {
           this.http.get(this.blockbookEndpoint + "/sendtx/" + rawTx).then(
-            resp => resolve({txHash: resp}),
-            reason => reject(reason)
+            resp => {
+              resolve({ txHash: resp })
+            },
+            reason => {
+              reject(reason)
+            }
           );
         }
       )
@@ -51,32 +55,38 @@ class Web3Service {
 
   getGasPrice = () => {
     return new Promise<number>((resolve) => {
-      this.http.get(this.blockbookEndpoint + "/estimatefee/5/").then(
-        response => resolve(parseFloat(response["result"]) * 1000000000),
-        reason => resolve(20000000000)
+      this.http.get(this.blockbookEndpoint + "/estimatefee/5").then(
+        response => {
+          resolve(this.web3.toWei(response["result"], 'ether'))
+        },
+        reason => {
+          resolve(20000000000)
+        }
       );
     })
   }
 
   createRawTx2 = (account, to, value) => {
-    return this.getGasPrice().then((gasPrice) => {
-      this.getTransactionCount2(account.address).then(
-        txCount => {
-          let txParams = {
-            nonce: '0x' + txCount.toString(16),
-            gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
-            gasPrice: this.web3.toHex(this.settingsService.get(gasPrice.toString())),
-            to: to,
-            value: '0x' + parseInt(value).toString(16)
-          };
-          // @ts-ignore
-          let tx = new ethereumjs.Tx(txParams);
-          // @ts-ignore
-          tx.sign(new ethereumjs.Buffer.Buffer(account.privateKey, 'hex'));
-          return '0x' + tx.serialize().toString('hex')
-        },
-        reason => console.error(reason)
-      )
+    return new Promise((resolve, reject) => {
+      this.getGasPrice().then((gasPrice) => {
+        this.getTransactionCount2(account.address).then(
+          txCount => {
+            let txParams = {
+              nonce: '0x' + txCount.toString(16),
+              gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
+              gasPrice: this.web3.toHex(String(gasPrice)),
+              to: to,
+              value: '0x' + parseInt(value).toString(16)
+            };
+            // @ts-ignore
+            let tx = new ethereumjs.Tx(txParams);
+            // @ts-ignore
+            tx.sign(new ethereumjs.Buffer.Buffer(account.privateKey, 'hex'));
+            resolve('0x' + tx.serialize().toString('hex'))
+          },
+          reason => reject(reason)
+        )
+      })
     })
   }
 
