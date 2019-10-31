@@ -42,7 +42,7 @@ To get started developing heat-ui applications you really need your own copy of 
 
 To clone heat-ui to your own machine open a terminal and `cd` to where you want your heat-ui folder to appear. Now type the following to clone heat-ui.
 
-`git clone https://github.com/Heat-Ledger-Ltd/heat-ui.git`
+`git clone https://github.com/heatcrypto/heat-ui.git`
 
 ### Visual Studio Code
 
@@ -187,7 +187,7 @@ An important aspect of heat-ui is the use of components, components are declared
 
 Since we wrote heat-ui at a stage when Angular 2 was still in early development we could already adopt the coding style of Angular 2. If you'd look at [Angular 2 components](https://angular.io/api/core/Component) you will find that our implementation tries to mimic that, somewhat.
 
-Important to understand here is that heat-ui components are in reality angular directives, if you would look in `app/src/decorators.ts` you would find that the [@Component](https://github.com/Heat-Ledger-Ltd/heat-ui/blob/master/app/src/decorators.ts#L35) annotation will generate a directive for you based on the parameters you provide to the @Component. When in doubt how to use a @Component annotation look in decorators.ts to see how we map the inputs to the directive inputs.
+Important to understand here is that heat-ui components are in reality angular directives, if you would look in `app/src/decorators.ts` you would find that the [@Component](https://github.com/heatcrypto/heat-ui/blob/master/app/src/decorators.ts#L35) annotation will generate a directive for you based on the parameters you provide to the @Component. When in doubt how to use a @Component annotation look in decorators.ts to see how we map the inputs to the directive inputs.
 
 A component allows you to create a standalone content type, a new HTML tag so to say. The component is a way of combining both the logic and the display/contents through the use of including Code, CSS and HTML.
 

@@ -50,7 +50,7 @@ declare var Big: any;
       <div layout="column" flex layout-fill class="main-display">
         <div>
           <div ng-if="vm.showMarketNotCertified">
-            <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
+            <div class="top-warning">CAUTION: This market comprises of unverified assets.</div>
           </div>
           <div class="trader-row top">
               <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>

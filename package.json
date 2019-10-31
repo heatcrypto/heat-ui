@@ -2,16 +2,16 @@
   "name": "heatwallet",
   "version": "3.1.0",
   "description": "Heat Ledger Generic Client Framework",
-  "author": "Heat Ledger Ltd.",
-  "homepage": "http://heatledger.com",
+  "author": "HEAT",
+  "homepage": "https://heatwallet.com",
   "license": "MIT",
   "main": "gulpfile.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Heat-Ledger-Ltd/heat-ui.git"
+    "url": "git+https://github.com/heatcrypto/heat-ui.git"
   },
   "bugs": {
-    "url": "https://github.com/Heat-Ledger-Ltd/heat-ui/issues"
+    "url": "https://github.com/heatcrypto/heat-ui/issues"
   },
   "scripts": {
     "pack": "build --dir",
@@ -78,7 +78,7 @@
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
     "filesaver.js": "0.2.0",
-    "heat-libs": "Heat-Ledger-Ltd/heat-libs#release-coins",
+    "heat-libs": "heatcrypto/heat-libs#release-coins",
     "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
@@ -89,7 +89,7 @@
   },
   "build": {
     "appId": "com.heatledger.heatwallet",
-    "copyright": "Copyright © 2018 Heat Ledger Ltd.",
+    "copyright": "Copyright © 2019 HEAT",
     "productName": "Heatwallet",
     "compression": "normal",
     "extraResources": [
