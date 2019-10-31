@@ -125,7 +125,7 @@ class CurrencyAddressCreate {
   }
 
   removeIsDeleted(entry) {
-    const storage = <StorageService> heat.$inject.get('storage')
+    const storage = <StorageService>heat.$inject.get('storage')
     const $rootScope = heat.$inject.get('$rootScope');
     let currency = entry.symbol;
     let heatAddress = entry.walletEntry.account;
@@ -134,7 +134,7 @@ class CurrencyAddressCreate {
     let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
     let walletType = JSON.parse(decryptedWallet)
     walletType.addresses.forEach(walletAddress => {
-      if(walletAddress.address === entry.address)
+      if (walletAddress.address === entry.address)
         delete walletAddress['isDeleted'];
     });
     let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
@@ -157,7 +157,7 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'ETH')
@@ -189,7 +189,7 @@ class CurrencyAddressCreate {
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
         this.addCurrency(this.parent.account, 'ETH')
@@ -212,7 +212,7 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'BTC')
@@ -244,7 +244,7 @@ class CurrencyAddressCreate {
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
         this.addCurrency(this.parent.account, 'BTC')
@@ -267,7 +267,7 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'FIM')
@@ -285,7 +285,7 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'NXT')
@@ -302,7 +302,7 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'ARDR')
@@ -322,7 +322,7 @@ class CurrencyAddressCreate {
       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
       component.rememberAdressCreated(this.parent.account, nextAddress.address)
       newCurrencyBalance.visible = this.parent.expanded
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       this.addCurrency(this.parent.account, 'LTC')
@@ -354,7 +354,7 @@ class CurrencyAddressCreate {
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
         this.addCurrency(this.parent.account, 'LTC')
@@ -378,7 +378,7 @@ class CurrencyAddressCreate {
       component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
       newCurrencyBalance.visible = this.parent.expanded
       this.parent.currencies.push(newCurrencyBalance)
-      if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+      if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
       this.removeIsDeleted(newCurrencyBalance)
       this.flatten()
       return true
@@ -409,7 +409,7 @@ class CurrencyAddressCreate {
         newCurrencyBalance.visible = this.parent.expanded
         let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        if(nextAddress.isDeleted === true) nextAddress.isDeleted = false;
+        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false;
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
         return true
@@ -680,23 +680,27 @@ class WalletComponent {
   }
 
   deleteEntry(entry) {
-    let remainingCurrencyBalances = this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account)
-                      .currencies.filter((currency) => currency instanceof CurrencyBalance && entry.address !== currency.address);
-    this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account).currencies = remainingCurrencyBalances;
-    let currency = entry.symbol;
-    let heatAddress = entry.walletEntry.account;
-    let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-    let encryptedWallet = store.get(`${currency}-${heatAddress}`)
-    let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-    let walletType = JSON.parse(decryptedWallet)
-    walletType.addresses.forEach(walletAddress => {
-      if(walletAddress.address === entry.address)
-        walletAddress.isDeleted = true;
-    });
-    let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
-    store.put(`${currency}-${heatAddress}`, encrypted);
+    dialogs.confirm(`Remove ${entry.symbol} Address`,
+      `This will remove ${entry.symbol} ${entry.address} from your device.
+      Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
+        let remainingCurrencyBalances = this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account)
+          .currencies.filter((currency) => currency instanceof CurrencyBalance && entry.address !== currency.address);
+        this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account).currencies = remainingCurrencyBalances;
+        let currency = entry.symbol;
+        let heatAddress = entry.walletEntry.account;
+        let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+        let encryptedWallet = store.get(`${currency}-${heatAddress}`)
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
+        let walletType = JSON.parse(decryptedWallet)
+        walletType.addresses.forEach(walletAddress => {
+          if (walletAddress.address === entry.address)
+            walletAddress.isDeleted = true;
+        });
+        let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
+        store.put(`${currency}-${heatAddress}`, encrypted);
 
-    this.flatten()
+        this.flatten()
+      });
   }
 
   createAccount($event) {
