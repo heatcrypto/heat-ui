@@ -3,6 +3,7 @@
 @Inject('http', '$q', '$http', 'settings')
 class LtcBlockExplorerService {
   static endPoint: string;
+  private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
@@ -28,15 +29,37 @@ class LtcBlockExplorerService {
     return deferred.promise;
   }
 
-  public getBalance(address: string) {
+  public getBalanceFromChain(address: string): angular.IPromise<string> {
     let deferred = this.$q.defer<string>();
     this.getAddressInfo(address).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       deferred.resolve(parsed.balance)
     }, () => {
-      deferred.reject()
+      deferred.resolve("0")
     })
     return deferred.promise
+  }
+
+  private getCachedAccountBalance = (address: string) => {
+    if (this.cachedGetCachedAccountBalance.get(address))
+      return this.cachedGetCachedAccountBalance.get(address)
+    let deferred = this.$q.defer<string>();
+    this.cachedGetCachedAccountBalance.set(address, deferred.promise)
+    this.getBalanceFromChain(address).then(deferred.resolve, deferred.reject)
+    this.cachedGetCachedAccountBalance.get(address).finally(() => {
+      setTimeout(() => {
+        this.cachedGetCachedAccountBalance.set(address, null);
+      }, 30 * 1000)
+    })
+    return this.cachedGetCachedAccountBalance.get(address)
+  }
+
+  public getBalance = (address: string) => {
+    let deferred = this.$q.defer<string>();
+    this.getCachedAccountBalance(address).then(info => {
+      deferred.resolve(info)
+    })
+    return deferred.promise;
   }
 
   public getTransactions(address: string, pageNum: number, pageSize: number): angular.IPromise<any> {

@@ -5,6 +5,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
   private static endPoint: string;
   public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
   private providerName = 'HEAT';
+  private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
 
   constructor(public $q: angular.IQService,
     private http: HttpService,
@@ -42,16 +43,38 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return deferred.promise;
   }
 
-  public getBalance(address: string) {
+  public getBalanceFromChain(address: string): angular.IPromise<string> {
     let deferred = this.$q.defer<string>();
     this.getAddressInfo(address).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      let balance = (parsed.balance / 1000000000000000000).toString();
-      deferred.resolve(balance)
+      deferred.resolve(parsed.balance)
     }, () => {
-      deferred.reject()
+      deferred.resolve("0")
     })
     return deferred.promise
+  }
+
+  private getCachedAccountBalance = (address: string) => {
+    if (this.cachedGetCachedAccountBalance.get(address))
+      return this.cachedGetCachedAccountBalance.get(address)
+    let deferred = this.$q.defer<string>();
+    this.cachedGetCachedAccountBalance.set(address, deferred.promise)
+    this.getBalanceFromChain(address).then(deferred.resolve, deferred.reject)
+    this.cachedGetCachedAccountBalance.get(address).finally(() => {
+      setTimeout(() => {
+        this.cachedGetCachedAccountBalance.set(address, null);
+      }, 30 * 1000)
+    })
+    return this.cachedGetCachedAccountBalance.get(address)
+  }
+
+  public getBalance = (address: string) => {
+    let deferred = this.$q.defer<string>();
+    this.getCachedAccountBalance(address).then(parsed=> {
+      let balance = (parsed / 1000000000000000000).toString();
+      deferred.resolve(balance)
+    })
+    return deferred.promise;
   }
 
   public getTransactionCount(address: string) {
