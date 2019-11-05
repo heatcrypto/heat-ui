@@ -44,10 +44,6 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
     private ethBlockExplorerService: EthBlockExplorerService,
     private ethTransactionParser: EthTransactionParserService,
     private account: string) {
-    if (ethBlockExplorerService.getProviderName() === 'Ethplorer') {
-      let ethplorer = <EthplorerService>heat.$inject.get('ethplorer');
-      this.paginator = ethplorer.createPaginator(account)
-    }
   }
 
   /* Be notified this provider got destroyed */
@@ -57,6 +53,10 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
     if (this.ethBlockExplorerService.getProviderName() === 'Ethplorer') {
+      if (!this.paginator) {
+        let ethplorer = <EthplorerService>heat.$inject.get('ethplorer');
+        this.paginator = ethplorer.createPaginator(this.account)
+      }
       this.paginator.getCount().then(count => {
         deferred.resolve(Math.min(this.lastIndex + 40, count))
       }, deferred.reject)
@@ -77,6 +77,10 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
     if (this.ethBlockExplorerService.getProviderName() === 'Ethplorer') {
       if (lastIndex > this.lastIndex) {
         this.lastIndex = lastIndex
+      }
+      if (!this.paginator) {
+        let ethplorer = <EthplorerService>heat.$inject.get('ethplorer');
+        this.paginator = ethplorer.createPaginator(this.account)
       }
       this.paginator.getItems(firstIndex, lastIndex).then(
         transactions => {
