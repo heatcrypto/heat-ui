@@ -79,10 +79,9 @@ class Web3Service {
               to: to,
               value: '0x' + parseInt(value).toString(16)
             };
-            // @ts-ignore
-            let tx = new ethereumjs.Tx(txParams);
-            // @ts-ignore
-            tx.sign(new ethereumjs.Buffer.Buffer(account.privateKey, 'hex'));
+            let tx = new this.$window.heatlibs.ethereumTx.Transaction(txParams);
+            let privateKey = this.$window.heatlibs.safeBuffer.Buffer.from(account.privateKey, 'hex');
+            tx.sign(privateKey);
             resolve('0x' + tx.serialize().toString('hex'))
           },
           reason => reject(reason)
