@@ -1589,7 +1589,7 @@ class WalletComponent {
                     <md-option style="height: 30px;" ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
                   </md-select>
                 </md-input-container>
-                <p>Enter your Secret Seed and provide a Password (or Pin)</p>
+                <p>Enter your Private Key / Secret Phrase / Wallet Seed and provide a Password (or PIN)</p>
                 <md-input-container flex>
                   <label>Private key / secret phrase</label>
                   <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false" ng-change="vm.secretChanged() "></textarea>
