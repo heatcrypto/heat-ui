@@ -1,5 +1,5 @@
 @Service('ethBlockExplorerService')
-@Inject('$q', 'ethplorer', 'ethBlockExplorerHeatNodeService', 'http')
+@Inject('$q', 'ethplorer', 'ethBlockExplorerHeatNodeService', 'http', 'web3')
 class EthBlockExplorerService implements IEthereumAPIList {
 
   public ethApiProvider: IEthereumAPIList;
@@ -8,7 +8,8 @@ class EthBlockExplorerService implements IEthereumAPIList {
   constructor(public $q: angular.IQService,
     public ethplorer: EthplorerService,
     public ethBlockExplorerHeatNodeService: EthBlockExplorerHeatNodeService,
-    public http: HttpService) {
+    public http: HttpService,
+    private web3: Web3Service) {
 
     setInterval(() => this.refresh(), 5 * 60 * 1000)
   }
@@ -67,7 +68,7 @@ class EthBlockExplorerService implements IEthereumAPIList {
       tx.from = tx.vin[0].addresses[0];
       tx.to = tx.vout[0].addresses[0];
       tx.hash = tx.txid;
-      tx.value = tx.vout[0].value / 1000000000000000000;
+      tx.value = this.web3.web3.fromWei(tx.vout[0].value, 'ether');
       tx.input = '';
       tx.success = '';
       tx.timestamp = tx.blockTime;

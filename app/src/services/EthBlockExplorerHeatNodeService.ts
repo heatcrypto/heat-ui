@@ -1,5 +1,5 @@
 @Service('ethBlockExplorerHeatNodeService')
-@Inject('$q', 'http', 'settings')
+@Inject('$q', 'http', 'settings', 'web3')
 class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
 
   private static endPoint: string;
@@ -9,7 +9,8 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
 
   constructor(public $q: angular.IQService,
     private http: HttpService,
-    private settingsService: SettingsService) {
+    private settingsService: SettingsService,
+    private web3: Web3Service) {
     // get settings after it is initialized (read config files)
     EthBlockExplorerHeatNodeService.endPoint = 'https://eth1.heatwallet.com/api/v2'
 
@@ -71,7 +72,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
   public getBalance = (address: string) => {
     let deferred = this.$q.defer<string>();
     this.getCachedAccountBalance(address).then(parsed=> {
-      let balance = (parsed / 1000000000000000000).toString();
+      let balance = this.web3.web3.fromWei(parsed, 'ether')
       deferred.resolve(balance)
     })
     return deferred.promise;
@@ -133,7 +134,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
         })
       }
       parsed.ETH = {}
-      parsed.ETH.balance = parsed.balance / 1000000000000000000;
+      parsed.ETH.balance = this.web3.web3.fromWei(parsed.balance, 'ether')
       deferred.resolve(parsed);
     }, (error) => {
       deferred.reject(error);
