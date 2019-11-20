@@ -14,10 +14,10 @@
   dependencies:
     "@types/angular" "*"
 
-"@types/angular-material@^1.1.51":
-  version "1.1.67"
-  resolved "https://registry.yarnpkg.com/@types/angular-material/-/angular-material-1.1.67.tgz#ea492bde2d4f78ce8c9a86db5601343b3fcf068e"
-  integrity sha512-1TG3HBogfQKG56Oi8iK9QeNHeEoEmUlRt3S8fNRkp9gYAX3KOkuUX+eDpTjNJX5AM4Hs8fMthW7Sy0BlB9o1iA==
+"@types/angular-material@^1.1.67":
+  version "1.1.68"
+  resolved "https://registry.yarnpkg.com/@types/angular-material/-/angular-material-1.1.68.tgz#9f5e2f66ea1c6d8be618289d008cbaeadad96ef1"
+  integrity sha512-+xX988ZxhD25lRrCdg1XzZpc2cDeGOcTU16STs4kXiL/LaNmMoRjD1FYWW1OjgIL6Sqxm0Gw6cHKYI+0Wy0XoQ==
   dependencies:
     "@types/angular" "*"
 
@@ -28,12 +28,17 @@
   dependencies:
     "@types/angular" "*"
 
-"@types/angular@*", "@types/angular@^1.6.18":
+"@types/angular@*":
   version "1.6.54"
   resolved "https://registry.yarnpkg.com/@types/angular/-/angular-1.6.54.tgz#f9d5a03e4da7b021a6dabe5d63e899ed4567a5bd"
   integrity sha512-xA1FuozWXeRQ7FClUbvk8ePL+dydBeDoCWRPFTHU5+8uvVtIIfLGiHA8CMkwsbddFCYnTDVbLxG85a/HBx7LtA==
 
-"@types/bytebuffer@^5.0.33":
+"@types/angular@^1.6.54":
+  version "1.6.56"
+  resolved "https://registry.yarnpkg.com/@types/angular/-/angular-1.6.56.tgz#20124077bd44061e018c7283c0bb83f4b00322dd"
+  integrity sha512-HxtqilvklZ7i6XOaiP7uIJIrFXEVEhfbSY45nfv2DeBRngncI58Y4ZOUMiUkcT8sqgLL1ablmbfylChUg7A3GA==
+
+"@types/bytebuffer@^5.0.40":
   version "5.0.40"
   resolved "https://registry.yarnpkg.com/@types/bytebuffer/-/bytebuffer-5.0.40.tgz#d6faac40dcfb09cd856cdc4c01d3690ba536d3ee"
   integrity sha512-h48dyzZrPMz25K6Q4+NCwWaxwXany2FhQg/ErOcdZS1ZpsaDnDMZg8JYLMTGz7uvXKrcKGJUZJlZObyfgdaN9g==
@@ -181,10 +186,10 @@ angular-ui-scroll@^1.7.2:
   resolved "https://registry.yarnpkg.com/angular-ui-scroll/-/angular-ui-scroll-1.7.2.tgz#fa3d08824e55756b859eee416fc6c9187b8f144a"
   integrity sha512-nZWqHpqzXwRwzF3rdlODk5rcTKVoK0lAa+ee/de47Dwp+w2puHLagHIKG7Nvs7pDA5JBROQEdPmkj8Ob9HdvKA==
 
-angular@1.5.8:
-  version "1.5.8"
-  resolved "https://registry.yarnpkg.com/angular/-/angular-1.5.8.tgz#925a5392b8c212d09572dc446db7e01264e094cb"
-  integrity sha1-klpTkrjCEtCVctxEbbfgEmTglMs=
+angular@1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/angular/-/angular-1.6.0.tgz#16c5edebd0a342046bd5281cca2decf04c40df76"
+  integrity sha1-FsXt69CjQgRr1Sgcyi3s8ExA33Y=
 
 angularjs-scroll-glue@^2.2.0:
   version "2.2.0"
