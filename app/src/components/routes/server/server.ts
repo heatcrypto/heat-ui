@@ -262,7 +262,10 @@ class ServerComponent {
             this.isMining = true;
             this.miningRemaining = info[0].remaining;
             this.miningDeadline = info[0].deadline;
-            this.miningHittime = info[0].hitTime;
+            let miningHittime = info[0].hitTime;
+            var date = utils.timestampToDate(miningHittime);
+            var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+            this.miningHittime = dateFormat(date, format);
           }
           else {
             this.isMining = false;
