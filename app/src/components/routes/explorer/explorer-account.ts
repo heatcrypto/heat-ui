@@ -116,7 +116,7 @@
       </div>
 
       <div layout="row" layout-align="start center" class="type-row">
-        <md-button ng-class="{'active':vm.type=='accounts'}"
+        <md-button ng-class="{'active':vm.type=='transactions'}"
           ng-disabled="vm.type=='transactions'"
           ng-href="#/explorer-account/{{vm.account}}/transactions">Transactions</md-button>
         <md-button ng-class="{'active':vm.type=='blocks'}"
@@ -128,6 +128,9 @@
         <md-button ng-class="{'active':vm.type=='trades'}"
           ng-disabled="vm.type=='trades'"
           ng-href="#/explorer-account/{{vm.account}}/trades">Trades</md-button>
+        <md-button ng-class="{'active':vm.type=='payments'}"
+          ng-disabled="vm.type=='payments'"
+          ng-href="#/explorer-account/{{vm.account}}/payments">Payments</md-button>
         <span flex></span>
         <md-button ng-click="vm.csv($event)">Download CSV</md-button>
       </div>
@@ -139,6 +142,9 @@
       </div>
       <div ng-if="vm.type=='trades'" flex layout="column">
         <virtual-repeat-trades hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-trades>
+      </div>
+      <div ng-if="vm.type=='payments'" flex layout="column">
+        <virtual-repeat-payments hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-payments>
       </div>
       <div ng-if="vm.type=='lessors'" flex layout="column" layout-fill>
         <md-list flex layout-fill layout="column" class="lessors">
@@ -197,7 +203,6 @@ class ExploreAccountComponent {
   balanceUnconfirmed: string;
   balanceConfirmed: string;
   assetInfos: Array<AssetInfo> = [];
-
 
   currentLessee: string;
   currentLesseeName: string;

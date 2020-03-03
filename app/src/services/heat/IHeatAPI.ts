@@ -953,6 +953,7 @@ interface IHeatChartData {
   close: string;
 }
 interface IHeatPayment {
+  transaction: string;
   currency: string;
   quantity: string;
   sender: string;
@@ -963,12 +964,15 @@ interface IHeatPayment {
   recipientPublicName: string;
   senderPublicKey: string;
   recipientPublicKey: string;
+  height: number;
   timestamp: number;
   blockId: string;
   messageBytes: string;
   messageIsText: boolean;
   messageIsEncrypted: boolean;
   messageIsEncryptedToSelf: boolean;
+  isAtomicTransfer: boolean;
+  num: number;  //has sense for atomic multi transfer when on one transaction are created multiple payments
 }
 interface IHeatBlockchainStatus {
   isScanning: boolean;
