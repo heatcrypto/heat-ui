@@ -30,26 +30,26 @@
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
-          <div class="truncate-col date-col left">Height</div>
+          <div class="truncate-col height-col left">Height</div>
           <div class="truncate-col date-col left">Time</div>
-          <div class="truncate-col type-col left">Sender</div>
-          <div class="truncate-col type-col left">Recipient</div>
-          <div class="truncate-col name-col left">Asset</div>
+          <div class="truncate-col name-col left">Sender</div>
+          <div class="truncate-col name-col left">Recipient</div>
+          <div class="truncate-col asset-col left">Asset</div>
           <div class="truncate-col amount-col">Amount</div>
           <div class="truncate-col json-col"></div>
         </md-list-item>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column" virtual-repeat-flex-helper>
           <md-list-item md-virtual-repeat="item in vm" md-on-demand aria-label="Entry" class="row">
 
-            <div class="truncate-col date-col left">{{item.height}}</div>
+            <div class="truncate-col height-col left">{{item.height}}</div>
 
             <div class="truncate-col date-col left">{{item.time}}</div>
 
-            <div class="truncate-col type-col left">{{item.senderPublicName||item.sender}}</div>
+            <div class="truncate-col name-col left">{{item.senderPublicName||item.sender}}</div>
 
-            <div class="truncate-col type-col left">{{item.recipientPublicName||item.recipient}}</div>
+            <div class="truncate-col name-col left">{{item.recipientPublicName||item.recipient}}</div>
 
-            <div class="truncate-col name-col left">{{item.assetInfo.symbol}}</div>
+            <div class="truncate-col asset-col left">{{item.assetInfo.symbol}}</div>
 
             <div class="truncate-col amount-col">{{item.amount}}</div>
 
