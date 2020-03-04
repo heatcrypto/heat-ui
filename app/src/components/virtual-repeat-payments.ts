@@ -34,7 +34,7 @@
           <div class="truncate-col date-col left">Time</div>
           <div class="truncate-col name-col left">Sender</div>
           <div class="truncate-col name-col left">Recipient</div>
-          <div class="truncate-col asset-col left">Asset</div>
+          <div class="truncate-col asset-col left">Currency/Asset</div>
           <div class="truncate-col amount-col">Amount</div>
           <div class="truncate-col json-col"></div>
         </md-list-item>
