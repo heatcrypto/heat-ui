@@ -2,7 +2,7 @@
 ///<reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -59,11 +59,15 @@ class AssetIssueService extends AbstractTransaction {
     transaction.dillutable = bytes.byteArray[bytes.pos] == 1;
     bytes.pos += 1;
 
+    transaction.assetType = bytes.byteArray[bytes.pos];
+    bytes.pos += 1;
+
     return transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
            transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
            transaction.quantity === data.AssetIssuance.quantityQNT &&
            transaction.decimals === data.AssetIssuance.decimals &&
-           transaction.dillutable === data.AssetIssuance.dillutable;
+           transaction.dillutable === data.AssetIssuance.dillutable &&
+           transaction.assetType === data.AssetIssuance.type;
   }
 }
 
@@ -87,6 +91,13 @@ class AssetIssueDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
+      builder
+        .text('assetType', '0')
+        .label('Asset type 0: STANDARD, 1: PRIVATE')
+        .validate("Allowed values: 0, 1", (v: string) => {
+          return v == '0' || v == '1';
+        })
+        .required(),
       builder.text('symbol').
               label('Asset symbol (3-4 chars)').
               validate("Symbol must have 3 to 4 chars", (symbol:string) => {
@@ -163,7 +174,8 @@ class AssetIssueDialog extends GenericDialog {
               dillutable: this.fields['dillutable'].value == 'true',
               quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
               descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
-              descriptionUrl: this.fields['descriptionUrl'].value || 'http://'
+              descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
+              type: parseInt(this.fields['assetType'].value) || 0
             });
 
     // generate a protocol 1 asset properties description
