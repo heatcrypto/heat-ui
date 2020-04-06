@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -21,29 +21,45 @@
  * SOFTWARE.
  * */
 
-@import './default';
-@import './popover';
-@import './trader/index';
-@import './home/index';
-@import './explorer/index';
-@import './ethereum/index';
-@import './messenger/index';
-@import './toolbar';
-@import './dialog';
-@import './user-balance';
-@import './virtual-repeat-transactions';
-@import './virtual-repeat-trades';
-@import './virtual-repeat-payments';
-@import './services/transactions/withdrawAssetService';
-@import './user-contacts';
-@import './json-formatter';
-@import './server/index';
-@import './login/index';
-@import './wallet/index';
-@import './bitcoin/index';
-@import './fimk/index';
-@import './nxt/index';
-@import './ardor/index';
-@import './iota/index';
-@import './ltc/index';
-@import './bitcoin-cash/index';
+ @import './colors';
+ @import './default';
+ @import './widget';
+
+ virtual-repeat-payments {
+   .widget();
+   .list();
+   md-list-item.md-no-proxy {
+     flex-grow: 0;
+   }
+   .truncate-col {
+     padding-right: 30px;
+     &.left {
+       text-align: left;
+     }
+     &.height-col {
+       max-width: 40px;
+     }
+     &.asset-col {
+       max-width: 50px;
+     }
+     &.name-col {
+       max-width: 180px;
+     }
+     &.amount-col {
+       text-align: right;
+    }
+     &.json-col {
+       min-width: 30px;
+       max-width: 30px;
+       padding-right: 0px;
+       a, a * {
+         font-size: 14px;
+         color: @link-yellow;
+         cursor: pointer;
+       }
+       md-icon {
+         padding-top: 8px;
+       }
+     }
+   }
+ }

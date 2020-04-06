@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -21,29 +21,32 @@
  * SOFTWARE.
  * */
 
-@import './default';
-@import './popover';
-@import './trader/index';
-@import './home/index';
-@import './explorer/index';
-@import './ethereum/index';
-@import './messenger/index';
-@import './toolbar';
-@import './dialog';
-@import './user-balance';
-@import './virtual-repeat-transactions';
-@import './virtual-repeat-trades';
-@import './virtual-repeat-payments';
-@import './services/transactions/withdrawAssetService';
-@import './user-contacts';
-@import './json-formatter';
-@import './server/index';
-@import './login/index';
-@import './wallet/index';
-@import './bitcoin/index';
-@import './fimk/index';
-@import './nxt/index';
-@import './ardor/index';
-@import './iota/index';
-@import './ltc/index';
-@import './bitcoin-cash/index';
+@Service('explorerPaymentsProviderFactory')
+@Inject('heat','$q')
+class ExplorerPaymentsProviderFactory {
+
+  constructor(private heat: HeatService, private $q: angular.IQService) {}
+
+  public createProvider(account: string): IPaginatedDataProvider {
+    return new PmtProvider(this.heat, this.$q, account);
+  }
+}
+
+class PmtProvider implements IPaginatedDataProvider {
+  constructor(private heat: HeatService,
+              private $q: angular.IQService,
+              private account: string) {}
+
+  /* Be notified this provider got destroyed */
+  public destroy() {}
+
+  /* The number of items available */
+  public getPaginatedLength(): angular.IPromise<number> {
+    return this.heat.api.getPaymentsCount(this.account, "all");
+  }
+
+  /* Returns results starting at firstIndex and up to and including lastIndex */
+  public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<IHeatPayment>> {
+    return this.heat.api.getPayments(this.account, "all", "timestamp", false, firstIndex, lastIndex);
+  }
+}
