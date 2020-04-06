@@ -469,6 +469,7 @@ interface IHeatCreateAssetIssuance {
   quantityQNT: string;
   decimals: number;
   dillutable: boolean;
+  type: number;
 }
 interface IHeatCreateAssetIssueMore {
   assetId: string;
