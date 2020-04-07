@@ -230,6 +230,12 @@
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="whitelist account for private asset" ng-click="vm.showWhitelistAssetAccountDialog($event)">
+                <md-icon md-font-library="material-icons">how_to_reg</md-icon>
+                <span>Whitelist account for private asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="whitelits market" ng-click="vm.showWhitelistMarketDialog($event)">
                 <md-icon md-font-library="material-icons">insert_chart</md-icon>
                 <span>Create Market</span>
@@ -302,7 +308,7 @@
   `
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
-  'assetIssue', 'whitelistMarket', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
+  'assetIssue', 'whitelistMarket', 'balanceLease', 'masternode', 'whitelistAssetAccount', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
 class ToolbarComponent {
 
@@ -326,6 +332,7 @@ class ToolbarComponent {
               private whitelistMarket: WhitelistMarketService,
               private balanceLease: BalanceLeaseService,
               private masternodeService: MasternodeService,
+              private whitelistAssetAccountService: WhitelistAssetAccountService,
               private storage: StorageService,
               private $window: angular.IWindowService,
               private $mdToast: angular.material.IToastService,
@@ -501,6 +508,10 @@ class ToolbarComponent {
 
   registerInternetAddress($event) {
     this.masternodeService.dialog(null).show();
+  }
+
+  showWhitelistAssetAccountDialog($event) {
+    this.whitelistAssetAccountService.dialog($event).show();
   }
 
   signout() {

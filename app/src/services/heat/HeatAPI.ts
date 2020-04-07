@@ -27,6 +27,8 @@ class HeatAPI implements IHeatAPI {
     standard: utils.convertToQNT('0.01'),
     assetIssue: utils.convertToQNT('500.00'),
     assetIssueMore: utils.convertToQNT('0.01'),
+    whitelistAssetAccount: utils.convertToQNT('100.00'),
+    assetAssignFee: utils.convertToQNT('0.1'),
     whitelistMarket: utils.convertToQNT('10.00'),
     registerInternetAddressFee: utils.convertToQNT('100.00')
   };

@@ -436,6 +436,8 @@ interface IHeatCreateTransactionInput {
   OrdinaryPayment?: IHeatCreateOrdinaryPayment;
   ArbitraryMessage?: IHeatCreateArbitraryMessage;
   WhitelistMarket?: IHeatCreateWhitelistMarket;
+  WhitelistAssetAccount?: IHeatCreateWhitelistAssetAccount;
+  AssetAssignFees?: IHeatCreateAssetAssignFees;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -486,6 +488,17 @@ interface IHeatCreateArbitraryMessage {}
 interface IHeatCreateWhitelistMarket {
   currencyId: string;
   assetId: string;
+}
+interface IHeatCreateWhitelistAssetAccount {
+  assetId: string;
+  accountId: string;
+  endHeight: number;
+}
+interface IHeatCreateAssetAssignFees {
+  assetId: string;
+  orderFee: number;
+  tradeFee: number;
+  feeRecipient: string;
 }
 
 interface IHeatCreateTransactionOutput {
