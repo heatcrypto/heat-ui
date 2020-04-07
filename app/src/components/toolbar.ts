@@ -230,6 +230,12 @@
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="assign fees for private asset" ng-click="vm.showAssetAssignAccountDialog($event)">
+                <md-icon md-font-library="material-icons">sports_baseball</md-icon>
+                <span>Fees for private asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="whitelist account for private asset" ng-click="vm.showWhitelistAssetAccountDialog($event)">
                 <md-icon md-font-library="material-icons">how_to_reg</md-icon>
                 <span>Whitelist account for private asset</span>
@@ -308,7 +314,7 @@
   `
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
-  'assetIssue', 'whitelistMarket', 'balanceLease', 'masternode', 'whitelistAssetAccount', 'storage', '$window', '$mdToast',
+  'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
 class ToolbarComponent {
 
@@ -317,8 +323,6 @@ class ToolbarComponent {
   isBetanet = heat.isBetanet;
   heatServerLocation;
   hasUnreadP2PMessage = false;
-
-  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
@@ -329,10 +333,11 @@ class ToolbarComponent {
               public env: EnvService,
               private assetTransfer: AssetTransferService,
               private assetIssue: AssetIssueService,
+              private whitelistAssetAccountService: WhitelistAssetAccountService,
+              private assetAssignFees: AssetAssignFeesService,
               private whitelistMarket: WhitelistMarketService,
               private balanceLease: BalanceLeaseService,
               private masternodeService: MasternodeService,
-              private whitelistAssetAccountService: WhitelistAssetAccountService,
               private storage: StorageService,
               private $window: angular.IWindowService,
               private $mdToast: angular.material.IToastService,
@@ -360,6 +365,8 @@ class ToolbarComponent {
     this.p2pMessaging.on(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener);
     $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener));
   }
+
+  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
   copyAddress() {
     this.clipboard.copyWithUI(document.getElementById('toolbar-user-address'), 'Copied address to clipboard');
@@ -512,6 +519,10 @@ class ToolbarComponent {
 
   showWhitelistAssetAccountDialog($event) {
     this.whitelistAssetAccountService.dialog($event).show();
+  }
+
+  showAssetAssignAccountDialog($event) {
+    this.assetAssignFees.dialog($event).show();
   }
 
   signout() {
