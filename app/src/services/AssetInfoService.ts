@@ -21,6 +21,7 @@
  * SOFTWARE.
  * */
 interface AssetInfo {
+  type?: number;
   id: string;
   description: string;
   descriptionUrl: string;
@@ -32,6 +33,9 @@ interface AssetInfo {
   issuer: string;
   issuerPublicName: string;
   userBalance?: string;
+  tradeFee?: string,
+  orderFee?: string,
+  feeRecipient?: string,
 }
 
 interface AssetPropertiesProtocol1 {
@@ -91,22 +95,26 @@ class AssetInfoService {
     }
     else {
       this.heat.api.getAssetProperties(asset, "0", 1).then((data) => {
-        var properties = this.parseProperties(data.properties, {
+        let properties = this.parseProperties(data.properties, {
           symbol: asset.substring(0, 4),
           name: asset,
           certified: false
         });
-        var info: AssetInfo = {
+        let info: AssetInfo = {
+          type: data.type,
           id: asset,
           description: null,
           descriptionUrl: data.descriptionUrl,
           decimals: data.decimals,
-          symbol: this.getDisplaySymbol(asset, properties.symbol||''),
+          symbol: this.getDisplaySymbol(asset, properties.symbol || ''),
           name: properties.name,
           certified: false,
           timestamp: data.timestamp,
           issuer: data.account,
-          issuerPublicName: data.accountPublicName
+          issuerPublicName: data.accountPublicName,
+          tradeFee: data.tradeFee,
+          orderFee: data.orderFee,
+          feeRecipient: data.feeRecipient,
         };
         this.cache[asset] = info;
         this.assetCertification.getInfo(asset).then((certificationData)=> {

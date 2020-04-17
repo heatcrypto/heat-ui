@@ -22,11 +22,16 @@
  * SOFTWARE.
  * */
 interface DialogFieldAssetAssetInfo {
+  issuer: string;
   symbol: string;
   name: string;
+  type: number;
   id: string;
   decimals: number;
   certified: boolean;
+  orderFee: string;
+  tradeFee: string;
+  feeRecipient: string;
 }
 
 class DialogFieldAsset extends AbstractDialogField {
@@ -63,11 +68,16 @@ class DialogFieldAsset extends AbstractDialogField {
           promises.push(
             this.assetInfo.getInfo(asset.asset).then((info2)=> {
               let info = {
+                issuer: info2.issuer,
                 name: asset.name,
                 symbol: asset.symbol,
                 id: asset.asset,
                 decimals: asset.decimals,
-                certified: false
+                certified: false,
+                type: info2.type,
+                orderFee: info2.orderFee,
+                tradeFee: info2.tradeFee,
+                feeRecipient: info2.feeRecipient
               };
               info.symbol = info2.symbol;
               info.name = info2.name;
@@ -86,11 +96,16 @@ class DialogFieldAsset extends AbstractDialogField {
           promises.push(
             this.assetInfo.getInfo(balance.id).then((info2)=> {
               let info = {
+                issuer: info2.issuer,
                 name: '*',
                 symbol: '*',
                 id: balance.id,
                 decimals: balance.decimals,
-                certified: false
+                certified: false,
+                type: info2.type,
+                orderFee: info2.orderFee,
+                tradeFee: info2.tradeFee,
+                feeRecipient: info2.feeRecipient
               };
               info.symbol = info2.symbol;
               info.name = info2.name;

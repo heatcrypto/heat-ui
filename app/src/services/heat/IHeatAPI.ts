@@ -651,6 +651,11 @@ interface IHeatBroadcastOutput {
   transaction: string;
 }
 interface IHeatAsset {
+
+  /**
+   * 0 - standard, 1 - private asset.
+   */
+  type: number;
   /**
    * The number of the account that issued the asset
    */
@@ -680,6 +685,12 @@ interface IHeatAsset {
    * True in case new assets can later be issued by the asset issuer
    */
   dillutable: boolean;
+
+  orderFee: string;
+
+  tradeFee: string;
+
+  feeRecipient: string;
 
   properties?: string;
 }

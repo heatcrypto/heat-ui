@@ -78,11 +78,26 @@ class AssetAssignFeesServiceDialog extends GenericDialog {
     var builder = new DialogFieldBuilder($scope);
     return [
       builder.asset('asset')
+        .onchange(newValue => {
+          let assetField = <DialogFieldAsset>this.fields['asset'];
+          let assetInfo = assetField.getAssetInfo(assetField.value);
+          let assetInfoField = this.fields['assetInfo'];
+          if (assetInfo == null || assetInfo.type != 1) {
+            assetInfoField.value = "the private asset is not selected";
+          } else {
+            if (assetInfo.issuer == this.user.account) {
+              let feeRecipient = (assetInfo.feeRecipient || "0") == "0" ? this.user.account : assetInfo.feeRecipient;
+              assetInfoField.value = `Asset Info: order fee ${assetInfo.orderFee || "0"}; trade fee ${assetInfo.tradeFee || "0"}; fee recipient ${feeRecipient}`;
+            } else {
+              assetInfoField.value = "selected private asset was not created by you"
+            }
+          }
+        })
         .label('Your private asset')
         .validate("You dont own this asset", (value) => {
           if (value == "0") return true;
           let assetField = <DialogFieldAsset>this.fields['asset'];
-          let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+          let assetInfo = assetField.getAssetInfo(assetField.value);
           return !!assetInfo;
         }).required(),
       builder
@@ -95,7 +110,9 @@ class AssetAssignFeesServiceDialog extends GenericDialog {
         .required(),
       builder
         .account('feeRecipient')
-        .label('Account for receiving fees')
+        .label('Account for receiving fees'),
+      builder
+        .staticText("assetInfo", "the private asset is not selected")
     ]
   }
 
