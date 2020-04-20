@@ -78,6 +78,7 @@ class AssetAssignFeesServiceDialog extends GenericDialog {
     var builder = new DialogFieldBuilder($scope);
     return [
       builder.asset('asset')
+        .reset()   // to get the actual assets from server
         .onchange(newValue => {
           let assetField = <DialogFieldAsset>this.fields['asset'];
           let assetInfo = assetField.getAssetInfo(assetField.value);

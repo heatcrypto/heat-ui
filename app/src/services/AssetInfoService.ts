@@ -64,6 +64,11 @@ class AssetInfoService {
               private $q: angular.IQService,
               private assetCertification: AssetCertificationService,
               private http: HttpService) {
+    this.resetCache();
+  }
+
+  resetCache() {
+    this.cache = {};
     this.cache["0"] = {
       id: "0",
       description: "HEAT Cryptocurrency",

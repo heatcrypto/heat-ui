@@ -50,6 +50,12 @@ class DialogFieldAsset extends AbstractDialogField {
     this.selector('field-asset');
   }
 
+  reset() {
+    this.assetInfo.resetCache();
+    this.availableAssetsPromise = null;
+    return this;
+  }
+
   initAvailableAssets() {
     if (this.availableAssetsPromise) {
       return this.availableAssetsPromise;
