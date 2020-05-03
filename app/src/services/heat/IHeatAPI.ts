@@ -470,7 +470,7 @@ interface IHeatCreateAssetIssuance {
   descriptionHash: string;
   quantityQNT: string;
   decimals: number;
-  dillutable: boolean;
+  dilutable: boolean;
   type: number;
 }
 interface IHeatCreateAssetIssueMore {
@@ -684,7 +684,7 @@ interface IHeatAsset {
   /**
    * True in case new assets can later be issued by the asset issuer
    */
-  dillutable: boolean;
+  dilutable: boolean;
 
   orderFee: string;
 

@@ -56,7 +56,7 @@ class AssetIssueService extends AbstractTransaction {
     transaction.decimals = bytes.byteArray[bytes.pos];
     bytes.pos += 1;
 
-    transaction.dillutable = bytes.byteArray[bytes.pos] == 1;
+    transaction.dilutable = bytes.byteArray[bytes.pos] == 1;
     bytes.pos += 1;
 
     transaction.assetType = bytes.byteArray[bytes.pos];
@@ -66,7 +66,7 @@ class AssetIssueService extends AbstractTransaction {
            transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
            transaction.quantity === data.AssetIssuance.quantityQNT &&
            transaction.decimals === data.AssetIssuance.decimals &&
-           transaction.dillutable === data.AssetIssuance.dillutable &&
+           transaction.dilutable === data.AssetIssuance.dilutable &&
            transaction.assetType === data.AssetIssuance.type;
   }
 }
@@ -136,11 +136,11 @@ class AssetIssueDialog extends GenericDialog {
                   return false;
                 return num >= 0 && num <= 8;
               }),
-      builder.text('dillutable', 'false').
-              label('Dillutable').
+      builder.text('dilutable', 'false').
+              label('Dilutable').
               required().
-              validate("Either type true or false", (dillutable) => {
-                return dillutable == 'true' || dillutable == 'false';
+              validate("Either type true or false", (dilutable) => {
+                return dilutable == 'true' || dilutable == 'false';
               }),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
@@ -171,7 +171,7 @@ class AssetIssueDialog extends GenericDialog {
            .feeNQT(HeatAPI.fee.assetIssue)
            .attachment('AssetIssuance', <IHeatCreateAssetIssuance> {
               decimals: parseInt(this.fields['decimals'].value),
-              dillutable: this.fields['dillutable'].value == 'true',
+              dilutable: this.fields['dilutable'].value == 'true',
               quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
               descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
               descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
