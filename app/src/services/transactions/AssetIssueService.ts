@@ -93,7 +93,8 @@ class AssetIssueDialog extends GenericDialog {
     return [
       builder.switcher('assetType', false)
         .label('Asset type')
-        .valueLabels("PRIVATE", "STANDARD"),
+        .valueLabels("PRIVATE", "STANDARD")
+        .valueNotes("PRIVATE ASSETS CAN ONLY BE TRADED OR TRANSFERRED BY ACCOUNTS YOU APPROVE", ""),
       builder.text('symbol').
               label('Asset symbol (3-4 chars)').
               validate("Symbol must have 3 to 4 chars", (symbol:string) => {
@@ -133,7 +134,8 @@ class AssetIssueDialog extends GenericDialog {
                 return num >= 0 && num <= 8;
               }),
       builder.switcher('dilutable', false)
-        .label('Dilutable'),
+        .label('Dilutable')
+        .valueNotes("FOR DILUTABLE ASSETS MORE UNITS CAN BE ADDED LATER", ""),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
               validate("Either leave blank or has to start with http:// or https://", (value) => {

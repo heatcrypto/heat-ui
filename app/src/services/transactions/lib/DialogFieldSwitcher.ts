@@ -25,6 +25,8 @@ class DialogFieldSwitcher extends AbstractDialogField {
 
   _trueLabel: string = "YES"
   _falseLabel: string = "NO"
+  _trueNote: string
+  _falseNote: string
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -36,27 +38,33 @@ class DialogFieldSwitcher extends AbstractDialogField {
     this._falseLabel = falseLabel;
     return this;
   }
+
+  valueNotes(trueNote: string, falseNote: string) {
+    this._trueNote = trueNote;
+    this._falseNote = falseNote;
+    return this;
+  }
 }
 
 @Component({
   selector: 'fieldSwitcher',
   inputs: ['label', 'value', 'changed', 'f'],
+  styles: [`
+    ng-form .note {max-width: 300px; margin-left: 20px; color: grey;}
+  `],
   template: `
     <ng-form name="userForm" layout="row" ng-show="vm.f._visible">
       <label>{{vm.label}}</label>
-      <!--<input ng-if="!vm.f._rows" field-validator="vm.f" ng-model="vm.value" ng-change="vm.changed()"
-          name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly" ng-trim="false" ng-disabled="vm.f._disabled">-->
-
       <div>
         <md-switch ng-model="vm.value" ng-change="vm.changed()"
             name="userField" ng-required="vm.f._required" ng-readonly="vm.f._readonly" ng-trim="false" ng-disabled="vm.f._disabled"
             class="md-primary">
-          <span ng-show="vm.value">{{vm.f._trueLabel|| 'YES'}}</span>
+          <span ng-show="vm.value">{{vm.f._trueLabel || 'YES'}}</span>
           <span ng-hide="vm.value">{{vm.f._falseLabel || 'NO'}}</span>
         </md-switch>
       </div>
-
-<!--      <md-progress-linear md-mode="indeterminate" ng-if="userForm.userField.$pending"></md-progress-linear>-->
+      <div class="note" ng-if="vm.value">{{vm.f._trueNote}}</div>
+      <div class="note" ng-hide="vm.value">{{vm.f._falseNote}}</div>
       <div ng-messages="userForm.userField.$error" ng-if="userForm.userField.$dirty">
         <div ng-messages-include="error-messages"></div>
         <div ng-repeat="errorMessage in vm.f.errorMessages" ng-message-exp="errorMessage.type">{{ errorMessage.text }}</div>
