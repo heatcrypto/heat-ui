@@ -2,7 +2,7 @@
 ///<reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -70,11 +70,15 @@ class WhitelistMarketferDialog extends GenericDialog {
 
   /* @override */
   getFields($scope: angular.IScope) {
-    var builder = new DialogFieldBuilder($scope);
+    let networkNote = "NETWORK FEE MIN 0.01 HEAT FOR EVERY SUBMITTED ORDER"
+    let builder = new DialogFieldBuilder($scope);
     return [
-      builder.asset('asset').
-              label('Your asset').
-              validate("You dont own this asset", (value) => {
+      builder.asset('asset')
+        .label('Your asset')
+        .onchange(newValue => {
+          this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
+        })
+        .validate("You dont own this asset", (value) => {
                 if (value == "0")
                   return true;
                 var assetField = <DialogFieldAsset> this.fields['asset'];
@@ -86,20 +90,33 @@ class WhitelistMarketferDialog extends GenericDialog {
               label('Allow market').
               searchAllAssets(true).
               required(),
+      builder.switcher('networkFee', false)
+        .label('Network fee paid by')
+        .valueLabels("ISSUER", "USER")
+        .valueNotes(networkNote, networkNote)
     ]
   }
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
-    var builder = new TransactionBuilder(this.transaction);
+    let builder = new TransactionBuilder(this.transaction);
+    let assetId = this.fields['asset'].value;
     builder.secretPhrase(this.user.secretPhrase)
            .feeNQT(HeatAPI.fee.whitelistMarket)
            .attachment('WhitelistMarket', <IHeatCreateWhitelistMarket>{
-              assetId: this.fields['asset'].value,
-              currencyId: this.fields['currency'].value
+              assetId: assetId,
+              currencyId: this.fields['currency'].value,
+              isIssuerFeePayer: (this.isSelectedAssetPrivate(assetId) ? (this.fields['networkFee'].value ? 1 : 2) : 1)
             });
     return builder;
   }
 
+  isSelectedAssetPrivate(assetId) {
+    if (assetId == "0")
+      return true;
+    let assetField = <DialogFieldAsset> this.fields['asset']
+    let assetInfo = assetField.getAssetInfo(assetId)
+    return assetInfo && assetInfo.type == 2
+  }
 
 }
