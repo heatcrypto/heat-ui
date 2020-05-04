@@ -91,13 +91,9 @@ class AssetIssueDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder
-        .text('assetType', '0')
-        .label('Asset type 0: STANDARD, 1: PRIVATE')
-        .validate("Allowed values: 0, 1", (v: string) => {
-          return v == '0' || v == '1';
-        })
-        .required(),
+      builder.switcher('assetType', false)
+        .label('Asset type')
+        .valueLabels("PRIVATE", "STANDARD"),
       builder.text('symbol').
               label('Asset symbol (3-4 chars)').
               validate("Symbol must have 3 to 4 chars", (symbol:string) => {
@@ -136,12 +132,8 @@ class AssetIssueDialog extends GenericDialog {
                   return false;
                 return num >= 0 && num <= 8;
               }),
-      builder.text('dilutable', 'false').
-              label('Dilutable').
-              required().
-              validate("Either type true or false", (dilutable) => {
-                return dilutable == 'true' || dilutable == 'false';
-              }),
+      builder.switcher('dilutable', false)
+        .label('Dilutable'),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
               validate("Either leave blank or has to start with http:// or https://", (value) => {
@@ -175,7 +167,7 @@ class AssetIssueDialog extends GenericDialog {
               quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
               descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
               descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
-              type: parseInt(this.fields['assetType'].value) || 0
+              type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1
             });
 
     // generate a protocol 1 asset properties description
