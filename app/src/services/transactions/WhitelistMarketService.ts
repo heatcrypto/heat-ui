@@ -94,6 +94,7 @@ class WhitelistMarketferDialog extends GenericDialog {
         .label('Network fee paid by')
         .valueLabels("ISSUER", "USER")
         .valueNotes(networkNote, networkNote)
+        .visible(false) //will be visible when private asset will be selected
     ]
   }
 

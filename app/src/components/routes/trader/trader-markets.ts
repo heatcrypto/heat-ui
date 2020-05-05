@@ -127,7 +127,15 @@ class TraderMarketsComponent {
         let traderStorage = this.storage.namespace('trader');
         let mymarkets = traderStorage.enabled ? traderStorage.get('my-markets') : null;
         if (angular.isArray(mymarkets)) {
-          mymarkets = mymarkets.filter((m)=>!this.markets.find((_m)=>_m.currency==m.currency.id&&_m.asset==m.asset.id));
+          //remove internal duplicates
+          mymarkets = mymarkets.reduce(
+            (x, y) => x.findIndex(e => e.currency.id == y.currency.id && e.asset.id == y.asset.id) < 0 ? [...x, y] : x,
+            []
+          )
+          //remove duplicates with markets
+          mymarkets = mymarkets.filter((m) =>
+            !this.markets.find((_m) => _m.currency == m.currency.id && _m.asset == m.asset.id)
+          );
           this.storage.namespace('trader').put('my-markets', mymarkets);
           /* {currency:{id: currency,symbol: currencySymbol},
               asset:{id:asset,symbol: assetSymbol}} */
