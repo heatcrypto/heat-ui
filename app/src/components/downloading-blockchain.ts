@@ -45,23 +45,28 @@ class DownloadingBlockchainComponent {
     this.refresh();
 
     let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
-    let checkServerHealthInterval = $interval(()=>{ this.checkServerHealth(this.settings) }, 33*1000, 0, false);
+    let checkServerHealthInterval
+    if (this.settings.failoverEnabled) {
+      checkServerHealthInterval = $interval(() => {
+        this.checkServerHealth(this.settings)
+      }, 33 * 1000, 0, false);
 
-    $scope.$on('$destroy',()=>{
-      $interval.cancel(interval);
-      $interval.cancel(checkServerHealthInterval);
-    });
-
-    //Check servers health to choose the right
-    //wait for loading  app-config.json
-    setTimeout(() => {
-      if (SettingsService.getFailoverDescriptor())
-        this.checkServerHealth(this.settings, true);
-      else
-        setTimeout(() => {
+      //Check servers health to choose the right
+      //wait for loading  app-config.json
+      setTimeout(() => {
+        if (SettingsService.getFailoverDescriptor())
           this.checkServerHealth(this.settings, true);
-        }, 500)
-    }, 200);
+        else
+          setTimeout(() => {
+            this.checkServerHealth(this.settings, true);
+          }, 500)
+      }, 200);
+    }
+
+    $scope.$on('$destroy', () => {
+      $interval.cancel(interval);
+      if (checkServerHealthInterval) $interval.cancel(checkServerHealthInterval);
+    });
   }
 
   refresh() {
@@ -225,6 +230,8 @@ class DownloadingBlockchainComponent {
   }
 
   calculatePeerEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    if (!health.peersIndicator) return -1;
+    if (!currentServerHealth.peersIndicator) return 1;
     let connected = health.peersIndicator.connected / health.peersIndicator.all;
     let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
     let threshold = SettingsService.getFailoverDescriptor().connectedPeersThreshold;
