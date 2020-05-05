@@ -28,6 +28,7 @@ class DialogFieldAccount extends AbstractDialogField {
   private user = <UserService> heat.$inject.get('user');
   private $q = <angular.IQService> heat.$inject.get('$q');
   private numbersOnly = /^[0-9]+$/;
+  searchText: string;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -53,6 +54,11 @@ class DialogFieldAccount extends AbstractDialogField {
     }, deferred.reject);
     return deferred.promise;
   }
+
+  setSearchText(value) {
+    this.searchText = value;
+  }
+
 }
 
 @Component({
@@ -71,11 +77,11 @@ class DialogFieldAccount extends AbstractDialogField {
         md-input-name="userField"
         md-floating-label="{{vm.label}}"
         md-min-length="1"
-        md-items="item in vm.f.search(vm.searchText)"
+        md-items="item in vm.f.search(vm.f.searchText)"
         md-item-text="item.publicName||item.id"
-        md-search-text="vm.searchText"
+        md-search-text="vm.f.searchText"
         md-selected-item-change="vm.selectedItemChange()"
-        md-search-text-change="vm.searchTextChange()"
+        md-search-text-change="vm.f.searchTextChange()"
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>
@@ -100,10 +106,9 @@ class DialogFieldAccount extends AbstractDialogField {
 class DialogFieldAccountComponent {
   f: any;
   selectedItem: any;
-  searchText: string;
 
   constructor() {
-    this.searchText = this.f.value;
+    this.f.searchText = this.f.value;
   }
 
   selectedItemChange() {
@@ -111,6 +116,7 @@ class DialogFieldAccountComponent {
   }
 
   searchTextChange() {
-    this.f.value = this.searchText;
+    this.f.value = this.f.searchText;
   }
+
 }

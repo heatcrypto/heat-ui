@@ -83,16 +83,18 @@ class AssetAssignFeesServiceDialog extends GenericDialog {
           let assetField = <DialogFieldAsset>this.fields['asset'];
           let assetInfo = assetField.getAssetInfo(assetField.value);
           let assetInfoField = this.fields['assetInfo'];
+          let feeRecipient
           if (assetInfo == null || assetInfo.type != 1) {
             assetInfoField.value = "the private asset is not selected";
           } else {
             if (assetInfo.issuer == this.user.account) {
-              let feeRecipient = (assetInfo.feeRecipient || "0") == "0" ? this.user.account : assetInfo.feeRecipient;
+              feeRecipient = (assetInfo.feeRecipient || "0") == "0" ? this.user.account : assetInfo.feeRecipient;
               assetInfoField.value = `Asset Info: order fee ${assetInfo.orderFee || "0"}; trade fee ${assetInfo.tradeFee || "0"}; fee recipient ${feeRecipient}`;
             } else {
               assetInfoField.value = "selected private asset was not created by you"
             }
           }
+          (<DialogFieldAccount>this.fields['feeRecipient']).setSearchText(feeRecipient)
         })
         .label('Your private asset')
         .validate("You dont own this asset", (value) => {
@@ -111,7 +113,7 @@ class AssetAssignFeesServiceDialog extends GenericDialog {
         .required(),
       builder
         .account('feeRecipient')
-        .label('Account for receiving fees'),
+        .label('Account receiving fees'),
       builder
         .staticText("assetInfo", "the private asset is not selected")
     ]
