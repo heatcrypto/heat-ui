@@ -94,7 +94,10 @@ class AssetAssignFeesServiceDialog extends GenericDialog {
               assetInfoField.value = "selected private asset was not created by you"
             }
           }
-          (<DialogFieldAccount>this.fields['feeRecipient']).setSearchText(feeRecipient)
+          let f = (<DialogFieldAccount>this.fields['feeRecipient'])
+          if (!f.searchText) {
+            (<DialogFieldAccount>this.fields['feeRecipient']).setSearchText(feeRecipient)
+          }
         })
         .label('Your private asset')
         .validate("You dont own this asset", (value) => {
