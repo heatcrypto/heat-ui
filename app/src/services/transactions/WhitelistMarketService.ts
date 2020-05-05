@@ -113,10 +113,10 @@ class WhitelistMarketferDialog extends GenericDialog {
 
   isSelectedAssetPrivate(assetId) {
     if (assetId == "0")
-      return true;
+      return false;
     let assetField = <DialogFieldAsset> this.fields['asset']
     let assetInfo = assetField.getAssetInfo(assetId)
-    return assetInfo && assetInfo.type == 2
+    return assetInfo && assetInfo.type == 1
   }
 
 }
