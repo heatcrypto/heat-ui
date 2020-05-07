@@ -464,6 +464,7 @@ interface IHeatCreateBidOrderPlacement {
   quantity: string;
   price: string;
   expiration: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateAssetIssuance {
   descriptionUrl: string;
@@ -472,6 +473,7 @@ interface IHeatCreateAssetIssuance {
   decimals: number;
   dilutable: boolean;
   type: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateAssetIssueMore {
   assetId: string;
