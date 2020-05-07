@@ -1114,3 +1114,8 @@ interface IHEATKeystoreTransaction {
   value: string,
   transaction: string
 }
+interface IHEATMasternode {
+  account: string,
+  internetAddress: string,
+  height: number
+}

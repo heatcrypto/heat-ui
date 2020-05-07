@@ -362,4 +362,9 @@ class HeatAPI implements IHeatAPI {
   saveKeystoreEntry(key: string, value: string, secretPhrase: string): angular.IPromise<IHeatCreateTransactionOutput> {
     return this.heat.post(`/keystore/put`, {key, value, fee: 1000000, deadline: 1440, secretPhrase});
   }
+
+  listMasternodes(): angular.IPromise<Array<IHEATMasternode>> {
+    return this.heat.get(`/account/internetaddress/list`);
+  }
+
 }
