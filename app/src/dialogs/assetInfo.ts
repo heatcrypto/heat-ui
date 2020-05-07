@@ -32,6 +32,9 @@ Asset purchases are non-refundable.`;
 
 
     assetInfoService.getAssetDescription(info).then((description)=>{
+      let orderFeePercentage = parseInt(info.orderFee || '0') / 1000000
+      let tradeFeePercentage = parseInt(info.tradeFee || '0') / 1000000
+      let feeRecipient = (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
       dialogs.dialog({
         id: 'assetInfo',
         title: 'Asset Info',
@@ -40,12 +43,24 @@ Asset purchases are non-refundable.`;
         locals: {
           description: description,
           info: info,
-          unsafeWarning: unsafeWarning
+          unsafeWarning: unsafeWarning,
+          orderFeePercentage: parseInt(info.orderFee || '0') / 1000000,
+          tradeFeePercentage: parseInt(info.tradeFee || '0') / 1000000,
+          feeRecipient: (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
         },
+        style: `
+          .private-asset {
+            color: darkgrey;
+          }
+        `,
         template: `
           <div layout="column">
             <span ng-if="!vm.info.certified">{{vm.unsafeWarning}}<br><br></span>
+            <span class="private-asset" ng-if="vm.info.type==1">PRIVATE ASSET </span>
             <span><b>{{vm.info.symbol}}</b> {{vm.info.name}}</span>
+            <p class="private-asset" ng-if="vm.info.type==1">
+            Order fee {{vm.orderFeePercentage}}% &nbsp;&nbsp;&nbsp;Trade fee {{vm.tradeFeePercentage}}% &nbsp;&nbsp;&nbsp;Fee recipient {{vm.feeRecipient}}
+            </p>
             <pre>{{vm.description}}</pre>
           </div>
         `
