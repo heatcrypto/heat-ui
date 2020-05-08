@@ -51,12 +51,15 @@ class PlaceAskOrderService extends AbstractTransaction {
     bytes.pos += 8;
     transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
     bytes.pos += 4;
+    transaction.isSenderFeePayer = bytes.byteArray[bytes.pos] == 1;
+    bytes.pos += 1;
 
     return transaction.currency === data.AskOrderPlacement.currencyId &&
-           transaction.asset === data.AskOrderPlacement.assetId &&
-           transaction.quantity === data.AskOrderPlacement.quantity &&
-           transaction.price === data.AskOrderPlacement.price &&
-           transaction.expiration === data.AskOrderPlacement.expiration;
+      transaction.asset === data.AskOrderPlacement.assetId &&
+      transaction.quantity === data.AskOrderPlacement.quantity &&
+      transaction.price === data.AskOrderPlacement.price &&
+      transaction.expiration === data.AskOrderPlacement.expiration &&
+      transaction.isSenderFeePayer === data.AskOrderPlacement.isSenderFeePayer;
   }
 }
 
@@ -113,6 +116,7 @@ class PlaceAskOrderDialog extends GenericDialog {
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
+      .message("order test message", TransactionMessageType.PUBLIC, false)
            .feeNQT(HeatAPI.fee.standard)
            .attachment('AskOrderPlacement', <IHeatCreateAskOrderPlacement>{
               currencyId: this.fields['currency'].value,

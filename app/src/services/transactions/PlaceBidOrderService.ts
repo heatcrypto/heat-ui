@@ -51,12 +51,15 @@ class PlaceBidOrderService extends AbstractTransaction {
     bytes.pos += 8;
     transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
     bytes.pos += 4;
+    transaction.isSenderFeePayer = bytes.byteArray[bytes.pos] == 1;
+    bytes.pos += 1;
 
     return transaction.currency === data.BidOrderPlacement.currencyId &&
-           transaction.asset === data.BidOrderPlacement.assetId &&
-           transaction.quantity === data.BidOrderPlacement.quantity &&
-           transaction.price === data.BidOrderPlacement.price &&
-           transaction.expiration === data.BidOrderPlacement.expiration;
+      transaction.asset === data.BidOrderPlacement.assetId &&
+      transaction.quantity === data.BidOrderPlacement.quantity &&
+      transaction.price === data.BidOrderPlacement.price &&
+      transaction.expiration === data.BidOrderPlacement.expiration &&
+      transaction.isSenderFeePayer === data.BidOrderPlacement.isSenderFeePayer;
   }
 }
 

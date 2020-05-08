@@ -457,6 +457,7 @@ interface IHeatCreateAskOrderPlacement {
   quantity: string;
   price: string;
   expiration: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateBidOrderPlacement {
   currencyId: string;
