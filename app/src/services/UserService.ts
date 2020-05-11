@@ -188,8 +188,9 @@ class UserService extends EventEmitter {
           this.publicKey = heat.crypto.secretPhraseToPublicKey(masterSecretPhrase);
           this.account = heat.crypto.getAccountId(masterSecretPhrase);
         }
+        this.accountName = this.account || this.currency.address;
 
-        /* The other parts are on the blockchain */
+          /* The other parts are on the blockchain */
         this.refresh().then(() => {
           deferred.resolve();
           this.emit(UserService.EVENT_UNLOCKED);
