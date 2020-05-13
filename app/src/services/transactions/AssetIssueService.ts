@@ -59,6 +59,9 @@ class AssetIssueService extends AbstractTransaction {
     transaction.dilutable = bytes.byteArray[bytes.pos] == 1;
     bytes.pos += 1;
 
+    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
+
     transaction.assetType = bytes.byteArray[bytes.pos];
     bytes.pos += 1;
 
@@ -67,6 +70,7 @@ class AssetIssueService extends AbstractTransaction {
            transaction.quantity === data.AssetIssuance.quantityQNT &&
            transaction.decimals === data.AssetIssuance.decimals &&
            transaction.dilutable === data.AssetIssuance.dilutable &&
+           transaction.expiration === data.AssetIssuance.expiration &&
            transaction.assetType === data.AssetIssuance.type;
   }
 }
@@ -136,6 +140,8 @@ class AssetIssueDialog extends GenericDialog {
       builder.switcher('dilutable', false)
         .label('Dilutable')
         .valueNotes("FOR DILUTABLE ASSETS MORE UNITS CAN BE ADDED LATER", ""),
+      builder.text('expiration', 0)
+        .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
               validate("Either leave blank or has to start with http:// or https://", (value) => {
@@ -162,15 +168,16 @@ class AssetIssueDialog extends GenericDialog {
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.assetIssue)
-           .attachment('AssetIssuance', <IHeatCreateAssetIssuance> {
-              decimals: parseInt(this.fields['decimals'].value),
-              dilutable: this.fields['dilutable'].value == 'true',
-              quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
-              descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
-              descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
-              type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1
-            });
+      .feeNQT(HeatAPI.fee.assetIssue)
+      .attachment('AssetIssuance', <IHeatCreateAssetIssuance>{
+        decimals: parseInt(this.fields['decimals'].value),
+        dilutable: this.fields['dilutable'].value == 'true',
+        expiration: parseInt(this.fields['expiration'].value || '0'),
+        quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
+        descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
+        descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
+        type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1
+      });
 
     // generate a protocol 1 asset properties description
     var properties =  this.assetInfo.stringifyProperties(<AssetPropertiesProtocol1>{

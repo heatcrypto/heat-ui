@@ -473,6 +473,7 @@ interface IHeatCreateAssetIssuance {
   quantityQNT: string;
   decimals: number;
   dilutable: boolean;
+  expiration: number;
   type: number;
   isSenderFeePayer: boolean;
 }
