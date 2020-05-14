@@ -113,7 +113,7 @@ class LocalKeyStoreService {
     let json_str = heat.crypto.passphraseDecrypt(message, passphrase);
     if (json_str) {
       let json = JSON.parse(json_str);
-      console.log(`decrypting is success for account ${account}`);
+      //console.log(`decrypting is success for account ${account}`);
       return {
         account: json['account'],
         secretPhrase: json['secretPhrase'],
@@ -121,7 +121,7 @@ class LocalKeyStoreService {
         name: json['name']
       }
     } else {
-      console.log(`decrypting is not success for account ${account}`);
+      //console.log(`decrypting is not success for account ${account}`);
     }
   }
 

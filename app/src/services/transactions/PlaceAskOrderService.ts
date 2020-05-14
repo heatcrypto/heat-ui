@@ -116,7 +116,6 @@ class PlaceAskOrderDialog extends GenericDialog {
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
-      .message("order test message", TransactionMessageType.PUBLIC, false)
            .feeNQT(HeatAPI.fee.standard)
            .attachment('AskOrderPlacement', <IHeatCreateAskOrderPlacement>{
               currencyId: this.fields['currency'].value,
