@@ -230,9 +230,15 @@
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="assign fees for private asset" ng-click="vm.showAssetAssignAccountDialog($event)">
+              <md-button aria-label="assign fees to private asset" ng-click="vm.showAssetAssignAccountDialog($event)">
                 <md-icon md-font-library="material-icons">sports_baseball</md-icon>
                 <span>Fees for private asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="assign expiration timestamp to asset" ng-click="vm.showAssetExpirationDialog($event)">
+                <md-icon md-font-library="material-icons">sports_baseball</md-icon>
+                <span>Assign expiration to asset</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
@@ -308,7 +314,8 @@
   `
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
-  'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
+  'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'assetExpiration',
+  'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
 class ToolbarComponent {
 
@@ -330,6 +337,7 @@ class ToolbarComponent {
               private whitelistAssetAccountService: WhitelistAssetAccountService,
               private assetAssignFees: AssetAssignFeesService,
               private whitelistMarket: WhitelistMarketService,
+              private assetExpiration: AssetExpirationService,
               private balanceLease: BalanceLeaseService,
               private masternodeService: MasternodeService,
               private storage: StorageService,
@@ -517,6 +525,10 @@ class ToolbarComponent {
 
   showAssetAssignAccountDialog($event) {
     this.assetAssignFees.dialog($event).show();
+  }
+
+  showAssetExpirationDialog($event) {
+    this.assetExpiration.dialog($event).show();
   }
 
   signout() {

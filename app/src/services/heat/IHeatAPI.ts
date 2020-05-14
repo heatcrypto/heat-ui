@@ -438,6 +438,7 @@ interface IHeatCreateTransactionInput {
   WhitelistMarket?: IHeatCreateWhitelistMarket;
   WhitelistAssetAccount?: IHeatCreateWhitelistAssetAccount;
   AssetAssignFees?: IHeatCreateAssetAssignFees;
+  AssetExpiration?: IHeatCreateAssetExpiration;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -503,6 +504,10 @@ interface IHeatCreateAssetAssignFees {
   orderFee: number;
   tradeFee: number;
   feeRecipient: string;
+}
+interface IHeatCreateAssetExpiration {
+  assetId: string;
+  expiration: number;
 }
 
 interface IHeatCreateTransactionOutput {
