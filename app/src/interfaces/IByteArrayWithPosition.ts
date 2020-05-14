@@ -23,4 +23,5 @@
 interface IByteArrayWithPosition {
   byteArray: Array<number>;
   pos: number;
+  attachmentVersion: number;
 }
