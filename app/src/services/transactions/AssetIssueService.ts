@@ -59,11 +59,15 @@ class AssetIssueService extends AbstractTransaction {
     transaction.dilutable = bytes.byteArray[bytes.pos] == 1;
     bytes.pos += 1;
 
-    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
+    if (bytes.attachmentVersion >= 3) {
+      transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+      bytes.pos += 4;
+    }
 
-    transaction.assetType = bytes.byteArray[bytes.pos];
-    bytes.pos += 1;
+    if (bytes.attachmentVersion >= 2) {
+      transaction.assetType = bytes.byteArray[bytes.pos];
+      bytes.pos += 1;
+    }
 
     return transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
            transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
