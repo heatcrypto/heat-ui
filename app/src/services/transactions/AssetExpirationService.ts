@@ -23,17 +23,18 @@
  * SOFTWARE.
  * */
 @Service('assetExpiration')
-@Inject('$q','user','heat')
+@Inject('$q','user','heat','$interval')
 class AssetExpirationService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              private $interval: angular.IIntervalService) {
     super();
   }
 
   dialog($event?, recipient?: string, recipientPublicKey?): IGenericDialog {
-    return new AssetExpirationDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey);
+    return new AssetExpirationDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, this.$interval);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -58,7 +59,8 @@ class AssetExpirationDialog extends GenericDialog {
               private user: UserService,
               private heat: HeatService,
               private recipient: string,
-              private recipientPublicKey: string) {
+              private recipientPublicKey: string,
+              private $interval: angular.IIntervalService) {
     super($event);
     this.dialogTitle = 'Assign asset expiration';
     this.dialogDescription = 'Description on how to assign asset expiration';
@@ -83,7 +85,9 @@ class AssetExpirationDialog extends GenericDialog {
               }).
               required(),
       builder.text('expiration', 0)
-        .label('Expiration timestamp (after timestamp the trading of asset will be disabled)')
+        .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
+      builder.staticText("expirationDate", ''),
+      builder.staticText("systemtimestamp", '')
     ]
   }
 
@@ -98,6 +102,19 @@ class AssetExpirationDialog extends GenericDialog {
         expiration: parseInt(this.fields['expiration'].value || '0')
       });
     return builder;
+  }
+
+  fieldsReady($scope: angular.IScope) {
+    let interval = this.$interval(() => {
+      $scope.$evalAsync(() => {
+        let expirationValue = parseInt(this.fields['expiration'].value || '0')
+        this.fields['expirationDate'].value = expirationValue > 0
+          ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue)
+          : ''
+        this.fields['systemtimestamp'].value = "Current timestamp: " + Math.round(utils.epochTime())
+      });
+    }, 1000, 0, false);
+    $scope.$on('$destroy', () => { this.$interval.cancel(interval) });
   }
 
 }
