@@ -76,7 +76,7 @@
 
             <!-- ID -->
             <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-              <a target="_blank" href="https://ethplorer.io/tx/{{item.hash}}">{{item.hash}}</a>
+              <a target="_blank" href="https://eth1.heatwallet.com/tx/{{item.hash}}">{{item.hash}}</a>
             </div>
 
             <!-- INOUT -->
@@ -502,17 +502,17 @@ class EthTransactionRenderer {
 
   account(account: string): string {
     if (account == this.provider.account) {
-      return `<a target="_blank" href="https://ethplorer.io/address/${account}">Myself</a>`;
+      return `<a target="_blank" href="https://eth1.heatwallet.com/address/${account}">Myself</a>`;
     }
-    return `<a target="_blank" href="https://ethplorer.io/address/${account}">${account}</a>`;
+    return `<a target="_blank" href="https://eth1.heatwallet.com/address/${account}">${account}</a>`;
   }
 
   token(address: string) {
     let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[address]
     if (tokenInfo) {
-      return `<a target="_blank" href="https://ethplorer.io/address/${address}">${tokenInfo.symbol}</a>`;
+      return `<a target="_blank" href="https://eth1.heatwallet.com/address/${address}">${tokenInfo.symbol}</a>`;
     }
-    return `<a target="_blank" href="https://ethplorer.io/address/${address}">${address}</a>`;
+    return `<a target="_blank" href="https://eth1.heatwallet.com/address/${address}">${address}</a>`;
   }
 
   amount(amount: string, tokenInfo?: EthplorerTokenInfo) {
