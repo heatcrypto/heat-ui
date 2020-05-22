@@ -2,7 +2,7 @@
 ///<reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -56,14 +56,26 @@ class AssetIssueService extends AbstractTransaction {
     transaction.decimals = bytes.byteArray[bytes.pos];
     bytes.pos += 1;
 
-    transaction.dillutable = bytes.byteArray[bytes.pos] == 1;
+    transaction.dilutable = bytes.byteArray[bytes.pos] == 1;
     bytes.pos += 1;
+
+    if (bytes.attachmentVersion >= 3) {
+      transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+      bytes.pos += 4;
+    }
+
+    if (bytes.attachmentVersion >= 2) {
+      transaction.assetType = bytes.byteArray[bytes.pos];
+      bytes.pos += 1;
+    }
 
     return transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
            transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
            transaction.quantity === data.AssetIssuance.quantityQNT &&
            transaction.decimals === data.AssetIssuance.decimals &&
-           transaction.dillutable === data.AssetIssuance.dillutable;
+           transaction.dilutable === data.AssetIssuance.dilutable &&
+           transaction.expiration === data.AssetIssuance.expiration &&
+           transaction.assetType === data.AssetIssuance.type;
   }
 }
 
@@ -87,6 +99,10 @@ class AssetIssueDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
+      builder.switcher('assetType', false)
+        .label('Asset type')
+        .valueLabels("PRIVATE", "STANDARD")
+        .valueNotes("PRIVATE ASSETS CAN ONLY BE TRADED OR TRANSFERRED BY ACCOUNTS YOU APPROVE", ""),
       builder.text('symbol').
               label('Asset symbol (3-4 chars)').
               validate("Symbol must have 3 to 4 chars", (symbol:string) => {
@@ -125,12 +141,11 @@ class AssetIssueDialog extends GenericDialog {
                   return false;
                 return num >= 0 && num <= 8;
               }),
-      builder.text('dillutable', 'false').
-              label('Dillutable').
-              required().
-              validate("Either type true or false", (dillutable) => {
-                return dillutable == 'true' || dillutable == 'false';
-              }),
+      builder.switcher('dilutable', false)
+        .label('Dilutable')
+        .valueNotes("FOR DILUTABLE ASSETS MORE UNITS CAN BE ADDED LATER", ""),
+      builder.text('expiration', 0)
+        .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
               validate("Either leave blank or has to start with http:// or https://", (value) => {
@@ -157,14 +172,16 @@ class AssetIssueDialog extends GenericDialog {
   getTransactionBuilder(): TransactionBuilder {
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.assetIssue)
-           .attachment('AssetIssuance', <IHeatCreateAssetIssuance> {
-              decimals: parseInt(this.fields['decimals'].value),
-              dillutable: this.fields['dillutable'].value == 'true',
-              quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
-              descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
-              descriptionUrl: this.fields['descriptionUrl'].value || 'http://'
-            });
+      .feeNQT(HeatAPI.fee.assetIssue)
+      .attachment('AssetIssuance', <IHeatCreateAssetIssuance>{
+        decimals: parseInt(this.fields['decimals'].value),
+        dilutable: this.fields['dilutable'].value == 'true',
+        expiration: parseInt(this.fields['expiration'].value || '0'),
+        quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
+        descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
+        descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
+        type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1
+      });
 
     // generate a protocol 1 asset properties description
     var properties =  this.assetInfo.stringifyProperties(<AssetPropertiesProtocol1>{

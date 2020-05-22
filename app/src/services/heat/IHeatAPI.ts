@@ -436,6 +436,9 @@ interface IHeatCreateTransactionInput {
   OrdinaryPayment?: IHeatCreateOrdinaryPayment;
   ArbitraryMessage?: IHeatCreateArbitraryMessage;
   WhitelistMarket?: IHeatCreateWhitelistMarket;
+  WhitelistAssetAccount?: IHeatCreateWhitelistAssetAccount;
+  AssetAssignFees?: IHeatCreateAssetAssignFees;
+  AssetExpiration?: IHeatCreateAssetExpiration;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -455,6 +458,7 @@ interface IHeatCreateAskOrderPlacement {
   quantity: string;
   price: string;
   expiration: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateBidOrderPlacement {
   currencyId: string;
@@ -462,13 +466,17 @@ interface IHeatCreateBidOrderPlacement {
   quantity: string;
   price: string;
   expiration: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateAssetIssuance {
   descriptionUrl: string;
   descriptionHash: string;
   quantityQNT: string;
   decimals: number;
-  dillutable: boolean;
+  dilutable: boolean;
+  expiration: number;
+  type: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateAssetIssueMore {
   assetId: string;
@@ -485,6 +493,21 @@ interface IHeatCreateArbitraryMessage {}
 interface IHeatCreateWhitelistMarket {
   currencyId: string;
   assetId: string;
+}
+interface IHeatCreateWhitelistAssetAccount {
+  assetId: string;
+  accountId: string;
+  endHeight: number;
+}
+interface IHeatCreateAssetAssignFees {
+  assetId: string;
+  orderFee: number;
+  tradeFee: number;
+  feeRecipient: string;
+}
+interface IHeatCreateAssetExpiration {
+  assetId: string;
+  expiration: number;
 }
 
 interface IHeatCreateTransactionOutput {
@@ -637,6 +660,11 @@ interface IHeatBroadcastOutput {
   transaction: string;
 }
 interface IHeatAsset {
+
+  /**
+   * 0 - standard, 1 - private asset.
+   */
+  type: number;
   /**
    * The number of the account that issued the asset
    */
@@ -665,7 +693,13 @@ interface IHeatAsset {
   /**
    * True in case new assets can later be issued by the asset issuer
    */
-  dillutable: boolean;
+  dilutable: boolean;
+
+  orderFee: string;
+
+  tradeFee: string;
+
+  feeRecipient: string;
 
   properties?: string;
 }
@@ -1086,4 +1120,9 @@ interface IHEATKeystoreTransaction {
   key: string,
   value: string,
   transaction: string
+}
+interface IHEATMasternode {
+  account: string,
+  internetAddress: string,
+  height: number
 }

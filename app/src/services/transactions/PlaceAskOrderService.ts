@@ -2,7 +2,7 @@
 ///<reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -51,12 +51,15 @@ class PlaceAskOrderService extends AbstractTransaction {
     bytes.pos += 8;
     transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
     bytes.pos += 4;
+    transaction.isSenderFeePayer = bytes.byteArray[bytes.pos] == 1;
+    bytes.pos += 1;
 
     return transaction.currency === data.AskOrderPlacement.currencyId &&
-           transaction.asset === data.AskOrderPlacement.assetId &&
-           transaction.quantity === data.AskOrderPlacement.quantity &&
-           transaction.price === data.AskOrderPlacement.price &&
-           transaction.expiration === data.AskOrderPlacement.expiration;
+      transaction.asset === data.AskOrderPlacement.assetId &&
+      transaction.quantity === data.AskOrderPlacement.quantity &&
+      transaction.price === data.AskOrderPlacement.price &&
+      transaction.expiration === data.AskOrderPlacement.expiration &&
+      transaction.isSenderFeePayer === data.AskOrderPlacement.isSenderFeePayer;
   }
 }
 
@@ -102,7 +105,10 @@ class PlaceAskOrderDialog extends GenericDialog {
       builder.text('expiration', this.expiration).
               label('Expiration').
               required().
-              readonly(this.readonly)
+              readonly(this.readonly),
+      builder.switcher("isSenderFeePayer", true)
+        .label('Force sender pays network fee')
+        .visible(this.assetInfo.type == 1 || this.currencyInfo.type == 1)
     ]
   }
 
@@ -116,8 +122,9 @@ class PlaceAskOrderDialog extends GenericDialog {
               assetId: this.fields['asset'].value,
               price: utils.convertToQNT(this.fields['price'].value),
               quantity: utils.convertToQNT(this.fields['quantity'].value),
-              expiration: this.fields['expiration'].value
-            });
+              expiration: this.fields['expiration'].value,
+              isSenderFeePayer: !!this.fields['isSenderFeePayer'].value
+           });
     return builder;
   }
 }

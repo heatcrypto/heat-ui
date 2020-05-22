@@ -188,12 +188,10 @@ abstract class AbstractTransaction {
     transaction.ecBlockHeight = converters.byteArrayToSignedInt32(byteArray, 132); // 4
     transaction.ecBlockId = String(converters.byteArrayToBigInteger(byteArray, 136)); // 8
 
-    var pos: number = 144;
-    pos++; // skip the attachmentVersion byte
-
-    var bytes: IByteArrayWithPosition = {
+    let bytes: IByteArrayWithPosition = {
       byteArray: byteArray,
-      pos: pos
+      pos: 145, // next after the attachmentVersion
+      attachmentVersion: byteArray[144] //attachmentVersion byte
     };
     if (!this.verify(transaction, bytes, data)) {
       return;

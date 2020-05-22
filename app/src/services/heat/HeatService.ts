@@ -301,7 +301,7 @@ class HeatService {
         var byteArray = converters.hexStringToByteArray(message.messageBytes);
         var nonce = converters.byteArrayToHexString(byteArray.slice(0, 32));
         var data = converters.byteArrayToHexString(byteArray.slice(32));
-        if (message.recipient == this.user.account) {
+        if (message.recipient == this.user.account || (message.recipient == '0' && message.sender == this.user.account)) {
           return heat.crypto.decryptMessage(data, nonce, message.senderPublicKey, this.user.secretPhrase);
         }
         else if (message.sender == this.user.account) {

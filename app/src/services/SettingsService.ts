@@ -88,6 +88,7 @@ class SettingsService {
 
   public static CRYPTO_NODES: CryptoNodesDescriptorMap[];
   public initialized: Promise<any>;
+  failoverEnabled: boolean = true;
 
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
@@ -236,6 +237,7 @@ class SettingsService {
     //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
     //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
     //   this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
+    //   this.failoverEnabled = false;
     // }
   }
 

@@ -230,6 +230,24 @@
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="assign fees to private asset" ng-click="vm.showAssetAssignAccountDialog($event)">
+                <md-icon md-font-library="material-icons">sports_baseball</md-icon>
+                <span>Fees for private asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="assign expiration timestamp to asset" ng-click="vm.showAssetExpirationDialog($event)">
+                <md-icon md-font-library="material-icons">sports_baseball</md-icon>
+                <span>Assign expiration to asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="whitelist account for private asset" ng-click="vm.showWhitelistAssetAccountDialog($event)">
+                <md-icon md-font-library="material-icons">how_to_reg</md-icon>
+                <span>Whitelist account for private asset</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="whitelits market" ng-click="vm.showWhitelistMarketDialog($event)">
                 <md-icon md-font-library="material-icons">insert_chart</md-icon>
                 <span>Create Market</span>
@@ -265,12 +283,6 @@
                 <span>Heat API (external)</span>
               </md-button>
             </md-menu-item>
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="Show copy" ng-click="vm.showSecretPhrase()">
-                <md-icon md-font-library="material-icons">content_copy</md-icon>
-                <span>Show private key</span>
-              </md-button>
-            </md-menu-item>
             <md-menu-item>
               <md-button aria-label="backup" ng-click="vm.backupWallet()">
                 <md-icon md-font-library="material-icons">save</md-icon>
@@ -302,7 +314,8 @@
   `
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
-  'assetIssue', 'whitelistMarket', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
+  'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'assetExpiration',
+  'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
 class ToolbarComponent {
 
@@ -311,8 +324,6 @@ class ToolbarComponent {
   isBetanet = heat.isBetanet;
   heatServerLocation;
   hasUnreadP2PMessage = false;
-
-  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
@@ -323,7 +334,10 @@ class ToolbarComponent {
               public env: EnvService,
               private assetTransfer: AssetTransferService,
               private assetIssue: AssetIssueService,
+              private whitelistAssetAccountService: WhitelistAssetAccountService,
+              private assetAssignFees: AssetAssignFeesService,
               private whitelistMarket: WhitelistMarketService,
+              private assetExpiration: AssetExpirationService,
               private balanceLease: BalanceLeaseService,
               private masternodeService: MasternodeService,
               private storage: StorageService,
@@ -353,6 +367,8 @@ class ToolbarComponent {
     this.p2pMessaging.on(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener);
     $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener));
   }
+
+  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
 
   copyAddress() {
     this.clipboard.copyWithUI(document.getElementById('toolbar-user-address'), 'Copied address to clipboard');
@@ -503,6 +519,18 @@ class ToolbarComponent {
     this.masternodeService.dialog(null).show();
   }
 
+  showWhitelistAssetAccountDialog($event) {
+    this.whitelistAssetAccountService.dialog($event).show();
+  }
+
+  showAssetAssignAccountDialog($event) {
+    this.assetAssignFees.dialog($event).show();
+  }
+
+  showAssetExpirationDialog($event) {
+    this.assetExpiration.dialog($event).show();
+  }
+
   signout() {
     this.user.lock();
   }
@@ -517,18 +545,6 @@ class ToolbarComponent {
 
   opendevTools() {
     this.electron.openDevTools(OpenDevToolsMode.detach);
-  }
-
-  showSecretPhrase() {
-    this.panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase">
-        <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
-        </md-input-container>
-      </div>
-    `, {
-      secretPhrase: this.user.currency.secretPhrase
-    })
   }
 
   backupWallet() {

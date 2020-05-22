@@ -22,35 +22,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Service('whitelistMarket')
-@Inject('$q','user','heat')
-class WhitelistMarketService extends AbstractTransaction {
+@Service('assetExpiration')
+@Inject('$q','user','heat','$interval')
+class AssetExpirationService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              private $interval: angular.IIntervalService) {
     super();
   }
 
   dialog($event?, recipient?: string, recipientPublicKey?): IGenericDialog {
-    return new WhitelistMarketferDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey);
+    return new AssetExpirationDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, this.$interval);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
-    if (transaction.subtype !== 9) return false;
+    if (transaction.subtype !== 12) return false;
 
-    transaction.currencyId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
     transaction.assetId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
     bytes.pos += 8;
+    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
 
-   return transaction.currencyId === data.WhitelistMarket.currencyId &&
-          transaction.assetId === data.WhitelistMarket.assetId;
+   return transaction.expiration === data.AssetExpiration.expiration &&
+          transaction.assetId === data.AssetExpiration.assetId;
   }
 }
 
-class WhitelistMarketferDialog extends GenericDialog {
+class AssetExpirationDialog extends GenericDialog {
 
   constructor($event,
               private transaction: AbstractTransaction,
@@ -58,26 +59,23 @@ class WhitelistMarketferDialog extends GenericDialog {
               private user: UserService,
               private heat: HeatService,
               private recipient: string,
-              private recipientPublicKey: string) {
+              private recipientPublicKey: string,
+              private $interval: angular.IIntervalService) {
     super($event);
-    this.dialogTitle = 'Whitelist Market';
-    this.dialogDescription = 'Description on how to whitelist a market';
+    this.dialogTitle = 'Assign asset expiration';
+    this.dialogDescription = 'Description on how to assign asset expiration';
     this.okBtnTitle = 'SEND';
-    this.feeFormatted = utils.formatQNT(HeatAPI.fee.whitelistMarket, 8).replace(/000000$/,'');
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.assetAssignExpiration, 8).replace(/000000$/,'');
     this.recipient = this.recipient || '';
     this.recipientPublicKey = this.recipientPublicKey || null;
   }
 
   /* @override */
   getFields($scope: angular.IScope) {
-    let networkNote = "NETWORK FEE MIN 0.01 HEAT FOR EVERY SUBMITTED ORDER"
     let builder = new DialogFieldBuilder($scope);
     return [
       builder.asset('asset')
         .label('Your asset')
-        .onchange(newValue => {
-          this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
-        })
         .validate("You dont own this asset", (value) => {
                 if (value == "0")
                   return true;
@@ -86,15 +84,10 @@ class WhitelistMarketferDialog extends GenericDialog {
                 return !!assetInfo;
               }).
               required(),
-      builder.asset('currency').
-              label('Allow market').
-              searchAllAssets(true).
-              required(),
-      builder.switcher('networkFee', false)
-        .label('Network fee paid by')
-        .valueLabels("ISSUER", "USER")
-        .valueNotes(networkNote, networkNote)
-        .visible(false) //will be visible when private asset will be selected
+      builder.text('expiration', 0)
+        .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
+      builder.staticText("expirationDate", ''),
+      builder.staticText("systemtimestamp", '')
     ]
   }
 
@@ -103,21 +96,25 @@ class WhitelistMarketferDialog extends GenericDialog {
     let builder = new TransactionBuilder(this.transaction);
     let assetId = this.fields['asset'].value;
     builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.whitelistMarket)
-           .attachment('WhitelistMarket', <IHeatCreateWhitelistMarket>{
-              assetId: assetId,
-              currencyId: this.fields['currency'].value,
-              isIssuerFeePayer: (this.isSelectedAssetPrivate(assetId) ? (this.fields['networkFee'].value ? 1 : 2) : 1)
-            });
+      .feeNQT(HeatAPI.fee.assetAssignExpiration)
+      .attachment('AssetExpiration', <IHeatCreateAssetExpiration>{
+        assetId: assetId,
+        expiration: parseInt(this.fields['expiration'].value || '0')
+      });
     return builder;
   }
 
-  isSelectedAssetPrivate(assetId) {
-    if (assetId == "0")
-      return false;
-    let assetField = <DialogFieldAsset> this.fields['asset']
-    let assetInfo = assetField.getAssetInfo(assetId)
-    return assetInfo && assetInfo.type == 1
+  fieldsReady($scope: angular.IScope) {
+    let interval = this.$interval(() => {
+      $scope.$evalAsync(() => {
+        let expirationValue = parseInt(this.fields['expiration'].value || '0')
+        this.fields['expirationDate'].value = expirationValue > 0
+          ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue)
+          : ''
+        this.fields['systemtimestamp'].value = "Current timestamp: " + Math.round(utils.epochTime())
+      });
+    }, 1000, 0, false);
+    $scope.$on('$destroy', () => { this.$interval.cancel(interval) });
   }
 
 }

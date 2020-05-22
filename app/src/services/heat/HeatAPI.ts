@@ -27,8 +27,11 @@ class HeatAPI implements IHeatAPI {
     standard: utils.convertToQNT('0.01'),
     assetIssue: utils.convertToQNT('500.00'),
     assetIssueMore: utils.convertToQNT('0.01'),
+    whitelistAssetAccount: utils.convertToQNT('100.00'),
+    assetAssignFee: utils.convertToQNT('0.1'),
+    assetAssignExpiration: utils.convertToQNT('0.01'),
     whitelistMarket: utils.convertToQNT('10.00'),
-    registerInternetAddressFee: utils.convertToQNT('100.00')
+    registerInternetAddressFee: utils.convertToQNT('50.00')
   };
 
   constructor(private heat: HeatService,
@@ -360,4 +363,9 @@ class HeatAPI implements IHeatAPI {
   saveKeystoreEntry(key: string, value: string, secretPhrase: string): angular.IPromise<IHeatCreateTransactionOutput> {
     return this.heat.post(`/keystore/put`, {key, value, fee: 1000000, deadline: 1440, secretPhrase});
   }
+
+  listMasternodes(): angular.IPromise<Array<IHEATMasternode>> {
+    return this.heat.get(`/account/internetaddress/list`);
+  }
+
 }

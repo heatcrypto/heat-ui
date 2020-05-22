@@ -22,9 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-@Service('whitelistMarket')
-@Inject('$q','user','heat')
-class WhitelistMarketService extends AbstractTransaction {
+@Service('whitelistAssetAccount')
+@Inject('$q', 'user', 'heat')
+class WhitelistAssetAccountService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
@@ -33,24 +33,26 @@ class WhitelistMarketService extends AbstractTransaction {
   }
 
   dialog($event?, recipient?: string, recipientPublicKey?): IGenericDialog {
-    return new WhitelistMarketferDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey);
+    return new WhitelistAssetAccountDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
-    if (transaction.type !== 2) return false;
-    if (transaction.subtype !== 9) return false;
+    if (transaction.type != 2 || transaction.subtype != 7) return false;
 
-    transaction.currencyId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
     transaction.assetId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
     bytes.pos += 8;
+    transaction.accountId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
+    bytes.pos += 8;
+    transaction.endHeight = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
+    bytes.pos += 4;
 
-   return transaction.currencyId === data.WhitelistMarket.currencyId &&
-          transaction.assetId === data.WhitelistMarket.assetId;
+    return transaction.assetId === data.WhitelistAssetAccount.assetId
+      && transaction.accountId === data.WhitelistAssetAccount.accountId
+      && transaction.endHeight === data.WhitelistAssetAccount.endHeight;
   }
 }
 
-class WhitelistMarketferDialog extends GenericDialog {
+class WhitelistAssetAccountDialog extends GenericDialog {
 
   constructor($event,
               private transaction: AbstractTransaction,
@@ -60,64 +62,56 @@ class WhitelistMarketferDialog extends GenericDialog {
               private recipient: string,
               private recipientPublicKey: string) {
     super($event);
-    this.dialogTitle = 'Whitelist Market';
-    this.dialogDescription = 'Description on how to whitelist a market';
+    this.dialogTitle = 'Whitelist account to use the private asset';
+    this.dialogDescription = 'Description on how to whitelist account to use the private asset';
     this.okBtnTitle = 'SEND';
-    this.feeFormatted = utils.formatQNT(HeatAPI.fee.whitelistMarket, 8).replace(/000000$/,'');
+    this.feeFormatted = utils.formatQNT(HeatAPI.fee.whitelistAssetAccount, 8).replace(/000000$/, '');
     this.recipient = this.recipient || '';
     this.recipientPublicKey = this.recipientPublicKey || null;
   }
 
   /* @override */
   getFields($scope: angular.IScope) {
-    let networkNote = "NETWORK FEE MIN 0.01 HEAT FOR EVERY SUBMITTED ORDER"
-    let builder = new DialogFieldBuilder($scope);
+    var builder = new DialogFieldBuilder($scope);
     return [
+      builder
+        .staticText('feeNote', "Enabling account for private asset the fee: "
+          + utils.formatQNT(HeatAPI.fee.whitelistAssetAccount, 8).replace(/000000$/, '')
+          + ". Disabling account for private asset the fee: "
+          + utils.formatQNT(HeatAPI.fee.standard, 8).replace(/000000$/, '')
+        ),
       builder.asset('asset')
-        .label('Your asset')
-        .onchange(newValue => {
-          this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
-        })
+        .label('Your private asset')
         .validate("You dont own this asset", (value) => {
-                if (value == "0")
-                  return true;
-                var assetField = <DialogFieldAsset> this.fields['asset'];
-                var assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
-                return !!assetInfo;
-              }).
-              required(),
-      builder.asset('currency').
-              label('Allow market').
-              searchAllAssets(true).
-              required(),
-      builder.switcher('networkFee', false)
-        .label('Network fee paid by')
-        .valueLabels("ISSUER", "USER")
-        .valueNotes(networkNote, networkNote)
-        .visible(false) //will be visible when private asset will be selected
+          if (value == "0") return true;
+          let assetField = <DialogFieldAsset>this.fields['asset'];
+          let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+          return !!assetInfo;
+        }).required(),
+      builder
+        .account('account')
+        .label('Account to be enabled to use the private asset')
+        .required(),
+      builder.text('endHeight')
+        .label('End height (set 0 to disable the account for private asset)')
+        .required(),
     ]
   }
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
+    let endHeight = parseInt(this.fields['endHeight'].value);
+    let fee = endHeight == 0 ? HeatAPI.fee.standard : HeatAPI.fee.whitelistAssetAccount
     let builder = new TransactionBuilder(this.transaction);
-    let assetId = this.fields['asset'].value;
     builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.whitelistMarket)
-           .attachment('WhitelistMarket', <IHeatCreateWhitelistMarket>{
-              assetId: assetId,
-              currencyId: this.fields['currency'].value,
-              isIssuerFeePayer: (this.isSelectedAssetPrivate(assetId) ? (this.fields['networkFee'].value ? 1 : 2) : 1)
-            });
+      .feeNQT(fee)
+      .attachment('WhitelistAssetAccount', <IHeatCreateWhitelistAssetAccount>{
+        assetId: this.fields['asset'].value,
+        accountId: this.fields['account'].value,
+        endHeight: endHeight
+      });
     return builder;
   }
 
-  isSelectedAssetPrivate(assetId) {
-    if (assetId == "0")
-      return false;
-    let assetField = <DialogFieldAsset> this.fields['asset']
-    let assetInfo = assetField.getAssetInfo(assetId)
-    return assetInfo && assetInfo.type == 1
-  }
 
 }

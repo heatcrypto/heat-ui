@@ -301,10 +301,10 @@ class TransactionRenderer {
   private SUBTYPE_COLORED_COINS_BID_ORDER_PLACEMENT = 4;
   private SUBTYPE_COLORED_COINS_ASK_ORDER_CANCELLATION = 5;
   private SUBTYPE_COLORED_COINS_BID_ORDER_CANCELLATION = 6;
-  private SUBTYPE_COLORED_COINS_WHITELIST_ACCOUNT_ADDITION = 7;
-  private SUBTYPE_COLORED_COINS_WHITELIST_ACCOUNT_REMOVAL = 8;
+  private SUBTYPE_COLORED_COINS_WHITELIST_ASSET_ACCOUNT = 7;
   private SUBTYPE_COLORED_COINS_WHITELIST_MARKET = 9;
   private SUBTYPE_COLORED_COINS_ATOMIC_MULTI_TRANSFER = 10;
+  private SUBTYPE_COLORED_COINS_ASSET_ASSIGN_FEES = 11;
   private SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
   private SUBTYPE_ACCOUNT_CONTROL_INTERNET_ADDRESS = 1;
 
@@ -350,12 +350,15 @@ class TransactionRenderer {
     this.transactionTypes[key] = 'ISSUE ASSET';
     this.renderers[key] = new TransactionRenderHelper(
       (t) => {
-        return provider.personalize ? 'Asset $asset' : "<b>ISSUE ASSET</b> Issuer $sender asset $asset";
+        return provider.personalize ? '$private Asset $asset' : "<b>ISSUE $private ASSET</b> Issuer $sender asset $asset";
       },
       (t) => {
+        this.asset(t.transaction) //fill cache
+        let info = this.assetInfo.cache[t.transaction]
         return {
           sender: this.account(t.sender, t.senderPublicName),
-          asset: t.transaction
+          asset: t.transaction,
+          private: info && info.type == 1 ? 'PRIVATE' : ''
         }
       }
     );
@@ -460,6 +463,47 @@ class TransactionRenderer {
       (t) => {
         return {
           sender: this.account(t.sender, t.senderPublicName)
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_ASSET_ASSIGN_FEES;
+    this.transactionTypes[key] = 'ASSET ASSIGN FEES';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>ASSIGN PRIVATE ASSET FEES</b> Asset $asset'
+      },
+      (t) => {
+        return {
+          asset: this.asset(t.attachment['asset'])
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_WHITELIST_MARKET;
+    this.transactionTypes[key] = 'WHITELIST MARKET';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>WHITELIST MARKET</b> Currency $currency Asset $asset'
+      },
+      (t) => {
+        return {
+          currency: this.asset(t.attachment['currency']),
+          asset: this.asset(t.attachment['asset'])
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_WHITELIST_ASSET_ACCOUNT;
+    this.transactionTypes[key] = 'WHITELIST ASSET ACCOUNT';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>WHITELIST ACCOUNT FOR PRIVATE ASSET</b> Asset $asset Account $account'
+      },
+      (t) => {
+        return {
+          asset: this.asset(t.attachment['asset']),
+          account: this.account(t.attachment['account'])
         }
       }
     );
@@ -578,7 +622,7 @@ class TransactionRenderer {
     return `not supported type=${transaction.type} subtype=${transaction.subtype}`;
   }
 
-  account(account: string, publicName: string): string {
+  account(account: string, publicName?: string): string {
     return account == '0' ? '' : `<a href="#/explorer-account/${account}/transactions">${publicName||account}</a>`;
   }
 
