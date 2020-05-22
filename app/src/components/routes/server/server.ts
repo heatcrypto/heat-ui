@@ -50,11 +50,9 @@
         </md-switch>
         <span flex></span>
         <div layout="row" layout-align="center center" class="mining-stats" ng-show="vm.isMining">
-          <span>Remaining : </span>
+          <span>Remaining: </span>
           <span class="mining-stats-val">{{vm.miningRemaining}}</span>
-          <span>Deadline : </span>
-          <span class="mining-stats-val">{{vm.miningDeadline}}</span>
-          <span>Hittime : </span>
+          <span>Hittime: </span>
           <span class="mining-stats-val">{{vm.miningHittime}}</span>
         </div>
         <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
@@ -87,7 +85,6 @@ class ServerComponent {
   private consoleRowCount = 0;
   private isMining = false;
   private miningRemaining: any = '*';
-  private miningDeadline: any = '*';
   private miningHittime: any = '*';
   private hostLocal: string;
   private hostRemote: string;
@@ -261,7 +258,6 @@ class ServerComponent {
           if (info[0]) {
             this.isMining = true;
             this.miningRemaining = info[0].remaining;
-            this.miningDeadline = info[0].deadline;
             let miningHittime = info[0].hitTime;
             var date = utils.timestampToDate(miningHittime);
             var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
