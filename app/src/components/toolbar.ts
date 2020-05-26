@@ -217,36 +217,40 @@
             <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content width="4">
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="transfer asset" ng-click="vm.showAssetTransferDialog($event)">
-                <md-icon md-font-library="material-icons">swap_horiz</md-icon>
-                <span>Transfer Asset</span>
-              </md-button>
-            </md-menu-item>
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="issue asset" ng-click="vm.showIssueAssetDialog($event)">
-                <md-icon md-font-library="material-icons">library_add</md-icon>
-                <span>Issue Asset</span>
-              </md-button>
-            </md-menu-item>
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="assign fees to private asset" ng-click="vm.showAssetAssignAccountDialog($event)">
-                <md-icon md-font-library="material-icons">sports_baseball</md-icon>
-                <span>Fees for private asset</span>
-              </md-button>
-            </md-menu-item>
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="assign expiration timestamp to asset" ng-click="vm.showAssetExpirationDialog($event)">
-                <md-icon md-font-library="material-icons">sports_baseball</md-icon>
-                <span>Assign expiration to asset</span>
-              </md-button>
-            </md-menu-item>
-            <md-menu-item  ng-if="vm.user.unlocked">
-              <md-button aria-label="whitelist account for private asset" ng-click="vm.showWhitelistAssetAccountDialog($event)">
-                <md-icon md-font-library="material-icons">how_to_reg</md-icon>
-                <span>Whitelist account for private asset</span>
-              </md-button>
-            </md-menu-item>
+
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="transfer asset" ng-click="vm.showAssetTransferDialog($event)">
+                  <md-icon md-font-library="material-icons">swap_horiz</md-icon>
+                  <span>Transfer Asset</span>
+                </md-button>
+              </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="issue asset" ng-click="vm.showIssueAssetDialog($event)">
+                  <md-icon md-font-library="material-icons">library_add</md-icon>
+                  <span>Issue Asset</span>
+                </md-button>
+              </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="assign fees to private asset" ng-click="vm.showAssetAssignAccountDialog($event)">
+                  <md-icon md-font-library="material-icons">sports_baseball</md-icon>
+                  <span>Fees for private asset</span>
+                </md-button>
+              </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="assign expiration timestamp to asset" ng-click="vm.showAssetExpirationDialog($event)">
+                  <md-icon md-font-library="material-icons">av_timer</md-icon>
+                  <span>Assign expiration to asset</span>
+                </md-button>
+              </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="whitelist account for private asset" ng-click="vm.showWhitelistAssetAccountDialog($event)">
+                  <md-icon md-font-library="material-icons">how_to_reg</md-icon>
+                  <span>Whitelist account for private asset</span>
+                </md-button>
+              </md-menu-item>
+
+            <md-menu-divider ng-if="vm.user.unlocked"></md-menu-divider>
+
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="whitelits market" ng-click="vm.showWhitelistMarketDialog($event)">
                 <md-icon md-font-library="material-icons">insert_chart</md-icon>
@@ -265,6 +269,9 @@
                 <span>Register Masternode Address</span>
               </md-button>
             </md-menu-item>
+
+            <md-menu-divider ng-if="vm.user.unlocked"></md-menu-divider>
+
             <md-menu-item ng-show="vm.isNodeEnv">
               <md-button aria-label="dev-tools" ng-click="vm.opendevTools($event)">
                 <md-icon md-font-library="material-icons">developer_board</md-icon>
