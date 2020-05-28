@@ -370,11 +370,19 @@ class TransactionRenderer {
         return provider.personalize ? '' : "<b>TRANSFER ASSET</b> $asset from $sender to $recipient amount $amount";
       },
       (t) => {
+
+        let assetId = t.attachment['asset']
+        let assetInfo = this.assetInfo.cache[assetId]
+        let amount
+        if (assetInfo) {
+          amount = this.amount(t.attachment['quantity'], assetInfo.decimals)
+        }
+
         return {
           sender: this.account(t.sender, t.senderPublicName),
           recipient: this.account(t.recipient, t.recipientPublicName),
-          asset: this.asset(t.attachment['asset']),
-          amount: this.amount(t.attachment['quantity'], 8),
+          asset: this.asset(assetId),
+          amount: amount,
         }
       }
     );

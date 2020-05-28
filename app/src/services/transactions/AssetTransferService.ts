@@ -111,14 +111,17 @@ class AssetTransferDialog extends GenericDialog {
               label('Asset').
               onchange(() => {
                 /* when the asset changes we update the symbol and precission of the amount field */
-                var amountField = <DialogFieldMoney> this.fields['amount'];
-                var assetField = <DialogFieldAsset> this.fields['asset'];
-                var assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+                let amountField = <DialogFieldMoney> this.fields['amount'];
+                let assetField = <DialogFieldAsset> this.fields['asset'];
+                let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
                 if (assetInfo) {
                   amountField.symbol(assetInfo.symbol);
                   amountField.precision(assetInfo.decimals);
+                  $scope.$evalAsync(() => {
+                    amountField.value = "0"
+                    amountField.changed(true)
+                  });
                 }
-                this.fields['amount'].changed();
               }).
               validate("You dont own this asset", () => {
                 var assetField = <DialogFieldAsset> this.fields['asset'];
