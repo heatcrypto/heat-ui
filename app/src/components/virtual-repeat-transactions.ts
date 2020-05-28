@@ -192,12 +192,13 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     if (angular.isString(this.account)) {
-      heat.subscriber.unconfirmedTransaction({recipient:this.account}, refresh, $scope);
-      heat.subscriber.unconfirmedTransaction({sender:this.account}, refresh, $scope);
+      heat.subscriber.unconfirmedTransaction({recipient: this.account}, refresh, $scope);
+      heat.subscriber.unconfirmedTransaction({sender: this.account}, refresh, $scope);
+      heat.subscriber.blockPushed({}, refresh, $scope);
     }
-    if (angular.isUndefined(this.block)&&angular.isUndefined(this.account)) {
+    if (angular.isUndefined(this.block) && angular.isUndefined(this.account)) {
       heat.subscriber.unconfirmedTransaction({}, refresh, $scope);
       heat.subscriber.blockPopped({}, refresh, $scope);
       heat.subscriber.blockPushed({}, refresh, $scope);
