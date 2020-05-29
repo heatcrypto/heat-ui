@@ -170,14 +170,15 @@ class AssetIssueDialog extends GenericDialog {
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
+    let decimals = parseInt(this.fields['decimals'].value);
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
       .feeNQT(HeatAPI.fee.assetIssue)
       .attachment('AssetIssuance', <IHeatCreateAssetIssuance>{
-        decimals: parseInt(this.fields['decimals'].value),
+        decimals: decimals,
         dilutable: this.fields['dilutable'].value == 'true',
         expiration: parseInt(this.fields['expiration'].value || '0'),
-        quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
+        quantityQNT: utils.convertToQNT(this.fields['quantity'].value, decimals),
         descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
         descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
         type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1

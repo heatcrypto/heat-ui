@@ -295,7 +295,7 @@ class ExploreAccountComponent {
         this.assetInfos = assetInfos
           .filter(info => parseFloat(info.userBalance) !== 0)
           .map(info => {
-            info['balance'] = utils.formatQNT(info.userBalance, 8);
+            info['balance'] = utils.formatQNT(info.userBalance, info.decimals);
             return info;
           });
       })

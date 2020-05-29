@@ -149,12 +149,7 @@ class DialogFieldAsset extends AbstractDialogField {
   }
 
   getAssetInfo(asset: string) : DialogFieldAssetAssetInfo {
-    for (var i=0; i<this.availableAssets.length; i++) {
-      if (this.availableAssets[i].id == asset) {
-        return this.availableAssets[i];
-      }
-    }
-    return null;
+    return this.availableAssets.find(info => info.id == asset) || null
   }
 
   searchAllAssets(searchAllAssets: boolean) {
