@@ -201,9 +201,9 @@ module utils {
     var cf = utils.commaFormat(asfloat);
     var parts = cf.split('.');
     var ret;
-    if (!parts[1])
-      ret = parts[0] + "." + "0".repeat(decimals);
-    else if (parts[1].length > decimals) {
+    if (!parts[1]) {
+      ret = parts[0] + (decimals > 0 ? "." + "0".repeat(decimals) : "");
+    } else if (parts[1].length > decimals) {
       var i=parts[1].length-1;
       while (parts[1].length > decimals) {
         if (parts[1][i]=="0") {
@@ -214,9 +214,9 @@ module utils {
         break;
       }
       ret = parts[0] + "." + parts[1];
-    }
-    else
+    } else {
       ret = parts[0] + "." + parts[1] + "0".repeat(decimals-parts[1].length);
+    }
     return returnNullZero && !ret.match(/[^0\.]/) ? null : ret;
   }
 
@@ -231,8 +231,7 @@ module utils {
     return parts[0]+"."+parts[1];
   }
 
-  export function convertToQNTf(quantity: string, decimals?: number): string {
-    decimals = decimals || 8
+  export function convertToQNTf(quantity: string, decimals: number = 8): string {
     if (typeof quantity == 'undefined') {
       return '0';
     }
@@ -256,8 +255,10 @@ module utils {
     return quantity + afterComma;
   }
 
+  const DIVIDER_100_MILIONS = new Big(100000000)
+
   export function calculateTotalOrderPriceQNT(quantityQNT: string, priceQNT: string): string {
-    return new Big(quantityQNT).times(new Big(priceQNT).div(new Big(100000000))).round().toString();
+    return new Big(quantityQNT).times(new Big(priceQNT).div(DIVIDER_100_MILIONS)).round().toString();
   }
 
   export class ConvertToQNTError implements Error  {
@@ -272,35 +273,32 @@ module utils {
    *
    * @throws utils.ConvertToQNTError
    */
-  export function convertToQNT(quantity: string /*, decimals: number = 8 */): string {
-    var decimals = 8; // qnts all have 8 decimals.
-    var parts = quantity.split(".");
-    var qnt   = parts[0];
+  export function convertToQNT(quantity: string, decimals: number = 8): string {
+    //var decimals = 8; // qnts all have 8 decimals.
+    let parts = quantity.split(".");
+    let qnt = parts[0];
     if (parts.length == 1) {
       if (decimals) {
-        for (var i = 0; i < decimals; i++) {
+        for (let i = 0; i < decimals; i++) {
           qnt += "0";
         }
       }
-    }
-    else if (parts.length == 2) {
-      var fraction = parts[1];
+    } else if (parts.length == 2) {
+      let fraction = parts[1];
       if (fraction.length > decimals) {
-        throw new ConvertToQNTError("Fraction can only have " + decimals + " decimals max.",1);
-      }
-      else if (fraction.length < decimals) {
-        for (var i = fraction.length; i < decimals; i++) {
+        throw new ConvertToQNTError("Fraction can only have " + decimals + " decimals max.", 1);
+      } else if (fraction.length < decimals) {
+        for (let i = fraction.length; i < decimals; i++) {
           fraction += "0";
         }
       }
       qnt += fraction;
-    }
-    else {
-      throw new ConvertToQNTError("Incorrect input",2);
+    } else {
+      throw new ConvertToQNTError("Incorrect input", 2);
     }
     //in case there's a comma or something else in there.. at this point there should only be numbers
     if (!/^\d+$/.test(qnt)) {
-      throw new ConvertToQNTError("Invalid input. Only numbers and a dot are accepted.",3);
+      throw new ConvertToQNTError("Invalid input. Only numbers and a dot are accepted.", 3);
     }
     //remove leading zeroes
     return qnt.replace(/^0+/, "");
