@@ -49,17 +49,20 @@ Asset purchases are non-refundable.`;
           feeRecipient: (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
         },
         style: `
-          .private-asset {
+          .grey {
             color: darkgrey;
           }
         `,
         template: `
           <div layout="column">
             <span ng-if="!vm.info.certified">{{vm.unsafeWarning}}<br><br></span>
-            <span class="private-asset" ng-if="vm.info.type==1">PRIVATE ASSET </span>
             <span><b>{{vm.info.symbol}}</b> {{vm.info.name}}</span>
-            <p class="private-asset" ng-if="vm.info.type==1">
-            Order fee {{vm.orderFeePercentage}}% &nbsp;&nbsp;&nbsp;Trade fee {{vm.tradeFeePercentage}}% &nbsp;&nbsp;&nbsp;Fee recipient {{vm.feeRecipient}}
+            <p class="grey" ng-if="vm.info.type==1">
+              <span>PRIVATE ASSET</span><br/>
+              Order fee: {{vm.orderFeePercentage}}% &nbsp;&nbsp;&nbsp;Trade fee: {{vm.tradeFeePercentage}}% &nbsp;&nbsp;&nbsp;Fee recipient: {{vm.feeRecipient}}
+            </p>
+            <p class="grey">
+                id: {{vm.info.id}} &nbsp;&nbsp;&nbsp; decimals: {{vm.info.decimals}} &nbsp;&nbsp;&nbsp; timestamp: {{vm.info.timestamp}} &nbsp;&nbsp;&nbsp; issuer: {{vm.info.issuerPublicName || vm.info.issuer}}
             </p>
             <pre>{{vm.description}}</pre>
           </div>
@@ -68,3 +71,4 @@ Asset purchases are non-refundable.`;
     });
   }
 }
+
