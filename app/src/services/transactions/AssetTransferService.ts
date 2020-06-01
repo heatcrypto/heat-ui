@@ -22,6 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+import assetInfo = dialogs.assetInfo;
+
 @Service('assetTransfer')
 @Inject('$q','user','heat')
 class AssetTransferService extends AbstractTransaction {
@@ -189,21 +191,25 @@ class AssetTransferDialog extends GenericDialog {
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
-    var builder = new TransactionBuilder(this.transaction);
-    builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.standard)
-           .attachment('AssetTransfer', <IHeatCreateAssetTransfer>{
-              assetId: this.fields['asset'].value,
-              quantity: this.fields['amount'].value
-            });
-    builder.recipient(this.fields['recipient'].value);
-    builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
-    if (this.fields['message'].value) {
-      builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
+    let builder = new TransactionBuilder(this.transaction);
+    let assetField = <DialogFieldAsset> this.fields['asset'];
+    let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+    if (assetInfo) {
+      builder.secretPhrase(this.user.secretPhrase)
+        .feeNQT(HeatAPI.fee.standard)
+        .attachment('AssetTransfer', <IHeatCreateAssetTransfer>{
+          assetId: this.fields['asset'].value,
+          quantity: this.fields['amount'].value
+        });
+      builder.recipient(this.fields['recipient'].value);
+      builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
+      if (this.fields['message'].value) {
+        builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
+      }
+      // if (angular.isDefined(this.bundle)) {
+      //   builder.bundle(this.bundle);
+      // }
+      return builder;
     }
-    // if (angular.isDefined(this.bundle)) {
-    //   builder.bundle(this.bundle);
-    // }
-    return builder;
   }
 }

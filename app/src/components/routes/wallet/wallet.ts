@@ -947,7 +947,7 @@ class WalletComponent {
         heatCurrencyBalance.tokens = []
         assetInfos.forEach(assetInfo => {
           let tokenBalance = new TokenBalance(assetInfo.name, assetInfo.symbol, assetInfo.id)
-          tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, 8)
+          tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, assetInfo.decimals)
           tokenBalance.visible = walletEntry.expanded
           heatCurrencyBalance.tokens.push(tokenBalance)
         })

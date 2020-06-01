@@ -237,15 +237,14 @@ class TraderQuickBuySellComponent {
           let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
           let balanceQNT = new Big(this.assetInfo.userBalance);
           if (balanceQNT.lt(quantityQNT)) {
-            this.quantity = utils.formatQNT(this.assetInfo.userBalance, 8);
+            this.quantity = utils.formatQNT(this.assetInfo.userBalance, this.assetInfo.decimals);
             this.recalculate();
           }
-        }
-        else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
+        } else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
           let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
           let balanceQNT = new Big(this.currencyInfo.userBalance);
           if (balanceQNT.lt(totalQNT)) {
-            this.total = utils.formatQNT(this.currencyInfo.userBalance, 8);
+            this.total = utils.formatQNT(this.currencyInfo.userBalance, this.currencyInfo.decimals);
             this.recalculateTotal();
           }
         }

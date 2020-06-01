@@ -33,7 +33,7 @@ class DialogFieldMoney extends AbstractDialogField {
       if (value == '') return '';
       if (!utils.isNumber(value)) return undefined;
       try {
-        return utils.convertToQNT(utils.unformat(value), this._precision);
+        return utils.convertToQNT(utils.unformat(value));
       } catch (e) {
         console.log('this')
         console.log(this)

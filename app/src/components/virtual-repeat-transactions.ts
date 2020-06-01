@@ -370,19 +370,12 @@ class TransactionRenderer {
         return provider.personalize ? '' : "<b>TRANSFER ASSET</b> $asset from $sender to $recipient amount $amount";
       },
       (t) => {
-
         let assetId = t.attachment['asset']
-        let assetInfo = this.assetInfo.cache[assetId]
-        let amount
-        if (assetInfo) {
-          amount = this.amount(t.attachment['quantity'], assetInfo.decimals)
-        }
-
         return {
           sender: this.account(t.sender, t.senderPublicName),
           recipient: this.account(t.recipient, t.recipientPublicName),
           asset: this.asset(assetId),
-          amount: amount,
+          amount: this.amount(t.attachment['quantity'], this.assetInfo.cache[assetId])
         }
       }
     );
@@ -395,12 +388,14 @@ class TransactionRenderer {
           "<b>SELL ORDER</b> $sender placed sell order $currency/$asset amount $amount price $price";
       },
       (t) => {
+        let assetId = t.attachment['asset']
+        let currencyId = t.attachment['currency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           currency: this.asset(t.attachment['currency']),
           asset: this.asset(t.attachment['asset']),
-          amount: this.amount(t.attachment['quantity'], 8),
-          price: this.amount(t.attachment['price'], 8),
+          amount: this.amount(t.attachment['quantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t.attachment['price'], this.assetInfo.cache[currencyId]),
         }
       }
     );
@@ -413,12 +408,14 @@ class TransactionRenderer {
           "<b>BUY ORDER</b> $sender placed buy order $currency/$asset amount $amount price $price";
       },
       (t) => {
+        let assetId = t.attachment['asset']
+        let currencyId = t.attachment['currency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
-          currency: this.asset(t.attachment['currency']),
-          asset: this.asset(t.attachment['asset']),
-          amount: this.amount(t.attachment['quantity'], 8),
-          price: this.amount(t.attachment['price'], 8),
+          currency: this.asset(currencyId),
+          asset: this.asset(assetId),
+          amount: this.amount(t.attachment['quantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t.attachment['price'], this.assetInfo.cache[currencyId]),
         }
       }
     );
@@ -432,13 +429,15 @@ class TransactionRenderer {
           '<b>CANCEL SELL</b> $sender cancelled order $currency/$asset amount $amount price $price';
       },
       (t) => {
+        let assetId = t.attachment['cancelledAskAsset']
+        let currencyId = t.attachment['cancelledAskCurrency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           order: t.attachment['order'],
           currency: this.asset(t['cancelledAskCurrency']),
           asset: this.asset(t['cancelledAskAsset']),
-          amount: this.amount(t['cancelledAskQuantity'], 8),
-          price: this.amount(t['cancelledAskPrice'], 8)
+          amount: this.amount(t['cancelledAskQuantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t['cancelledAskPrice'], this.assetInfo.cache[currencyId])
         }
       }
     );
@@ -452,13 +451,15 @@ class TransactionRenderer {
           '<b>CANCEL BUY</b> $sender cancelled order $currency/$asset amount $amount price $price';
       },
       (t) => {
+        let assetId = t.attachment['cancelledAskAsset']
+        let currencyId = t.attachment['cancelledAskCurrency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           order: t.attachment['order'],
           currency: this.asset(t['cancelledBidCurrency']),
           asset: this.asset(t['cancelledBidAsset']),
-          amount: this.amount(t['cancelledBidQuantity'], 8),
-          price: this.amount(t['cancelledBidPrice'], 8)
+          amount: this.amount(t['cancelledBidQuantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t['cancelledBidPrice'], this.assetInfo.cache[currencyId])
         }
       }
     );
@@ -592,15 +593,16 @@ class TransactionRenderer {
         }
       }
       if (angular.isString(amount)) {
-        if (angular.isDefined(this.assetInfo.cache[currency])) {
-          let symbol = this.assetInfo.cache[currency].symbol;
+        let assetInfo = this.assetInfo.cache[currency];
+        if (angular.isDefined(assetInfo)) {
+          let symbol = assetInfo.symbol;
           if (angular.isString(symbol)) {
-            return this.formatAmount(amount, symbol, neg);
+            return this.formatAmount(amount, symbol, neg, assetInfo);
           }
         }
         let deferred = this.$q.defer<string>();
         this.assetInfo.getInfo(currency).then(info=>{
-          deferred.resolve(this.formatAmount(amount, info.symbol, neg))
+          deferred.resolve(this.formatAmount(amount, info.symbol, neg, info))
         }, deferred.reject);
         return deferred.promise;
       }
@@ -615,8 +617,8 @@ class TransactionRenderer {
     return this.account(transaction.sender, transaction.senderPublicName);
   }
 
-  formatAmount(amount: string, symbol: string, neg: boolean): string {
-    let returns = this.amount(amount, 8, symbol);
+  formatAmount(amount: string, symbol: string, neg: boolean, assetInfo?: AssetInfo): string {
+    let returns = this.amount(amount, assetInfo ? assetInfo.decimals : 8, symbol);
     return (neg?'-':'+') + returns;
   }
 
@@ -635,8 +637,11 @@ class TransactionRenderer {
     return account == '0' ? '' : `<a href="#/explorer-account/${account}/transactions">${publicName||account}</a>`;
   }
 
-  amount(amountHQT: string, decimals: number, symbol?: string) {
-    return `<span>${utils.formatQNT(amountHQT||"0", decimals)} ${symbol||""}</span>`;
+  amount(amountHQT: string, decimalsInfo: number | AssetInfo, symbol?: string) {
+    let decimals = decimalsInfo
+      ? (typeof decimalsInfo === "number" ? decimalsInfo : decimalsInfo.decimals)
+      : 8;
+    return `<span>${utils.formatQNT(amountHQT || "0", decimals)} ${symbol || ""}</span>`;
   }
 
   asset(asset:string) {

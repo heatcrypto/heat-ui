@@ -178,7 +178,7 @@ class AssetIssueDialog extends GenericDialog {
         decimals: decimals,
         dilutable: this.fields['dilutable'].value == 'true',
         expiration: parseInt(this.fields['expiration'].value || '0'),
-        quantityQNT: utils.convertToQNT(this.fields['quantity'].value, decimals),
+        quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
         descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
         descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
         type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1

@@ -197,27 +197,27 @@ module utils {
   }
 
   export function formatQNT(quantity: string, decimals?: number, returnNullZero?: boolean): string {
-    var asfloat = utils.convertToQNTf(quantity, decimals);
-    var cf = utils.commaFormat(asfloat);
-    var parts = cf.split('.');
-    var ret;
+    let asfloat = utils.convertToQNTf(quantity);
+    let cf = utils.commaFormat(asfloat);
+    let parts = cf.split('.');
+    let result;
     if (!parts[1]) {
-      ret = parts[0] + (decimals > 0 ? "." + "0".repeat(decimals) : "");
+      result = parts[0] + (decimals > 0 ? "." + "0".repeat(decimals) : "");
     } else if (parts[1].length > decimals) {
-      var i=parts[1].length-1;
+      let i = parts[1].length - 1;
       while (parts[1].length > decimals) {
-        if (parts[1][i]=="0") {
-          parts[1] = parts[i].slice(0,-1);
+        if (parts[1][i] == "0") {
+          parts[1] = parts[i].slice(0, -1);
           i--;
           continue;
         }
         break;
       }
-      ret = parts[0] + "." + parts[1];
+      result = parts[0] + "." + parts[1];
     } else {
-      ret = parts[0] + "." + parts[1] + "0".repeat(decimals-parts[1].length);
+      result = parts[0] + "." + parts[1] + "0".repeat(decimals - parts[1].length);
     }
-    return returnNullZero && !ret.match(/[^0\.]/) ? null : ret;
+    return returnNullZero && !result.match(/[^0\.]/) ? null : result;
   }
 
   export function trimDecimals(formatted: string, decimals: number): string {
@@ -273,8 +273,8 @@ module utils {
    *
    * @throws utils.ConvertToQNTError
    */
-  export function convertToQNT(quantity: string, decimals: number = 8): string {
-    //var decimals = 8; // qnts all have 8 decimals.
+  export function convertToQNT(quantity: string): string {
+    let decimals = 8; // qnts all have 8 decimals.
     let parts = quantity.split(".");
     let qnt = parts[0];
     if (parts.length == 1) {
