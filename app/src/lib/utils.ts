@@ -266,6 +266,8 @@ module utils {
     constructor(public message: string, public code: number) {}
   }
 
+  const ALL_ASSETS_DECIMALS = 8
+
   /**
    * Converts a float to a QNT based on the number of decimals to use.
    * Note! That this method throws a ConvertToQNTError in case the
@@ -273,22 +275,19 @@ module utils {
    *
    * @throws utils.ConvertToQNTError
    */
-  export function convertToQNT(quantity: string): string {
-    let decimals = 8; // qnts all have 8 decimals.
+  export function convertToQNT(quantity: string, decimals: number = 8): string {
     let parts = quantity.split(".");
     let qnt = parts[0];
     if (parts.length == 1) {
-      if (decimals) {
-        for (let i = 0; i < decimals; i++) {
-          qnt += "0";
-        }
+      for (let i = 0; i < ALL_ASSETS_DECIMALS; i++) {
+        qnt += "0";
       }
     } else if (parts.length == 2) {
       let fraction = parts[1];
-      if (fraction.length > decimals) {
-        throw new ConvertToQNTError("Fraction can only have " + decimals + " decimals max.", 1);
-      } else if (fraction.length < decimals) {
-        for (let i = fraction.length; i < decimals; i++) {
+      if (fraction.length > ALL_ASSETS_DECIMALS) {
+        throw new ConvertToQNTError("Fraction can only have " + ALL_ASSETS_DECIMALS + " decimals max.", 1);
+      } else if (fraction.length < ALL_ASSETS_DECIMALS) {
+        for (let i = fraction.length; i < ALL_ASSETS_DECIMALS; i++) {
           fraction += "0";
         }
       }
@@ -301,7 +300,11 @@ module utils {
       throw new ConvertToQNTError("Invalid input. Only numbers and a dot are accepted.", 3);
     }
     //remove leading zeroes
-    return qnt.replace(/^0+/, "");
+    let result = qnt.replace(/^0+/, "");
+    let lastZeros = ALL_ASSETS_DECIMALS - decimals;
+    return result.length > lastZeros
+      ? result.substr(0, result.length - lastZeros) + '0'.repeat(lastZeros)
+      : result
   }
 
   /**

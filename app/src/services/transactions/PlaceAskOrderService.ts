@@ -120,8 +120,8 @@ class PlaceAskOrderDialog extends GenericDialog {
            .attachment('AskOrderPlacement', <IHeatCreateAskOrderPlacement>{
               currencyId: this.fields['currency'].value,
               assetId: this.fields['asset'].value,
-              price: utils.convertToQNT(this.fields['price'].value),
-              quantity: utils.convertToQNT(this.fields['quantity'].value),
+              price: utils.convertToQNT(this.fields['price'].value, this.currencyInfo.decimals),
+              quantity: utils.convertToQNT(this.fields['quantity'].value, this.assetInfo.decimals),
               expiration: this.fields['expiration'].value,
               isSenderFeePayer: !!this.fields['isSenderFeePayer'].value
            });

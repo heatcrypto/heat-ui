@@ -234,14 +234,14 @@ class TraderQuickBuySellComponent {
         this.total = this.selectedOrder['sum'];
 
         if (this.selectedOrder.type == 'bid' && angular.isString(this.assetInfo.userBalance)) {
-          let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+          let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity), this.assetInfo.decimals));
           let balanceQNT = new Big(this.assetInfo.userBalance);
           if (balanceQNT.lt(quantityQNT)) {
             this.quantity = utils.formatQNT(this.assetInfo.userBalance, this.assetInfo.decimals);
             this.recalculate();
           }
         } else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
-          let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+          let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total), this.currencyInfo.decimals));
           let balanceQNT = new Big(this.currencyInfo.userBalance);
           if (balanceQNT.lt(totalQNT)) {
             this.total = utils.formatQNT(this.currencyInfo.userBalance, this.currencyInfo.decimals);
@@ -281,7 +281,7 @@ class TraderQuickBuySellComponent {
 
   quickAsk($event) {
     if (angular.isString(this.assetInfo.userBalance)) {
-      let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+      let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity), this.assetInfo.decimals));
       let balanceQNT = new Big(this.assetInfo.userBalance);
       if (balanceQNT.lt(quantityQNT)) {
         this.notifyUser(`Insufficient ${this.assetInfo.symbol} balance`);
@@ -298,7 +298,7 @@ class TraderQuickBuySellComponent {
 
   quickBid($event) {
     if (angular.isString(this.currencyInfo.userBalance)) {
-      let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+      let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total), this.currencyInfo.decimals));
       let balanceQNT = new Big(this.currencyInfo.userBalance);
       if (balanceQNT.lt(totalQNT)) {
         this.notifyUser(`Insufficient ${this.currencyInfo.symbol} balance`);
@@ -321,8 +321,8 @@ class TraderQuickBuySellComponent {
         return "";
       }
       else {
-        var quantityQNT = utils.convertToQNT(quantity);
-        var priceQNT = utils.convertToQNT(price);
+        var quantityQNT = utils.convertToQNT(quantity, this.assetInfo.decimals);
+        var priceQNT = utils.convertToQNT(price, this.currencyInfo.decimals);
         var totalQNT = utils.calculateTotalOrderPriceQNT(quantityQNT, priceQNT);
         return utils.formatQNT(totalQNT, this.currencyInfo.decimals, true);
       }
