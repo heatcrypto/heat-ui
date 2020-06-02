@@ -44,6 +44,7 @@ Asset purchases are non-refundable.`;
           description: description,
           info: info,
           unsafeWarning: unsafeWarning,
+          dateTime: utils.timestampToDate(info.timestamp).toLocaleString(),
           orderFeePercentage: parseInt(info.orderFee || '0') / 1000000,
           tradeFeePercentage: parseInt(info.tradeFee || '0') / 1000000,
           feeRecipient: (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
@@ -62,7 +63,9 @@ Asset purchases are non-refundable.`;
               Order fee: {{vm.orderFeePercentage}}% &nbsp;&nbsp;&nbsp;Trade fee: {{vm.tradeFeePercentage}}% &nbsp;&nbsp;&nbsp;Fee recipient: {{vm.feeRecipient}}
             </p>
             <p class="grey">
-                id: {{vm.info.id}} &nbsp;&nbsp;&nbsp; decimals: {{vm.info.decimals}} &nbsp;&nbsp;&nbsp; timestamp: {{vm.info.timestamp}} &nbsp;&nbsp;&nbsp; issuer: {{vm.info.issuerPublicName || vm.info.issuer}}
+                id: {{vm.info.id}} &nbsp;&nbsp;&nbsp; decimals: {{vm.info.decimals}}<br/>
+                created: {{vm.dateTime}}<br/>
+                issuer: {{vm.info.issuerPublicName || vm.info.issuer}}
             </p>
             <pre>{{vm.description}}</pre>
           </div>

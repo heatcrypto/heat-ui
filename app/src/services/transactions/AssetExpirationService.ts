@@ -109,7 +109,7 @@ class AssetExpirationDialog extends GenericDialog {
       $scope.$evalAsync(() => {
         let expirationValue = parseInt(this.fields['expiration'].value || '0')
         this.fields['expirationDate'].value = expirationValue > 0
-          ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue)
+          ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue).toLocaleString()
           : ''
         this.fields['systemtimestamp'].value = "Current timestamp: " + Math.round(utils.epochTime())
       });

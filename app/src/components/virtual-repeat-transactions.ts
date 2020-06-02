@@ -306,6 +306,7 @@ class TransactionRenderer {
   private SUBTYPE_COLORED_COINS_WHITELIST_MARKET = 9;
   private SUBTYPE_COLORED_COINS_ATOMIC_MULTI_TRANSFER = 10;
   private SUBTYPE_COLORED_COINS_ASSET_ASSIGN_FEES = 11;
+  private SUBTYPE_COLORED_COINS_ASSET_EXPIRATION = 12;
   private SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
   private SUBTYPE_ACCOUNT_CONTROL_INTERNET_ADDRESS = 1;
 
@@ -486,6 +487,20 @@ class TransactionRenderer {
       (t) => {
         return {
           asset: this.asset(t.attachment['asset'])
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_ASSET_EXPIRATION;
+    this.transactionTypes[key] = 'ASSET EXPIRATION';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>ASSIGN ASSET EXPIRATION</b> Asset $asset expiration $dateTime'
+      },
+      (t) => {
+        return {
+          asset: this.asset(t.attachment['asset']),
+          dateTime: utils.timestampToDate(parseInt(this.asset(t.attachment['expiration']))).toLocaleString()
         }
       }
     );
