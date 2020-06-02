@@ -404,6 +404,8 @@ class CurrencyAddressCreate {
   }
 }
 
+
+
 class WalletEntry {
   public isWalletEntry = true
   public selected = true
@@ -441,19 +443,6 @@ class WalletEntry {
       this.component.loadLtcAddresses(this);
       this.component.loadBitcoinCashAddresses(this)
     }
-  }
-
-  showSecretPhrase() {
-    let panel: PanelService = heat.$inject.get('panel')
-    panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase">
-        <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
-        </md-input-container>
-      </div>
-    `, {
-        secretPhrase: this.secretPhrase
-      })
   }
 
 }
@@ -526,7 +515,7 @@ class WalletEntry {
                   </md-button>
                   <md-menu-content width="4">
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="entry.showSecretPhrase()">
+                      <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
                       </md-button>
@@ -552,7 +541,7 @@ class WalletEntry {
                   </md-button>
                   <md-menu-content width="4">
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="vm.showPrivateKey(entry)">
+                      <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
                       </md-button>
@@ -650,17 +639,29 @@ class WalletComponent {
     this.initCreatedAddresses()
   }
 
-  showPrivateKey(entry) {
+  showSecret(secret: string) {
     let panel: PanelService = heat.$inject.get('panel')
     panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.privateKey" readonly ng-trim="false"></textarea>
+          <textarea rows="2" flex ng-bind="vm.secret" readonly ng-trim="false"></textarea>
+          <div class="qrcodeBox" id="PKQRCode"></div>
         </md-input-container>
       </div>
     `, {
-        privateKey: entry.secretPhrase
+        secret: secret
+      }
+    )
+    setTimeout(() => {
+      new QRCode("PKQRCode", {
+        text: secret,
+        width: 128,
+        height: 128,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
       })
+    }, 800)
   }
 
   deleteEntry(entry) {

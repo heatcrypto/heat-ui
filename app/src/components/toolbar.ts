@@ -2,7 +2,7 @@
 /// <reference path='../services/transactions/SendmoneyService.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Component({
   selector: 'toolbar',
   styles: [`
@@ -49,6 +50,16 @@
     left: 32px;
     color: green;
     font-size: 35px;
+  }
+  .qrcodeBox {
+    padding: 20px;
+    margin-top: 15px;
+    background: white;
+    border-radius: 10px;
+    width: min-content;
+  }
+  .qrcode-link {
+    margin-left: 11px;
   }
   `],
   template: `
@@ -188,12 +199,18 @@
             <span flex></span>
 
             <div class="selected-address" ng-if="vm.user.unlocked">
-              <div>Currently using <b>{{vm.user.currency.symbol}}</b></div>
+              <div>Currently using <b>{{vm.user.currency.symbol}}</b>
+                <a ng-click="vm.showQRCode(vm.user.currency.address)" class="qrcode-link">
+                  <md-tooltip>Show QR code</md-tooltip>
+                  <md-icon md-font-library="material-icons">qr_code</md-icon>
+                </a>
+              </div>
               <div layout="row">
                 <div class="address wrapped">
-                  <a href="#{{vm.user.currency.homePath}}" id="toolbar-user-address">{{vm.user.currency.address}}</a>
+                  <a ng-click="vm.copyAddress()" id="toolbar-user-address">{{vm.user.currency.address}}
+                    <md-tooltip>Copy to clipboard</md-tooltip>
+                  </a>
                 </div>
-                &nbsp;<a ng-click="vm.copyAddress()">[copy]</a>
               </div>
             </div>
           </div>
@@ -560,4 +577,26 @@ class ToolbarComponent {
     var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
     saveAs(blob, 'heat.wallet');
   }
+
+  showQRCode(data) {
+    let panel: PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex>
+        <p><div class="qrcodeBox" id="addressQRCode"></div></p>
+      </div>
+    `,
+      {}
+    )
+    setTimeout(() => {
+      new QRCode("addressQRCode", {
+        text: data,
+        width: 128,
+        height: 128,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      })
+    }, 800);
+  }
+
 }
