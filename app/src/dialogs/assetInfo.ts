@@ -29,8 +29,6 @@ It's possible the asset does NOT represent what you think it does.
 Please ensure from asset issuer that the asset is valid before purchasing it, as there may be no refunds or redemptions available.
 Asset purchases are non-refundable.`;
 
-
-
     assetInfoService.getAssetDescription(info).then((description)=>{
       let orderFeePercentage = parseInt(info.orderFee || '0') / 1000000
       let tradeFeePercentage = parseInt(info.tradeFee || '0') / 1000000
@@ -44,7 +42,10 @@ Asset purchases are non-refundable.`;
           description: description,
           info: info,
           unsafeWarning: unsafeWarning,
-          dateTime: utils.timestampToDate(info.timestamp).toLocaleString(),
+          createdDate: utils.timestampToDate(info.timestamp).toLocaleString(),
+          expirationDate: info.expiration == 0
+            ? "no expiration"
+            : (info.expiration ? utils.timestampToDate(info.expiration).toLocaleString() : null),
           orderFeePercentage: parseInt(info.orderFee || '0') / 1000000,
           tradeFeePercentage: parseInt(info.tradeFee || '0') / 1000000,
           feeRecipient: (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
@@ -64,7 +65,8 @@ Asset purchases are non-refundable.`;
             </p>
             <p class="grey">
                 id: {{vm.info.id}} &nbsp;&nbsp;&nbsp; decimals: {{vm.info.decimals}}<br/>
-                created: {{vm.dateTime}}<br/>
+                created: {{vm.createdDate}}<br/>
+                expiration: {{vm.expirationDate || "?"}}<br/>
                 issuer: {{vm.info.issuerPublicName || vm.info.issuer}}
             </p>
             <pre>{{vm.description}}</pre>

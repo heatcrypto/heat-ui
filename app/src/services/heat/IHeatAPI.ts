@@ -701,6 +701,8 @@ interface IHeatAsset {
 
   feeRecipient: string;
 
+  expiration?: number;
+
   properties?: string;
 }
 interface IHeatAssetCertification {

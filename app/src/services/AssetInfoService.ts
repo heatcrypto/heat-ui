@@ -36,6 +36,7 @@ interface AssetInfo {
   tradeFee?: string,
   orderFee?: string,
   feeRecipient?: string,
+  expiration?: number
 }
 
 interface AssetPropertiesProtocol1 {
@@ -120,6 +121,7 @@ class AssetInfoService {
           tradeFee: data.tradeFee,
           orderFee: data.orderFee,
           feeRecipient: data.feeRecipient,
+          expiration: data.expiration
         };
         this.cache[asset] = info;
         this.assetCertification.getInfo(asset).then((certificationData)=> {
