@@ -2,7 +2,7 @@
 @Inject('$q', 'http', '$window', 'settings')
 class IotaBlockExplorerService {
   private iotaCore;
-  private api;
+  public iotaAPI: Promise<any>;
   private cachedGetCachedAccountInfo: Map<string, any> = new Map<string, any>();
 
   constructor(
@@ -12,29 +12,30 @@ class IotaBlockExplorerService {
     private settingsService: SettingsService) {
 
     this.iotaCore = $window.heatlibs.IotaCore;
-    this.settingsService.initialized.then(
-      () => this.setUrl(SettingsService.getCryptoServerEndpoint('IOTA'))
-    );
 
-
-  }
-
-  public setUrl(url) {
-    this.api = this.iotaCore.composeAPI({
-      provider: url
-    });
+    this.iotaAPI = new Promise<any>(resolve => {
+      this.settingsService.initialized.then(
+        () => {
+          resolve(this.iotaCore.composeAPI(
+            {provider: SettingsService.getCryptoServerEndpoint('IOTA')}
+          ))
+        }
+      );
+    })
   }
 
   private getTransactions = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
     let deferred = this.$q.defer<IotaGetAccount>();
-    this.api.getAccountData(seed, { startKeyIndex, security }).then(ret => {
-      let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
-      if (data.transfers) {
-        deferred.resolve(data)
-      }
-      else
-        deferred.reject(`Unable to fetch IOTA address data`)
-    });
+    this.iotaAPI
+      .then(api => api.getAccountData(seed, {start: startKeyIndex, security: security}))
+      .then(accountData => {
+        let data = JSON.parse(typeof accountData === "string" ? accountData : JSON.stringify(accountData))
+        if (data.transfers) {
+          deferred.resolve(data)
+        } else {
+          deferred.reject(`Unable to fetch IOTA address data`)
+        }
+      })
     return deferred.promise;
   }
 
@@ -64,13 +65,14 @@ class IotaBlockExplorerService {
     let deferred = this.$q.defer<any>();
     const depth = 3
     const minWeightMagnitude = 14
-
-    this.api.prepareTransfers(seed, transfers)
-      .then(trytes => this.api.sendTrytes(trytes, depth, minWeightMagnitude))
-      .then(bundle => deferred.resolve(bundle))
-      .catch(err => {
-        deferred.reject(err)
-      })
+    this.iotaAPI.then(api => {
+      api.prepareTransfers(seed, transfers)
+        .then(trytes => api.sendTrytes(trytes, depth, minWeightMagnitude))
+        .then(bundle => deferred.resolve(bundle))
+        .catch(err => {
+          deferred.reject(err)
+        })
+    })
     return deferred.promise;
   }
 
@@ -78,7 +80,8 @@ class IotaBlockExplorerService {
     if (address.length === 90)
       address = address.slice(0, 81)
     let deferred = this.$q.defer<any>();
-    this.api.getBalances([address], 100)
+    this.iotaAPI
+      .then(api => api.getBalances([address], 100))
       .then(ret => {
         let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
         deferred.resolve(data.balances[0])
@@ -93,7 +96,8 @@ class IotaBlockExplorerService {
     if (address.length === 90)
       address = address.slice(0, 81)
     let deferred = this.$q.defer<any>();
-    this.api.getBundlesFromAddresses([address])
+    this.iotaAPI
+      .then(api => api.getBundlesFromAddresses([address]))
       .then(ret => {
         let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
         deferred.resolve(data)
@@ -106,7 +110,8 @@ class IotaBlockExplorerService {
 
   public getInputs = (seed: string) => {
     let deferred = this.$q.defer<any>();
-    this.api.getInputs(seed, {start: 0, security: 2})
+    this.iotaAPI
+      .then(api => api.getInputs(seed, {start: 0, security: 2}))
       .then(ret => {
         let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret))
         deferred.resolve(data)
