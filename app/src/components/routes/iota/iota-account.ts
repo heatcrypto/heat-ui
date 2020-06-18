@@ -86,23 +86,25 @@ class IotaAccountComponent {
   timerHandler() {
     this.refresh()
     if (this.pendingTransactions.length) {
-      this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(recentTransactions => {
-        for(let i = 0; i < this.pendingTransactions.length; i++) {
-          let isPending = true;
-          for(let j = 0; j < recentTransactions.transfers.length; j++) {
-            if(recentTransactions.transfers[j][0].hash == this.pendingTransactions[i].txId) {
-              isPending = false;
-              break;
+      this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase)
+        .then(recentTransactions => {
+          for (let i = 0; i < this.pendingTransactions.length; i++) {
+            let isPending = true;
+            for (let j = 0; j < recentTransactions.transfers.length; j++) {
+              if (recentTransactions.transfers[j][0].hash == this.pendingTransactions[i].txId) {
+                isPending = false;
+                break;
+              }
+            }
+            if (!isPending) {
+              this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${this.pendingTransactions[i].txId} found`).hideDelay(2000));
+              this.iotaPendingTransactions.remove(this.pendingTransactions[i].address, this.pendingTransactions[i].txId, this.pendingTransactions[i].time)
             }
           }
-          if(!isPending) {
-            this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${this.pendingTransactions[i].txId} found`).hideDelay(2000));
-            this.iotaPendingTransactions.remove(this.pendingTransactions[i].address, this.pendingTransactions[i].txId, this.pendingTransactions[i].time)
-          }
-        }
-      }, err => {
-        console.log('Error in getting recent IOTA Transactions '+ err)
-      })
+        }, err => {
+          console.log('Error in getting recent IOTA Transactions ' + err)
+        })
+        .catch(reason => console.error(reason))
     }
   }
 
@@ -129,11 +131,13 @@ class IotaAccountComponent {
   refresh() {
     this.busy = true;
     this.balanceUnconfirmed = "";
-    this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(info => {
-      this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = info ? info.balance : 0;
-        this.busy = false;
+    this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase)
+      .then(info => {
+        this.$scope.$evalAsync(() => {
+          this.balanceUnconfirmed = info ? info.accountData.balance : 0;
+          this.busy = false;
+        })
       })
-    })
+      .catch(reason => console.error(reason))
   }
 }

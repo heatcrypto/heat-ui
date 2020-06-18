@@ -23,7 +23,7 @@ class IOTACurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     let deferred = this.$q.defer();
     this.iotaBlockExplorerService.getAccountInfo(this.secretPhrase).then(info => {
-      deferred.resolve(info.balance.toString())
+      deferred.resolve(info.accountData.balance.toString())
     }, err => {
       deferred.reject();
     })

@@ -85,48 +85,48 @@ class VirtualRepeatIotaTransactionsComponent extends VirtualRepeatComponent {
     private iotaBlockExplorerService: IotaBlockExplorerService) {
 
     super($scope, $q);
-    let myAddresses
-    this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(accountInfo => {
-      myAddresses = accountInfo.addresses;
-    })
+    let myAddresses = this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(accountInfo => {
+      return accountInfo.accountData.addresses;
+    }).catch(reason => console.error(reason))
 
     this.initializeVirtualRepeat(
       this.iotaTransactionsProviderFactory.createProvider(this.user.currency.secretPhrase),
       /* decorator function */
       (bundle: any) => {
-        bundle.dateTime = dateFormat(new Date(bundle[0].timestamp * 1000), this.settings.get(SettingsService.DATEFORMAT_DEFAULT));
-        bundle.bundleId = bundle[0].hash;
-        let isOutgoingTx = false;
-        bundle.forEach(tx => {
-          myAddresses.forEach(address => {
-            if(address === tx.address && tx.value < 0) {
-              bundle.from = tx.address;
-              isOutgoingTx = true;
-            } else if(tx.value < 0){
-              bundle.from = tx.address
+        bundle.dateTime = dateFormat(new Date(bundle.timestamp * 1000), this.settings.get(SettingsService.DATEFORMAT_DEFAULT));
+        bundle.bundleId = bundle.hash;
+        /*let isOutgoingTx = false;
+        myAddresses.then(addresses => {
+          bundle.forEach(tx => {
+            addresses.forEach(address => {
+              if (tx.value < 0) {
+                if (address === tx.address) {
+                  bundle.from = tx.address;
+                  isOutgoingTx = true;
+                } else {
+                  bundle.from = tx.address
+                }
+              }
+            })
+            if(!bundle.to && tx.value > 0){
+              bundle.to = tx.address;
+              bundle.amount = tx.value;
             }
-          })
-          if(!bundle.to && tx.value > 0){
-            bundle.to = tx.address;
-            bundle.amount = tx.value;
-          }
-        });
+          });*/
 
-        bundle.amount = isOutgoingTx? Math.abs(bundle.amount) * -1 : bundle.amount
-        bundle.displayFromAddress = bundle.from.substring(0, 42).concat('...')
-        bundle.displayToAddress = bundle.to.substring(0, 42).concat('...')
-        bundle.displayBundleAddress = bundle.bundleId.substring(0, 42).concat('...')
-
+        bundle.displayFromAddress = bundle.from ? bundle.from.substring(0, 42).concat('...') : "-"
+        bundle.displayToAddress = bundle.to ? bundle.to.substring(0, 42).concat('...') : "-"
+        bundle.displayBundleAddress = bundle.hash.substring(0, 42).concat('...')
 
         bundle.json = {
-          bundle: bundle.bundleId,
+          bundle: bundle.hash,
           time: bundle.dateTime,
           from: bundle.from,
           to: bundle.to,
           amount: bundle.amount,
         }
       }
-    );
+    )
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     let timeout = setTimeout(refresh, 10 * 1000)

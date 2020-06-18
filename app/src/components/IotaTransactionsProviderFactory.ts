@@ -23,11 +23,13 @@ class iotaTransactionsProvider implements IPaginatedDataProvider {
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-    this.iotaBlockExplorerService.getAccountInfo(this.seed).then(result => {
-      deferred.resolve(result.transfers.length)
-    }, () => {
-      deferred.reject()
-    })
+    this.iotaBlockExplorerService.getAccountInfo(this.seed)
+      .then(result => {
+        deferred.resolve(result.transfers.length)
+      }, (reason) => {
+        deferred.reject(reason)
+      })
+      //.catch(reason => console.error(reason))
 
     return <angular.IPromise<number>>deferred.promise;
   }
@@ -35,7 +37,11 @@ class iotaTransactionsProvider implements IPaginatedDataProvider {
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): any {
     return new Promise((resolve, reject) => {
-      this.iotaBlockExplorerService.getAccountInfo(this.seed).then(result => resolve(result.transfers))
+      this.iotaBlockExplorerService.getAccountInfo(this.seed)
+        .then(result =>
+          resolve(result.transfers.filter(x => !!x))
+        )
+        //.catch(reason => console.error(reason))
     })
   }
 
