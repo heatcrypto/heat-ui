@@ -24,6 +24,7 @@ class IotaBlockExplorerService {
     })
   }
 
+  //deprecated
   private getTransactions = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
     let deferred = this.$q.defer<IotaGetAccount>();
     this.iotaAPI
@@ -42,48 +43,21 @@ class IotaBlockExplorerService {
     return deferred.promise;
   }
 
-  private getCachedAccountInfo = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
+  public getAccountInfo = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
     let result: Promise<IotaAccountInfo> = this.cachedGetCachedAccountInfo.get(seed)
     if (result) return result
-    let accountData
     result = this.iotaAPI
       .then(api => api.getAccountData(seed, {start: startKeyIndex, security: security}))
-      .then(data => {
-        accountData = data
-        return this.getTransfers(data.addresses)
-      })
-      .then(transfers => {
-        setTimeout(() => {
-          this.cachedGetCachedAccountInfo.set(seed, null)
-        }, 30 * 1000)
-        //filter transfers because some responses from iota node may be error (wrong bundle)
-        let v: IotaAccountInfo = {accountData: accountData, transfers: transfers.filter(v => !!v)}
+      .then(accountData => {
+        let collapsed = this.collapseTransfers(accountData.transfers).filter(v => !!v)
+        let v: IotaAccountInfo = {accountData: accountData, transfers: collapsed}
         return v
       })
-      //.catch(reason => console.error(reason))
-    /*.then(accountData => {
-      let data = JSON.parse(typeof accountData === "string" ? accountData : JSON.stringify(accountData))
-      if (data.transfers) {
-        deferred.resolve(data)
-      } else {
-        deferred.reject(`Unable to fetch IOTA address data`)
-      }
-    }, reason => {
-      deferred.reject(reason)
-    })
-    .catch(reason => console.error(reason))
-
-  this.getTransactions(seed).then(resolve, reject)
-})*/
     setTimeout(() => {
       this.cachedGetCachedAccountInfo.set(seed, null)
     }, 60 * 1000)
     this.cachedGetCachedAccountInfo.set(seed, result)
     return result
-  }
-
-  public getAccountInfo = (seed: string, startKeyIndex: number = 0, security: number = 2) => {
-    return this.getCachedAccountInfo(seed, startKeyIndex, security)
   }
 
   public sendIota = (seed: string, transfers: any[]) => {
@@ -175,6 +149,7 @@ class IotaBlockExplorerService {
    * 2: Second half of Alice's signature. =0
    * 3: Output. Remainder.	(input - output) > 0
    */
+  //deprecated, use IotaBlockExplorerService.collapseTransfers()
   public getTransfers(addresses): Promise<IotaTransfer[]> {
     return this.iotaAPI.then(api => {
       return api.findTransactions({addresses: addresses})
@@ -207,11 +182,33 @@ class IotaBlockExplorerService {
                   return transfer
                 }
                 return null;
-              }).catch(reason => console.error(`Error on getting IOTA bundle: ${reason}`))
+              }, reason => console.log("rejected " + reason))
+              .catch(reason => {
+                console.error(`Error on getting IOTA bundle: ${reason}`)
+                return reason
+              })
             )
           }
           return Promise.all(result)
         })
+    })
+  }
+
+  //alternative to IotaBlockExplorerService.getTransfers()
+  public collapseTransfers(transfers: any[]): IotaTransfer[] {
+    return transfers.map(v => {
+      if (v.length === 4) {
+        let transfer: IotaTransfer = {
+          timestamp: v[0].timestamp,
+          from: v[1].address,
+          to: v[0].address,
+          amount: v[0].value,
+          hash: v[0].hash,
+          trunkTransaction: v[v.length - 1].trunkTransaction,
+          branchTransaction: v[v.length - 1].branchTransaction
+        }
+        return transfer
+      }
     })
   }
 

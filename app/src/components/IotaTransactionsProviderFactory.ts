@@ -29,7 +29,7 @@ class iotaTransactionsProvider implements IPaginatedDataProvider {
       }, (reason) => {
         deferred.reject(reason)
       })
-      //.catch(reason => console.error(reason))
+      .catch(reason => console.error(reason))
 
     return <angular.IPromise<number>>deferred.promise;
   }
@@ -39,9 +39,9 @@ class iotaTransactionsProvider implements IPaginatedDataProvider {
     return new Promise((resolve, reject) => {
       this.iotaBlockExplorerService.getAccountInfo(this.seed)
         .then(result =>
-          resolve(result.transfers.filter(x => !!x))
+          resolve(result.transfers)
         )
-        //.catch(reason => console.error(reason))
+        .catch(reason => console.error(reason))
     })
   }
 

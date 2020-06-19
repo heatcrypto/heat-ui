@@ -91,7 +91,7 @@ class IotaAccountComponent {
           for (let i = 0; i < this.pendingTransactions.length; i++) {
             let isPending = true;
             for (let j = 0; j < recentTransactions.transfers.length; j++) {
-              if (recentTransactions.transfers[j][0].hash == this.pendingTransactions[i].txId) {
+              if (recentTransactions.transfers[j].hash == this.pendingTransactions[i].txId) {
                 isPending = false;
                 break;
               }
