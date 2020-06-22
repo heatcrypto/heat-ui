@@ -66,6 +66,7 @@ class AssetInfoService {
               private assetCertification: AssetCertificationService,
               private http: HttpService) {
     this.resetCache();
+    setInterval(this.resetCache, 5 * 60 * 1000);
   }
 
   resetCache() {

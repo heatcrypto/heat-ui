@@ -1,7 +1,7 @@
 ///<reference path='AbstractDialogField.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -32,6 +32,8 @@ interface DialogFieldAssetAssetInfo {
   orderFee: string;
   tradeFee: string;
   feeRecipient: string;
+  expiration: number,
+  timestamp: number
 }
 
 class DialogFieldAsset extends AbstractDialogField {
@@ -83,7 +85,9 @@ class DialogFieldAsset extends AbstractDialogField {
                 type: info2.type,
                 orderFee: info2.orderFee,
                 tradeFee: info2.tradeFee,
-                feeRecipient: info2.feeRecipient
+                feeRecipient: info2.feeRecipient,
+                expiration: info2.expiration,
+                timestamp: info2.timestamp
               };
               info.symbol = info2.symbol;
               info.name = info2.name;
@@ -111,7 +115,9 @@ class DialogFieldAsset extends AbstractDialogField {
                 type: info2.type,
                 orderFee: info2.orderFee,
                 tradeFee: info2.tradeFee,
-                feeRecipient: info2.feeRecipient
+                feeRecipient: info2.feeRecipient,
+                expiration: info2.expiration,
+                timestamp: info2.timestamp
               };
               info.symbol = info2.symbol;
               info.name = info2.name;

@@ -75,15 +75,17 @@ class AssetExpirationDialog extends GenericDialog {
     let builder = new DialogFieldBuilder($scope);
     return [
       builder.asset('asset')
+        .reset()
         .label('Your asset')
         .validate("You dont own this asset", (value) => {
                 if (value == "0")
                   return true;
-                var assetField = <DialogFieldAsset> this.fields['asset'];
-                var assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+                let assetField = <DialogFieldAsset> this.fields['asset'];
+                let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
                 return !!assetInfo;
               }).
               required(),
+      builder.staticText("assetInfo", ''),
       builder.text('expiration', 0)
         .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
       builder.staticText("expirationDate", ''),
@@ -94,11 +96,10 @@ class AssetExpirationDialog extends GenericDialog {
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
     let builder = new TransactionBuilder(this.transaction);
-    let assetId = this.fields['asset'].value;
     builder.secretPhrase(this.user.secretPhrase)
       .feeNQT(HeatAPI.fee.assetAssignExpiration)
       .attachment('AssetExpiration', <IHeatCreateAssetExpiration>{
-        assetId: assetId,
+        assetId: this.fields['asset'].value,
         expiration: parseInt(this.fields['expiration'].value || '0')
       });
     return builder;
@@ -112,6 +113,16 @@ class AssetExpirationDialog extends GenericDialog {
           ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue).toLocaleString()
           : ''
         this.fields['systemtimestamp'].value = "Current timestamp: " + Math.round(utils.epochTime())
+
+        let assetField = <DialogFieldAsset> this.fields['asset'];
+        let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+        if (assetInfo) {
+          this.fields['assetInfo'].value = assetInfo.expiration
+            ? `Current expiration: ${assetInfo.expiration} (${utils.timestampToDate(assetInfo.expiration).toLocaleString()})`
+            : "Current expiration: no"
+        } else {
+          this.fields['assetInfo'].value = ''
+        }
       });
     }, 1000, 0, false);
     $scope.$on('$destroy', () => { this.$interval.cancel(interval) });
