@@ -33,6 +33,7 @@ Asset purchases are non-refundable.`;
       let orderFeePercentage = parseInt(info.orderFee || '0') / 1000000
       let tradeFeePercentage = parseInt(info.tradeFee || '0') / 1000000
       let feeRecipient = (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
+      info.expired = utils.isAssetExpired(info.expiration)
       dialogs.dialog({
         id: 'assetInfo',
         title: 'Asset Info',
@@ -66,7 +67,7 @@ Asset purchases are non-refundable.`;
             <p class="grey">
                 id: {{vm.info.id}} &nbsp;&nbsp;&nbsp; decimals: {{vm.info.decimals}}<br/>
                 created: {{vm.createdDate}}<br/>
-                expiration: {{vm.expirationDate || "?"}}<br/>
+                expiration: {{vm.expirationDate || "-"}} &nbsp;&nbsp;<b>{{vm.info.expired ? "EXPIRED" : ""}}</b><br/>
                 issuer: {{vm.info.issuerPublicName || vm.info.issuer}}
             </p>
             <pre>{{vm.description}}</pre>

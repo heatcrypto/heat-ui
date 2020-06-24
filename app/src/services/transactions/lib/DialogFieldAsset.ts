@@ -32,8 +32,9 @@ interface DialogFieldAssetAssetInfo {
   orderFee: string;
   tradeFee: string;
   feeRecipient: string;
-  expiration: number,
-  timestamp: number
+  expiration: number;
+  timestamp: number;
+  expired: boolean;
 }
 
 class DialogFieldAsset extends AbstractDialogField {
@@ -87,7 +88,8 @@ class DialogFieldAsset extends AbstractDialogField {
                 tradeFee: info2.tradeFee,
                 feeRecipient: info2.feeRecipient,
                 expiration: info2.expiration,
-                timestamp: info2.timestamp
+                timestamp: info2.timestamp,
+                expired: info2.expired
               };
               info.symbol = info2.symbol;
               info.name = info2.name;
@@ -117,7 +119,8 @@ class DialogFieldAsset extends AbstractDialogField {
                 tradeFee: info2.tradeFee,
                 feeRecipient: info2.feeRecipient,
                 expiration: info2.expiration,
-                timestamp: info2.timestamp
+                timestamp: info2.timestamp,
+                expired: info2.expired
               };
               info.symbol = info2.symbol;
               info.name = info2.name;
@@ -188,7 +191,7 @@ class DialogFieldAsset extends AbstractDialogField {
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>
-          <div layout="row" flex>
+          <div ng-class="{expired: !!item.expired}" layout="row" flex>
             <span>{{item.symbol}}</span>
             <span flex></span>
             <span>{{item.id}}</span>
@@ -213,6 +216,10 @@ class DialogFieldAssetComponent {
 
   constructor() {
     this.searchText = this.f.value;
+    this.f.setValue = (value) => {
+      this.f.value = value
+      this.searchText = this.f.value
+    }
   }
 
   selectedItemChange() {

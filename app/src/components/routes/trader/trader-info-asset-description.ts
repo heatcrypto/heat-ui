@@ -31,7 +31,7 @@
             <div class="title">
               Asset name:
             </div>
-            <div class="value">
+            <div class="value" ng-class="{expired: vm.currencyInfo.expired}">
               <a ng-click="vm.showDescription($event, vm.currencyInfo)">{{vm.currencyInfo.name}}</a>
             </div>
           </div>
@@ -73,7 +73,7 @@
             <div class="title">
               Asset name:
             </div>
-            <div class="value">
+            <div class="value" ng-class="{expired: vm.assetInfo.expired}">
               <a ng-click="vm.showDescription($event, vm.assetInfo)">{{vm.assetInfo.name}}</a>
             </div>
           </div>

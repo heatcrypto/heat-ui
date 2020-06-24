@@ -100,7 +100,7 @@
               Assets:
             </div>
             <div class="scrollable">
-              <div class="value" ng-repeat="item in vm.assetInfos">
+              <div class="value" ng-class="{expired: item.expired}" ng-repeat="item in vm.assetInfos">
                 <span class="balance">{{item.balance}}</span>
                 <span class="symbol"><b>{{item.symbol}}</b></span>
                 <span class="name">

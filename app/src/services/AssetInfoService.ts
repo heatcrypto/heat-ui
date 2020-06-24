@@ -33,10 +33,11 @@ interface AssetInfo {
   issuer: string;
   issuerPublicName: string;
   userBalance?: string;
-  tradeFee?: string,
-  orderFee?: string,
-  feeRecipient?: string,
-  expiration?: number
+  tradeFee?: string;
+  orderFee?: string;
+  feeRecipient?: string;
+  expiration?: number;
+  expired?: boolean
 }
 
 interface AssetPropertiesProtocol1 {
@@ -81,7 +82,8 @@ class AssetInfoService {
       certified: true,
       timestamp: 100149557,
       issuer: "8150091319858025343",
-      issuerPublicName: "HEAT blockchain Genesis account"
+      issuerPublicName: "HEAT blockchain Genesis account",
+      expired: false
     };
   }
 
@@ -122,7 +124,8 @@ class AssetInfoService {
           tradeFee: data.tradeFee,
           orderFee: data.orderFee,
           feeRecipient: data.feeRecipient,
-          expiration: data.expiration
+          expiration: data.expiration,
+          expired: utils.isAssetExpired(data.expiration)
         };
         this.cache[asset] = info;
         this.assetCertification.getInfo(asset).then((certificationData)=> {

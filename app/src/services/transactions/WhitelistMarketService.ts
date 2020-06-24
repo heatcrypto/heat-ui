@@ -77,6 +77,7 @@ class WhitelistMarketferDialog extends GenericDialog {
         .label('Your asset')
         .onchange(newValue => {
           this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
+          if (this.isSelectedAssetExpired(newValue)) this.fields['asset'].setValue("")
         })
         .validate("You dont own this asset", (value) => {
                 if (value == "0")
@@ -86,10 +87,14 @@ class WhitelistMarketferDialog extends GenericDialog {
                 return !!assetInfo;
               }).
               required(),
-      builder.asset('currency').
-              label('Allow market').
-              searchAllAssets(true).
-              required(),
+      builder.asset('currency')
+        .label('Allow market')
+        .searchAllAssets(true)
+        .required()
+        .onchange(newValue => {
+          this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
+          if (this.isSelectedAssetExpired(newValue)) this.fields['currency'].setValue("")
+        }),
       builder.switcher('networkFee', false)
         .label('Network fee paid by')
         .valueLabels("ISSUER", "USER")
@@ -112,12 +117,23 @@ class WhitelistMarketferDialog extends GenericDialog {
     return builder;
   }
 
+  private getSelectedAssetInfo(assetId) {
+    let assetField = <DialogFieldAsset> this.fields['asset']
+    return assetField.getAssetInfo(assetId)
+  }
+
   isSelectedAssetPrivate(assetId) {
     if (assetId == "0")
       return false;
-    let assetField = <DialogFieldAsset> this.fields['asset']
-    let assetInfo = assetField.getAssetInfo(assetId)
+    let assetInfo = this.getSelectedAssetInfo(assetId)
     return assetInfo && assetInfo.type == 1
+  }
+
+  isSelectedAssetExpired(assetId) {
+    if (assetId == "0")
+      return false;
+    let assetInfo = this.getSelectedAssetInfo(assetId)
+    return !!assetInfo && assetInfo.expired
   }
 
 }

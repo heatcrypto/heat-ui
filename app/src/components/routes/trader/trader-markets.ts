@@ -42,7 +42,11 @@
         <md-list-item md-virtual-repeat="item in vm.markets | filter: vm.filterFunc">
           <div class="truncate-col market-col">
             <a href="#/trader/{{item.currency}}/{{item.asset}}">
-              <span ng-class="{certified:item.currencyInfo.certified}">{{item.currencyInfo.symbol}}</span>/<span ng-class="{certified:item.assetInfo.certified}">{{item.assetInfo.symbol}}</span>
+              <span ng-class="{certified:item.currencyInfo.certified, expired: item.currencyInfo.expired}">
+              {{item.currencyInfo.symbol}}</span>
+              /
+              <span ng-class="{certified:item.assetInfo.certified, expired: item.assetInfo.expired}">
+              {{item.assetInfo.symbol}}</span>
             </a>
           </div>
           <div class="truncate-col change-col">{{item.change}}</div>

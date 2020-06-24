@@ -78,6 +78,10 @@ abstract class AbstractDialogField {
     this._previousValue = value;
   }
 
+  setValue(value) {
+    this.value = value
+  }
+
   /* Model change listener */
   changed(force?: boolean) {
     if (force || this.value != this._previousValue) {
