@@ -1489,6 +1489,8 @@ class WalletComponent {
             var textB = b.symbol.toUpperCase();
             return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
           });
+          const zero = new Big(0)
+          assetInfos = assetInfos.filter(v => ! new Big(v.userBalance || 0).eq(zero))
           deferred.resolve(assetInfos);
         }, deferred.reject);
       }
