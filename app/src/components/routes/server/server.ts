@@ -58,7 +58,6 @@
         <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
         <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
         <a ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
-
       </div>
       <div layout="column" flex class="console" layout-fill>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column"
@@ -76,7 +75,7 @@
 })
 @Inject('$scope','server','heat','user','settings','$mdToast')
 class ServerComponent {
-  private ROW_HEIGHT = 12; // must match the `server .console pre { height: 12px }` style rule above
+  private ROW_HEIGHT = 14; // must match the `server .console pre { height: 12px }` style rule above
 
   private console: any;
   private onOutput: IEventListenerFunction;
