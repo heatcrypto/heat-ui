@@ -35,7 +35,7 @@ class ServerService extends EventEmitter {
   private command: string;
   private cwd: string;
   private childProcess: any;
-  public buffer: Array<string> = [" "]; // needs one empty line or last line is not shown in console
+  public buffer: Array<string> = [" "," "," "]; // needs one empty line or last line is not shown in console
 
   constructor(private $rootScope: angular.IRootScopeService,
               private $q: angular.IQService,
@@ -192,7 +192,7 @@ class ServerService extends EventEmitter {
     for (var i=0; i<lines.length; i++) {
       if (lines[i].match(/\S/)) {
         lines[i] = new String(lines[i]);
-        this.buffer.splice(this.buffer.length-1, 0, lines[i]); // must add at index 1 before last to keep last line for proper console display
+        this.buffer.splice(this.buffer.length-3, 0, lines[i]); // must add at index 1 before last to keep last line for proper console display
         if (this.buffer.length > this.MAX_CONSOLE_LINE_LENGTH) {
           this.buffer.splice(0, this.buffer.length - this.MAX_CONSOLE_LINE_LENGTH);
         }
