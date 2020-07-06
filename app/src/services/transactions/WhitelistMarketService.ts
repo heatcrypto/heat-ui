@@ -52,6 +52,9 @@ class WhitelistMarketService extends AbstractTransaction {
 
 class WhitelistMarketferDialog extends GenericDialog {
 
+  private assetIsPrivate: boolean
+  private currencyIsPrivate: boolean
+
   constructor($event,
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
@@ -76,7 +79,8 @@ class WhitelistMarketferDialog extends GenericDialog {
       builder.asset('asset')
         .label('Your asset')
         .onchange(newValue => {
-          this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
+          this.assetIsPrivate = newValue && this.isSelectedAssetPrivate(newValue)
+          this.fields['networkFee'].visible(this.assetIsPrivate || this.currencyIsPrivate)
           if (this.isSelectedAssetExpired(newValue)) this.fields['asset'].setValue("")
         })
         .validate("You dont own this asset", (value) => {
@@ -92,7 +96,8 @@ class WhitelistMarketferDialog extends GenericDialog {
         .searchAllAssets(true)
         .required()
         .onchange(newValue => {
-          this.fields['networkFee'].visible(newValue && this.isSelectedAssetPrivate(newValue))
+          this.currencyIsPrivate = newValue && this.isSelectedAssetPrivate(newValue)
+          this.fields['networkFee'].visible(this.assetIsPrivate || this.currencyIsPrivate)
           if (this.isSelectedAssetExpired(newValue)) this.fields['currency'].setValue("")
         }),
       builder.switcher('networkFee', false)
