@@ -48,7 +48,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
 
 @Component({
   selector: 'traderQuickBuySell',
-  inputs: ['currencyInfo', 'assetInfo', 'selectedOrder', 'oneClickOrders'],
+  inputs: ['currencyInfo', 'assetInfo', 'selectedOrder', 'oneClickOrders', 'market'],
   template: `
     <div>
       <div class="trader-component-title">Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
@@ -88,6 +88,15 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
             HEAT
           </div>
         </div>
+
+        <!--<div style="margin-top: -13px; color: grey;">
+            {{vm.market}}
+        </div>-->
+
+        <div ng-if="vm.market && vm.market.isIssuerFeePayer" style="margin-top: -13px; color: grey;">
+            Default fee payer is issuer of the private asset
+        </div>
+
         <div class="row">
           <div class="label" ng-class="{'expires-invalid': !vm.expiryValid}">
             Expires in
@@ -168,6 +177,7 @@ class TraderQuickBuySellComponent {
   assetInfo: AssetInfo; // @input
   selectedOrder: IHeatOrder; // @input
   oneClickOrders: boolean; // @input
+  market: IHeatMarket; // @input
 
   quantity: string = '0';
   price: string = '0';

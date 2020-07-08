@@ -238,9 +238,8 @@ module utils {
   }
 
   export function convertToQNTf(quantity: string, decimals: number = 8): string {
-    if (typeof quantity == 'undefined') {
-      return '0';
-    }
+    if (typeof quantity == 'undefined') return '0'
+    if (typeof quantity == 'number') quantity = "" + quantity
     if (quantity.length < decimals) {
       for (var i = quantity.length; i < decimals; i++) {
         quantity = "0" + quantity;

@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 interface AssetInfo {
-  type?: number;
+  type?: number; // 0: STANDARD, 1: PRIVATE
   id: string;
   description: string;
   descriptionUrl: string;

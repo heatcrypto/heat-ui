@@ -80,7 +80,7 @@ class WhitelistMarketferDialog extends GenericDialog {
         .label('Your asset')
         .onchange(newValue => {
           this.assetIsPrivate = newValue && this.isSelectedAssetPrivate(newValue)
-          this.fields['networkFee'].visible(this.assetIsPrivate || this.currencyIsPrivate)
+          this.fields['issuerFeePayer'].visible(this.assetIsPrivate || this.currencyIsPrivate)
           if (this.isSelectedAssetExpired(newValue)) this.fields['asset'].setValue("")
         })
         .validate("You dont own this asset", (value) => {
@@ -97,12 +97,12 @@ class WhitelistMarketferDialog extends GenericDialog {
         .required()
         .onchange(newValue => {
           this.currencyIsPrivate = newValue && this.isSelectedAssetPrivate(newValue)
-          this.fields['networkFee'].visible(this.assetIsPrivate || this.currencyIsPrivate)
+          this.fields['issuerFeePayer'].visible(this.assetIsPrivate || this.currencyIsPrivate)
           if (this.isSelectedAssetExpired(newValue)) this.fields['currency'].setValue("")
         }),
-      builder.switcher('networkFee', false)
+      builder.switcher('issuerFeePayer', false)
         .label('Network fee paid by')
-        .valueLabels("ISSUER", "USER")
+        .valueLabels("ISSUER", "SENDER")
         .valueNotes(networkNote, networkNote)
         .visible(false) //will be visible when private asset will be selected
     ]
@@ -117,7 +117,7 @@ class WhitelistMarketferDialog extends GenericDialog {
            .attachment('WhitelistMarket', <IHeatCreateWhitelistMarket>{
               assetId: assetId,
               currencyId: this.fields['currency'].value,
-              isIssuerFeePayer: (this.isSelectedAssetPrivate(assetId) ? (this.fields['networkFee'].value ? 1 : 2) : 1)
+              isIssuerFeePayer: (this.isSelectedAssetPrivate(assetId) ? (this.fields['issuerFeePayer'].value ? 2 : 1) : 1)
             });
     return builder;
   }

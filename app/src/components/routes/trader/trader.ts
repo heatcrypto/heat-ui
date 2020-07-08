@@ -36,7 +36,7 @@ declare var Big: any;
       </div>
       -->
       <span flex></span>
-      <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
+      <trader-volume class="trader-component" market="vm.market" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
     </div>
     <div layout="row" flex layout-fill>
       <md-sidenav class="md-sidenav-left" md-component-id="trader-markets-sidenav"
@@ -58,7 +58,9 @@ declare var Big: any;
           </div>
           <div class="trader-row middle">
             <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-buy>
-            <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-quick-buy-sell>
+            <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders"
+                selected-order="vm.selectedOrder" currency-info="vm.currencyInfo"
+                asset-info="vm.assetInfo" market="vm.market"></trader-quick-buy-sell>
             <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"l></trader-orders-sell>
           </div>
           <div class="trader-row bottom">
@@ -70,12 +72,13 @@ declare var Big: any;
     </div>
   `
 })
-@Inject('$scope','user','$timeout','assetInfo','$mdSidenav')
+@Inject('$scope','user', 'heat', '$timeout','assetInfo','$mdSidenav')
 class TraderComponent {
 
   currency: string; // @input
   asset: string; // @input
 
+  market: IHeatMarket;
   currencyInfo: AssetInfo;
   assetInfo: AssetInfo;
 
@@ -95,6 +98,7 @@ class TraderComponent {
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
+              private heatService: HeatService,
               private $timeout: angular.ITimeoutService,
               private assetInfoService: AssetInfoService,
               private $mdSidenav: angular.material.ISidenavService) {
@@ -121,6 +125,12 @@ class TraderComponent {
     assetInfoService.getInfo(this.asset).then((info) => {
       $scope.$evalAsync(() => {
         this.assetInfo = info;
+      });
+    });
+
+    this.heatService.api.getMarket(this.currency, this.asset, "0", 1).then((market) => {
+      this.$scope.$evalAsync(() => {
+        this.market = market
       });
     });
 

@@ -813,6 +813,7 @@ interface IHeatOrder {
    */
   currentlyNotValid: boolean;
 }
+
 interface IHeatTrade {
   /**
    * The ID of the block that contains the trade (0 for unconfirmed trades)
@@ -880,7 +881,28 @@ interface IHeatTrade {
    * Asset properties based on protocol and account id (blank for all but 'list account trades')
    */
   assetProperties: string;
+
+  /**
+   * The trade fee for the price
+   */
+  totalOrderPriceFee: string;
+
+  /**
+   * The trade fee for the quantity
+   */
+  quantityFee: string;
+
+  /**
+   * Account received the trade fee of asset by assetId
+   */
+  quantityFeeRecipient: string;
+
+  /**
+   * Account received the trade fee of asset by currencyId
+   */
+  totalOrderPriceFeeRecipient: string;
 }
+
 interface IHeatAccountBalance {
   /**
    * Asset ID, asset=0 is your HEAT balance all others are assets you own
@@ -965,6 +987,10 @@ interface IHeatMarket {
    * Asset decimals
    */
   assetDecimals: number;
+  /**
+   * Is private asset issuer network fee payer
+   */
+  isIssuerFeePayer: boolean;
 }
 interface IHeatChart {
   currency: string;

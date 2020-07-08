@@ -46,7 +46,17 @@
           <div class="truncate-col amount-col left">Amount</div>
 
           <!-- BUYER/ SELLER -->
-          <div class="truncate-col buyerseller-col left">Buyer/ Seller</div>
+          <div class="truncate-col buyerseller-col left">Buyer/Seller</div>
+
+          <!-- fee -->
+          <div class="truncate-col amount-col">Quantity Fee</div>
+
+          <div class="truncate-col buyerseller-col left">Quantity Fee Recipient</div>
+
+          <!-- fee -->
+          <div class="truncate-col amount-col">Price Fee</div>
+
+          <div class="truncate-col buyerseller-col left">Price Fee Recipient</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -74,6 +84,18 @@
             <div class="truncate-col buyerseller-col left">
               <a href="#/explorer-account/{{item.buyerseller}}/trades">{{item.buyersellerName}} </a>
             </div>
+
+            <!-- fee -->
+            <div class="truncate-col amount-col left">{{item.formatted.quantityFee || ''}}</div>
+
+            <!-- fee -->
+            <div class="truncate-col buyerseller-col left">{{item.quantityFeeRecipient || ''}}</div>
+
+            <!-- fee -->
+            <div class="truncate-col amount-col left">{{item.formatted.totalOrderPriceFee || ''}}</div>
+
+            <!-- fee -->
+            <div class="truncate-col buyerseller-col left">{{item.totalOrderPriceFeeRecipient || ''}}</div>
 
             <!-- JSON -->
             <div class="truncate-col json-col">
@@ -110,15 +132,28 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
       (trade: any | IHeatTrade) => {
         let date = utils.timestampToDate(trade.timestamp);
         trade.time = dateFormat(date, format);
-        let currecy = this.asset(trade.currency);
-        let asset = this.asset(trade.asset);
-        let decimals = currecy.decimals;
-        trade.market = `${currecy.symbol}/${asset.symbol}`;
+        let currencyInfo = this.asset(trade.currency);
+        let assetInfo = this.asset(trade.asset);
+        let decimals = currencyInfo.decimals;
+        trade.market = `${currencyInfo.symbol}/${assetInfo.symbol}`;
         trade.type = trade.buyer === this.account? 'Buy': 'Sell';
         trade.price = (trade.price / (Math.pow(10, decimals))).toFixed(decimals);
         trade.amount = (trade.quantity / (Math.pow(10, decimals))).toFixed(decimals);
         trade.buyersellerName = trade.type === 'Buy' ? trade.sellerName : trade.buyerName;
         trade.buyerseller = trade.type === 'Buy' ? trade.seller : trade.buyer;
+        trade.formatted = {}
+        if (trade.totalOrderPriceFee) {
+          trade.formatted.totalOrderPriceFee = utils.formatQNT(trade.totalOrderPriceFee, currencyInfo.decimals)
+        } else {
+          trade.formatted.totalOrderPriceFee = ''
+          trade.totalOrderPriceFeeRecipient = ''
+        }
+        if (trade.quantityFee) {
+          trade.formatted.quantityFee = utils.formatQNT(trade.quantityFee, assetInfo.decimals)
+        } else {
+          trade.formatted.quantityFee = ''
+          trade.quantityFeeRecipient = ''
+        }
       });
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
