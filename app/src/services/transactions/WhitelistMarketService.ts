@@ -63,7 +63,7 @@ class WhitelistMarketferDialog extends GenericDialog {
               private recipient: string,
               private recipientPublicKey: string) {
     super($event);
-    this.dialogTitle = 'Whitelist Market';
+    this.dialogTitle = 'Whitelist Market (update the market)';
     this.dialogDescription = 'Description on how to whitelist a market';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.whitelistMarket, 8).replace(/000000$/,'');

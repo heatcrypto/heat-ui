@@ -84,6 +84,8 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
+  public static BENCHMARK_WEB_URL = 'https://benchmarkrewards.com';
+
   public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
 
   public static CRYPTO_NODES: CryptoNodesDescriptorMap[];
@@ -159,7 +161,7 @@ class SettingsService {
     this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
     this.settings[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
 
-    this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
+    this.settings[SettingsService.APPLICATION_NAME] = 'Heatwallet';
     this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
     this.settings[SettingsService.APPLICATION_BUILD] = this.BUILD;
     this.settings[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
@@ -237,7 +239,7 @@ class SettingsService {
     //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
     //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
     //   this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
-    //   this.failoverEnabled = false;
+    //   //this.failoverEnabled = false;
     // }
   }
 

@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,7 +22,8 @@
  * */
 module dialogs {
   export function about($event) {
-    var settings = <SettingsService> heat.$inject.get('settings');
+    let settings = <SettingsService> heat.$inject.get('settings');
+    let env = <EnvService> heat.$inject.get('env');
     dialogs.dialog({
       id: 'about',
       title: 'About',
@@ -32,7 +33,8 @@ module dialogs {
         <p>Embedded HEAT server {{vm.heatServerVersion}}</p>
         <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
-        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>
+<!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
+        <p><a href="#" ng-click="vm.goTo('bench')">Open BENCHMARK application</a></p>
         <br>
         <p>Ethereum API <u>Powered by <a href="https://ethplorer.io">Ethplorer.io</a></u></p>
         <!--
@@ -55,9 +57,16 @@ module dialogs {
           window.localStorage.setItem('betanet','false');
           if (net == 'test') {
             window.localStorage.setItem('testnet','true');
-          }
-          else if (net == 'beta') {
+          } else if (net == 'beta') {
             window.localStorage.setItem('betanet','true');
+          } else if (net == 'bench') {
+            if (env.type == EnvType.NODEJS) {
+              let shell = require('electron').shell
+              shell.openExternal(SettingsService.BENCHMARK_WEB_URL)
+            } else {
+              window.location.assign(SettingsService.BENCHMARK_WEB_URL)
+            }
+            return
           }
           window.location.reload();
         }
