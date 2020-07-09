@@ -298,7 +298,7 @@ class TraderQuickBuySellComponent {
         return;
       }
     }
-    var dialog = this.placeAskOrder.dialog(this.currencyInfo, this.assetInfo, utils.unformat(this.price),
+    var dialog = this.placeAskOrder.dialog(this.market, this.currencyInfo, this.assetInfo, utils.unformat(this.price),
       utils.unformat(this.quantity), parseInt(this.expiry + ''), true, $event);
     if (this.oneClickOrders)
       dialog.send()
@@ -315,7 +315,7 @@ class TraderQuickBuySellComponent {
         return;
       }
     }
-    var dialog = this.placeBidOrder.dialog(this.currencyInfo, this.assetInfo, utils.unformat(this.price),
+    var dialog = this.placeBidOrder.dialog(this.market, this.currencyInfo, this.assetInfo, utils.unformat(this.price),
       utils.unformat(this.quantity), parseInt(this.expiry + ''), true, $event);
     if (this.oneClickOrders)
       dialog.send()

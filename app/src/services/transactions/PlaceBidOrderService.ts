@@ -31,10 +31,10 @@ class PlaceBidOrderService extends AbstractTransaction {
     super();
   }
 
-  dialog(currencyInfo: AssetInfo, assetInfo: AssetInfo, price?: string, quantity?: string, expiration?: number,
-            readonly?: boolean, $event?): IGenericDialog {
+  dialog(market: IHeatMarket, currencyInfo: AssetInfo, assetInfo: AssetInfo, price?: string, quantity?: string, expiration?: number,
+         readonly?: boolean, $event?): IGenericDialog {
     return new PlaceBidOrderDialog($event, this, this.$q, this.user,
-                    currencyInfo, assetInfo, price, quantity, expiration, readonly);
+      market, currencyInfo, assetInfo, price, quantity, expiration, readonly);
   }
 
   verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -69,6 +69,7 @@ class PlaceBidOrderDialog extends GenericDialog {
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
               private user: UserService,
+              private market: IHeatMarket,
               private currencyInfo: AssetInfo,
               private assetInfo: AssetInfo,
               private price: string,
@@ -108,7 +109,7 @@ class PlaceBidOrderDialog extends GenericDialog {
               readonly(this.readonly),
       builder.switcher("isSenderFeePayer", true)
         .label('Force sender pays network fee')
-        .visible(this.assetInfo.type == 1 || this.currencyInfo.type == 1)
+        .visible(this.market.isIssuerFeePayer && (this.assetInfo.type == 1 || this.currencyInfo.type == 1))
     ]
   }
 
