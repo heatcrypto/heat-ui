@@ -493,6 +493,7 @@ interface IHeatCreateArbitraryMessage {}
 interface IHeatCreateWhitelistMarket {
   currencyId: string;
   assetId: string;
+  isIssuerFeePayer: number;
 }
 interface IHeatCreateWhitelistAssetAccount {
   assetId: string;

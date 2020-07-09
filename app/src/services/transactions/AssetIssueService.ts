@@ -59,23 +59,24 @@ class AssetIssueService extends AbstractTransaction {
     transaction.dilutable = attachment.byteArray[attachment.pos] == 1;
     attachment.pos += 1;
 
+    let result = transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
+      transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
+      transaction.quantity === data.AssetIssuance.quantityQNT &&
+      transaction.decimals === data.AssetIssuance.decimals &&
+      transaction.dilutable === data.AssetIssuance.dilutable;
+
     if (attachment.attachmentVersion >= 3) {
       transaction.expiration = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
       attachment.pos += 4;
+      result = result && transaction.expiration === data.AssetIssuance.expiration;
     }
 
     if (attachment.attachmentVersion >= 2) {
       transaction.assetType = attachment.byteArray[attachment.pos];
       attachment.pos += 1;
+      result = result && transaction.assetType === data.AssetIssuance.type;
     }
-
-    return transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
-           transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
-           transaction.quantity === data.AssetIssuance.quantityQNT &&
-           transaction.decimals === data.AssetIssuance.decimals &&
-           transaction.dilutable === data.AssetIssuance.dilutable &&
-           transaction.expiration === data.AssetIssuance.expiration &&
-           transaction.assetType === data.AssetIssuance.type;
+    return result
   }
 }
 

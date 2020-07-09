@@ -45,8 +45,16 @@ class WhitelistMarketService extends AbstractTransaction {
     transaction.assetId = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
     attachment.pos += 8;
 
-   return transaction.currencyId === data.WhitelistMarket.currencyId &&
-          transaction.assetId === data.WhitelistMarket.assetId;
+    let result = transaction.currencyId === data.WhitelistMarket.currencyId &&
+      transaction.assetId === data.WhitelistMarket.assetId;
+
+    if (attachment.attachmentVersion > 1) {
+      transaction.isIssuerFeePayer = attachment.byteArray[attachment.pos] == 1;
+      attachment.pos += 1;
+      result = result && transaction.isIssuerFeePayer === data.WhitelistMarket.isIssuerFeePayer;
+    }
+
+    return result;
   }
 }
 
