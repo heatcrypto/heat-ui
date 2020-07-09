@@ -36,12 +36,12 @@ class BalanceLeaseService extends AbstractTransaction {
     return new BalanceLeaseDialog($event, this, this.$q, this.user, this.heat, period, recipient);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 4) return false;
     if (transaction.subtype !== 0) return false;
 
-    transaction.period = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
+    transaction.period = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+    attachment.pos += 4;
 
     return transaction.period === data.EffectiveBalanceLeasing.period;
   }

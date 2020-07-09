@@ -37,29 +37,34 @@ class PlaceAskOrderService extends AbstractTransaction {
       market, currencyInfo, assetInfo, price, quantity, expiration, readonly);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 3) return false;
 
-    transaction.currency = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.asset = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.quantity = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.price = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
-    transaction.isSenderFeePayer = bytes.byteArray[bytes.pos] == 1;
-    bytes.pos += 1;
+    transaction.currency = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.asset = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.quantity = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.price = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.expiration = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+    attachment.pos += 4;
 
-    return transaction.currency === data.AskOrderPlacement.currencyId &&
+    let result = transaction.currency === data.AskOrderPlacement.currencyId &&
       transaction.asset === data.AskOrderPlacement.assetId &&
       transaction.quantity === data.AskOrderPlacement.quantity &&
       transaction.price === data.AskOrderPlacement.price &&
-      transaction.expiration === data.AskOrderPlacement.expiration &&
-      transaction.isSenderFeePayer === data.AskOrderPlacement.isSenderFeePayer;
+      transaction.expiration === data.AskOrderPlacement.expiration;
+
+    if (attachment.attachmentVersion > 1) {
+      transaction.isSenderFeePayer = attachment.byteArray[attachment.pos] == 1;
+      attachment.pos += 1;
+      result = result && transaction.isSenderFeePayer === data.AskOrderPlacement.isSenderFeePayer;
+    }
+
+    return result
   }
 }
 

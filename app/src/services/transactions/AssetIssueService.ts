@@ -37,36 +37,36 @@ class AssetIssueService extends AbstractTransaction {
     return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, this.heat, readonly);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 0) return false;
 
-    var descriptionUrlLen = bytes.byteArray[bytes.pos]
-    bytes.pos += 1;
+    var descriptionUrlLen = attachment.byteArray[attachment.pos]
+    attachment.pos += 1;
 
-    transaction.descriptionUrl = converters.byteArrayToString(bytes.byteArray, bytes.pos, descriptionUrlLen);
-    bytes.pos += descriptionUrlLen;
+    transaction.descriptionUrl = converters.byteArrayToString(attachment.byteArray, attachment.pos, descriptionUrlLen);
+    attachment.pos += descriptionUrlLen;
 
-    transaction.descriptionHash = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + 32));
-    bytes.pos += 32;
+    transaction.descriptionHash = converters.byteArrayToHexString(attachment.byteArray.slice(attachment.pos, attachment.pos + 32));
+    attachment.pos += 32;
 
-    transaction.quantity = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.quantity = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
-    transaction.decimals = bytes.byteArray[bytes.pos];
-    bytes.pos += 1;
+    transaction.decimals = attachment.byteArray[attachment.pos];
+    attachment.pos += 1;
 
-    transaction.dilutable = bytes.byteArray[bytes.pos] == 1;
-    bytes.pos += 1;
+    transaction.dilutable = attachment.byteArray[attachment.pos] == 1;
+    attachment.pos += 1;
 
-    if (bytes.attachmentVersion >= 3) {
-      transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-      bytes.pos += 4;
+    if (attachment.attachmentVersion >= 3) {
+      transaction.expiration = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+      attachment.pos += 4;
     }
 
-    if (bytes.attachmentVersion >= 2) {
-      transaction.assetType = bytes.byteArray[bytes.pos];
-      bytes.pos += 1;
+    if (attachment.attachmentVersion >= 2) {
+      transaction.assetType = attachment.byteArray[attachment.pos];
+      attachment.pos += 1;
     }
 
     return transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&

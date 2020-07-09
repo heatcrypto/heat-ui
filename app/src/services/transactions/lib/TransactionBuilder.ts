@@ -54,7 +54,7 @@ class TransactionBuilder {
   private _recipient: string;
   private _attachment: any;
   private _transactionArgs: IHeatCreateTransactionInput;
-  private _transactionData: IHeatCreateTransactionOutput;
+  private _transactionData: IHeatCreateTransactionOutput;  //from server api
   private _transactionBytes: string;
 
   /* Client side calculated transaction full hash, set when `sign` completes */

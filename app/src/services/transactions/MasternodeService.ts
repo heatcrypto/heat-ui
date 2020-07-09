@@ -37,14 +37,14 @@ class MasternodeService extends AbstractTransaction {
     return new RegisterInternetAddressDialog($event, this, this.$q, this.user, this.heat, "");
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (!AbstractTransaction.checkType(transaction, 4, 1)) return false;
 
-    let len = bytes.byteArray[bytes.pos];
-    bytes.pos += 1;
+    let len = attachment.byteArray[attachment.pos];
+    attachment.pos += 1;
 
-    transaction.internetAddress = converters.byteArrayToString(bytes.byteArray, bytes.pos, len);
-    bytes.pos += len;
+    transaction.internetAddress = converters.byteArrayToString(attachment.byteArray, attachment.pos, len);
+    attachment.pos += len;
 
     return transaction.internetAddress === data.InternetAddress.internetAddress;
   }

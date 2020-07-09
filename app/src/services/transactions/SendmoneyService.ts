@@ -36,7 +36,7 @@ class SendmoneyService extends AbstractTransaction {
     return new SendmoneyDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, amount, userMessage);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition): boolean {
     return transaction.type === 0 && transaction.subtype === 0;
   }
 }

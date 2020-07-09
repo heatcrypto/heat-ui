@@ -37,14 +37,14 @@ class AssetExpirationService extends AbstractTransaction {
     return new AssetExpirationDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, this.$interval);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 12) return false;
 
-    transaction.assetId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
+    transaction.assetId = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.expiration = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+    attachment.pos += 4;
 
    return transaction.expiration === data.AssetExpiration.expiration &&
           transaction.assetId === data.AssetExpiration.assetId;

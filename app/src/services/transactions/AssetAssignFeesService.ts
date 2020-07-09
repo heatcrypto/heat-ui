@@ -36,17 +36,17 @@ class AssetAssignFeesService extends AbstractTransaction {
     return new AssetAssignFeesServiceDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type != 2 || transaction.subtype != 11) return false;
 
-    transaction.assetId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.tradeFee = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
-    transaction.orderFee = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
-    transaction.feeRecepient = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.assetId = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.tradeFee = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+    attachment.pos += 4;
+    transaction.orderFee = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+    attachment.pos += 4;
+    transaction.feeRecepient = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
     return transaction.assetId === data.AssetAssignFees.assetId
       && transaction.tradeFee === data.AssetAssignFees.tradeFee

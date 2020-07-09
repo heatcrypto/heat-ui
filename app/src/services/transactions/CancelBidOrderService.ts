@@ -35,12 +35,12 @@ class CancelBidOrderService extends AbstractTransaction {
     return new CancelBidOrderDialog($event, this, this.$q, this.user, order, readonly);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 6) return false;
 
-    transaction.order = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.order = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
     return transaction.order === data.BidOrderCancellation.orderId;
   }

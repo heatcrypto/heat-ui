@@ -36,14 +36,14 @@ class WhitelistMarketService extends AbstractTransaction {
     return new WhitelistMarketferDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 9) return false;
 
-    transaction.currencyId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.assetId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.currencyId = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.assetId = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
    return transaction.currencyId === data.WhitelistMarket.currencyId &&
           transaction.assetId === data.WhitelistMarket.assetId;
