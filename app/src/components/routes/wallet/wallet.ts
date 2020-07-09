@@ -644,19 +644,23 @@ class WalletComponent {
     panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secret" readonly ng-trim="false"></textarea>
+          <textarea rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
           <div class="qrcodeBox" id="PKQRCode"></div>
+          <p>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel">Close</md-button>
+          </p>
         </md-input-container>
       </div>
     `, {
+        panel: panel,
         secret: secret
       }
     )
     setTimeout(() => {
       new QRCode("PKQRCode", {
         text: secret,
-        width: 128,
-        height: 128,
+        width: 160,
+        height: 160,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H

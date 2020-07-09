@@ -582,16 +582,21 @@ class ToolbarComponent {
     let panel: PanelService = heat.$inject.get('panel')
     panel.show(`
       <div layout="column" flex>
-        <p><div class="qrcodeBox" id="addressQRCode"></div></p>
+        <md-input-container flex>
+          <div class="qrcodeBox" id="addressQRCode"></div>
+          <p>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel">Close</md-button>
+          </p>
+        </md-input-container>
       </div>
     `,
-      {}
+      {panel: panel}
     )
     setTimeout(() => {
       new QRCode("addressQRCode", {
         text: data,
-        width: 128,
-        height: 128,
+        width: 160,
+        height: 160,
         colorDark : "#000000",
         colorLight : "#ffffff",
         correctLevel : QRCode.CorrectLevel.H
