@@ -89,6 +89,12 @@ class ServerService extends EventEmitter {
     }
   }
 
+  isHeatledgerServerDirExists() {
+    const fs = require('fs');
+    return fs.existsSync('resources/heatledger')
+  }
+
+
   getAppDir(dirName) {
     var path = require('path');
     let dir = path.join(__dirname,'..','heatledger', dirName);

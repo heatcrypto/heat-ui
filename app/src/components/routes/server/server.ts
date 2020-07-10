@@ -26,8 +26,10 @@
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <div layout="row" class="button-row">
-        <md-button class="start-stop" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">Start Server</md-button>
-        <md-button class="start-stop md-primary" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">Stop Server</md-button>
+        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">
+            Start Server</md-button>
+        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">
+            Stop Server</md-button>
         <md-button class="start-stop" ng-click="vm.showInstallFolder()">
           <md-tooltip md-direction="bottom">Access your server config files and back them up before updating HEAT server</md-tooltip>
           Install Dir
@@ -57,7 +59,7 @@
         </div>
         <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
         <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
-        <a ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
+        <a ng-if="vm.isServerAvailable()" ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
       </div>
       <div layout="column" flex class="console" layout-fill>
         <md-virtual-repeat-container md-top-index="vm.topIndex" flex layout-fill layout="column"
@@ -146,6 +148,10 @@ class ServerComponent {
     },3000);
 
     this.remotehostDisplay = this.hostRemote.replace('https://','');
+  }
+
+  isServerAvailable() {
+    return this.server.isHeatledgerServerDirExists()
   }
 
   showInstallFolder() {

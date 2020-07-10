@@ -271,7 +271,7 @@
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="whitelits market" ng-click="vm.showWhitelistMarketDialog($event)">
                 <md-icon md-font-library="material-icons">insert_chart</md-icon>
-                <span>Create Market</span>
+                <span>Create/Update Market</span>
               </md-button>
             </md-menu-item>
             <md-menu-item  ng-if="vm.user.unlocked">
