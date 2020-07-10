@@ -585,7 +585,7 @@ class ToolbarComponent {
         <md-input-container flex>
           <div class="qrcodeBox" id="addressQRCode"></div>
           <p>
-          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel">Close</md-button>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right">Close</md-button>
           </p>
         </md-input-container>
       </div>
