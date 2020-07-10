@@ -49,7 +49,7 @@ class WhitelistMarketService extends AbstractTransaction {
       transaction.assetId === data.WhitelistMarket.assetId;
 
     if (attachment.attachmentVersion > 1) {
-      transaction.isIssuerFeePayer = attachment.byteArray[attachment.pos] == 1;
+      transaction.isIssuerFeePayer = attachment.byteArray[attachment.pos];
       attachment.pos += 1;
       result = result && transaction.isIssuerFeePayer === data.WhitelistMarket.isIssuerFeePayer;
     }
