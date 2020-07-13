@@ -45,9 +45,13 @@ class DialogFieldAccount extends AbstractDialogField {
       });
       if (accounts.length > 0) {
         deferred.resolve(accounts);
-      }
-      else if (this.numbersOnly.test(query)) {
-        this.heat.api.getAccountByNumericId(query).then(account=>{
+      } else if (this.numbersOnly.test(query)) {
+        this.heat.api.getAccountByNumericId(query).then(account => {
+          deferred.resolve([account]);
+        }, deferred.reject);
+      } else {
+        //find by public or private name
+        this.heat.api.findAccountByName(query).then(account => {
           deferred.resolve([account]);
         }, deferred.reject);
       }
@@ -81,7 +85,7 @@ class DialogFieldAccount extends AbstractDialogField {
         md-item-text="item.publicName||item.id"
         md-search-text="vm.f.searchText"
         md-selected-item-change="vm.selectedItemChange()"
-        md-search-text-change="vm.f.searchTextChange()"
+        md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>

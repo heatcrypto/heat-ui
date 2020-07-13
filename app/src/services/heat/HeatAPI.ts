@@ -292,6 +292,13 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/account/find/${numericId}`);
   }
 
+  /**
+   * Find account by name (public and private)
+   */
+  findAccountByName(name: string): angular.IPromise<IHeatAccount> {
+    return this.heat.get(`/account/find/name/${name}`);
+  }
+
   getTransaction(transaction: string): angular.IPromise<IHeatTransaction> {
     return this.heat.get(`/blockchain/transaction/${transaction}`);
   }
