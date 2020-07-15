@@ -78,6 +78,10 @@ class ServerService extends EventEmitter {
       this.command = path.join('bin','heatledger');
     }
 
+    if (heat.isTestnet) {
+
+    }
+
     //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
     let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
     const fs = require('fs');
@@ -121,10 +125,18 @@ class ServerService extends EventEmitter {
         var env = process.env
 
         // When things go wrong undefined is returned
+        let path = require('path');
         if (userDataDir) {
-          var path = require('path');
           env['HEAT_WALLET_BLOCKCHAINDIR'] = path.join(userDataDir, 'blockchain')
           env['HEAT_WALLET_BLOCKCHAINDIR_TEST'] = path.join(userDataDir, 'blockchain-test')
+        }
+
+        if (heat.isTestnet) {
+          env['HEATLEDGER_OPTS'] = '-Dheatwallet.testnet=true'
+          env['HEAT_WALLET_DB_DIR'] = path.join(userDataDir, 'heat-db-test/heat_replicator')
+        } else {
+          env['HEATLEDGER_OPTS'] = '-Dheatwallet.mainnet=true'
+          env['HEAT_WALLET_DB_DIR'] = path.join(userDataDir, 'heat-db/heat_replicator')
         }
 
         var promise = spawn(this.command,[],{
