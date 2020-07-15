@@ -34,7 +34,10 @@ module dialogs {
         <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
 <!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
-        <p><a href="#" ng-click="vm.goTo('bench')">Open BENCHMARK application</a></p>
+        <p>
+<!--            <a ng-href="{{vm.benchmarkUrl}}" target="_blank">BENCHMARK application</a><br/>-->
+            <a ng-if="vm.isEnvNodeJS" href="#" ng-click="vm.goTo('bench')">BENCHMARK application (in browser)</a>
+        </p>
         <br>
         <p>Ethereum API <u>Powered by <a href="https://ethplorer.io">Ethplorer.io</a></u></p>
         <!--
@@ -51,6 +54,8 @@ module dialogs {
         applicationBuild: settings.get(SettingsService.APPLICATION_BUILD),
         heatServerVersion: SettingsService.EMBEDDED_HEATLEDGER_VERSION,
         isTestnet: window.localStorage.getItem('testnet')=='true',
+        benchmarkUrl: SettingsService.BENCHMARK_WEB_URL,
+        isEnvNodeJS: env.type == EnvType.NODEJS,
         goTo: (net) => {
           // defaults to main net
           window.localStorage.setItem('testnet','false');
