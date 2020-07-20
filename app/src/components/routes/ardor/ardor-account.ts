@@ -79,19 +79,21 @@ class ArdorAccountComponent {
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
               private user: UserService) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    ardorPendingTransactions.addListener(listener)
+    this.ardorPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 1000)
+    let promise = this.$interval(this.timerHandler.bind(this), 1000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      ardorPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.ardorPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
 
     this.sockets = [

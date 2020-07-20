@@ -69,14 +69,19 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
   btcMessages: Array<{ txId: string, message: string }> = []
+
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
-    private settings: SettingsService,
-    private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
-    private user: UserService,
-    private bitcoinMessagesService: BitcoinMessagesService) {
+              protected $q: angular.IQService,
+              private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
+              private settings: SettingsService,
+              private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
+              private user: UserService,
+              private bitcoinMessagesService: BitcoinMessagesService) {
+
     super($scope, $q);
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
     /* privateKey and publicKey should be HEAT keys */
@@ -91,7 +96,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         this.btcMessages.forEach(message => {
           if (message.txId == transaction.txid) {
             transaction.displayMessage = message.message;
-            if(transaction.displayMessage.length > 13) {
+            if (transaction.displayMessage.length > 13) {
               transaction.displayMessage = transaction.displayMessage.substr(0, 10).concat('...')
             }
             transaction.message = message.message
@@ -173,10 +178,10 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    bitcoinPendingTransactions.addListener(listener)
+    this.bitcoinPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      bitcoinPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.bitcoinPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }
@@ -184,7 +189,6 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   jsonDetails($event, item) {
     dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
   }
-
 
   onSelect(selectedTransaction) { }
 

@@ -53,23 +53,24 @@ class MsgViewerComponent {
   private store: Store;
 
   constructor(private heat: HeatService,
-    private user: UserService,
-    private $scope: angular.IScope,
-    private p2pMessaging: P2PMessaging,
-    private settings: SettingsService,
-    private $timeout: angular.ITimeoutService,
-    private storage: StorageService,
-    private $mdToast: angular.material.IToastService, ) {
+              private user: UserService,
+              private $scope: angular.IScope,
+              private p2pMessaging: P2PMessaging,
+              private settings: SettingsService,
+              private $timeout: angular.ITimeoutService,
+              private storage: StorageService,
+              private $mdToast: angular.material.IToastService,) {
+  }
 
+  $onInit() {
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
-
-    this.store = storage.namespace('contacts.latestTimestamp', $scope);
+    this.store = this.storage.namespace('contacts.latestTimestamp', this.$scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
-    heat.subscriber.message({ sender: this.user.account }, refresh, $scope);
-    heat.subscriber.message({ recipient: this.user.account }, refresh, $scope);
+    this.heat.subscriber.message({sender: this.user.account}, refresh, this.$scope);
+    this.heat.subscriber.message({recipient: this.user.account}, refresh, this.$scope);
     MsgViewerComponent.count = 10000;
     this.initMessages()
   }
@@ -78,7 +79,7 @@ class MsgViewerComponent {
     this.offchainPages = 0;
     this.onchainMessagesCount = 0;
     this.messagesCount = 0;
-    this.displayMessages = { index: 0, messages: [] };
+    this.displayMessages = {index: 0, messages: []};
     this.allMessages = [];
 
     this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey)).then(count => {
@@ -91,7 +92,9 @@ class MsgViewerComponent {
         this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
         this.messageHistory = room.getMessageHistory()
         this.offchainPages = this.messageHistory.getPageCount() - 1;
-        room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => { this.onMessageAdded(item, true) }
+        room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+          this.onMessageAdded(item, true)
+        }
         this.messagesCount += this.messageHistory.getItemCount();
         this.$scope.$on('$destroy', () => {
           this.p2pMessaging.updateSeenTime(room.name, Date.now());
@@ -150,7 +153,9 @@ class MsgViewerComponent {
         }
         page.forEach(item => this.processOffchainItem(item));
         resolve(page)
-      } else { resolve([]) }
+      } else {
+        resolve([])
+      }
     });
   }
 
@@ -166,6 +171,7 @@ class MsgViewerComponent {
       '__id': ++MsgViewerComponent.count
     }
   }
+
   private processOffchainItem(item: p2p.MessageHistoryItem) {
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['timestamp'] = item.timestamp;
@@ -181,8 +187,7 @@ class MsgViewerComponent {
     let newMessage;
     if (isoffchain) {
       newMessage = this.processOffchainItem(data);
-    }
-    else {
+    } else {
       newMessage = this.processOnchainItem(data);
       if (!newMessage['outgoing']) {
         this.$mdToast.show(

@@ -112,6 +112,9 @@ class DialogFieldAccountComponent {
   selectedItem: any;
 
   constructor() {
+  }
+
+  $onInit() {
     this.f.searchText = this.f.value;
   }
 

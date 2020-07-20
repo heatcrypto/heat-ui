@@ -221,10 +221,13 @@ class ExploreAccountComponent {
               private heat: HeatService,
               private assetInfo: AssetInfoService,
               private $q: angular.IQService) {
+  }
+
+  $onInit() {
     this.refresh();
-    heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
+    this.heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
       this.refresh();
-    }, $scope);
+    }, this.$scope);
   }
 
   csv($event) {

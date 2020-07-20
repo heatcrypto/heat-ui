@@ -74,13 +74,16 @@ class VirtualRepeatPaymentsComponent extends VirtualRepeatComponent {
   personalize: boolean; // @input
 
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private heat: HeatService,
-    private explorerPaymentsProviderFactory: ExplorerPaymentsProviderFactory,
-    private settings: SettingsService,
-    private assetInfo: AssetInfoService) {
+              protected $q: angular.IQService,
+              private heat: HeatService,
+              private explorerPaymentsProviderFactory: ExplorerPaymentsProviderFactory,
+              private settings: SettingsService,
+              private assetInfo: AssetInfoService) {
     super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  }
+
+  $onInit() {
+    const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.explorerPaymentsProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -92,10 +95,10 @@ class VirtualRepeatPaymentsComponent extends VirtualRepeatComponent {
         payment.amount = (payment.quantity / (Math.pow(10, decimals))).toFixed(decimals);
       });
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    const refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     if (angular.isUndefined(this.account)) {
-      heat.subscriber.blockPopped({}, refresh, $scope);
-      heat.subscriber.blockPushed({}, refresh, $scope);
+      this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, refresh, this.$scope);
     }
   }
 

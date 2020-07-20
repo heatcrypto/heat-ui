@@ -82,25 +82,27 @@ class BitcoinAccountComponent {
   busy = true
 
   constructor(private $scope: angular.IScope,
-    private btcBlockExplorerService: BtcBlockExplorerService,
-    private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
-    private $interval: angular.IIntervalService,
-    private $mdToast: angular.material.IToastService,
-    private settings: SettingsService,
-    private user: UserService) {
+              private btcBlockExplorerService: BtcBlockExplorerService,
+              private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
+              private $interval: angular.IIntervalService,
+              private $mdToast: angular.material.IToastService,
+              private settings: SettingsService,
+              private user: UserService) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    bitcoinPendingTransactions.addListener(listener)
+    this.bitcoinPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 1000)
+    let promise = this.$interval(this.timerHandler.bind(this), 1000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      bitcoinPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.bitcoinPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
   }
 

@@ -109,21 +109,22 @@ class TraderComponent {
       if (sidenav.isOpen()) {
         this.marketsSidenavLockedOpen = false;
         sidenav.close();
-      }
-      else {
+      } else {
         this.marketsSidenavLockedOpen = true;
         sidenav.open();
       }
     };
+  }
 
+  $onInit() {
     // lookup currency and asset info and pass as parameters to child components
-    assetInfoService.getInfo(this.currency).then((info) => {
-      $scope.$evalAsync(() => {
+    this.assetInfoService.getInfo(this.currency).then((info) => {
+      this.$scope.$evalAsync(() => {
         this.currencyInfo = info;
       });
     });
-    assetInfoService.getInfo(this.asset).then((info) => {
-      $scope.$evalAsync(() => {
+    this.assetInfoService.getInfo(this.asset).then((info) => {
+      this.$scope.$evalAsync(() => {
         this.assetInfo = info;
       });
     });
@@ -134,19 +135,21 @@ class TraderComponent {
       });
     });
 
-    this.user.account = user.account || "";
+    this.user.account = this.user.account || "";
     this.isTestnet = heat.isTestnet;
 
     let ready = () => {
       if (this.currencyInfo && this.assetInfo) {
-        this.showMarketNotCertified = !this.currencyInfo.certified||!this.assetInfo.certified;
-        unregister.forEach((fn)=>{fn()});
+        this.showMarketNotCertified = !this.currencyInfo.certified || !this.assetInfo.certified;
+        unregister.forEach((fn) => {
+          fn()
+        });
       }
     }
-    let unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
-    setTimeout(()=>{
+    let unregister = [this.$scope.$watch('vm.currencyInfo', ready), this.$scope.$watch('vm.assetInfo', ready)];
+    setTimeout(() => {
       if (!angular.isDefined(this.showMarketNotCertified)) {
-        $scope.$evalAsync(()=>{
+        this.$scope.$evalAsync(() => {
           this.showMarketNotCertified = true;
         })
       }

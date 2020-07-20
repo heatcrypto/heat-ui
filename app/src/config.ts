@@ -21,15 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider', /*'$locationProvider',*/
-                      ($mdThemingProvider, noCAPTCHAProvider /*, $locationProvider*/) => {
+heat.Loader.config(['$mdThemingProvider', 'noCAPTCHAProvider', '$locationProvider',
+                      ($mdThemingProvider, noCAPTCHAProvider, $locationProvider) => {
 
   $mdThemingProvider.theme('default')
 
   noCAPTCHAProvider.setSiteKey("6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc");
   noCAPTCHAProvider.setTheme('light');
 
-  // $locationProvider.hashPrefix('');
+  //$locationProvider.html5Mode(true)
+  $locationProvider.hashPrefix('');
 
 }]);
 

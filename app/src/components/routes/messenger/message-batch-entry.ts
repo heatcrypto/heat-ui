@@ -98,7 +98,11 @@
 class MessageBatchEntryComponent {
   message: IHeatMessage; // @input
   io: string;
+
   constructor() {
+  }
+
+  $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming';
   }
 }

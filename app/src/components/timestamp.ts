@@ -36,8 +36,11 @@ class Timestamp {
 
   private timestampFormatted: string;
 
-  constructor(private settings: SettingsService,$scope) {
-    $scope.$watch(() => this.timestampValue, () => { this.update() });
+  constructor(private settings: SettingsService,
+              private $scope) {}
+
+  $onInit() {
+    this.$scope.$watch(() => this.timestampValue, () => { this.update() });
     this.update();
   }
 

@@ -143,9 +143,11 @@ class ExplorerBlockComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private settings: SettingsService) {
-    let format = settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    heat.api.getBlock(this.block).then(block=>{
-      $scope.$evalAsync(()=>{
+  }
+
+  $onInit() {
+    this.heat.api.getBlock(this.block).then(block => {
+      this.$scope.$evalAsync(() => {
         this.generator = block.generator;
         this.generatorPublicName = block['generatorPublicName'];
         this.totalAmount = utils.formatQNT(block.totalAmountHQT, 8);
@@ -153,7 +155,7 @@ class ExplorerBlockComponent {
         this.popReward = utils.formatQNT(block.popRewardHQT, 8);
         this.posReward = utils.formatQNT(block.posRewardHQT, 8);
         var date = utils.timestampToDate(block.timestamp);
-        this.time = dateFormat(date, format);
+        this.time = dateFormat(date, this.settings.get(SettingsService.DATEFORMAT_DEFAULT));
         this.height = block.height;
         this.blockObject = block;
       })

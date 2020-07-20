@@ -51,6 +51,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   private containerId: string; // @input
   private store: Store;
   private dateFormat;
+
   constructor($scope: angular.IScope,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
@@ -64,10 +65,12 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
     super($scope, $q, $timeout);
     this.store = storage.namespace('contacts.latestTimestamp',$scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
+    let refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
     heat.subscriber.message({sender:this.user.account}, refresh, $scope);
     heat.subscriber.message({recipient:this.user.account}, refresh, $scope);
+  }
 
+  $onInit() {
     this.loadInitial();
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");

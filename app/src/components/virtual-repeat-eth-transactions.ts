@@ -140,6 +140,9 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private web3: Web3Service,
               private ethereumPendingTransactions: EthereumPendingTransactionsService) {
     super($scope, $q);
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.ethTransactionsProviderFactory.createProvider(this.account),
@@ -161,9 +164,8 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         let renderedInfo = this.renderer.renderInfo(transaction);
         if (angular.isString(renderedInfo)) {
           transaction['renderedInfo'] = renderedInfo;
-        }
-        else if (angular.isObject(renderedInfo)) {
-          renderedInfo.then((text)=>{
+        } else if (angular.isObject(renderedInfo)) {
+          renderedInfo.then((text) => {
             transaction['renderedInfo'] = text;
           })
         }
@@ -171,13 +173,13 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     );
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    let timeout = setTimeout(refresh, 10*1000)
+    let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
-    ethereumPendingTransactions.addListener(listener)
+    this.ethereumPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      ethereumPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.ethereumPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

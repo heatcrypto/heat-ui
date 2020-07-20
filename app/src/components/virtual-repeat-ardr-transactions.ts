@@ -91,6 +91,9 @@ class VirtualRepeatArdrTransactionsComponent extends VirtualRepeatComponent {
               private ardorBlockExplorerService: ArdorBlockExplorerService) {
 
     super($scope, $q);
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     let secretPhrase = this.user.currency.secretPhrase;
     this.initializeVirtualRepeat(
@@ -138,10 +141,10 @@ class VirtualRepeatArdrTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    ardorPendingTransactions.addListener(listener)
+    this.ardorPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      ardorPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.ardorPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

@@ -77,14 +77,17 @@ class VirtualRepeatIotaTransactionsComponent extends VirtualRepeatComponent {
   account: string; // @input
 
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private iotaTransactionsProviderFactory: IotaTransactionsProviderFactory,
-    private settings: SettingsService,
-    private iotaPendingTransactions: IotaPendingTransactionsService,
-    private user: UserService,
-    private iotaBlockExplorerService: IotaBlockExplorerService) {
+              protected $q: angular.IQService,
+              private iotaTransactionsProviderFactory: IotaTransactionsProviderFactory,
+              private settings: SettingsService,
+              private iotaPendingTransactions: IotaPendingTransactionsService,
+              private user: UserService,
+              private iotaBlockExplorerService: IotaBlockExplorerService) {
 
     super($scope, $q);
+  }
+
+  $onInit() {
     let myAddresses = this.iotaBlockExplorerService.getAccountInfo(this.user.currency.secretPhrase).then(accountInfo => {
       return accountInfo.accountData.addresses;
     }).catch(reason => console.error(reason))
@@ -128,14 +131,14 @@ class VirtualRepeatIotaTransactionsComponent extends VirtualRepeatComponent {
       }
     )
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    const refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
-    iotaPendingTransactions.addListener(listener)
+    this.iotaPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      iotaPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.iotaPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }
@@ -144,6 +147,6 @@ class VirtualRepeatIotaTransactionsComponent extends VirtualRepeatComponent {
     dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
   }
 
-
-  onSelect(selectedTransaction) { }
+  onSelect(selectedTransaction) {
+  }
 }

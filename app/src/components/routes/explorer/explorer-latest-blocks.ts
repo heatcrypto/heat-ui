@@ -22,18 +22,18 @@
  * */
 @Component({
   selector: 'explorerLatestBlocks',
-  inputs: ['blockObject','account','hideLabel'],
+  inputs: ['blockObject', 'account', 'hideLabel'],
   styles: [`
-  .he {         
-    min-width: 40px !important;         
-    max-width: 70px !important;         
+  .he {
+    min-width: 40px !important;
+    max-width: 70px !important;
   }
-  .tx {         
-    min-width: 20px !important;         
-    max-width: 40px !important;         
+  .tx {
+    min-width: 20px !important;
+    max-width: 40px !important;
   }
-  .fee {         
-    max-width: 70px !important;         
+  .fee {
+    max-width: 70px !important;
   }
   `],
   template: `
@@ -79,7 +79,7 @@
     </div>
   `
 })
-@Inject('$scope','$q','heat','latestBlocksProviderFactory','settings')
+@Inject('$scope', '$q', 'heat', 'latestBlocksProviderFactory', 'settings')
 class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
   blockObject: IHeatBlock; // @input
@@ -94,37 +94,40 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
               private latestBlocksProviderFactory: LatestBlocksProviderFactory,
               private settings: SettingsService) {
     super($scope, $q);
+  }
 
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  $onInit() {
+    const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     let headerInitialized = false;
     this.initializeVirtualRepeat(
       this.latestBlocksProviderFactory.createProvider(this.blockObject, this.account),
       /* decorator function */
-      (block: any|IHeatBlock) => {
-        var date = utils.timestampToDate(block.timestamp);
+      (block: any | IHeatBlock) => {
+        const date = utils.timestampToDate(block.timestamp);
         block.time = dateFormat(date, format);
         block.amount = utils.formatQNT(block.totalAmountHQT, 8) + " HEAT";
-        block.fee = utils.trimDecimals(utils.formatQNT(block.totalFeeHQT, 8),2) + " HEAT";
-        block.pos = utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2) + " HEAT";
-        block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2) + " HEAT";
+        block.fee = utils.trimDecimals(utils.formatQNT(block.totalFeeHQT, 8), 2) + " HEAT";
+        block.pos = utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8), 2) + " HEAT";
+        block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8), 2) + " HEAT";
         if (!headerInitialized) {
-          this.minerHeader = `Miner (${utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2)} HEAT)`;
+          this.minerHeader = `Miner (${utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8), 2)} HEAT)`;
           headerInitialized = true;
         }
         if (this.popHeader == this.popHeaderOrig && block.popRewardHQT != '0') {
-          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2)} HEAT)`;
+          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8), 2)} HEAT)`;
         }
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    heat.subscriber.blockPopped({}, refresh, $scope);
-    heat.subscriber.blockPushed({}, refresh, $scope);
+    const refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+    this.heat.subscriber.blockPushed({}, refresh, this.$scope);
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Block: '+item.block);
+    dialogs.jsonDetails($event, item, 'Block: ' + item.block);
   }
 
-  onSelect(selectedBlock) {}
+  onSelect(selectedBlock) {
+  }
 }

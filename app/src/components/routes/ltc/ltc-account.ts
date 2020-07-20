@@ -60,25 +60,27 @@ class LtcAccountComponent {
   busy = true
 
   constructor(private $scope: angular.IScope,
-    private ltcBlockExplorerService: LtcBlockExplorerService,
-    private ltcPendingTransactions: LtcPendingTransactionsService,
-    private $interval: angular.IIntervalService,
-    private $mdToast: angular.material.IToastService,
-    private settings: SettingsService,
-    private user: UserService) {
+              private ltcBlockExplorerService: LtcBlockExplorerService,
+              private ltcPendingTransactions: LtcPendingTransactionsService,
+              private $interval: angular.IIntervalService,
+              private $mdToast: angular.material.IToastService,
+              private settings: SettingsService,
+              private user: UserService) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    ltcPendingTransactions.addListener(listener)
+    this.ltcPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 30000)
+    let promise = this.$interval(this.timerHandler.bind(this), 30000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      ltcPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.ltcPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
   }
 

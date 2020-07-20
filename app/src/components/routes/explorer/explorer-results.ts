@@ -74,12 +74,14 @@ class ExplorerResultsComponent {
   transactionObject: IHeatTransaction;
 
   constructor(private $scope: angular.IScope,
-    private heat: HeatService,
-    private $location: angular.ILocationService) {
+              private heat: HeatService,
+              private $location: angular.ILocationService) {
+  }
 
+  $onInit() {
     if (this.type === 'search' || this.type === 'accounts') {
-      heat.api.searchAccountsCount(this.query).then(count => {
-        $scope.$evalAsync(() => {
+      this.heat.api.searchAccountsCount(this.query).then(count => {
+        this.$scope.$evalAsync(() => {
           if (this.type === 'search' && count > 0) {
             this.type = 'accounts'
             this.$location.path(`/explorer-results/${this.type}/${this.query}`)
@@ -89,8 +91,8 @@ class ExplorerResultsComponent {
     }
 
     if (this.type === 'search' || this.type === 'blocks') {
-      heat.api.getBlock(this.query, true).then(block => {
-        $scope.$evalAsync(() => {
+      this.heat.api.getBlock(this.query, true).then(block => {
+        this.$scope.$evalAsync(() => {
           this.blockObject = block;
           if (this.type === 'search') {
             this.type = 'blocks'
@@ -100,8 +102,8 @@ class ExplorerResultsComponent {
       }, () => {
         let height = parseInt(this.query);
         if (!isNaN(height)) {
-          heat.api.getBlockAtHeight(height, true).then(block => {
-            $scope.$evalAsync(() => {
+          this.heat.api.getBlockAtHeight(height, true).then(block => {
+            this.$scope.$evalAsync(() => {
               this.blockObject = block;
               if (this.type === 'search') {
                 this.type = 'blocks'
@@ -113,8 +115,8 @@ class ExplorerResultsComponent {
       });
     }
     if (this.type === 'search' || this.type === 'transactions') {
-      heat.api.getTransaction(this.query).then(transaction => {
-        $scope.$evalAsync(() => {
+      this.heat.api.getTransaction(this.query).then(transaction => {
+        this.$scope.$evalAsync(() => {
           this.transactionObject = transaction;
           if (this.type === 'search') {
             this.type = 'transactions';
@@ -124,4 +126,5 @@ class ExplorerResultsComponent {
       });
     }
   }
+
 }

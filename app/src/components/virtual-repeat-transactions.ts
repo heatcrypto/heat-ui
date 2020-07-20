@@ -1,7 +1,7 @@
 ///<reference path='VirtualRepeatComponent.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -142,7 +142,10 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
               private $mdPanel: angular.material.IPanelService,
               private controlCharRender: ControlCharRenderService) {
     super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  }
+
+  $onInit() {
+    let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.transactionsProviderFactory.createProvider(this.account, this.block, this.transactionObject),
       /* decorator function */
@@ -194,16 +197,15 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
 
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     if (angular.isString(this.account)) {
-      heat.subscriber.unconfirmedTransaction({recipient: this.account}, refresh, $scope);
-      heat.subscriber.unconfirmedTransaction({sender: this.account}, refresh, $scope);
-      heat.subscriber.blockPushed({}, refresh, $scope);
+      this.heat.subscriber.unconfirmedTransaction({recipient: this.account}, refresh, this.$scope);
+      this.heat.subscriber.unconfirmedTransaction({sender: this.account}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, refresh, this.$scope);
     }
     if (angular.isUndefined(this.block) && angular.isUndefined(this.account)) {
-      heat.subscriber.unconfirmedTransaction({}, refresh, $scope);
-      heat.subscriber.blockPopped({}, refresh, $scope);
-      heat.subscriber.blockPushed({}, refresh, $scope);
-    }
-  }
+      this.heat.subscriber.unconfirmedTransaction({}, refresh, this.$scope);
+      this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, refresh, this.$scope);
+    }  }
 
   showPopup(messageText: string) {
     let renderedHTML = this.render.render(messageText, [this.controlCharRender]);

@@ -87,16 +87,16 @@
     </div>
   `
 })
-@Inject('$scope','web3','assetInfo','$q','user','ethBlockExplorerService',
-  'ethereumPendingTransactions','settings','$interval','$mdToast')
+@Inject('$scope', 'web3', 'assetInfo', '$q', 'user', 'ethBlockExplorerService',
+  'ethereumPendingTransactions', 'settings', '$interval', '$mdToast')
 class EthereumAccountComponent {
   account: string; // @input
 
   balanceUnconfirmed: string;
-  erc20Tokens: Array<{balance:string, symbol:string, name:string, id:string}> = [];
+  erc20Tokens: Array<{ balance: string, symbol: string, name: string, id: string }> = [];
   personalize: boolean
 
-  pendingTransactions: Array<{date:string, txHash:string, timestamp:number, address:string}> = []
+  pendingTransactions: Array<{ date: string, txHash: string, timestamp: number, address: string }> = []
   prevIndex = 0
 
   constructor(private $scope: angular.IScope,
@@ -109,6 +109,9 @@ class EthereumAccountComponent {
               private settings: SettingsService,
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService) {
+  }
+
+  $onInit() {
     this.personalize = this.account == this.user.currency.address
     this.refresh();
 
@@ -116,15 +119,15 @@ class EthereumAccountComponent {
     // this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    ethereumPendingTransactions.addListener(listener)
+    this.ethereumPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 20000)
+    let promise = this.$interval(this.timerHandler.bind(this), 20000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      ethereumPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.ethereumPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
   }
 
@@ -135,13 +138,13 @@ class EthereumAccountComponent {
     this.refresh()
     if (this.pendingTransactions.length) {
       this.prevIndex += 1
-      if (this.prevIndex>=this.pendingTransactions.length) {
+      if (this.prevIndex >= this.pendingTransactions.length) {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.ethBlockExplorerService.getTxInfo(pendingTxn.txHash).then(
         data => {
-          if(data.confirmations && data.confirmations > 0) {
+          if (data.confirmations && data.confirmations > 0) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with hash ${pendingTxn.txHash} found`).hideDelay(2000));
             this.ethereumPendingTransactions.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
           }
@@ -168,7 +171,7 @@ class EthereumAccountComponent {
             address: addr
           })
         })
-        this.pendingTransactions.sort((a,b) => b.timestamp-a.timestamp)
+        this.pendingTransactions.sort((a, b) => b.timestamp - a.timestamp)
       }
     })
   }
@@ -176,13 +179,13 @@ class EthereumAccountComponent {
   refresh() {
     this.balanceUnconfirmed = "*";
     this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
-      this.$scope.$evalAsync(()=>{
+      this.$scope.$evalAsync(() => {
         this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
         if (info.tokens) {
           this.erc20Tokens = info.tokens.map(token => {
             let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
             return {
-              balance: utils.formatQNT(new Big(token.balance+"").toFixed(), tokenInfo?tokenInfo.decimals:18),
+              balance: utils.formatQNT(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18),
               symbol: token.tokenInfo.symbol,
               name: token.tokenInfo.name,
               id: ''

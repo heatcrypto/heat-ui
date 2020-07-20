@@ -97,13 +97,16 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
   personalize: boolean; // @input
 
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private heat: HeatService,
-    private explorerTradesProviderFactory: ExplorerTradesProviderFactory,
-    private settings: SettingsService,
-    private assetInfo: AssetInfoService) {
+              protected $q: angular.IQService,
+              private heat: HeatService,
+              private explorerTradesProviderFactory: ExplorerTradesProviderFactory,
+              private settings: SettingsService,
+              private assetInfo: AssetInfoService) {
     super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  }
+
+  $onInit() {
+    const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.explorerTradesProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -114,7 +117,7 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
         let asset = this.asset(trade.asset);
         let decimals = currecy.decimals;
         trade.market = `${currecy.symbol}/${asset.symbol}`;
-        trade.type = trade.buyer === this.account? 'Buy': 'Sell';
+        trade.type = trade.buyer === this.account ? 'Buy' : 'Sell';
         trade.price = (trade.price / (Math.pow(10, decimals))).toFixed(decimals);
         trade.amount = (trade.quantity / (Math.pow(10, decimals))).toFixed(decimals);
         trade.buyersellerName = trade.type === 'Buy' ? trade.sellerName : trade.buyerName;
@@ -123,8 +126,8 @@ class VirtualRepeatTradesComponent extends VirtualRepeatComponent {
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     if (angular.isUndefined(this.account)) {
-      heat.subscriber.blockPopped({}, refresh, $scope);
-      heat.subscriber.blockPushed({}, refresh, $scope);
+      this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, refresh, this.$scope);
     }
   }
 

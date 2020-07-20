@@ -91,13 +91,16 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
               private nxtBlockExplorerService: NxtBlockExplorerService) {
 
     super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  }
+
+  $onInit() {
+    const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     let secretPhrase = this.user.currency.secretPhrase;
     this.initializeVirtualRepeat(
       this.nxtTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any) => {
-        transaction.amount = transaction.amountNQT/100000000;
+        transaction.amount = transaction.amountNQT / 100000000;
         let date = utils.timestampToDate(transaction.timestamp);
         transaction.dateTime = dateFormat(date, format);
         transaction.from = transaction.senderRS;
@@ -105,9 +108,12 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
         transaction.txid = transaction.transaction;
         transaction.message = ''
         if (transaction.attachment.encryptedMessage) {
-          if(transaction.senderPublicKey !== this.user.publicKey)
-            transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.senderPublicKey, secretPhrase)
-          else {
+          if (transaction.senderPublicKey !== this.user.publicKey) {
+            transaction.message = heat.crypto.decryptMessage(
+              transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce,
+              transaction.senderPublicKey, secretPhrase
+            )
+          } else {
             try {
               let recipientPublicKey;
               this.nxtBlockExplorerService.getPublicKeyFromAddress(transaction.recipientRS).then(_publicKey => {
@@ -115,7 +121,7 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
                 transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, recipientPublicKey, secretPhrase)
                 transaction.json.message = transaction.message
               })
-            } catch(e) {
+            } catch (e) {
               transaction.message = ''
             }
           }
@@ -128,20 +134,20 @@ class VirtualRepeatNxtTransactionsComponent extends VirtualRepeatComponent {
           amount: transaction.amount,
           block: transaction.height,
           confirmations: transaction.confirmations,
-          fee: transaction.feeNQT/100000000
+          fee: transaction.feeNQT / 100000000
         }
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    const refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    nxtPendingTransactions.addListener(listener)
+    this.nxtPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      nxtPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.nxtPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

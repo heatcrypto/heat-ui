@@ -215,6 +215,9 @@ class DialogFieldAssetComponent {
   searchText: string;
 
   constructor() {
+  }
+
+  $onInit() {
     this.searchText = this.f.value;
     this.f.setValue = (value) => {
       this.f.value = value

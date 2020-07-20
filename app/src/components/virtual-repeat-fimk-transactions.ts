@@ -83,12 +83,15 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
   account: string; // @input
 
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private fimkTransactionsProviderFactory: FimkTransactionsProviderFactory,
-    private settings: SettingsService,
-    private fimkPendingTransactions: FimkPendingTransactionsService,
-    private user: UserService) {
+              protected $q: angular.IQService,
+              private fimkTransactionsProviderFactory: FimkTransactionsProviderFactory,
+              private settings: SettingsService,
+              private fimkPendingTransactions: FimkPendingTransactionsService,
+              private user: UserService) {
     super($scope, $q);
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     let secretPhrase = this.user.currency.secretPhrase;
     this.initializeVirtualRepeat(
@@ -103,12 +106,12 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
         transaction.txid = transaction.transaction;
         transaction.message = ''
         if (transaction.attachment.senderPublicKey) {
-          if(transaction.attachment.senderPublicKey !== this.user.publicKey)
+          if (transaction.attachment.senderPublicKey !== this.user.publicKey)
             transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.senderPublicKey, secretPhrase)
           else {
             try {
               transaction.message = heat.crypto.decryptMessage(transaction.attachment.encryptedMessage.data, transaction.attachment.encryptedMessage.nonce, transaction.attachment.recipientPublicKey, secretPhrase)
-            } catch(e) {
+            } catch (e) {
               transaction.message = ''
             }
           }
@@ -132,10 +135,10 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 15;
-    fimkPendingTransactions.addListener(listener)
+    this.fimkPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      fimkPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.fimkPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }
@@ -144,6 +147,6 @@ class VirtualRepeatFIMKTransactionsComponent extends VirtualRepeatComponent {
     dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
   }
 
-
-  onSelect(selectedTransaction) { }
+  onSelect(selectedTransaction) {
+  }
 }

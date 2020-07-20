@@ -60,25 +60,27 @@ class BitcoinCashAccountComponent {
   busy = true
 
   constructor(private $scope: angular.IScope,
-    private bchBlockExplorerService: BchBlockExplorerService,
-    private bchPendingTransactions: BchPendingTransactionsService,
-    private $interval: angular.IIntervalService,
-    private $mdToast: angular.material.IToastService,
-    private settings: SettingsService,
-    private user: UserService) {
+              private bchBlockExplorerService: BchBlockExplorerService,
+              private bchPendingTransactions: BchPendingTransactionsService,
+              private $interval: angular.IIntervalService,
+              private $mdToast: angular.material.IToastService,
+              private settings: SettingsService,
+              private user: UserService) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    bchPendingTransactions.addListener(listener)
+    this.bchPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 30000)
+    let promise = this.$interval(this.timerHandler.bind(this), 30000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      bchPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.bchPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
   }
 

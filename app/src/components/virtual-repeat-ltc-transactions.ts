@@ -63,21 +63,24 @@
 class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
+
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private ltcTransactionsProviderFactory: LtcTransactionsProviderFactory,
-    private settings: SettingsService,
-    private ltcPendingTransactions: LtcPendingTransactionsService,
-    private user: UserService) {
+              protected $q: angular.IQService,
+              private ltcTransactionsProviderFactory: LtcTransactionsProviderFactory,
+              private settings: SettingsService,
+              private ltcPendingTransactions: LtcPendingTransactionsService,
+              private user: UserService) {
 
     super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  }
 
+  $onInit() {
+    const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.ltcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any) => {
-        transaction.txid = transaction.txid;
+        //transaction.txid = transaction.txid;
         transaction.dateTime = dateFormat(new Date(transaction.blockTime * 1000), format);
         transaction.from = transaction.vin[0].addresses[0];
         transaction.amount = transaction.vout[0].value / 100000000;
@@ -140,15 +143,15 @@ class VirtualRepeatLtcTransactionsComponent extends VirtualRepeatComponent {
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    const refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    ltcPendingTransactions.addListener(listener)
+    this.ltcPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      ltcPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.ltcPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

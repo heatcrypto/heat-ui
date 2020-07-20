@@ -23,7 +23,7 @@
 
 @Component({
   selector: 'p2pMessagesViewer',
-  inputs: ['publickey','@containerId'],
+  inputs: ['publickey', '@containerId'],
   styles: [`
     .messages {
       overflow: auto;
@@ -100,8 +100,8 @@
 </div>
   `
 })
-@Inject('$scope','$q','$timeout','$document','heat','user','settings',
-        'render','controlCharRender','storage', 'P2PMessaging')
+@Inject('$scope', '$q', '$timeout', '$document', 'heat', 'user', 'settings',
+  'render', 'controlCharRender', 'storage', 'P2PMessaging')
 class P2PMessagesViewerComponent {
 
   private publickey: string; // @input
@@ -122,6 +122,10 @@ class P2PMessagesViewerComponent {
               private controlCharRender: ControlCharRenderService,
               private storage: StorageService,
               private p2pMessaging: P2PMessaging) {
+
+  }
+
+  $onInit() {
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
@@ -145,7 +149,7 @@ class P2PMessagesViewerComponent {
           }
         };
 
-        $scope.$on('$destroy', () => {
+        this.$scope.$on('$destroy', () => {
           this.p2pMessaging.updateSeenTime(room.name, Date.now());
           room.onNewMessageHistoryItem = null;
         });

@@ -77,15 +77,18 @@
 class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
-  constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private bchTransactionsProviderFactory: BchTransactionsProviderFactory,
-    private settings: SettingsService,
-    private bchPendingTransactions: BchPendingTransactionsService,
-    private user: UserService) {
-    super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
+  constructor(protected $scope: angular.IScope,
+              protected $q: angular.IQService,
+              private bchTransactionsProviderFactory: BchTransactionsProviderFactory,
+              private settings: SettingsService,
+              private bchPendingTransactions: BchPendingTransactionsService,
+              private user: UserService) {
+    super($scope, $q);
+  }
+
+  $onInit() {
+    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.bchTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -158,10 +161,10 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    bchPendingTransactions.addListener(listener)
+    this.bchPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      bchPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.bchPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }
@@ -170,6 +173,6 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
     dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
   }
 
-
   onSelect(selectedTransaction) { }
+
 }
