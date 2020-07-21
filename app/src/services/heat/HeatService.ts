@@ -82,8 +82,10 @@ class HeatService {
   }
 
   get(route: string, returns?: string): angular.IPromise<any> {
-    return this.getRaw(this.settings.get(SettingsService.HEAT_HOST),
-      this.settings.get(SettingsService.HEAT_PORT), route, returns);
+    return this.getRaw(
+      this.settings.get(SettingsService.HEAT_HOST),
+      this.settings.get(SettingsService.HEAT_PORT), route, returns
+    )
   }
 
   getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean): angular.IPromise<any> {
