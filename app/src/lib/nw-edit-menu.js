@@ -62,7 +62,7 @@ angular.element(document).ready(function() {
   }
 
   try {
-    if (isNodeJS) {
+    if (typeof isNodeJS !== 'undefined' && isNodeJS) {
       var menu = new Menu(/* pass cut, copy, paste labels if you need i18n*/);
       $(document).on("contextmenu", function(e) {
         if (!isDisabled(e.target)) {
