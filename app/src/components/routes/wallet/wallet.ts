@@ -672,25 +672,30 @@ class WalletComponent {
     dialogs.confirm(`Remove ${entry.symbol} Address`,
       `This will remove ${entry.symbol} ${entry.address} from your device.
       Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
-        let remainingCurrencyBalances = this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account)
-          .currencies.filter((currency) => currency instanceof CurrencyBalance && entry.address !== currency.address);
-        this.walletEntries.find((walletEntry) => walletEntry.account === entry.walletEntry.account).currencies = remainingCurrencyBalances;
-        let currency = entry.symbol;
-        let heatAddress = entry.walletEntry.account;
-        let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-        let encryptedWallet = store.get(`${currency}-${heatAddress}`)
-        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-        let walletType = JSON.parse(decryptedWallet)
-        if (['FIM', 'NXT', 'ARDR'].indexOf(entry.symbol) !== -1) {
-          walletType.addresses[0].isDeleted = true;
-        } else {
-          walletType.addresses = walletType.addresses.filter(address => address.address !== entry.address)
-        }
-        let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
-        store.put(`${currency}-${heatAddress}`, encrypted);
+      if (!entry.walletEntry) return
+      let remainingCurrencyBalances = this.walletEntries
+        .find((walletEntry) => entry.walletEntry.account === walletEntry.account)
+        .currencies
+        .filter((currency) => currency instanceof CurrencyBalance && entry.address !== currency.address);
+      this.walletEntries
+        .find((walletEntry) => walletEntry.account === entry.walletEntry.account)
+        .currencies = remainingCurrencyBalances;
+      let currency = entry.symbol;
+      let heatAddress = entry.walletEntry.account;
+      let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+      let encryptedWallet = store.get(`${currency}-${heatAddress}`)
+      let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
+      let walletType = JSON.parse(decryptedWallet)
+      if (['FIM', 'NXT', 'ARDR'].indexOf(entry.symbol) !== -1) {
+        walletType.addresses[0].isDeleted = true;
+      } else {
+        walletType.addresses = walletType.addresses.filter(address => address.address !== entry.address)
+      }
+      let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
+      store.put(`${currency}-${heatAddress}`, encrypted);
 
-        this.flatten()
-      });
+      this.flatten()
+    });
   }
 
   createAccount($event) {
@@ -1536,28 +1541,29 @@ class WalletComponent {
 
   promptSecretPlusPassword($event): angular.IPromise<{ password: string, secretPhrase: string }> {
     let self = this
+
     function DialogController($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function () {
+      this.okButtonClick = function () {
         $mdDialog.hide({
-          password: $scope['vm'].data.password1,
-          secretPhrase: $scope['vm'].data.secretPhrase,
+          password: this.data.password1,
+          secretPhrase: this.data.secretPhrase,
         })
-        importWallet($scope['vm'].data.secretPhrase, $scope['vm'].data.selectedImport)
+        importWallet(this.data.secretPhrase, this.data.selectedImport)
       }
-      $scope['vm'].secretChanged = function () {
-        $scope['vm'].data.bip44Compatible = self.lightwalletService.validSeed($scope['vm'].data.secretPhrase)
+      this.secretChanged = function () {
+        this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
       }
-      $scope['vm'].data = {
+      this.data = {
         password1: '',
         password2: '',
         secretPhrase: '',
         bip44Compatible: false,
         selectedImport: ''
       }
-      $scope['vm'].currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'Litecoin', symbol: 'LTC' }, { name: 'BitcoinCash', symbol: 'BCH' }];
+      this.currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'Litecoin', symbol: 'LTC' }, { name: 'BitcoinCash', symbol: 'BCH' }];
     }
 
     function importWallet(secret: string, selectedImport: string) {
@@ -1632,18 +1638,18 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         if (walletEntry) {
-          let walletEntry = $scope['vm'].data.selectedWalletEntry
+          let walletEntry = this.data.selectedWalletEntry
           let success = false
           if (walletEntry) {
             let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
@@ -1673,21 +1679,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
@@ -1785,16 +1791,16 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
@@ -1823,21 +1829,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
@@ -1935,13 +1941,13 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function () {
+      this.okButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].generateSeed = function () {
+      this.generateSeed = function () {
         var length = 81;
         var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ9";
         var randomValues = new Uint32Array(length);
@@ -1952,10 +1958,10 @@ class WalletComponent {
           cursor += randomValues[i];
           result[i] = chars[cursor % chars.length];
         }
-        $scope['vm'].iotaSeed = result.join('');
+        this.iotaSeed = result.join('');
       };
-      $scope['vm'].generateSeed();
-      $scope['vm'].copySeed = function () {
+      this.generateSeed();
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
     }
@@ -2013,16 +2019,16 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
@@ -2064,21 +2070,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
@@ -2176,16 +2182,16 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
@@ -2226,21 +2232,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
@@ -2338,16 +2344,16 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
@@ -2388,21 +2394,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
@@ -2500,16 +2506,16 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
@@ -2538,21 +2544,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
@@ -2646,12 +2652,12 @@ class WalletComponent {
   createHEATAccount($event) {
     let self = this;
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function () {
-        const mnemonic = $scope['vm'].heatSeed;
-        const pin = $scope['vm'].pin;
+      this.okButtonClick = function () {
+        const mnemonic = this.heatSeed;
+        const pin = this.pin;
 
         let account = heat.crypto.getAccountId(mnemonic)
         let publicKey = heat.crypto.secretPhraseToPublicKey(mnemonic)
@@ -2669,11 +2675,11 @@ class WalletComponent {
 
         $mdDialog.cancel()
       }
-      $scope['vm'].generateSeed = function () {
-        $scope['vm'].heatSeed = self.lightwalletService.generateRandomSeed()
+      this.generateSeed = function () {
+        this.heatSeed = self.lightwalletService.generateRandomSeed()
       };
-      $scope['vm'].generateSeed();
-      $scope['vm'].copySeed = function () {
+      this.generateSeed();
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
     }
@@ -2727,16 +2733,16 @@ class WalletComponent {
       return
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
+      this.copySeed = function () {
         self.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
       }
 
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
+      this.okButtonClick = function ($event) {
+        let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
           let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'BitcoinCash')
@@ -2765,21 +2771,21 @@ class WalletComponent {
         }
       }
 
-      $scope['vm'].data = {
+      this.data = {
         selectedWalletEntry: walletEntries[0],
         selected: walletEntries[0].account,
         walletEntries: walletEntries,
         password: ''
       }
 
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
       }
 
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
+      this.passwordChanged = function () {
+        let password = this.data.password
+        let account = this.data.selected
         let walletEntry = walletEntries.find(w => w.account == account)
         try {
           var key = self.localKeyStore.load(account, password);
