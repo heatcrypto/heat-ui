@@ -37,7 +37,10 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 800,
-    icon:`${APP_DIR}/electron/icon.png`
+    icon:`${APP_DIR}/electron/icon.png`,
+    webPreferences: {
+      nodeIntegration: true
+    }
   })
   mainWindow.loadURL(`file://${APP_DIR}/index.html`)
 

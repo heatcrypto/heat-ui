@@ -36,7 +36,7 @@ module dialogs {
 <!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
         <p>
 <!--            <a ng-href="{{vm.benchmarkUrl}}" target="_blank">BENCHMARK application</a><br/>-->
-            <a ng-if="vm.isEnvNodeJS" href="#" ng-click="vm.goTo('bench')">BENCHMARK application (in browser)</a>
+            <a href="#" ng-click="vm.goTo('bench')">BENCHMARK application</a>
         </p>
         <br>
         <p>Ethereum API <u>Powered by <a href="https://ethplorer.io">Ethplorer.io</a></u></p>
@@ -56,18 +56,33 @@ module dialogs {
         isTestnet: window.localStorage.getItem('testnet')=='true',
         benchmarkUrl: SettingsService.BENCHMARK_WEB_URL,
         isEnvNodeJS: env.type == EnvType.NODEJS,
-        goTo: (net) => {
+        goTo: (target) => {
           // defaults to main net
           window.localStorage.setItem('testnet','false');
           window.localStorage.setItem('betanet','false');
-          if (net == 'test') {
+          if (target == 'test') {
             window.localStorage.setItem('testnet','true');
-          } else if (net == 'beta') {
+          } else if (target == 'beta') {
             window.localStorage.setItem('betanet','true');
-          } else if (net == 'bench') {
+          } else if (target == 'bench') {
             if (env.type == EnvType.NODEJS) {
-              let shell = require('electron').shell
-              shell.openExternal(SettingsService.BENCHMARK_WEB_URL)
+              /*let shell = require('electron').shell
+              shell.openExternal(SettingsService.BENCHMARK_WEB_URL)*/
+              //open site in the electron window in browser mode
+              const { BrowserWindow } = require('electron').remote
+              let benchWindow = new BrowserWindow({
+                width: 1200,
+                height: 800,
+                webPreferences: {
+                  nodeIntegration: false
+                },
+                show: false,
+                backgroundColor: '#d22424'
+              })
+              benchWindow.once('ready-to-show', () => {
+                benchWindow.show()
+              })
+              benchWindow.loadURL(SettingsService.BENCHMARK_WEB_URL)
             } else {
               window.location.assign(SettingsService.BENCHMARK_WEB_URL)
             }

@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @RouteConfig('/server')
 @Component({
   selector: 'server',
@@ -51,14 +52,14 @@
           Client API connected to {{ vm.connectedToLocalhost ? 'localhost' : vm.remotehostDisplay }}
         </md-switch>
         <span flex></span>
-        <div layout="row" layout-align="center center" class="mining-stats" ng-show="vm.isMining">
-          <span>Remaining: </span>
-          <span class="mining-stats-val">{{vm.miningRemaining}}</span>
-          <span>Hittime: </span>
+        <div ng-show="vm.isMining" layout="row" layout-align="center center" class="mining-stats">
+          <span>Estimated hit time: </span>
           <span class="mining-stats-val">{{vm.miningHittime}}</span>
+          <span>({{vm.miningRemaining}} sec)</span>
         </div>
-        <md-button ng-show="vm.user.unlocked&&!vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
-        <md-button ng-show="vm.user.unlocked&&vm.isMining" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
+        <md-button ng-show="vm.user.unlocked && !vm.isMining && !vm.isUpdatingMiningInfo" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
+        <md-button ng-show="vm.user.unlocked && vm.isMining && !vm.isUpdatingMiningInfo" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
+        <span ng-if="vm.user.unlocked && vm.isUpdatingMiningInfo">Updating Mining Info...</span>
         <a ng-if="vm.isServerAvailable()" ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
       </div>
       <div layout="column" flex class="console" layout-fill>
@@ -85,6 +86,7 @@ class ServerComponent {
   private topIndex = 0;
   private consoleRowCount = 0;
   private isMining = false;
+  private isUpdatingMiningInfo = false;
   private miningRemaining: any = '*';
   private miningHittime: any = '*';
   private hostLocal: string;
@@ -110,8 +112,7 @@ class ServerComponent {
     if (user.unlocked) {
       heat.subscriber.blockPushed({generator:user.account}, ()=>{this.updateMiningInfo()});
       heat.subscriber.blockPopped({generator:user.account}, ()=>{this.updateMiningInfo()});
-    }
-    else {
+    } else {
       let listener = () => { this.updateMiningInfo() };
       user.on(UserService.EVENT_UNLOCKED, listener);
       $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
@@ -138,9 +139,6 @@ class ServerComponent {
       })
     };
     server.addListener('output',this.onOutput);
-    $scope.$on('$destroy',()=>{
-      server.removeListener('output',this.onOutput);
-    });
     this.updateMiningInfo();
     window.setTimeout(()=>{
       this.topIndex = this.determineTopIndex();
@@ -148,6 +146,21 @@ class ServerComponent {
     },3000);
 
     this.remotehostDisplay = this.hostRemote.replace('https://','');
+
+    let interval = setInterval(() => {
+      if (typeof this.miningRemaining === "number") {
+        if (this.miningRemaining > 0) {
+          this.miningRemaining--
+        } else {
+          if (Math.random() < 0.2) this.updateMiningInfo()
+        }
+      }
+    }, 1000)
+
+    $scope.$on('$destroy',()=>{
+      server.removeListener('output',this.onOutput)
+      clearInterval(interval)
+    })
   }
 
   isServerAvailable() {
@@ -177,12 +190,14 @@ class ServerComponent {
         console.log("Cannot load 'app-config.json': " + err);
         throw err;
       }
-      dialogs.textEditor("Application Config", data, (editedData) => {
-        fs.writeFile(filePath, editedData, (err) => {
-          if (err) throw err;
-          this.settings.applyFailoverConfig();
+      this.$scope.$evalAsync(() => {
+        dialogs.textEditor("Application Config", data, (editedData) => {
+          fs.writeFile(filePath, editedData, (err) => {
+            if (err) throw err;
+            this.settings.applyFailoverConfig();
+          });
         });
-      });
+      })
     });
   }
 
@@ -224,8 +239,8 @@ class ServerComponent {
   }
 
   determineRowCount() {
-    var el = document.getElementById('server-console-container');
-    return Math.round(el.clientHeight / this.ROW_HEIGHT);
+    let el = document.getElementById('server-console-container');
+    return el ? Math.round(el.clientHeight / this.ROW_HEIGHT) : 5;
   }
 
   determineTopIndex() {
@@ -245,20 +260,27 @@ class ServerComponent {
   }
 
   startMining() {
+    this.isUpdatingMiningInfo = true;
     this.heat.api.startMining(this.user.secretPhrase).then((info) => {
       this.updateMiningInfo();
-    });
+    }).catch(reason => {
+      this.isUpdatingMiningInfo = false;
+    })
   }
 
   stopMining() {
+    this.isUpdatingMiningInfo = true;
     this.heat.api.stopMining(this.user.secretPhrase).then((info) => {
       this.updateMiningInfo();
-    });
+    }).catch(reason => {
+      this.isUpdatingMiningInfo = false;
+    })
   }
 
   updateMiningInfo() {
     if (this.user.unlocked) {
       this.heat.api.getMiningInfo(this.user.secretPhrase).then((info)=> {
+        this.isUpdatingMiningInfo = false;
         this.$scope.$evalAsync(() => {
           if (info[0]) {
             this.isMining = true;
@@ -275,6 +297,7 @@ class ServerComponent {
       }, () => {
         this.$scope.$evalAsync(() => {
           this.isMining = false;
+          this.isUpdatingMiningInfo = false;
         });
       });
     }
