@@ -30,7 +30,7 @@
     </div>
   `
 })
-@Inject('$rootScope', '$scope','heat','$interval','settings', '$router')
+@Inject('$rootScope', '$scope','heat','$interval','settings', '$router', '$mdToast')
 class DownloadingBlockchainComponent {
   showComponent = false;
   lastBlockHeight = 0;
@@ -41,7 +41,8 @@ class DownloadingBlockchainComponent {
               private heat: HeatService,
               private $interval: angular.IIntervalService,
               private settings: SettingsService,
-              private router) {
+              private router,
+              private $mdToast: angular.material.IToastService) {
     this.refresh();
 
     let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
@@ -163,7 +164,7 @@ class DownloadingBlockchainComponent {
         if (best == currentServer && !currentServerIsAlive) {
           best = server; //if current server is not alive switch to other server in any case
           let se = currentServer.statusError;
-          causeToSelectBest = "Сurrent server is not alive"
+          causeToSelectBest = "Current host is unavailable"
             + (se.code ? ". Code: " + se.code : "") + (se.description ? ". Description: " + se.description : "");
         }
         if (server.statusScore >= 0 || !currentServerIsAlive) {
@@ -193,7 +194,14 @@ class DownloadingBlockchainComponent {
               : "Client API address switched to\n" + best.host + ":" + best.port;
             if (causeToSelectBest)
               message = message + " \n\n" + "Reason: " + causeToSelectBest;
-            alert(message);
+            this.$mdToast.show(
+                this.$mdToast.simple()
+                  .textContent(message)
+                  .highlightAction(true)
+                  .action('close')
+                  .highlightClass('md-warn')
+                  .hideDelay(0)
+            )
           }
         }
       }
