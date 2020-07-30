@@ -81,7 +81,7 @@ module p2p {
     private decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string;
     private signalingError: (reason: string) => void;
 
-    private pendingIdentity: string;
+    private accountPublicKey: string;
     private identity: string;
     private pendingRooms: Function[] = [];
     private pendingOnlineStatus: Function;
@@ -123,7 +123,7 @@ module p2p {
           sign: (dataHex: string) => ProvingData,
           encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
           decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string) {
-      this.pendingIdentity = identity;
+      this.accountPublicKey = identity;
       this.createRoom = createRoom;
       this.confirmIncomingCall = confirmIncomingCall;
       this.sign = sign;
@@ -153,11 +153,11 @@ module p2p {
         this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
         this.pendingOnlineStatus = sendOnlineStatus;
       }
-      this._onlineStatus = status;
       if (status == "offline") {
         this.identity = null;
-        //todo clear rooms?
+        this.close();
       }
+      this._onlineStatus = status;
     }
 
     get onlineStatus(): OnlineStatus {
@@ -300,7 +300,7 @@ module p2p {
         signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
         this.sendSignalingMessage([signedData]);
       } else if (msg.type === 'APPROVED_IDENTITY') {
-        this.identity = this.pendingIdentity;
+        this.identity = this.accountPublicKey;
         this.pendingRooms.forEach(f => f());
         this.pendingRooms = [];
         if (this.pendingOnlineStatus)
@@ -709,7 +709,6 @@ module p2p {
      */
     close(closeWebsocket?: boolean) {
       this.identity = null;
-      this.pendingIdentity = null;
       this.pendingRooms = [];
       this.pendingOnlineStatus = null;
       this.rooms.forEach(room => this.closeRoom(room));
