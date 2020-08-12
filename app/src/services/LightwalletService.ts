@@ -112,7 +112,7 @@ class LightwalletService {
           promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
         }
         else {
-          reject()
+          reject("Invalid seed or private key")
         }
         promise.then(wallet => {
           let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(wallet), heatAddress, seedOrPrivateKey)

@@ -1017,7 +1017,7 @@ class WalletComponent {
         if (walletEntry.expanded) {
           this.loadEthereumAddresses(walletEntry)
         }
-      })
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
       this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
@@ -1553,9 +1553,6 @@ class WalletComponent {
         })
         importWallet(this.data.secretPhrase, this.data.selectedImport)
       }
-      this.secretChanged = function () {
-        this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
-      }
       this.data = {
         password1: '',
         password2: '',
@@ -1563,13 +1560,33 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
-      this.currencyList = [{ name: 'HEAT', symbol: 'HEAT' }, { name: 'Ethereum', symbol: 'ETH' }, { name: 'Bitcoin', symbol: 'BTC' }, { name: 'FIMK', symbol: 'FIM' }, { name: 'NXT', symbol: 'NXT' }, { name: 'ARDOR', symbol: 'ARDR' }, { name: 'IOTA', symbol: 'IOTA' }, { name: 'Litecoin', symbol: 'LTC' }, { name: 'BitcoinCash', symbol: 'BCH' }];
+      this.currencyList = [
+        {name: 'HEAT', symbol: 'HEAT'},
+        {name: 'Ethereum', symbol: 'ETH', onlyBip44: true},
+        {name: 'Bitcoin', symbol: 'BTC'},
+        {name: 'FIMK', symbol: 'FIM'},
+        {name: 'NXT', symbol: 'NXT'},
+        {name: 'ARDOR', symbol: 'ARDR'},
+        {name: 'IOTA', symbol: 'IOTA'},
+        {name: 'Litecoin', symbol: 'LTC'},
+        {name: 'BitcoinCash', symbol: 'BCH'}
+      ]
+      this.secretChanged = function () {
+        this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
+      }
+      this.invalidParameters = function () {
+        let selectedCurrency = this.currencyList.find(item => item.symbol == this.data.selectedImport)
+        if (selectedCurrency) {
+          this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
+          if (this.data.password1 != this.data.password2) return "PINs are not equal"
+          if (!this.data.bip44Compatible && selectedCurrency.onlyBip44) return "Seed of the chosen currency must be compatible with BIP44"
+          return null //parameters are ok
+        }
+        return "  " // parameters are not completed, so no error but invalid
+      }
     }
 
     function importWallet(secret: string, selectedImport: string) {
-      let distinctValues = (value, index, self) => {
-        return self.indexOf(value) === index;
-      }
       let storage = <StorageService>heat.$inject.get('storage');
       let $rootScope = heat.$inject.get('$rootScope');
       let store = storage.namespace('wallet', $rootScope, true);
@@ -1578,6 +1595,9 @@ class WalletComponent {
       if (!currencies)
         currencies = []
       currencies.push(selectedImport)
+      let distinctValues = (value, index, self) => {
+        return self.indexOf(value) === index;
+      }
       store.put(accountId, currencies.filter(distinctValues));
     }
 
@@ -1616,12 +1636,13 @@ class WalletComponent {
                   <input type="password" ng-model="vm.data.password2" required name="password2">
                 </md-input-container>
                 <span>BIP44 compatible = <b>{{vm.data.bip44Compatible?'TRUE':'FALSE'}}</b></span>
+                <p>{{vm.invalidParameters()}}</p>
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button type="submit" ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2 || vm.data.selectedImport === ''" class="md-primary"
+              <md-button type="submit" ng-disabled="dialogForm.$invalid || vm.invalidParameters() != null" class="md-primary"
                   ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
           </form>
