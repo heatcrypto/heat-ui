@@ -308,7 +308,13 @@ class ExploreAccountComponent {
       this.$scope.$evalAsync(()=>{
         this.totalRewards = utils.commaFormat(utils.formatQNT(info.totalRewards, 8))
       })
-    }).catch(reason => console.error(reason))
+    }).catch(reason => {
+      if (reason.code == 3) {
+        //unknown miner is ok
+      } else {
+        console.error(reason)
+      }
+    })
   }
 
   showDescription($event, info: AssetInfo) {
