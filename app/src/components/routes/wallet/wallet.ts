@@ -1563,13 +1563,13 @@ class WalletComponent {
       this.currencyList = [
         {name: 'HEAT', symbol: 'HEAT'},
         {name: 'Ethereum', symbol: 'ETH', onlyBip44: true},
-        {name: 'Bitcoin', symbol: 'BTC'},
+        {name: 'Bitcoin', symbol: 'BTC', onlyBip44: true},
         {name: 'FIMK', symbol: 'FIM'},
         {name: 'NXT', symbol: 'NXT'},
         {name: 'ARDOR', symbol: 'ARDR'},
         {name: 'IOTA', symbol: 'IOTA'},
-        {name: 'Litecoin', symbol: 'LTC'},
-        {name: 'BitcoinCash', symbol: 'BCH'}
+        {name: 'Litecoin', symbol: 'LTC', onlyBip44: true},
+        {name: 'BitcoinCash', symbol: 'BCH', onlyBip44: true}
       ]
       this.secretChanged = function () {
         this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
