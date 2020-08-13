@@ -101,8 +101,9 @@ declare var saveAs: any;
             </div>
             <div layout="column" flex>
               <md-input-container flex>
-                <label>Password (or Pin Code) (required)</label>
-                <input type="password" ng-model="vm.pageCreatePincode" required name="pincode" maxlength="64">
+                <label>Password (or Pin Code) (required min length 4)</label>
+                <input type="password" ng-model="vm.pageCreatePincode" required name="pincode" maxlength="64"
+                    ng-pattern="/^[a-zA-Z0-9_.-]{4,15}$/">
               </md-input-container>
             </div>
             <div layout="column" flex>
@@ -121,7 +122,7 @@ declare var saveAs: any;
                 Renew pass
               </md-button>
               <md-button class="md-primary md-raised" ng-click="vm.page='create1'"
-                ng-disabled="!vm.pageCreateUserName||!vm.pageCreateSecretPhrase||!vm.isValidPincode(vm.pageCreatePincode)"
+                ng-disabled="!vm.pageCreateUserName || !vm.pageCreateSecretPhrase || !vm.isValidPincode(vm.pageCreatePincode)"
                 aria-label="Continue">Continue</md-button>
             </div>
             <div layout="column" layout-align="center center">
