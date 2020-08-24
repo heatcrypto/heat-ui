@@ -98,35 +98,40 @@ class EditMessageComponent {
       if (this.p2pMessaging.onlineStatus == "online") {
         this.sendP2PMessage($event);
       } else {
-        this.sendMessage($event);
+        this.sendHeatMessage($event);
       }
     }
   }
 
   sendP2PMessage($event) {
     let notSentReason: string;
-    let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
+    let room = this.p2pMessaging.getOneToOneRoom(this.publickey)
     if (room) {
-      let peer = room.getPeer(this.publickey);
-      if (peer && peer.isConnected()) {
-        let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
-        this.$scope.$evalAsync(() => {
-          this.messageText = '';
-        });
+      let peer = room.getPeer(this.publickey) || room.createPeer(this.publickey, this.publickey);
+      if (peer) {
+        try {
+          let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText})
+        } catch (e) {
+          notSentReason = e;
+        }
+        this.$scope.$evalAsync(() => this.messageText = '')
       } else {
-        notSentReason = "Peer is not connected";
+        notSentReason = "Peer not found"
       }
     } else {
-      notSentReason = "Chat 'room' for contact is not created";
+      notSentReason = "Chat 'room' for contact is not created"
     }
     if (notSentReason) {
       this.$mdToast.show(
         this.$mdToast.simple().textContent(`Not sent. ${notSentReason}`).hideDelay(3000)
-      );
+      )
     }
   }
 
-  sendMessage($event) {
+  /**
+   * Send Heat message transaction.
+   */
+  sendHeatMessage($event) {
     var account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
     this.sendmessage.
          dialog($event, account, this.publickey, this.messageText).

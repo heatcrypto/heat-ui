@@ -263,10 +263,10 @@ module p2p {
       }
     }
 
-    sendSignalingMessage(data: any[]): Promise<any> {
+    sendSignalingMessage(data: any[], protocol: string = "webrtc"): Promise<any> {
       return this.getWebSocket()
         .then(websocket => {
-          data.splice(0, 0, "webrtc");
+          data.splice(0, 0, protocol); // data format: [protocolName, message1, message2, ...]
           websocket.send(JSON.stringify(data));
           //console.log(">> \n" + JSON.stringify(data));
         }, reason => console.log(reason))
@@ -427,7 +427,7 @@ module p2p {
             this.sendSignalingMessage([
               {room: roomName, toPeerId: peerId},
               {room: roomName, fromPeer: this.identity, encrypted: encrypted}
-              ]);
+            ]);
           }
         };
         pc.ondatachannel = (event) => {
@@ -594,18 +594,27 @@ module p2p {
     }
 
     private send(roomName: string, data: string, channel?: RTCDataChannel) {
-      let room = this.rooms.get(roomName);
-      let peers = Array.from(room.getAllPeers().values());
-      let count = 0;
+      let room = this.rooms.get(roomName)
+      let peers = Array.from(room.getAllPeers().values())
+      let count = 0
       for (let peer of peers) {
         if (channel) {
           if (peer.dataChannel == channel) {
-            let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey);
-            return this.sendInternal(channel, JSON.stringify(encrypted));
+            let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey)
+            return this.sendInternal(channel, JSON.stringify(encrypted))
           }
         } else {
-          let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey);
-          count = count + this.sendInternal(peer.dataChannel, JSON.stringify(encrypted));
+          let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey)
+          if (peer.dataChannel) {
+            count = count + this.sendInternal(peer.dataChannel, JSON.stringify(encrypted))
+          } else {
+            if (/* todo this.isServerMessaging*/ true) {
+              this.sendSignalingMessage([{type: "MESSAGE", room: room.name, recipientPK: peer.publicKey, message: encrypted}], "U2U")
+            } else {
+              throw new Error('Direct channel is not provided and server messaging is not provided')
+            }
+
+          }
         }
       }
       return count;

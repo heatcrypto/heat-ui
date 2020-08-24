@@ -11,7 +11,7 @@
           <md-button ng-click="vm.scrollUp()" aria-label="Go up">Go up</md-button>
         </div>
         <div layout="column">
-          <div layout="row" flex layout-fill ng-repeat="message in vm.displayMessages.messages | orderBy:'date'">
+          <div layout="row" flex layout-fill ng-repeat="message in vm.displayMessages.messages | orderBy:'date' track by $index">
             <div layout="column" flex>
               <message-batch-entry id="{{::message.__id}}" message="message" flex="none" class="message-item"></message-batch-entry>
             </div>
