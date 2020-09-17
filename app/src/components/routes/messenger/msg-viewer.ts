@@ -17,7 +17,7 @@
             </div>
             <div layout="column">
               <md-menu>
-                <md-button ng-disabled="message.onchain" aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
+                <md-button ng-disabled="message.onchain || message.transport == 'chain'" aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
                   <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
                   ...
                 </md-button>
@@ -121,9 +121,11 @@ class MsgViewerComponent {
         this.$timeout(0).then(() => { // resolve promise in next event loop
           let m = this.displayMessages.messages[this.displayMessages.index];
           if (m) {
-            this.scrollElement = document.getElementById(m.__id);
             this.displayMessages.index = this.displayMessages.index + 10 <= this.messagesCount ? this.displayMessages.index + 10 : this.messagesCount;
-            this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+            this.scrollElement = document.getElementById(m.__id);
+            if (this.scrollElement) {
+              this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+            }
           }
         });
       })
@@ -166,7 +168,7 @@ class MsgViewerComponent {
       'contents': this.heat.getHeatMessageContents(message),
       'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
       'outgoing': this.user.account === message.sender,
-      'onchain': true,
+      'transport': 'chain',
       'timestamp': message.timestamp,
       '__id': ++MsgViewerComponent.count
     }
@@ -177,7 +179,7 @@ class MsgViewerComponent {
     item['timestamp'] = item.timestamp;
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['date'] = dateFormat(item.timestamp, this.dateFormat);
-    item['onchain'] = false;
+    item.transport = item.transport || (item['onchain'] ? 'chain' : 'p2p');
     item['contents'] = item['content'] || item['message'];
     item['__id'] = ++MsgViewerComponent.count;
     return item;
@@ -201,7 +203,9 @@ class MsgViewerComponent {
     this.$scope.$evalAsync(() => { // ensure contents are rendered
       this.$timeout(0).then(() => {
         this.scrollElement = document.getElementById(newMessage.__id);
-        this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+        if (this.scrollElement) {
+          this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+        }
       })
     })
   }

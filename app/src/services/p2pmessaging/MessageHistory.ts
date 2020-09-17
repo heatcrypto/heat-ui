@@ -24,9 +24,10 @@
 module p2p {
 
   export interface MessageHistoryItem {
-    timestamp: number,
-    fromPeer: string,
+    timestamp: number
+    fromPeer: string
     content: string
+    transport?: "chain" | "p2p" | "server"
   }
 
   /*

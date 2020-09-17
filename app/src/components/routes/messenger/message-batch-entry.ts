@@ -27,12 +27,6 @@
     message-batch-entry .header {
       font-size: 12px;
     }
-    message-batch-entry .outgoing {
-      text-align: right;
-    }
-    message-batch-entry .incoming {
-      text-align: left;
-    }
     message-batch-entry .batch-entry {
       padding-left: 0px;
     }
@@ -85,9 +79,18 @@
     message-batch-entry .offchain {
       border-left: solid 7px green;
     }
+    message-batch-entry .transport-chain {
+      border-left: solid 7px #ff3301;
+    }
+    message-batch-entry .transport-p2p {
+      border-left: solid 7px green;
+    }
+    message-batch-entry .transport-server {
+      border-left: solid 7px skyblue;
+    }
   `],
   template: `
-    <div class="{{vm.io}}" ng-class="{'offchain': !vm.message.onchain}">
+    <div class="{{vm.transport}}" ng-class="{'outgoing': vm.message.outgoing, 'incoming': !vm.message.outgoing}">
       <div class="header">
         {{::vm.message.date}}
       </div>
@@ -98,11 +101,23 @@
 class MessageBatchEntryComponent {
   message: IHeatMessage; // @input
   io: string;
+  transport: string;
 
   constructor() {
   }
 
   $onInit() {
-    this.io = this.message['outgoing'] ? 'outgoing' : 'incoming';
+    this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
+
+    // just enough:
+    // this.transport = "transport-" + this.message['transport']
+    // but we need to be compatible with old messages in the storage
+    let v = this.message['transport']
+    this.transport = "transport-"
+    if (v) {
+      this.transport += v
+    } else {
+      this.transport += this.message['onchain'] ? "chain" : "p2p"
+    }
   }
 }

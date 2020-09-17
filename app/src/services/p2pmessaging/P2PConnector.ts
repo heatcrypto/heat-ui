@@ -312,6 +312,13 @@ module p2p {
           let room = this.createRoom(roomName, caller);
           this.enter(room, true);
         });
+      } else if (msg.type === 'MESSAGE') {
+        let room: Room = this.rooms.get(roomName);
+        if (room) {
+          let chatMessage: U2UMessage = JSON.parse(this.decrypt(msg.message, msg.sender));
+          chatMessage.transport = "server";
+          this.processRoomMessage(chatMessage, room, msg.sender);
+        }
       } else if (msg.type === 'ERROR') {
         this.signalingError(msg.reason);
       } else if (msg.type === 'WELCOME') {  //welcome to existing room
@@ -589,35 +596,41 @@ module p2p {
     /**
      * Sends message to all online members of room.
      */
-    sendMessage(roomName: string, message: P2PMessage) {
-      return this.send(roomName, JSON.stringify(message));
+    sendMessage(roomName: string, message: U2UMessage) {
+      let result = this.send(roomName, JSON.stringify(message))
+      // @ts-ignore
+      message.transport = result.transport
+      return result
     }
 
     private send(roomName: string, data: string, channel?: RTCDataChannel) {
       let room = this.rooms.get(roomName)
       let peers = Array.from(room.getAllPeers().values())
-      let count = 0
+      let result = {count: 0, transport: null}
       for (let peer of peers) {
         if (channel) {
           if (peer.dataChannel == channel) {
             let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey)
-            return this.sendInternal(channel, JSON.stringify(encrypted))
+            result.transport = 'p2p'
+            result.count = this.sendInternal(channel, JSON.stringify(encrypted))
           }
         } else {
           let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey)
-          if (peer.dataChannel) {
-            count = count + this.sendInternal(peer.dataChannel, JSON.stringify(encrypted))
+          if (peer.dataChannel && peer.dataChannel.readyState == "open") {
+            result.count = this.sendInternal(peer.dataChannel, JSON.stringify(encrypted))
           } else {
-            if (/* todo this.isServerMessaging*/ true) {
-              this.sendSignalingMessage([{type: "MESSAGE", room: room.name, recipientPK: peer.publicKey, message: encrypted}], "U2U")
+            if (true /* todo this.isServerMessaging*/) {
+              result.transport = 'server'
+              this.sendSignalingMessage(
+                [{type: "MESSAGE", room: room.name, sender: this.identity, recipient: peer.publicKey, message: encrypted}],
+                "U2U")
             } else {
               throw new Error('Direct channel is not provided and server messaging is not provided')
             }
-
           }
         }
       }
-      return count;
+      return result
     }
 
     private sendInternal(channel: RTCDataChannel, data: string): number {
@@ -643,16 +656,14 @@ module p2p {
       try {
         let encrypted: heat.crypto.IEncryptedMessage = JSON.parse(event.data);
         let msg = JSON.parse(this.decrypt(encrypted, peerId));
+        msg.transport = "p2p";
         //todo consider if needing to remove all special symbols from msg.text
 
         // console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
 
         let room: Room = this.rooms.get(roomName);
         if (room) {
-          msg.fromPeerId = peerId;
-          msg.roomName = roomName;
-          room.onMessageInternal(msg);
-          this.messenger.onMessage(msg, room);
+          this.processRoomMessage(msg, room, peerId);
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendSignalingMessage([{room: roomName}, msg]);
@@ -701,6 +712,13 @@ module p2p {
       } catch (e) {
         console.log(e);
       }
+    }
+
+    processRoomMessage(msg: U2UMessage, room: Room, sender: string) {
+      msg.fromPeerId = sender;
+      msg.roomName = room.name;
+      room.onMessageInternal(msg);
+      this.messenger.onMessage(msg, room);
     }
 
     /**

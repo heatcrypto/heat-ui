@@ -23,6 +23,22 @@
 
 module p2p {
 
+  export interface U2UMessage {
+    type: "chat" | "contactUpdate" | ""
+    timestamp: number
+    text: string
+    fromPeerId?: string
+    roomName?: string
+    //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
+    transport?: "chain" | "p2p" | "server"
+  }
+
+  export interface ProvingData {
+    signatureHex: string,
+    dataHex: string,
+    publicKeyHex: string
+  }
+
   /**
    * Room it is the way to connect peers. When two peers (client apps) will create the room object with the same name
    * they will get the WebRTC channel between each other (if signaling happened succesfully).
@@ -60,21 +76,23 @@ module p2p {
      * Sends message to all members of room (all peers in the room).
      * Returns count of peers to which message sent.
      */
-    sendMessage(message: P2PMessage): number {
-      let count = this.connector.sendMessage(this.name, message);
+    sendMessage(message: U2UMessage): number {
+      let result = this.connector.sendMessage(this.name, message);
       if (message.type == "chat") {
-        let item = {timestamp: message.timestamp, fromPeer: this.user.publicKey, content: message.text};
+        let item = {transport: result.transport, timestamp: message.timestamp, fromPeer: this.user.publicKey, content: message.text};
+        // @ts-ignore
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
+          // @ts-ignore
           this.onNewMessageHistoryItem(item);
         }
       }
-      return count;
+      return result.count;
     }
 
-    onMessageInternal(msg: any) {
+    onMessageInternal(msg: U2UMessage) {
       if (msg.type == "chat") {
-        let item: MessageHistoryItem = {timestamp: msg.timestamp, fromPeer: msg.fromPeerId, content: msg.text};
+        let item: MessageHistoryItem = {timestamp: msg.timestamp, fromPeer: msg.fromPeerId, content: msg.text, transport: msg.transport};
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
           this.onNewMessageHistoryItem(item);
@@ -173,12 +191,6 @@ module p2p {
 
   }
 
-  export interface P2PMessage {
-    timestamp: number,
-    type: "chat" | "contactUpdate" | "",
-    text: string
-  }
-
   export class RTCPeer {
     constructor(publicKey: string) {
       this.publicKey = publicKey;
@@ -191,12 +203,6 @@ module p2p {
     isConnected() {
       return this.dataChannel && this.dataChannel.readyState == "open"
     }
-  }
-
-  export interface ProvingData {
-    signatureHex: string,
-    dataHex: string,
-    publicKeyHex: string
   }
 
 }
