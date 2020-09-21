@@ -74,14 +74,6 @@ module p2p {
     private signalingMessageAwaitings: Function[] = [];
     private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
-    private createRoom: (name: string, peerId) => Room;
-    private confirmIncomingCall: (caller: string) => Promise<void>;
-    private sign: (dataHex: string) => ProvingData;
-    private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage;
-    private decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string;
-    private signalingError: (reason: string) => void;
-
-    private accountPublicKey: string;
     private identity: string;
     private pendingRooms: Function[] = [];
     private pendingOnlineStatus: Function;
@@ -104,11 +96,11 @@ module p2p {
 
     private pingSignalingInterval;
 
-    constructor(private messenger: p2p.P2PMessenger, private settings: SettingsService, private $interval: angular.IIntervalService) {
-    }
-
     /**
-     * @param identity
+     * @param $interval
+     * @param messenger
+     * @param settings
+     * @param accountPublicKey
      * @param createRoom function to create the room on incoming call
      * @param confirmIncomingCall function to accept the caller
      * @param signalingError
@@ -116,20 +108,18 @@ module p2p {
      * @param encrypt Encrypt p2p messages
      * @param decrypt Decrypt p2p messages
      */
-    setup(identity: string,
-          createRoom: (name: string, peerId) => Room,
-          confirmIncomingCall: (caller: string) => Promise<void>,
-          signalingError: (reason: string) => void,
-          sign: (dataHex: string) => ProvingData,
-          encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
-          decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string) {
-      this.accountPublicKey = identity;
-      this.createRoom = createRoom;
-      this.confirmIncomingCall = confirmIncomingCall;
-      this.sign = sign;
-      this.signalingError = signalingError;
-      this.encrypt = encrypt;
-      this.decrypt = decrypt;
+    constructor(
+      private $interval: angular.IIntervalService,
+      private messenger: p2p.P2PMessenger,
+      private settings: SettingsService,
+      private accountPublicKey: string,
+      private createRoom: (name: string, peerId) => p2p.Room,
+      private confirmIncomingCall: (caller: string) => Promise<void>,
+      private signalingError: (reason: string) => void,
+      private sign: (dataHex: string) => p2p.ProvingData,
+      private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
+      private decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string
+    ) {
     }
 
     /**

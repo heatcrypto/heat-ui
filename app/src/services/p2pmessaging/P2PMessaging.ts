@@ -58,12 +58,14 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       }
     };
 
+    this.p2pContactStore = storage.namespace('p2pContacts');
+    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
+
     user.on(UserService.EVENT_UNLOCKED, () => {
       closeConnector();
 
-      this.connector = new p2p.P2PConnector(this, settings, $interval);
-      this.connector.setup(
-        this.user.publicKey,
+      this.connector = new p2p.P2PConnector(
+        $interval, this, settings, this.user.publicKey,
         (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
         peerId => this.confirmIncomingCall(peerId),
         reason => this.onSignalingError(reason),
@@ -71,12 +73,12 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
         (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
       );
+
+      this.connector.setOnlineStatus("online");
+      this.enterRoom(this.user.publicKey);
     });
 
     user.on(UserService.EVENT_LOCKED, closeConnector);
-
-    this.p2pContactStore = storage.namespace('p2pContacts');
-    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
   }
 
   private encrypt(message: string, peerPublicKey: string) {
