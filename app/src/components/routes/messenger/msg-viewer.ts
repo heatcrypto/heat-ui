@@ -164,10 +164,11 @@ class MsgViewerComponent {
   private processOnchainItem(message) {
     this.updateLatestMessageReadTimestamp(message);
     return {
+      'senderPublicKey': message.senderPublicKey,
       'senderAccount': heat.crypto.getAccountIdFromPublicKey(message.senderPublicKey),
       'contents': this.heat.getHeatMessageContents(message),
       'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
-      'outgoing': this.user.account === message.sender,
+      'outgoing': this.user.account == message.sender,
       'transport': 'chain',
       'timestamp': message.timestamp,
       '__id': ++MsgViewerComponent.count
@@ -175,6 +176,7 @@ class MsgViewerComponent {
   }
 
   private processOffchainItem(item: p2p.MessageHistoryItem) {
+    item['senderPublicKey'] = item.fromPeer;
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['timestamp'] = item.timestamp;
     item['outgoing'] = this.user.account == item['senderAccount'];
@@ -197,17 +199,20 @@ class MsgViewerComponent {
         );
       }
     }
-    this.displayMessages.messages.splice(0, 0, newMessage);
-    this.displayMessages.index++;
-    this.messagesCount++;
-    this.$scope.$evalAsync(() => { // ensure contents are rendered
-      this.$timeout(0).then(() => {
-        this.scrollElement = document.getElementById(newMessage.__id);
-        if (this.scrollElement) {
-          this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
-        }
+    //display new message if it is incoming or selected contact is the sender
+    if (newMessage['outgoing'] || this.publickey == newMessage.senderPublicKey) {
+      this.displayMessages.messages.splice(0, 0, newMessage);
+      this.displayMessages.index++;
+      this.messagesCount++;
+      this.$scope.$evalAsync(() => { // ensure contents are rendered
+        this.$timeout(0).then(() => {
+          this.scrollElement = document.getElementById(newMessage.__id);
+          if (this.scrollElement) {
+            this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+          }
+        })
       })
-    })
+    }
   }
 
   private scrollUp() {
