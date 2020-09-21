@@ -187,9 +187,9 @@ class MsgViewerComponent {
     return item;
   }
 
-  private onMessageAdded(data, isoffchain = false) {
+  private onMessageAdded(data, offchain = false) {
     let newMessage;
-    if (isoffchain) {
+    if (offchain) {
       newMessage = this.processOffchainItem(data);
     } else {
       newMessage = this.processOnchainItem(data);

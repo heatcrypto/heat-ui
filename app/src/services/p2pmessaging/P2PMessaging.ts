@@ -130,9 +130,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return this.connector.onlineStatus;
   }
 
-  /**
-   * Returns room with single peer.
-   */
   getOneToOneRoom(peerId: string, required?: boolean): p2p.Room {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
@@ -151,7 +148,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   /**
-   * Creates new room and registers it on the signaling server.
+   * Create new room and register it on the signaling server.
    */
   enterRoom(peerId: string): p2p.Room {
     if (this.onlineStatus == "offline") {

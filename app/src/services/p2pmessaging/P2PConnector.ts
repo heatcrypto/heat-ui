@@ -55,7 +55,12 @@ module p2p {
     /**
      * Invoked on incoming message.
      */
-    onMessage: (msg: {}, room: Room) => any;
+    onMessage: (msg: {}, room: Room) => any
+
+    /**
+     * Returns room with single peer.
+     */
+    getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
   }
 
   /**
@@ -303,11 +308,13 @@ module p2p {
           this.enter(room, true);
         });
       } else if (msg.type === 'MESSAGE') {
-        let room: Room = this.rooms.get(roomName);
+        let room: Room = this.rooms.get(roomName) || this.messenger.getOneToOneRoom(msg.fromPeer || msg.sender, true)
         if (room) {
           let chatMessage: U2UMessage = JSON.parse(this.decrypt(msg.message, msg.sender));
           chatMessage.transport = "server";
           this.processRoomMessage(chatMessage, room, msg.sender);
+        } else {
+          throw new Error(`Cannot get 'chat room' for message sender ${msg.fromPeer}`)
         }
       } else if (msg.type === 'ERROR') {
         this.signalingError(msg.reason);
