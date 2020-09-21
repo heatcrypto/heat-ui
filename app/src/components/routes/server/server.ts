@@ -40,9 +40,14 @@
           User Dir
         </md-button>
 
-        <md-button ng-click="vm.editFailoverConfig()">
-          <md-tooltip md-direction="bottom">Edit application config</md-tooltip>
-          Config
+        <md-button ng-click="vm.editClientApplicationsConfig()">
+          <md-tooltip md-direction="bottom">Edit client application config</md-tooltip>
+          Client application config
+        </md-button>
+
+        <md-button ng-click="vm.editHeatledgerConfig()">
+          <md-tooltip md-direction="bottom">Edit Heatledger server config</md-tooltip>
+          Heatledger server config
         </md-button>
 
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
@@ -181,20 +186,27 @@ class ServerComponent {
     )
   }
 
-  editFailoverConfig() {
+  editClientApplicationsConfig() {
+    this.editConfig("Client Application Config", "app-config.json", () => this.settings.applyFailoverConfig())
+  }
+
+  editHeatledgerConfig() {
+    this.editConfig("Heatledger server Config", "resources/heatledger/conf/heat.properties")
+  }
+
+  editConfig(title, filePath, applyConfig?) {
     // @ts-ignore
     const fs = require('fs');
-    let filePath = 'app-config.json';
     fs.readFile(filePath, (err, data) => {
       if (err) {
-        console.log("Cannot load 'app-config.json': " + err);
+        console.log(`Cannot load '${filePath}': ${err}`);
         throw err;
       }
       this.$scope.$evalAsync(() => {
-        dialogs.textEditor("Application Config", data, (editedData) => {
+        dialogs.textEditor(title, data, (editedData) => {
           fs.writeFile(filePath, editedData, (err) => {
             if (err) throw err;
-            this.settings.applyFailoverConfig();
+            if (applyConfig) applyConfig();
           });
         });
       })
