@@ -31,7 +31,7 @@ type EnterRoomState = "not" | "entering" | "entered";
  * So this service is intended to provide p2p connector to the heat-ui functions.
  */
 @Service('P2PMessaging')
-@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast')
+@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast', 'contactService')
 class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public static EVENT_NEW_MESSAGE = 'EVENT_NEW_MESSAGE';
@@ -50,7 +50,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private storage: StorageService,
               private $interval: angular.IIntervalService,
               private heat: HeatService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private contactService: ContactService) {
     super();
 
     let closeConnector = () => {
@@ -97,21 +98,15 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     this.updateSeenTime(null);
     this.displayNewMessagePopup(msg, room);
 
-    if (this.getContacts) {
-      let contacts = this.getContacts()
+    this.contactService.getContacts().then(contacts => {
       let c = contacts.find(v => v.publicKey == msg.fromPeerId)
       if (!c) {
         let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
         if (senderAccount) {
-          this.heat.api.searchPublicNames(senderAccount, 0, 100).then(accounts => {
-            let expectedAccount = accounts.find(v => v.publicKey == msg.fromPeerId);
-            if (expectedAccount) {
-              this.saveContact(senderAccount, msg.fromPeerId, expectedAccount.publicName, -Date.now());
-            }
-          });
+          this.contactService.saveContact(senderAccount, msg.fromPeerId, null, -Date.now())
         }
       }
-    }
+    })
   }
 
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
@@ -133,7 +128,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       this.heat.api.searchPublicNames(account, 0, 100).then((accounts)=> {
         let expectedAccount = accounts.find(value => value.publicKey == publicKey);
           if (expectedAccount) {
-            let contactUtils = <P2pContactUtils>heat.$inject.get('p2pContactUtils');
+            let contactUtils = <ContactService>heat.$inject.get('contactService');
             contactUtils.updateContactCurrencyAddress(account, parsedMessage.name, parsedMessage.address, publicKey, expectedAccount.publicName, -Date.now())
           }
       })
@@ -236,7 +231,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
       let updateContactCallTime = (account: string, publicKey: string, publicName: string) => {
         //save negative time to force to select contact in contact list
-        this.saveContact(peerAccount, peerId, publicName, -Date.now());
+        this.contactService.saveContact(peerAccount, peerId, publicName, -Date.now());
       };
 
       let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
@@ -269,28 +264,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): p2p.CallDialog {
     return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
-  }
-
-  getContacts: () => IHeatMessageContact[]
-
-  saveContact(account: string, publicKey: string, publicName: string, calledTimestamp?: number) {
-    if (!publicKey) return;
-    let contact: IHeatMessageContact = this.p2pContactStore.get(account);
-    if (contact && calledTimestamp && calledTimestamp != contact.activityTimestamp) {
-      contact.activityTimestamp = calledTimestamp;
-      this.p2pContactStore.put(account, contact);
-    }
-    if (!contact) {
-      contact = {
-        account: account,
-        privateName: '',
-        publicKey: publicKey,
-        publicName: publicName,
-        timestamp: 0,
-        activityTimestamp: calledTimestamp
-      };
-      this.p2pContactStore.put(account, contact);
-    }
   }
 
   isPeerConnected(peerId: string): boolean {

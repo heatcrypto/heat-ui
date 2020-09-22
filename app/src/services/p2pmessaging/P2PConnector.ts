@@ -62,7 +62,6 @@ module p2p {
      */
     getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
 
-    getContacts?: () => IHeatMessageContact[]
   }
 
   /**

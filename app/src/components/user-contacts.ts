@@ -66,7 +66,7 @@
     </div>
   `
 })
-@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging', '$mdToast')
+@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging', '$mdToast', 'contactService')
 class UserContactsComponent {
 
   public contacts : Array<IHeatMessageContact> = [];
@@ -84,7 +84,8 @@ class UserContactsComponent {
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
               private p2pMessaging: P2PMessaging,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private contactService: ContactService) {
 
     this.refresh = utils.debounce(
       () => {
@@ -130,7 +131,7 @@ class UserContactsComponent {
 
     let messageListener = (msg: any, room: p2p.Room) => {
       for (let contact of this.contacts) {
-        if (this.contactHasUnreadP2PMessage(contact)) {
+        if (this.contactService.contactHasUnreadP2PMessage(contact)) {
           this.refreshContacts();
           return;
         }
@@ -181,40 +182,9 @@ class UserContactsComponent {
     this.refreshContacts();
   }
 
-  refreshContacts() {
-    this.heat.api.getMessagingContacts(this.user.account, 0, 100).then((contacts) => {
-      this.$scope.$evalAsync(() => {
-        this.contacts = contacts;
-
-        //merge contacts obtained via p2p messaging
-        this.p2pMessaging.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => {
-          let existingHeatContact = this.contacts.find(contact => !p2pContact.publicKey || contact.publicKey == p2pContact.publicKey);
-          if (existingHeatContact) {
-            existingHeatContact.activityTimestamp = p2pContact.activityTimestamp;
-          } else {
-            p2pContact['isP2POnlyContact'] = true;
-            this.contacts.push(p2pContact);
-          }
-        });
-
-        this.contacts = this.contacts.filter(contact => contact.publicKey && contact.account != this.user.account)
-          .map((contact) => {
-            if (this.activePublicKey != contact.publicKey) {
-              contact['hasUnreadMessage'] = !contact['isP2POnlyContact'] && this.contactHasUnreadMessage(contact);
-              contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
-            }
-            // contact['p2pStatus'] = this.p2pStatus(contact);
-            return contact;
-          })
-          .sort((c1, c2) => (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));
-
-        if (this.getActivePublicKey()=="0") {
-          this.setActivePublicKey();
-        }
-
-        this.p2pMessaging.getContacts = () => this.contacts
-      });
-    })
+  async refreshContacts() {
+    let contacts = await this.contactService.getContacts(this.activePublicKey)
+    if (this.getActivePublicKey() == "0") this.setActivePublicKey()
   }
 
   p2pStatus(contact: IHeatMessageContact) {
@@ -233,16 +203,5 @@ class UserContactsComponent {
     }
   }
 
-  contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
-    return contact.timestamp > this.store.getNumber(contact.account, 0);
-  }
-
-  contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
-    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey, true);
-    if (room) {
-      return this.p2pMessaging.roomHasUnreadMessage(room);
-    }
-    return false;
-  }
 
 }

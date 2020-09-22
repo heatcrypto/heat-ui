@@ -102,12 +102,8 @@ module p2p {
           }, 60 * 1000);
 
           let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
-          this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
-            let expectedAccount = accounts.find(value => value.publicKey == publicKey);
-            if (expectedAccount) {
-              this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName, -Date.now());
-            }
-          });
+          let contactService = <ContactService>heat.$inject.get('contactService');
+          contactService.saveContact(peerAccount, publicKey, null, -Date.now())
         }, reason => {
           this.okBtn['processing'] = false;
         }

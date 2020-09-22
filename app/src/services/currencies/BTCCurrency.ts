@@ -157,7 +157,7 @@ class BTCCurrency implements ICurrency {
       }
 
       $scope['vm'].search = function(){
-        let p = <P2pContactUtils> heat.$inject.get('p2pContactUtils');
+        let p = <ContactService> heat.$inject.get('contactService');
         return p.lookupContact($scope['vm'].searchText.trim())
       }
 
