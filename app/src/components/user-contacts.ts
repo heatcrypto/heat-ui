@@ -211,6 +211,8 @@ class UserContactsComponent {
         if (this.getActivePublicKey()=="0") {
           this.setActivePublicKey();
         }
+
+        this.p2pMessaging.getContacts = () => this.contacts
       });
     })
   }

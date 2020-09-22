@@ -55,12 +55,14 @@ module p2p {
     /**
      * Invoked on incoming message.
      */
-    onMessage: (msg: {}, room: Room) => any
+    onMessage: (msg: U2UMessage, room: Room) => any
 
     /**
      * Returns room with single peer.
      */
     getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
+
+    getContacts?: () => IHeatMessageContact[]
   }
 
   /**

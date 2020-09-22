@@ -21,6 +21,8 @@
  * SOFTWARE.
  * */
 
+import U2UMessage = p2p.U2UMessage;
+
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 
@@ -89,11 +91,27 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
   }
 
-  onMessage(msg: {}, room: p2p.Room) {
+  onMessage(msg: U2UMessage, room: p2p.Room) {
     this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
     this.seenP2PMessageTimestampStore.put(room.name + "_last-message-time", Date.now());
     this.updateSeenTime(null);
     this.displayNewMessagePopup(msg, room);
+
+    if (this.getContacts) {
+      let contacts = this.getContacts()
+      let c = contacts.find(v => v.publicKey == msg.fromPeerId)
+      if (!c) {
+        let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+        if (senderAccount) {
+          this.heat.api.searchPublicNames(senderAccount, 0, 100).then(accounts => {
+            let expectedAccount = accounts.find(v => v.publicKey == msg.fromPeerId);
+            if (expectedAccount) {
+              this.saveContact(senderAccount, msg.fromPeerId, expectedAccount.publicName, -Date.now());
+            }
+          });
+        }
+      }
+    }
   }
 
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
@@ -252,6 +270,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): p2p.CallDialog {
     return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
   }
+
+  getContacts: () => IHeatMessageContact[]
 
   saveContact(account: string, publicKey: string, publicName: string, calledTimestamp?: number) {
     if (!publicKey) return;
