@@ -1,5 +1,5 @@
 @Service('contactService')
-@Inject('storage', 'heat', '$q', 'user', '$scope', 'P2PMessaging')
+@Inject('storage', 'heat', '$q', 'user')
 class ContactService {
   private static numbersOnly = /^[0-9]+$/;
   private p2pContactStore: Store;
@@ -9,12 +9,10 @@ class ContactService {
     private storage: StorageService,
     private heat: HeatService,
     private $q: angular.IQService,
-    private user: UserService,
-    private $scope: angular.IScope,
-    private p2pMessaging: P2PMessaging)
+    private user: UserService)
   {
     this.p2pContactStore = storage.namespace('p2pContacts')
-    this.latestTimestampStore = storage.namespace('contacts.latestTimestamp', $scope)
+    this.latestTimestampStore = storage.namespace('contacts.latestTimestamp')
   }
 
   /**
@@ -176,9 +174,10 @@ class ContactService {
   }
 
   contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
-    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey, true);
+    let p2pMessaging: P2PMessaging = heat.$inject.get('P2PMessaging')
+    let room = p2pMessaging.getOneToOneRoom(contact.publicKey, true);
     if (room) {
-      return this.p2pMessaging.roomHasUnreadMessage(room);
+      return p2pMessaging.roomHasUnreadMessage(room);
     }
     return false;
   }

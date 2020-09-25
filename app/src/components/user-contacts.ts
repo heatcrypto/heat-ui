@@ -182,9 +182,11 @@ class UserContactsComponent {
     this.refreshContacts();
   }
 
-  async refreshContacts() {
-    let contacts = await this.contactService.getContacts(this.activePublicKey)
-    if (this.getActivePublicKey() == "0") this.setActivePublicKey()
+  refreshContacts() {
+    this.contactService.getContacts(this.activePublicKey).then(contacts => {
+      this.contacts = contacts
+      if (this.getActivePublicKey() == "0") this.setActivePublicKey()
+    })
   }
 
   p2pStatus(contact: IHeatMessageContact) {
