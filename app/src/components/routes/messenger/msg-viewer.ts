@@ -1,6 +1,11 @@
 @Component({
   selector: 'msgViewer',
   inputs: ['publickey', '@containerId'],
+  styles: [`
+    .msg-entry-menu-disabled {
+      opacity: 20%;
+    }
+  `],
   template: `
     <div>
       <div class="row" class="progress-indicator" flex ng-show="vm.loading">
@@ -16,7 +21,7 @@
               <message-batch-entry id="{{::message.__id}}" message="message" flex="none" class="message-item"></message-batch-entry>
             </div>
             <div layout="column">
-              <md-menu>
+              <md-menu ng-class="{'msg-entry-menu-disabled': message.onchain || message.transport == 'chain'}">
                 <md-button ng-disabled="message.onchain || message.transport == 'chain'" aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
                   <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
                   ...
@@ -228,7 +233,7 @@ class MsgViewerComponent {
   public removeOffchainMessage($event: any, item: p2p.MessageHistoryItem) {
     dialogs.confirm(
       "Remove message",
-      `Do you want to remove the message ?`
+      "Do you want to remove this message (from yourself only)?"
     ).then(() => {
       this.messageHistory.remove(item.timestamp)
       this.displayMessages.messages = this.displayMessages.messages.filter(i => i.timestamp != item.timestamp);

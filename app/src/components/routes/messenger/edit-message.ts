@@ -51,7 +51,7 @@
             <md-icon md-font-library="material-icons">send</md-icon>
           </md-button>
         </form>
-        <textarea hide-xs ng-model="vm.messageText" flex rows="4" class="edit-message-textarea"
+        <textarea hide-xs ng-model="vm.messageText" flex rows="2" class="edit-message-textarea"
           ng-class="{'offchain': vm.p2pMessaging.onlineStatus == 'online'}"
           ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line"></textarea>
       </div>

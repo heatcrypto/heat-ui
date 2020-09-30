@@ -33,9 +33,6 @@
       margin-top: 6px;
       margin-right: 6px;
     }
-    messenger edit-message {
-      min-height: 80px;
-    }
     messenger .outer-container {
       padding-top: 0px;
       padding-bottom: 0px;
@@ -87,26 +84,17 @@
         <div layout="column">
           <user-contacts flex layout="column" ></user-contacts>
           <div layout="row" class="control-panel">
+            <md-button class="online" id="onlineStatusButton" ng-click="vm.toggleOnline()"
+            ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
+              <md-tooltip md-direction="top">{{vm.p2pMessaging.onlineStatus == 'online' ? 'NOW STEALTH - CLICK FOR ONCHAIN' : 'NOW ONCHAIN - CLICK FOR STEALTH'}}</md-tooltip>
+              {{vm.p2pMessaging.onlineStatus == 'online' ? 'offchain  ✔' : 'onchain'}}
+            </md-button>
             <md-button id="newContactButton" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
               <md-tooltip md-direction="top">
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               New CONTACT
-            </md-button>
-            <md-button id="CallButton" class="md-primary" aria-label="Call"
-            ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
-              <md-tooltip md-direction="top">
-                Connect user to establish the peer-to-peer channel
-              </md-tooltip>
-              CONNECT
-            </md-button>
-          </div>
-          <div layout="row" class="control-panel">
-            <md-button class="online" id="onlineStatusButton" ng-click="vm.toggleOnline()"
-            ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
-              <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
-              {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
             </md-button>
           </div>
         </div>
