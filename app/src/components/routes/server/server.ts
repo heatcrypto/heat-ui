@@ -195,22 +195,17 @@ class ServerComponent {
   }
 
   editConfig(title, filePath, applyConfig?) {
-    // @ts-ignore
-    const fs = require('fs');
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        console.log(`Cannot load '${filePath}': ${err}`);
-        throw err;
-      }
+    this.server.getServerProperties(filePath).then(content => {
       this.$scope.$evalAsync(() => {
-        dialogs.textEditor(title, data, (editedData) => {
+        dialogs.textEditor(title, content, (editedData) => {
+          const fs = require('fs')
           fs.writeFile(filePath, editedData, (err) => {
-            if (err) throw err;
-            if (applyConfig) applyConfig();
-          });
-        });
+            if (err) throw err
+            if (applyConfig) applyConfig()
+          })
+        })
       })
-    });
+    })
   }
 
   /* md-virtual-repeat */
