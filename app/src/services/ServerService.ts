@@ -80,15 +80,14 @@ class ServerService extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
-      if (heat.isTestnet) {
-        this.getServerProperties("resources/heatledger/conf/heatwallet-testnet.json").then(propertiesContent => {
-          let clearedPropertiesStr = propertiesContent.toString()/*.replace(/"/g, '\\"')*/.replace(/\n/g, ' ')
-          this.args = ["-properties", clearedPropertiesStr]
-          resolve()
-        })
-      } else {
+      let filePath = heat.isTestnet
+        ? "resources/heatledger/conf/heatwallet-testnet.json"
+        : "resources/heatledger/conf/heatwallet-mainnet.json"
+      this.getServerProperties(filePath).then(propertiesContent => {
+        let clearedPropertiesStr = propertiesContent.toString()/*.replace(/"/g, '\\"')*/.replace(/\n/g, ' ')
+        this.args = ["-properties", clearedPropertiesStr]
         resolve()
-      }
+      }).catch(reason => reject(reason))
 
       //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
       let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';

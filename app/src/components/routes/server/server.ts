@@ -108,7 +108,7 @@ class ServerComponent {
   private msgRegExp = /^([\d-]+\s[\d:]+)\s(.+)\s-\s(.*)/;
 
   constructor(private $scope:angular.IScope,
-              public server: ServerService,
+              private serverService: ServerService,
               private heat: HeatService,
               private user: UserService,
               private settings: SettingsService,
@@ -143,7 +143,7 @@ class ServerComponent {
         }
       })
     };
-    server.addListener('output',this.onOutput);
+    serverService.addListener('output',this.onOutput);
     this.updateMiningInfo();
     window.setTimeout(()=>{
       this.topIndex = this.determineTopIndex();
@@ -163,21 +163,21 @@ class ServerComponent {
     }, 1000)
 
     $scope.$on('$destroy',()=>{
-      server.removeListener('output',this.onOutput)
+      serverService.removeListener('output',this.onOutput)
       clearInterval(interval)
     })
   }
 
   isServerAvailable() {
-    return this.server.isHeatledgerServerDirExists()
+    return this.serverService.isHeatledgerServerDirExists()
   }
 
   showInstallFolder() {
-    require('electron').shell.showItemInFolder(this.server.getAppDir('.'))
+    require('electron').shell.showItemInFolder(this.serverService.getAppDir('.'))
   }
 
   showUserDataFolder() {
-    this.server.getUserDataDirFromMainProcess().then(
+    this.serverService.getUserDataDirFromMainProcess().then(
       userDataDir => {
         var path = require('path');
         let dir = path.join(userDataDir);
@@ -191,11 +191,14 @@ class ServerComponent {
   }
 
   editHeatledgerConfig() {
-    this.editConfig("Heatledger server Config", "resources/heatledger/conf/heat.properties")
+    let filePath = heat.isTestnet
+      ? "resources/heatledger/conf/heatwallet-testnet.json"
+      : "resources/heatledger/conf/heatwallet-mainnet.json"
+    this.editConfig("Heatledger server Config", filePath)
   }
 
   editConfig(title, filePath, applyConfig?) {
-    this.server.getServerProperties(filePath).then(content => {
+    this.serverService.getServerProperties(filePath).then(content => {
       this.$scope.$evalAsync(() => {
         dialogs.textEditor(title, content, (editedData) => {
           const fs = require('fs')
@@ -210,12 +213,12 @@ class ServerComponent {
 
   /* md-virtual-repeat */
   getItemAtIndex(index) {
-    return this.render(this.server.buffer[index]);
+    return this.render(this.serverService.buffer[index]);
   }
 
   /* md-virtual-repeat */
   getLength() {
-    return this.server.buffer.length;
+    return this.serverService.buffer.length;
   }
 
   connectToLocalhostChanged() {
@@ -236,13 +239,13 @@ class ServerComponent {
   }
 
   startServer() {
-    this.server.startServer()
+    this.serverService.startServer()
     this.$mdToast.show(this.$mdToast.simple().textContent("In some cases you need to Start the server A SECOND TIME!\n"+
       "Wheter that's the case is indicated at the end of the log output (the colored text with black background).").hideDelay(10000));
   }
 
   stopServer() {
-    this.server.stopServer()
+    this.serverService.stopServer()
   }
 
   determineRowCount() {
