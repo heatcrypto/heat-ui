@@ -27,9 +27,9 @@
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <div layout="row" class="button-row">
-        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.server.isRunning" ng-click="vm.startServer()">
+        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.serverService.isRunning" ng-click="vm.startServer()">
             Start Server</md-button>
-        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.server.isRunning" ng-click="vm.stopServer()">
+        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.serverService.isRunning" ng-click="vm.stopServer()">
             Stop Server</md-button>
         <md-button class="start-stop" ng-click="vm.showInstallFolder()">
           <md-tooltip md-direction="bottom">Access your server config files and back them up before updating HEAT server</md-tooltip>
@@ -62,8 +62,8 @@
           <span class="mining-stats-val">{{vm.miningHittime}}</span>
           <span>({{vm.miningRemaining}} sec)</span>
         </div>
-        <md-button ng-show="vm.user.unlocked && !vm.isMining && !vm.isUpdatingMiningInfo" ng-disabled="!vm.server.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
-        <md-button ng-show="vm.user.unlocked && vm.isMining && !vm.isUpdatingMiningInfo" ng-disabled="!vm.server.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
+        <md-button ng-show="vm.user.unlocked && !vm.isMining && !vm.isUpdatingMiningInfo" ng-disabled="!vm.serverService.isReady" class="start-stop" ng-click="vm.startMining()">Start Mining</md-button>
+        <md-button ng-show="vm.user.unlocked && vm.isMining && !vm.isUpdatingMiningInfo" ng-disabled="!vm.serverService.isReady" class="start-stop md-primary" ng-click="vm.stopMining()">Stop Mining</md-button>
         <span ng-if="vm.user.unlocked && vm.isUpdatingMiningInfo">Updating Mining Info...</span>
         <a ng-if="vm.isServerAvailable()" ng-show="!vm.user.unlocked" class="start-stop" href="#/login">Sign in to start mining</a>
       </div>
@@ -191,10 +191,7 @@ class ServerComponent {
   }
 
   editHeatledgerConfig() {
-    let filePath = heat.isTestnet
-      ? "resources/heatledger/conf/heatwallet-testnet.json"
-      : "resources/heatledger/conf/heatwallet-mainnet.json"
-    this.editConfig("Heatledger server Config", filePath)
+    this.editConfig("Heatledger server Config", this.serverService.getConfigFilePath())
   }
 
   editConfig(title, filePath, applyConfig?) {

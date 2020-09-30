@@ -1,7 +1,7 @@
 /// <reference path='../lib/EventEmitter.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -79,33 +79,20 @@ class ServerService extends EventEmitter {
       this.command = path.join('bin','heatledger');
     }
 
-    return new Promise((resolve, reject) => {
-      let filePath = heat.isTestnet
-        ? "resources/heatledger/conf/heatwallet-testnet.json"
-        : "resources/heatledger/conf/heatwallet-mainnet.json"
-      this.getServerProperties(filePath).then(propertiesContent => {
-        let clearedPropertiesStr = propertiesContent.toString()/*.replace(/"/g, '\\"')*/.replace(/\n/g, ' ')
-        this.args = ["-properties", clearedPropertiesStr]
-        resolve()
-      }).catch(reason => reject(reason))
-
-      //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
-      let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
-      const fs = require('fs');
-      if (!fs.existsSync(embeddedInWalletSignalFilePath)) {
-        fs.writeFile(embeddedInWalletSignalFilePath, '', {flag: 'w'}, function (err) {
-          if (err) console.error(err);
-        });
-      }
-    })
-
+    //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
+    let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
+    const fs = require('fs');
+    if (!fs.existsSync(embeddedInWalletSignalFilePath)) {
+      fs.writeFile(embeddedInWalletSignalFilePath, '', {flag: 'w'}, function (err) {
+        if (err) console.error(err);
+      });
+    }
   }
 
   isHeatledgerServerDirExists() {
     const fs = require('fs');
     return fs.existsSync('resources/heatledger')
   }
-
 
   getAppDir(dirName) {
     var path = require('path');
@@ -118,51 +105,65 @@ class ServerService extends EventEmitter {
     if (this.isRunning) {
       throw new Error('Server starting or already up, check server.isRunning before calling this method');
     }
-    this.initOsDepends().then(value => {
-      var spawn = require('child-process-promise').spawn;
-      this.isRunning = true;
-      this.log("[SERVER] command >> " + this.command);
-      this.log("[SERVER] arguments >> " + this.args);
-      this.log("[SERVER] cwd     >> " + this.cwd);
 
-      // Point the blockchain dir to be in the appData dir
-      // Set ENV vars to:
-      //   - HEAT_WALLET_BLOCKCHAINDIR
-      //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
-      this.getUserDataDirFromMainProcess().then(
-        userDataDir => {
-          var env = process.env
+    this.initOsDepends();
 
-          // When things go wrong undefined is returned
-          let path = require('path');
-          if (userDataDir) {
-            env['HEAT_WALLET_BLOCKCHAINDIR'] = path.join(userDataDir, 'blockchain')
-            env['HEAT_WALLET_BLOCKCHAINDIR_TEST'] = path.join(userDataDir, 'blockchain-test')
-          }
+    var spawn = require('child-process-promise').spawn;
+    this.isRunning = true;
+    this.log("[SERVER] command >> " + this.command);
+    this.log("[SERVER] arguments >> " + this.args);
+    this.log("[SERVER] cwd     >> " + this.cwd);
 
-          if (heat.isTestnet) {
-            env['HEATLEDGER_OPTS'] = '-Dheatwallet.testnet=true'
-            env['HEAT_WALLET_DB_DIR'] = path.join(userDataDir, 'heat-db-test/heat_replicator')
-          } else {
-            env['HEATLEDGER_OPTS'] = '-Dheatwallet.mainnet=true'
-            env['HEAT_WALLET_DB_DIR'] = path.join(userDataDir, 'heat-db/heat_replicator')
-          }
+    // Point the blockchain dir to be in the appData dir
+    // Set ENV vars to:
+    //   - HEAT_WALLET_BLOCKCHAINDIR
+    //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
+    this.getUserDataDirFromMainProcess().then(
+      userDataDir => {
+        var env = process.env
 
-          var promise = spawn(this.command, this.args, {
-            cwd: this.cwd,
-            env: env
-          });
-          this.childProcess = promise.childProcess;
-          this.log("[SERVER] pid     >> " + this.childProcess.pid);
-          this.childProcess.stdout.on('data', (data) => {
-            this.log(data.toString());
-          });
-          this.childProcess.stderr.on('data', (data) => {
-            this.log(data.toString());
-          });
+        // When things go wrong undefined is returned
+        let path = require('path');
+        if (userDataDir) {
+          env['HEAT_WALLET_BLOCKCHAINDIR'] = path.join(userDataDir, 'blockchain')
+          env['HEAT_WALLET_BLOCKCHAINDIR_TEST'] = path.join(userDataDir, 'blockchain-test')
+        }
 
-          promise.then(() => {
-            this.log("[SPAWN] DONE!");
+        env['HEATLEDGER_OPTS'] = heat.isTestnet
+          ? '-Dprops=conf/heatwallet-testnet.properties'
+          : '-Dprops=conf/heatwallet-mainnet.properties'
+        env['HEAT_WALLET_DB_DIR'] = heat.isTestnet
+          ? path.join(userDataDir, 'heat-db-test/heat_replicator')
+          : path.join(userDataDir, 'heat-db/heat_replicator')
+
+        var promise = spawn(this.command, this.args, {
+          cwd: this.cwd,
+          env: env
+        });
+        this.childProcess = promise.childProcess;
+        this.log("[SERVER] pid     >> " + this.childProcess.pid);
+        this.childProcess.stdout.on('data', (data) => {
+          this.log(data.toString());
+        });
+        this.childProcess.stderr.on('data', (data) => {
+          this.log(data.toString());
+        });
+
+        promise.then(() => {
+          this.log("[SPAWN] DONE!");
+          this.$rootScope.$evalAsync(() => {
+            this.isRunning = false;
+            this.isReady = false;
+            if (this.needsRecoveryRestart()) {
+              this.$timeout(() => {
+                this.startServer();
+              }, 2000, true);
+            }
+          })
+        })
+          .catch((err) => {
+            var message = angular.isObject(err) ? (err.message || '') : '';
+            this.log(`[SPAWN EXIT] ${message}`, err);
             this.$rootScope.$evalAsync(() => {
               this.isRunning = false;
               this.isReady = false;
@@ -171,24 +172,10 @@ class ServerService extends EventEmitter {
                   this.startServer();
                 }, 2000, true);
               }
-            })
-          })
-            .catch((err) => {
-              var message = angular.isObject(err) ? (err.message || '') : '';
-              this.log(`[SPAWN EXIT] ${message}`, err);
-              this.$rootScope.$evalAsync(() => {
-                this.isRunning = false;
-                this.isReady = false;
-                if (this.needsRecoveryRestart()) {
-                  this.$timeout(() => {
-                    this.startServer();
-                  }, 2000, true);
-                }
-              });
             });
-        }
-      )
-    })
+          });
+      }
+    )
   }
 
   getUserDataDirFromMainProcess() {
@@ -324,6 +311,12 @@ class ServerService extends EventEmitter {
         resolve(data)
       })
     })
+  }
+
+  getConfigFilePath() {
+    return heat.isTestnet
+      ? "resources/heatledger/conf/heatwallet-testnet.properties"
+      : "resources/heatledger/conf/heatwallet-mainnet.properties"
   }
 
 }
