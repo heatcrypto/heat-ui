@@ -644,7 +644,7 @@ class WalletComponent {
     panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
+          <textarea style="width: 600px" rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
           <div class="qrcodeBox" id="PKQRCode"></div>
           <p>
           <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right">Close</md-button>
