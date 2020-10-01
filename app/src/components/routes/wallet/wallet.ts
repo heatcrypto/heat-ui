@@ -1673,21 +1673,20 @@ class WalletComponent {
           let walletEntry = this.data.selectedWalletEntry
           let success = false
           if (walletEntry) {
-            let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-            if (!node) {
-              let storage = <StorageService>heat.$inject.get('storage')
-              let $rootScope = heat.$inject.get('$rootScope');
-              let store = storage.namespace('wallet', $rootScope, true)
-              let currencies = store.get(walletEntry.account)
-              if (!currencies)
-                currencies = []
-              currencies.push('ETH')
-              store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
-              self.initWalletEntry(walletEntry)
-            }
+            // let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
+            // if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!currencies) currencies = []
+            currencies.push('ETH')
+            store.put(walletEntry.account, currencies.filter((value, index, self) => self.indexOf(value) === index));
+            self.initWalletEntry(walletEntry)
+            // }
             // load in next event loop to load currency addresses first
             setTimeout(() => {
-              node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
+              let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
               success = node.createAddress(self)
               walletEntry.toggle(true)
               $mdDialog.hide(null).then(() => {
