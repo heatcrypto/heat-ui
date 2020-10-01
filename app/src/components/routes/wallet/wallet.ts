@@ -2698,6 +2698,9 @@ class WalletComponent {
       }
       this.generateSeed = function () {
         this.heatSeed = self.lightwalletService.generateRandomSeed()
+        self.$scope.$evalAsync(() => {
+          this.calculatedAccountId = heat.crypto.getAccountId(this.heatSeed)
+        })
       };
       this.generateSeed();
       this.copySeed = function () {
@@ -2729,6 +2732,7 @@ class WalletComponent {
                     style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
               </md-input-container>
               <span style="display:none">{{vm.heatSeed}}</span>
+              <label style="color: grey; margin: -25px 0px 20px 0px;">Account {{vm.calculatedAccountId}}</label>
               <md-input-container flex>
                 <label>Desired Heatwallet PIN / password</label>
                 <input type="password" ng-model="vm.pin" required name="pin">
