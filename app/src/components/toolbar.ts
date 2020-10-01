@@ -307,6 +307,12 @@
                 <span>Heat API (external)</span>
               </md-button>
             </md-menu-item>
+            <md-menu-item  ng-if="vm.user.unlocked">
+              <md-button aria-label="Show private key (or secret phrase)" ng-click="vm.showSecretPhrase()">
+                <md-icon md-font-library="material-icons">content_copy</md-icon>
+                <span>Show private key</span>
+              </md-button>
+            </md-menu-item>
             <md-menu-item>
               <md-button aria-label="backup" ng-click="vm.backupWallet()">
                 <md-icon md-font-library="material-icons">save</md-icon>
@@ -602,6 +608,18 @@ class ToolbarComponent {
         correctLevel : QRCode.CorrectLevel.H
       })
     }, 800);
+  }
+
+  showSecretPhrase() {
+    this.panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea style="width: 600px;" rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+        </md-input-container>
+      </div>
+    `, {
+      secretPhrase: this.user.currency.secretPhrase
+    })
   }
 
 }
