@@ -45,11 +45,14 @@ class ElectronService {
   // TODO
   private getMainWindowWebContents() {
     try {
-      return require('electron').remote.webContents.getAllWebContents()[0];
+      let wcs: Array<any> = require('electron').remote.webContents.getAllWebContents()
+      for (let i = 0; i < wcs.length; i++) {
+        if (wcs[i].getTitle().toUpperCase().indexOf("HEATWALLET") >= 0) return wcs[i]
+      }
+      return wcs[wcs.length - 1]
     } catch (e) {
-      if (this.enabled)
-        throw e;
-      console.log("Do not access the `electron` service in browser env", e);
+      if (this.enabled) throw e
+      console.log("Do not access the `electron` service in browser env", e)
     }
   }
 
