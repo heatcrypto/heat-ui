@@ -66,7 +66,7 @@
             <div class="he truncate-col height-col left" ng-if="!vm.personalize">
               <span ng-show="item.height!=2147483647">{{item.heightDisplay}}</span>
               <span>
-                <a target="_blank" href="https://etherscan.io/block/{{item.heightDisplay}}">{{item.heightDisplay}}</a>
+                <a target="_blank" rel="noopener noreferrer" href="https://etherscan.io/block/{{item.heightDisplay}}">{{item.heightDisplay}}</a>
               </span>
             </div>
             -->
@@ -76,7 +76,7 @@
 
             <!-- ID -->
             <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-              <a target="_blank" href="https://eth1.heatwallet.com/tx/{{item.hash}}">{{item.hash}}</a>
+              <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/tx/{{item.hash}}">{{item.hash}}</a>
             </div>
 
             <!-- INOUT -->
@@ -504,17 +504,17 @@ class EthTransactionRenderer {
 
   account(account: string): string {
     if (account == this.provider.account) {
-      return `<a target="_blank" href="https://eth1.heatwallet.com/address/${account}">Myself</a>`;
+      return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/address/${account}">Myself</a>`;
     }
-    return `<a target="_blank" href="https://eth1.heatwallet.com/address/${account}">${account}</a>`;
+    return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/address/${account}">${account}</a>`;
   }
 
   token(address: string) {
     let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[address]
     if (tokenInfo) {
-      return `<a target="_blank" href="https://eth1.heatwallet.com/address/${address}">${tokenInfo.symbol}</a>`;
+      return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/address/${address}">${tokenInfo.symbol}</a>`;
     }
-    return `<a target="_blank" href="https://eth1.heatwallet.com/address/${address}">${address}</a>`;
+    return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/address/${address}">${address}</a>`;
   }
 
   amount(amount: string, tokenInfo?: EthplorerTokenInfo) {

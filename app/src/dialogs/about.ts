@@ -35,7 +35,7 @@ module dialogs {
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
 <!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
         <p>
-<!--            <a ng-href="{{vm.benchmarkUrl}}" target="_blank">BENCHMARK application</a><br/>-->
+<!--            <a ng-href="{{vm.benchmarkUrl}}" target="_blank" rel="noopener noreferrer">BENCHMARK application</a><br/>-->
             <a href="#" ng-click="vm.goTo('bench')">BENCHMARK application</a>
         </p>
         <br>

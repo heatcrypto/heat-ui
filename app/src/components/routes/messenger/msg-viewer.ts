@@ -5,6 +5,9 @@
     .msg-entry-menu-disabled {
       opacity: 20%;
     }
+    .entry-menu {
+      place-content: center;
+    }
   `],
   template: `
     <div>
@@ -20,7 +23,7 @@
             <div layout="column" flex>
               <message-batch-entry id="{{::message.__id}}" message="message" flex="none" class="message-item"></message-batch-entry>
             </div>
-            <div layout="column">
+            <div layout="column" class="entry-menu">
               <md-menu ng-class="{'msg-entry-menu-disabled': message.onchain || message.transport == 'chain'}">
                 <md-button ng-disabled="message.onchain || message.transport == 'chain'" aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
                   <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->

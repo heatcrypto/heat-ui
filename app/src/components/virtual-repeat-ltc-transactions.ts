@@ -29,7 +29,7 @@
             <!-- TX ID -->
             <div class="truncate-col tx-col left">
               <span>
-                <a target="_blank" href="https://ltc1.heatwallet.com/tx/{{item.txid}}">{{item.txid}}</a>
+                <a target="_blank" rel="noopener noreferrer" href="https://ltc1.heatwallet.com/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
             <!-- FROM -->

@@ -561,7 +561,7 @@ class LoginComponent {
       `Publickey:`,
       this.pageCreatePublicKey,
       '',
-      '<a href="https://heatwallet.com" target="_blank">https://heatwallet.com</a>'].join('<br>');
+      '<a href="https://heatwallet.com" target="_blank" rel="noopener noreferrer">https://heatwallet.com</a>'].join('<br>');
   }
 
   createLocalAccount() {

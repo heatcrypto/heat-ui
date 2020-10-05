@@ -40,7 +40,7 @@
                 Pending&nbsp;<elipses-loading></elipses-loading>
               </div>
               <div class="truncate-col tx-col left" flex>
-              <a target="_blank" href="https://ltc1.heatwallet.com/tx/{{item.txId}}">{{item.txId}}</a>
+              <a target="_blank" rel="noopener noreferrer" href="https://ltc1.heatwallet.com/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
             </md-list-item>
           </md-list>

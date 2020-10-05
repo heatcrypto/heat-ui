@@ -302,7 +302,7 @@
               </md-button>
             </md-menu-item>
             <md-menu-item>
-              <md-button aria-label="about" href="https://heatwallet.com/api" target="_blank">
+              <md-button aria-label="about" href="https://heatwallet.com/api" target="_blank" rel="noopener noreferrer">
                 <md-icon md-font-library="material-icons">find_in_page</md-icon>
                 <span>Heat API (external)</span>
               </md-button>
