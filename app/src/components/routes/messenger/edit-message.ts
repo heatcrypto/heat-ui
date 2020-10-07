@@ -87,7 +87,7 @@ class EditMessageComponent {
   }
 
   onKeyPress($event: KeyboardEvent) {
-    if ($event.keyCode == 13 && !$event.shiftKey) {
+    if ($event.key == "Enter" && !$event.shiftKey) {
       this.send($event);
     }
   }
@@ -110,7 +110,7 @@ class EditMessageComponent {
       let peer = room.getPeer(this.publickey) || room.createPeer(this.publickey, this.publickey);
       if (peer) {
         try {
-          let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText})
+          let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
         } catch (e) {
           notSentReason = e;
         }

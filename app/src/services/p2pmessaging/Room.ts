@@ -23,14 +23,22 @@
 
 module p2p {
 
-  export interface U2UMessage {
-    type: "chat" | "contactUpdate" | ""
+  export class U2UMessage {
+    id?: string
+    type: MessageType
     timestamp: number
     text: string
     fromPeerId?: string
     roomName?: string
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
-    transport?: "chain" | "p2p" | "server"
+    transport?: TransportType
+
+    constructor(type: MessageType, timestamp: number, text: string) {
+      this.type = type;
+      this.timestamp = timestamp;
+      this.text = text;
+      this.id = utils.uuidv4()
+    }
   }
 
   export interface ProvingData {
@@ -79,20 +87,30 @@ module p2p {
     sendMessage(message: U2UMessage): number {
       let result = this.connector.sendMessage(this.name, message);
       if (message.type == "chat") {
-        let item = {transport: result.transport, timestamp: message.timestamp, fromPeer: this.user.publicKey, content: message.text};
-        // @ts-ignore
+        let item: MessageHistoryItem = {
+          id: message.id,
+          transport: result.transport,
+          timestamp: message.timestamp,
+          fromPeer: this.user.publicKey,
+          content: message.text
+        };
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
-          // @ts-ignore
           this.onNewMessageHistoryItem(item);
         }
       }
       return result.count;
     }
 
-    onMessageInternal(msg: U2UMessage) {
-      if (msg.type == "chat") {
-        let item: MessageHistoryItem = {timestamp: msg.timestamp, fromPeer: msg.fromPeerId, content: msg.text, transport: msg.transport};
+    onMessageInternal(message: U2UMessage) {
+      if (message.type == "chat") {
+        let item: MessageHistoryItem = {
+          id: message.id,
+          timestamp: message.timestamp,
+          fromPeer: message.fromPeerId,
+          content: message.text,
+          transport: message.transport
+        };
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
           this.onNewMessageHistoryItem(item);
@@ -100,7 +118,7 @@ module p2p {
         this.lastIncomingMessageTimestamp = Date.now();
       }
       if (this.onMessage) {
-        this.onMessage(msg);
+        this.onMessage(message);
       }
     }
 

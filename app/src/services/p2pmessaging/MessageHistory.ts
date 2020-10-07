@@ -24,10 +24,11 @@
 module p2p {
 
   export interface MessageHistoryItem {
+    id: string
     timestamp: number
     fromPeer: string
     content: string
-    transport?: "chain" | "p2p" | "server"
+    transport?: TransportType
   }
 
   /*
@@ -50,17 +51,22 @@ module p2p {
     private enabled: boolean;
 
     private store: Store;
-    // private db: IDBDatabase;
+    private extraStore : Store; //additional data for message stored by message id, e.g. message status
 
     private pageStorageNum: number;  //for ordering pages from storage
     private pageContent: Array<MessageHistoryItem>;
     private pages: number[][];
+
     constructor(private room: Room,
                 private storage: StorageService,
                 private user: UserService) {
 
       this.enabled = true;
       this.store = storage.namespace('p2p-messages.' + this.room.name);
+      //namespace for storage per message should started by different string
+      // because keys (load by namespace prefix) in second namespace have other format
+      // and cannot be parsed same way as in the namespace above
+      this.extraStore = storage.namespace('extra-p2p-messages.' + this.room.name);
       //format of key of message history stored item: "pageNumber.messagesCount", e.g. "502.78"
       //Message count by pages is needing for providing requesting message items from history by range "from" "to"
       this.pages = this.store.keys()
@@ -77,7 +83,7 @@ module p2p {
       //convert old format of keys to the new format
       for (var i = 0; i < this.pages.length; i++) {
         if (this.pages[i][1] == -1 || this.pages[i][2] == -1) {
-          let items = this.getItemsInternal(this.pageKey(i));
+          let items = this.getPageMessages(this.store.getString(this.pageKey(i)));
           this.savePage(i, items);
         }
       }
@@ -134,16 +140,15 @@ module p2p {
      */
     public getItems(pageIndex: number): Array<MessageHistoryItem> {
       if (pageIndex >= 0 && pageIndex < this.pages.length) {
-        return this.getItemsInternal(this.pageKey(pageIndex));
+        return this.getPageMessages(this.store.getString(this.pageKey(pageIndex)));
       }
       return [];
     }
 
-    private getItemsInternal(key: string): Array<MessageHistoryItem> {
-      let v = this.store.getString(key);
-      if (v) {
+    private getPageMessages(encryptedPage: string): Array<MessageHistoryItem> {
+      if (encryptedPage) {
         try {
-          let encrypted = JSON.parse(v);
+          let encrypted = JSON.parse(encryptedPage);
           let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
           return JSON.parse(pageContentStr);
         } catch (e) {
@@ -170,6 +175,10 @@ module p2p {
       }
     }
 
+    public putExtraInfo(msgId: string, data) {
+      this.extraStore.put(msgId, data);
+    }
+
     /**
      * Removes message in the history. Returns number of deleted messages.
      */
@@ -179,6 +188,9 @@ module p2p {
       //iterate from end to begin because more likely user removed the recent message
       for (let i = this.pages.length - 1; i >= 0; i--) {
         let items = this.getItems(i);
+        //remove extra data per message
+        items.filter(item => item.timestamp == timestamp).forEach(m => this.extraStore.remove(m.id))
+        //update page with new content without removed messages
         let newItems = items.filter(item => item.timestamp != timestamp);
         if (items.length != newItems.length) {
           this.savePage(i, newItems);
@@ -196,7 +208,7 @@ module p2p {
         this.store.remove(this.pageKey(pageIndex));
         page[1] = pageContent.length;
         page[2] = pageContent.length > 0 ? pageContent[pageContent.length - 1].timestamp : 0;
-        this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
+        this.store.put(this.pageKey(pageIndex), encrypted);
       } catch (domException) {
         console.log("Save page error " + domException);
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) >= 0) {
@@ -233,8 +245,16 @@ module p2p {
         .sort((a, b) => a[3] - b[3]);
 
       //remove oldest pages
-      for (let key of keysByTime) {
-        allRoomStore.remove(key.join('.'));
+      for (let keys of keysByTime) {
+        let key = keys.join('.')
+        let page = allRoomStore.get(key)
+        if (page) {
+          //remove extra data per message
+          let messages = this.getPageMessages(page)
+          messages.forEach(m => this.extraStore.remove(m.id))
+          //remove the page
+          allRoomStore.remove(key)
+        }
         if ((--pageToRemoveNumber) <= 0) {
           break;
         }

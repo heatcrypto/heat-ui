@@ -157,7 +157,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   sendKeys = (room: p2p.Room, text: string) => {
-    room.sendMessage({timestamp: Date.now(), type: "contactUpdate", text});
+    room.sendMessage(new p2p.U2UMessage("contactUpdate", Date.now(), text));
   }
 
   /**
