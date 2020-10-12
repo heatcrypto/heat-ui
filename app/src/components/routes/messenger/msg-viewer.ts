@@ -127,15 +127,16 @@ class MsgViewerComponent {
 
       this.$scope.$evalAsync(() => { // ensure contents are rendered
         this.$timeout(0).then(() => { // resolve promise in next event loop
-          let m = this.displayMessages.messages[this.displayMessages.index];
-          if (m) {
-            this.displayMessages.index = this.displayMessages.index + 10 <= this.messagesCount ? this.displayMessages.index + 10 : this.messagesCount;
-            this.scrollElement = document.getElementById(m.__id);
-            if (this.scrollElement) {
-              this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+            let m = this.displayMessages.messages[this.displayMessages.index];
+            if (m) {
+              this.displayMessages.index = this.displayMessages.index + 10 <= this.messagesCount ? this.displayMessages.index + 10 : this.messagesCount;
+              this.scrollElement = document.getElementById(m.__id);
+              if (this.scrollElement) {
+                this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
+              }
             }
-          }
-        });
+          },
+          reason => console.log(reason));
       })
     })
   }

@@ -88,11 +88,11 @@ module p2p {
       let result = this.connector.sendMessage(this.name, message);
       if (message.type == "chat") {
         let item: MessageHistoryItem = {
-          id: message.id,
-          transport: result.transport,
+          msgId: message.id,
           timestamp: message.timestamp,
           fromPeer: this.user.publicKey,
-          content: message.text
+          content: message.text,
+          transport: result.transport
         };
         this.getMessageHistory().put(item);
         if (this.onNewMessageHistoryItem) {
@@ -103,9 +103,12 @@ module p2p {
     }
 
     onMessageInternal(message: U2UMessage) {
+      if (this.getMessageHistory().isExistingId(message.id)) {
+        throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
+      }
       if (message.type == "chat") {
         let item: MessageHistoryItem = {
-          id: message.id,
+          msgId: message.id,
           timestamp: message.timestamp,
           fromPeer: message.fromPeerId,
           content: message.text,

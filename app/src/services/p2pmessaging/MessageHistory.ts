@@ -24,7 +24,7 @@
 module p2p {
 
   export interface MessageHistoryItem {
-    id: string
+    msgId: string
     timestamp: number
     fromPeer: string
     content: string
@@ -83,7 +83,7 @@ module p2p {
       //convert old format of keys to the new format
       for (var i = 0; i < this.pages.length; i++) {
         if (this.pages[i][1] == -1 || this.pages[i][2] == -1) {
-          let items = this.getPageMessages(this.store.getString(this.pageKey(i)));
+          let items = this.getPageMessages(i);
           this.savePage(i, items);
         }
       }
@@ -140,16 +140,20 @@ module p2p {
      */
     public getItems(pageIndex: number): Array<MessageHistoryItem> {
       if (pageIndex >= 0 && pageIndex < this.pages.length) {
-        return this.getPageMessages(this.store.getString(this.pageKey(pageIndex)));
+        return this.getPageMessages(pageIndex);
       }
       return [];
     }
 
-    private getPageMessages(encryptedPage: string): Array<MessageHistoryItem> {
+    private getPageMessages(pageIndex: number, page?): Array<MessageHistoryItem> {
+      let encryptedPage = page ? page : this.store.get(this.pageKey(pageIndex))
       if (encryptedPage) {
         try {
-          let encrypted = JSON.parse(encryptedPage);
-          let pageContentStr = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
+          //was the bug when page was stringifyed twice: json.stringfy(json.stringfy(page))
+          //therefore, if necessary, have to do extra json parsing
+          let pageObject = typeof encryptedPage === "string" ? JSON.parse(encryptedPage) : encryptedPage
+          let pageContentStr = heat.crypto.decryptMessage(
+            pageObject.data, pageObject.nonce, this.user.publicKey, this.user.secretPhrase);
           return JSON.parse(pageContentStr);
         } catch (e) {
           console.log("Error on parse/decrypt message history page");
@@ -158,9 +162,14 @@ module p2p {
       return [];
     }
 
+    public isExistingId(msgId: string) {
+      return !!this.extraStore.get(msgId)
+    }
+
     public put(item: MessageHistoryItem) {
       this.pageContent.push(item);
       this.savePage(this.pages.length - 1, this.pageContent);
+      this.putExtraInfo(item.msgId, "")  //no extra info but to register message id, later this entry may be updated
 
       if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
         this.pageContent = [];
@@ -189,7 +198,7 @@ module p2p {
       for (let i = this.pages.length - 1; i >= 0; i--) {
         let items = this.getItems(i);
         //remove extra data per message
-        items.filter(item => item.timestamp == timestamp).forEach(m => this.extraStore.remove(m.id))
+        items.filter(item => item.timestamp == timestamp).forEach(m => this.extraStore.remove(m.msgId))
         //update page with new content without removed messages
         let newItems = items.filter(item => item.timestamp != timestamp);
         if (items.length != newItems.length) {
@@ -217,7 +226,7 @@ module p2p {
           while (attempts > 0) {
             try {
               this.shrinkPageStore(6 - attempts);
-              this.store.put(this.pageKey(pageIndex), JSON.stringify(encrypted));
+              this.store.put(this.pageKey(pageIndex), encrypted);
               attempts = 0;
             } catch (e) {
               console.log("Error while shrinking message history " + e);
@@ -250,8 +259,8 @@ module p2p {
         let page = allRoomStore.get(key)
         if (page) {
           //remove extra data per message
-          let messages = this.getPageMessages(page)
-          messages.forEach(m => this.extraStore.remove(m.id))
+          let messages = this.getPageMessages(-1, page)
+          messages.forEach(m => this.extraStore.remove(m.msgId))
           //remove the page
           allRoomStore.remove(key)
         }
