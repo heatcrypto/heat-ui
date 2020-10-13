@@ -68,7 +68,7 @@ class SendmessageDialog extends GenericDialog {
               onchange(() => {
                 this.fields['recipientPublicKey'].value = null;
                 this.fields['message'].changed();
-                this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+                this.heat.api.getPublicKey(this.fields['recipient'].value, true).then(
                   (publicKey) => {
                     this.fields['recipientPublicKey'].value = publicKey;
                     $scope.$evalAsync(()=>{
@@ -76,14 +76,14 @@ class SendmessageDialog extends GenericDialog {
                       // this.fields['message'].visible(true);
                       this.fields['messagWarning'].visible(false);
                     });
-                  },()=>{
+                  },(reason)=>{
                     $scope.$evalAsync(()=>{
                       this.fields['recipient']['accountExists'] = false
                       // this.fields['message'].visible(false);
                       this.fields['messagWarning'].visible(true);
                     });
                   }
-                );
+                )
               })
         .asyncValidate("No recipient public key", (message) => {
           let deferred = this.$q.defer<boolean>();

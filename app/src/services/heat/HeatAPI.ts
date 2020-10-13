@@ -72,9 +72,9 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/blocks/account/count/${account}`, "count");
   }
 
-  getPublicKey(account: string): angular.IPromise<string> {
+  getPublicKey(account: string, ignoreErrorResponse?: boolean): angular.IPromise<string> {
     let deferred = this.$q.defer<string>();
-    this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
+    this.heat.get(`/account/publickey/${account}`, "value", ignoreErrorResponse).then((publicKey)=> {
       var test = heat.crypto.getAccountIdFromPublicKey(publicKey);
       if (test != account) {
         console.log("Public key returned from server does not match account");
@@ -288,15 +288,15 @@ class HeatAPI implements IHeatAPI {
     return this.heat.post('/mining/stop?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
   }
 
-  getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount> {
-    return this.heat.get(`/account/find/${numericId}`);
+  getAccountByNumericId(numericId: string, ignoreErrorResponse?: boolean): angular.IPromise<IHeatAccount> {
+    return this.heat.get(`/account/find/${numericId}`, null, ignoreErrorResponse);
   }
 
   /**
    * Find account by name (public and private)
    */
-  findAccountByName(name: string): angular.IPromise<IHeatAccount> {
-    return this.heat.get(`/account/find/name/${name}`);
+  findAccountByName(name: string, ignoreErrorResponse?: boolean): angular.IPromise<IHeatAccount> {
+    return this.heat.get(`/account/find/name/${name}`, null, ignoreErrorResponse);
   }
 
   getTransaction(transaction: string): angular.IPromise<IHeatTransaction> {
@@ -339,8 +339,8 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/search/accounts/count/${query}`, "count");
   }
 
-  searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
-    return this.heat.get(`/account/search/0/${query}/${from}/${to}`);
+  searchPublicNames(query: string, from: number, to: number, ignoreErrorResponse?: boolean): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.get(`/account/search/0/${query}/${from}/${to}`, null, ignoreErrorResponse);
   }
 
   rewardsAccount(account: string): angular.IPromise<IHeatRewardsInfo> {

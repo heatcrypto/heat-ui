@@ -81,10 +81,13 @@ class HeatService {
     }
   }
 
-  get(route: string, returns?: string): angular.IPromise<any> {
+  get(route: string, returns?: string, ignoreErrorResponse = false): angular.IPromise<any> {
     return this.getRaw(
       this.settings.get(SettingsService.HEAT_HOST),
-      this.settings.get(SettingsService.HEAT_PORT), route, returns
+      this.settings.get(SettingsService.HEAT_PORT),
+      route,
+      returns,
+      ignoreErrorResponse
     )
   }
 
@@ -100,10 +103,9 @@ class HeatService {
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
         },(response)=>{
-          if (ignoreErrorResponse === undefined || !ignoreErrorResponse) {
-            this.logErrorResponse(route, null, response);
-          }
-          deferred.reject(new ServerEngineError(response.data));
+          if (ignoreErrorResponse) return
+          this.logErrorResponse(route, null, response)
+          deferred.reject(new ServerEngineError(response.data))
         }
       );
     }
@@ -119,6 +121,7 @@ class HeatService {
           var data = angular.isString(returns) ? response[returns] : response;
           deferred.resolve(data);
         },(response)=>{
+          if (ignoreErrorResponse) return
           this.logErrorResponse(route, null, response);
           deferred.reject(new ServerEngineError(response));
         }

@@ -37,7 +37,7 @@ class DialogFieldAccount extends AbstractDialogField {
 
   search(query: string) {
     let deferred = this.$q.defer();
-    this.heat.api.searchPublicNames(query, 0, 100).then(accounts => {
+    this.heat.api.searchPublicNames(query, 0, 100, true).then(accounts => {
       accounts.forEach(account => {
         if (this.numbersOnly.test(account.publicName)) {
           account.publicName = '';
@@ -46,12 +46,12 @@ class DialogFieldAccount extends AbstractDialogField {
       if (accounts.length > 0) {
         deferred.resolve(accounts);
       } else if (this.numbersOnly.test(query)) {
-        this.heat.api.getAccountByNumericId(query).then(account => {
+        this.heat.api.getAccountByNumericId(query, true).then(account => {
           deferred.resolve([account]);
         }, deferred.reject);
       } else {
         //find by public or private name
-        this.heat.api.findAccountByName(query).then(account => {
+        this.heat.api.findAccountByName(query, true).then(account => {
           deferred.resolve([account]);
         }, deferred.reject);
       }
