@@ -84,35 +84,34 @@ class SendmessageDialog extends GenericDialog {
                     });
                   }
                 );
-              }).
-              required(),
+              })
+        .asyncValidate("No recipient public key", (message) => {
+          let deferred = this.$q.defer<boolean>();
+          if (String(message).trim().length == 0) {
+            deferred.resolve();
+          } else {
+            if (this.fields['recipientPublicKey'].value) {
+              deferred.resolve();
+            } else {
+              this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+                (publicKey) => {
+                  this.fields['recipientPublicKey'].value = publicKey;
+                  deferred.resolve();
+                },
+                deferred.reject
+              );
+            }
+          }
+          return deferred.promise;
+        })
+        .required(),
       builder.staticText('messagWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
              .visible(true),
-      builder.text('message', this.userMessage).
-              rows(2).
-              // visible(false).
-              asyncValidate("No recipient public key", (message) => {
-                let deferred = this.$q.defer<boolean>();
-                if (String(message).trim().length == 0) {
-                  deferred.resolve();
-                }
-                else {
-                  if (this.fields['recipientPublicKey'].value) {
-                    deferred.resolve();
-                  }
-                  else {
-                    this.heat.api.getPublicKey(this.fields['recipient'].value).then(
-                      (publicKey) => {
-                        this.fields['recipientPublicKey'].value = publicKey;
-                        deferred.resolve();
-                      },
-                      deferred.reject
-                    );
-                  }
-                }
-                return deferred.promise;
-              }).
-              label('Message'),
+      builder.text('message', this.userMessage)
+        .rows(2)
+        .required(true)
+        // visible(false).
+        .label('Message'),
       builder.hidden('recipientPublicKey', this.recipientPublicKey)
     ]
   }
