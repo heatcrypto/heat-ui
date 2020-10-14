@@ -52,6 +52,10 @@ class DialogFieldAccount extends AbstractDialogField {
       } else {
         //find by public or private name
         this.heat.api.findAccountByName(query, true).then(account => {
+          if (account.publicName == account.id) {
+            //account has the private name. If user has entered the private name we should display it
+            account["calculatedName"] = query
+          }
           deferred.resolve([account]);
         }, deferred.reject);
       }
@@ -82,15 +86,16 @@ class DialogFieldAccount extends AbstractDialogField {
         md-floating-label="{{vm.label}}"
         md-min-length="1"
         md-items="item in vm.f.search(vm.f.searchText)"
-        md-item-text="item.publicName||item.id"
+        md-item-text="item.calculatedName || item.publicName || item.id"
         md-search-text="vm.f.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem"
+        md-autoselect
         ng-disabled="vm.f._disabled">
         <md-item-template>
           <div layout="row" flex class="monospace-font">
-            <span>{{item.publicName||''}}</span>
+            <span>{{item.calculatedName || item.publicName || ''}}</span>
             <span flex></span>
             <span>{{item.id}}</span>
           </span>

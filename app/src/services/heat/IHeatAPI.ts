@@ -291,7 +291,7 @@ interface IHeatAccount {
   nextLeasingHeightFrom: number;
   nextLeasingHeightTo: number;
   lessors: Array<string|IHeatLessors>;
-  publicName: string;
+  publicName: string; // if  this.publicName == this.id  then account has the private name
 }
 interface IHeatLessors {
   id: string;
