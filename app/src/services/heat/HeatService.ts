@@ -103,9 +103,12 @@ class HeatService {
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
         },(response)=>{
-          if (ignoreErrorResponse) return
-          this.logErrorResponse(route, null, response)
-          deferred.reject(new ServerEngineError(response.data))
+          if (ignoreErrorResponse) {
+            deferred.resolve()
+          } else {
+            this.logErrorResponse(route, null, response)
+            deferred.reject(new ServerEngineError(response.data))
+          }
         }
       );
     }

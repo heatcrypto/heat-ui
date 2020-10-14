@@ -47,11 +47,15 @@ class DialogFieldAccount extends AbstractDialogField {
         deferred.resolve(accounts);
       } else if (this.numbersOnly.test(query)) {
         this.heat.api.getAccountByNumericId(query, true).then(account => {
-          deferred.resolve([account]);
+          deferred.resolve(account ? [account] : []);
         }, deferred.reject);
       } else {
         //find by public or private name
         this.heat.api.findAccountByName(query, true).then(account => {
+          if (!account) {
+            deferred.resolve([])
+            return
+          }
           if (account.publicName == account.id) {
             //account has the private name. If user has entered the private name we should display it
             account["calculatedName"] = query
@@ -101,7 +105,7 @@ class DialogFieldAccount extends AbstractDialogField {
           </span>
         </md-item-template>
         <md-not-found>
-          No matches found.
+          No matches found
         </md-not-found>
         <div ng-messages="userForm.userField.$error" ng-if="userForm.userField.$dirty">
           <div ng-messages-include="error-messages"></div>
