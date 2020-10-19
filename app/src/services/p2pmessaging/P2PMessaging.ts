@@ -74,7 +74,12 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         reason => this.onSignalingError(reason),
         dataHex => this.sign(dataHex),
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
-        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
+        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
+        [
+          new p2p.NoProtocol(),
+          new p2p.U2UProtocol(),
+          new p2p.SignalingProtocol()
+        ]
       );
 
       this.connector.setOnlineStatus("online");

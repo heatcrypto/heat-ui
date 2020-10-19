@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2019 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -53,7 +53,7 @@ module p2p {
 
   export type TransportType = "chain" | "p2p" | "server"
   export type MessageType = "chat" | "contactUpdate" | ""
-  export type ProtocolType = "U2U" | "webrtc"
+  export type ProtocolName = "U2U" | "webrtc" | ""
 
   export interface P2PMessenger {
     /**
@@ -74,19 +74,21 @@ module p2p {
    */
   export class P2PConnector {
 
+    protocolsMap = {}
+
     rooms: Map<string, Room> = new Map<string, Room>(); // roomName -> room
 
     private static MSG_TYPE_CHECK_CHANNEL = "CHECK_CHANNEL";
     private static MSG_TYPE_REQUEST_PROOF_IDENTITY = "GET_PROOF_IDENTITY";
-    private static MSG_TYPE_RESPONSE_PROOF_IDENTITY = "PROOF_IDENTITY";
+    static MSG_TYPE_RESPONSE_PROOF_IDENTITY = "PROOF_IDENTITY";
 
     private webSocketPromise: Promise<WebSocket>;
     private signalingMessageAwaitings: Function[] = [];
     private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
-    private identity: string;
-    private pendingRooms: Function[] = [];
-    private pendingOnlineStatus: Function;
+    identity: string;
+    pendingRooms: Function[] = [];
+    pendingOnlineStatus: Function;
     private _onlineStatus: OnlineStatus = "offline";
     private signalingReady: boolean = null;
 
@@ -117,19 +119,25 @@ module p2p {
      * @param sign Signing delegated to client class because this service class should not to have deal with secret info
      * @param encrypt Encrypt p2p messages
      * @param decrypt Decrypt p2p messages
+     * @param protocols list of supported protocols
      */
     constructor(
       private $interval: angular.IIntervalService,
-      private messenger: p2p.P2PMessenger,
+      public messenger: p2p.P2PMessenger,
       private settings: SettingsService,
-      private accountPublicKey: string,
-      private createRoom: (name: string, peerId) => p2p.Room,
-      private confirmIncomingCall: (caller: string) => Promise<void>,
-      private signalingError: (reason: string) => void,
-      private sign: (dataHex: string) => p2p.ProvingData,
+      public accountPublicKey: string,
+      public createRoom: (name: string, peerId) => p2p.Room,
+      public confirmIncomingCall: (caller: string) => Promise<void>,
+      public signalingError: (reason: string) => void,
+      public sign: (dataHex: string) => p2p.ProvingData,
       private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
-      private decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string
+      public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string,
+      protocols: MessagingProtocol[]
     ) {
+      protocols.forEach(p => {
+        p.connector = this
+        this.protocolsMap[p.name] = p
+      })
     }
 
     /**
@@ -263,7 +271,7 @@ module p2p {
       }
     }
 
-    sendWebsocketMessage(protocol: ProtocolType = "webrtc", data: any[]): Promise<any> {
+    sendWebsocketMessage(protocol: ProtocolName = "webrtc", data: any[]): Promise<any> {
       return this.getWebSocket()
         .then(websocket => {
           let sendingData = [protocol].concat(data)  // sending data format: [protocolName, message1, message2, ...]
@@ -282,16 +290,18 @@ module p2p {
 
       let originalData = JSON.parse(messageEvent.data);
 
-      let protocolName: ProtocolType
+      console.log("<< \n"+ JSON.stringify(originalData));
+
+      let protocolName: ProtocolName
       let data
       if (Array.isArray(originalData)) {
         protocolName = originalData[0]
         data = originalData[1]
       } else {
+        protocolName = ""
         data = originalData
       }
 
-      console.log("<< \n"+ JSON.stringify(data));
       let msg;
       if (data.encrypted) {
         msg = JSON.parse(this.decrypt(data.encrypted, data.fromPeer));
@@ -304,139 +314,12 @@ module p2p {
 
       let roomName: string = msg.room;
 
-      if (protocolName == "U2U") {
-        if (msg.type === 'chat') {
-          let room: Room = this.rooms.get(roomName) || this.messenger.getOneToOneRoom(msg.fromPeer || msg.sender, true)
-          if (room) {
-            let payload = JSON.parse(msg.payload)
-            let chatMessage: U2UMessage = JSON.parse(this.decrypt(payload, msg.sender));
-            chatMessage.transport = "server";
-            this.processRoomMessage(chatMessage, room, msg.sender);
-            //response to server that message is delivered by the client app
-            this.sendWebsocketMessage("U2U", [{
-              id: utils.uuidv4(),
-              type: "STATUS",
-              sender: this.identity,
-              recipient: msg.sender,
-              payload: JSON.stringify({msgId: chatMessage.id, stage: 1})  // stage 1 mean delivered
-            }])
-          } else {
-            throw new Error(`Cannot get 'chat room' for message sender ${msg.fromPeer}`)
-          }
-        } else if (msg.type === 'STATUS') {
-          let payload = JSON.parse(msg.payload)
-          console.log(payload)
-          //todo mark message payload.msgId as delivered
-          //message status, sender is the server {"type": "STATUS", "msgId": "X032T-U34Y", "stage": 3, "remark": "limit max messages per account reached"}
-          //stages: 1 - delivered, 2 - read, 3 - rejected by server
-          let room: Room = this.rooms.get(roomName) || this.messenger.getOneToOneRoom(msg.sender || msg.fromPeer, true)
-          if (room) {
-            room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: msg.stage, remark: msg.remark}})
-          }
-        }
-      }
-
-      if (msg.type === 'PONG') {
-        //console.log("signaling pong");
-      } else if (msg.type === 'PROVE_IDENTITY') {
-        let signedData = this.sign(msg.data);
-        signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
-        this.sendWebsocketMessage("webrtc", [signedData]);
-      } else if (msg.type === 'APPROVED_IDENTITY') {
-        this.identity = this.accountPublicKey;
-        this.pendingRooms.forEach(f => f());
-        this.pendingRooms = [];
-        if (this.pendingOnlineStatus)
-          this.pendingOnlineStatus();
-        this.pendingOnlineStatus = null;
-      } else if (msg.type === 'CALL') {
-        let caller: string = msg.caller;
-        this.confirmIncomingCall(caller).then(value => {
-          let room = this.createRoom(roomName, caller);
-          this.enter(room, true);
-        });
-      } else if (msg.type === 'ERROR') {
-        this.signalingError(msg.reason);
-      } else if (msg.type === 'WELCOME') {  //welcome to existing room
-        let room = this.rooms.get(roomName);
-        room.state.entered = "entered";
-        msg.remotePeerIds.forEach((peerId: string) => {
-          let peer = room.createPeer(peerId, peerId);
-          if (peer && !peer.isConnected()) {
-            let pc = this.askPeerConnection(roomName, peerId);
-            this.doOffer(roomName, peerId, pc);
-          }
-        });
-      } else if (msg.type === 'offer') {
-        let peerId: string = msg.fromPeer;
-        let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
-        if (peer && !peer.isConnected()) {
-          let room = this.rooms.get(roomName);
-          let pc = this.askPeerConnection(roomName, peerId);
-          if (pc) {
-            pc.setRemoteDescription(new RTCSessionDescription(msg))
-              .then(() => {
-                this.doAnswer(roomName, peerId, pc);
-              })
-              .catch(e => {
-                if (room.onFailure) {
-                  room.onFailure(peerId, e);
-                } else {
-                  console.log(e.name + "  " + e.message);
-                }
-              });
-          }
-        }
-      } else if (msg.type === 'answer') {
-        let room = this.rooms.get(roomName);
-        let peer = room.getPeer(msg.fromPeer);
-        if (peer && !peer.isConnected()) {
-          let pc = peer.peerConnection;
-          if (pc) {
-            pc.setRemoteDescription(new RTCSessionDescription(msg))
-              .catch(e => {
-                if (room.onFailure) {
-                  room.onFailure(msg.fromPeer, e);
-                } else {
-                  console.log(e.name + "  " + e.message);
-                }
-              });
-          }
-        }
-      } else if (msg.type === 'candidate') {
-        let room = this.rooms.get(roomName);
-        let peer = room.getPeer(msg.fromPeer);
-        let pc = peer.peerConnection;
-        let candidate = new RTCIceCandidate({
-          sdpMLineIndex: msg.label,
-          candidate: msg.candidate
-        });
-        pc.addIceCandidate(candidate)
-          .catch(e => {
-            console.log("Failure during addIceCandidate(): " + e.name + "  " + e.message);
-            if (room.onFailure) {
-              room.onFailure(msg.fromPeer, e);
-            }
-          });
-
-        //hack
-        if (!peer['noNeedReconnect']) {
-          setTimeout(() => {
-            if (!peer.isConnected() && peer['connectionRole'] == "answer") {
-              peer['noNeedReconnect'] = true;
-              let pc = this.askPeerConnection(roomName, msg.fromPeer);
-              this.doOffer(roomName, msg.fromPeer, pc);
-            }
-          }, 2500);
-        }
-        // } else if (msg.type === 'GETROOM') {
-        //   this.room = msg.value;
-        //   this.onRoomReceived(this.room);
-        //   //printState("Room received");
-      } else if (msg.type === 'WRONGROOM') {
-        //window.location.href = "/";
-        console.log("Wrong room");
+      //empty protocol name means messages without specified protocol
+      let protocol: MessagingProtocol = this.protocolsMap[protocolName]
+      if (protocol) {
+        protocol.handle(msg.type, roomName, msg)
       } else {
+        //throw new Error(`No protocol for protocol name "${protocolName || 'no specified'}"`)
         this.signalingMessageAwaitings.forEach(f => f(msg));
       }
     }
