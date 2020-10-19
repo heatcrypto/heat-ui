@@ -89,6 +89,7 @@ class DialogFieldAccount extends AbstractDialogField {
         md-input-name="userField"
         md-floating-label="{{vm.label}}"
         md-min-length="1"
+        md-delay="1000"
         md-items="item in vm.f.search(vm.f.searchText)"
         md-item-text="item.calculatedName || item.publicName || item.id"
         md-search-text="vm.f.searchText"
