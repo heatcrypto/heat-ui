@@ -89,13 +89,20 @@
               <md-tooltip md-direction="top">{{vm.p2pMessaging.onlineStatus == 'online' ? 'NOW STEALTH - CLICK FOR ONCHAIN' : 'NOW ONCHAIN - CLICK FOR STEALTH'}}</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'offchain  ✔' : 'onchain'}}
             </md-button>
-            <md-button id="newContactButton" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
+            <md-button id="callButton" class="md-primary" aria-label="Call"
+            ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
+              <md-tooltip md-direction="top">
+                Call user to establish the contact
+              </md-tooltip>
+              New Contact
+            </md-button>
+            <!--<md-button id="newContactButton" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
               <md-tooltip md-direction="top">
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               New CONTACT
-            </md-button>
+            </md-button>-->
           </div>
         </div>
         <div layout="column" layout-fill>

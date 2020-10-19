@@ -64,47 +64,59 @@ module p2p {
     }
 
     okBtn() {
+      let doCall = (publicKey) => {
+        let room = this.p2pmessaging.getOneToOneRoom(publicKey);
+        if (this.p2pmessaging.isPeerConnected(publicKey)) {
+          this.okBtn['mdDialog'].hide(room);
+          return;
+        }
+
+        setTimeout(() => {
+          this.okBtn['scope'].$evalAsync(() => {
+            this.okBtn['processing'] = false;
+          });
+        }, 7000);
+
+        room = this.p2pmessaging.call(publicKey);
+
+        /*
+        listen WebRTC channel to close this dialog on connected event
+        */
+        //remove previous listener
+        if (this.channelListener) {
+          this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+        }
+        this.channelListener = (roomParam: p2p.Room, peerId: string) => {
+          if (roomParam.name == room.name) {
+            this.okBtn['mdDialog'].hide(room);
+            this.okBtn['processing'] = false;
+            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+          }
+        };
+        this.p2pmessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+        //todo it is not good way to remove the listener. It is better to do it in the  dialog.show.finally(...)
+        setTimeout(() => {
+          this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+        }, 60 * 1000);
+
+        let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
+        let contactService = <ContactService>heat.$inject.get('contactService');
+        contactService.saveContact(peerAccount, publicKey, null, -Date.now())
+      }
+
       this.okBtn['processing'] = true;
       this.heat.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
-          let room = this.p2pmessaging.getOneToOneRoom(publicKey);
-          if (this.p2pmessaging.isPeerConnected(publicKey)) {
-            this.okBtn['mdDialog'].hide(room);
-            return;
-          }
-
-          setTimeout(() => {
-            this.okBtn['scope'].$evalAsync(() => {
-              this.okBtn['processing'] = false;
-            });
-          }, 7000);
-
-          room = this.p2pmessaging.call(publicKey);
-
-          /*
-          listen WebRTC channel to close this dialog on connected event
-          */
-          //remove previous listener
-          if (this.channelListener) {
-            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-          }
-          this.channelListener = (roomParam: p2p.Room, peerId: string) => {
-            if (roomParam.name == room.name) {
-              this.okBtn['mdDialog'].hide(room);
-              this.okBtn['processing'] = false;
-              this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-            }
-          };
-          this.p2pmessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-          //todo it is not good way to remove the listener. It is better to do it in the  dialog.show.finally(...)
-          setTimeout(() => {
-            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-          }, 60 * 1000);
-
-          let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
-          let contactService = <ContactService>heat.$inject.get('contactService');
-          contactService.saveContact(peerAccount, publicKey, null, -Date.now())
+          doCall(publicKey)
         }, reason => {
+          //no found public key in the network, likely it the new account, so use the local public key
+          doCall(this.user.publicKey)
+          if (reason.description) {
+            let $mdToast = <angular.material.IToastService>heat.$inject.get('$mdToast')
+            $mdToast.show($mdToast.simple().textContent(
+              "Error: \n" + reason.description
+            ).hideDelay(5000));
+          }
           this.okBtn['processing'] = false;
         }
       );
