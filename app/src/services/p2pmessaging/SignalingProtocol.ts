@@ -23,13 +23,40 @@
 
 module p2p {
 
-  export class SignalingProtocol extends MessagingProtocol {
+  export class SignalingProtocol extends BaseProtocol {
 
     get name(): p2p.ProtocolName {
       return "webrtc"
     }
 
     readonly handlers = Object.assign(this.baseHandlers, {
+
+      PROVE_IDENTITY: (roomName: string, msg) => {
+        let signedData = this.connector.sign(msg.data);
+        signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
+        this.connector.sendWebsocketMessage("webrtc", [signedData]);
+      },
+
+      APPROVED_IDENTITY: (roomName: string, msg) => {
+        this.connector.identity = this.connector.accountPublicKey;
+        this.connector.pendingRooms.forEach(f => f());
+        this.connector.pendingRooms = [];
+        if (this.connector.pendingOnlineStatus)
+          this.connector.pendingOnlineStatus();
+        this.connector.pendingOnlineStatus = null;
+      },
+
+      WELCOME: (roomName: string, msg) => {
+        let room = this.connector.rooms.get(roomName);
+        room.state.entered = "entered";
+        msg.remotePeerIds.forEach((peerId: string) => {
+          let peer = room.createPeer(peerId, peerId);
+          if (peer && !peer.isConnected()) {
+            let pc = this.connector.askPeerConnection(roomName, peerId);
+            this.connector.doOffer(roomName, peerId, pc);
+          }
+        });
+      },
 
       CALL: (roomName: string, msg) => {
         let caller: string = msg.caller;

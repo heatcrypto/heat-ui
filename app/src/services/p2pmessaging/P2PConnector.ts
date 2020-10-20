@@ -53,7 +53,6 @@ module p2p {
 
   export type TransportType = "chain" | "p2p" | "server"
   export type MessageType = "chat" | "contactUpdate" | ""
-  export type ProtocolName = "U2U" | "webrtc" | ""
 
   export interface P2PMessenger {
     /**
@@ -132,7 +131,7 @@ module p2p {
       public sign: (dataHex: string) => p2p.ProvingData,
       private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
       public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string,
-      protocols: MessagingProtocol[]
+      protocols: BaseProtocol[]
     ) {
       protocols.forEach(p => {
         p.connector = this
@@ -315,7 +314,7 @@ module p2p {
       let roomName: string = msg.room;
 
       //empty protocol name means messages without specified protocol
-      let protocol: MessagingProtocol = this.protocolsMap[protocolName]
+      let protocol: BaseProtocol = this.protocolsMap[protocolName]
       if (protocol) {
         protocol.handle(msg.type, roomName, msg)
       } else {

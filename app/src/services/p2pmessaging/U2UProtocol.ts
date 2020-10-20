@@ -23,7 +23,7 @@
 
 module p2p {
 
-  export class U2UProtocol extends MessagingProtocol {
+  export class U2UProtocol extends BaseProtocol {
 
     get name(): p2p.ProtocolName {
       return "U2U"

@@ -21,8 +21,6 @@
  * SOFTWARE.
  * */
 
-import U2UMessage = p2p.U2UMessage;
-
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 
@@ -76,7 +74,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
         (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
         [
-          new p2p.NoProtocol(),
+          new p2p.BaseProtocol(),
           new p2p.U2UProtocol(),
           new p2p.SignalingProtocol()
         ]
@@ -97,7 +95,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
   }
 
-  onMessage(msg: U2UMessage, room: p2p.Room) {
+  onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
     this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
     this.seenP2PMessageTimestampStore.put(room.name + "_last-message-time", Date.now());
     this.updateSeenTime(null);
