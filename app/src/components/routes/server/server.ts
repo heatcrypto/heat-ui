@@ -31,24 +31,38 @@
             Start Server</md-button>
         <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.serverService.isRunning" ng-click="vm.stopServer()">
             Stop Server</md-button>
-        <md-button class="start-stop" ng-click="vm.showInstallFolder()">
-          <md-tooltip md-direction="bottom">Access your server config files and back them up before updating HEAT server</md-tooltip>
-          Install Dir
-        </md-button>
-        <md-button class="start-stop" ng-click="vm.showUserDataFolder()">
-          <md-tooltip md-direction="bottom">Access your user profile</md-tooltip>
-          User Dir
-        </md-button>
 
-        <md-button ng-click="vm.editClientApplicationsConfig()">
-          <md-tooltip md-direction="bottom">Edit client application config</md-tooltip>
-          Client application config
-        </md-button>
-
-        <md-button ng-click="vm.editHeatledgerConfig()">
-          <md-tooltip md-direction="bottom">Edit Heatledger server config</md-tooltip>
-          Heatledger server config
-        </md-button>
+        <md-menu md-position-mode="target-right target" md-offset="34px 0px">
+          <md-button style="margin-top: 14px; margin-right: 20px;" aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+            <i><img src="assets/sandwich.png"></i>
+          </md-button>
+          <md-menu-content>
+            <md-menu-item>
+              <md-button class="start-stop" ng-click="vm.showInstallFolder()">
+                <md-tooltip md-direction="bottom">Access your server config files and back them up before updating HEAT server</md-tooltip>
+                <span>Install Dir</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button class="start-stop" ng-click="vm.showUserDataFolder()">
+                <md-tooltip md-direction="bottom">Access your user profile</md-tooltip>
+                <span>User Dir</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button ng-click="vm.editClientApplicationsConfig()">
+                <md-tooltip md-direction="bottom">Edit application config</md-tooltip>
+                <span>Data sources config</span>
+              </md-button>
+            </md-menu-item>
+            <md-menu-item>
+              <md-button ng-click="vm.editHeatledgerConfig()">
+                <md-tooltip md-direction="bottom">Edit embedded Heatledger server config</md-tooltip>
+                <span>Server config</span>
+              </md-button>
+            </md-menu-item>
+          </md-menu-content>
+        </md-menu>
 
         <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
           <md-tooltip md-direction="top">
