@@ -23,7 +23,11 @@
 
 module p2p {
 
-  export type ProtocolName = "U2U" | "webrtc" | ""
+  export const enum Protocol {
+    U2U = "U2U",
+    signaling = "signaling",
+    noname = ""
+  }
 
   /**
    * Protocol handles the set of messages to provide some high level network functionality.
@@ -34,8 +38,8 @@ module p2p {
 
     connector: P2PConnector
 
-    get name(): p2p.ProtocolName {
-      return ""
+    get name(): p2p.Protocol {
+      return Protocol.noname
     }
 
     handle(messageType: string, roomName: string, msg) {

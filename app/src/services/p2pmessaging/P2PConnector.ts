@@ -144,7 +144,7 @@ module p2p {
      */
     setOnlineStatus(status: OnlineStatus) {
       let sendOnlineStatus = () => {
-        this.sendWebsocketMessage("webrtc", [{type: "SET_ONLINE_STATUS", status: status}]);
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "SET_ONLINE_STATUS", status: status}]);
         if (status == "online") {
           this.rooms.forEach(room => {
             if (room.state.entered == "entered") {
@@ -157,7 +157,7 @@ module p2p {
       if (this.identity) {
         sendOnlineStatus();
       } else {
-        this.sendWebsocketMessage("webrtc", [{type: "WANT_PROVE_IDENTITY"}]);
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}]);
         this.pendingOnlineStatus = sendOnlineStatus;
       }
       if (status == "offline") {
@@ -173,7 +173,7 @@ module p2p {
 
     getPeerOnlineStatus(peerId: string): Promise<string> {
       return this.request(
-        () => this.sendWebsocketMessage("webrtc", [{type: "GET_ONLINE_STATUS", peerId: peerId}]),
+        () => this.sendWebsocketMessage(Protocol.signaling, [{type: "GET_ONLINE_STATUS", peerId: peerId}]),
         (msg) => {
           if (msg.type === "ONLINE_STATUS" && msg.peerId == peerId)
             return msg.status;
@@ -182,12 +182,12 @@ module p2p {
     }
 
     call(toPeerId: string, caller: string, room: Room) {
-      this.sendWebsocketMessage("webrtc", [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.name}]);
+      this.sendWebsocketMessage(Protocol.signaling, [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.name}]);
     }
 
     getTmp(roomName: string): Promise<Array<string>> {
       return this.request(
-        () => this.sendWebsocketMessage("webrtc", [{type: "WHO_ONLINE"}]),
+        () => this.sendWebsocketMessage(Protocol.signaling, [{type: "WHO_ONLINE"}]),
         (msg) => {
           if (msg.type === "WHO_ONLINE")
             return msg.remotePeerIds;
@@ -217,7 +217,7 @@ module p2p {
           }, 4000);
 
           //request entering to the room
-          this.sendWebsocketMessage("webrtc", [{type: "ROOM", room: room.name}]);
+          this.sendWebsocketMessage(Protocol.signaling, [{type: "ROOM", room: room.name}]);
         }
       };
 
@@ -227,7 +227,7 @@ module p2p {
         requestEnterRoom();
       } else {
         this.pendingRooms.push(requestEnterRoom);
-        this.sendWebsocketMessage("webrtc", [{type: "WANT_PROVE_IDENTITY"}]);
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}]);
         return;
       }
     }
@@ -266,11 +266,11 @@ module p2p {
 
     private pingSignalingServer(socket: WebSocket) {
       if (this.signalingReady) {
-        this.sendWebsocketMessage("webrtc", [{type: "PING"}]);
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "PING"}]);
       }
     }
 
-    sendWebsocketMessage(protocol: ProtocolName = "webrtc", data: any[]): Promise<any> {
+    sendWebsocketMessage(protocol: Protocol = Protocol.signaling, data: any[]): Promise<any> {
       return this.getWebSocket()
         .then(websocket => {
           let sendingData = [protocol].concat(data)  // sending data format: [protocolName, message1, message2, ...]
@@ -291,13 +291,13 @@ module p2p {
 
       console.log("<< \n"+ JSON.stringify(originalData));
 
-      let protocolName: ProtocolName
+      let protocolName: Protocol
       let data
       if (Array.isArray(originalData)) {
         protocolName = originalData[0]
         data = originalData[1]
       } else {
-        protocolName = ""
+        protocolName = Protocol.noname
         data = originalData
       }
 
@@ -349,7 +349,7 @@ module p2p {
               candidate: event.candidate.candidate
             };
             let encrypted = this.encrypt(JSON.stringify(data), peerId);
-            this.sendWebsocketMessage("webrtc", [
+            this.sendWebsocketMessage(Protocol.signaling, [
               {room: roomName, toPeerId: peerId},
               {room: roomName, fromPeer: this.identity, encrypted: encrypted}
             ]);
@@ -401,7 +401,7 @@ module p2p {
         let checkChannelMessage = {type: P2PConnector.MSG_TYPE_CHECK_CHANNEL, room: roomName, value: ("" + Math.random())};
         //send checking message to signaling server,
         // then when other peer will send this value also the server will be sure that both ends established channel
-        this.sendWebsocketMessage("webrtc", [checkChannelMessage]);
+        this.sendWebsocketMessage(Protocol.signaling, [checkChannelMessage]);
         //send checking message to peer
         this.send(roomName, JSON.stringify(checkChannelMessage), dataChannel);
         //console.log("Checking message sent " + checkChannelMessage.value);
@@ -478,7 +478,7 @@ module p2p {
       peerConnection.createOffer((offer) => {
           peerConnection.setLocalDescription(offer, () => {
             let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
-            this.sendWebsocketMessage("webrtc", [
+            this.sendWebsocketMessage(Protocol.signaling, [
               {room: roomName, toPeerId: peerId, fromPeer: this.identity, encrypted: encrypted}
             ]);
           }, (e) => this.onFailure(roomName, peerId, e));
@@ -500,7 +500,7 @@ module p2p {
       peerConnection.createAnswer((answer) => {
         peerConnection.setLocalDescription(answer, () => {
           let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
-          this.sendWebsocketMessage("webrtc", [
+          this.sendWebsocketMessage(Protocol.signaling, [
             {room: roomName, toPeerId: peerId, fromPeer: this.identity, encrypted: encrypted}
           ]);
         }, (e) => this.onFailure(roomName, peerId, e));
@@ -545,7 +545,7 @@ module p2p {
               payload: JSON.stringify(encrypted)
             }
             : encrypted
-          this.sendWebsocketMessage("U2U", [sendingData])
+          this.sendWebsocketMessage(Protocol.U2U, [sendingData])
           //throw new Error('Direct channel is not provided and server messaging is not provided')
         }
       }
@@ -585,7 +585,7 @@ module p2p {
           this.processRoomMessage(msg, room, peerId);
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
-          this.sendWebsocketMessage("webrtc", [{room: roomName}, msg]);
+          this.sendWebsocketMessage(Protocol.signaling, [{room: roomName}, msg]);
         } else if (msg.type === P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY) {
           let signedData = this.sign(msg.data);
           let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY,

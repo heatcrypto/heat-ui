@@ -25,8 +25,8 @@ module p2p {
 
   export class U2UProtocol extends BaseProtocol {
 
-    get name(): p2p.ProtocolName {
-      return "U2U"
+    get name(): p2p.Protocol {
+      return Protocol.U2U
     }
 
     callForNewContact(recipient: string, caller: string, room: Room) {
@@ -43,7 +43,7 @@ module p2p {
           chatMessage.transport = "server";
           this.connector.processRoomMessage(chatMessage, room, msg.sender);
           //response to server that message is delivered by the client app
-          this.connector.sendWebsocketMessage("U2U", [{
+          this.connector.sendWebsocketMessage(Protocol.U2U, [{
             id: utils.uuidv4(),
             type: "STATUS",
             sender: this.connector.identity,

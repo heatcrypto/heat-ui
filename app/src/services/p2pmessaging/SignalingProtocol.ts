@@ -25,8 +25,8 @@ module p2p {
 
   export class SignalingProtocol extends BaseProtocol {
 
-    get name(): p2p.ProtocolName {
-      return "webrtc"
+    get name(): p2p.Protocol {
+      return Protocol.signaling
     }
 
     readonly handlers = Object.assign(this.baseHandlers, {
@@ -34,7 +34,7 @@ module p2p {
       PROVE_IDENTITY: (roomName: string, msg) => {
         let signedData = this.connector.sign(msg.data);
         signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
-        this.connector.sendWebsocketMessage("webrtc", [signedData]);
+        this.connector.sendWebsocketMessage(Protocol.signaling, [signedData]);
       },
 
       APPROVED_IDENTITY: (roomName: string, msg) => {
