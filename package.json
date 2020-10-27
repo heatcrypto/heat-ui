@@ -57,7 +57,7 @@
     "open": "^7.0.0",
     "random-hash": "^4.0.1",
     "serve-static": "^1.14.1",
-    "typescript": "^2.3.4"
+    "typescript": "^4.0.5"
   },
   "dependencies": {
     "angular": "^1.8.0",
@@ -82,6 +82,7 @@
     "jsonformatter": "^0.6.0",
     "long": "3.2.0",
     "material-design-icons": "2.2.3",
+    "material-design-icons-iconfont": "^6.1.0",
     "ng-popover": "^2.0.0",
     "pako": "1.0.3",
     "techan": "0.8.0",

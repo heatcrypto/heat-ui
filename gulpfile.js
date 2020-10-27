@@ -163,7 +163,7 @@ gulp.task('less', function () {
     .pipe(less({
       paths: [path.join(__dirname, 'less', 'includes')]
     }))
-    .pipe(minifyCss())
+    .pipe(minifyCss({ processImport: false }))
     .pipe(rename(LESS_HASHED_NAME))
     .pipe(gulp.dest('./dist/styles/'));
 });
