@@ -418,7 +418,9 @@ class LoginComponent {
         this.$scope.$evalAsync(() => {
           this.pageAddWalletInvalid = true;
           let fileContents = reader.result;
-          this.pageAddWallet = this.walletFile.createFromText(fileContents);
+          if (typeof fileContents === "string") {
+            this.pageAddWallet = this.walletFile.createFromText(fileContents);
+          }
           if (this.pageAddWallet) {
             this.pageAddWalletInvalid = false;
           }

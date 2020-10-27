@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var Clipboard: any;
+//declare var Clipboard: any;
 @Service('clipboard')
 @Inject('$q', '$mdToast')
 class ClipboardService {
@@ -105,8 +105,8 @@ class ClipboardService {
           <textarea style="width: 600px" rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
           <div class="qrcodeBox" id="PKQRCode"></div>
           <p>
-          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right">Close</md-button>
-          <md-button ng-click="vm.copyToClipboard()" aria-label="Copy" style="float: right">copy</md-button>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Close" style="float: right">Close</md-button>
+          <md-button ng-click="vm.copyToClipboard()" aria-label="Copy">copy</md-button>
           </p>
         </md-input-container>
       </div>
