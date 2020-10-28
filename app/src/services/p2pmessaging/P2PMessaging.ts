@@ -224,43 +224,45 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return room;
   }
 
-  private confirmIncomingCall(peerId: string): Promise<any> {
+  private confirmIncomingCall(callerPublicKey: string): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       // if peer is connected already confirm silently
-      if (this.isPeerConnected(peerId)) {
+      if (this.isPeerConnected(callerPublicKey)) {
         resolve();
         return;
       }
 
-      let updateContactCallTime = (account: string, publicKey: string, publicName: string) => {
+      let callerAccount = heat.crypto.getAccountIdFromPublicKey(callerPublicKey);
+
+      let updateContactCallTime = (account: string, publicKey: string, publicName?: string) => {
         //save negative time to force to select contact in contact list
-        this.contactService.saveContact(peerAccount, peerId, publicName, -Date.now());
+        this.contactService.saveContact(callerAccount, callerPublicKey, publicName, -Date.now());
       };
 
-      let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
-      this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
-        let expectedAccount = accounts.find(value => value.publicKey == peerId);
-        if (expectedAccount) {
-          let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
-            let interval = this.$interval(() => {
-              if (this.isPeerConnected(peerId)) {
-                mdDialog.cancel("Already connected");
-                this.$interval.cancel(interval);
-                updateContactCallTime(peerAccount, peerId, expectedAccount.publicName);
-              }
-            }, 500, 7, false);
-          };
-          dialogs.confirm(
-            "Incoming connect request",
-            `Account &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; wants to connect with you. Accepting connection will share your current IP address. Accept or decline? Click OK to accept, Cancel to decline.`,
-            closeDialogOnConnected
-          ).then(() => {
-            updateContactCallTime(peerAccount, peerId, expectedAccount.publicName);
-            resolve();
-          });
-        } else {
-          reject("Account not found");
-        }
+      this.heat.api.searchPublicNames(callerAccount, 0, 100).then(accounts => {
+        let expectedAccount = accounts.find(value => value.publicKey == callerPublicKey)
+        let caller = expectedAccount ? expectedAccount.publicName : callerAccount
+        let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
+          let interval = this.$interval(() => {
+            if (this.isPeerConnected(callerPublicKey)) {
+              mdDialog.cancel("Already connected");
+              this.$interval.cancel(interval);
+              updateContactCallTime(callerAccount, callerPublicKey,  caller);
+            }
+          }, 500, 7, false);
+        };
+        let notes = expectedAccount ? null : `Note the caller has no registered in the blockchain`
+        dialogs.confirm(
+          "Incoming connect request",
+          `Account &nbsp;&nbsp;<b>${caller}</b>&nbsp;&nbsp; wants to connect with you.
+           Accepting connection will share your current IP address.
+           Accept or decline? Click OK to accept, Cancel to decline.
+           ${notes || ""}`,
+          closeDialogOnConnected
+        ).then(() => {
+          updateContactCallTime(callerAccount, callerPublicKey, expectedAccount ? expectedAccount.publicName : null);
+          resolve();
+        });
       });
     });
   }

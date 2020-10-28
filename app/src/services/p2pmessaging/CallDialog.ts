@@ -31,7 +31,7 @@ module p2p {
     private channelListener: IEventListenerFunction;
 
     constructor($event,
-                private heat: HeatService,
+                private heatService: HeatService,
                 private user: UserService,
                 private recipient: string,
                 private recipientPublicKey: string,
@@ -67,12 +67,12 @@ module p2p {
       let self = this
 
       this.okBtn['processing'] = true;
-      this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+      this.heatService.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
-          self.doCall(publicKey)
+          this.doCall(publicKey)
         }, reason => {
           //no found public key in the network, likely it the new account, so use the local public key
-          self.doCall(self.user.publicKey)
+          this.doCall(this.user.publicKey)
           if (reason.description) {
             let $mdToast = <angular.material.IToastService>heat.$inject.get('$mdToast')
             $mdToast.show($mdToast.simple().textContent(
@@ -90,7 +90,7 @@ module p2p {
       });
     }
 
-    private doCall(publicKey) {
+    doCall = (publicKey) => {
       let room = this.p2pmessaging.getOneToOneRoom(publicKey);
       if (this.p2pmessaging.isPeerConnected(publicKey)) {
         this.okBtn['mdDialog'].hide(room);
