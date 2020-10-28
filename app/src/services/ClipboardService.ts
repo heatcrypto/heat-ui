@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var Clipboard: any;
+//declare var Clipboard: any;
 @Service('clipboard')
 @Inject('$q', '$mdToast')
 class ClipboardService {
@@ -96,4 +96,38 @@ class ClipboardService {
       }
     )
   }
+
+  showSecret(secret: string) {
+    let panel: PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea style="width: 600px" rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
+          <div class="qrcodeBox" id="PKQRCode"></div>
+          <p>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Close" style="float: right">Close</md-button>
+          <md-button ng-click="vm.copyToClipboard()" aria-label="Copy">copy</md-button>
+          </p>
+        </md-input-container>
+      </div>
+    `, {
+        panel: panel,
+        secret: secret,
+        copyToClipboard: () => {
+          this.copyText(secret, 'Copied data to clipboard')
+        }
+      }
+    )
+    setTimeout(() => {
+      new QRCode("PKQRCode", {
+        text: secret,
+        width: 160,
+        height: 160,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      })
+    }, 800)
+  }
+
 }

@@ -404,8 +404,6 @@ class CurrencyAddressCreate {
   }
 }
 
-
-
 class WalletEntry {
   public isWalletEntry = true
   public selected = true
@@ -583,7 +581,10 @@ class WalletEntry {
     </div>
   `
 })
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'ltcCryptoService', 'ltcBlockExplorerService', 'bchCryptoService', 'bchBlockExplorerService', 'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
+  '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService',
+  'ardorCryptoService', 'ltcCryptoService', 'ltcBlockExplorerService', 'bchCryptoService', 'bchBlockExplorerService',
+  'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
   selectAll = true;
   allLocked = true
@@ -640,32 +641,7 @@ class WalletComponent {
   }
 
   showSecret(secret: string) {
-    let panel: PanelService = heat.$inject.get('panel')
-    panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase">
-        <md-input-container flex>
-          <textarea style="width: 600px" rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
-          <div class="qrcodeBox" id="PKQRCode"></div>
-          <p>
-          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right">Close</md-button>
-          </p>
-        </md-input-container>
-      </div>
-    `, {
-        panel: panel,
-        secret: secret
-      }
-    )
-    setTimeout(() => {
-      new QRCode("PKQRCode", {
-        text: secret,
-        width: 160,
-        height: 160,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      })
-    }, 800)
+    this.clipboard.showSecret(secret)
   }
 
   deleteEntry(entry) {

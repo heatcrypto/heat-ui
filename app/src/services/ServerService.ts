@@ -79,6 +79,9 @@ class ServerService extends EventEmitter {
       this.command = path.join('bin','heatledger');
     }
 
+    let namespace = heat.isTestnet ? "(heatwallet\\,testnet)" : "(heatwallet)"
+    this.args = ["-properties", "namespace=" + namespace]
+
     //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
     let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
     const fs = require('fs');
@@ -114,27 +117,9 @@ class ServerService extends EventEmitter {
     this.log("[SERVER] arguments >> " + this.args);
     this.log("[SERVER] cwd     >> " + this.cwd);
 
-    // Point the blockchain dir to be in the appData dir
-    // Set ENV vars to:
-    //   - HEAT_WALLET_BLOCKCHAINDIR
-    //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
     this.getUserDataDirFromMainProcess().then(
       userDataDir => {
         var env = process.env
-
-        // When things go wrong undefined is returned
-        let path = require('path');
-        if (userDataDir) {
-          env['HEAT_WALLET_BLOCKCHAINDIR'] = path.join(userDataDir, 'blockchain')
-          env['HEAT_WALLET_BLOCKCHAINDIR_TEST'] = path.join(userDataDir, 'blockchain-test')
-        }
-
-        env['HEATLEDGER_OPTS'] = heat.isTestnet
-          ? '-Dprops=conf/heatwallet-testnet.properties'
-          : '-Dprops=conf/heatwallet-mainnet.properties'
-        env['HEAT_WALLET_DB_DIR'] = heat.isTestnet
-          ? path.join(userDataDir, 'heat-db-test/heat_replicator')
-          : path.join(userDataDir, 'heat-db/heat_replicator')
 
         var promise = spawn(this.command, this.args, {
           cwd: this.cwd,
@@ -314,9 +299,7 @@ class ServerService extends EventEmitter {
   }
 
   getConfigFilePath() {
-    return heat.isTestnet
-      ? "resources/heatledger/conf/heatwallet-testnet.properties"
-      : "resources/heatledger/conf/heatwallet-mainnet.properties"
+    return "resources/heatledger/conf/heat.properties"
   }
 
 }

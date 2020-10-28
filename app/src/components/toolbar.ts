@@ -611,15 +611,7 @@ class ToolbarComponent {
   }
 
   showSecretPhrase() {
-    this.panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase">
-        <md-input-container flex>
-          <textarea style="width: 600px;" rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
-        </md-input-container>
-      </div>
-    `, {
-      secretPhrase: this.user.currency.secretPhrase
-    })
+    this.clipboard.showSecret(this.user.currency.secretPhrase)
   }
 
 }
