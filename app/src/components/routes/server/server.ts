@@ -33,7 +33,7 @@
             Stop Server</md-button>
 
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
-          <md-button style="margin-top: 14px; margin-right: 20px;" aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+          <md-button style="margin-top: 14px; margin-right: 20px;" aria-label="signout" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
             <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content>

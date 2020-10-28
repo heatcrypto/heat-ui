@@ -508,7 +508,7 @@ class WalletEntry {
                 <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
 
                 <md-menu md-position-mode="target-right target" md-offset="34px 34px" ng-if="entry.unlocked">
-                  <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdOpenMenu($event)" md-menu-origin >
+                  <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>
                   </md-button>
                   <md-menu-content width="4">

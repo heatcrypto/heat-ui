@@ -140,7 +140,7 @@
             </div>
 
             <md-menu md-position-mode="target-right target" md-offset="34px 34px" hide-gt-sm ng-if="vm.user.unlocked">
-              <md-button aria-label="user menu" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+              <md-button aria-label="user menu" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
                 <md-icon md-font-library="material-icons">more_vert</md-icon>
               </md-button>
               <md-menu-content width="4">
@@ -217,7 +217,7 @@
         </div>
 
         <md-menu ng-if="vm.user.unlocked" style="margin-right: -12px;">
-          <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+          <md-button aria-label="signout" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
             <md-icon md-font-library="material-icons">face</md-icon>
           </md-button>
           <md-menu-content width="4">
@@ -230,7 +230,7 @@
         </md-menu>
 
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
-          <md-button aria-label="signout" class="md-icon-button" ng-click="$mdOpenMenu($event)" md-menu-origin >
+          <md-button aria-label="signout" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
             <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content width="4">
