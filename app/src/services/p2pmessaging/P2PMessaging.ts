@@ -68,7 +68,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       this.connector = new p2p.P2PConnector(
         $interval, this, settings, this.user.publicKey,
         (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-        peerId => this.confirmIncomingCall(peerId),
+        peerId => this.processIncomingCall(peerId),
         reason => this.onSignalingError(reason),
         dataHex => this.sign(dataHex),
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
@@ -109,7 +109,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
           this.contactService.saveContact(senderAccount, msg.fromPeerId, null, -Date.now())
         }
       }
-    })
+    }).catch(reason => console.error(reason))
   }
 
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
@@ -224,7 +224,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return room;
   }
 
-  private confirmIncomingCall(callerPublicKey: string): Promise<any> {
+  private processIncomingCall(callerPublicKey: string): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       // if peer is connected already confirm silently
       if (this.isPeerConnected(callerPublicKey)) {
@@ -256,7 +256,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
           "Incoming connect request",
           `Account &nbsp;&nbsp;<b>${caller}</b>&nbsp;&nbsp; wants to connect with you.
            Accepting connection will share your current IP address.
-           Accept or decline? Click OK to accept, Cancel to decline.
+           <p><strong>Accept or decline?</strong> Click OK to accept, Cancel to decline.</p>
            ${notes || ""}`,
           closeDialogOnConnected
         ).then(() => {

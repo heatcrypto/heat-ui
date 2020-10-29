@@ -156,7 +156,7 @@ module p2p {
      * Invoked on offer from remote peer to establish p2p channel. Needs to resolve promise if user allows call.
      * It is default implementation allowing all calls.
      */
-    // confirmIncomingCall: (peerId: string) => Promise<void> = (peerId: string) => {
+    // processIncomingCall: (peerId: string) => Promise<void> = (peerId: string) => {
     //   return Promise.resolve();
     // };
 

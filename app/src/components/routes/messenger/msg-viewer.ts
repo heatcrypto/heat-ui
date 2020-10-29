@@ -90,27 +90,31 @@ class MsgViewerComponent {
     this.displayMessages = {index: 0, messages: []};
     this.allMessages = [];
 
-    this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey)).then(count => {
-      if (count > 0) {
-        this.onchainMessagesCount = count;
-        this.messagesCount += count;
-      }
-      let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
-      if (room) {
-        this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
-        this.messageHistory = room.getMessageHistory()
-        this.offchainPages = this.messageHistory.getPageCount() - 1;
-        room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
-          this.onMessageAdded(item, true)
+    this.heat.api.getMessagingContactMessagesCount(this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey))
+      .then(count => {
+        if (count > 0) {
+          this.onchainMessagesCount = count;
+          this.messagesCount += count;
         }
-        this.messagesCount += this.messageHistory.getItemCount();
-        this.$scope.$on('$destroy', () => {
-          this.p2pMessaging.updateSeenTime(room.name, Date.now());
-          room.onNewMessageHistoryItem = null;
-        });
-      }
-      this.loadMessages();
-    })
+      })
+      .catch(reason => console.error('Error on getting contact messages count: ' + reason))
+      .then(value => {
+        let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
+        if (room) {
+          this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
+          this.messageHistory = room.getMessageHistory()
+          this.offchainPages = this.messageHistory.getPageCount() - 1;
+          room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+            this.onMessageAdded(item, true)
+          }
+          this.messagesCount += this.messageHistory.getItemCount();
+          this.$scope.$on('$destroy', () => {
+            this.p2pMessaging.updateSeenTime(room.name, Date.now());
+            room.onNewMessageHistoryItem = null;
+          });
+        }
+        this.loadMessages();
+      })
   }
 
   private loadMessages() {

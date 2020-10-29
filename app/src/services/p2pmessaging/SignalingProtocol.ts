@@ -60,7 +60,7 @@ module p2p {
 
       CALL: (roomName: string, msg) => {
         let caller: string = msg.caller;
-        this.connector.confirmIncomingCall(caller).then(value => {
+        this.connector.processIncomingCall(caller).then(value => {
           let room = this.connector.createRoom(roomName, caller);
           this.connector.enter(room, true);
         });

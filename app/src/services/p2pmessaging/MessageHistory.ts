@@ -263,6 +263,7 @@ module p2p {
           messages.forEach(m => this.extraStore.remove(m.msgId))
           //remove the page
           allRoomStore.remove(key)
+          console.log(`removed page (length ${page.length}) in the message history, page key ${key}`)
         }
         if ((--pageToRemoveNumber) <= 0) {
           break;

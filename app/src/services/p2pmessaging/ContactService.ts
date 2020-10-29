@@ -20,39 +20,44 @@ class ContactService {
    * @param selectedContactPublicKey
    */
   getContacts(selectedContactPublicKey?) {
+    let localContacts: IHeatMessageContact[] = []
+    this.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => localContacts.push(p2pContact))
     return this.heat.api.getMessagingContacts(this.user.account, 0, 100).then((contacts) => {
-        //merge contacts obtained via p2p messaging
-        this.p2pContactStore.forEach((key, p2pContact: IHeatMessageContact) => {
-          let existingHeatContact = contacts.find(contact => !p2pContact.publicKey || contact.publicKey == p2pContact.publicKey)
-          if (existingHeatContact) {
-            existingHeatContact.activityTimestamp = p2pContact.activityTimestamp
-          } else {
-            p2pContact['isP2POnlyContact'] = true
-            contacts.push(p2pContact)
+      //merge contacts obtained via p2p messaging
+      localContacts.forEach(p2pContact => {
+        let existingHeatContact = contacts.find(contact => !p2pContact.publicKey || contact.publicKey == p2pContact.publicKey)
+        if (existingHeatContact) {
+          existingHeatContact.activityTimestamp = p2pContact.activityTimestamp
+        } else {
+          p2pContact['isP2POnlyContact'] = true
+          contacts.push(p2pContact)
+        }
+      })
+
+      contacts = contacts
+        .filter(contact => contact.publicKey && contact.account != this.user.account)
+        .map((contact) => {
+          if (selectedContactPublicKey && selectedContactPublicKey != contact.publicKey) {
+            contact['hasUnreadMessage'] = !contact['isP2POnlyContact'] && this.contactHasUnreadMessage(contact);
+            contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
           }
-        });
+          // contact['p2pStatus'] = this.p2pStatus(contact);
+          return contact;
+        })
+        .sort(
+          (c1, c2) =>
+            (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));
 
-        contacts = contacts
-          .filter(contact => contact.publicKey && contact.account != this.user.account)
-          .map((contact) => {
-            if (selectedContactPublicKey && selectedContactPublicKey != contact.publicKey) {
-              contact['hasUnreadMessage'] = !contact['isP2POnlyContact'] && this.contactHasUnreadMessage(contact);
-              contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
-            }
-            // contact['p2pStatus'] = this.p2pStatus(contact);
-            return contact;
-          })
-          .sort(
-            (c1, c2) =>
-              (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));
-
-        return contacts
-      });
+      return contacts
+    }).catch(reason => {
+      console.error("Error on getting messaging contacts from server: " + reason)
+      return localContacts
+    })
   }
 
   saveContact(account: string, publicKey: string, publicName?: string, calledTimestamp?: number) {
     if (!publicKey) return;
-    let save = () => {
+    let save = (publicName?: string) => {
       let contact: IHeatMessageContact = this.p2pContactStore.get(account);
       if (contact && calledTimestamp && calledTimestamp != contact.activityTimestamp) {
         contact.activityTimestamp = calledTimestamp;
@@ -71,13 +76,11 @@ class ContactService {
       }
     }
     if (publicName) {
-      save()
+      save(publicName)
     } else {
       this.heat.api.searchPublicNames(account, 0, 100).then(accounts => {
-        let expectedAccount = accounts.find(v => v.publicKey == publicKey);
-        if (expectedAccount) {
-          save()
-        }
+        let expectedAccount = accounts.find(v => v.publicKey == publicKey)
+        save(expectedAccount ? expectedAccount.publicName : null)
       });
     }
   }

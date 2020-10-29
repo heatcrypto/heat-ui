@@ -64,20 +64,18 @@ module p2p {
     }
 
     okBtn() {
-      let self = this
-
       this.okBtn['processing'] = true;
       this.heatService.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
           this.doCall(publicKey)
         }, reason => {
-          //no found public key in the network, likely it the new account, so use the local public key
-          this.doCall(this.user.publicKey)
           if (reason.description) {
             let $mdToast = <angular.material.IToastService>heat.$inject.get('$mdToast')
             $mdToast.show($mdToast.simple().textContent(
               "Error: \n" + reason.description
             ).hideDelay(5000));
+          } else {
+            console.error(reason)
           }
           this.okBtn['processing'] = false;
         }
