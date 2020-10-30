@@ -40,7 +40,6 @@ module p2p {
       this.dialogTitle = 'Send offchain connect request';
       this.dialogDescription = 'Connect other user to establish the peer-to-peer channel';
       this.okBtnTitle = 'Connect';
-      this.okBtn['processing'] = false;
       this.customFeeTitle = 'NO FEE';
       this.okBtn['disabled'] = !recipient;
     }
@@ -64,7 +63,22 @@ module p2p {
     }
 
     okBtn() {
-      this.okBtn['processing'] = true;
+      this.okBtnReplacingText = "requesting ..........."
+      let interval = setInterval(() => {
+        this.okBtn['scope'].$evalAsync(() => {
+          let s = this.okBtnReplacingText
+          if (!s) return
+          if (s.charAt(s.length - 1) == ".")
+            this.okBtnReplacingText = s.substr(0, s.length - 1)
+        });
+      }, 1000)
+      setTimeout(() => {
+        clearInterval(interval)
+        this.okBtn['scope'].$evalAsync(() => {
+          this.okBtnReplacingText = null;
+        });
+      }, 7000);
+
       this.heatService.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
           this.doCall(publicKey)
@@ -77,7 +91,7 @@ module p2p {
           } else {
             console.error(reason)
           }
-          this.okBtn['processing'] = false;
+          this.okBtnReplacingText = null;
         }
       );
     }
@@ -95,12 +109,6 @@ module p2p {
         return;
       }
 
-      setTimeout(() => {
-        this.okBtn['scope'].$evalAsync(() => {
-          this.okBtn['processing'] = false;
-        });
-      }, 7000);
-
       room = this.p2pmessaging.requestNewContact(publicKey, "");
 
       /*
@@ -113,7 +121,7 @@ module p2p {
       this.channelListener = (roomParam: p2p.Room, peerId: string) => {
         if (roomParam.name == room.name) {
           this.okBtn['mdDialog'].hide(room);
-          this.okBtn['processing'] = false;
+          this.okBtnReplacingText = null;
           this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
         }
       };

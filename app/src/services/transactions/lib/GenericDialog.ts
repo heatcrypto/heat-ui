@@ -55,12 +55,13 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
   abstract getFields($scope: angular.IScope): Array<AbstractDialogField>;
   public fieldsReady($scope: angular.IScope): void {}
 
-  /* Providedd by extending classs */
+  /* Provided by extending classs */
   protected dialogClass: string;
   protected dialogTitle: string;
   protected feeFormatted: string;
   protected dialogDescription: string;
   protected okBtnTitle: string = 'OK';
+  protected okBtnReplacingText: string; // set this then the OK button is replaced by the text from this field
   protected customFeeTitle: string;
 
   /* Available for extending class - set from dialog controller */
@@ -202,8 +203,8 @@ abstract class GenericDialog implements angular.material.IDialogOptions {
           <div ng-switch-when="0">
             <md-button class="md-warn" ng-click="vm.cancelBtn()">Cancel</md-button>
             <!--<md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.okBtn['processing']"></md-progress-circular>-->
-            <span class="text-center" ng-hide="!vm.okBtn['processing']"><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;contacting...&nbsp;</i></span>
-            <md-button class="md-primary" ng-hide="vm.okBtn['processing']" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid || vm.okBtn['processing'] || vm.okBtn['disabled']">
+            <span class="text-center" ng-hide="!vm.okBtnReplacingText"><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{vm.okBtnReplacingText}}&nbsp;</i></span>
+            <md-button class="md-primary" ng-hide="!!vm.okBtnReplacingText" ng-click="vm.okBtn()" ng-disabled="!dialogForm.$valid || vm.okBtnReplacingText || vm.okBtn['disabled']">
               {{vm.okBtnTitle}}
             </md-button>
           </div>
