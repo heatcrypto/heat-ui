@@ -55,6 +55,13 @@ class ContactService {
     })
   }
 
+  /**
+   *
+   * @param account
+   * @param publicKey
+   * @param publicName
+   * @param calledTimestamp set negative time to force selecting the contact in contact list
+   */
   saveContact(account: string, publicKey: string, publicName?: string, calledTimestamp?: number) {
     if (!publicKey) return;
     let save = (publicName?: string) => {

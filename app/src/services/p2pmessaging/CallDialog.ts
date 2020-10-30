@@ -101,7 +101,7 @@ module p2p {
         });
       }, 7000);
 
-      room = this.p2pmessaging.call(publicKey);
+      room = this.p2pmessaging.requestNewContact(publicKey, "");
 
       /*
       listen WebRTC channel to close this dialog on connected event

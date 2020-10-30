@@ -42,6 +42,9 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   public hasUnreadMessage: boolean = false;
 
   public connector: p2p.P2PConnector;
+  private baseProtocol: p2p.BaseProtocol;
+  private u2uProtocol: p2p.U2UProtocol;
+  private signalingProtocol: p2p.SignalingProtocol;
 
   constructor(private settings: SettingsService,
               private user: UserService,
@@ -65,6 +68,12 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     user.on(UserService.EVENT_UNLOCKED, () => {
       closeConnector();
 
+      let protocols = [
+        this.baseProtocol = new p2p.BaseProtocol(),
+        this.u2uProtocol = new p2p.U2UProtocol(),
+        this.signalingProtocol = new p2p.SignalingProtocol()
+      ]
+
       this.connector = new p2p.P2PConnector(
         $interval, this, settings, this.user.publicKey,
         (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
@@ -73,11 +82,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         dataHex => this.sign(dataHex),
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
         (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
-        [
-          new p2p.BaseProtocol(),
-          new p2p.U2UProtocol(),
-          new p2p.SignalingProtocol()
-        ]
+        protocols
       );
 
       this.connector.setOnlineStatus("online");
@@ -182,9 +187,11 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return room;
   }
 
-  call(peerId: string): p2p.Room {
-    let room = this.enterRoom(peerId);
-    this.connector.call(peerId, this.user.publicKey, room);
+  requestNewContact(recipient: string, text: string): p2p.Room {
+    let room = this.enterRoom(recipient)
+    //room.sendMessage(new p2p.U2UMessage("newContact", Date.now()))
+    this.u2uProtocol.requestNewContact(recipient, this.user.publicKey, room, text)
+    //this.connector.call(peerId, this.user.publicKey, room);
     return room;
   }
 

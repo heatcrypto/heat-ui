@@ -23,6 +23,9 @@
 
 module p2p {
 
+  /**
+   * Messages of this type are stored on the server, then they are sent to the recipients when recipient will be online
+   */
   export class U2UMessage {
     id?: string
     type: MessageType
@@ -33,7 +36,7 @@ module p2p {
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
     transport?: TransportType
 
-    constructor(type: MessageType, timestamp: number, text: string) {
+    constructor(type: MessageType, timestamp: number, text?: string) {
       this.type = type;
       this.timestamp = timestamp;
       this.text = text;

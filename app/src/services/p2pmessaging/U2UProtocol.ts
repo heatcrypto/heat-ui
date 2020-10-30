@@ -29,10 +29,22 @@ module p2p {
       return Protocol.U2U
     }
 
-    callForNewContact(recipient: string, caller: string, room: Room) {
-      this.connector.sendWebsocketMessage(this.name, [{type: "CALL", toPeerId: recipient, caller: caller, room: room.name}]);
+    requestNewContact(recipient: string, caller: string, room: Room, text: string) {
+      //this.connector.sendWebsocketMessage(this.name, [{type: "newContact", recipient: recipient, sender: caller, room: room.name}])
+      let m = new U2UMessage("newContact", Date.now(), text)
+      let encrypted = this.connector.encrypt(JSON.stringify(m), recipient)
+      let sendingData = {
+          id: m.id,
+          type: m.type,
+          room: room.name,
+          sender: caller,
+          recipient: recipient,
+          payload: JSON.stringify(encrypted)
+        }
+      this.connector.sendWebsocketMessage(this.name, [sendingData])
     }
 
+    // set of functions to process the incoming messages
     readonly handlers = Object.assign(this.baseHandlers, {
 
       chat: (roomName: string, msg) => {
@@ -41,7 +53,9 @@ module p2p {
           let payload = JSON.parse(msg.payload)
           let chatMessage: U2UMessage = JSON.parse(this.connector.decrypt(payload, msg.sender));
           chatMessage.transport = "server";
+
           this.connector.processRoomMessage(chatMessage, room, msg.sender);
+
           //response to server that message is delivered by the client app
           this.connector.sendWebsocketMessage(Protocol.U2U, [{
             id: utils.uuidv4(),
@@ -53,6 +67,10 @@ module p2p {
         } else {
           throw new Error(`Cannot get 'chat room' for message sender ${msg.fromPeer}`)
         }
+      },
+
+      newContact: (roomName: string, msg) => {
+        console.log(msg)
       },
 
       STATUS: (roomName: string, msg) => {

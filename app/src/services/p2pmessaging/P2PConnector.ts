@@ -52,7 +52,7 @@ http://webrtc-security.github.io/
 module p2p {
 
   export type TransportType = "chain" | "p2p" | "server"
-  export type MessageType = "chat" | "contactUpdate" | ""
+  export type MessageType = "chat" | "contactUpdate" | "newContact" | ""
 
   export interface P2PMessenger {
     /**
@@ -129,7 +129,7 @@ module p2p {
       public processIncomingCall: (caller: string) => Promise<void>,
       public signalingError: (reason: string) => void,
       public sign: (dataHex: string) => p2p.ProvingData,
-      private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
+      public encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
       public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string,
       protocols: BaseProtocol[]
     ) {

@@ -60,6 +60,10 @@ module p2p {
 
     }
 
+    /**
+     * Set of functions to process the incoming messages.
+     * Function name matches the message type.
+     */
     handlers = this.baseHandlers
 
   }
