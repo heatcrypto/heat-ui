@@ -1104,6 +1104,8 @@ interface IHeatMessageContact {
   timestamp: number;
   activityTimestamp?: number;
   cryptoAddresses?: currencyAddressMap[];
+  newIncomingContact?: boolean;
+  isP2POnlyContact?: boolean;
 }
 interface IHeatMessage {
   transaction: string;

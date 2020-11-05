@@ -33,14 +33,14 @@ class SendmessageService extends AbstractTransaction {
   }
 
   dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): IGenericDialog {
-    return new SendmessageDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, userMessage);
+    return new SendMessageDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, userMessage);
   }
 
   verify(transaction: any, attachment: IByteArrayWithPosition): boolean {
     return transaction.type === 1 && transaction.subtype === 0;
   }
 }
-class SendmessageDialog extends GenericDialog {
+class SendMessageDialog extends GenericDialog {
 
   constructor($event,
               private transaction: AbstractTransaction,
@@ -74,13 +74,13 @@ class SendmessageDialog extends GenericDialog {
                     $scope.$evalAsync(()=>{
                       this.fields['recipient']['accountExists'] = true
                       // this.fields['message'].visible(true);
-                      this.fields['messagWarning'].visible(false);
+                      this.fields['messageWarning'].visible(false);
                     });
                   },(reason)=>{
                     $scope.$evalAsync(()=>{
                       this.fields['recipient']['accountExists'] = false
                       // this.fields['message'].visible(false);
-                      this.fields['messagWarning'].visible(true);
+                      this.fields['messageWarning'].visible(true);
                     });
                   }
                 )
@@ -105,13 +105,15 @@ class SendmessageDialog extends GenericDialog {
           return deferred.promise;
         })
         .required(),
-      builder.staticText('messagWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
+      builder.staticText('messageWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
              .visible(true),
       builder.text('message', this.userMessage)
         .rows(2)
         .required(true)
         // visible(false).
         .label('Message'),
+      builder.staticText('messageWarning', 'This message will be stored encrypted in HEAT blockchain')
+        .visible(true),
       builder.hidden('recipientPublicKey', this.recipientPublicKey)
     ]
   }

@@ -89,10 +89,9 @@
               <md-tooltip md-direction="top">{{vm.p2pMessaging.onlineStatus == 'online' ? 'NOW STEALTH - CLICK FOR ONCHAIN' : 'NOW ONCHAIN - CLICK FOR STEALTH'}}</md-tooltip>
               {{vm.p2pMessaging.onlineStatus == 'online' ? 'offchain  ✔' : 'onchain'}}
             </md-button>
-            <md-button id="callButton" class="md-primary" aria-label="Call"
-            ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
+            <md-button id="callButton" class="md-primary" aria-label="Send" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
-                Call user to establish the contact
+                Send message to user to establish the contact
               </md-tooltip>
               New Contact
             </md-button>
@@ -139,8 +138,14 @@ class MessengerComponent {
   }
 
   showCallDialog($event) {
-    let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => {});
+    if (this.p2pMessaging.onlineStatus == 'online') {
+      let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
+      this.p2pMessaging.dialog($event, recipient, this.publickey, `Hello, I am ${this.user.accountName}`)
+        .show()
+        .finally(() => {});
+    } else {
+      this.sendmessage.dialog($event).show();
+    }
   }
 
   toggleOnline($event) {

@@ -185,7 +185,15 @@ module p2p {
     }
 
     public putExtraInfo(msgId: string, data) {
-      this.extraStore.put(msgId, data);
+      try {
+        this.extraStore.put(msgId, data);
+      } catch (e) {
+        console.log("Error on saving data to the local storage " + e);
+        if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(e.name) >= 0) {
+          //shrink history of all accounts when reach storage limit
+          this.shrink(5, () => this.extraStore.put(msgId, data))
+        }
+      }
     }
 
     /**
@@ -209,6 +217,28 @@ module p2p {
       return 0;
     }
 
+    /**
+     * Return true if the shrinking was success
+     * @param attempts
+     * @param putData
+     */
+    public shrink(attempts: number, putData: Function) {
+      let n = attempts
+      while (n > 0) {
+        try {
+          console.log("Trying to remove old messages history, attempt №" + (attempts + 1 - n));
+          this.shrinkPageStore(attempts + 1 - n);
+          putData();
+          n = 0;
+          return true
+        } catch (e) {
+          console.log("Error while shrinking message history " + e);
+        }
+        n--;
+      }
+      return false
+    }
+
     private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
       let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.user.publicKey, this.user.secretPhrase, false);
       let page = this.pages[pageIndex];
@@ -222,17 +252,7 @@ module p2p {
         console.log("Save page error " + domException);
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) >= 0) {
           //shrink history of all accounts when reach storage limit
-          let attempts = 5;
-          while (attempts > 0) {
-            try {
-              this.shrinkPageStore(6 - attempts);
-              this.store.put(this.pageKey(pageIndex), encrypted);
-              attempts = 0;
-            } catch (e) {
-              console.log("Error while shrinking message history " + e);
-            }
-            attempts--;
-          }
+          this.shrink(5, () => this.store.put(this.pageKey(pageIndex), encrypted))
         }
       }
     }

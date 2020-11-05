@@ -111,7 +111,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       if (!c) {
         let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
         if (senderAccount) {
-          this.contactService.saveContact(senderAccount, msg.fromPeerId, null, -Date.now())
+          this.contactService.saveContact(senderAccount, msg.fromPeerId, null, -Date.now(), true)
         }
       }
     }).catch(reason => console.error(reason))
@@ -274,8 +274,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     });
   }
 
-  dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): p2p.CallDialog {
-    return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
+  dialog($event?, recipient?: string, recipientPublicKey?: string, messageText?: string): p2p.CallDialog {
+    return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, messageText, this);
   }
 
   isPeerConnected(peerId: string): boolean {

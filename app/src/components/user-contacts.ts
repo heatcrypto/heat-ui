@@ -23,6 +23,18 @@
 @Component({
   selector: 'userContacts',
   styles: [`
+    .new-incoming-contact {
+      color: lightblue !important;
+      font-size: smaller;
+      margin-right: 5px;
+    }
+    .contact-control {
+      color: lightblue !important;
+      font-size: smaller;
+      cursor: pointer;
+      margin-left: 5px;
+      text-decoration: underline;
+    }
     .unread-symbol {
       font-size: 22px;
       color: #ff3301;
@@ -58,9 +70,13 @@
           <span ng-if="contact.hasUnreadP2PMessage" class="p2p-unread-symbol">*</span>
           <span ng-if="vm.p2pStatus(contact)=='channelOpened'" class="channelopened-status-symbol">●</span>
           <span ng-if="vm.p2pStatus(contact)=='roomRegistered'" class="roomregistered-status-symbol">●</span>
-          <div class="truncate-col account-col left">
+          <span ng-if="contact.newIncomingContact" class="new-incoming-contact">new</span>
+          <div class="account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
+          <a class="contact-control" ng-if="contact.newIncomingContact" ng-click="vm.acceptNewContact(contact)">Accept</a>
+          <a class="contact-control" ng-if="contact.newIncomingContact && contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>
+<!--          <a class="contact-control" ng-if="contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>-->
         </md-list-item>
       </md-list>
     </div>
@@ -106,10 +122,9 @@ class UserContactsComponent {
       let contact: IHeatMessageContact = this.p2pMessaging.p2pContactStore.get(contactKey);
       if (contact && contact.activityTimestamp) {
         if (contact.activityTimestamp < 0) {
-          contact.activityTimestamp = - contact.activityTimestamp;
+          contact.activityTimestamp = -contact.activityTimestamp;
           this.$location.path(`/messenger/${contact.publicKey}`);
         }
-      } else {
         this.refresh();
       }
     };
@@ -154,22 +169,42 @@ class UserContactsComponent {
     });
   }
 
+  acceptNewContact(contact: IHeatMessageContact) {
+    delete contact.newIncomingContact
+    this.p2pMessaging.p2pContactStore.put(contact.account, contact)
+  }
+
+  remove(contact: IHeatMessageContact) {
+    dialogs.confirm(
+      `Remove contact ${contact.publicName || contact.privateName || contact.account}`,
+      `Do you want to remove the contact ${contact.publicName || contact.privateName || contact.account}`
+    ).then(() => {
+      this.$scope.$evalAsync(() => {
+        //todo remove messages also
+        let pr = this.getPeerAndRoom(contact)
+        if (pr && pr.peer && pr.peer.dataChannel) pr.peer.dataChannel.close()
+        this.p2pMessaging.p2pContactStore.remove(contact.account)
+        this.refreshContacts().then(v => this.setActivePublicKey(true))
+      })
+    })
+  }
+
   getActivePublicKey() {
-    var path = this.$location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1);
+    let path = this.$location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1);
     return (route == "messenger") ? params[0] : null;
   }
 
-  setActivePublicKey() {
+  setActivePublicKey(reset?: boolean) {
     this.activePublicKey = this.getActivePublicKey();
 
-    if (this.activePublicKey && this.activePublicKey != "0") {
-      let room = this.p2pMessaging.enterRoom(this.activePublicKey);
-    }
-
-    if (!this.activePublicKey || this.activePublicKey == "0") {
+    if (reset || !this.activePublicKey || this.activePublicKey == "0") {
       if (this.contacts[0] && this.contacts[0].publicKey != "0") {
         this.$location.path(`/messenger/${this.contacts[0].publicKey}`);
       }
+    }
+
+    if (this.activePublicKey && this.activePublicKey != "0") {
+      let room = this.p2pMessaging.enterRoom(this.activePublicKey);
     }
 
     let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey);
@@ -183,27 +218,29 @@ class UserContactsComponent {
   }
 
   refreshContacts() {
-    this.contactService.getContacts(this.activePublicKey).then(contacts => {
+    return this.contactService.getContacts(this.activePublicKey).then(contacts => {
       this.contacts = contacts
       if (this.getActivePublicKey() == "0") this.setActivePublicKey()
     })
   }
 
   p2pStatus(contact: IHeatMessageContact) {
-    if (!contact.publicKey) return;
-    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey);
-    if (room) {
-      let peer = room.getPeer(contact.publicKey);
-      if (peer && peer.isConnected()) {
-        return "channelOpened";
-      } else {
-        //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
-        if (room.state.entered != "not") {
-          return "roomRegistered";
-        }
+    let pr = this.getPeerAndRoom(contact)
+    if (!pr) return
+    if (pr.peer && pr.peer.isConnected()) {
+      return "channelOpened"
+    } else {
+      //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
+      if (pr.room.state.entered != "not") {
+        return "roomRegistered"
       }
     }
   }
 
+  getPeerAndRoom(contact: IHeatMessageContact) {
+    if (!contact.publicKey) return
+    let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey)
+    return room ? {room: room, peer: room.getPeer(contact.publicKey)} : null
+  }
 
 }

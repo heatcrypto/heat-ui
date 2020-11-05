@@ -31,7 +31,7 @@ module p2p {
 
     requestNewContact(recipient: string, caller: string, room: Room, text: string) {
       //this.connector.sendWebsocketMessage(this.name, [{type: "newContact", recipient: recipient, sender: caller, room: room.name}])
-      let m = new U2UMessage("newContact", Date.now(), text)
+      let m = new U2UMessage("chat", Date.now(), text)
       let encrypted = this.connector.encrypt(JSON.stringify(m), recipient)
       let sendingData = {
           id: m.id,

@@ -29,7 +29,7 @@ class ContactService {
         if (existingHeatContact) {
           existingHeatContact.activityTimestamp = p2pContact.activityTimestamp
         } else {
-          p2pContact['isP2POnlyContact'] = true
+          p2pContact.isP2POnlyContact = true
           contacts.push(p2pContact)
         }
       })
@@ -38,7 +38,7 @@ class ContactService {
         .filter(contact => contact.publicKey && contact.account != this.user.account)
         .map((contact) => {
           if (selectedContactPublicKey && selectedContactPublicKey != contact.publicKey) {
-            contact['hasUnreadMessage'] = !contact['isP2POnlyContact'] && this.contactHasUnreadMessage(contact);
+            contact['hasUnreadMessage'] = !contact.isP2POnlyContact && this.contactHasUnreadMessage(contact);
             contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
           }
           // contact['p2pStatus'] = this.p2pStatus(contact);
@@ -62,7 +62,7 @@ class ContactService {
    * @param publicName
    * @param calledTimestamp set negative time to force selecting the contact in contact list
    */
-  saveContact(account: string, publicKey: string, publicName?: string, calledTimestamp?: number) {
+  saveContact(account: string, publicKey: string, publicName?: string, calledTimestamp?: number, newIncomingContact?: boolean) {
     if (!publicKey) return;
     let save = (publicName?: string) => {
       let contact: IHeatMessageContact = this.p2pContactStore.get(account);
@@ -77,19 +77,34 @@ class ContactService {
           publicKey: publicKey,
           publicName: publicName,
           timestamp: 0,
-          activityTimestamp: calledTimestamp
+          activityTimestamp: calledTimestamp,
+          newIncomingContact: newIncomingContact
         };
         this.p2pContactStore.put(account, contact);
       }
     }
-    if (publicName) {
-      save(publicName)
-    } else {
-      this.heat.api.searchPublicNames(account, 0, 100).then(accounts => {
-        let expectedAccount = accounts.find(v => v.publicKey == publicKey)
-        save(expectedAccount ? expectedAccount.publicName : null)
-      });
+    try {
+      if (publicName) {
+        save(publicName)
+      } else {
+        this.heat.api.searchPublicNames(account, 0, 100).then(accounts => {
+          let expectedAccount = accounts.find(v => v.publicKey == publicKey)
+          save(expectedAccount ? expectedAccount.publicName : null)
+        });
+      }
+      return true
+    } catch (e) {
+      console.log("Save contact error " + e);
+      if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(e.name) >= 0) {
+        //shrink history of all accounts when reach storage limit
+        let p2pMessaging: P2PMessaging = heat.$inject.get('P2PMessaging')
+        let room = p2pMessaging.getOneToOneRoom(publicKey, true);
+        if (room) {
+          if (room.getMessageHistory().shrink(5, () => save(publicName))) return true
+        }
+      }
     }
+    return false
   }
 
   updateContactCurrencyAddress(account: string, currency: string, address: string, publicKey: string, publicName: string, calledTimeStamp?: number) {
