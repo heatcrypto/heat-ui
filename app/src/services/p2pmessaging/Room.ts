@@ -227,6 +227,10 @@ module p2p {
     isConnected() {
       return this.dataChannel && this.dataChannel.readyState == "open"
     }
+
+    closeConnection() {
+      if (this.isConnected()) this.dataChannel.close()
+    }
   }
 
 }

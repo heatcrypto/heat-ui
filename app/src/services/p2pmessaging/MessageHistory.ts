@@ -32,6 +32,7 @@ module p2p {
   }
 
   /*
+  Room message history.
    Messages are stored in the local storage.
    Messages are stored in bundles called pages:
    key -> page
@@ -45,7 +46,7 @@ module p2p {
 
     //todo migrate from localStorage to IndexedDB
 
-    static MAX_PAGES_COUNT = 200; //max number of pages for one room
+    static MAX_PAGES_COUNT = 100; //max number of pages for one room
     static MAX_PAGE_LENGTH = 100; //count of messages in one page of localStorage
 
     private enabled: boolean;
@@ -67,6 +68,11 @@ module p2p {
       // because keys (load by namespace prefix) in second namespace have other format
       // and cannot be parsed same way as in the namespace above
       this.extraStore = storage.namespace('extra-p2p-messages.' + this.room.name);
+
+      this.init()
+    }
+
+    init() {
       //format of key of message history stored item: "pageNumber.messagesCount", e.g. "502.78"
       //Message count by pages is needing for providing requesting message items from history by range "from" "to"
       this.pages = this.store.keys()
@@ -91,6 +97,7 @@ module p2p {
       if (this.pages.length == 0) {
         this.pageStorageNum = 0;
         this.pages.push([0, 0]);
+        this.pageContent = [];
       } else {
         this.pageStorageNum = this.pages[this.pages.length - 1][0];
         this.pageContent = this.getItems(this.pages.length - 1);
@@ -215,6 +222,12 @@ module p2p {
         }
       }
       return 0;
+    }
+
+    clear() {
+      this.store.clear()
+      this.extraStore.clear()
+      this.init()
     }
 
     /**

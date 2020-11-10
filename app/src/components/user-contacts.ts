@@ -75,8 +75,8 @@
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
           <a class="contact-control" ng-if="contact.newIncomingContact" ng-click="vm.acceptNewContact(contact)">Accept</a>
-          <a class="contact-control" ng-if="contact.newIncomingContact && contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>
-<!--          <a class="contact-control" ng-if="contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>-->
+<!--          <a class="contact-control" ng-if="contact.newIncomingContact && contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>-->
+          <a class="contact-control" ng-if="contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>
         </md-list-item>
       </md-list>
     </div>
@@ -182,7 +182,8 @@ class UserContactsComponent {
       this.$scope.$evalAsync(() => {
         //todo remove messages also
         let pr = this.getPeerAndRoom(contact)
-        if (pr && pr.peer && pr.peer.dataChannel) pr.peer.dataChannel.close()
+        if (pr.peer) pr.peer.closeConnection()
+        if (pr.room) pr.room.getMessageHistory().clear()
         this.p2pMessaging.p2pContactStore.remove(contact.account)
         this.refreshContacts().then(v => this.setActivePublicKey(true))
       })
@@ -195,9 +196,11 @@ class UserContactsComponent {
   }
 
   setActivePublicKey(reset?: boolean) {
+    if (reset) this.$location.path("/messenger/0");
+
     this.activePublicKey = this.getActivePublicKey();
 
-    if (reset || !this.activePublicKey || this.activePublicKey == "0") {
+    if (!this.activePublicKey || this.activePublicKey == "0") {
       if (this.contacts[0] && this.contacts[0].publicKey != "0") {
         this.$location.path(`/messenger/${this.contacts[0].publicKey}`);
       }
@@ -226,21 +229,20 @@ class UserContactsComponent {
 
   p2pStatus(contact: IHeatMessageContact) {
     let pr = this.getPeerAndRoom(contact)
-    if (!pr) return
     if (pr.peer && pr.peer.isConnected()) {
       return "channelOpened"
     } else {
       //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
-      if (pr.room.state.entered != "not") {
+      if (pr.room && pr.room.state.entered != "not") {
         return "roomRegistered"
       }
     }
   }
 
   getPeerAndRoom(contact: IHeatMessageContact) {
-    if (!contact.publicKey) return
+    if (!contact.publicKey) return {}
     let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey)
-    return room ? {room: room, peer: room.getPeer(contact.publicKey)} : null
+    return room ? {room: room, peer: room.getPeer(contact.publicKey)} : {}
   }
 
 }
