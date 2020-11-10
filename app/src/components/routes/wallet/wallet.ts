@@ -1536,16 +1536,33 @@ class WalletComponent {
         bip44Compatible: false,
         selectedImport: ''
       }
+      let emptyValidator = () => null
+      let bip44CompatibleValidator = () => {
+        return self.lightwalletService.validSeed(this.data.secretPhrase)
+          ? null
+          : "Seed of the chosen currency must be compatible with BIP44"
+      }
+      let ethereumValidator = () => {
+        let s: string = this.data.secretPhrase || ""
+        if (s.toLowerCase().startsWith("0x")) {
+          s = s.substr(2)
+          return self.lightwalletService.validPrivateKey(s)
+            ? null
+            : "ETH private key is not valid"
+        } else {
+          return bip44CompatibleValidator()
+        }
+      }
       this.currencyList = [
-        {name: 'HEAT', symbol: 'HEAT'},
-        {name: 'Ethereum', symbol: 'ETH', onlyBip44: true},
-        {name: 'Bitcoin', symbol: 'BTC', onlyBip44: true},
-        {name: 'FIMK', symbol: 'FIM'},
-        {name: 'NXT', symbol: 'NXT'},
-        {name: 'ARDOR', symbol: 'ARDR'},
-        {name: 'IOTA', symbol: 'IOTA'},
-        {name: 'Litecoin', symbol: 'LTC', onlyBip44: true},
-        {name: 'BitcoinCash', symbol: 'BCH', onlyBip44: true}
+        {name: 'HEAT', symbol: 'HEAT', validate: emptyValidator},
+        {name: 'Ethereum', symbol: 'ETH', onlyBip44: true, validate: ethereumValidator},
+        {name: 'Bitcoin', symbol: 'BTC', onlyBip44: true, validate: bip44CompatibleValidator},
+        {name: 'FIMK', symbol: 'FIM', validate: emptyValidator},
+        {name: 'NXT', symbol: 'NXT', validate: emptyValidator},
+        {name: 'ARDOR', symbol: 'ARDR', validate: emptyValidator},
+        {name: 'IOTA', symbol: 'IOTA', validate: emptyValidator},
+        {name: 'Litecoin', symbol: 'LTC', onlyBip44: true, validate: bip44CompatibleValidator},
+        {name: 'BitcoinCash', symbol: 'BCH', onlyBip44: true, validate: bip44CompatibleValidator}
       ]
       this.secretChanged = function () {
         this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
@@ -1553,9 +1570,9 @@ class WalletComponent {
       this.invalidParameters = function () {
         let selectedCurrency = this.currencyList.find(item => item.symbol == this.data.selectedImport)
         if (selectedCurrency) {
-          this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
+          let validateResult = selectedCurrency.validate()
+          if (validateResult) return validateResult
           if (this.data.password1 != this.data.password2) return "PINs are not equal"
-          if (!this.data.bip44Compatible && selectedCurrency.onlyBip44) return "Seed of the chosen currency must be compatible with BIP44"
           return null //parameters are ok
         }
         return "  " // parameters are not completed, so no error but invalid
