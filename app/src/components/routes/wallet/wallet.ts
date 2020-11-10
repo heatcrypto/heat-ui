@@ -1543,14 +1543,11 @@ class WalletComponent {
           : "Seed of the chosen currency must be compatible with BIP44"
       }
       let ethereumValidator = () => {
-        let s: string = this.data.secretPhrase || ""
-        if (s.toLowerCase().startsWith("0x")) {
-          s = s.substr(2)
-          return self.lightwalletService.validPrivateKey(s)
-            ? null
-            : "ETH private key is not valid"
-        } else {
-          return bip44CompatibleValidator()
+        let bip44Invalid = bip44CompatibleValidator()
+        if (bip44Invalid) {
+          if (! self.lightwalletService.validPrivateKey(this.data.secretPhrase)) {
+            return "Private key is not valid or " + bip44Invalid
+          }
         }
       }
       this.currencyList = [

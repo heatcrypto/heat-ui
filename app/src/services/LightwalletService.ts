@@ -107,11 +107,9 @@ class LightwalletService {
         let promise: Promise<WalletType>;
         if (this.validSeed(seedOrPrivateKey)) {
           promise = this.getEtherWallet(seedOrPrivateKey, password || "")
-        }
-        else if (this.validPrivateKey(seedOrPrivateKey)) {
+        } else if (this.validPrivateKey(seedOrPrivateKey)) {
           promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
-        }
-        else {
+        } else {
           reject("Invalid seed or private key")
         }
         promise.then(wallet => {
@@ -272,7 +270,6 @@ class LightwalletService {
   }
 
   getEtherWalletFromPrivateKey(privkeyHex: string, password: string): Promise<WalletType> {
-    let that = this;
     return new Promise((resolve, reject) => {
       try {
         this.lightwallet.keystore.createVault({
