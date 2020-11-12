@@ -41,7 +41,7 @@ module p2p {
   const checkStorageSpaceEconomizer = {
     lastOccupiedShare: 0,
     skipCounter: 0,
-    update(occupiedShare: number) {
+    reset(occupiedShare: number) {
       if (occupiedShare < DO_CHECK_SPACE_THRESHOLD) {
         this.skipCounter = Math.min(33, 4 + DO_CHECK_SPACE_THRESHOLD / occupiedShare).toFixed(0)
         this.lastOccupiedShare = occupiedShare
@@ -200,9 +200,6 @@ module p2p {
     }
 
     public put(item: MessageHistoryItem) {
-
-      if (item.content == "zzz") this.shrink(5)
-
       this.pageContent.push(item);
       this.savePage(this.pages.length - 1, this.pageContent);
       this.putExtraInfo(item.msgId, "")  //no extra info but to register message id, later this entry may be updated
@@ -282,8 +279,8 @@ module p2p {
     }
 
     private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
-      let occupiedSpaceBefore = this.checkStorageSpace(true)
-      let occupiedSpaceAfter = this.checkStorageSpace(false)
+      let occupiedSpaceBefore = this.checkStorageSpace(true, false)
+      let occupiedSpaceAfter = this.checkStorageSpace(false, true)
       if (occupiedSpaceAfter != occupiedSpaceBefore) {
         console.log(`Removed data length ${occupiedSpaceBefore - occupiedSpaceAfter}, storage occupied space ${occupiedSpaceAfter}`)
       }
@@ -347,7 +344,7 @@ module p2p {
       return page[0] + (page[1] == -1 ? "" : "." + page[1]) + (page[2] == -1 ? "" : "." + page[2]);
     }
 
-    private checkStorageSpace(shrink: boolean = true) {
+    private checkStorageSpace(shrink: boolean = true, resetChecking: boolean = false) {
       //skip check if occupied space is far from limit
       if (checkStorageSpaceEconomizer.isToSkip()) return null
 
@@ -363,7 +360,7 @@ module p2p {
         }
       }
       let occupiedShare = totalAmount / DEFAULT_STORAGE_SPACE_LIMIT
-      checkStorageSpaceEconomizer.update(occupiedShare)
+      if (resetChecking) checkStorageSpaceEconomizer.reset(occupiedShare)
       if (shrink && occupiedShare > CLEAR_SPACE_THRESHOLD) {
         console.warn(`Estimated occupied storage space ${(totalAmount / 1024 / 1024).toFixed(2)}  Entries count ${n}`)
         this.shrink(7)
