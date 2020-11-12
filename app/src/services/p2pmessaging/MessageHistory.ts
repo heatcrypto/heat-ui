@@ -31,6 +31,31 @@ module p2p {
     transport?: TransportType
   }
 
+  const DEFAULT_STORAGE_SPACE_LIMIT = 5 * 1024 * 1024
+  const DO_CHECK_SPACE_THRESHOLD = 0.79 //skip some invokes of free space check until the 0.7 of the storage limit
+  const CLEAR_SPACE_THRESHOLD = 0.8  //when local storage is filled 0.8 of the limit the old messages will be removed
+
+  /**
+   * Skip check if occupied space is far from limit.
+   */
+  const checkStorageSpaceEconomizer = {
+    lastOccupiedShare: 0,
+    skipCounter: 0,
+    update(occupiedShare: number) {
+      if (occupiedShare < DO_CHECK_SPACE_THRESHOLD) {
+        this.skipCounter = Math.min(33, 4 + DO_CHECK_SPACE_THRESHOLD / occupiedShare).toFixed(0)
+        this.lastOccupiedShare = occupiedShare
+      }
+    },
+    isToSkip() {
+      if (this.skipCounter > 0) {
+        this.skipCounter--
+        return true
+      }
+      return false
+    }
+  }
+
   /*
   Room message history.
    Messages are stored in the local storage.
@@ -159,8 +184,9 @@ module p2p {
           //was the bug when page was stringifyed twice: json.stringfy(json.stringfy(page))
           //therefore, if necessary, have to do extra json parsing
           let pageObject = typeof encryptedPage === "string" ? JSON.parse(encryptedPage) : encryptedPage
+          let encrypted = pageObject.encrypted ? pageObject.encrypted : pageObject
           let pageContentStr = heat.crypto.decryptMessage(
-            pageObject.data, pageObject.nonce, this.user.publicKey, this.user.secretPhrase);
+            encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
           return JSON.parse(pageContentStr);
         } catch (e) {
           console.log("Error on parse/decrypt message history page");
@@ -174,6 +200,9 @@ module p2p {
     }
 
     public put(item: MessageHistoryItem) {
+
+      if (item.content == "zzz") this.shrink(5)
+
       this.pageContent.push(item);
       this.savePage(this.pages.length - 1, this.pageContent);
       this.putExtraInfo(item.msgId, "")  //no extra info but to register message id, later this entry may be updated
@@ -235,13 +264,13 @@ module p2p {
      * @param attempts
      * @param putData
      */
-    public shrink(attempts: number, putData: Function) {
+    public shrink(attempts: number, putData?: Function) {
       let n = attempts
       while (n > 0) {
         try {
           console.log("Trying to remove old messages history, attempt №" + (attempts + 1 - n));
           this.shrinkPageStore(attempts + 1 - n);
-          putData();
+          if (putData) putData();
           n = 0;
           return true
         } catch (e) {
@@ -253,6 +282,12 @@ module p2p {
     }
 
     private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
+      let occupiedSpaceBefore = this.checkStorageSpace(true)
+      let occupiedSpaceAfter = this.checkStorageSpace(false)
+      if (occupiedSpaceAfter != occupiedSpaceBefore) {
+        console.log(`Removed data length ${occupiedSpaceBefore - occupiedSpaceAfter}, storage occupied space ${occupiedSpaceAfter}`)
+      }
+
       let encrypted = heat.crypto.encryptMessage(JSON.stringify(pageContent), this.user.publicKey, this.user.secretPhrase, false);
       let page = this.pages[pageIndex];
       try {
@@ -260,7 +295,7 @@ module p2p {
         this.store.remove(this.pageKey(pageIndex));
         page[1] = pageContent.length;
         page[2] = pageContent.length > 0 ? pageContent[pageContent.length - 1].timestamp : 0;
-        this.store.put(this.pageKey(pageIndex), encrypted);
+        this.store.put(this.pageKey(pageIndex), {encrypted: encrypted, ids: pageContent.map(v => v.msgId)});
       } catch (domException) {
         console.log("Save page error " + domException);
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(domException.name) >= 0) {
@@ -273,34 +308,36 @@ module p2p {
     /**
      * Deletes the oldest pages among all contacts.
      */
-    private shrinkPageStore(pageToRemoveNumber: number) {
+    //todo allRoom=true does not work properly because removing entries from this.extraStore is impossible
+    // due impossible to decrypt pages in rooms created under another user.
+    // So remove the pages of current unlocked account only
+    private shrinkPageStore(pageToRemoveNumber: number, allRooms: boolean = true) {
       //used 'p2p-messages' instead ('p2p-messages' + this.room.name) to get keys for all rooms.
       //note 'p2p-messages' without '.'
-      let allRoomStore = this.storage.namespace('p2p-messages');
+      let roomStore = allRooms ? this.storage.namespace('p2p-messages') : this.store
       //last integer substring of page's key is timestamp of the page, example "10344812140431697156-5056413637982060108.47.100.7367346346"
-      let keysByTime = allRoomStore.keys()
+      let keysByTime = roomStore.keys()
         .map(key => {
-          let ss = key.split('.');
-          return [ss[0], parseInt(ss[1]), parseInt(ss[2]), parseInt(ss[3])];
+          let ss = key.split('.')
+          return {original: key, timestamp: parseInt(ss[ss.length - 1])}
         })
         // @ts-ignore
-        .sort((a, b) => a[3] - b[3]);
+        .sort((a, b) => a.timestamp - b.timestamp);
 
       //remove oldest pages
-      for (let keys of keysByTime) {
-        let key = keys.join('.')
-        let page = allRoomStore.get(key)
+      for (let k of keysByTime) {
+        let key = k.original
+        let page = roomStore.get(key)
         if (page) {
           //remove extra data per message
-          let messages = this.getPageMessages(-1, page)
-          messages.forEach(m => this.extraStore.remove(m.msgId))
+          if (page.ids) {
+            page.ids.forEach(id => this.extraStore.remove(id))
+          }
           //remove the page
-          allRoomStore.remove(key)
-          console.log(`removed page (length ${page.length}) in the message history, page key ${key}`)
+          roomStore.remove(key)
+          console.log(`removed page ${key} length ${page.ids ? page.ids.length : "?"} in the message history`)
         }
-        if ((--pageToRemoveNumber) <= 0) {
-          break;
-        }
+        if ((--pageToRemoveNumber) <= 0) break
       }
     }
 
@@ -308,6 +345,30 @@ module p2p {
       let page = this.pages[pageIndex];
       //page[1] == -1 page[1] == -2  - it is for old format key, e.g. "4", new format is 4.122.765856765"
       return page[0] + (page[1] == -1 ? "" : "." + page[1]) + (page[2] == -1 ? "" : "." + page[2]);
+    }
+
+    private checkStorageSpace(shrink: boolean = true) {
+      //skip check if occupied space is far from limit
+      if (checkStorageSpaceEconomizer.isToSkip()) return null
+
+      let totalAmount = 0
+      let n = 0
+      for (let x in localStorage) {
+        // Value is multiplied by 2 due to data being stored in `utf-16` format, which requires twice the space.
+        let amount = localStorage[x].length * 2
+        if (!isNaN(amount) && localStorage.hasOwnProperty(x)) {
+          // console.log(x, localStorage.getItem(x), amount);
+          totalAmount += amount
+          n++
+        }
+      }
+      let occupiedShare = totalAmount / DEFAULT_STORAGE_SPACE_LIMIT
+      checkStorageSpaceEconomizer.update(occupiedShare)
+      if (shrink && occupiedShare > CLEAR_SPACE_THRESHOLD) {
+        console.warn(`Estimated occupied storage space ${(totalAmount / 1024 / 1024).toFixed(2)}  Entries count ${n}`)
+        this.shrink(7)
+      }
+      return totalAmount
     }
 
   }
