@@ -27,13 +27,8 @@
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <div layout="row" class="button-row">
-        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.serverService.isRunning" ng-click="vm.startServer()">
-            Start Server</md-button>
-        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.serverService.isRunning" ng-click="vm.stopServer()">
-            Stop Server</md-button>
-
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
-          <md-button style="margin-top: 14px; margin-right: 20px;" aria-label="signout" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
+          <md-button style="margin-top: 5px; margin-right: 20px;" aria-label="signout" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
             <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content>
@@ -64,12 +59,24 @@
           </md-menu-content>
         </md-menu>
 
-        <md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
+        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.serverService.isRunning" ng-click="vm.startServer()">
+            Start Server</md-button>
+        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.serverService.isRunning" ng-click="vm.stopServer()">
+            Stop Server</md-button>
+
+        <label id="failoverUsage" style="margin-left: 9px; margin-right: 9px">Client API data from:</label>
+        <md-radio-group ng-model="vm.connectionWay" aria-labelledby="failoverUsage" ng-change="vm.failoverUsageChanged()">
+          <md-radio-button value="failover" class="md-primary" style="margin-bottom: 7px">Best server (use failover feature)</md-radio-button>
+          <md-radio-button value="localhost" style="margin-bottom: 7px">Localhost (ignore failover feature)</md-radio-button>
+        </md-radio-group>
+
+        <!--<md-switch ng-model="vm.connectedToLocalhost" aria-label="Choose API connection" ng-change="vm.connectToLocalhostChanged()">
           <md-tooltip md-direction="top">
             Connect client API to remotehost or to your local machine
           </md-tooltip>
           Client API connected to {{ vm.connectedToLocalhost ? 'localhost' : vm.remotehostDisplay }}
-        </md-switch>
+        </md-switch>-->
+
         <span flex></span>
         <div ng-show="vm.isMining" layout="row" layout-align="center center" class="mining-stats">
           <span>Estimated hit time: </span>
@@ -112,8 +119,9 @@ class ServerComponent {
   private hostRemote: string;
   private portLocal: string;
   private portRemote: string;
-  private connectedToLocalhost: boolean;
+  // private connectedToLocalhost: boolean;
   private remotehostDisplay: string;
+  private connectionWay: "failover" | "localhost";
 
   /* 2017-01-27 23:22:30 INFO: Pushed block 13300804393767116009 with height 2925 */
   //private msgRegExp = /^([\d-]+\s[\d:]+)\s(\w+):\s(.*)/;
@@ -141,12 +149,13 @@ class ServerComponent {
     this.hostRemote = this.settings.get(SettingsService.HEAT_HOST_REMOTE);
     this.portLocal  = this.settings.get(SettingsService.HEAT_PORT_LOCAL);
     this.portRemote = this.settings.get(SettingsService.HEAT_PORT_REMOTE);
-    this.connectedToLocalhost = this.isConnectedToLocalhost();
+    // this.connectedToLocalhost = this.isConnectedToLocalhost();
+    this.connectionWay = this.settings["connectionWay"] || "failover"
 
     //failover will choose this host by priority
     SettingsService.forceServerPriority(
-      this.isConnectedToLocalhost() ? this.hostLocal : this.hostRemote,
-      this.isConnectedToLocalhost() ? this.portLocal : this.portRemote
+      this.connectionWay == "localhost" ? this.hostLocal : this.hostRemote,
+      this.connectionWay == "localhost" ? this.portLocal : this.portRemote
     );
 
     this.onOutput = () => {
@@ -232,22 +241,27 @@ class ServerComponent {
     return this.serverService.buffer.length;
   }
 
-  connectToLocalhostChanged() {
-    this.toggleConnectToLocalhost();
+  failoverUsageChanged() {
+    if (this.connectionWay == "failover") {
+      this.settings.setHost("remote", true, false)
+    } else if (this.connectionWay == "localhost") {
+      this.settings.setHost("local", false, false)
+    }
+    this.settings["connectionWay"] = this.connectionWay
   }
 
-  isConnectedToLocalhost(): boolean {
-    return this.settings.get(SettingsService.HEAT_HOST) == this.hostLocal &&
-           this.settings.get(SettingsService.HEAT_PORT) == this.portLocal;
-  }
-
-  toggleConnectToLocalhost() {
-    var host = this.isConnectedToLocalhost() ? this.hostRemote : this.hostLocal;
-    var port = this.isConnectedToLocalhost() ? this.portRemote : this.portLocal;
-    this.settings.put(SettingsService.HEAT_HOST, host);
-    this.settings.put(SettingsService.HEAT_PORT, port);
-    SettingsService.forceServerPriority(host, port);  //failover will choose this host by priority
-  }
+  // isConnectedToLocalhost(): boolean {
+  //   return this.settings.get(SettingsService.HEAT_HOST) == this.hostLocal &&
+  //          this.settings.get(SettingsService.HEAT_PORT) == this.portLocal;
+  // }
+  //
+  // toggleConnectToLocalhost() {
+  //   var host = this.isConnectedToLocalhost() ? this.hostRemote : this.hostLocal;
+  //   var port = this.isConnectedToLocalhost() ? this.portRemote : this.portLocal;
+  //   this.settings.put(SettingsService.HEAT_HOST, host);
+  //   this.settings.put(SettingsService.HEAT_PORT, port);
+  //   SettingsService.forceServerPriority(host, port);  //failover will choose this host by priority
+  // }
 
   startServer() {
     this.serverService.startServer()

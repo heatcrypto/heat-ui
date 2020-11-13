@@ -130,7 +130,7 @@ class SettingsService {
   }
 
   /**
-   * failover will choose this host by priority
+   * set high failover priority for the host
    */
   static forceServerPriority(host: string, port: string) {
     let portNum = parseInt(port);
@@ -139,8 +139,7 @@ class SettingsService {
         server.originalPriority = server.priority;
         server.priority = 0;
       } else {
-        if (server.originalPriority)
-          server.priority = server.originalPriority;
+        if (server.originalPriority) server.priority = server.originalPriority;
       }
     }
   }
@@ -235,21 +234,23 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    // if (true) {
-    //   this.initialized.then(
-    //     () => {
-    //       this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL]
-    //       this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL]
-    //       this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL]
-    //       SettingsService.FAILOVER_DESCRIPTOR.signalingUrl = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL]
-    //       this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl
-    //     }
-    //   )
-    //   //this.failoverEnabled = false;
-    // }
+    //this.setHost("local", false, true)
   }
 
   settings={};
+
+  public setHost(host: "local" | "remote", failoverEnabled: boolean, setSignalingToHost: boolean) {
+    this.failoverEnabled = failoverEnabled;
+    this.settings[SettingsService.HEAT_HOST] =
+      this.settings[host == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
+    this.settings[SettingsService.HEAT_PORT] =
+      this.settings[host == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
+    this.settings[SettingsService.HEAT_WEBSOCKET] =
+      this.settings[host == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
+    this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = setSignalingToHost
+      ? this.settings[host == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
+      : SettingsService.FAILOVER_DESCRIPTOR.signalingUrl
+  }
 
   public get(id:string) {
     return this.settings[id];
