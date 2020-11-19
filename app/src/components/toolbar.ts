@@ -34,12 +34,11 @@
     margin-left: 0px;
   }
   toolbar .test-net {
-    font-size: 22px !important;
-    font-weight: bold !important;
     line-height: 0.6;
   }
   toolbar .test-net-color {
-    background-color: #4CAF50 !important;
+    //background-color: #4CAF50 !important;
+    background-image: linear-gradient(180deg, #4CAF50 95%, transparent);
   }
   toolbar .beta-net-color {
     background-color: #bf112f !important;
@@ -65,11 +64,14 @@
   template: `
     <md-toolbar class="main-toolbar" ng-class="{'test-net-color':vm.isTestnet,'beta-net-color':vm.isBetanet}">
       <div class="md-toolbar-tools">
-        <h2 ng-if="vm.isTestnet" class="test-net">
+        <h3 ng-if="vm.isTestnet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           TEST-NET&nbsp;&nbsp;&nbsp;&nbsp;
-          <br/><span style="font-size: 9px; font-weight: normal;">{{vm.heatServerLocation}}&nbsp;&nbsp;&nbsp;&nbsp;</span>
-        </h2>
+          <br/><span style="font-size:9px; font-weight:normal; color:lightgrey">
+          {{vm.heatServerLocation}}&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+          {{vm.signalingURL}}&nbsp;&nbsp;&nbsp;&nbsp;
+          </span>
+        </h3>
         <h2 ng-if="vm.isBetanet" class="test-net">
           <md-tooltip md-direction="bottom">See About dialog to switch to main net</md-tooltip>
           B E T A N E T &nbsp;
@@ -346,13 +348,14 @@
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
   'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'assetExpiration',
   'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
-  'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging')
+  'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging', 'settings')
 class ToolbarComponent {
 
   isNodeEnv = false;
   isTestnet = heat.isTestnet;
   isBetanet = heat.isBetanet;
   heatServerLocation;
+  signalingURL;
   hasUnreadP2PMessage = false;
 
   constructor(private $rootScope: angular.IScope,
@@ -378,7 +381,8 @@ class ToolbarComponent {
               private panel: PanelService,
               private $location: angular.ILocationService,
               private clipboard: ClipboardService,
-              private p2pMessaging: P2PMessaging) {
+              private p2pMessaging: P2PMessaging,
+              private settings: SettingsService) {
     this.isNodeEnv = env.type == EnvType.NODEJS;
 
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
@@ -387,6 +391,7 @@ class ToolbarComponent {
 
     $rootScope.$on('HEAT_SERVER_LOCATION', (event, location) => {
       this.heatServerLocation = location;
+      this.signalingURL = this.settings.get(SettingsService.HEAT_WEBRTC_WEBSOCKET);
     });
 
     let unreadChangedListener = (rooms: p2p.Room[]) => {

@@ -27,6 +27,12 @@
   template: `
     <div layout="column" flex layout-padding layout-fill>
       <div layout="row" class="button-row">
+
+        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.serverService.isRunning" ng-click="vm.startServer()">
+            Start Server</md-button>
+        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.serverService.isRunning" ng-click="vm.stopServer()">
+            Stop Server</md-button>
+
         <md-menu md-position-mode="target-right target" md-offset="34px 0px">
           <md-button style="margin-top: 5px; margin-right: 20px;" aria-label="signout" class="md-icon-button" ng-click="$mdMenu.open($event)" md-menu-origin >
             <i><img src="assets/sandwich.png"></i>
@@ -59,12 +65,7 @@
           </md-menu-content>
         </md-menu>
 
-        <md-button class="start-stop" ng-if="vm.isServerAvailable()" ng-show="!vm.serverService.isRunning" ng-click="vm.startServer()">
-            Start Server</md-button>
-        <md-button class="start-stop md-primary" ng-if="vm.isServerAvailable()" ng-show="vm.serverService.isRunning" ng-click="vm.stopServer()">
-            Stop Server</md-button>
-
-        <label id="failoverUsage" style="margin-left: 9px; margin-right: 9px">Client API data from:</label>
+        <label id="failoverUsage" style="margin-left: 11px; margin-right: 9px">Client API data from:</label>
         <md-radio-group ng-model="vm.connectionWay" aria-labelledby="failoverUsage" ng-change="vm.failoverUsageChanged()">
           <md-radio-button value="failover" class="md-primary" style="margin-bottom: 7px">Best server (use failover feature)</md-radio-button>
           <md-radio-button value="localhost" style="margin-bottom: 7px">Localhost (ignore failover feature)</md-radio-button>
