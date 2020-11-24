@@ -52,7 +52,10 @@ abstract class VirtualRepeatComponent {
   protected decorator: (item:any,context:any)=>void;
   protected preprocessor: (firstIndex:number, lastIndex:number, items: Array<any>)=>void;
   protected PAGE_SIZE = 20; // number of items per page
-  protected loadedPages = {};
+  protected loadedPages = {
+    dirty: true,
+    inProgress: false
+  };
   protected numItems = -1;
   public topIndex = 0;
   public selected = null;
@@ -73,18 +76,22 @@ abstract class VirtualRepeatComponent {
 
   /* md-virtual-repeat */
   public getItemAtIndex(index: number) {
-    var pageNumber = Math.floor(index / this.PAGE_SIZE);
-    var page = this.loadedPages[pageNumber];
+    let pageNumber = Math.floor(index / this.PAGE_SIZE);
+    let item
+    let page = this.loadedPages[pageNumber];
     if (page) {
-        var item = page[index % this.PAGE_SIZE];
+        item = page[index % this.PAGE_SIZE];
         if (!this.selected) {
           this.selected = item;
         }
-        return item;
     }
-    else if (page !== null) {
-        this.fetchPage(pageNumber);
+    if (!page || this.loadedPages.dirty) {
+      if (!this.loadedPages.inProgress) {
+        this.fetchPage(pageNumber, this.loadedPages.dirty)
+        this.loadedPages.dirty = false
+      }
     }
+    return item;
   }
 
   /* md-virtual-repeat */
@@ -95,7 +102,7 @@ abstract class VirtualRepeatComponent {
   protected determineLength(retain?: boolean): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
     if (this.provider) {
-      this.loadedPages = {};
+      this.loadedPages.dirty = true
       this.provider.getPaginatedLength().then((length) => {
         this.numItems = length;
         if (length == 0) {
@@ -109,8 +116,8 @@ abstract class VirtualRepeatComponent {
     return deferred.promise;
   }
 
-  protected fetchPage(pageNumber:number) {
-    this.loadedPages[pageNumber] = null;
+  protected fetchPage(pageNumber:number, reset?: boolean) {
+    this.loadedPages.inProgress = true
     var firstIndex = pageNumber * this.PAGE_SIZE;
     var lastIndex = firstIndex + this.PAGE_SIZE;
     this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
@@ -125,7 +132,11 @@ abstract class VirtualRepeatComponent {
           items.forEach((item) => { this.decorator(item, this.loadedPages) });
         }
       }
-      this.loadedPages[pageNumber] = items;
+      if (reset) {
+        this.loadedPages = {dirty: false, inProgress: false}
+      }
+      this.loadedPages[pageNumber] = items
+      this.loadedPages.inProgress = false
     });
   }
 

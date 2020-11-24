@@ -195,17 +195,25 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
       }
     );
 
+    let onBlockRefresh = (block: IHeatBlock) => {
+      if (block && block.numberOfTransactions > 0) {
+        this.determineLength()
+      }
+    }
+    let onBlockRefreshDebounced = utils.debounce(angular.bind(this, onBlockRefresh), 500, false);
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+
     if (angular.isString(this.account)) {
       this.heat.subscriber.unconfirmedTransaction({recipient: this.account}, refresh, this.$scope);
       this.heat.subscriber.unconfirmedTransaction({sender: this.account}, refresh, this.$scope);
-      this.heat.subscriber.blockPushed({}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, onBlockRefreshDebounced, this.$scope);
     }
     if (angular.isUndefined(this.block) && angular.isUndefined(this.account)) {
       this.heat.subscriber.unconfirmedTransaction({}, refresh, this.$scope);
       this.heat.subscriber.blockPopped({}, refresh, this.$scope);
-      this.heat.subscriber.blockPushed({}, refresh, this.$scope);
-    }  }
+      this.heat.subscriber.blockPushed({}, onBlockRefreshDebounced, this.$scope);
+    }
+  }
 
   showPopup(messageText: string) {
     let renderedHTML = this.render.render(messageText, [this.controlCharRender]);
