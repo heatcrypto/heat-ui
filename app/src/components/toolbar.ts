@@ -389,8 +389,8 @@ class ToolbarComponent {
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
     this.refreshLocalWallet()
 
-    $rootScope.$on('HEAT_SERVER_LOCATION', (event, location) => {
-      this.heatServerLocation = location;
+    $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
+      this.heatServerLocation = settings.get(SettingsService.HEAT_HOST) + ":" + settings.get(SettingsService.HEAT_PORT);
       this.signalingURL = this.settings.get(SettingsService.HEAT_WEBRTC_WEBSOCKET);
     });
 

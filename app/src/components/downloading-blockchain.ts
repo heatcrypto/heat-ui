@@ -35,7 +35,8 @@ class DownloadingBlockchainComponent {
   showComponent = false;
   lastBlockHeight = 0;
   lastBlockTime = 0;
-  heatServerLocation;
+  refreshInterval;
+  preHeight = 0;
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
               private heat: HeatService,
@@ -45,7 +46,23 @@ class DownloadingBlockchainComponent {
               private $mdToast: angular.material.IToastService) {
     this.refresh();
 
-    let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
+    let skip = 0  //control the speed of refreshing depending on the download blocks count
+    this.refreshInterval = $interval(() => {
+      if (skip > 0) {
+        skip--
+        return
+      }
+      this.refresh()
+      if (this.lastBlockHeight - this.preHeight > 20) {
+        skip = 0
+      } else {
+        skip = 10
+      }
+      this.preHeight = this.lastBlockHeight
+    }, 6 * 1000, 0, false);
+
+    setTimeout(() => this.notifyOnServerLocationUpdating(), 1000)
+
     let checkServerHealthInterval
     if (this.settings.failoverEnabled) {
       checkServerHealthInterval = $interval(() => {
@@ -65,7 +82,7 @@ class DownloadingBlockchainComponent {
     }
 
     $scope.$on('$destroy', () => {
-      $interval.cancel(interval);
+      $interval.cancel(this.refreshInterval);
       if (checkServerHealthInterval) $interval.cancel(checkServerHealthInterval);
     });
   }
@@ -129,8 +146,6 @@ class DownloadingBlockchainComponent {
         if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
-          if (!this.heatServerLocation)
-            this.notifyOnServerLocationUpdating(currentServer);
           //if the server response is nothing then server is down
           currentServerIsAlive = !server.statusError;
           server.statusScore = currentServerIsAlive ? 0 : null;
@@ -182,7 +197,7 @@ class DownloadingBlockchainComponent {
         let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
           settings.setCurrentServer(best);
-          this.notifyOnServerLocationUpdating(best);
+          this.notifyOnServerLocationUpdating();
           this.heat.resetSubscriber();
           if (firstTime) {
             //on initializing (first time) switched silently and starts from login page
@@ -250,9 +265,8 @@ class DownloadingBlockchainComponent {
         : 0;
   }
 
-  private notifyOnServerLocationUpdating(sd: ServerDescriptor) {
-    this.heatServerLocation = sd.host + ":" + sd.port;
-    this.$rootScope.$emit('HEAT_SERVER_LOCATION', this.heatServerLocation);
+  private notifyOnServerLocationUpdating() {
+    this.$rootScope.$emit('HEAT_SERVER_LOCATION', "nothing")
   }
 
 }
