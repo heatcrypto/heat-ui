@@ -197,7 +197,7 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
 
     let onBlockRefresh = (block: IHeatBlock) => {
       if (block && block.numberOfTransactions > 0) {
-        this.determineLength()
+        setTimeout(() => this.determineLength(), 2400)  //delay to fetch the actual transaction list
       }
     }
     let onBlockRefreshDebounced = utils.debounce(angular.bind(this, onBlockRefresh), 500, false);
@@ -670,13 +670,10 @@ class TransactionRenderer {
   }
 
   asset(asset:string) {
-    if (asset=="5592059897546023466")
-      return "<b>BTC</b>"
-    if (asset=="0")
-      return "<b>HEAT</b>";
-    if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol)
-      return this.assetInfo.cache[asset].symbol;
-    else
+    if (!asset) return "?"
+    if (asset=="5592059897546023466") return "<b>BTC</b>"
+    if (asset=="0") return "<b>HEAT</b>";
+    if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol) return this.assetInfo.cache[asset].symbol;
       this.assetInfo.getInfo(asset);
     return asset;
   }

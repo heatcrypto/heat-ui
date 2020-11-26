@@ -61,6 +61,9 @@ abstract class VirtualRepeatComponent {
   public selected = null;
   public loading: boolean = true;
 
+  private fetchPageDebounced: (pageNumber:number, reset?: boolean) => void =
+    utils.debounce(this.fetchPage, 300)
+
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService) {}
 
@@ -87,7 +90,8 @@ abstract class VirtualRepeatComponent {
     }
     if (!page || this.loadedPages.dirty) {
       if (!this.loadedPages.inProgress) {
-        this.fetchPage(pageNumber, this.loadedPages.dirty)
+        setTimeout(() => this.fetchPageDebounced(pageNumber, this.loadedPages.dirty), 200)
+        this.loadedPages.inProgress = true
         this.loadedPages.dirty = false
       }
     }
