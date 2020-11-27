@@ -24,9 +24,18 @@
 @Component({
   selector: 'virtualRepeatTransactions',
   inputs: ['account','block','personalize','transactionObject','hideLabel'],
+  styles: [`
+  .loadingIcon {
+    color: grey;
+    flex: auto;
+    margin-left: 10px;
+  }
+  `],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+      <div>Latest Transactions</div>
+      <div><md-icon md-font-library="material-icons" class="loadingIcon rotate" ng-if="vm.loadedPages.inProgress">sync</md-icon></div>
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -195,9 +204,11 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
       }
     );
 
+    let refreshOneMore = false
     let onBlockRefresh = (block: IHeatBlock) => {
-      if (block && block.numberOfTransactions > 0) {
+      if ((block && block.numberOfTransactions > 0) || refreshOneMore) {
         setTimeout(() => this.determineLength(), 2400)  //delay to fetch the actual transaction list
+        refreshOneMore = (block && block.numberOfTransactions > 0)
       }
     }
     let onBlockRefreshDebounced = utils.debounce(angular.bind(this, onBlockRefresh), 500, false);
@@ -674,7 +685,7 @@ class TransactionRenderer {
     if (asset=="5592059897546023466") return "<b>BTC</b>"
     if (asset=="0") return "<b>HEAT</b>";
     if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol) return this.assetInfo.cache[asset].symbol;
-      this.assetInfo.getInfo(asset);
+    this.assetInfo.getInfo(asset);
     return asset;
   }
 }

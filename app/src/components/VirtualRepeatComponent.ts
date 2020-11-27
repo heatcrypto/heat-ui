@@ -61,8 +61,7 @@ abstract class VirtualRepeatComponent {
   public selected = null;
   public loading: boolean = true;
 
-  private fetchPageDebounced: (pageNumber:number, reset?: boolean) => void =
-    utils.debounce(this.fetchPage, 300)
+  private fetchPageDebounced;
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService) {}
@@ -74,6 +73,8 @@ abstract class VirtualRepeatComponent {
     this.provider = provider;
     this.decorator = decorator;
     this.preprocessor = preprocessor;
+    this.fetchPageDebounced = utils.debounce(this.fetchPage, 300);
+
     return this.determineLength();
   }
 

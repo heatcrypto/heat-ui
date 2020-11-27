@@ -35,11 +35,19 @@
   .fee {
     max-width: 70px !important;
   }
+  .loadingIcon {
+    color: grey;
+    flex: auto;
+    margin-left: 10px;
+  }
   `],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Blocks
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+      <div>Latest Blocks</div>
+      <div><md-icon md-font-library="material-icons" class="loadingIcon rotate" ng-if="vm.loadedPages.inProgress">sync</md-icon></div>
       </div>
+
       <md-list flex layout-fill layout="column" >
         <md-list-item class="header">
           <div class="he truncate-col height-col left">Height</div>
