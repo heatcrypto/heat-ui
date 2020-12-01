@@ -104,13 +104,23 @@
     </div>
   `
 })
+@Inject('$rootScope', '$scope')
 class MessageBatchEntryComponent {
   message: any; // @input
   io: string;
   transport: string;
   stage: number
 
-  constructor() {
+  constructor(private $rootScope: angular.IScope,
+              private $scope: angular.IScope) {
+    $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
+      if (this.message.msgId == msgId) {
+        this.$scope.$evalAsync(() => {
+          this.message.extraInfo = info
+          this.stage = this.message.extraInfo ? this.message.extraInfo.status.stage : null
+        })
+      }
+    });
   }
 
   $onInit() {

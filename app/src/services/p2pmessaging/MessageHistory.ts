@@ -222,9 +222,11 @@ module p2p {
 
     public putExtraInfo(msgId: string, data: p2p.MessageExtraInfo) {
       try {
-        this.extraStore.put(msgId, data);
+        this.extraStore.put(msgId, data)
+        let $rootScope = heat.$inject.get('$rootScope')
+        $rootScope.$emit('OFFCHAIN_MESSAGE_EXTRA_INFO', msgId, data)
       } catch (e) {
-        console.error("Error on saving data to the local storage " + e);
+        console.error("Error on saving data to the local storage " + e)
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(e.name) >= 0) {
           //shrink history of all accounts when reach storage limit
           this.shrink(5, () => this.extraStore.put(msgId, data))
