@@ -23,6 +23,13 @@
 
 module p2p {
 
+  export interface MessageExtraInfo {
+    status: {
+      stage: number, // 1 - delivered, 2 - read, 3 - rejected by server
+      remark: string
+    }
+  }
+
   export class U2UProtocol extends BaseProtocol {
 
     get name(): p2p.Protocol {
@@ -81,7 +88,7 @@ module p2p {
         //stages: 1 - delivered, 2 - read, 3 - rejected by server
         let room: Room = this.connector.rooms.get(roomName) || this.connector.messenger.getOneToOneRoom(msg.sender || msg.fromPeer, true)
         if (room) {
-          room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: msg.stage, remark: msg.remark}})
+          room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
         }
       }
 

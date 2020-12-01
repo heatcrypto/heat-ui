@@ -29,6 +29,7 @@ module p2p {
     fromPeer: string
     content: string
     transport?: TransportType
+    extraInfo?: MessageExtraInfo
   }
 
   const DEFAULT_STORAGE_SPACE_LIMIT = 5 * 1024 * 1024
@@ -59,7 +60,7 @@ module p2p {
   /*
   Room message history.
    Messages are stored in the local storage.
-   Messages are stored in bundles called pages:
+   There is no way to get individual message by id because messages are stored in bundles called pages:
    key -> page
    Page is encrypted array of messages.
    Key format:  num.messagesCount.timestampOfLastMessage, for example  "301.40.1552578853760"
@@ -187,7 +188,9 @@ module p2p {
           let encrypted = pageObject.encrypted ? pageObject.encrypted : pageObject
           let pageContentStr = heat.crypto.decryptMessage(
             encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase);
-          return JSON.parse(pageContentStr);
+          let items:Array<MessageHistoryItem> = JSON.parse(pageContentStr);
+          items.forEach(v => v.extraInfo = this.getExtraInfo(v.msgId))
+          return items
         } catch (e) {
           console.log("Error on parse/decrypt message history page");
         }
@@ -202,7 +205,7 @@ module p2p {
     public put(item: MessageHistoryItem) {
       this.pageContent.push(item);
       this.savePage(this.pages.length - 1, this.pageContent);
-      this.putExtraInfo(item.msgId, "")  //no extra info but to register message id, later this entry may be updated
+      this.putExtraInfo(item.msgId, null)  //no extra info but to register message id, later this entry may be updated
 
       if (this.pageContent.length >= MessageHistory.MAX_PAGE_LENGTH) {
         this.pageContent = [];
@@ -217,16 +220,20 @@ module p2p {
       }
     }
 
-    public putExtraInfo(msgId: string, data) {
+    public putExtraInfo(msgId: string, data: p2p.MessageExtraInfo) {
       try {
         this.extraStore.put(msgId, data);
       } catch (e) {
-        console.log("Error on saving data to the local storage " + e);
+        console.error("Error on saving data to the local storage " + e);
         if (['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].indexOf(e.name) >= 0) {
           //shrink history of all accounts when reach storage limit
           this.shrink(5, () => this.extraStore.put(msgId, data))
         }
       }
+    }
+
+    public getExtraInfo(msgId: string): p2p.MessageExtraInfo {
+      return this.extraStore.get(msgId)
     }
 
     /**

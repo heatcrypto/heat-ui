@@ -33,6 +33,10 @@
     message-batch-entry .message-content {
       font-size: 16px;
     }
+    message-batch-entry .status {
+      font-size: 12px;
+      float: right;
+    }
 
     message-batch-entry .column {
       border-radius: 15px;
@@ -92,22 +96,26 @@
   template: `
     <div class="{{vm.transport}}" ng-class="{'outgoing': vm.message.outgoing, 'incoming': !vm.message.outgoing}">
       <div class="header">
-        {{::vm.message.date}}
+        <span>{{::vm.message.date}}</span>
+        <!-- delivered icon, stage == 1 means Delivered -->
+        <md-icon class="status" md-font-library="material-icons" ng-if="vm.stage==1">check</md-icon>
       </div>
       <div class="message-content"><pre>{{vm.message.contents}}</pre></div>
     </div>
   `
 })
 class MessageBatchEntryComponent {
-  message: IHeatMessage; // @input
+  message: any; // @input
   io: string;
   transport: string;
+  stage: number
 
   constructor() {
   }
 
   $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
+    this.stage = this.message.extraInfo ? this.message.extraInfo.status.stage : null
 
     // just enough:
     // this.transport = "transport-" + this.message['transport']
