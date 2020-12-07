@@ -126,7 +126,7 @@ class HeatService {
         },(response)=>{
           if (ignoreErrorResponse) return
           this.logErrorResponse(route, null, response);
-          deferred.reject(new ServerEngineError(response));
+          deferred.reject(new ServerEngineError({host: host, port: port, route: route, response: response}));
         }
       )
     }
@@ -152,6 +152,7 @@ class HeatService {
         'Content-Type': 'application/json'
       }
     };
+    //require("tls").DEFAULT_ECDH_CURVE = "auto"
     var http = require(isHttps ? 'https':'http');
     var req = http.request(options, (res) => {
       res.setEncoding('utf8');
@@ -229,6 +230,7 @@ class HeatService {
   }
 
   private browserHttpPost(url: string, request: any, onSuccess: Function, onFailure: Function) {
+    //require("tls").DEFAULT_ECDH_CURVE = "auto"
     this.$http({
         method: 'POST',
         url: url,

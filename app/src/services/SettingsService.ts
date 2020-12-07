@@ -278,7 +278,7 @@ class SettingsService {
       this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
       SettingsService.CRYPTO_NODES = json.cryptoNodes;
     };
-    this.initialized = new Promise<any>((resolve, reject) => {
+    this.initialized = new Promise<void>((resolve, reject) => {
       if (this.env.type == EnvType.BROWSER) {
         this.http.get('app-config.json').then((json: any) => {
           resolveFailoverDescriptor(json);

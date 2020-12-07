@@ -44,7 +44,7 @@ class LTCCryptoService {
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
-          resolve()
+          resolve(null)
         }
       }
       else {

@@ -232,7 +232,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   private processIncomingCall(callerPublicKey: string): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       // if peer is connected already confirm silently
       if (this.isPeerConnected(callerPublicKey)) {
         resolve();
