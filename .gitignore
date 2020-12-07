@@ -9,6 +9,7 @@ dist
 npm-debug.log
 releases
 blockchain
+/tmp
 /.idea/
 /out/
 /.out/
