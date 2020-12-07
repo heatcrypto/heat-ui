@@ -55,7 +55,7 @@
     }
     .roomregistered-status-symbol {
       font-size: 22px;
-      color: grey;
+      color: skyblue;
       margin: 0 6px 4px 0;
     }
   `],
@@ -69,7 +69,8 @@
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
           <span ng-if="contact.hasUnreadP2PMessage" class="p2p-unread-symbol">*</span>
           <span ng-if="vm.p2pStatus(contact)=='channelOpened'" class="channelopened-status-symbol">●</span>
-          <span ng-if="vm.p2pStatus(contact)=='roomRegistered'" class="roomregistered-status-symbol">●</span>
+          <span ng-if="vm.p2pStatus(contact)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online'"
+                class="roomregistered-status-symbol">●</span>
           <span ng-if="contact.newIncomingContact" class="new-incoming-contact">new</span>
           <div class="account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
@@ -99,7 +100,7 @@ class UserContactsComponent {
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
-              private p2pMessaging: P2PMessaging,
+              protected p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService,
               private contactService: ContactService) {
 

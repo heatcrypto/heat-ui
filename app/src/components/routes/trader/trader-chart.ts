@@ -223,6 +223,7 @@ class TraderChartComponent {
   }
 
   public refresh() {
+    if (!this.currencyInfo || !this.assetInfo) return
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
       let margin = { top: 20, right: 80, bottom: 60, left: 50 },
         width = this.fullWidth - margin.left - margin.right,
