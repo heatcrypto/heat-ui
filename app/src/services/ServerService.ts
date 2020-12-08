@@ -79,9 +79,6 @@ class ServerService extends EventEmitter {
       this.command = path.join('bin','heatledger');
     }
 
-    let namespace = heat.isTestnet ? "(heatwallet\\,testnet)" : "(heatwallet)"
-    this.args = ["-properties", "namespace=" + namespace]
-
     //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
     let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
     const fs = require('fs');
@@ -113,13 +110,23 @@ class ServerService extends EventEmitter {
 
     var spawn = require('child-process-promise').spawn;
     this.isRunning = true;
-    this.log("[SERVER] command >> " + this.command);
-    this.log("[SERVER] arguments >> " + this.args);
-    this.log("[SERVER] cwd     >> " + this.cwd);
 
     this.getUserDataDirFromMainProcess().then(
       userDataDir => {
         var env = process.env
+
+        if (userDataDir) {
+          //pass env variable to the server process that it can set path to blockchain and to replicator
+          let path = require('path');
+          env['HEAT_WALLET_DIR'] = path.join(userDataDir, '.')
+        }
+
+        let namespace = heat.isTestnet ? "(heatwallet\\,testnet)" : "(heatwallet)"
+        this.args = ["-properties", "namespace=" + namespace]
+
+        this.log("[SERVER] command >> " + this.command);
+        this.log("[SERVER] arguments >> " + this.args);
+        this.log("[SERVER] cwd     >> " + this.cwd);
 
         var promise = spawn(this.command, this.args, {
           cwd: this.cwd,
@@ -145,20 +152,19 @@ class ServerService extends EventEmitter {
               }, 2000, true);
             }
           })
-        })
-          .catch((err) => {
-            var message = angular.isObject(err) ? (err.message || '') : '';
-            this.log(`[SPAWN EXIT] ${message}`, err);
-            this.$rootScope.$evalAsync(() => {
-              this.isRunning = false;
-              this.isReady = false;
-              if (this.needsRecoveryRestart()) {
-                this.$timeout(() => {
-                  this.startServer();
-                }, 2000, true);
-              }
-            });
+        }).catch((err) => {
+          var message = angular.isObject(err) ? (err.message || '') : '';
+          this.log(`[SPAWN EXIT] ${message}`, err);
+          this.$rootScope.$evalAsync(() => {
+            this.isRunning = false;
+            this.isReady = false;
+            if (this.needsRecoveryRestart()) {
+              this.$timeout(() => {
+                this.startServer();
+              }, 2000, true);
+            }
           });
+        });
       }
     )
   }
