@@ -93,6 +93,7 @@ module p2p {
         let item: MessageHistoryItem = {
           msgId: message.id,
           timestamp: message.timestamp,
+          receiptTimestamp: Date.now(),
           fromPeer: this.user.publicKey,
           content: message.text,
           transport: result.transport
@@ -113,6 +114,7 @@ module p2p {
         let item: MessageHistoryItem = {
           msgId: message.id,
           timestamp: message.timestamp,
+          receiptTimestamp: Date.now(),
           fromPeer: message.fromPeerId,
           content: message.text,
           transport: message.transport

@@ -126,7 +126,7 @@ class MsgViewerComponent {
     // can improvise sorting --> currently sorting the already sorted elements too
     Promise.all(promises).then((messages) => {
       this.allMessages = this.allMessages.concat(...messages)
-      this.allMessages.sort((a, b) => (Date.parse(a.date) < Date.parse(b.date)) ? 1 : ((Date.parse(b.date) < Date.parse(a.date)) ? -1 : 0));
+      this.allMessages.sort((a, b) => b.sortingTimestamp - a.sortingTimestamp);
       this.displayMessages.messages = this.displayMessages.messages.concat(this.allMessages.slice(this.displayMessages.index, this.displayMessages.index + 10))
 
       this.$scope.$evalAsync(() => { // ensure contents are rendered
@@ -176,14 +176,16 @@ class MsgViewerComponent {
 
   private processOnchainItem(message) {
     this.updateLatestMessageReadTimestamp(message);
+    let date = utils.timestampToDate(message.timestamp)
     return {
       'senderPublicKey': message.senderPublicKey,
       'senderAccount': heat.crypto.getAccountIdFromPublicKey(message.senderPublicKey),
       'contents': this.heat.getHeatMessageContents(message),
-      'date': dateFormat(utils.timestampToDate(message.timestamp), this.dateFormat),
+      'date': dateFormat(date, this.dateFormat),
       'outgoing': this.user.account == message.sender,
       'transport': 'chain',
       'timestamp': message.timestamp,
+      'sortingTimestamp': date.getTime(),
       '__id': ++MsgViewerComponent.count
     }
   }
@@ -192,8 +194,9 @@ class MsgViewerComponent {
     item['senderPublicKey'] = item.fromPeer;
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['timestamp'] = item.timestamp;
+    item['sortingTimestamp'] = item.receiptTimestamp || item.timestamp;
     item['outgoing'] = this.user.account == item['senderAccount'];
-    item['date'] = dateFormat(item.timestamp, this.dateFormat);
+    item['date'] = dateFormat(item['sortingTimestamp'], this.dateFormat);
     item.transport = item.transport || (item['onchain'] ? 'chain' : 'p2p');
     item['contents'] = item['content'] || item['message'];
     item['__id'] = ++MsgViewerComponent.count;

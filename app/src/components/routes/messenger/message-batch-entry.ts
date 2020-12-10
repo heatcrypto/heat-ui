@@ -36,8 +36,9 @@
     message-batch-entry .status {
       font-size: 12px;
       float: right;
+      margin-left: 7px;
+      margin-right: -12px;
     }
-
     message-batch-entry .column {
       border-radius: 15px;
       min-width: 120px;
