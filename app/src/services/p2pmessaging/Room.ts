@@ -99,6 +99,10 @@ module p2p {
           transport: result.transport
         };
         this.getMessageHistory().put(item);
+        if (message.transport == "p2p" && result.count > 0) {
+          //webrtc message is sent, it means the channel is opened, it means that delivered
+          setTimeout(() => this.getMessageHistory().putExtraInfo(message.id, {status: {stage: 1}}), 100)
+        }
         if (this.onNewMessageHistoryItem) {
           this.onNewMessageHistoryItem(item);
         }

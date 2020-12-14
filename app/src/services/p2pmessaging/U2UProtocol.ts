@@ -26,7 +26,7 @@ module p2p {
   export interface MessageExtraInfo {
     status: {
       stage: number, // 1 - delivered, 2 - read, 3 - rejected by server
-      remark: string
+      remark?: string
     }
   }
 
