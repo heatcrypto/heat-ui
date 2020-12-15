@@ -102,12 +102,20 @@ class ClipboardService {
     panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
-          <textarea style="width: 600px" rows="2" flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
-          <div class="qrcodeBox" id="PKQRCode"></div>
-          <p>
-          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Close" style="float: right">Close</md-button>
-          <md-button ng-click="vm.copyToClipboard()" aria-label="Copy">copy</md-button>
-          </p>
+          <md-menu>
+            <md-button style="margin-top: 5px; margin-right: 20px;" ng-click="$mdMenu.open($event)" md-menu-origin >
+              <i>If you are sure that you want to see the secret data click here</i>
+            </md-button>
+            <md-menu-content class="toolbar-copy-passphrase">
+              <textarea style="min-height: 44px; width: 600px; border: none; background: transparent;" rows="2"
+                    flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
+              <div class="qrcodeBox" id="PKQRCode"></div>
+              <p>
+              <md-button ng-click="vm.copyToClipboard()" aria-label="Copy" style="color: white !important;">copy</md-button>
+              <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Close" style="float: right; color: white !important;">Close</md-button>
+              </p>
+            </md-menu-content>
+          </md-menu>
         </md-input-container>
       </div>
     `, {
