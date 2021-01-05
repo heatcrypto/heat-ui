@@ -62,10 +62,10 @@ class IOTACurrency implements ICurrency {
 
   sendIota($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let iotaBlockExplorerService = <IotaBlockExplorerService>heat.$inject.get('iotaBlockExplorerService')
         let user = <UserService>heat.$inject.get('user')
 
@@ -93,9 +93,9 @@ class IOTACurrency implements ICurrency {
         $mdToast.show($mdToast.simple().textContent("Send transaction is in process.\n" +
           "Please wait for the dialog to view transaction id").hideDelay(5000));
       }
-      $scope['vm'].disableOKBtn = false
+      this.disableOKBtn = false
 
-      $scope['vm'].data = {
+      this.data = {
         value: '',
         recipient: '',
         recipientInfo: '',
@@ -125,7 +125,7 @@ class IOTACurrency implements ICurrency {
         iotaBlockExplorerService.checkAddressReuse(address).then(reuse => $scope['vm'].data.addressReuse = reuse);
       }
 
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
         checkAddressValidity($scope['vm'].data.recipient)

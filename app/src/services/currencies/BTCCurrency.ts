@@ -59,7 +59,7 @@ class BTCCurrency implements ICurrency {
 
   sendBtc($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
@@ -90,7 +90,7 @@ class BTCCurrency implements ICurrency {
         return txObject
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].disableOKBtn = true
         bitcoreService.sendBitcoins(createTx()).then(
@@ -107,8 +107,8 @@ class BTCCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
-      $scope['vm'].data = {
+      this.disableOKBtn = false
+      this.data = {
         amount: '',
         recipient: '',
         recipientInfo: '',
@@ -135,7 +135,7 @@ class BTCCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
@@ -147,7 +147,7 @@ class BTCCurrency implements ICurrency {
         })
       }
 
-      $scope['vm'].selectedItemChange = function(item: IHeatMessageContact) {
+      this.selectedItemChange = function(item: IHeatMessageContact) {
         $scope['vm'].value = $scope['vm'].selectedItem ? $scope['vm'].selectedItem.id : '';
         $scope['vm'].data.recipient = item.cryptoAddresses ? item.cryptoAddresses.find( i => i.name === 'BTC').address : ''
 
@@ -156,18 +156,18 @@ class BTCCurrency implements ICurrency {
 
       }
 
-      $scope['vm'].search = function(){
+      this.search = function(){
         let p = <ContactService> heat.$inject.get('contactService');
         return p.lookupContact($scope['vm'].searchText.trim())
       }
 
-      $scope['vm'].searchTextChange = function() {
+      this.searchTextChange = function() {
         $scope['vm'].value = $scope['vm'].searchText;
         $scope['vm'].data.recipient = $scope['vm'].searchText;
         $scope['vm'].recipientChanged()
       }
 
-      $scope['vm'].amountChanged = function () {
+      this.amountChanged = function () {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].data.txBytes = []
         bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
@@ -176,7 +176,7 @@ class BTCCurrency implements ICurrency {
             $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
         })
       }
-      $scope['vm'].feeChanged = function () {
+      this.feeChanged = function () {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].data.txBytes = []
         bitcoreService.signTransaction(createTx(true), true).then(rawTx => {

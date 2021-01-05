@@ -55,7 +55,7 @@ class BCHCurrency implements ICurrency {
 
   sendBch($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
@@ -77,7 +77,7 @@ class BCHCurrency implements ICurrency {
         return txObject
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
         $scope['vm'].disableOKBtn = true
         bchCryptoService.sendBitcoinCash(createTx()).then(
@@ -93,8 +93,8 @@ class BCHCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
-      $scope['vm'].data = {
+      this.disableOKBtn = false
+      this.data = {
         amount: '',
         recipient: '',
         recipientInfo: '',
@@ -118,7 +118,7 @@ class BCHCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         // let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
@@ -129,7 +129,7 @@ class BCHCurrency implements ICurrency {
         // })
       }
 
-      $scope['vm'].amountChanged = function () {
+      this.amountChanged = function () {
         let bchCryptoService = <BCHCryptoService> heat.$inject.get('bchCryptoService')
         $scope['vm'].data.txBytes = []
         bchCryptoService.signTransaction(createTx(true), true).then(rawTx => {

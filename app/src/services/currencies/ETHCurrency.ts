@@ -80,10 +80,10 @@ class ETHCurrency implements ICurrency {
 
   sendEther($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
         let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
@@ -106,8 +106,8 @@ class ETHCurrency implements ICurrency {
           )
         })
       }
-      $scope['vm'].disableOKBtn = false
-      $scope['vm'].data = {
+      this.disableOKBtn = false
+      this.data = {
         amount: '',
         recipient: '',
         recipientInfo: '',
@@ -131,7 +131,7 @@ class ETHCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }

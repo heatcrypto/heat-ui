@@ -68,10 +68,10 @@ class FIMKCurrency implements ICurrency {
 
   sendFim($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let mofoSocketService = <MofoSocketService> heat.$inject.get('mofoSocketService')
         let to = $scope['vm'].data.recipient
@@ -123,10 +123,10 @@ class FIMKCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
+      this.disableOKBtn = false
 
       let defaultFee = '0.1'
-      $scope['vm'].data = {
+      this.data = {
         amountNQT: '',
         recipient: '',
         recipientInfo: '',
@@ -155,7 +155,7 @@ class FIMKCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         $scope['vm'].data.recipientPublicKey = ''
         lookup()

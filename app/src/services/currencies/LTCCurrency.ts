@@ -57,7 +57,7 @@ class LTCCurrency implements ICurrency {
 
   sendLtc($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
@@ -77,7 +77,7 @@ class LTCCurrency implements ICurrency {
         return txObject
       }
 
-      $scope['vm'].okButtonClick = ($event) => {
+      this.okButtonClick = ($event) => {
         let ltcBlockExplorerService = <LtcBlockExplorerService>heat.$inject.get('ltcBlockExplorerService')
         $scope['vm'].disableOKBtn = true
         let txObject = createTx(false)
@@ -105,8 +105,8 @@ class LTCCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
-      $scope['vm'].data = {
+      this.disableOKBtn = false
+      this.data = {
         amount: '',
         recipient: '',
         recipientInfo: '',
@@ -131,7 +131,7 @@ class LTCCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         let ltcCryptoService = <LTCCryptoService>heat.$inject.get('ltcCryptoService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
@@ -142,7 +142,7 @@ class LTCCurrency implements ICurrency {
         // })
       }
 
-      $scope['vm'].amountChanged = function () {
+      this.amountChanged = function () {
         let ltcCryptoService = <LTCCryptoService>heat.$inject.get('ltcCryptoService')
         $scope['vm'].data.txBytes = []
         ltcCryptoService.signTransaction(createTx(true), true).then(rawTx => {
