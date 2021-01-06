@@ -510,6 +510,7 @@ interface IHeatCreateAssetExpiration {
   assetId: string;
   expiration: number;
 }
+interface IHeatCreateSupervisoryAccount {}
 
 interface IHeatCreateTransactionOutput {
   /**
