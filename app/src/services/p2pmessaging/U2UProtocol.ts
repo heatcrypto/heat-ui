@@ -26,7 +26,7 @@ module p2p {
   export interface MessageExtraInfo {
     status: {
       stage: number, // 1 - delivered, 2 - read, 3 - rejected by server
-      remark: string
+      remark?: string
     }
   }
 
@@ -90,6 +90,13 @@ module p2p {
         if (room) {
           room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
         }
+      },
+
+      ERROR: (roomName: string, msg) => {
+        let errorText = msg
+          ? `Server error response. ${roomName ? "Room " + roomName : ""} ${msg.reason}`
+          : "error"
+        this.connector.processError(errorText, Protocol.U2U)
       }
 
     })

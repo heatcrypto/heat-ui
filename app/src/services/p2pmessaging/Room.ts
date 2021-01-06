@@ -93,11 +93,16 @@ module p2p {
         let item: MessageHistoryItem = {
           msgId: message.id,
           timestamp: message.timestamp,
+          receiptTimestamp: Date.now(),
           fromPeer: this.user.publicKey,
           content: message.text,
           transport: result.transport
         };
         this.getMessageHistory().put(item);
+        if (message.transport == "p2p" && result.count > 0) {
+          //webrtc message is sent, it means the channel is opened, it means that delivered
+          setTimeout(() => this.getMessageHistory().putExtraInfo(message.id, {status: {stage: 1}}), 100)
+        }
         if (this.onNewMessageHistoryItem) {
           this.onNewMessageHistoryItem(item);
         }
@@ -113,6 +118,7 @@ module p2p {
         let item: MessageHistoryItem = {
           msgId: message.id,
           timestamp: message.timestamp,
+          receiptTimestamp: Date.now(),
           fromPeer: message.fromPeerId,
           content: message.text,
           transport: message.transport

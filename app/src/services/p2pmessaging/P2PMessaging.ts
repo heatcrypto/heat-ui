@@ -78,7 +78,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         $interval, this, settings, this.user.publicKey,
         (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
         peerId => this.processIncomingCall(peerId),
-        reason => this.onSignalingError(reason),
+        (reason, protocol) => this.onError(reason, protocol),
         dataHex => this.sign(dataHex),
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
         (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
@@ -115,6 +115,16 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         }
       }
     }).catch(reason => console.error(reason))
+  }
+
+  onError(reason: string, protocol?: p2p.Protocol) {
+    if (protocol == p2p.Protocol.U2U) {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent(`Error: ${reason}`).hideDelay(9000)
+      );
+    } else {
+      console.log(`Messaging error: ${reason}\n Protocol: ${protocol}`);
+    }
   }
 
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
@@ -193,10 +203,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     this.u2uProtocol.requestNewContact(recipient, this.user.publicKey, room, text)
     //this.connector.call(peerId, this.user.publicKey, room);
     return room;
-  }
-
-  onSignalingError(reason: string) {
-    console.log("Signaling error: " + reason);
   }
 
   sign(dataHex: string): p2p.ProvingData {

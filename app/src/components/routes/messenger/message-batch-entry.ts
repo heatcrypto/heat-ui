@@ -36,8 +36,9 @@
     message-batch-entry .status {
       font-size: 12px;
       float: right;
+      margin-left: 7px;
+      margin-right: -12px;
     }
-
     message-batch-entry .column {
       border-radius: 15px;
       min-width: 120px;
@@ -83,20 +84,20 @@
     message-batch-entry .offchain {
       border-left: solid 7px green;
     }
-    message-batch-entry .transport-chain {
+    message-batch-entry .onchain, message-batch-entry .chain {
       border-left: solid 7px #ff3301;
     }
-    message-batch-entry .transport-p2p {
+    message-batch-entry .p2p {
       border-left: solid 7px green;
     }
-    message-batch-entry .transport-server {
+    message-batch-entry .server {
       border-left: solid 7px skyblue;
     }
   `],
   template: `
-    <div class="{{vm.transport}}" ng-class="{'outgoing': vm.message.outgoing, 'incoming': !vm.message.outgoing}">
+    <div class="{{vm.message.transport}}" ng-class="{'outgoing': vm.message.outgoing, 'incoming': !vm.message.outgoing}">
       <div class="header">
-        <span>{{::vm.message.date}}</span>
+        <span>{{vm.message.date}}</span>
         <!-- delivered icon, stage == 1 means Delivered -->
         <md-icon class="status" md-font-library="material-icons" ng-if="vm.stage==1">check</md-icon>
       </div>
@@ -108,7 +109,6 @@
 class MessageBatchEntryComponent {
   message: any; // @input
   io: string;
-  transport: string;
   stage: number
 
   constructor(private $rootScope: angular.IScope,
@@ -126,16 +126,5 @@ class MessageBatchEntryComponent {
   $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
     this.stage = this.message.extraInfo ? this.message.extraInfo.status.stage : null
-
-    // just enough:
-    // this.transport = "transport-" + this.message['transport']
-    // but we need to be compatible with old messages in the storage
-    let v = this.message['transport']
-    this.transport = "transport-"
-    if (v) {
-      this.transport += v
-    } else {
-      this.transport += this.message['onchain'] ? "chain" : "p2p"
-    }
   }
 }

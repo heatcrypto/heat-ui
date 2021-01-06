@@ -26,6 +26,7 @@ module p2p {
   export interface MessageHistoryItem {
     msgId: string
     timestamp: number
+    receiptTimestamp?: number
     fromPeer: string
     content: string
     transport?: TransportType
@@ -289,8 +290,8 @@ module p2p {
 
     private savePage(pageIndex: number, pageContent: Array<MessageHistoryItem>) {
       let occupiedSpaceBefore = this.checkStorageSpace(true, false)
-      let occupiedSpaceAfter = this.checkStorageSpace(false, true)
-      if (occupiedSpaceAfter != occupiedSpaceBefore) {
+      let occupiedSpaceAfter = occupiedSpaceBefore ? this.checkStorageSpace(false, true) : null
+      if (occupiedSpaceAfter && occupiedSpaceAfter != occupiedSpaceBefore) {
         console.log(`Removed data length ${occupiedSpaceBefore - occupiedSpaceAfter}, storage occupied space ${occupiedSpaceAfter}`)
       }
 

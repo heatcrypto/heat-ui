@@ -114,7 +114,7 @@ module p2p {
      * @param accountPublicKey
      * @param createRoom function to create the room on incoming call
      * @param processIncomingCall function to accept the caller
-     * @param signalingError
+     * @param processError
      * @param sign Signing delegated to client class because this service class should not to have deal with secret info
      * @param encrypt Encrypt p2p messages
      * @param decrypt Decrypt p2p messages
@@ -127,7 +127,7 @@ module p2p {
       public accountPublicKey: string,
       public createRoom: (name: string, peerId) => p2p.Room,
       public processIncomingCall: (caller: string) => Promise<void>,
-      public signalingError: (reason: string) => void,
+      public processError: (reason: string, protocol?: Protocol) => void,
       public sign: (dataHex: string) => p2p.ProvingData,
       public encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
       public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string,

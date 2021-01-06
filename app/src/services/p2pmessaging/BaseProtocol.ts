@@ -55,7 +55,7 @@ module p2p {
       },
 
       ERROR: (msg) => {
-        this.connector.signalingError(msg ? msg.reason : "error")
+        this.connector.processError(msg ? msg.reason : "error")
       }
 
     }
