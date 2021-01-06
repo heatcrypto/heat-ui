@@ -165,11 +165,6 @@ class CurrencyAddressCreate {
     // determine the first 'nxt' address based of the last currencyBalance displayed
     let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
-    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
-      return false
-    }
-
     // look up the following address
     for (let i = 0; i < this.wallet.addresses.length; i++) {
 
