@@ -513,7 +513,7 @@ class WalletEntry {
                   </md-button>
                   <md-menu-content width="4">
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase)">
+                      <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase, entry.symbol)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
                       </md-button>
@@ -539,7 +539,7 @@ class WalletEntry {
                   </md-button>
                   <md-menu-content width="4">
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase)">
+                      <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase, entry.symbol)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
                       </md-button>
@@ -640,8 +640,8 @@ class WalletComponent {
     this.initCreatedAddresses()
   }
 
-  showSecret(secret: string) {
-    this.clipboard.showSecret(secret)
+  showSecret(secret: string, currencySymbol: string) {
+    this.clipboard.showSecret(secret, currencySymbol)
   }
 
   deleteEntry(entry) {

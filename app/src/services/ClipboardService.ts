@@ -97,7 +97,8 @@ class ClipboardService {
     )
   }
 
-  showSecret(secret: string) {
+  showSecret(secret: string, currencySymbol?: string) {
+    if (currencySymbol == "ETH") secret = "0x" + secret
     let panel: PanelService = heat.$inject.get('panel')
     panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">

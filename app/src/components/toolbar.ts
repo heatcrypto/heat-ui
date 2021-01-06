@@ -616,7 +616,7 @@ class ToolbarComponent {
   }
 
   showSecretPhrase() {
-    this.clipboard.showSecret(this.user.currency.secretPhrase)
+    this.clipboard.showSecret(this.user.currency.secretPhrase, this.user.currency.symbol)
   }
 
 }
