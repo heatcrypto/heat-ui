@@ -104,7 +104,7 @@ class ClipboardService {
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
           <md-menu>
-            <md-button style="margin-top: 5px; margin-right: 20px;" ng-click="$mdMenu.open($event)" md-menu-origin >
+            <md-button style="margin-top: 5px; margin-right: 20px; padding: 20px;" ng-click="$mdMenu.open($event)" md-menu-origin >
               <i>If you are sure that you want to see the secret data click here</i>
             </md-button>
             <md-menu-content class="toolbar-copy-passphrase">

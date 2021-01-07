@@ -269,7 +269,7 @@
               </md-menu-item>
               <md-menu-item ng-if="vm.user.unlocked">
                 <md-button aria-label="set supervisory account" ng-click="vm.showSupervisoryAccountDialog($event)">
-                  <md-icon md-font-library="material-icons">how_to_reg</md-icon>
+                  <md-icon md-font-library="material-icons">supervisor_account</md-icon>
                   <span>Set supervisory account</span>
                 </md-button>
               </md-menu-item>
