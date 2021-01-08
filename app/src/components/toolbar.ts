@@ -273,6 +273,12 @@
                   <span>Set supervisory account</span>
                 </md-button>
               </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="set asset amount limit for account" ng-click="vm.showAccountAssetLimitDialog($event)">
+                  <md-icon md-font-library="material-icons">supervisor_account</md-icon>
+                  <span>Set asset amount limit</span>
+                </md-button>
+              </md-menu-item>
 
             <md-menu-divider ng-if="vm.user.unlocked"></md-menu-divider>
 
@@ -353,7 +359,7 @@
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
   'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'assetExpiration', 'supervisoryAccount',
-  'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
+  'accountAssetLimit', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging', 'settings')
 class ToolbarComponent {
 
@@ -378,6 +384,7 @@ class ToolbarComponent {
               private whitelistMarket: WhitelistMarketService,
               private assetExpiration: AssetExpirationService,
               private supervisoryAccount: SupervisoryAccountService,
+              private accountAssetLimit: AccountAssetLimitService,
               private balanceLease: BalanceLeaseService,
               private masternodeService: MasternodeService,
               private storage: StorageService,
@@ -575,6 +582,10 @@ class ToolbarComponent {
 
   showSupervisoryAccountDialog($event) {
     this.supervisoryAccount.dialog($event).show();
+  }
+
+  showAccountAssetLimitDialog($event) {
+    this.accountAssetLimit.dialog($event).show();
   }
 
   signout() {

@@ -439,6 +439,7 @@ interface IHeatCreateTransactionInput {
   WhitelistAssetAccount?: IHeatCreateWhitelistAssetAccount;
   AssetAssignFees?: IHeatCreateAssetAssignFees;
   AssetExpiration?: IHeatCreateAssetExpiration;
+  AccountAssetLimit?: IHeatCreateAccountAssetLimit;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -511,6 +512,11 @@ interface IHeatCreateAssetExpiration {
   expiration: number;
 }
 interface IHeatCreateSupervisoryAccount {}
+interface IHeatCreateAccountAssetLimit {
+  assetId: string;
+  amount: string;
+  interval: number;
+}
 
 interface IHeatCreateTransactionOutput {
   /**
