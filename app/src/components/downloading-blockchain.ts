@@ -183,15 +183,18 @@ class DownloadingBlockchainComponent {
           let se = currentServer.statusError;
           causeToSelectBest = "Current host is unavailable"
             + (se.code ? ". Code: " + se.code : "") + (se.description ? ". Description: " + se.description : "");
+          return;
         }
         if (server.statusScore >= 0 || !currentServerIsAlive) {
           if ((server.statusScore != null && best.statusScore == null) || server.statusScore > best.statusScore) {
             best = server;
             causeToSelectBest = "Status score is better";
+            return;
           }
-          if (server.statusScore == best.statusScore && server.priority < best.priority && best != currentServer) {
+          if (server.statusScore == best.statusScore && server.priority < best.priority && best != server) {
             best = server;
             causeToSelectBest = "Server priority";
+            return;
           }
         }
       });
