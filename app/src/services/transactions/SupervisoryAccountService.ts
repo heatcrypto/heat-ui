@@ -51,7 +51,7 @@ class SupervisoryAccountServiceDialog extends GenericDialog {
               private recipient: string,
               private recipientPublicKey: string) {
     super($event);
-    this.dialogTitle = 'Assign account control with another account';
+    this.dialogTitle = "Assigning the recipient's control over the sender";
     this.dialogDescription = 'Puts the sender account under the control of the recipient';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.supervisoryAccountFee, 8).replace(/000000$/, '');

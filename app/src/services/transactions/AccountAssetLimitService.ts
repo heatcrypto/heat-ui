@@ -62,7 +62,7 @@ class AccountAssetLimitDialog extends GenericDialog {
               private recipient: string,
               private recipientPublicKey: string) {
     super($event);
-    this.dialogTitle = 'Set limited asset amount per interval for account';
+    this.dialogTitle = 'Set max asset amount per interval that account can to send';
     this.dialogDescription = 'Description';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.accountAssetLimitFee, 8).replace(/000000$/, '');

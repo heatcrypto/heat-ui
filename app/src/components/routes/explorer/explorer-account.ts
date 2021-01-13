@@ -36,6 +36,9 @@
             <div class="value">
               <a href="#/explorer-account/{{vm.account}}/{{vm.type}}">{{vm.accountName||vm.account}}</a>
             </div>
+            <div ng-if="vm.supervisoryAccount" style="font-size: x-small; margin-bottom: 6px;">
+              under control <a href="#/explorer-account/{{vm.supervisoryAccount}}/transactions">{{vm.supervisoryAccount}}</a>
+            </div>
           </div>
           <div class="col-item">
             <div class="title">
@@ -217,6 +220,8 @@ class ExploreAccountComponent {
   nextLeaseTitle: string;
   lessors: Array<IHeatLessors>;
 
+  supervisoryAccount: string;
+
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private assetInfo: AssetInfoService,
@@ -267,6 +272,7 @@ class ExploreAccountComponent {
         this.nextLeasingHeightFrom = account.nextLeasingHeightFrom;
         this.nextLeasingHeightTo = account.nextLeasingHeightTo;
         this.lessors = <Array<IHeatLessors>>account.lessors;
+        this.supervisoryAccount = account.supervisoryAccount;
         if (angular.isArray(this.lessors)) {
           this.lessors.forEach((lessor:any) => {
             lessor.balance = utils.formatQNT(lessor.effectiveBalance, 8) + " HEAT";

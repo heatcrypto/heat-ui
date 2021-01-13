@@ -274,8 +274,9 @@
                 </md-button>
               </md-menu-item>
               <md-menu-item ng-if="vm.user.unlocked">
-                <md-button aria-label="set asset amount limit for account" ng-click="vm.showAccountAssetLimitDialog($event)">
-                  <md-icon md-font-library="material-icons">supervisor_account</md-icon>
+                <md-button aria-label="set max asset amount per interval that account can to send" ng-click="vm.showAccountAssetLimitDialog($event)">
+                  <md-icon md-font-library="material-icons">vertical_align_center</md-icon>
+                  <!--<md-icon md-font-library="material-icons">horizontal_distribute</md-icon>-->
                   <span>Set asset amount limit</span>
                 </md-button>
               </md-menu-item>
