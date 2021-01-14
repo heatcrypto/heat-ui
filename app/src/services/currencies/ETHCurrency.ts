@@ -84,14 +84,14 @@ class ETHCurrency implements ICurrency {
         $mdDialog.cancel()
       }
       this.okButtonClick = function ($event) {
+        let data = $scope['vm'].data
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
         let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
-        let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
+        let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
-        let to = $scope['vm'].data.recipient
         $scope['vm'].disableOKBtn = true
-        web3.createRawTx2(from, to, amountInWei).then((rawTx) => {
+        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice, data.gasLimit).then((rawTx) => {
           ethBlockExplorerService.broadcast(rawTx).then(
             data => {
               $mdDialog.hide(data).then(() => {
@@ -109,6 +109,8 @@ class ETHCurrency implements ICurrency {
       this.disableOKBtn = false
       this.data = {
         amount: '',
+        gasPrice: '',
+        gasLimit: '',
         recipient: '',
         recipientInfo: '',
         fee: '0.000420'
@@ -131,13 +133,24 @@ class ETHCurrency implements ICurrency {
           }
         )
       }, 1000, false)
+
+      let web3 = <Web3Service> heat.$inject.get('web3')
+      let settingsService: any = heat.$inject.get('settings')
+
       this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
-      let web3 = <Web3Service> heat.$inject.get('web3')
+      this.gasChanged = () => {
+        $scope.$evalAsync(() => {
+          this.data.fee = web3.web3.fromWei(this.data.gasPrice * this.data.gasLimit, 'ether')
+        })
+      }
       web3.getGasPrice().then((gasprice) => {
-        $scope['vm'].data.fee = web3.web3.fromWei(21000 * gasprice, 'ether');
+        let data = $scope['vm'].data
+        data.gasPrice = gasprice
+        data.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
+        data.fee = web3.web3.fromWei(gasprice * data.gasLimit, 'ether')
       })
     }
 
@@ -169,6 +182,16 @@ class ETHCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Amount in ETH</label>
                   <input ng-model="vm.data.amount" required name="amount">
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Gas price (in Wei)</label>
+                  <input ng-model="vm.data.gasPrice" ng-change="vm.gasChanged()" required name="gasPrice">
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Gas limit</label>
+                  <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
                 </md-input-container>
 
                 <p>Fee: {{vm.data.fee}} ETH</p>

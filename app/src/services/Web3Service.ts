@@ -67,15 +67,16 @@ class Web3Service {
     })
   }
 
-  createRawTx2 = (account, to, value) => {
+  createRawTx2 = (account, to, value, gasPriceParam?, gasLimitParam?) => {
     return new Promise((resolve, reject) => {
       this.getGasPrice().then((gasPrice) => {
         this.getTransactionCount2(account.address).then(
           txCount => {
+            let defaultGasLimit = this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
             let txParams = {
               nonce: '0x' + txCount.toString(16),
-              gasLimit: this.web3.toHex(this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)),
-              gasPrice: this.web3.toHex(String(gasPrice)),
+              gasLimit: this.web3.toHex(gasLimitParam || defaultGasLimit),
+              gasPrice: this.web3.toHex(String(gasPriceParam || gasPrice)),
               to: to,
               value: '0x' + parseInt(value).toString(16)
             };
