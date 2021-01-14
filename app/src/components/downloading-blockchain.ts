@@ -64,22 +64,24 @@ class DownloadingBlockchainComponent {
     setTimeout(() => this.notifyOnServerLocationUpdating(), 1000)
 
     let checkServerHealthInterval
-    if (this.settings.failoverEnabled) {
-      checkServerHealthInterval = $interval(() => {
-        this.checkServerHealth(this.settings)
-      }, 33 * 1000, 0, false);
+    settings.initialized.then(value => {
+      if (this.settings.failoverEnabled) {
+        checkServerHealthInterval = $interval(() => {
+          this.checkServerHealth(this.settings)
+        }, 33 * 1000, 0, false);
 
-      //Check servers health to choose the right
-      //wait for loading  app-config.json
-      setTimeout(() => {
-        if (SettingsService.getFailoverDescriptor())
-          this.checkServerHealth(this.settings, true);
-        else
-          setTimeout(() => {
+        //Check servers health to choose the right
+        //wait for loading  app-config.json
+        setTimeout(() => {
+          if (SettingsService.getFailoverDescriptor())
             this.checkServerHealth(this.settings, true);
-          }, 500)
-      }, 200);
-    }
+          else
+            setTimeout(() => {
+              this.checkServerHealth(this.settings, true);
+            }, 500)
+        }, 200);
+      }
+    })
 
     $scope.$on('$destroy', () => {
       $interval.cancel(this.refreshInterval);
@@ -181,15 +183,18 @@ class DownloadingBlockchainComponent {
           let se = currentServer.statusError;
           causeToSelectBest = "Current host is unavailable"
             + (se.code ? ". Code: " + se.code : "") + (se.description ? ". Description: " + se.description : "");
+          return;
         }
         if (server.statusScore >= 0 || !currentServerIsAlive) {
           if ((server.statusScore != null && best.statusScore == null) || server.statusScore > best.statusScore) {
             best = server;
             causeToSelectBest = "Status score is better";
+            return;
           }
-          if (server.statusScore == best.statusScore && server.priority < best.priority && best != currentServer) {
+          if (server.statusScore == best.statusScore && server.priority < best.priority && best != server) {
             best = server;
             causeToSelectBest = "Server priority";
+            return;
           }
         }
       });

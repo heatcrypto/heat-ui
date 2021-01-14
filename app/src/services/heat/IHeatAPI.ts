@@ -292,6 +292,7 @@ interface IHeatAccount {
   nextLeasingHeightTo: number;
   lessors: Array<string|IHeatLessors>;
   publicName: string; // if  this.publicName == this.id  then account has the private name
+  supervisoryAccount: string;
 }
 interface IHeatLessors {
   id: string;
@@ -439,6 +440,7 @@ interface IHeatCreateTransactionInput {
   WhitelistAssetAccount?: IHeatCreateWhitelistAssetAccount;
   AssetAssignFees?: IHeatCreateAssetAssignFees;
   AssetExpiration?: IHeatCreateAssetExpiration;
+  AccountAssetLimit?: IHeatCreateAccountAssetLimit;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
@@ -509,6 +511,12 @@ interface IHeatCreateAssetAssignFees {
 interface IHeatCreateAssetExpiration {
   assetId: string;
   expiration: number;
+}
+interface IHeatCreateSupervisoryAccount {}
+interface IHeatCreateAccountAssetLimit {
+  assetId: string;
+  amount: string;
+  interval: number;
 }
 
 interface IHeatCreateTransactionOutput {

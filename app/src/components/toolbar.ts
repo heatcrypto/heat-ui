@@ -267,6 +267,19 @@
                   <span>Whitelist account for private asset</span>
                 </md-button>
               </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="set supervisory account" ng-click="vm.showSupervisoryAccountDialog($event)">
+                  <md-icon md-font-library="material-icons">supervisor_account</md-icon>
+                  <span>Set supervisory account</span>
+                </md-button>
+              </md-menu-item>
+              <md-menu-item ng-if="vm.user.unlocked">
+                <md-button aria-label="set max asset amount per interval that account can to send" ng-click="vm.showAccountAssetLimitDialog($event)">
+                  <md-icon md-font-library="material-icons">vertical_align_center</md-icon>
+                  <!--<md-icon md-font-library="material-icons">horizontal_distribute</md-icon>-->
+                  <span>Set asset amount limit</span>
+                </md-button>
+              </md-menu-item>
 
             <md-menu-divider ng-if="vm.user.unlocked"></md-menu-divider>
 
@@ -346,8 +359,8 @@
   `
 })
 @Inject('$rootScope', '$scope', '$mdSidenav', 'user', 'sendmoney', 'electron', 'env', 'assetTransfer',
-  'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'assetExpiration',
-  'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
+  'assetIssue','whitelistAssetAccount', 'assetAssignFees', 'whitelistMarket', 'assetExpiration', 'supervisoryAccount',
+  'accountAssetLimit', 'balanceLease', 'masternode', 'storage', '$window', '$mdToast',
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging', 'settings')
 class ToolbarComponent {
 
@@ -371,6 +384,8 @@ class ToolbarComponent {
               private assetAssignFees: AssetAssignFeesService,
               private whitelistMarket: WhitelistMarketService,
               private assetExpiration: AssetExpirationService,
+              private supervisoryAccount: SupervisoryAccountService,
+              private accountAssetLimit: AccountAssetLimitService,
               private balanceLease: BalanceLeaseService,
               private masternodeService: MasternodeService,
               private storage: StorageService,
@@ -564,6 +579,14 @@ class ToolbarComponent {
 
   showAssetExpirationDialog($event) {
     this.assetExpiration.dialog($event).show();
+  }
+
+  showSupervisoryAccountDialog($event) {
+    this.supervisoryAccount.dialog($event).show();
+  }
+
+  showAccountAssetLimitDialog($event) {
+    this.accountAssetLimit.dialog($event).show();
   }
 
   signout() {
