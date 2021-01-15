@@ -62,8 +62,8 @@ class AccountAssetLimitDialog extends GenericDialog {
               private recipient: string,
               private recipientPublicKey: string) {
     super($event);
-    this.dialogTitle = 'Set max asset amount per interval that account can to send';
-    this.dialogDescription = 'Description';
+    this.dialogTitle = 'Assign asset limit to account';
+    this.dialogDescription = 'Set max asset amount per interval that account can to send';
     this.okBtnTitle = 'SEND';
     this.feeFormatted = utils.formatQNT(HeatAPI.fee.accountAssetLimitFee, 8).replace(/000000$/, '');
     this.recipient = this.recipient || '';
@@ -74,8 +74,9 @@ class AccountAssetLimitDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
+      builder.staticText('dialogDescription', this.dialogDescription),
       builder.account('recipient', this.recipient)
-        .label('Recipient')
+        .label('Recipient (account to be limited)')
         .onchange(() => {
           this.fields['recipientPublicKey'].value = null;
           this.heat.api.getPublicKeyOrEmptyString(this.fields['recipient'].value).then(

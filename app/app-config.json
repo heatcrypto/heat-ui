@@ -37,10 +37,16 @@
           "host": "http://localhost",
           "port": 7733,
           "websocket": "ws://localhost:7755/ws/",
+          "priority": 0
+        },
+        {
+          "host": "http://173.212.203.227",
+          "port": 7833,
+          "websocket": "ws://173.212.203.227:7855/ws/",
           "priority": 1
         }
       ],
-      "signalingUrl": "wss://alpha.heatledger.com:7755/ws/"
+      "signalingUrl": "ws://173.212.203.227:7855/ws/"
     },
     "betanet": {}
   },
