@@ -707,6 +707,9 @@ class WalletComponent {
       let walletEntry = new WalletEntry(account, name, this)
       this.walletEntries.push(walletEntry)
     });
+    this.walletEntries.sort((a, b) => {
+      return a.identifier.localeCompare(b.identifier)
+    })
     this.walletEntries.forEach(walletEntry => {
       let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
       if (password) {
