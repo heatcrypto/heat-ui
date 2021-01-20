@@ -1,7 +1,7 @@
 ///<reference path='VirtualRepeatComponent.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 Heat Ledger Ltd.
+ * Copyright (c) 2021 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -49,8 +49,8 @@
           <!-- AMOUNT -->
           <div class="truncate-col amount-col" ng-if="vm.personalize">Amount</div>
 
-          <!-- TOFROM -->
-          <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To/From</div>
+          <!-- TO -->
+          <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To</div>
 
           <!-- INFO -->
           <div class="truncate-col info-col left" flex>Info</div>
@@ -96,9 +96,9 @@
               <span ng-bind-html="item.renderedAmount"></span>
             </div>
 
-            <!-- TOFROM -->
+            <!-- TO -->
             <div class="truncate-col tofrom-col left" ng-if="vm.personalize">
-              <span ng-bind-html="item.renderedToFrom"></span>
+              <span ng-bind-html="item.renderedTo"></span>
             </div>
 
             <!-- INFO -->
@@ -158,7 +158,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
           //transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
           let amountVal = this.renderer.renderAmount(transaction);
           transaction['renderedAmount'] = amountVal;
-          transaction['renderedToFrom'] = this.renderer.renderedToFrom(transaction);
+          transaction['renderedTo'] = this.renderer.renderTo(transaction);
         }
 
         let renderedInfo = this.renderer.renderInfo(transaction);
@@ -475,11 +475,8 @@ class EthTransactionRenderer {
   }
 
   /* Returns HTML */
-  renderedToFrom(transaction: EthplorerAddressTransactionExtended): string {
-    if (transaction.from == this.provider.account) {
-      return this.account(transaction.to);
-    }
-    return this.account(transaction.from);
+  renderTo(transaction: EthplorerAddressTransactionExtended): string {
+    return this.account(transaction.to);
   }
 
   // formatAmount(amount: string, symbol: string, neg: boolean): string {
