@@ -21,6 +21,8 @@
  * SOFTWARE.
  * */
 
+const GWEI_SCALE = 1000000000
+
 class ETHCurrency implements ICurrency {
 
   private ethBlockExplorerService: EthBlockExplorerService
@@ -91,7 +93,7 @@ class ETHCurrency implements ICurrency {
         let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
         $scope['vm'].disableOKBtn = true
-        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice, data.gasLimit).then((rawTx) => {
+        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit).then((rawTx) => {
           ethBlockExplorerService.broadcast(rawTx).then(
             data => {
               $mdDialog.hide(data).then(() => {
@@ -113,7 +115,7 @@ class ETHCurrency implements ICurrency {
         gasLimit: '',
         recipient: '',
         recipientInfo: '',
-        fee: '0.000420'
+        fee: '0.000420',
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -143,12 +145,12 @@ class ETHCurrency implements ICurrency {
       }
       this.gasChanged = () => {
         $scope.$evalAsync(() => {
-          this.data.fee = web3.web3.fromWei(this.data.gasPrice * this.data.gasLimit, 'ether')
+          this.data.fee = web3.web3.fromWei((this.data.gasPrice * GWEI_SCALE) * this.data.gasLimit, 'ether')
         })
       }
       web3.getGasPrice().then((gasprice) => {
         let data = $scope['vm'].data
-        data.gasPrice = gasprice
+        data.gasPrice = gasprice / GWEI_SCALE
         data.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
         data.fee = web3.web3.fromWei(gasprice * data.gasLimit, 'ether')
       })
@@ -185,7 +187,7 @@ class ETHCurrency implements ICurrency {
                 </md-input-container>
 
                 <md-input-container flex >
-                  <label>Gas price (in Wei)</label>
+                  <label>Gas price (in GWei)</label>
                   <input ng-model="vm.data.gasPrice" ng-change="vm.gasChanged()" required name="gasPrice">
                 </md-input-container>
 
