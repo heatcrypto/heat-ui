@@ -23,18 +23,19 @@
  * SOFTWARE.
  * */
 @Service('assetIssue')
-@Inject('$q','user','assetInfo','heat')
+@Inject('$q','user','assetInfo','heat', '$interval')
 class AssetIssueService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
               private assetInfo: AssetInfoService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              private $interval: angular.IIntervalService) {
     super();
   }
 
   dialog(currency: string, readonly?: boolean, $event?): IGenericDialog {
-    return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, this.heat, readonly);
+    return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, this.heat, readonly, this.$interval);
   }
 
   verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -88,7 +89,8 @@ class AssetIssueDialog extends GenericDialog {
               private user: UserService,
               private assetInfo: AssetInfoService,
               private heat: HeatService,
-              private readonly: boolean) {
+              private readonly: boolean,
+              private $interval: angular.IIntervalService) {
     super($event);
     this.dialogTitle = 'Issue asset';
     this.dialogDescription = 'Description on how to issue an asset';
@@ -115,7 +117,9 @@ class AssetIssueDialog extends GenericDialog {
                 this.heat.api.getAssetProtocol1(symbol).then((asset) => {
                   deferred.reject();
                 }, (response) => {
-                  if (response && response.code == 3 && response.description == "Unknown asset")
+                  let v = response && response.data && response.data.response ? response.data.response : response
+                  let error = v.description || v.errorDescription
+                  if (error == "Unknown asset")
                     deferred.resolve();
                   else
                     deferred.reject();
@@ -147,6 +151,8 @@ class AssetIssueDialog extends GenericDialog {
         .valueNotes("FOR DILUTABLE ASSETS MORE UNITS CAN BE ADDED LATER", ""),
       builder.text('expiration', 0)
         .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
+      builder.staticText("expirationDate", ''),
+      builder.staticText("systemtimestamp", ''),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
               validate("Either leave blank or has to start with http:// or https://", (value) => {
@@ -167,6 +173,19 @@ class AssetIssueDialog extends GenericDialog {
               }).
               required(false),
     ]
+  }
+
+  fieldsReady($scope: angular.IScope) {
+    let interval = this.$interval(() => {
+      $scope.$evalAsync(() => {
+        let expirationValue = parseInt(this.fields['expiration'].value || '0')
+        this.fields['expirationDate'].value = expirationValue > 0
+          ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue).toLocaleString()
+          : ''
+        this.fields['systemtimestamp'].value = "Current timestamp: " + Math.round(utils.epochTime())
+      });
+    }, 1000, 0, false);
+    $scope.$on('$destroy', () => { this.$interval.cancel(interval) });
   }
 
   /* @override */
