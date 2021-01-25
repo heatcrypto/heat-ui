@@ -49,8 +49,8 @@
           <!-- AMOUNT -->
           <div class="truncate-col amount-col" ng-if="vm.personalize">Amount</div>
 
-          <!-- TO -->
-          <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To</div>
+          <!-- TOFROM -->
+          <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To/From</div>
 
           <!-- INFO -->
           <div class="truncate-col info-col left" flex>Info</div>
@@ -96,9 +96,9 @@
               <span ng-bind-html="item.renderedAmount"></span>
             </div>
 
-            <!-- TO -->
+            <!-- TOFROM -->
             <div class="truncate-col tofrom-col left" ng-if="vm.personalize">
-              <span ng-bind-html="item.renderedTo"></span>
+              <span ng-bind-html="item.renderedToFrom"></span>
             </div>
 
             <!-- INFO -->
@@ -153,12 +153,12 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         transaction['time'] = dateFormat(date, format);
         transaction['heightDisplay'] = 'no height'
         if (this.personalize) {
-          transaction['outgoing'] = this.user.currency.address == transaction.from;
+          transaction['outgoing'] = this.user.currency.address.toUpperCase() == transaction.from.toUpperCase();
 
           //transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
           let amountVal = this.renderer.renderAmount(transaction);
           transaction['renderedAmount'] = amountVal;
-          transaction['renderedTo'] = this.renderer.renderTo(transaction);
+          transaction['renderedToFrom'] = this.renderer.renderedToFrom(transaction);
         }
 
         let renderedInfo = this.renderer.renderInfo(transaction);
@@ -475,8 +475,11 @@ class EthTransactionRenderer {
   }
 
   /* Returns HTML */
-  renderTo(transaction: EthplorerAddressTransactionExtended): string {
-    return this.account(transaction.to);
+  renderedToFrom(transaction: EthplorerAddressTransactionExtended): string {
+    if (transaction.from.toUpperCase() == this.provider.account.toUpperCase()) {
+      return this.account(transaction.to);
+    }
+    return this.account(transaction.from);
   }
 
   // formatAmount(amount: string, symbol: string, neg: boolean): string {
@@ -485,7 +488,7 @@ class EthTransactionRenderer {
   // }
 
   isOutgoing(transaction: EthplorerAddressTransactionExtended): boolean {
-    return transaction.from == this.provider.account;
+    return transaction.from.toUpperCase() == this.provider.account.toUpperCase();
   }
 
   renderInfo(transaction: EthplorerAddressTransactionExtended) {
@@ -500,7 +503,7 @@ class EthTransactionRenderer {
   }
 
   account(account: string): string {
-    if (account == this.provider.account) {
+    if (account.toUpperCase() == this.provider.account.toUpperCase()) {
       return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/address/${account}">Myself</a>`;
     }
     return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/address/${account}">${account}</a>`;
