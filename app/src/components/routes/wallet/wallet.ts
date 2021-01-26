@@ -1548,16 +1548,26 @@ class WalletComponent {
           }
         }
       }
+      let bitcoinValidator = () => {
+        let bip44Invalid = bip44CompatibleValidator()
+        if (bip44Invalid) {
+          /*Bitcoin WIF keys. WIF keys are no longer used widely, and most wallets use BIP39 phrases to store private keys*/
+          let regex = /^[5KL][1-9A-HJ-NP-Za-km-z]{50,51}$/
+          if (! regex.test(this.data.secretPhrase)) {
+            return "Private key is not valid or " + bip44Invalid
+          }
+        }
+      }
       this.currencyList = [
         {name: 'HEAT', symbol: 'HEAT', validate: emptyValidator},
-        {name: 'Ethereum', symbol: 'ETH', onlyBip44: true, validate: ethereumValidator},
-        {name: 'Bitcoin', symbol: 'BTC', onlyBip44: true, validate: bip44CompatibleValidator},
+        {name: 'Ethereum', symbol: 'ETH', validate: ethereumValidator},
+        {name: 'Bitcoin', symbol: 'BTC', validate: bitcoinValidator},
         {name: 'FIMK', symbol: 'FIM', validate: emptyValidator},
         {name: 'NXT', symbol: 'NXT', validate: emptyValidator},
         {name: 'ARDOR', symbol: 'ARDR', validate: emptyValidator},
         {name: 'IOTA', symbol: 'IOTA', validate: emptyValidator},
-        {name: 'Litecoin', symbol: 'LTC', onlyBip44: true, validate: bip44CompatibleValidator},
-        {name: 'BitcoinCash', symbol: 'BCH', onlyBip44: true, validate: bip44CompatibleValidator}
+        {name: 'Litecoin', symbol: 'LTC', validate: bip44CompatibleValidator},
+        {name: 'BitcoinCash', symbol: 'BCH', validate: bip44CompatibleValidator}
       ]
       this.secretChanged = function () {
         this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
