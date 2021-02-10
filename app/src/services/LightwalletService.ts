@@ -228,12 +228,12 @@ class LightwalletService {
             return;
           }
 
-          // var HookedWeb3Provider = this.$window.heatlibs.HookedWeb3Provider;
-          // var web3Provider = new HookedWeb3Provider({
-          //   host: this.settingsService.get(SettingsService.WEB3PROVIDER),
-          //   transaction_signer: ks
-          // });
-          // this.web3Service.web3.setProvider(web3Provider);
+          var HookedWeb3Provider = this.$window.heatlibs.HookedWeb3Provider;
+          var web3Provider = new HookedWeb3Provider({
+            host: this.settingsService.get(SettingsService.WEB3PROVIDER),
+            transaction_signer: ks
+          });
+          this.web3Service.web3.setProvider(web3Provider);
           ks.passwordProvider = function (callback) {
             callback(null, password);
           }

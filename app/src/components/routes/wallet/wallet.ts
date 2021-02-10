@@ -141,6 +141,25 @@ class CurrencyAddressCreate {
     store.put(`${currency}-${heatAddress}`, encrypted);
 
   }
+
+  createAddressByName(component: WalletComponent, name: string) {
+    if (name == "Bitcoin") {
+      this.createBtcAddress(component)
+    } else if (name == "Ethereum") {
+      this.createAddress(component)
+    } else if (name == "FIMK") {
+      this.createFIMKAddress(component)
+    } else if (name == "NXT") {
+      this.createNXTAddress(component)
+    } else if (name == "ARDOR") {
+      this.createARDRAddress(component)
+    } else if (name == "Litecoin") {
+      this.createLtcAddress(component)
+    } else if (name == "BitcoinCash") {
+      this.createBchAddress(component)
+    }
+  }
+
   /* Handler for creating a new address, this method is declared here (on the node so to say)
     still after an architectural change where we dont display the CREATE node anymore.
     We'll be leaving it in place where all you need to do is set this.hidden=false to
@@ -581,6 +600,7 @@ class WalletEntry {
   'ardorCryptoService', 'ltcCryptoService', 'ltcBlockExplorerService', 'bchCryptoService', 'bchBlockExplorerService',
   'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent {
+  public static instance;
   selectAll = true;
   allLocked = true
 
@@ -618,6 +638,8 @@ class WalletComponent {
     private iotaCoreService: IotaCoreService,
     private storage: StorageService,
     private $rootScope: angular.IScope) {
+
+    WalletComponent.instance = this;
     this.store = this.storage.namespace('wallet', $rootScope, true)
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
@@ -1500,7 +1522,8 @@ class WalletComponent {
         this.localKeyStore.add(key);
         let message = `Seed was successfully imported under HEAT account ${account}`;
         this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase)).then(() => heat.fullApplicationScopeReload())
+        this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase))
+          .then(() => heat.fullApplicationScopeReload())
       }
     )
   }
@@ -1527,13 +1550,6 @@ class WalletComponent {
         })
         importWallet(this.data.secretPhrase, this.data.selectedImport)
       }
-      this.data = {
-        password1: '',
-        password2: '',
-        secretPhrase: '',
-        bip44Compatible: false,
-        selectedImport: ''
-      }
       let emptyValidator = () => null
       let bip44CompatibleValidator = () => {
         return self.lightwalletService.validSeed(this.data.secretPhrase)
@@ -1543,6 +1559,8 @@ class WalletComponent {
       let ethereumValidator = () => {
         let bip44Invalid = bip44CompatibleValidator()
         if (bip44Invalid) {
+          let s = this.data.secretPhrase?.trim()
+          this.data.secretPhrase = s.startsWith("0x") ? s.substr(2) : s
           if (! self.lightwalletService.validPrivateKey(this.data.secretPhrase)) {
             return "Private key is not valid or " + bip44Invalid
           }
@@ -1569,11 +1587,21 @@ class WalletComponent {
         {name: 'Litecoin', symbol: 'LTC', validate: bip44CompatibleValidator},
         {name: 'BitcoinCash', symbol: 'BCH', validate: bip44CompatibleValidator}
       ]
+      this.data = {
+        password1: '',
+        password2: '',
+        secretPhrase: '',
+        bip44Compatible: false,
+        selectedImport: null
+      }
       this.secretChanged = function () {
         this.data.bip44Compatible = self.lightwalletService.validSeed(this.data.secretPhrase)
       }
       this.invalidParameters = function () {
-        let selectedCurrency = this.currencyList.find(item => item.symbol == this.data.selectedImport)
+        let searchingSymbol = typeof this.data.selectedImport == "string"
+          ? JSON.parse(this.data.selectedImport)?.symbol
+          : this.data.selectedImport?.symbol
+        let selectedCurrency = this.currencyList.find(item => item.symbol == searchingSymbol)
         if (selectedCurrency) {
           let validateResult = selectedCurrency.validate()
           if (validateResult) return validateResult
@@ -1584,7 +1612,8 @@ class WalletComponent {
       }
     }
 
-    function importWallet(secret: string, selectedImport: string) {
+    function importWallet(secret: string, selectedImport) {
+      if (typeof selectedImport == "string") selectedImport = JSON.parse(selectedImport)
       let storage = <StorageService>heat.$inject.get('storage');
       let $rootScope = heat.$inject.get('$rootScope');
       let store = storage.namespace('wallet', $rootScope, true);
@@ -1592,11 +1621,29 @@ class WalletComponent {
       let currencies = store.get(accountId)
       if (!currencies)
         currencies = []
-      currencies.push(selectedImport)
+      currencies.push(selectedImport.symbol)
       let distinctValues = (value, index, self) => {
         return self.indexOf(value) === index;
       }
       store.put(accountId, currencies.filter(distinctValues));
+
+      let n = 0
+      let interval = setInterval(() => {
+        n++
+        if (n > 50) clearInterval(interval)
+        let wc = WalletComponent.instance
+        if (wc != self) {
+          let entry = wc.entries.find(w => w instanceof WalletEntry && w.account == accountId)
+          if (entry) {
+            // @ts-ignore
+            let v = entry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
+            if (v) {
+              v.createAddressByName(wc, selectedImport.name)
+            }
+          }
+          clearInterval(interval)
+        }
+      }, 200)
     }
 
     let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
@@ -1617,7 +1664,7 @@ class WalletComponent {
                 <p>Select currency to import</p>
                 <md-input-container flex>
                   <md-select ng-model="vm.data.selectedImport" placeholder="Select currency" auto-focus>
-                    <md-option style="height: 30px;" ng-repeat="entry in vm.currencyList" value="{{entry.symbol}}">{{entry.symbol}}</md-option>
+                    <md-option style="height: 30px;" ng-repeat="entry in vm.currencyList" value="{{entry}}">{{entry.symbol}}</md-option>
                   </md-select>
                 </md-input-container>
                 <p>Enter your Private Key / Secret Phrase / Wallet Seed and provide a Password (or PIN)</p>

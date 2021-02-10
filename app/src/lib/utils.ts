@@ -110,13 +110,17 @@ module utils {
     return new Date(Date.UTC(2015, 2, 29, 0, 5, 36, 25) + timestamp * 1000);
   }
 
-  const GENESIS_DATE = Date.UTC(2013, 10, 24, 12, 0, 0, 0);
+  let BASE_DATE;
+
+  export function setBaseTimestamp(timestamp: number) {
+    BASE_DATE = timestamp
+  }
 
   /**
    * Converts heat transaction timestamp to the real Date.
    */
   export function timestampToDate(timestamp: number) {
-    return new Date(GENESIS_DATE + timestamp * 1000);
+    return new Date(BASE_DATE + timestamp * 1000);
   }
 
   /**
@@ -124,7 +128,7 @@ module utils {
    */
   export function epochTime(timestamp?: number) {
     let t = timestamp ? timestamp : Date.now();
-    return (t - 1385294400000 + 500) / 1000;
+    return (t - BASE_DATE + 500) / 1000;
   }
 
   export function isAssetExpired(assetExpiration) {

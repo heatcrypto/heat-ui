@@ -560,7 +560,7 @@ interface IHeatTransaction {
    */
   subtype: number;
   /**
-   * The time (in seconds since 24 november 2013 00:00 UTC) of the transaction
+   * The time (in seconds since base timestamp) of the transaction
    */
   timestamp: number;
   /**
@@ -636,7 +636,7 @@ interface IHeatTransaction {
    */
   block: string;
   /**
-   * The timestamp (in seconds since 24 november 2013 00:00 UTC) of the block
+   * The timestamp (in seconds since base timestamp) of the block
    */
   blockTimestamp: number;
 
@@ -765,7 +765,7 @@ interface IHeatAssetProperties extends IHeatAsset {
 
 interface IHeatOrder {
   /**
-   * The expiration time (in seconds since 24 november 2013 00:00 UTC)
+   * The expiration time (in seconds since base timestamp)
    */
   expiration: number;
   /**
@@ -833,7 +833,7 @@ interface IHeatTrade {
    */
   height: number;
   /**
-   * The trade timestamp (in seconds since 24 november 2013 00:00 UTC)
+   * The trade timestamp (in seconds since base timestamp)
    */
   timestamp: number;
   /**

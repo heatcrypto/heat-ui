@@ -28,14 +28,14 @@ class ETHCurrency implements ICurrency {
   private ethBlockExplorerService: EthBlockExplorerService
   public symbol = 'ETH'
   public homePath
-  private pendingTransactions: EthereumPendingTransactionsService
+  private pendingService: EthereumPendingTransactionsService
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
-    this.pendingTransactions = heat.$inject.get('ethereumPendingTransactions')
+    this.pendingService = heat.$inject.get('ethereumPendingTransactions')
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
@@ -64,7 +64,7 @@ class ETHCurrency implements ICurrency {
         if (data) {
           let address = this.user.currency.address
           let timestamp = new Date().getTime()
-          this.pendingTransactions.add(address, data.txId, timestamp)
+          this.pendingService.add(address, data.txId, timestamp)
         }
       },
       err => {
@@ -96,9 +96,13 @@ class ETHCurrency implements ICurrency {
         web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit).then((rawTx) => {
           ethBlockExplorerService.broadcast(rawTx).then(
             data => {
-              $mdDialog.hide(data).then(() => {
-                dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
-              })
+              if (data.txId) {
+                $mdDialog.hide(data).then(() => {
+                  dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
+                })
+              } else {
+                dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(data)}`);
+              }
             },
             err => {
               $mdDialog.hide(null).then(() => {

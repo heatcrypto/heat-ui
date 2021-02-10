@@ -55,6 +55,11 @@ class HeatService {
               private user: UserService,
               private $timeout: angular.ITimeoutService,
               private env: EnvService) {
+    this.settings.initialized.then(value => {
+      this.api.baseTimestamp().then(basetimestamp => {
+        utils.setBaseTimestamp(parseInt(basetimestamp))
+      })
+    })
   }
 
   public createSubscriber(url: string)  {

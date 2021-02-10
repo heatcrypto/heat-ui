@@ -105,7 +105,7 @@ class EthereumAccountComponent {
               private $q: angular.IQService,
               private user: UserService,
               private ethBlockExplorerService: EthBlockExplorerService,
-              private ethereumPendingTransactions: EthereumPendingTransactionsService,
+              private pendingService: EthereumPendingTransactionsService,
               private settings: SettingsService,
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService) {
@@ -119,14 +119,14 @@ class EthereumAccountComponent {
     // this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    this.ethereumPendingTransactions.addListener(listener)
+    this.pendingService.addListener(listener)
     this.updatePendingTransactions()
 
     let promise = this.$interval(this.timerHandler.bind(this), 20000)
     this.timerHandler()
 
     this.$scope.$on('$destroy', () => {
-      this.ethereumPendingTransactions.removeListener(listener)
+      this.pendingService.removeListener(listener)
       this.$interval.cancel(promise)
     })
   }
@@ -146,11 +146,18 @@ class EthereumAccountComponent {
         data => {
           if (data.confirmations && data.confirmations > 0) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with hash ${pendingTxn.txHash} found`).hideDelay(2000));
-            this.ethereumPendingTransactions.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+            this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
           }
         },
         err => {
-          console.log('Transaction not found', err)
+          console.log('Transaction not found', err || "")
+          if (!err) {
+            let minutesOld = (Date.now() - pendingTxn.timestamp) / (1000*60)
+            if (minutesOld > 60) {
+              console.log('Transaction was pending and is disappeared. Transaction is removed from pending list', pendingTxn)
+              this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+            }
+          }
         }
       )
     }
@@ -160,7 +167,7 @@ class EthereumAccountComponent {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
       let addr = this.user.currency.address
-      let txns = this.ethereumPendingTransactions.pending[addr]
+      let txns = this.pendingService.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {

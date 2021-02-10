@@ -77,7 +77,7 @@ class BitcoreService {
 
         /* look up its data on btcBlockExplorerService */
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.refresh().then(() => {
+        //btcBlockExplorerService.refresh().then(() => {
           btcBlockExplorerService.getAddressInfo(address).then(info => {
 
             /* lookup the 'real' WalletAddress */
@@ -96,7 +96,7 @@ class BitcoreService {
           }, () => {
             resolve(false)
           })
-        })
+        //})
       })
     }
 

@@ -39,10 +39,12 @@ class BTCCurrency implements ICurrency {
   invokeSendDialog = ($event) => {
     this.sendBtc($event).then(
       data => {
-        let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
-        let timestamp = new Date().getTime()
-        this.pendingTransactions.add(this.address, data.txId, timestamp)
-        this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
+        if (data != null) {
+          let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
+          let timestamp = new Date().getTime()
+          this.pendingTransactions.add(this.address, data.txId, timestamp)
+          this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
+        }
       },
       err => {
         if (err) {
@@ -102,7 +104,17 @@ class BTCCurrency implements ICurrency {
           },
           err => {
             $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err.message);
+              let message
+              if (angular.isString(err)) {
+                message = err
+              }
+              else if (angular.isObject(err) && err != null) {
+                message = err.message || err.error || JSON.stringify(err)
+              }
+              else {
+                message = 'Unknown reason'
+              }
+              dialogs.alert(event, 'Send BTC Error', 'There was an error sending this transaction: ' +message);
             })
           }
         )
@@ -130,7 +142,7 @@ class BTCCurrency implements ICurrency {
           },
           error => {
             $scope.$evalAsync(() => {
-              $scope['vm'].data.recipientInfo = error.message||'Invalid'
+              $scope['vm'].data.recipientInfo = (error||{}).message||'Invalid'
             })
           }
         )

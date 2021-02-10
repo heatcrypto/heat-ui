@@ -1,5 +1,6 @@
 .config
 deploy.sh
+deploy-mac.sh
 test_deploy.sh
 release.mac.sh
 tools

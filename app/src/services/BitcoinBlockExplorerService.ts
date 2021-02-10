@@ -1,18 +1,20 @@
 
 @Service('btcBlockExplorerService')
-@Inject('$q', 'btcBlockExplorerHeatNodeService', 'btcBlockExplorer3rdPartyService')
+@Inject('$q', /*'btcBlockExplorerHeatNodeService', 'btcBlockExplorer3rdPartyService',*/ 'btcBlockExplorerBlockbookService')
 class BtcBlockExplorerService {
 
   private btcProvider: IBitcoinAPIList;
   private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
   constructor(private $q: angular.IQService,
-              private btcBlockExplorerHeatNodeService: BtcBlockExplorerHeatNodeService,
-              private btcBlockExplorer3rdPartyService: BtcBlockExplorer3rdPartyService) {
+              /*private btcBlockExplorerHeatNodeService: BtcBlockExplorerHeatNodeService,
+              private btcBlockExplorer3rdPartyService: BtcBlockExplorer3rdPartyService,*/
+              private btcBlockExplorerBlockbookService: BtcBlockExplorerBlockbookService) {
 
-    setInterval(() => this.refresh(), 5 * 60 * 1000)
+    //setInterval(() => this.refresh(), 5 * 60 * 1000)
+    this.btcProvider = btcBlockExplorerBlockbookService
   }
 
-  public refresh = () => {
+  /*public refresh = () => {
     let btcServer = SettingsService.getCryptoServer('BTC')
     let timeoutPromise = new Promise((resolve, reject) => {
       let wait = setTimeout(() => {
@@ -42,7 +44,7 @@ class BtcBlockExplorerService {
 
   private changeProvider(newProvider: any) {
     this.btcProvider = newProvider
-  }
+  }*/
 
   private getCachedAccountBalance = (address: string) => {
     if (this.cachedGetCachedAccountBalance.get(address))
@@ -67,7 +69,14 @@ class BtcBlockExplorerService {
   }
 
   public getTransactions = (address: string, from: number, to: number): angular.IPromise<any> => {
-    return this.btcProvider.getTransactions(address, from, to)
+    let deferred = this.$q.defer<any>();
+    this.btcProvider.getTransactions(address, from, to).then(info => {
+      let data = Update3rdPartyAPIResponsesUtil.updateBTCGetTransactions(info, this.btcProvider)
+      deferred.resolve(data)
+    }, () => {
+      deferred.reject()
+    })
+    return deferred.promise
   }
 
   public getAddressInfo = (address: string): angular.IPromise<any> => {

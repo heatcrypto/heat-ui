@@ -44,7 +44,8 @@ class DownloadingBlockchainComponent {
               private settings: SettingsService,
               private router,
               private $mdToast: angular.material.IToastService) {
-    this.refresh();
+
+    setTimeout(() => this.refresh(), 1000)
 
     let skip = 0  //control the speed of refreshing depending on the download blocks count
     this.refreshInterval = $interval(() => {

@@ -380,4 +380,8 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/account/internetaddress/list`);
   }
 
+  baseTimestamp(): angular.IPromise<string> {
+    return this.heat.get('/blockchain/basetimestamp');
+  }
+
 }
