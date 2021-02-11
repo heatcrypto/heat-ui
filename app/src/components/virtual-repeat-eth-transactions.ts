@@ -24,6 +24,11 @@
 @Component({
   selector: 'virtualRepeatEthTransactions',
   inputs: ['account','personalize'],
+  styles: [`
+    .failed {
+      color: red;
+    }
+  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
@@ -208,7 +213,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 }
 
 interface EthTemplateFunction {
-  (transaction: IHeatTransaction):string;
+  (transaction: EthplorerAddressTransactionExtended):string;
 }
 
 class EthTransactionRenderHelper {
@@ -290,11 +295,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHEREUM_TRANSFER;
     this.transactionTypes[key] = 'TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return '<b>TRANSFER</b> $amount from $from to $to'
-      },
+      "$status<b>TRANSFER</b> $amount from $from to $to",
       (t) => {
         return {
+          status: this.status(t),
           from: this.account(t.from),
           to: this.account(t.to),
           amount: this.amount(t.value)
@@ -304,11 +308,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ERC20_APPROVE;
     this.transactionTypes[key] = 'ERC20 APPROVE';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return '<b>ERC20 APPROVE</b> $from $to $spender $value'
-      },
+      "$status<b>ERC20 APPROVE</b> $from $to $spender $value",
       (t) => {
         return {
+          status: this.status(t),
           from: this.account(t.from),
           to: this.account(t.to),
           spender: this.account(t.abi.decodedData.params[0].value),
@@ -330,11 +333,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ERC20_TRANSFER
     this.transactionTypes[key] = 'ERC20 TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>ERC20 TRANSFER</b> Send $value $token from $from to $to";
-      },
+      "$status<b>ERC20 TRANSFER</b> Send $value $token from $from to $to",
       (t) => {
         return {
+          status: this.status(t),
           token: this.token(t.to),
           from: this.account(t.from),
           to: this.account(t.abi.decodedData.params[0].value),
@@ -345,11 +347,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ERC20_TRANSFER_FROM
     this.transactionTypes[key] = 'ERC20 TRANSFER FROM';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>ERC20 TRANSFER FROM</b> $asset from $sender to $recipient amount $amount";
-      },
+      "$status<b>ERC20 TRANSFER FROM</b> $asset from $sender to $recipient amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           asset: this.token(t.to),
           sender: this.account(t.abi.decodedData.params[0].value),
           recipient: this.account(t.abi.decodedData.params[1].value),
@@ -360,11 +361,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_DEPOSIT_TOKEN
     this.transactionTypes[key] = 'DELTA DEPOSIT';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA DEPOSIT</b> Deposit $amount $token";
-      },
+      "$status<b>DELTA DEPOSIT</b> Deposit $amount $token",
       (t) => {
         return {
+          status: this.status(t),
           token: this.token(t.abi.decodedData.params[0].value),
           amount: this.amount(t.abi.decodedData.params[1].value)
         }
@@ -373,11 +373,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_WITHDRAWAL
     this.transactionTypes[key] = 'DELTA WITHDRAW';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA WITHDRAW</b> Withdraw $amount";
-      },
+      "$status<b>DELTA WITHDRAW</b> Withdraw $amount",
       (t) => {
         return {
+          status: this.status(t),
           amount: this.amount(t.abi.decodedData.params[0].value)
         }
       }
@@ -385,11 +384,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_WITHDRAWAL_TOKEN
     this.transactionTypes[key] = 'DELTA WITHDRAW TOKEN';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA WITHDRAW TOKEN</b> Withdraw $amount $token";
-      },
+      "$status<b>DELTA WITHDRAW TOKEN</b> Withdraw $amount $token",
       (t) => {
         return {
+          status: this.status(t),
           token: this.token(t.abi.decodedData.params[0].value),
           amount: this.amount(t.abi.decodedData.params[1].value)
         }
@@ -398,11 +396,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_ORDER
     this.transactionTypes[key] = 'DELTA ORDER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA ORDER</b> Order get $amountGet $tokenGet pay $amountGive $tokenGive";
-      },
+      "$status<b>DELTA ORDER</b> Order get $amountGet $tokenGet pay $amountGive $tokenGive",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -414,11 +411,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_TRADE
     this.transactionTypes[key] = 'DELTA TRADE';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA TRADE</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount";
-      },
+      "$status<b>DELTA TRADE</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -432,11 +428,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_TRADE_BALANCES
     this.transactionTypes[key] = 'DELTA TRADE BALANCES';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA TRADE BALANCES</b> Trade balances get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount";
-      },
+      "$status<b>DELTA TRADE BALANCES</b> Trade balances get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -449,11 +444,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_CANCEL_ORDER
     this.transactionTypes[key] = 'DELTA CANCEL ORDER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA CANCEL ORDER</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount";
-      },
+      "$status<b>DELTA CANCEL ORDER</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -527,5 +521,12 @@ class EthTransactionRenderer {
       str = utils.commaFormat(amount).replace(/(\.\d*?[1-9])0+$/g, "$1" ) + ' ETH'
     }
     return `<span>${str}</span>`;
+  }
+
+  private status(t: EthplorerAddressTransactionExtended) {
+    if (t.ethereumSpecific?.status !== 1) {
+      return "<span class='failed'>[FAILED] </span>"
+    }
+    return ""
   }
 }
