@@ -79,7 +79,7 @@ class NxtBlockExplorerService {
 
   public sendNxt = (txObject) => {
     let deferred = this.$q.defer<any>();
-    this.http.post(this.url + txObject, {}).then(ret => {
+    this.http.post(this.url + "/" + txObject, {}).then(ret => {
       let userService: UserService = heat.$inject.get('user')
       let data = JSON.parse(typeof ret === "string" ? ret : JSON.stringify(ret));
       if(data.errorDescription) {
@@ -95,7 +95,7 @@ class NxtBlockExplorerService {
         deferred.resolve({txId: data.transaction})
       })
     }, err => {
-      deferred.reject(err.errorDescription)
+      deferred.reject(err?.errorDescription)
     })
     return deferred.promise;
   }

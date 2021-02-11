@@ -65,9 +65,11 @@ class NXTCurrency implements ICurrency {
 
   sendNxt($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
+
       this.okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let nxtBlockExplorerService = <NxtBlockExplorerService> heat.$inject.get('nxtBlockExplorerService')
@@ -105,6 +107,7 @@ class NXTCurrency implements ICurrency {
           }
         )
       }
+
       this.disableOKBtn = false
 
       let defaultFee = '1.0'
@@ -138,7 +141,8 @@ class NXTCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
