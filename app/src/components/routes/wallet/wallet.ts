@@ -607,7 +607,7 @@ class WalletComponent {
   entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
   walletEntries: Array<WalletEntry> = []
   createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'HEAT', disabled: false }, { name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'LTC', disabled: false }, { name: 'BCH', disabled: false }];
+  chains = [{ name: 'HEAT', disabled: false }, { name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: false }, { name: 'ARDR', disabled: false }, { name: 'IOTA', disabled: false }, { name: 'LTC', disabled: false }, { name: 'BCH', disabled: false }];
   selectedChain = '';
   store: any;
 
@@ -679,7 +679,7 @@ class WalletComponent {
       let encryptedWallet = store.get(`${currency}-${heatAddress}`)
       let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
       let walletType = JSON.parse(decryptedWallet)
-      if (['FIM', 'NXT', 'ARDR'].indexOf(entry.symbol) !== -1) {
+      if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
         walletType.addresses[0].isDeleted = true;
       } else {
         walletType.addresses = walletType.addresses.filter(address => address.address !== entry.address)
