@@ -99,7 +99,7 @@ class ArdorAccountComponent {
     this.sockets = [
       {
         name: 'HEAT_Ardr_node',
-        hostUrl: 'https://bitnode.heatwallet.com:27876'
+        hostUrl: 'https://ardr1.heatwallet.com'
       },
       {
         name: 'Localhost',

@@ -99,7 +99,7 @@ class NxtAccountComponent {
     this.sockets = [
       {
         name: 'HEAT_NXT_node',
-        hostUrl: 'https://bitnode.heatwallet.com:7876'
+        hostUrl: 'https://nxt1.heatwallet.com'
       },
       {
         name: 'Localhost',
