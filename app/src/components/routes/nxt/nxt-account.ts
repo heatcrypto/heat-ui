@@ -16,7 +16,8 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
+              Balance:
+              <md-progress-circular style="display: initial; position: fixed;" md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
               {{vm.balanceUnconfirmed}} NXT
@@ -88,7 +89,7 @@ class NxtAccountComponent {
     this.nxtPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = this.$interval(this.timerHandler.bind(this), 1000)
+    let promise = this.$interval(this.timerHandler.bind(this), 7000)
     this.timerHandler()
 
     this.$scope.$on('$destroy', () => {
