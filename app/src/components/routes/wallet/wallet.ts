@@ -1569,9 +1569,12 @@ class WalletComponent {
       let bitcoinValidator = () => {
         let bip44Invalid = bip44CompatibleValidator()
         if (bip44Invalid) {
+          // allowed raw hex pk or WIF pk
+          let pk = this.data.secretPhrase
+          if (utils.isHex(pk) && pk.length > 32) return
           /*Bitcoin WIF keys. WIF keys are no longer used widely, and most wallets use BIP39 phrases to store private keys*/
           let regex = /^[5KL][1-9A-HJ-NP-Za-km-z]{50,51}$/
-          if (! regex.test(this.data.secretPhrase)) {
+          if (! regex.test(pk)) {
             return "Private key is not valid or " + bip44Invalid
           }
         }
