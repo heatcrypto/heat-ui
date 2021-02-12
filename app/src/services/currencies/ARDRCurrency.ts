@@ -44,6 +44,7 @@ class ARDRCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendArdr($event).then(
       data => {
+        if (!data) return
         let address = this.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp, data.fullHash)
@@ -74,7 +75,7 @@ class ARDRCurrency implements ICurrency {
         let amountNQT = utils.convertToNQT(String($scope['vm'].data.amountNQT))
         let feeNQT = utils.convertToNQT(String($scope['vm'].data.feeNQT))
         let recipientPublicKey;
-        let txObject;
+        let requestParams;
         if($scope['vm'].data.recipientPublicKey) {
           recipientPublicKey = converters.hexStringToByteArray($scope['vm'].data.recipientPublicKey)
         }
@@ -84,13 +85,13 @@ class ARDRCurrency implements ICurrency {
             "publicKey": recipientPublicKey
           };
           let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
-          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
+          requestParams = `requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
         }
         else {
-          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
+          requestParams = `requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
         }
         $scope['vm'].disableOKBtn = true
-        ardorBlockExplorerService.sendTransactionWithSecret(txObject).then(
+        ardorBlockExplorerService.sendTransactionWithSecret(requestParams).then(
           data => {
             $mdDialog.hide(data).then(() => {
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);

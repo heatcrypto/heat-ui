@@ -2424,7 +2424,7 @@ class WalletComponent {
         let walletEntry = this.data.selectedWalletEntry
         let success = false
         if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
+          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
           if (!node) {
             let storage = <StorageService>heat.$inject.get('storage')
             let $rootScope = heat.$inject.get('$rootScope');
@@ -2438,7 +2438,7 @@ class WalletComponent {
           }
           // load in next event loop to load currency addresses first
           var interval = setInterval(() => {
-            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDR')
+            node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
             if (node) {
               success = node.createARDRAddress(self)
               walletEntry.toggle(true)

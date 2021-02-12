@@ -16,7 +16,8 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
+              Balance:
+              <md-progress-circular style="display: initial; position: fixed;" md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
               {{vm.balanceUnconfirmed}} ARDR
@@ -88,7 +89,7 @@ class ArdorAccountComponent {
     this.ardorPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = this.$interval(this.timerHandler.bind(this), 1000)
+    let promise = this.$interval(this.timerHandler.bind(this), 7000)
     this.timerHandler()
 
     this.$scope.$on('$destroy', () => {
@@ -124,6 +125,9 @@ class ArdorAccountComponent {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
+      if (!pendingTxn.fullHash || pendingTxn.fullHash == "undefined") {
+        this.ardorPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time, pendingTxn.fullHash)
+      }
       this.ardorBlockExplorerService.getTransactionStatus(pendingTxn.fullHash).then(
         data => {
           if (data.confirmations) {
@@ -144,7 +148,7 @@ class ArdorAccountComponent {
       let addr = this.user.currency.address
       let txns = this.ardorPendingTransactions.pending[addr]
       if (txns) {
-        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+        const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
           this.pendingTransactions.push({
             date: dateFormat(new Date(tx.time), format),

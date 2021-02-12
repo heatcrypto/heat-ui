@@ -219,10 +219,11 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getAskOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.askOrders)
+      if (data.askOrders) {
         deferred.resolve(data.askOrders)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
@@ -232,10 +233,11 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getBidOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.bidOrders)
+      if (data.bidOrders) {
         deferred.resolve(data.bidOrders.length)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
@@ -245,10 +247,11 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getBidOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.bidOrders)
+      if (data.bidOrders) {
         deferred.resolve(data.bidOrders)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
@@ -303,10 +306,11 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getAccountCurrentBidOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.bidOrders)
+      if (data.bidOrders) {
         deferred.resolve(data.bidOrders.length)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
@@ -316,10 +320,11 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getAccountCurrentAskOrders&chain=2&asset=${ardorAsset}&firstIndex=${firstIndex}&lastIndex=${lastIndex}&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.askOrders)
+      if (data.askOrders) {
         deferred.resolve(data.askOrders)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
@@ -329,10 +334,11 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getAccountCurrentAskOrders&chain=2&asset=${ardorAsset}&firstIndex=0&lastIndex=-1&account=${account}`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.askOrders)
+      if (data.askOrders) {
         deferred.resolve(data.askOrders.length)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
@@ -342,22 +348,23 @@ class ArdorBlockExplorerService {
     let url = `${this.url}/nxt?requestType=getAllAssets&firstIndex=0&lastIndex=-1`
     this.http.get(url).then(response => {
       let data = angular.isString(response) ? JSON.parse(response) : response;
-      if (data.assets)
+      if (data.assets) {
         deferred.resolve(data.assets)
-      else
+      } else {
         deferred.reject(data.errorDescription)
+      }
     });
     return deferred.promise;
   }
 
   public sendTransactionWithSecret = (endpoint) => {
     let deferred = this.$q.defer<any>();
-    this.http.post(`${this.url}/nxt?requestType=${endpoint}`, {}).then(ret => {
-      let data = JSON.parse(JSON.stringify(ret))
+    this.http.post(`${this.url}/nxt?${endpoint}`, {}).then((data: any) => {
       if (data.errorDescription) {
         deferred.reject(data.errorDescription)
+      } else {
+        deferred.resolve({ txId: data.transactionJSON.transaction, fullHash: data.fullHash })
       }
-      deferred.resolve({ txId: data.transaction })
     })
     return deferred.promise;
   }
