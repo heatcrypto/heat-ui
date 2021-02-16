@@ -305,7 +305,7 @@ class ServerService extends EventEmitter {
   }
 
   getConfigFilePath() {
-    return "resources/heatledger/conf/heat.properties"
+    return "resources/heatledger/conf/heat-default.properties"
   }
 
 }

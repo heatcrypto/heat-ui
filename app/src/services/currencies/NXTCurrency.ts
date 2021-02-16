@@ -26,7 +26,7 @@ class NXTCurrency implements ICurrency {
     this.nxtBlockExplorerService.getAccount(this.address).then(data => {
       deferred.resolve(new Big(utils.convertToQNTf(data.balanceNQT)).toFixed(8))
     }, err => {
-      deferred.reject();
+      deferred.reject(err);
     })
     return deferred.promise;
   }
