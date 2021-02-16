@@ -87,7 +87,7 @@ class LightwalletService {
   }
 
   validPrivateKey(privKey) {
-    return utils.isHex(privKey) && privKey.length > 32
+    return utils.isHex(privKey) && privKey.length == 64
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */

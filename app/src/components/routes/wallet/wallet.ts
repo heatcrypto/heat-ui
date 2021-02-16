@@ -1367,9 +1367,9 @@ class WalletComponent {
         let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
         if (address.inUse || wasCreated) {
           let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
-          btcCurrencyBalance.balance = address.balance + ""
+          btcCurrencyBalance.balance = (address.balance || "0") + ""
           btcCurrencyBalance.visible = walletEntry.expanded
-          btcCurrencyBalance.inUse = wasCreated ? false : true
+          btcCurrencyBalance.inUse = !wasCreated
           btcCurrencyBalance.walletEntry = walletEntry
           walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
           index++;
@@ -1559,24 +1559,24 @@ class WalletComponent {
       let ethereumValidator = () => {
         let bip44Invalid = bip44CompatibleValidator()
         if (bip44Invalid) {
-          let s = this.data.secretPhrase?.trim()
-          this.data.secretPhrase = s.startsWith("0x") ? s.substr(2) : s
-          if (! self.lightwalletService.validPrivateKey(this.data.secretPhrase)) {
-            return "Private key is not valid or " + bip44Invalid
-          }
+          let s = this.data.secretPhrase.trim()
+          this.data.secretPhrase = s = s.startsWith("0x") ? s.substr(2) : s
+          if (utils.isHex(s) && s.length == 64) return
+          return "Private key is not valid or " + bip44Invalid
         }
       }
       let bitcoinValidator = () => {
         let bip44Invalid = bip44CompatibleValidator()
         if (bip44Invalid) {
           // allowed raw hex pk or WIF pk
-          let pk = this.data.secretPhrase
-          if (utils.isHex(pk) && pk.length > 32) return
-          /*Bitcoin WIF keys. WIF keys are no longer used widely, and most wallets use BIP39 phrases to store private keys*/
+          let s = this.data.secretPhrase.trim()
+          this.data.secretPhrase = s = s.startsWith("0x") ? s.substr(2) : s
+          //check is raw private key
+          if (utils.isHex(s) && s.length == 64) return
+          //check is WIF private key
           let regex = /^[5KL][1-9A-HJ-NP-Za-km-z]{50,51}$/
-          if (! regex.test(pk)) {
-            return "Private key is not valid or " + bip44Invalid
-          }
+          if (regex.test(s)) return
+          return "Private key is not valid or " + bip44Invalid
         }
       }
       this.currencyList = [
