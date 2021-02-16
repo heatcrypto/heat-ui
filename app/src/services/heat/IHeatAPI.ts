@@ -1163,5 +1163,6 @@ interface IHEATKeystoreTransaction {
 interface IHEATMasternode {
   account: string,
   internetAddress: string,
-  height: number
+  height: number,
+  expirationHeight: number
 }

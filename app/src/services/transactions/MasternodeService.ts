@@ -76,19 +76,16 @@ class RegisterInternetAddressDialog extends GenericDialog {
       builder.staticText('note2', "Minimum stake for Masternode to receive POP reward at block generation is 1000 HEAT"),
       builder.staticText('feeText', "NOTICE: Masternode registration will expire after 622080 blocks (~180 days). To keep receiving POP rewards you will need to re-register at that time"),
       builder.staticText('masternodesList', "")
-        .label("List of actual masternodes")
+        .label("List of actual masternodes (account, IP or domain name, expiration height)")
         .scrollable(true)
     ]
   }
 
   fieldsReady($scope: angular.IScope) {
     this.heat.api.listMasternodes().then(masternodes => {
-      let result = ''
-      for (const masternode of masternodes) {
-        result = result + (result ? '\n' : '') + `${masternode.account}   ${masternode.internetAddress}`
-      }
+      let masterNodesStr = masternodes.map(v => `${v.account}   ${v.internetAddress}   ${v.expirationHeight || ""}`).join("\n")
       $scope.$evalAsync(() => {
-        this.fields['masternodesList'].value = result
+        this.fields['masternodesList'].value = masterNodesStr
       });
     });
   }
