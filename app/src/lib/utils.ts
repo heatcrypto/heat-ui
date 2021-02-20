@@ -62,7 +62,9 @@ module utils {
   }
 
   export function isHex(value: string) {
-    return angular.isString(value) && (/^[0-9a-fA-F]+$/.test(value))
+    if (!angular.isString(value)) return false
+    let s = value.startsWith("0x") ? value.substr(2) : value
+    return (/^[0-9a-fA-F]+$/.test(s))
   }
 
   export function isTimeWithinThreasholdLimit(inputTime) {

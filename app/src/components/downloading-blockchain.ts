@@ -66,22 +66,14 @@ class DownloadingBlockchainComponent {
 
     let checkServerHealthInterval
     settings.initialized.then(value => {
-      if (this.settings.failoverEnabled) {
-        checkServerHealthInterval = $interval(() => {
+      checkServerHealthInterval = $interval(() => {
+        if (this.settings.failoverEnabled) {
           this.checkServerHealth(this.settings)
-        }, 33 * 1000, 0, false);
+        }
+      }, 33 * 1000, 0, false);
 
-        //Check servers health to choose the right
-        //wait for loading  app-config.json
-        setTimeout(() => {
-          if (SettingsService.getFailoverDescriptor())
-            this.checkServerHealth(this.settings, true);
-          else
-            setTimeout(() => {
-              this.checkServerHealth(this.settings, true);
-            }, 500)
-        }, 200);
-      }
+      //Check servers health to choose the right
+      this.checkServerHealth(this.settings, true)
     })
 
     $scope.$on('$destroy', () => {

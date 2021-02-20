@@ -1,10 +1,10 @@
 {
   "heatNodes": {
     "mainnet": {
-      "heightDeltaThreshold": 2,
+      "heightDeltaThreshold": 4,
       "balancesMismatchesThreshold": 0.9,
       "balancesEqualityThreshold": 0.8,
-      "connectedPeersThreshold": 0.8,
+      "connectedPeersThreshold": 0.5,
       "knownServers": [
         {
           "host": "https://heatwallet.com",
