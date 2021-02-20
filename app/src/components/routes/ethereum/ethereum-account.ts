@@ -142,6 +142,10 @@ class EthereumAccountComponent {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
+      if (!utils.isHex(pendingTxn.txHash)) {
+        this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+        return
+      }
       this.ethBlockExplorerService.getTxInfo(pendingTxn.txHash).then(
         data => {
           if (data.confirmations && data.confirmations > 0) {

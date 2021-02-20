@@ -61,10 +61,12 @@ class ETHCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendEther($event).then(
       data => {
-        if (data) {
+        if (data && data.txId) {
           let address = this.user.currency.address
           let timestamp = new Date().getTime()
           this.pendingService.add(address, data.txId, timestamp)
+        } else {
+          dialogs.alert($event, 'Send Ether Error', 'There was wrong response on sending transaction: ' + JSON.stringify(data))
         }
       },
       err => {
