@@ -524,7 +524,7 @@ class EthTransactionRenderer {
   }
 
   private status(t: EthplorerAddressTransactionExtended) {
-    if (t.ethereumSpecific?.status !== 1) {
+    if (t.ethereumSpecific && t.ethereumSpecific.status !== 1) {
       return "<span class='failed'>[FAILED] </span>"
     }
     return ""
