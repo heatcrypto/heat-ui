@@ -111,10 +111,10 @@ class EditMessageComponent {
       if (peer) {
         try {
           let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
+          this.$scope.$evalAsync(() => this.messageText = '')
         } catch (e) {
           notSentReason = e;
         }
-        this.$scope.$evalAsync(() => this.messageText = '')
       } else {
         notSentReason = "Peer not found"
       }

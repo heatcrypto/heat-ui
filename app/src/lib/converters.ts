@@ -189,8 +189,36 @@ module converters {
       var index = checkBytesToIntInput(bytes, parseInt(length, 10), parseInt(opt_startIndex, 10));
       bytes = bytes.slice(opt_startIndex, opt_startIndex + length);
     }
-    // @ts-ignore
-    return decodeURIComponent(escape(String.fromCharCode.apply(null, bytes)));
+
+    return byteArrayToStringInternal(bytes)
+  }
+
+  /**
+   * Provides decoding large data using decodeURIComponent()
+   */
+	function byteArrayToStringInternal(bytes: Array<number>) {
+    let result = ""
+    let chunkSize = 20000;
+    if (bytes.length > chunkSize) {
+      let pos = 0
+      while (pos < bytes.length) {
+        let shift = 0
+        while (shift < 3) {
+          try {
+            let escaped = escape(String.fromCharCode.apply(null, bytes.slice(pos, pos + chunkSize + shift)))
+            result = result + decodeURIComponent(escaped)
+            pos = pos + chunkSize + shift
+            break
+          } catch (e) {
+            console.debug("trying decode escaped string " + e)
+          }
+          shift++
+        }
+      }
+    } else {
+      result = decodeURIComponent(escape(String.fromCharCode.apply(null, bytes)))
+    }
+    return result
   }
 
   export function byteArrayToShortArray(byteArray: Array<number>): Array<number> {

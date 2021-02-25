@@ -410,8 +410,7 @@ module heat.crypto {
   function decryptData(data, options, uncompressed?: boolean) {
     var compressedPlaintext = aesDecrypt(data, options);
     var binData = new Uint8Array(compressedPlaintext);
-    var data = uncompressed ? binData : pako.inflate(binData);
-    return converters.byteArrayToString(data);
+    return converters.byteArrayToString(uncompressed ? binData : pako.inflate(binData));
   }
 
   function aesDecrypt(ivCiphertext, options) {

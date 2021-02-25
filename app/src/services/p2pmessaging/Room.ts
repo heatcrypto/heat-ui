@@ -23,6 +23,8 @@
 
 module p2p {
 
+  const MESSAGE_TEXT_MAX_SIZE = 8000
+
   /**
    * Messages of this type are stored on the server, then they are sent to the recipients when recipient will be online
    */
@@ -39,6 +41,7 @@ module p2p {
     constructor(type: MessageType, timestamp: number, text?: string) {
       this.type = type;
       this.timestamp = timestamp;
+      if (text.length > MESSAGE_TEXT_MAX_SIZE) throw new Error(`Text length ${text.length} is too big, the length is limited to ${MESSAGE_TEXT_MAX_SIZE}`)
       this.text = text;
       this.id = utils.uuidv4()
     }
