@@ -431,7 +431,7 @@ class WalletEntry {
   public expanded = false
   public btcWalletAddressIndex = 0
   constructor(public account: string, public name: string, public component: WalletComponent) {
-    this.identifier = name ? `${name} | ${account}` : account
+    this.identifier = name ? `${account} | ${name}` : account
   }
 
   public toggle(forceVisible?: boolean) {
@@ -730,7 +730,7 @@ class WalletComponent {
       this.walletEntries.push(walletEntry)
     });
     this.walletEntries.sort((a, b) => {
-      return a.identifier.localeCompare(b.identifier)
+      return a.account.localeCompare(b.account)
     })
     this.walletEntries.forEach(walletEntry => {
       let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
