@@ -1,6 +1,7 @@
 {
   "heatNodes": {
     "mainnet": {
+      "failoverEnabled": true,
       "heightDeltaThreshold": 4,
       "balancesMismatchesThreshold": 0.9,
       "balancesEqualityThreshold": 0.8,
@@ -22,6 +23,7 @@
       "signalingUrl": "wss://heatwallet.com:7755/ws/"
     },
     "testnet": {
+      "failoverEnabled": true,
       "heightDeltaThreshold": 2,
       "balancesMismatchesThreshold": 0.9,
       "balancesEqualityThreshold": 0.8,

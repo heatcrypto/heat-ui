@@ -235,9 +235,9 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    this.initialized.then(value => {
-      this.setHost("local", false, true)
-    })
+    // this.initialized.then(value => {
+    //   this.setHost("local", false, true)
+    // })
   }
 
   settings={};
