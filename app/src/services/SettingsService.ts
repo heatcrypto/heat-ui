@@ -95,6 +95,7 @@ class SettingsService {
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
       SettingsService.FAILOVER_DESCRIPTOR =  {
+        failoverEnabled: false,
         heightDeltaThreshold: 2,
         balancesMismatchesThreshold: 0.9,
         balancesEqualityThreshold: 0.8,
@@ -234,9 +235,9 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    // this.initialized.then(value => {
-    //   this.setHost("local", false, true)
-    // })
+    this.initialized.then(value => {
+      this.setHost("local", false, true)
+    })
   }
 
   settings={};
@@ -270,15 +271,17 @@ class SettingsService {
 
   public applyFailoverConfig() {
     let resolveFailoverDescriptor = (json: any) => {
-      if (heat.isTestnet)
+      if (heat.isTestnet) {
         SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.testnet;
-      else if (heat.isBetanet)
+      } else if (heat.isBetanet) {
         SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.betanet;
-      else
+      } else {
         SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.mainnet;
+      }
 
       this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
       SettingsService.CRYPTO_NODES = json.cryptoNodes;
+      this.failoverEnabled = SettingsService.FAILOVER_DESCRIPTOR.failoverEnabled || true;
     };
     this.initialized = new Promise<void>((resolve, reject) => {
       if (this.env.type == EnvType.BROWSER) {
@@ -322,6 +325,7 @@ interface ServerDescriptor {
 }
 
 interface FailoverDescriptor {
+  failoverEnabled: boolean;
   heightDeltaThreshold: number;  // e.g.  2 means 2 blocks ahead
   balancesMismatchesThreshold: number;  // 0 - 1
   balancesEqualityThreshold: number;  // 0 - 1
