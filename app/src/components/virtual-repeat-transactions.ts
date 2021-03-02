@@ -521,7 +521,7 @@ class TransactionRenderer {
       (t) => {
         return {
           asset: this.asset(t.attachment['asset']),
-          dateTime: utils.timestampToDate(parseInt(this.asset(t.attachment['expiration']))).toLocaleString()
+          dateTime: utils.timestampToDate(parseInt(this.asset(t.attachment['asset']))).toLocaleString()
         }
       }
     );
