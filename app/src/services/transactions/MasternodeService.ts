@@ -27,14 +27,21 @@
 @Inject('$q', 'user', 'heat')
 class MasternodeService extends AbstractTransaction {
 
+  fee: string
+
   constructor(private $q: angular.IQService,
               private user: UserService,
               private heat: HeatService) {
     super();
+    this.fee = HeatAPI.fee.registerInternetAddressFee
+    this.heat.api.getBlockchainStatus().then(status => {
+      //fork 4.0.0
+      this.fee = status?.lastBlockchainFeederHeight < 4372000 ? utils.convertToQNT('100.00') : HeatAPI.fee.registerInternetAddressFee
+    })
   }
 
   dialog($event?): IGenericDialog {
-    return new RegisterInternetAddressDialog($event, this, this.$q, this.user, this.heat, "");
+    return new RegisterInternetAddressDialog($event, this, this.$q, this.user, this.heat, "", this.fee);
   }
 
   verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
@@ -57,12 +64,14 @@ class RegisterInternetAddressDialog extends GenericDialog {
               private $q: angular.IQService,
               private user: UserService,
               private heat: HeatService,
-              private internetAddress: string) {
+              private internetAddress: string,
+              private fee: string) {
     super($event);
     this.dialogTitle = 'Register Masternode Address';
     this.dialogDescription = 'Register Internet Address to be Masternode';
     this.okBtnTitle = 'SEND';
-    this.feeFormatted = utils.formatQNT(HeatAPI.fee.registerInternetAddressFee, 8).replace(/000000$/, '');
+
+    this.feeFormatted = utils.formatQNT(this.fee, 8).replace(/000000$/, '');
   }
 
   /* @override */
@@ -84,10 +93,8 @@ class RegisterInternetAddressDialog extends GenericDialog {
   fieldsReady($scope: angular.IScope) {
     this.heat.api.listMasternodes().then(masternodes => {
       let masterNodesStr = masternodes.map(v => `${v.account}   ${v.internetAddress}   ${v.expirationHeight || ""}`).join("\n")
-      $scope.$evalAsync(() => {
-        this.fields['masternodesList'].value = masterNodesStr
-      });
-    });
+      $scope.$evalAsync(() => this.fields['masternodesList'].value = masterNodesStr)
+    })
   }
 
   /* @override */
@@ -95,7 +102,7 @@ class RegisterInternetAddressDialog extends GenericDialog {
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
       .recipient(this.user.account)
-      .feeNQT(HeatAPI.fee.registerInternetAddressFee)
+      .feeNQT(this.fee)
       .attachment('InternetAddress', <IHeatRegisterInternetAddress>{
         internetAddress: this.fields['internetAddress'].value
       });
