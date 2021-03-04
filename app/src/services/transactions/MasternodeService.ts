@@ -31,17 +31,19 @@ class MasternodeService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
-              private heat: HeatService) {
+              private heatService: HeatService) {
     super();
     this.fee = HeatAPI.fee.registerInternetAddressFee
-    this.heat.api.getBlockchainStatus().then(status => {
-      //fork 4.0.0
-      this.fee = status?.lastBlockchainFeederHeight < 4372000 ? utils.convertToQNT('100.00') : HeatAPI.fee.registerInternetAddressFee
-    })
+    if (!heat.isTestnet) {
+      this.heatService.api.getBlockchainStatus().then(status => {
+        //fork 4.0.0
+        this.fee = status?.lastBlockchainFeederHeight < 4372000 ? utils.convertToQNT('100.00') : HeatAPI.fee.registerInternetAddressFee
+      })
+    }
   }
 
   dialog($event?): IGenericDialog {
-    return new RegisterInternetAddressDialog($event, this, this.$q, this.user, this.heat, "", this.fee);
+    return new RegisterInternetAddressDialog($event, this, this.$q, this.user, this.heatService, "", this.fee);
   }
 
   verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
