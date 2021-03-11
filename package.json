@@ -112,7 +112,7 @@
       "publisherName": "Tulipfox"
     },
     "linux": {
-      "target": "deb"
+      "target": "zip"
     },
     "deb": {},
     "mac": {
