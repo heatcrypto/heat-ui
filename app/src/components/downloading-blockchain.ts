@@ -72,8 +72,10 @@ class DownloadingBlockchainComponent {
         }
       }, 33 * 1000, 0, false);
 
-      //Check servers health to choose the right
-      this.checkServerHealth(this.settings, true)
+      if (this.settings.failoverEnabled) {
+        //Check servers health to choose the right
+        this.checkServerHealth(this.settings, true)
+      }
     })
 
     $scope.$on('$destroy', () => {

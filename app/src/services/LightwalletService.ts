@@ -83,7 +83,12 @@ class LightwalletService {
   }
 
   validSeed(seed) {
-    return this.lightwallet.keystore.isSeedValid(seed)
+    try {
+      return this.lightwallet.keystore.isSeedValid(seed)
+    } catch (e) {
+      console.error(e)
+    }
+    return false
   }
 
   validPrivateKey(privKey) {
