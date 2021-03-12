@@ -38,7 +38,7 @@
           "host": "http://localhost",
           "port": 7733,
           "websocket": "ws://localhost:7755/ws/",
-          "priority": 0
+          "priority": 3
         },
         {
           "host": "http://173.212.203.227",
