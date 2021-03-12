@@ -140,7 +140,7 @@ class DownloadingBlockchainComponent {
         server.statusScore = null;
         if (health)
           server.statusScore = 0; // has health means has min score
-        if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
+        if (server.host == settings.get(SettingsService.HEAT_HOST) && (server.port || "") == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
           //if the server response is nothing then server is down
