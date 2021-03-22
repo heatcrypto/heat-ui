@@ -11,19 +11,18 @@
           "host": "https://heatwallet.com",
           "port": 7734,
           "websocket": "wss://heatwallet.com:7755/ws/",
-          "priority": 1
+          "priority": 2
         },
         {
-          "host": "http://localhost",
-          "port": 7733,
-          "websocket": "ws://localhost:7755/ws/",
-          "priority": 2
+          "host": "https://heat1.heatwallet.com",
+          "websocket": "wss://heat1.heatwallet.com/ws/",
+          "priority": 1
         }
       ],
       "signalingUrl": "wss://heatwallet.com:7755/ws/"
     },
     "testnet": {
-      "failoverEnabled": true,
+      "failoverEnabled": false,
       "heightDeltaThreshold": 2,
       "balancesMismatchesThreshold": 0.9,
       "balancesEqualityThreshold": 0.8,
@@ -39,7 +38,7 @@
           "host": "http://localhost",
           "port": 7733,
           "websocket": "ws://localhost:7755/ws/",
-          "priority": 0
+          "priority": 3
         },
         {
           "host": "http://173.212.203.227",

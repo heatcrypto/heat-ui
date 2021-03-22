@@ -100,8 +100,9 @@ class HeatService {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     if (this.env.type == EnvType.BROWSER) {
+      let portStr = port ? `:${port}` : ""
       this.browserHttpGet(
-        [host,':',port,'/',route].join(''),
+        [host, portStr, '/', route].join(''),
         {headers: {'Content-Type': 'application/json'} },
         (response)=>{
           this.logResponse(route, null, response);
@@ -189,7 +190,8 @@ class HeatService {
       req = angular.extend(req, this.getAuthData());
     }
     if (this.env.type == EnvType.BROWSER) {
-      let address = [host,':',port,'/',route].join('');
+      let portStr = port ? `:${port}` : ""
+      let address = [host, portStr, '/', route].join('');
       if (localHostOnly) {
         if (address.indexOf('http://localhost')!=0) {
           deferred.reject(new ServerEngineError({

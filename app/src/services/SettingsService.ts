@@ -183,15 +183,23 @@ class SettingsService {
       "sv": ["sv.txt","87d1bf55193c95c03aa8e0d221dfaa94ccd8d6ea153b3d735eac235d592273fe"]
     };
 
+    // Uncomment to switch between backend servers..
+
+    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heat1.heatwallet.com/ws/";
+    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heat1.heatwallet.com"; // mainnet
+    this.settings[SettingsService.HEAT_PORT_REMOTE] = "";
+
+    // this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
+    // this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
+    // this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
+
     this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
     this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
     this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
     this.settings[SettingsService.LOG_HEAT_ALL] = false;
     this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
     this.settings[SettingsService.LOG_HEAT_SERVER_ALL] = false;
-    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
-    this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
+
     this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
     this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
     this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
