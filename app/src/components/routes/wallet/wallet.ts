@@ -422,6 +422,7 @@ class WalletEntry {
   public isWalletEntry = true
   public selected = true
   public identifier: string
+  public label: string
   public secretPhrase: string
   public bip44Compatible: boolean
   public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
@@ -433,7 +434,6 @@ class WalletEntry {
 
   constructor(public account: string,
               public name: string,
-              public label: string,
               public component: WalletComponent //user may assign any text for wallet account
   ) {
     this.identifier = name ? `${account} | ${name}` : account
@@ -680,15 +680,16 @@ class WalletComponent {
     )
   }
 
-  loadLabel(account: string) {
-    return this.store.get(account + "-label")
-  }
-
   saveLabel(account: string, label: string) {
-    if (label) {
-      this.store.put(account + "-label", label)
-    } else {
-      this.store.remove(account + "-label")
+    let password = this.localKeyStore.getPasswordForAccount(account)
+    if (password) {
+      try {
+        let key = this.localKeyStore.load(account, password)
+        if (key) {
+          key.label = label ? label.trim() : null
+          this.localKeyStore.add(key)
+        }
+      } catch (e) { console.error(e) }
     }
   }
 
@@ -761,7 +762,7 @@ class WalletComponent {
     this.walletEntries = []
     this.localKeyStore.list().map((account: string) => {
       let name = this.localKeyStore.keyName(account)
-      let walletEntry = new WalletEntry(account, name, this.loadLabel(account), this)
+      let walletEntry = new WalletEntry(account, name, this)
       this.walletEntries.push(walletEntry)
     });
     this.walletEntries.sort((a, b) => {
@@ -777,6 +778,7 @@ class WalletComponent {
             walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
             walletEntry.unlocked = true
             walletEntry.pin = password
+            walletEntry.label = key.label
             this.initWalletEntry(walletEntry)
           }
         } catch (e) { console.log(e) }
@@ -929,6 +931,7 @@ class WalletComponent {
               walletEntry.pin = pin
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+              walletEntry.label = key.label
               walletEntry.unlocked = true
               this.initWalletEntry(walletEntry)
             }

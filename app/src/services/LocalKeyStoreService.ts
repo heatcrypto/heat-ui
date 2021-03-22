@@ -26,6 +26,7 @@ interface ILocalKey {
   pincode: string;
   secretPhrase: string;
   name: string;
+  label?: string;
 }
 
 interface ILocalKeyEntry {
@@ -102,7 +103,8 @@ class LocalKeyStoreService {
       account: key.account,
       secretPhrase: key.secretPhrase,
       pincode: key.pincode,
-      name: key.name
+      name: key.name,
+      label: key.label
     });
     var message = heat.crypto.passphraseEncrypt(payload, key.pincode);
     return message.encode();
@@ -118,7 +120,8 @@ class LocalKeyStoreService {
         account: json['account'],
         secretPhrase: json['secretPhrase'],
         pincode: json['pincode'],
-        name: json['name']
+        name: json['name'],
+        label: json['label']
       }
     } else {
       //console.log(`decrypting is not success for account ${account}`);
