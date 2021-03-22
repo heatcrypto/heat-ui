@@ -50,6 +50,35 @@ module dialogs {
     return deferred.promise
   }
 
+  export function simplePrompt($event, title:string, description:string, defaultValue:string): angular.IPromise<string> {
+    let $q = <angular.IQService> heat.$inject.get('$q');
+    let deferred = $q.defer<string>();
+    let locals = {
+      v: {
+        value: defaultValue||''
+      },
+      description: description||'',
+    }
+    dialogs.dialog({
+      id: 'prompt',
+      title: title,
+      targetEvent: $event,
+      template: `
+        <p>{{vm.description}}</p>
+        <md-input-container flex>
+          <input id="1" type="text" ng-model="vm.v.value" autocomplete="off" auto-focus/><br>
+        </md-input-container>
+      `,
+      locals: locals
+    }).then(
+      () => {
+        deferred.resolve(locals.v.value)
+      },
+      deferred.reject
+    )
+    return deferred.promise
+  }
+
   export function alert($event, title:string, description:string): angular.IPromise<any> {
     let $q = <angular.IQService> heat.$inject.get('$q');
     let deferred = $q.defer<string>();

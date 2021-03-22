@@ -430,7 +430,12 @@ class WalletEntry {
   public visible = true
   public expanded = false
   public btcWalletAddressIndex = 0
-  constructor(public account: string, public name: string, public component: WalletComponent) {
+
+  constructor(public account: string,
+              public name: string,
+              public label: string,
+              public component: WalletComponent //user may assign any text for wallet account
+  ) {
     this.identifier = name ? `${account} | ${name}` : account
   }
 
@@ -517,7 +522,9 @@ class WalletEntry {
                   <md-icon md-font-library="material-icons">{{entry.expanded?'expand_less':'expand_more'}}</md-icon>
                 </md-button>
 
-                <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a></div>
+                <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a>
+                    <span class="label">{{entry.label}}</span>
+                </div>
                 <div flex ng-if="!entry.secretPhrase" class="identifier">{{entry.identifier}}</div>
                 <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
 
@@ -526,6 +533,12 @@ class WalletEntry {
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>
                   </md-button>
                   <md-menu-content width="4">
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.enterEntryLabel(entry)">
+                        <md-icon md-font-library="material-icons">label</md-icon>
+                        Enter label
+                      </md-button>
+                    </md-menu-item>
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase, entry.symbol)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
@@ -609,7 +622,7 @@ class WalletComponent {
   createdAddresses: { [key: string]: Array<string> } = {}
   chains = [{ name: 'HEAT', disabled: false }, { name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }, { name: 'IOTA', disabled: false }, { name: 'LTC', disabled: false }, { name: 'BCH', disabled: false }];
   selectedChain = '';
-  store: any;
+  store: Store;
 
   constructor(private $scope: angular.IScope,
     private $q: angular.IQService,
@@ -655,6 +668,28 @@ class WalletComponent {
 
     this.initLocalKeyStore()
     this.initCreatedAddresses()
+  }
+
+  enterEntryLabel(entry: WalletEntry) {
+    dialogs.simplePrompt(null, 'Enter Label',
+      `Enter label for account ${entry.identifier} or enter empty value to delete the label`, '').then(
+      label => {
+        entry.label = label?.trim()
+        this.saveLabel(entry.account, label)
+      }
+    )
+  }
+
+  loadLabel(account: string) {
+    return this.store.get(account + "-label")
+  }
+
+  saveLabel(account: string, label: string) {
+    if (label) {
+      this.store.put(account + "-label", label)
+    } else {
+      this.store.remove(account + "-label")
+    }
   }
 
   showSecret(secret: string, currencySymbol: string) {
@@ -726,7 +761,7 @@ class WalletComponent {
     this.walletEntries = []
     this.localKeyStore.list().map((account: string) => {
       let name = this.localKeyStore.keyName(account)
-      let walletEntry = new WalletEntry(account, name, this)
+      let walletEntry = new WalletEntry(account, name, this.loadLabel(account), this)
       this.walletEntries.push(walletEntry)
     });
     this.walletEntries.sort((a, b) => {
