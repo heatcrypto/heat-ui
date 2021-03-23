@@ -1,6 +1,6 @@
 {
   "name": "heatwallet",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "HEAT Desktop Wallet",
   "main": "electron/electron.js",
   "scripts": {
@@ -22,8 +22,8 @@
   "homepage": "https://heatwallet.com",
   "dependencies": {
     "child-process-promise": "^2.2.0",
-    "tree-kill": "^1.1.0",
     "electron-contextmenu-middleware": "^1.0.3",
-    "electron-input-menu": "^2.1.0"
+    "electron-input-menu": "^2.1.0",
+    "tree-kill": "^1.2.2"
   }
 }
