@@ -196,7 +196,7 @@ class MsgViewerComponent {
     item['timestamp'] = item.timestamp;
     item['sortingTimestamp'] = item.receiptTimestamp || item.timestamp;
     item['outgoing'] = this.user.account == item['senderAccount'];
-    item['date'] = dateFormat(item['sortingTimestamp'], this.dateFormat);
+    item['date'] = dateFormat(item.timestamp, this.dateFormat);
     item.transport = item.transport || (item['onchain'] ? 'chain' : 'p2p');
     item['contents'] = item['content'] || item['message'];
     item['__id'] = ++MsgViewerComponent.count;
