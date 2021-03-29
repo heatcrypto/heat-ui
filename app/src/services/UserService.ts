@@ -208,9 +208,9 @@ class UserService extends EventEmitter {
     this.currency = null
     this.bip44Compatible = false
     this.emit(UserService.EVENT_LOCKED);
-    if (noreload)
-      return
-    window.location.reload(true);
+    if (noreload) return
+    dialogs.showProgressMessage(null, "Signing out")
+    setTimeout(() => window.location.reload(), 2000)
   }
 
   requireLogin() {

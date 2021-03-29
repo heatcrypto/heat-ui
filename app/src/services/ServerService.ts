@@ -23,7 +23,7 @@
  * */
 
 @Service('server')
-@Inject('$rootScope','$q','$interval','$timeout','settings', '$mdToast')
+@Inject('$rootScope','$q','$interval','$timeout','settings', 'user', '$mdToast')
 class ServerService extends EventEmitter {
   private stopServerSignalFile = 'resources/heatledger/stopserver.signal';
   private serverStoppedSignalFile = 'resources/heatledger/serverstopped.signal';
@@ -38,29 +38,42 @@ class ServerService extends EventEmitter {
   private childProcess: any;
   public buffer: Array<string> = [" "," "," "]; // needs one empty line or last line is not shown in console
 
+  private justLocked: boolean
+
   constructor(private $rootScope: angular.IRootScopeService,
               private $q: angular.IQService,
               private $interval: angular.IIntervalService,
               private $timeout: angular.ITimeoutService,
               private settings: SettingsService,
+              private user: UserService,
               private $mdToast: angular.material.IToastService) {
     super();
-    var onbeforeunload = () => {
+    let onbeforeunload = () => {
       window.onbeforeunload = null;
       if (this.isRunning) {
-        this.applicationShutdown().then(() => {
-          window.close();
-        });
-        $timeout(() => {
-          this.stopServer();
-        }, 2000);
-        $timeout(() => {
-          window.close();
-        }, 8000);
-        return "dont close";
+        if (!this.justLocked) {
+          $timeout(() => {
+            this.stopServer();
+          }, 500);
+          this.applicationShutdown().then(() => {
+            window.close();
+          });
+          $timeout(() => {
+            window.close();
+          }, 8000);
+          return "dont close";
+        }
       }
     };
     window.onbeforeunload = onbeforeunload;
+
+    user.on(UserService.EVENT_LOCKED, () => {
+      this.justLocked = true
+      if (this.isRunning) {
+        this.stopServer()
+      }
+      this.applicationShutdown()
+    });
   }
 
   initOsDepends() {
@@ -271,12 +284,12 @@ class ServerService extends EventEmitter {
 
   applicationShutdown() {
     var deferred = this.$q.defer();
-    dialogs.shutdown(null);
+    dialogs.showProgressMessage(null, 'Shutting down');
     this.$interval(() => {
       if (!this.isRunning) {
         deferred.resolve();
       }
-    }, 2000);
+    }, 1000);
     return deferred.promise;
   }
 
