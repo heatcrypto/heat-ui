@@ -277,6 +277,17 @@ class SettingsService {
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
   }
 
+  getHeatwalletConfigFilePath() {
+    let fileName = 'app-config.json'
+    if (this.env.type == EnvType.BROWSER) {
+      return fileName
+    }
+    if (this.env.type == EnvType.NODEJS) {
+      let path = require('path')
+      return path.join(__dirname, '..', '..', fileName)
+    }
+  }
+
   public applyFailoverConfig() {
     let resolveFailoverDescriptor = (json: any) => {
       if (heat.isTestnet) {
@@ -304,7 +315,7 @@ class SettingsService {
       } else if (this.env.type == EnvType.NODEJS) {
         // @ts-ignore
         const fs = require('fs');
-        fs.readFile('app-config.json', (err, data) => {
+        fs.readFile(this.getHeatwalletConfigFilePath(), (err, data) => {
           if (err) {
             let message = "Cannot load 'app-config.json': " + err;
             console.log(message);

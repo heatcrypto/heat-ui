@@ -51,7 +51,7 @@
               </md-button>
             </md-menu-item>
             <md-menu-item>
-              <md-button ng-click="vm.editClientApplicationsConfig()">
+              <md-button ng-click="vm.editHeatwalletConfig()">
                 <md-tooltip md-direction="bottom">Edit application config</md-tooltip>
                 <span>Data sources config</span>
               </md-button>
@@ -210,12 +210,16 @@ class ServerComponent {
     )
   }
 
-  editClientApplicationsConfig() {
-    this.editConfig("Client Application Config", "app-config.json", () => this.settings.applyFailoverConfig())
+  editHeatwalletConfig() {
+    this.editConfig(
+      "Client Application Config",
+      this.settings.getHeatwalletConfigFilePath(),
+      () => this.settings.applyFailoverConfig()
+    )
   }
 
   editHeatledgerConfig() {
-    this.editConfig("Heatledger server Config", this.serverService.getConfigFilePath())
+    this.editConfig("Heatledger server Config", this.serverService.getHeatConfigFilePath())
   }
 
   editConfig(title, filePath, applyConfig?) {

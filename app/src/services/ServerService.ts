@@ -25,9 +25,6 @@
 @Service('server')
 @Inject('$rootScope','$q','$interval','$timeout','settings', 'user', '$mdToast')
 class ServerService extends EventEmitter {
-  private stopServerSignalFile = 'resources/heatledger/stopserver.signal';
-  private serverStoppedSignalFile = 'resources/heatledger/serverstopped.signal';
-
   private MAX_CONSOLE_LINE_LENGTH = 20000;
   public isRunning: boolean = false;
   public isReady: boolean = false;
@@ -39,6 +36,8 @@ class ServerService extends EventEmitter {
   public buffer: Array<string> = [" "," "," "]; // needs one empty line or last line is not shown in console
 
   private justLocked: boolean
+  private readonly stopServerSignalFile
+  private readonly serverStoppedSignalFile
 
   constructor(private $rootScope: angular.IRootScopeService,
               private $q: angular.IQService,
@@ -74,26 +73,28 @@ class ServerService extends EventEmitter {
       }
       this.applicationShutdown()
     });
+    let path = require('path')
+
+    this.stopServerSignalFile = path.join(__dirname, '..', 'heatledger', 'stopserver.signal')
+    this.serverStoppedSignalFile = path.join(__dirname, '..', 'heatledger', 'serverstopped.signal')
+    this.cwd = path.join(__dirname, '..', 'heatledger')
   }
 
   initOsDepends() {
     var os = this.getOS();
     var path = require('path');
     if (os == 'WIN')  {
-      this.cwd = path.join(__dirname,'..','heatledger');
       this.command = path.join('bin','heatledger.bat');
     }
     if (os == 'MAC') {
-      this.cwd = path.join(__dirname,'..','heatledger');
       this.command = path.join('bin','heatledger');
     }
     if (os == 'LINUX') {
-      this.cwd = path.join(__dirname,'..','heatledger');
       this.command = path.join('bin','heatledger');
     }
 
     //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
-    let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
+    let embeddedInWalletSignalFilePath = path.join(__dirname, '..', 'heatledger', 'embeddedinwallet.signal')
     const fs = require('fs');
     if (!fs.existsSync(embeddedInWalletSignalFilePath)) {
       fs.writeFile(embeddedInWalletSignalFilePath, '', {flag: 'w'}, function (err) {
@@ -104,7 +105,7 @@ class ServerService extends EventEmitter {
 
   isHeatledgerServerDirExists() {
     const fs = require('fs');
-    return fs.existsSync('resources/heatledger')
+    return fs.existsSync(this.cwd)
   }
 
   getAppDir(dirName) {
@@ -317,8 +318,9 @@ class ServerService extends EventEmitter {
     })
   }
 
-  getConfigFilePath() {
-    return "resources/heatledger/conf/heat-default.properties"
+  getHeatConfigFilePath() {
+    let path = require('path')
+    return path.join(__dirname, '..', 'heatledger', 'conf', 'heat-default.properties')
   }
 
 }
