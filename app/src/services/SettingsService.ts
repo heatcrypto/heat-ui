@@ -317,7 +317,7 @@ class SettingsService {
         const fs = require('fs');
         fs.readFile(this.getHeatwalletConfigFilePath(), (err, data) => {
           if (err) {
-            let message = "Cannot load 'app-config.json': " + err;
+            let message = `Cannot load '${this.getHeatwalletConfigFilePath()}'. Error: ${err}`;
             console.log(message);
             reject(message);
             throw err;
