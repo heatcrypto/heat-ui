@@ -306,4 +306,28 @@ module converters {
     }
     return bytes;
   }
+
+  /* fast functions to converting string to ArrayBuffer and vice-versa
+  https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String*/
+
+  export function arrayBufferToString(buf: ArrayBuffer): string {
+    return String.fromCharCode.apply(null, new Uint16Array(buf))
+  }
+
+  export function stringToArrayBuffer(str: string): ArrayBuffer {
+    let buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+    let bufView = new Uint16Array(buf)
+    for (let i = 0, strLen = str.length; i < strLen; i++) {
+      bufView[i] = str.charCodeAt(i)
+    }
+    return buf
+  }
+
+  export function concatenate(buffer1: ArrayBuffer, buffer2: ArrayBuffer): ArrayBufferLike {
+    let temp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+    temp.set(new Uint8Array(buffer1), 0);
+    temp.set(new Uint8Array(buffer2), buffer1.byteLength);
+    return temp.buffer;
+  }
+
 }

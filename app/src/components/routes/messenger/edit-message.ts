@@ -43,7 +43,8 @@
     }
   `],
   template: `
-    <div layout="row" flex>
+<!--    <div layout="row" flex ondrop="dropHandler($event);" ondragover="dragOverHandler($event);">-->
+    <div layout="row" flex ng-on-drop="vm.onDrop($event)" ng-on-dragover="vm.onDragover($event)">
       <div layout="column" flex="noshrink">
         <form hide-gt-xs name="editMessageForm" ng-submit="vm.sendMessage($event)" flex layout="row">
           <textarea flex rows="4" ng-model="vm.messageText"></textarea>
@@ -103,15 +104,19 @@ class EditMessageComponent {
     }
   }
 
-  sendP2PMessage($event) {
+  sendP2PMessage($event, files?: File[]) {
     let notSentReason: string;
     let room = this.p2pMessaging.getOneToOneRoom(this.publickey)
     if (room) {
       let peer = room.getPeer(this.publickey) || room.createPeer(this.publickey, this.publickey);
       if (peer) {
         try {
-          let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
-          this.$scope.$evalAsync(() => this.messageText = '')
+          if (files) {
+            room.sendFiles(files)
+          } else {
+            let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
+            this.$scope.$evalAsync(() => this.messageText = '')
+          }
         } catch (e) {
           notSentReason = e;
         }
@@ -149,6 +154,41 @@ class EditMessageComponent {
         this.store.put(account, latestTimestamp + 1);
       })
     });
+  }
+
+  onDrop($event) {
+    if (!($event.dataTransfer.files && $event.dataTransfer.files.length > 0)) return
+
+    $event.preventDefault()
+    if (this.p2pMessaging.onlineStatus != "online") {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent("Send file(s) is not accepted because of disabled offchain messaging").hideDelay(3000)
+      )
+      return;
+    }
+    let files: File[] = $event.dataTransfer.files
+    let errorMessage
+    if (files.length > 100) {
+      errorMessage = "Too many files, limit is 100"
+    } else {
+      for (const file of files) {
+        if (file.size > 1024 * 1024) {
+          errorMessage = `File size of "${file.name}" is too big, limit is 1 MB`
+          break
+        }
+      }
+    }
+    if (errorMessage) {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent(`File(s) is not accepted. ${errorMessage}`).hideDelay(3000)
+      )
+      return
+    }
+    this.sendP2PMessage($event, files)
+  }
+
+  onDragover($event) {
+    $event.preventDefault()
   }
 
 }

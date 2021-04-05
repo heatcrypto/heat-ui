@@ -52,7 +52,7 @@ http://webrtc-security.github.io/
 module p2p {
 
   export type TransportType = "chain" | "p2p" | "server"
-  export type MessageType = "chat" | "contactUpdate" | "newContact" | ""
+  export type MessageType = "chat" | "contactUpdate" | "newContact" | "file" | ""
 
   export interface P2PMessenger {
     /**
