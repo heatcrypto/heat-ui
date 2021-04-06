@@ -520,31 +520,51 @@ module p2p {
       return result
     }
 
-    private send(roomName: string, data: string | U2UMessage, channel?: RTCDataChannel) {
+    private send(roomName: string, msg: string | U2UMessage, channel?: RTCDataChannel) {
       let room = this.rooms.get(roomName)
       let peers = Array.from(room.getAllPeers().values())
       let result = {count: 0, transport: null}
-      let encryptingData = typeof data === "string" ? data : JSON.stringify(data)
       for (let peer of peers) {
-        let encrypted = this.encrypt(encryptingData, peer.publicKey)
         if ((channel && peer.dataChannel == channel) || (!channel && peer.dataChannel && peer.dataChannel.readyState == "open")) {
           //send direct to the peer using WebRTC
+          let encryptingData
+          if (typeof msg === "string") {
+            encryptingData = msg
+          } else {
+            if (msg.type == "file") {
+              //overwrite field data
+              msg.data = this.encrypt(converters.arrayBufferToString(msg.data), peer.publicKey)
+            }
+            encryptingData = JSON.stringify(msg)
+          }
+          let encrypted = this.encrypt(encryptingData, peer.publicKey)
           result.transport = 'p2p'
           result.count = this.sendRTCChannelMessage(peer.dataChannel, JSON.stringify(encrypted))
         } else {
           //Send via the server using Websocket
           //Add additional transport info (recipient, msgId,...) used by server for message dispatching (storage and forwarding)
-          result.transport = 'server'
-          let sendingData = data instanceof U2UMessage
-            ? {
-              id: data.id,
-              type: data.type,
+          let sendingData
+          if (typeof msg === "string") {
+            sendingData = this.encrypt(msg, peer.publicKey)
+          } else {
+            let encryptedFile
+            if (msg.type == "file") {
+              //encrypt message and file separated
+              encryptedFile = this.encrypt(converters.arrayBufferToString(msg.data), peer.publicKey)
+              delete msg.data
+            }
+            let encrypted = this.encrypt(JSON.stringify(msg), peer.publicKey)
+            sendingData = {
+              id: msg.id,
+              type: msg.type,
               room: room.name,
               sender: this.identity,
               recipient: peer.publicKey,
-              payload: JSON.stringify(encrypted)
+              payload: JSON.stringify(encrypted),
             }
-            : encrypted
+            if (encryptedFile) sendingData.payloadFile = JSON.stringify(encryptedFile)
+          }
+          result.transport = 'server'
           this.sendWebsocketMessage(Protocol.U2U, [sendingData])
           //throw new Error('Direct channel is not provided and server messaging is not provided')
         }

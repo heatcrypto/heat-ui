@@ -33,6 +33,7 @@ module p2p {
     type: MessageType
     timestamp: number
     text: string
+    data?: any
     fromPeerId?: string
     roomName?: string
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
@@ -45,6 +46,7 @@ module p2p {
 
       if (file) {
         this.ready = file.arrayBuffer().then(buffer => {
+          /*
           //header format:  0: header length  1: file size in bytes  2: file name
           let fileNameBuffer = converters.stringToArrayBuffer(file.name)
           let headerLength = 4 + 4 + fileNameBuffer.byteLength
@@ -54,6 +56,9 @@ module p2p {
           )
           let messageContentBuffer = converters.concatenate(header, buffer)
           this.text = converters.arrayBufferToString(messageContentBuffer)
+          */
+          this.data = buffer
+          this.text = `${file.size} | ${file.name}`
         })
       } else {
         if (text?.length > MESSAGE_TEXT_MAX_SIZE) {
@@ -113,9 +118,7 @@ module p2p {
     sendMessage(message: U2UMessage): Promise<number> {
       return message.ready.then(value => {
         let result = this.connector.sendMessage(this.name, message);
-        if (message.type == "chat") {
-          this.registerInHistory(message, result)
-        }
+        this.registerInHistory(true, message, result)
         return result.count;
       })
     }
@@ -126,17 +129,21 @@ module p2p {
       }
     }
 
-    registerInHistory(message, sendResult) {
+    registerInHistory(sending: boolean, message, sendResult?) {
+      if (!(message.type == "chat" || message.type == "file")) return
+      if (this.getMessageHistory().isExistingId(message.id)) {
+        throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
+      }
       let item: MessageHistoryItem = {
         msgId: message.id,
         timestamp: message.timestamp,
         receiptTimestamp: Date.now(),
-        fromPeer: this.user.publicKey,
+        fromPeer: sending ? this.user.publicKey : message.fromPeerId,
         content: message.text,
-        transport: sendResult.transport
+        transport: sending ? sendResult.transport : message.transport
       };
       this.getMessageHistory().put(item);
-      if (message.transport == "p2p" && sendResult.count > 0) {
+      if (sending && message.transport == "p2p" && sendResult.count > 0) {
         //webrtc message is sent, it means the channel is opened, it means that delivered
         setTimeout(() => this.getMessageHistory().putExtraInfo(message.id, {status: {stage: 1}}), 100)
       }
@@ -149,19 +156,8 @@ module p2p {
       if (this.getMessageHistory().isExistingId(message.id)) {
         throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
       }
+      this.registerInHistory(false, message)
       if (message.type == "chat") {
-        let item: MessageHistoryItem = {
-          msgId: message.id,
-          timestamp: message.timestamp,
-          receiptTimestamp: Date.now(),
-          fromPeer: message.fromPeerId,
-          content: message.text,
-          transport: message.transport
-        };
-        this.getMessageHistory().put(item);
-        if (this.onNewMessageHistoryItem) {
-          this.onNewMessageHistoryItem(item);
-        }
         this.lastIncomingMessageTimestamp = Date.now();
       }
       if (this.onMessage) {
