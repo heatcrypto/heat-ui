@@ -43,7 +43,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public connector: p2p.P2PConnector;
   private baseProtocol: p2p.BaseProtocol;
-  private u2uProtocol: p2p.U2UProtocol;
+  u2uProtocol: p2p.U2UProtocol;
   private signalingProtocol: p2p.SignalingProtocol;
 
   constructor(private settings: SettingsService,
@@ -115,6 +115,15 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         }
       }
     }).catch(reason => console.error(reason))
+  }
+
+  onFile(fileContent: ArrayBuffer) {
+    this.saveFile(fileContent)
+  }
+
+  saveFile(fileContent: ArrayBuffer) {
+    let blob = new Blob([fileContent]);
+    saveAs(blob, 'zzz');
   }
 
   onError(reason: string, protocol?: p2p.Protocol) {

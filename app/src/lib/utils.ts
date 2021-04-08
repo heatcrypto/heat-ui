@@ -365,6 +365,9 @@ module utils {
     return (angular.isString(input) && input.trim().length == 0) ? null : input;
   }
 
+  /**
+   * Random UUID
+   */
   export function uuidv4() {
     // @ts-ignore
     return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>

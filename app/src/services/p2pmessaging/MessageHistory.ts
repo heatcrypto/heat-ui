@@ -25,6 +25,7 @@ module p2p {
 
   export interface MessageHistoryItem {
     msgId: string
+    type: MessageType
     timestamp: number
     receiptTimestamp?: number
     fromPeer: string

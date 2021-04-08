@@ -136,6 +136,7 @@ module p2p {
       }
       let item: MessageHistoryItem = {
         msgId: message.id,
+        type: message.type,
         timestamp: message.timestamp,
         receiptTimestamp: Date.now(),
         fromPeer: sending ? this.user.publicKey : message.fromPeerId,

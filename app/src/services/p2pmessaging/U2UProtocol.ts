@@ -51,30 +51,48 @@ module p2p {
       this.connector.sendWebsocketMessage(this.name, [sendingData])
     }
 
+    /**
+     * Request the file saved on the server for this recipient
+     */
+    requestFile(fileMessageId: string, fileSender: string) {
+      let sendingData = {
+        id: utils.uuidv4(),
+        type: "DOWNLOADFILE",
+        sender: this.connector.identity,
+        fileMessageId: fileMessageId,
+        fileSender: fileSender
+      }
+      return this.connector.sendWebsocketMessage(this.name, [sendingData])
+    }
+
+    private commonMessageHandler = (roomName: string, msg) => {
+      let room: Room = this.connector.rooms.get(roomName) || this.connector.messenger.getOneToOneRoom(msg.fromPeer || msg.sender, true)
+      if (room) {
+        let payload = JSON.parse(msg.payload)
+        let chatMessage: U2UMessage = JSON.parse(this.connector.decrypt(payload, msg.sender));
+        chatMessage.transport = "server";
+
+        this.connector.processRoomMessage(chatMessage, room, msg.sender);
+
+        //response to server that message is delivered by the client app
+        this.connector.sendWebsocketMessage(Protocol.U2U, [{
+          id: utils.uuidv4(),
+          type: "STATUS",
+          sender: this.connector.identity,
+          recipient: msg.sender,
+          payload: JSON.stringify({msgId: chatMessage.id, stage: 1})  // stage 1 mean delivered
+        }])
+      } else {
+        throw new Error(`Cannot get 'chat room' for message sender ${msg.fromPeer}`)
+      }
+    }
+
     // set of functions to process the incoming messages
     readonly handlers = Object.assign(this.baseHandlers, {
 
-      chat: (roomName: string, msg) => {
-        let room: Room = this.connector.rooms.get(roomName) || this.connector.messenger.getOneToOneRoom(msg.fromPeer || msg.sender, true)
-        if (room) {
-          let payload = JSON.parse(msg.payload)
-          let chatMessage: U2UMessage = JSON.parse(this.connector.decrypt(payload, msg.sender));
-          chatMessage.transport = "server";
+      chat: this.commonMessageHandler,
 
-          this.connector.processRoomMessage(chatMessage, room, msg.sender);
-
-          //response to server that message is delivered by the client app
-          this.connector.sendWebsocketMessage(Protocol.U2U, [{
-            id: utils.uuidv4(),
-            type: "STATUS",
-            sender: this.connector.identity,
-            recipient: msg.sender,
-            payload: JSON.stringify({msgId: chatMessage.id, stage: 1})  // stage 1 mean delivered
-          }])
-        } else {
-          throw new Error(`Cannot get 'chat room' for message sender ${msg.fromPeer}`)
-        }
-      },
+      file: this.commonMessageHandler,
 
       newContact: (roomName: string, msg) => {
         console.log(msg)
@@ -90,6 +108,13 @@ module p2p {
         if (room) {
           room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
         }
+      },
+
+      TRANSFERFILE: (roomName: string, msg) => {
+        let payload = JSON.parse(msg.payload)
+        let fileAsString = this.connector.decrypt(payload, msg.fileSender)
+        let fileContent = converters.stringToArrayBuffer(fileAsString)
+        this.connector.messenger.onFile(fileContent)
       },
 
       ERROR: (roomName: string, msg) => {

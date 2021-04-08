@@ -101,18 +101,25 @@
         <!-- delivered icon, stage == 1 means Delivered -->
         <md-icon class="status" md-font-library="material-icons" ng-if="vm.stage==1">check</md-icon>
       </div>
-      <div class="message-content"><pre>{{vm.message.contents}}</pre></div>
+      <div ng-if="!vm.linkToFile" class="message-content"><pre>{{vm.text}}</pre></div>
+      <div ng-if="vm.linkToFile" class="message-content">
+        <pre>{{vm.text}}</pre>
+        <p><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile()">download</a></p>
+      </div>
     </div>
   `
 })
-@Inject('$rootScope', '$scope')
+@Inject('$rootScope', '$scope', 'P2PMessaging')
 class MessageBatchEntryComponent {
   message: any; // @input
   io: string;
   stage: number
+  text: string
+  linkToFile: string
 
   constructor(private $rootScope: angular.IScope,
-              private $scope: angular.IScope) {
+              private $scope: angular.IScope,
+              private messaging: P2PMessaging) {
     $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
@@ -126,5 +133,28 @@ class MessageBatchEntryComponent {
   $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
     this.stage = this.message.extraInfo ? this.message.extraInfo.status.stage : null
+    if (!this.message.type || this.message.type == "chat") {
+      this.text = this.message.contents
+    } else if (this.message.type == "file") {
+      let s: string = this.message.contents
+      let delimiterPos = s.indexOf("|")
+      if (delimiterPos > 0) {
+        let fileSize = parseInt(s.substr(0, delimiterPos))
+        let fileName = s.substr(delimiterPos + 1).trim()
+        if (this.io == 'incoming') {
+          this.text = `file "${fileName}", size ${fileSize} bytes`
+          //link to file
+          this.linkToFile = "todo"
+        } else {
+          this.text = `file sent "${fileName}", size ${fileSize} bytes`
+        }
+      }
+    }
   }
+
+  //send request to server to download the file
+  downloadFile() {
+    this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer)
+  }
+
 }
