@@ -32,6 +32,14 @@ module p2p {
 
   export class U2UProtocol extends BaseProtocol {
 
+    // fileMessageId => {}
+    private awaitingDownloadingFiles: Map<string, {fileName: string; fileSize: number; fileSender: string}>
+
+    constructor() {
+      super();
+      this.awaitingDownloadingFiles = new Map<string, {fileName: string; fileSize: number; fileSender: string}>()
+    }
+
     get name(): p2p.Protocol {
       return Protocol.U2U
     }
@@ -54,14 +62,14 @@ module p2p {
     /**
      * Request the file saved on the server for this recipient
      */
-    requestFile(fileMessageId: string, fileSender: string) {
+    requestFile(fileMessageId: string, fileSender: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }) {
       let sendingData = {
         id: utils.uuidv4(),
         type: "DOWNLOADFILE",
         sender: this.connector.identity,
-        fileMessageId: fileMessageId,
-        fileSender: fileSender
+        fileMessageId: fileMessageId
       }
+      this.awaitingDownloadingFiles.set(fileMessageId, fileDescriptor)
       return this.connector.sendWebsocketMessage(this.name, [sendingData])
     }
 
@@ -69,7 +77,8 @@ module p2p {
       let room: Room = this.connector.rooms.get(roomName) || this.connector.messenger.getOneToOneRoom(msg.fromPeer || msg.sender, true)
       if (room) {
         let payload = JSON.parse(msg.payload)
-        let chatMessage: U2UMessage = JSON.parse(this.connector.decrypt(payload, msg.sender));
+        let decrypted = this.connector.decrypt(payload, msg.sender)
+        let chatMessage: U2UMessage = JSON.parse(<string>decrypted)
         chatMessage.transport = "server";
 
         this.connector.processRoomMessage(chatMessage, room, msg.sender);
@@ -110,11 +119,13 @@ module p2p {
         }
       },
 
+      //on file downloaded
       TRANSFERFILE: (roomName: string, msg) => {
         let payload = JSON.parse(msg.payload)
-        let fileAsString = this.connector.decrypt(payload, msg.fileSender)
-        let fileContent = converters.stringToArrayBuffer(fileAsString)
-        this.connector.messenger.onFile(fileContent)
+        let fileDescriptor = this.awaitingDownloadingFiles.get(msg.fileMessageId)
+        this.awaitingDownloadingFiles.delete(msg.fileMessageId)
+        let fileContent = this.connector.decrypt(payload, fileDescriptor.fileSender)
+        this.connector.messenger.onFile(fileContent, fileDescriptor)
       },
 
       ERROR: (roomName: string, msg) => {

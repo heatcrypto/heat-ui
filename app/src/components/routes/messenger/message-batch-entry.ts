@@ -116,6 +116,7 @@ class MessageBatchEntryComponent {
   stage: number
   text: string
   linkToFile: string
+  private fileDescriptor: { fileName: string; fileSize: number; fileSender: string }
 
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
@@ -139,14 +140,17 @@ class MessageBatchEntryComponent {
       let s: string = this.message.contents
       let delimiterPos = s.indexOf("|")
       if (delimiterPos > 0) {
-        let fileSize = parseInt(s.substr(0, delimiterPos))
-        let fileName = s.substr(delimiterPos + 1).trim()
+        this.fileDescriptor = {
+          fileName: s.substr(delimiterPos + 1).trim(),
+          fileSize: parseInt(s.substr(0, delimiterPos)),
+          fileSender: this.message.fromPeer
+        }
         if (this.io == 'incoming') {
-          this.text = `file "${fileName}", size ${fileSize} bytes`
+          this.text = `file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
           //link to file
           this.linkToFile = "todo"
         } else {
-          this.text = `file sent "${fileName}", size ${fileSize} bytes`
+          this.text = `file sent "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
         }
       }
     }
@@ -154,7 +158,7 @@ class MessageBatchEntryComponent {
 
   //send request to server to download the file
   downloadFile() {
-    this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer)
+    this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
   }
 
 }

@@ -60,7 +60,7 @@ module p2p {
      */
     onMessage: (msg: U2UMessage, room: Room) => any
 
-    onFile: (fileContent: ArrayBuffer) => any
+    onFile: (fileContent: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }) => any
 
     /**
      * Returns room with single peer.
@@ -131,8 +131,8 @@ module p2p {
       public processIncomingCall: (caller: string) => Promise<void>,
       public processError: (reason: string, protocol?: Protocol) => void,
       public sign: (dataHex: string) => p2p.ProvingData,
-      public encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
-      public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string,
+      public encrypt: (message: string | ArrayBuffer, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
+      public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string | ArrayBuffer,
       protocols: BaseProtocol[]
     ) {
       protocols.forEach(p => {
@@ -305,12 +305,13 @@ module p2p {
 
       let msg;
       if (data.encrypted) {
-        msg = JSON.parse(this.decrypt(data.encrypted, data.fromPeer));
-        msg.fromPeer = data.fromPeer;
-        msg.toPeer = data.toPeer;
-        msg.room = data.room;
+        let decrypted = this.decrypt(data.encrypted, data.fromPeer)
+        msg = JSON.parse(<string>decrypted)
+        msg.fromPeer = data.fromPeer
+        msg.toPeer = data.toPeer
+        msg.room = data.room
       } else {
-        msg = data;
+        msg = data
       }
 
       let roomName: string = msg.room;
@@ -535,7 +536,9 @@ module p2p {
           } else {
             if (msg.type == "file") {
               //overwrite field data
-              msg.data = this.encrypt(converters.arrayBufferToString(msg.data), peer.publicKey)
+
+              let fileContent: ArrayBuffer = msg.data
+              msg.data = this.encrypt(msg.data, peer.publicKey)
             }
             encryptingData = JSON.stringify(msg)
           }
@@ -552,7 +555,7 @@ module p2p {
             let encryptedFile
             if (msg.type == "file") {
               //encrypt message and file separated
-              encryptedFile = this.encrypt(converters.arrayBufferToString(msg.data), peer.publicKey)
+              encryptedFile = this.encrypt(msg.data, peer.publicKey)
               delete msg.data
             }
             let encrypted = this.encrypt(JSON.stringify(msg), peer.publicKey)
@@ -596,7 +599,7 @@ module p2p {
     onMessage(roomName: string, peerId: string, dataChannel: RTCDataChannel, event: MessageEvent) {
       try {
         let encrypted: heat.crypto.IEncryptedMessage = JSON.parse(event.data);
-        let msg = JSON.parse(this.decrypt(encrypted, peerId));
+        let msg = JSON.parse(<string>this.decrypt(encrypted, peerId));
         msg.transport = "p2p";
         //todo consider if needing to remove all special symbols from msg.text
 

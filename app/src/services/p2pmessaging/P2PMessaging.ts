@@ -92,12 +92,22 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     user.on(UserService.EVENT_LOCKED, closeConnector);
   }
 
-  private encrypt(message: string, peerPublicKey: string) {
-    return heat.crypto.encryptMessage(message, peerPublicKey, this.user.secretPhrase, false);
+  private encrypt(message: string | ArrayBuffer, recipientPublicKey: string) {
+    if (message instanceof ArrayBuffer) {
+      let options: heat.crypto.IEncryptOptions = {
+        publicKey: converters.hexStringToByteArray(recipientPublicKey),
+        privateKey: converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
+      }
+      return heat.crypto.encryptBinary(message, options)
+    }
+    return heat.crypto.encryptMessage(message, recipientPublicKey, this.user.secretPhrase, false)
   }
 
   private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
-    return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
+    if (message.isText) {
+      return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false)
+    }
+    return heat.crypto.decryptBinary(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false)
   }
 
   onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
@@ -117,13 +127,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }).catch(reason => console.error(reason))
   }
 
-  onFile(fileContent: ArrayBuffer) {
-    this.saveFile(fileContent)
-  }
-
-  saveFile(fileContent: ArrayBuffer) {
-    let blob = new Blob([fileContent]);
-    saveAs(blob, 'zzz');
+  onFile(fileContent: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }): any {
+    saveAs(new Blob([fileContent], {type: "text/text"}), fileDescriptor.fileName)
   }
 
   onError(reason: string, protocol?: p2p.Protocol) {
