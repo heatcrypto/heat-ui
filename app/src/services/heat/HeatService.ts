@@ -22,6 +22,7 @@
  * */
 
 /* Wraps all API returned server errors */
+
 class ServerEngineError {
   public description: string;
   public code: number;
@@ -86,24 +87,41 @@ class HeatService {
     }
   }
 
-  get(route: string, returns?: string, ignoreErrorResponse = false): angular.IPromise<any> {
+  get(route: string, returns?: string, ignoreErrorResponse = false, isFile?: boolean): angular.IPromise<any> {
     return this.getRaw(
       this.settings.get(SettingsService.HEAT_HOST),
       this.settings.get(SettingsService.HEAT_PORT),
       route,
       returns,
-      ignoreErrorResponse
+      ignoreErrorResponse,
+      isFile
     )
   }
 
-  getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean): angular.IPromise<any> {
+  getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     if (this.env.type == EnvType.BROWSER) {
       let portStr = port ? `:${port}` : ""
+      let config
+      if (isFile) {
+        config = {
+          headers: {'Content-Type': undefined},
+          transformResponse: [
+            function (data) {
+              return data;
+            }
+          ],
+          responseType: "arraybuffer"  //arraybuffer/blob/json/text/document
+        }
+      } else {
+        config = {
+          headers: {'Content-Type': 'application/json'}
+        }
+      }
       this.browserHttpGet(
         [host, portStr, '/', route].join(''),
-        {headers: {'Content-Type': 'application/json'} },
+        config,
         (response)=>{
           this.logResponse(route, null, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
@@ -176,13 +194,13 @@ class HeatService {
     req.end();
   }
 
-  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
+  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
     let host = localHostOnly ? this.settings.get(SettingsService.HEAT_HOST_LOCAL) : this.settings.get(SettingsService.HEAT_HOST);
     let port = localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) : this.settings.get(SettingsService.HEAT_PORT);
-    return this.postRaw(host, port, route, request, withAuth, returns, localHostOnly);
+    return this.postRaw(host, port, route, request, withAuth, returns, localHostOnly, isFile);
   }
 
-  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
+  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     var req = request||{};
@@ -208,7 +226,8 @@ class HeatService {
         },(response)=>{
           this.logErrorResponse(route, request, response);
           deferred.reject(new ServerEngineError(response.data));
-        }
+        },
+        isFile
       );
     }
     else if (this.env.type == EnvType.NODEJS) {
@@ -230,62 +249,108 @@ class HeatService {
         },(response)=>{
           this.logErrorResponse(route, request, response);
           deferred.reject(new ServerEngineError(response.data));
-        }
+        },
+        isFile
       )
     }
     return deferred.promise;
   }
 
-  private browserHttpPost(url: string, request: any, onSuccess: Function, onFailure: Function) {
+  private browserHttpPost(url: string, request: any, onSuccess: Function, onFailure: Function, isFile?: boolean) {
     //require("tls").DEFAULT_ECDH_CURVE = "auto"
-    this.$http({
+    let config
+    if (isFile) {
+      let formData = new FormData()
+      formData.append("fileName", request.fileName)
+      formData.append("file", request.file)
+      config = {
+        method: 'POST',
+        url: url,
+        headers: {'Content-Type': undefined},
+        data: formData
+      }
+    } else {
+      config = {
         method: 'POST',
         url: url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        transformRequest: function(obj) {
-          var str = [];
-          for(var p in obj)
+        data: request,
+        transformRequest: function (obj) {
+          let str = [];
+          for (let p in obj) {
             str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+          }
           return str.join("&");
-        },
-        data: request
-    }).then(
+        }
+      }
+    }
+
+    this.$http(config).then(
       (response:any) => {
-        if (angular.isDefined(response.data.errorDescription))
+        if (angular.isDefined(response.data.errorDescription)) {
           onFailure(response);
-        else
+        } else {
           onSuccess(response);
+        }
       },
       (response) => { onFailure(response) }
     );
   }
 
-  private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
-    var querystring = require('querystring');
-    var body = querystring.stringify(request);
-    var options = {
-      hostname: hostname, port: port, path: path, method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        "Content-Length": body.length
+  private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function, isFile?: boolean) {
+    let http = require(isHttps ? 'https':'http')
+
+    if (isFile) {
+      const fs = require("fs")
+      let FormData = require("form-data")
+      const form = new FormData()
+      form.append('fileName', request.fileName)
+      form.append('file', fs.createReadStream(request.file.path))
+      const req = http.request(
+        {
+          hostname: hostname, port: port, path: path, method: 'POST',
+          headers: form.getHeaders(),
+        },
+        response => {
+          if (response?.statusCode != 200) onFailure(response)
+        }
+      )
+      req.on('error', (e) => { onFailure(e) })
+      form.pipe(req)
+    } else {
+      let querystring = require('querystring')
+      let body = querystring.stringify(request)
+      let options = {
+        hostname: hostname, port: port, path: path, method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "Content-Length": body.length
+          }
       }
-    };
-    var http = require(isHttps ? 'https':'http');
-    var req = http.request(options, (res) => {
-      res.setEncoding('utf8');
-      var body = [];
-      res.on('data', (chunk) => { body.push(chunk) });
-      res.on('end', () => {
-        var response = { data: JSON.parse(body.join('')) };
-        if (angular.isDefined(response.data.errorDescription))
-          onFailure(response)
-        else
-          onSuccess(response)
+      let req = http.request(options, res => {
+        res.setEncoding('utf8');
+        let respBody = []
+        res.on('data', (chunk) => { respBody.push(chunk) })
+        res.on('end', () => {
+          let responseBody
+          try {
+            responseBody = JSON.parse(respBody.join(''))
+          } catch (e) {
+            console.error(e)
+            onFailure(res)
+          }
+          let response = { data: responseBody }
+          if (angular.isDefined(response.data.errorDescription)) {
+            onFailure(response)
+          } else {
+            onSuccess(response)
+          }
+        });
       });
-    });
-    req.on('error', (e) => { onFailure(e) });
-    req.write(body);
-    req.end();
+      req.on('error', (e) => { onFailure(e) });
+      req.write(body);
+      req.end();
+    }
   }
 
   private logResponse(route: string, request: any, response: any) {

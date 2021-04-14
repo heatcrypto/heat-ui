@@ -168,12 +168,12 @@ class EditMessageComponent {
     }
     let files: File[] = $event.dataTransfer.files
     let errorMessage
-    if (files.length > 100) {
-      errorMessage = "Too many files, limit is 100"
+    if (files.length > 10) {
+      errorMessage = "Too many files, limit is 10"
     } else {
       for (const file of files) {
-        if (file.size > 1024 * 1024) {
-          errorMessage = `File size of "${file.name}" is too big, limit is 1 MB`
+        if (file.size > 2 * 1024 * 1024) {
+          errorMessage = `File size of "${file.name}" is too big, limit is 2 MB`
           break
         }
       }

@@ -67,6 +67,8 @@ module p2p {
      */
     getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
 
+    sendFile(messageId: string, file)
+
   }
 
   /**
@@ -552,12 +554,6 @@ module p2p {
           if (typeof msg === "string") {
             sendingData = this.encrypt(msg, peer.publicKey)
           } else {
-            let encryptedFile
-            if (msg.type == "file") {
-              //encrypt message and file separated
-              encryptedFile = this.encrypt(msg.data, peer.publicKey)
-              delete msg.data
-            }
             let encrypted = this.encrypt(JSON.stringify(msg), peer.publicKey)
             sendingData = {
               id: msg.id,
@@ -567,7 +563,6 @@ module p2p {
               recipient: peer.publicKey,
               payload: JSON.stringify(encrypted),
             }
-            if (encryptedFile) sendingData.payloadFile = JSON.stringify(encryptedFile)
           }
           result.transport = 'server'
           this.sendWebsocketMessage(Protocol.U2U, [sendingData])

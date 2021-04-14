@@ -384,4 +384,17 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get('/blockchain/basetimestamp');
   }
 
+  /**
+   * Send file to the server
+   * @param fileName to use on the server, it can be different to name of the original file on client
+   * @param file file to send
+   */
+  uploadFile(fileName: string, file): angular.IPromise<any> {
+    return this.heat.post('/messaging/file/upload', {fileName: fileName, file: file}, undefined, undefined, undefined, true)
+  }
+
+  downloadFile(fileName: string): angular.IPromise<any> {
+    return this.heat.get(`/messaging/file/${fileName}`, undefined, undefined, true)
+  }
+
 }

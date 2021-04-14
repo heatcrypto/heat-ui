@@ -188,6 +188,10 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }
   }
 
+  sendFile(messageId: string, file) {
+    this.heat.api.uploadFile(messageId, file)
+  }
+
   sendKeys = (room: p2p.Room, text: string) => {
     room.sendMessage(new p2p.U2UMessage("contactUpdate", Date.now(), text));
   }

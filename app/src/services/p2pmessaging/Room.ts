@@ -38,36 +38,35 @@ module p2p {
     roomName?: string
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
     transport?: TransportType
-    ready: Promise<void>
 
     constructor(type: MessageType, timestamp: number, text?: string, file?: File) {
       this.type = type;
       this.timestamp = timestamp;
 
       if (file) {
-        this.ready = file.arrayBuffer().then(buffer => {
-          /*
-          //header format:  0: header length  1: file size in bytes  2: file name
-          let fileNameBuffer = converters.stringToArrayBuffer(file.name)
-          let headerLength = 4 + 4 + fileNameBuffer.byteLength
-          let header = converters.concatenate(
-            new Uint32Array([headerLength, file.size]).buffer,
-            fileNameBuffer
-          )
-          let messageContentBuffer = converters.concatenate(header, buffer)
-          this.text = converters.arrayBufferToString(messageContentBuffer)
-          */
-          this.data = buffer
-          this.text = `${file.size} | ${file.name}`
-        })
+        this.text = `${file.size} | ${file.name}`
+        // this.ready = file.arrayBuffer().then(buffer => {
+        //   /*
+        //   //header format:  0: header length  1: file size in bytes  2: file name
+        //   let fileNameBuffer = converters.stringToArrayBuffer(file.name)
+        //   let headerLength = 4 + 4 + fileNameBuffer.byteLength
+        //   let header = converters.concatenate(
+        //     new Uint32Array([headerLength, file.size]).buffer,
+        //     fileNameBuffer
+        //   )
+        //   let messageContentBuffer = converters.concatenate(header, buffer)
+        //   this.text = converters.arrayBufferToString(messageContentBuffer)
+        //   */
+        //   this.data = buffer
+        //   this.text = `${file.size} | ${file.name}`
+        // })
       } else {
         if (text?.length > MESSAGE_TEXT_MAX_SIZE) {
           throw new Error(`Text length ${text.length} is too big, the length is limited to ${MESSAGE_TEXT_MAX_SIZE}`)
         }
-        this.ready = Promise.resolve()
+        this.text = text;
       }
 
-      this.text = text;
       this.id = utils.uuidv4()
     }
   }
@@ -115,17 +114,19 @@ module p2p {
      * Sends message to all members of room (all peers in the room).
      * Returns count of peers to which message sent.
      */
-    sendMessage(message: U2UMessage): Promise<number> {
-      return message.ready.then(value => {
-        let result = this.connector.sendMessage(this.name, message);
-        this.registerInHistory(true, message, result)
-        return result.count;
-      })
+    sendMessage(message: U2UMessage): number {
+      let result = this.connector.sendMessage(this.name, message);
+      this.registerInHistory(true, message, result)
+      return result.count;
     }
 
     sendFiles(files?: File[]) {
       for (const file of files) {
-        if (file.size > 0) this.sendMessage(new p2p.U2UMessage("file", Date.now(), null, file))
+        if (file.size > 0) {
+          let m = new p2p.U2UMessage("file", Date.now(), null, file)
+          this.sendMessage(m)
+          this.connector.messenger.sendFile(m.id, file)
+        }
       }
     }
 
