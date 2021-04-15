@@ -31,7 +31,7 @@ type EnterRoomState = "not" | "entering" | "entered";
  * So this service is intended to provide p2p connector to the heat-ui functions.
  */
 @Service('P2PMessaging')
-@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast', 'contactService')
+@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast', 'contactService', 'env')
 class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public static EVENT_NEW_MESSAGE = 'EVENT_NEW_MESSAGE';
@@ -54,7 +54,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private $interval: angular.IIntervalService,
               private heat: HeatService,
               private $mdToast: angular.material.IToastService,
-              private contactService: ContactService) {
+              private contactService: ContactService,
+              private env: EnvService) {
     super();
 
     let closeConnector = () => {
@@ -130,11 +131,32 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   sendFile(messageId: string, file: File, recipientPublicKey: string) {
-    file.arrayBuffer().then(buffer => {
-      let encrypted = this.encrypt(buffer, recipientPublicKey)
-      let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
-      this.heat.api.uploadFile(messageId, new Blob([encryptedBuffer]))
-    })
+    if (this.env.isBrowser()) {
+      return file.arrayBuffer().then(arrayBuffer => {
+        let encrypted = this.encrypt(arrayBuffer, recipientPublicKey)
+        let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
+        return this.heat.api.uploadFile(messageId, encryptedBuffer)
+      }).catch(reason => {
+        this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file uploading: ${reason}`).hideDelay(6000))
+      })
+    } else {
+      let p: Promise<ArrayBuffer> = new Promise<ArrayBuffer>((resolve, reject) => {
+        let fs = require("fs")
+        // @ts-ignore
+        fs.readFile(file.path, function (err, data) {
+          if (err) reject(err)
+          else resolve(data.buffer)
+        })
+      })
+      // @ts-ignore
+      return p.then(arrayBuffer => {
+        let encrypted = this.encrypt(arrayBuffer, recipientPublicKey)
+        let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
+        return this.heat.api.uploadFile(messageId, encryptedBuffer)
+      }).catch(reason => {
+        this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file uploading: ${reason}`).hideDelay(6000))
+      })
+    }
   }
 
   onFile(encryptedData: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }): any {

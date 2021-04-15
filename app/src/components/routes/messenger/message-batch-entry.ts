@@ -109,7 +109,7 @@
     </div>
   `
 })
-@Inject('$rootScope', '$scope', 'P2PMessaging', 'heat')
+@Inject('$rootScope', '$scope', 'P2PMessaging', 'heat', '$mdToast')
 class MessageBatchEntryComponent {
   message: any; // @input
   io: string;
@@ -121,7 +121,8 @@ class MessageBatchEntryComponent {
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
               private messaging: P2PMessaging,
-              private heat: HeatService) {
+              private heat: HeatService,
+              private $mdToast: angular.material.IToastService) {
     $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
@@ -151,17 +152,20 @@ class MessageBatchEntryComponent {
           //link to file
           this.linkToFile = "todo"
         } else {
-          this.text = `file sent "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
+          this.text = `sent file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
         }
       }
     }
   }
 
-  //send request to server to download the file
+  //download message's file
   downloadFile() {
     //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
     this.heat.api.downloadFile(this.message.msgId).then(value => {
       this.messaging.onFile(value, this.fileDescriptor)
+    }).catch(reason => {
+      this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
+      console.error(reason)
     })
   }
 

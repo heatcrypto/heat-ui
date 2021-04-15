@@ -389,11 +389,15 @@ class HeatAPI implements IHeatAPI {
    * @param fileName to use on the server, it can be different to name of the original file on client
    * @param file file to send
    */
-  uploadFile(fileName: string, blob): angular.IPromise<any> {
-    return this.heat.post('/messaging/file/upload', {fileName: fileName, blob: blob}, undefined, undefined, undefined, true)
+  uploadFile(fileName: string, arrayBuffer): angular.IPromise<any> {
+    return this.heat.post('/messaging/file/upload', {fileName: fileName, arrayBuffer: arrayBuffer}, undefined, undefined, undefined, true)
   }
 
-  downloadFile(fileName: string): angular.IPromise<any> {
+  /**
+   * Download file from the server
+   * @param fileName
+   */
+  downloadFile(fileName: string): angular.IPromise<ArrayBuffer> {
     return this.heat.get(`/messaging/file/${fileName}`, undefined, undefined, true)
   }
 

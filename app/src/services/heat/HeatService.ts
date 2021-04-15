@@ -122,36 +122,36 @@ class HeatService {
       this.browserHttpGet(
         [host, portStr, '/', route].join(''),
         config,
-        (response)=>{
+        (response) => {
           this.logResponse(route, null, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
-        },(response)=>{
+        }, (response) => {
           if (ignoreErrorResponse) {
             deferred.resolve()
           } else {
             this.logErrorResponse(route, null, response)
-            deferred.reject(new ServerEngineError(response.data))
+            deferred.reject(new ServerEngineError(isFile ? response : response.data))
           }
         }
       );
-    }
-    else if (this.env.type == EnvType.NODEJS) {
+    } else if (this.env.type == EnvType.NODEJS) {
       var isHttps = host.indexOf('https://') == 0;
       this.nodeHttpGet(
         isHttps,
-        host.replace(/^(\w+:\/\/)/,''),
+        host.replace(/^(\w+:\/\/)/, ''),
         port,
         '/' + route,
-        (response)=>{
+        (response) => {
           this.logResponse(route, null, response);
           var data = angular.isString(returns) ? response[returns] : response;
           deferred.resolve(data);
-        },(response)=>{
+        }, (response) => {
           if (ignoreErrorResponse) return
           this.logErrorResponse(route, null, response);
           deferred.reject(new ServerEngineError({host: host, port: port, route: route, response: response}));
-        }
+        },
+        isFile
       )
     }
     return deferred.promise;
@@ -160,38 +160,40 @@ class HeatService {
   private browserHttpGet(url: string, config: any, onSuccess: Function, onFailure: Function) {
     this.$http.get(url, config).then(
       (response: any) => {
-        if (angular.isDefined(response.data.errorDescription))
+        if (angular.isDefined(response.data.errorDescription)) {
           onFailure(response);
-        else
+        } else {
           onSuccess(response);
+        }
       },
       (response) => { onFailure(response) }
     )
   }
 
-  private nodeHttpGet(isHttps: boolean, hostname: string, port: number, path: string, onSuccess: Function, onFailure: Function) {
-    var options = {
+  private nodeHttpGet(isHttps: boolean, hostname: string, port: number, path: string, onSuccess: Function, onFailure: Function, isFile?: boolean) {
+    let options = {
       hostname: hostname, port: port, path: path, method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': isFile ? undefined : 'application/json'
       }
-    };
+    }
     //require("tls").DEFAULT_ECDH_CURVE = "auto"
-    var http = require(isHttps ? 'https':'http');
-    var req = http.request(options, (res) => {
-      res.setEncoding('utf8');
-      var body = [];
-      res.on('data', (chunk) => { body.push(chunk) });
+    let http = require(isHttps ? 'https':'http')
+    let req = http.request(options, (res) => {
+      res.setEncoding('utf8')
+      let body = []
+      res.on('data', (chunk) => { body.push(chunk) })
       res.on('end', () => {
-        var response = JSON.parse(body.join(''));
-        if (angular.isDefined(response.errorDescription))
+        let response = JSON.parse(body.join(''))
+        if (angular.isDefined(response.errorDescription)) {
           onFailure(response)
-        else
+        } else {
           onSuccess(response)
-      });
-    });
-    req.on('error', (e) => { onFailure(e) });
-    req.end();
+        }
+      })
+    })
+    req.on('error', (e) => { onFailure(e) })
+    req.end()
   }
 
   post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
@@ -203,15 +205,15 @@ class HeatService {
   postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
-    var req = request||{};
+    var req = request || {};
     if (withAuth) {
       req = angular.extend(req, this.getAuthData());
     }
-    if (this.env.type == EnvType.BROWSER) {
+    if (this.env.isBrowser()) {
       let portStr = port ? `:${port}` : ""
       let address = [host, portStr, '/', route].join('');
       if (localHostOnly) {
-        if (address.indexOf('http://localhost')!=0) {
+        if (address.indexOf('http://localhost') != 0) {
           deferred.reject(new ServerEngineError({
             errorDescription: `Operation allowed to localhost only! ${address} is not allowed`,
             errorCode: 10
@@ -219,21 +221,20 @@ class HeatService {
         }
       }
       this.browserHttpPost(address, req,
-        (response)=>{
+        (response) => {
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
-        },(response)=>{
+        }, (response) => {
           this.logErrorResponse(route, request, response);
           deferred.reject(new ServerEngineError(response.data));
         },
         isFile
       );
-    }
-    else if (this.env.type == EnvType.NODEJS) {
-      let address = host.replace(/^(\w+:\/\/)/,'');
+    } else if (this.env.type == EnvType.NODEJS) {
+      let address = host.replace(/^(\w+:\/\/)/, '');
       if (localHostOnly) {
-        if (address.indexOf('localhost')!=0) {
+        if (address.indexOf('localhost') != 0) {
           deferred.reject(new ServerEngineError({
             errorDescription: `Operation allowed to localhost only ${address} is not allowed`,
             errorCode: 10
@@ -242,11 +243,11 @@ class HeatService {
       }
       var isHttps = host.indexOf('https://') == 0;
       this.nodeHttpPost(isHttps, address, port, '/' + route, req,
-        (response)=>{
+        (response) => {
           this.logResponse(route, request, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
-        },(response)=>{
+        }, (response) => {
           this.logErrorResponse(route, request, response);
           deferred.reject(new ServerEngineError(response.data));
         },
@@ -262,7 +263,7 @@ class HeatService {
     if (isFile) {
       let formData = new FormData()
       formData.append("fileName", request.fileName)
-      formData.append("file", request.blob)
+      formData.append("file", new Blob([request.arrayBuffer]))
       config = {
         method: 'POST',
         url: url,
@@ -299,13 +300,11 @@ class HeatService {
 
   private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function, isFile?: boolean) {
     let http = require(isHttps ? 'https':'http')
-
     if (isFile) {
-      const fs = require("fs")
       let FormData = require("form-data")
       const form = new FormData()
       form.append('fileName', request.fileName)
-      form.append('file', fs.createReadStream(request.file.path))
+      form.append('file', Buffer.from(request.arrayBuffer))
       const req = http.request(
         {
           hostname: hostname, port: port, path: path, method: 'POST',

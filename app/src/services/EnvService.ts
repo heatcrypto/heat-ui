@@ -24,19 +24,25 @@ enum EnvType {
   NODEJS,
   BROWSER
 }
+
 @Service('env')
 class EnvService {
   public type: EnvType;
+
   constructor() {
     try {
       if (typeof window['require'] == 'function' && window['require']('child_process')) {
         this.type = EnvType.NODEJS;
-      }
-      else {
+      } else {
         this.type = EnvType.BROWSER;
       }
     } catch (e) {
       this.type = EnvType.BROWSER;
     }
   }
+
+  isBrowser() {
+    return this.type == EnvType.BROWSER
+  }
+
 }
