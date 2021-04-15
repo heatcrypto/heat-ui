@@ -131,7 +131,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   sendFile(messageId: string, file: File, recipientPublicKey: string) {
     file.arrayBuffer().then(buffer => {
-      let encrypted = this.encrypt(buffer, recipientPublicKey)
+      let bufferStr = converters.arrayBufferToString(buffer)
+      let encrypted = this.encrypt(bufferStr, recipientPublicKey)
       let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
       //this.heat.api.uploadFile(messageId, new Blob([new Uint8Array(encryptedBuffer)]))
       this.heat.api.uploadFile(messageId, new Blob([encryptedBuffer]))
@@ -142,7 +143,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     let encryptedMessage: IEncryptedMessage = typeof encryptedData === "string"
       ? JSON.parse(encryptedData)
       : JSON.parse(converters.arrayBufferToString(encryptedData))
-    let buffer = this.decrypt(encryptedMessage, this.user.publicKey)
+    let bufferStr = <string>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
+    let buffer = converters.stringToArrayBuffer(bufferStr)
     saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
   }
 
