@@ -26,7 +26,7 @@ module p2p {
   const MESSAGE_TEXT_MAX_SIZE = 8000
 
   /**
-   * Messages of this type are stored on the server, then they are sent to the recipients when recipient will be online
+   * Messages of this type are stored on the server, then they are sent to the room's recipients when recipient will be online
    */
   export class U2UMessage {
     id?: string
@@ -120,12 +120,12 @@ module p2p {
       return result.count;
     }
 
-    sendFiles(files?: File[]) {
+    sendFiles(files: File[], recipientPublicKey: string) {
       for (const file of files) {
         if (file.size > 0) {
           let m = new p2p.U2UMessage("file", Date.now(), null, file)
           this.sendMessage(m)
-          this.connector.messenger.sendFile(m.id, file)
+          this.connector.messenger.sendFile(m.id, file, recipientPublicKey)
         }
       }
     }

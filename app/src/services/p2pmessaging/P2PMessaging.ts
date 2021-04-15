@@ -21,6 +21,8 @@
  * SOFTWARE.
  * */
 
+import IEncryptedMessage = heat.crypto.IEncryptedMessage;
+
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 
@@ -127,8 +129,21 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }).catch(reason => console.error(reason))
   }
 
-  onFile(fileContent: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }): any {
-    saveAs(new Blob([fileContent], {type: "text/text"}), fileDescriptor.fileName)
+  sendFile(messageId: string, file: File, recipientPublicKey: string) {
+    file.arrayBuffer().then(buffer => {
+      let encrypted = this.encrypt(buffer, recipientPublicKey)
+      let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
+      //this.heat.api.uploadFile(messageId, new Blob([new Uint8Array(encryptedBuffer)]))
+      this.heat.api.uploadFile(messageId, new Blob([encryptedBuffer]))
+    })
+  }
+
+  onFile(encryptedData: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }): any {
+    let encryptedMessage: IEncryptedMessage = typeof encryptedData === "string"
+      ? JSON.parse(encryptedData)
+      : JSON.parse(converters.arrayBufferToString(encryptedData))
+    let buffer = this.decrypt(encryptedMessage, this.user.publicKey)
+    saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
   }
 
   onError(reason: string, protocol?: p2p.Protocol) {
@@ -186,10 +201,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       //todo check is opened channel
       return room;
     }
-  }
-
-  sendFile(messageId: string, file) {
-    this.heat.api.uploadFile(messageId, file)
   }
 
   sendKeys = (room: p2p.Room, text: string) => {

@@ -262,7 +262,7 @@ class HeatService {
     if (isFile) {
       let formData = new FormData()
       formData.append("fileName", request.fileName)
-      formData.append("file", request.file)
+      formData.append("file", request.blob)
       config = {
         method: 'POST',
         url: url,

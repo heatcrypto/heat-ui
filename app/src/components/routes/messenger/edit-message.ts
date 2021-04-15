@@ -112,7 +112,7 @@ class EditMessageComponent {
       if (peer) {
         try {
           if (files) {
-            room.sendFiles(files)
+            room.sendFiles(files, this.publickey)
           } else {
             let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
             this.$scope.$evalAsync(() => this.messageText = '')

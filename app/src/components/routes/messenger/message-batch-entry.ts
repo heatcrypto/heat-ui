@@ -109,7 +109,7 @@
     </div>
   `
 })
-@Inject('$rootScope', '$scope', 'P2PMessaging')
+@Inject('$rootScope', '$scope', 'P2PMessaging', 'heat')
 class MessageBatchEntryComponent {
   message: any; // @input
   io: string;
@@ -120,7 +120,8 @@ class MessageBatchEntryComponent {
 
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
-              private messaging: P2PMessaging) {
+              private messaging: P2PMessaging,
+              private heat: HeatService) {
     $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
@@ -138,7 +139,7 @@ class MessageBatchEntryComponent {
       this.text = this.message.contents
     } else if (this.message.type == "file") {
       let s: string = this.message.contents
-      let delimiterPos = s.indexOf("|")
+      let delimiterPos = s?.indexOf("|")
       if (delimiterPos > 0) {
         this.fileDescriptor = {
           fileName: s.substr(delimiterPos + 1).trim(),
@@ -158,7 +159,10 @@ class MessageBatchEntryComponent {
 
   //send request to server to download the file
   downloadFile() {
-    this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
+    //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
+    this.heat.api.downloadFile(this.message.msgId).then(value => {
+      this.messaging.onFile(value, this.fileDescriptor)
+    })
   }
 
 }

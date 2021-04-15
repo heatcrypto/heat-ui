@@ -67,7 +67,7 @@ module p2p {
      */
     getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
 
-    sendFile(messageId: string, file)
+    sendFile(messageId: string, file: File, recipientPublicKey: string)
 
   }
 
@@ -538,7 +538,6 @@ module p2p {
           } else {
             if (msg.type == "file") {
               //overwrite field data
-
               let fileContent: ArrayBuffer = msg.data
               msg.data = this.encrypt(msg.data, peer.publicKey)
             }
