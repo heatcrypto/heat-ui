@@ -174,23 +174,31 @@ class HeatService {
     let options = {
       hostname: hostname, port: port, path: path, method: 'GET',
       headers: {
-        'Content-Type': isFile ? undefined : 'application/json'
+        'Content-Type': isFile ? 'multipart/form-data' : 'application/json'
       }
     }
     //require("tls").DEFAULT_ECDH_CURVE = "auto"
     let http = require(isHttps ? 'https':'http')
     let req = http.request(options, (res) => {
-      res.setEncoding('utf8')
-      let body = []
-      res.on('data', (chunk) => { body.push(chunk) })
-      res.on('end', () => {
-        let response = JSON.parse(body.join(''))
-        if (angular.isDefined(response.errorDescription)) {
-          onFailure(response)
-        } else {
-          onSuccess(response)
-        }
-      })
+      if (isFile) {
+        let chunkArray = []
+        res.on('data', (chunk) => chunkArray.push(chunk))
+        res.on('end', () => {
+          onSuccess(Buffer.concat(chunkArray))
+        })
+      } else {
+        res.setEncoding('utf8')
+        let body = []
+        res.on('data', (chunk) => {body.push(chunk)})
+        res.on('end', () => {
+          let response = JSON.parse(body.join(''))
+          if (angular.isDefined(response.errorDescription)) {
+            onFailure(response)
+          } else {
+            onSuccess(response)
+          }
+        })
+      }
     })
     req.on('error', (e) => { onFailure(e) })
     req.end()

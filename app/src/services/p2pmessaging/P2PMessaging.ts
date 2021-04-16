@@ -137,7 +137,9 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
         return this.heat.api.uploadFile(messageId, encryptedBuffer)
       }).catch(reason => {
-        this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file uploading: ${reason}`).hideDelay(6000))
+        this.$mdToast.show(this.$mdToast.simple().textContent(
+          `Error on file uploading: ${reason?.description || reason?.data?.errorDescription}`
+        ).hideDelay(6000))
       })
     } else {
       let p: Promise<ArrayBuffer> = new Promise<ArrayBuffer>((resolve, reject) => {
@@ -154,7 +156,9 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
         return this.heat.api.uploadFile(messageId, encryptedBuffer)
       }).catch(reason => {
-        this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file uploading: ${reason}`).hideDelay(6000))
+        this.$mdToast.show(this.$mdToast.simple().textContent(
+          `Error on file uploading: ${reason?.description || reason?.data?.errorDescription}`
+        ).hideDelay(6000))
       })
     }
   }
@@ -164,7 +168,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       ? JSON.parse(encryptedData)
       : JSON.parse(converters.arrayBufferToString(encryptedData))
     let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
-    saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
+    saveAs(new Blob([buffer]), fileDescriptor.fileName)
   }
 
   onError(reason: string, protocol?: p2p.Protocol) {

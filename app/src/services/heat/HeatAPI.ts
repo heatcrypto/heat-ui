@@ -398,7 +398,7 @@ class HeatAPI implements IHeatAPI {
    * @param fileName
    */
   downloadFile(fileName: string): angular.IPromise<ArrayBuffer> {
-    return this.heat.get(`/messaging/file/${fileName}`, undefined, undefined, true)
+    return this.heat.get(`/messaging/file/download/${fileName}`, undefined, undefined, true)
   }
 
 }
