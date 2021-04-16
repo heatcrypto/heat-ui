@@ -164,7 +164,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       ? JSON.parse(encryptedData)
       : JSON.parse(converters.arrayBufferToString(encryptedData))
     let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
-    saveAs(new Blob([buffer]), fileDescriptor.fileName)
+    saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
   }
 
   onError(reason: string, protocol?: p2p.Protocol) {
