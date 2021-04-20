@@ -60,7 +60,10 @@ module p2p {
      */
     onMessage: (msg: U2UMessage, room: Room) => any
 
-    onFile: (fileContent: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }) => any
+    onFile: (fileContent: string | ArrayBuffer, room: p2p.Room,
+             fileTransferMessageId: string,
+             fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
+             fileSavedCallback?: Function) => any
 
     /**
      * Returns room with single peer.

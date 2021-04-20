@@ -25,8 +25,9 @@ module p2p {
 
   export interface MessageExtraInfo {
     status: {
-      stage: number, // 1 - delivered, 2 - read, 3 - rejected by server
+      stage: number // 1 - delivered, 2 - read, 3 - rejected by server
       remark?: string
+      fileIndicator?: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded
     }
   }
 
@@ -57,6 +58,19 @@ module p2p {
           payload: JSON.stringify(encrypted)
         }
       this.connector.sendWebsocketMessage(this.name, [sendingData])
+    }
+
+    /**
+     * Heatwallet got the file then informs server that file is received.
+     * Receiver - server.
+     * @param fileId
+     */
+    sendFileIsReceived(fileId: string) {
+      this.connector.sendWebsocketMessage(Protocol.U2U, [{
+        type: "file-received",
+        sender: this.connector.identity,
+        payload: fileId
+      }])
     }
 
     /**
@@ -125,7 +139,7 @@ module p2p {
         let fileDescriptor = this.awaitingDownloadingFiles.get(msg.fileMessageId)
         this.awaitingDownloadingFiles.delete(msg.fileMessageId)
         let fileContent = this.connector.decrypt(payload, fileDescriptor.fileSender)
-        this.connector.messenger.onFile(fileContent, fileDescriptor)
+        this.connector.messenger.onFile(fileContent, null, msg.fileMessageId, fileDescriptor)
       },
 
       ERROR: (roomName: string, msg) => {

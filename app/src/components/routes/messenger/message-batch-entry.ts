@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2021 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,7 +22,7 @@
  * */
 @Component({
   selector: 'messageBatchEntry',
-  inputs: ['message'],
+  inputs: ['message', 'room'],
   styles: [`
     message-batch-entry .header {
       font-size: 12px;
@@ -101,21 +101,23 @@
         <!-- delivered icon, stage == 1 means Delivered -->
         <md-icon class="status" md-font-library="material-icons" ng-if="vm.stage==1">check</md-icon>
       </div>
-      <div ng-if="!vm.linkToFile" class="message-content"><pre>{{vm.text}}</pre></div>
-      <div ng-if="vm.linkToFile" class="message-content">
-        <pre>{{vm.text}}</pre>
-        <p><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile()">download</a></p>
+      <div ng-if="!vm.fileIndicator" class="message-content"><p>{{vm.text}}</p></div>
+      <div ng-if="vm.fileIndicator" class="message-content">
+        <p>{{vm.text}}</p>
+        <p ng-if="vm.fileIndicator == 1"><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile()">download</a></p>
+        <pre ng-if="vm.fileIndicator == 2">File is downloaded</pre>
       </div>
     </div>
   `
 })
 @Inject('$rootScope', '$scope', 'P2PMessaging', 'heat', '$mdToast')
 class MessageBatchEntryComponent {
-  message: any; // @input
-  io: string;
+  message: any // @input
+  room: p2p.Room // @input
+  io: string
   stage: number
   text: string
-  linkToFile: string
+  fileIndicator: number = 0  // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded
   private fileDescriptor: { fileName: string; fileSize: number; fileSender: string }
 
   constructor(private $rootScope: angular.IScope,
@@ -127,7 +129,7 @@ class MessageBatchEntryComponent {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
           this.message.extraInfo = info
-          this.stage = this.message.extraInfo ? this.message.extraInfo.status.stage : null
+          this.stage = this.message.extraInfo?.status.stage
         })
       }
     });
@@ -135,7 +137,7 @@ class MessageBatchEntryComponent {
 
   $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
-    this.stage = this.message.extraInfo ? this.message.extraInfo.status.stage : null
+    this.stage = this.message.extraInfo?.status.stage
     if (!this.message.type || this.message.type == "chat") {
       this.text = this.message.contents
     } else if (this.message.type == "file") {
@@ -150,7 +152,7 @@ class MessageBatchEntryComponent {
         if (this.io == 'incoming') {
           this.text = `file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
           //link to file
-          this.linkToFile = "todo"
+          this.fileIndicator = this.message.extraInfo?.status.fileIndicator || 1
         } else {
           this.text = `sent file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
         }
@@ -161,8 +163,11 @@ class MessageBatchEntryComponent {
   //download message's file
   downloadFile() {
     //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
-    this.heat.api.downloadFile(this.message.msgId).then(value => {
-      this.messaging.onFile(value, this.fileDescriptor)
+    this.heat.api.downloadFile(this.message.msgId).then(encryptedFileContent => {
+      this.messaging.onFile(encryptedFileContent, this.room, this.message.msgId, this.fileDescriptor,
+        () => {
+          this.fileIndicator = 2
+        })
     }).catch(reason => {
       this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
       console.error(reason)

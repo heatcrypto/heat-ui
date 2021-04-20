@@ -21,7 +21,7 @@
         <div layout="column">
           <div layout="row" flex layout-fill ng-repeat="message in vm.displayMessages.messages | orderBy:'sortingTimestamp' track by $index">
             <div layout="column" flex>
-              <message-batch-entry id="{{::message.__id}}" message="message" flex="none" class="message-item"></message-batch-entry>
+              <message-batch-entry id="{{::message.__id}}" message="message" room="vm.room" flex="none" class="message-item"></message-batch-entry>
             </div>
             <div layout="column" class="entry-menu">
               <md-menu ng-class="{'msg-entry-menu-disabled': message.onchain || message.transport == 'chain'}">
@@ -46,6 +46,7 @@
 })
 @Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout', 'storage', '$mdToast')
 class MsgViewerComponent {
+  public room: p2p.Room;
   private publickey: string; //input
   private allMessages;
   private onchainMessagesCount;
@@ -80,6 +81,7 @@ class MsgViewerComponent {
     this.heat.subscriber.message({sender: this.user.account}, refresh, this.$scope);
     this.heat.subscriber.message({recipient: this.user.account}, refresh, this.$scope);
     MsgViewerComponent.count = 10000;
+    this.room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
     this.initMessages()
   }
 
@@ -99,18 +101,17 @@ class MsgViewerComponent {
       })
       .catch(reason => console.error('Error on getting contact messages count: ' + reason))
       .then(value => {
-        let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
-        if (room) {
-          this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
-          this.messageHistory = room.getMessageHistory()
+        if (this.room) {
+          this.p2pMessaging.updateSeenTime(this.room.name, Date.now() + 1000 * 60 * 60 * 24);
+          this.messageHistory = this.room.getMessageHistory()
           this.offchainPages = this.messageHistory.getPageCount() - 1;
-          room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+          this.room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
             this.onMessageAdded(item, true)
           }
           this.messagesCount += this.messageHistory.getItemCount();
           this.$scope.$on('$destroy', () => {
-            this.p2pMessaging.updateSeenTime(room.name, Date.now());
-            room.onNewMessageHistoryItem = null;
+            this.p2pMessaging.updateSeenTime(this.room.name, Date.now());
+            this.room.onNewMessageHistoryItem = null;
           });
         }
         this.loadMessages();

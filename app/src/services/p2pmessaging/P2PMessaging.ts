@@ -163,12 +163,32 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }
   }
 
-  onFile(encryptedData: string | ArrayBuffer, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }): any {
-    let encryptedMessage: IEncryptedMessage = typeof encryptedData === "string"
-      ? JSON.parse(encryptedData)
-      : JSON.parse(converters.arrayBufferToString(encryptedData))
+  onFile(fileContent: string | ArrayBuffer, room: p2p.Room,
+         fileTransferMessageId: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
+         fileSavedCallback?: Function): any {
+    let encryptedMessage: IEncryptedMessage = typeof fileContent === "string"
+      ? JSON.parse(fileContent)
+      : JSON.parse(converters.arrayBufferToString(fileContent))
     let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
-    saveAs(new Blob([buffer]), fileDescriptor.fileName)
+
+    dialogs.confirm(
+      "Save file",
+      "Note the file will be deleted on the server after you confirm this.<br>Do you want to save the file on your device?"
+    ).then(() => {
+      saveAs(new Blob([buffer]), fileDescriptor.fileName).onwriteend = () => {
+        setTimeout(() => {
+          this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
+          let extraInfo: p2p.MessageExtraInfo = room.getMessageHistory().getExtraInfo(fileTransferMessageId)
+          if (extraInfo) {
+            extraInfo.status.fileIndicator = 2
+          } else {
+            extraInfo = {status: {stage: 2, fileIndicator: 2}}
+          }
+          room.getMessageHistory().putExtraInfo(fileTransferMessageId, extraInfo)
+          if (fileSavedCallback) fileSavedCallback()
+        }, 250)
+      }
+    })
   }
 
   onError(reason: string, protocol?: p2p.Protocol) {
