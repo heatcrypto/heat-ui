@@ -103,7 +103,7 @@
     </div>
   `
 })
-@Inject('$scope','server','heat','user','settings','$mdToast')
+@Inject('$scope','server','heat','user','settings','$mdToast', 'clipboard')
 class ServerComponent {
   private ROW_HEIGHT = 14; // must match the `server .console pre { height: 12px }` style rule above
 
@@ -135,7 +135,8 @@ class ServerComponent {
               private heat: HeatService,
               private user: UserService,
               private settings: SettingsService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private clipboard: ClipboardService) {
 
     if (user.unlocked) {
       heat.subscriber.blockPushed({generator:user.account}, ()=>{this.updateMiningInfo()});
@@ -225,13 +226,17 @@ class ServerComponent {
   editConfig(title, filePath, applyConfig?) {
     this.serverService.getServerProperties(filePath).then(content => {
       this.$scope.$evalAsync(() => {
-        dialogs.textEditor(title, content, (editedData) => {
-          const fs = require('fs')
-          fs.writeFile(filePath, editedData, (err) => {
-            if (err) throw err
-            if (applyConfig) applyConfig()
+        dialogs.textEditor(title, content,
+          (editedData) => {
+            const fs = require('fs')
+            fs.writeFile(filePath, editedData, (err) => {
+              if (err) throw err
+              if (applyConfig) applyConfig()
+            })
+          },
+          (content) => {
+            this.clipboard.copyText(content, 'Copied text to clipboard');
           })
-        })
       })
     })
   }

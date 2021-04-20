@@ -22,7 +22,7 @@
  * */
 module dialogs {
 
-  export function textEditor(title, content, saveContentFunc) {
+  export function textEditor(title, content, saveContentFunc, copyToClipboardFunc?) {
     dialogs.dialog({
       id: 'textEditor',
       title: title,
@@ -30,6 +30,11 @@ module dialogs {
       okButton: false,
       cancelButton: false,
       locals: {
+        copyToClipboard: copyToClipboardFunc
+          ? function () {
+            copyToClipboardFunc(this.content);
+          }
+          : null,
         save: function() {
           saveContentFunc(this.content);
           $mdDialog().hide();
@@ -46,6 +51,7 @@ module dialogs {
         </p>
         <!--</md-input-container>-->
         <div layout="row" layout-align="center center" style="min-height: 25px">
+          <md-button class="md-primary" ng-if="vm.copyToClipboard" ng-click="vm.copyToClipboard()">Copy</md-button>
           <md-button class="md-primary" ng-click="vm.save()">Save</md-button>
           <md-button class="md-primary" ng-click="vm.close()">Close</md-button>
         </div>

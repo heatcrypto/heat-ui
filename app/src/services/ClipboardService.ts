@@ -59,7 +59,7 @@ class ClipboardService {
   }
 
   copyText(text: string, successMessage?: string) {
-    var tempInput = <any> document.createElement("input");
+    var tempInput = <any> document.createElement("TextArea");
     tempInput.style = "position: absolute; left: -1000px; top: -1000px";
     tempInput.value = text;
     document.body.appendChild(tempInput);
