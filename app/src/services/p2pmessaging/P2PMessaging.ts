@@ -175,19 +175,18 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       "Save file",
       "Note the file will be deleted on the server after you confirm this.<br>Do you want to save the file on your device?"
     ).then(() => {
-      saveAs(new Blob([buffer]), fileDescriptor.fileName).onwriteend = () => {
-        setTimeout(() => {
-          this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
-          let extraInfo: p2p.MessageExtraInfo = room.getMessageHistory().getExtraInfo(fileTransferMessageId)
-          if (extraInfo) {
-            extraInfo.status.fileIndicator = 2
-          } else {
-            extraInfo = {status: {stage: 2, fileIndicator: 2}}
-          }
-          room.getMessageHistory().putExtraInfo(fileTransferMessageId, extraInfo)
-          if (fileSavedCallback) fileSavedCallback()
-        }, 250)
-      }
+      saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
+      setTimeout(() => {
+        this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
+        let extraInfo: p2p.MessageExtraInfo = room.getMessageHistory().getExtraInfo(fileTransferMessageId)
+        if (extraInfo) {
+          extraInfo.status.fileIndicator = 2
+        } else {
+          extraInfo = {status: {stage: 2, fileIndicator: 2}}
+        }
+        room.getMessageHistory().putExtraInfo(fileTransferMessageId, extraInfo)
+        if (fileSavedCallback) fileSavedCallback()
+      }, 250)
     })
   }
 
