@@ -129,7 +129,7 @@ class MessageBatchEntryComponent {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
           this.message.extraInfo = info
-          this.stage = this.message.extraInfo?.status.stage
+          this.stage = this.message.extraInfo?.status?.stage
         })
       }
     });
@@ -137,7 +137,7 @@ class MessageBatchEntryComponent {
 
   $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
-    this.stage = this.message.extraInfo?.status.stage
+    this.stage = this.message.extraInfo?.status?.stage
     if (!this.message.type || this.message.type == "chat") {
       this.text = this.message.contents
     } else if (this.message.type == "file") {

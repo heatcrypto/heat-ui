@@ -202,7 +202,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
-    if (msg.type == "chat" && msg.text) {
+    if ((msg.type == "chat" || msg.type == "file") && msg.text) {
       let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
       let text: string = msg.text.substring(0, 50);
       if (msg.text.length > 50) {

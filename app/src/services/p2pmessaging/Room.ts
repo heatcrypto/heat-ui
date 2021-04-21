@@ -159,7 +159,7 @@ module p2p {
         throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
       }
       this.registerInHistory(false, message)
-      if (message.type == "chat") {
+      if (message.type == "chat" || message.type == "file") {
         this.lastIncomingMessageTimestamp = Date.now();
       }
       if (this.onMessage) {
