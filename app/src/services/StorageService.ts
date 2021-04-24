@@ -45,24 +45,25 @@ class StorageService {
     var store = new Store(namespace, this);
     if ($scope) {
       $scope.$on('$destroy',() => {
+        if (store.userServiceListener) {
+          this.user.removeListener(UserService.EVENT_UNLOCKED, store.userServiceListener)
+        }
         this.removeStore(store)
       });
     }
     this.addStore(store);
     if (!angular.isDefined(globalScope) || !globalScope) {
-      this.user = this.user || <UserService> heat.$inject.get('user'); // causes circular dependency if done through DI.
+      this.user = this.user || <UserService>heat.$inject.get('user'); // causes circular dependency if done through DI.
       if (this.user.unlocked) {
+        store.enable(this.user.account)
+      }
+      if (!store.userServiceListener) {
+        store.userServiceListener = () => {
           store.enable(this.user.account)
-      }
-      else {
-        var closure = () => {
-          this.user.removeListener(UserService.EVENT_UNLOCKED, closure);
-            store.enable(this.user.account)
         }
-        this.user.on(UserService.EVENT_UNLOCKED, closure);
+        this.user.on(UserService.EVENT_UNLOCKED, store.userServiceListener);
       }
-    }
-    else {
+    } else {
       store.enable();
     }
     return store;
@@ -97,6 +98,7 @@ class Store extends EventEmitter {
   public static EVENT_PUT = 'put';
   public static EVENT_REMOVE = 'remove';
 
+  userServiceListener: IEventListenerFunction;
   private prefix: string;
   private _enabled: boolean = false;
 
