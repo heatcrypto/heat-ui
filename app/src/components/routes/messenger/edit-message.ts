@@ -52,9 +52,9 @@
             <md-icon md-font-library="material-icons">send</md-icon>
           </md-button>
         </form>
-        <textarea hide-xs ng-model="vm.messageText" flex rows="2" class="edit-message-textarea"
+        <textarea hide-xs ng-model="vm.messageText" flex rows="3" class="edit-message-textarea"
           ng-class="{'offchain': vm.p2pMessaging.onlineStatus == 'online'}"
-          ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line"></textarea>
+          ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line. &#10;Drag and drop file (max 2MB) here to encrypt and send instantly"></textarea>
       </div>
       <div layout="column" class="send-button-container">
         <!--<md-button class="offchain-button" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">

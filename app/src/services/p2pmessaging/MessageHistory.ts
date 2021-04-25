@@ -254,6 +254,7 @@ module p2p {
         //update page with new content without removed messages
         let newItems = items.filter(item => item.timestamp != timestamp);
         if (items.length != newItems.length) {
+          this.pageContent = this.pageContent.filter(item => item.timestamp != timestamp);
           this.savePage(i, newItems);
           return items.length - newItems.length;
         }

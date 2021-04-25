@@ -69,7 +69,7 @@
       max-width: 75%;
       min-width: 20%;
     }
-    message-batch-entry .message-content pre {
+    message-batch-entry .message-content p {
       white-space: pre-wrap;       /* Since CSS 2.1 */
       white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
       white-space: -pre-wrap;      /* Opera 4-6 */
