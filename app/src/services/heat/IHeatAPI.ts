@@ -184,6 +184,9 @@ interface IHeatAPI {
    */
   getMessagingContactMessages(accountA:string, accountB:string, from:number, to:number):angular.IPromise<Array<IHeatMessage>>;
 
+  getMessagingContactMessagesByTimestampRange(
+    accountA: string, accountB: string, fromTimestamp: number, toTimestamp: number): angular.IPromise<Array<IHeatMessage>>;
+
   /**
    * Lists latest message contacts (requires replicator)
    */

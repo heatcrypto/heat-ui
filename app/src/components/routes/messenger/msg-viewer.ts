@@ -1,3 +1,5 @@
+const PAGE_LENGTH = 2
+
 @Component({
   selector: 'msgViewer',
   inputs: ['publickey', '@containerId'],
@@ -19,7 +21,7 @@
           <md-button ng-click="vm.scrollUp()" aria-label="Go up">Go up</md-button>
         </div>
         <div layout="column">
-          <div layout="row" flex layout-fill ng-repeat="message in vm.displayMessages.messages | orderBy:'sortingTimestamp' track by $index">
+          <div layout="row" flex layout-fill ng-repeat="message in vm.displayMessages.messages track by $index">
             <div layout="column" flex>
               <message-batch-entry id="{{::message.__id}}" message="message" room="vm.room" flex="none" class="message-item"></message-batch-entry>
             </div>
@@ -44,7 +46,7 @@
     </div>
   `
 })
-@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout', 'storage', '$mdToast')
+@Inject('heat', 'user', '$scope', 'P2PMessaging', 'settings', '$timeout', 'storage', '$mdToast', '$router')
 class MsgViewerComponent {
   public room: p2p.Room;
   private publickey: string; //input
@@ -68,7 +70,8 @@ class MsgViewerComponent {
               private settings: SettingsService,
               private $timeout: angular.ITimeoutService,
               private storage: StorageService,
-              private $mdToast: angular.material.IToastService,) {
+              private $mdToast: angular.material.IToastService,
+              private router) {
   }
 
   $onInit() {
@@ -77,7 +80,7 @@ class MsgViewerComponent {
     }
     this.store = this.storage.namespace('contacts.latestTimestamp', this.$scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
+    let refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
     this.heat.subscriber.message({sender: this.user.account}, refresh, this.$scope);
     this.heat.subscriber.message({recipient: this.user.account}, refresh, this.$scope);
     MsgViewerComponent.count = 10000;
@@ -118,23 +121,26 @@ class MsgViewerComponent {
       })
   }
 
-  private loadMessages() {
+  /*private loadMessages() {
     let promises: Promise<any>[] = [];
     let to = this.onchainMessagesCount;
-    let from = this.onchainMessagesCount - 10 > 0 ? this.onchainMessagesCount - 10 : 0;
+    let from = this.onchainMessagesCount - PAGE_LENGTH > 0 ? this.onchainMessagesCount - PAGE_LENGTH : 0;
     promises.push(this.loadOnchainMessages(from, to));
     promises.push(this.loadOffchainMessages());
     // can improvise sorting --> currently sorting the already sorted elements too
     Promise.all(promises).then((messages) => {
       this.allMessages = this.allMessages.concat(...messages)
       this.allMessages.sort((a, b) => b.sortingTimestamp - a.sortingTimestamp);
-      this.displayMessages.messages = this.displayMessages.messages.concat(this.allMessages.slice(this.displayMessages.index, this.displayMessages.index + 10))
-
+      this.displayMessages.messages = this.displayMessages.messages.concat(
+        this.allMessages.slice(this.displayMessages.index, this.displayMessages.index + PAGE_LENGTH)
+      )
       this.$scope.$evalAsync(() => { // ensure contents are rendered
         this.$timeout(0).then(() => { // resolve promise in next event loop
             let m = this.displayMessages.messages[this.displayMessages.index];
             if (m) {
-              this.displayMessages.index = this.displayMessages.index + 10 <= this.messagesCount ? this.displayMessages.index + 10 : this.messagesCount;
+              this.displayMessages.index = this.displayMessages.index + PAGE_LENGTH <= this.messagesCount
+                ? this.displayMessages.index + PAGE_LENGTH
+                : this.messagesCount;
               this.scrollElement = document.getElementById(m.__id);
               if (this.scrollElement) {
                 this.getScrollContainer().duScrollToElement(angular.element(this.scrollElement), 0, 1200, heat.easing.easeOutCubic);
@@ -144,6 +150,53 @@ class MsgViewerComponent {
           reason => console.log(reason));
       })
     })
+  }*/
+
+  range = [0, PAGE_LENGTH]
+
+  private loadMessages() {
+    let messagesA = []
+    if (this.offchainPages >= 0) {
+      messagesA = this.messageHistory.getItems(--this.offchainPages);
+    }
+    messagesA.forEach(item => this.processOffchainItem(item));
+    let timestampes = messagesA.map(m => m.timestamp)
+    let minTimestamp = timestampes.length > 0 ? Math.min(...timestampes) : 0
+    let maxTimestamp = timestampes.length > 0 ? Math.max(...timestampes) : 0
+    if (minTimestamp > 0) {
+      this.heat.api.getMessagingContactMessagesByTimestampRange(
+        this.user.account, heat.crypto.getAccountIdFromPublicKey(this.publickey), minTimestamp, maxTimestamp).then(messagesB => {
+        this.$scope.$evalAsync(() => {
+          this.range[0] += messagesB.length
+          this.range[1] += messagesB.length
+          let processedMessagesB = []
+          messagesB.forEach(message => processedMessagesB.push(this.processOnchainItem(message)));
+          this.displayMessages.messages = this.displayMessages.messages
+            .concat(messagesA, processedMessagesB)
+            .sort((a, b) => a.sortingTimestamp - b.sortingTimestamp)
+          this.displayMessages.index = this.displayMessages.messages.length
+
+          let joinedContent = this.displayMessages.messages.map(item => item.content?.substr(0, 10)).join(" | ")
+          console.debug(`loadOffchainMessages ${this.displayMessages.messages.length}  offchainPages ${this.offchainPages} joinedContent ${joinedContent}`)
+
+        })
+      })
+    } else {
+      this.loadOnchainMessages(this.range[0], this.range[1]).then(messagesB => {
+        this.$scope.$evalAsync(() => {
+          this.displayMessages.messages = this.displayMessages.messages
+            .concat(messagesA, messagesB)
+            .sort((a, b) => a.sortingTimestamp - b.sortingTimestamp)
+          this.displayMessages.index = this.displayMessages.messages.length
+
+          let joinedContent = this.displayMessages.messages.map(item => item.content?.substr(0, 10)).join(" | ")
+          console.debug(`loadOffchainMessages ${this.displayMessages.messages.length}  offchainPages ${this.offchainPages} joinedContent ${joinedContent}`)
+
+        })
+      })
+      this.range[0] += PAGE_LENGTH
+      this.range[1] += PAGE_LENGTH
+    }
   }
 
   private loadOnchainMessages(from: number, to: number) {
@@ -160,14 +213,18 @@ class MsgViewerComponent {
     })
   }
 
-  private loadOffchainMessages() {
+  private loadOffchainMessages(): Promise<Array<p2p.MessageHistoryItem>> {
     return new Promise((resolve, reject) => {
       if (this.messageHistory && this.offchainPages >= 0) {
         let page = this.messageHistory.getItems(this.offchainPages);
-        if (page.length < 10) {
+        if (page.length < PAGE_LENGTH && this.offchainPages > 0) {
           page = page.concat(this.messageHistory.getItems(--this.offchainPages))
         }
         page.forEach(item => this.processOffchainItem(item));
+
+        let joinedContent = page.map(item => item.content).join(" | ")
+        console.debug(`loadOffchainMessages ${page.length}  offchainPages ${this.offchainPages} joinedContent ${joinedContent}`)
+
         resolve(page)
       } else {
         resolve([])
@@ -192,6 +249,8 @@ class MsgViewerComponent {
   }
 
   private processOffchainItem(item: p2p.MessageHistoryItem) {
+    if (item['__id']) return item //already was processed
+    item['__id'] = ++MsgViewerComponent.count;
     item['senderPublicKey'] = item.fromPeer;
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['timestamp'] = item.timestamp;
@@ -200,7 +259,6 @@ class MsgViewerComponent {
     item['date'] = dateFormat(item.timestamp, this.dateFormat);
     item.transport = item.transport || (item['onchain'] ? 'chain' : 'p2p');
     item['contents'] = item['content'] || item['message'];
-    item['__id'] = ++MsgViewerComponent.count;
     return item;
   }
 
@@ -233,8 +291,8 @@ class MsgViewerComponent {
   }
 
   private scrollUp() {
-    --this.offchainPages;
-    this.onchainMessagesCount -= 11;
+    //--this.offchainPages;
+    this.onchainMessagesCount -= PAGE_LENGTH + 1;
     this.loadMessages();
   }
 
@@ -251,7 +309,9 @@ class MsgViewerComponent {
       this.displayMessages.messages = this.displayMessages.messages.filter(i => i.timestamp != item.timestamp);
       this.displayMessages.index--;
       this.allMessages = this.allMessages.filter(i => i.timestamp != item.timestamp);
-    });
+    }).then(() => {
+      this.initMessages()  //stupid way to refresh messages after removing
+    })
   }
 
   getScrollContainer(): duScroll.IDocumentService {

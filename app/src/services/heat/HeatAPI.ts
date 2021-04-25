@@ -273,6 +273,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/messages/contact/${accountA}/${accountB}/${from}/${to}`);
   }
 
+  getMessagingContactMessagesByTimestampRange(accountA: string, accountB: string, fromTimestamp: number, toTimestamp: number): angular.IPromise<Array<IHeatMessage>> {
+    return this.heat.get(`/messages/contacttimestamprange/${accountA}/${accountB}/${fromTimestamp}/${toTimestamp}`);
+  }
+
   getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>> {
     return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
   }
