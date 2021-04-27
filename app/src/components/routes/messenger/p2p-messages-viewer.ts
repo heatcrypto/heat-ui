@@ -52,6 +52,15 @@
     .message-entry div.message {
       width: 100%;
     }
+    .message-entry .status {
+      font-size: 12px;
+      margin-top: 4px;
+      margin-left: -30px;
+    }
+
+    .message-entry .file-status {
+      color: green;
+    }
     // .outgoing {
     //   align-self: flex-end;
     // }
@@ -73,13 +82,16 @@
 
   <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter"
   layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
-
     <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
+    <md-icon class="status" md-font-library="material-icons" ng-if="item.stage==1">check</md-icon>
     <div layout="column" class="message">
       <div class="header">
         <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
       </div>
-      <div class="message-content">{{item.content}}</div>
+      <div ng-if="!item.fileIndicator" class="message-content">{{item.content}}</div>
+      <div ng-if="item.fileIndicator" class="message-content">{{item.content}}</div>
+      <div ng-if="item.fileIndicator == 1"><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a></div>
+      <pre ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</pre>
     </div>
 
     <md-menu>
@@ -101,7 +113,7 @@
   `
 })
 @Inject('$scope', '$q', '$timeout', '$document', 'heat', 'user', 'settings',
-  'render', 'controlCharRender', 'storage', 'P2PMessaging')
+  'render', 'controlCharRender', 'storage', 'P2PMessaging', '$mdToast')
 class P2PMessagesViewerComponent {
 
   private publickey: string; // @input
@@ -110,6 +122,8 @@ class P2PMessagesViewerComponent {
   private dateFormat;
   // items: Array<p2p.MessageHistoryItem>;
   datasource: P2PMessagesDataSource;
+  private room: p2p.Room;
+  private items: p2p.MessageHistoryItem[] = []
 
   constructor(private $scope: angular.IScope,
               $q: angular.IQService,
@@ -121,8 +135,8 @@ class P2PMessagesViewerComponent {
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
               private storage: StorageService,
-              private p2pMessaging: P2PMessaging) {
-
+              private p2pMessaging: P2PMessaging,
+              private $mdToast: angular.material.IToastService) {
   }
 
   $onInit() {
@@ -133,25 +147,37 @@ class P2PMessagesViewerComponent {
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
 
     if (this.publickey != '0') {
-      let room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
-      if (room) {
+      this.room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
+      if (this.room) {
         /* set seen time to future, so no need to update seen time on each new incoming message.
         The seen time will be updated to the real value on destroying this component*/
-        this.p2pMessaging.updateSeenTime(room.name, Date.now() + 1000 * 60 * 60 * 24);
+        this.p2pMessaging.updateSeenTime(this.room.name, Date.now() + 1000 * 60 * 60 * 24);
 
-        this.datasource = new P2PMessagesDataSource(room.getMessageHistory(), item => this.processItem(item));
-        room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+        this.datasource = new P2PMessagesDataSource(this.room.getMessageHistory(), item => this.processItem(item));
+        this.room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
           this.datasource.first++;
           // @ts-ignore
-          let adapter = $scope.adapter;
+          let adapter = this.$scope.adapter;
           if (adapter.isEOF()) {
             adapter.append([this.processItem(item)]);
           }
         };
 
+        let $rootScope = heat.$inject.get('$rootScope')
+        $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
+          this.items.forEach(item => {
+            if (item.msgId == msgId) {
+              this.$scope.$evalAsync(() => {
+                item.extraInfo = info
+                this.processItem(item)
+              })
+            }
+          })
+        })
+
         this.$scope.$on('$destroy', () => {
-          this.p2pMessaging.updateSeenTime(room.name, Date.now());
-          room.onNewMessageHistoryItem = null;
+          this.p2pMessaging.updateSeenTime(this.room.name, Date.now());
+          this.room.onNewMessageHistoryItem = null;
         });
       }
     }
@@ -178,10 +204,51 @@ class P2PMessagesViewerComponent {
   }
 
   private processItem(item: p2p.MessageHistoryItem) {
+    this.items.push(item)
     item['senderAccount'] = heat.crypto.getAccountIdFromPublicKey(item.fromPeer);
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['dateFormatted'] = dateFormat(item.timestamp, this.dateFormat);
+    item['fileIndicator'] = 0  // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded
+    item['stage'] = item.extraInfo?.status?.stage
+
+    if (item.type == "file") {
+      if (!item['fileDescriptor']) {
+        let s: string = item.content
+        let delimiterPos = s?.indexOf("|")
+        if (delimiterPos > 0) {
+          item['fileDescriptor'] = {
+            fileName: s.substr(delimiterPos + 1).trim(),
+            fileSize: parseInt(s.substr(0, delimiterPos)),
+            fileSender: item.fromPeer
+          }
+        }
+      }
+      let fileDescriptor = item['fileDescriptor']
+      if (fileDescriptor) {
+        if (item['outgoing']) {
+          item.content = `sent file "${fileDescriptor.fileName}", size ${fileDescriptor.fileSize} bytes`
+        } else {
+          item.content = `file "${fileDescriptor.fileName}", size ${fileDescriptor.fileSize} bytes`
+          //link to file
+          item['fileIndicator'] = item.extraInfo?.status.fileIndicator || 1
+        }
+      }
+    }
+
     return item;
+  }
+
+  //download message's file
+  downloadFile(item) {
+    //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
+    this.heat.api.downloadFile(item.msgId).then(encryptedFileContent => {
+      this.p2pMessaging.onFile(
+        encryptedFileContent, this.room, item.msgId, item['fileDescriptor'], () => item['fileIndicator'] = 2
+      )
+    }).catch(reason => {
+      this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
+      console.error(reason)
+    })
   }
 
 }
