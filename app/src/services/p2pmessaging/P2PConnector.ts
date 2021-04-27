@@ -70,7 +70,7 @@ module p2p {
      */
     getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
 
-    sendFile(messageId: string, file: File, recipientPublicKey: string)
+    sendFile(messageId: string, file: File, recipientPublicKey: string): Promise<any>
 
   }
 

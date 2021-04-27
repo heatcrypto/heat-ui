@@ -91,7 +91,9 @@
       <div ng-if="!item.fileIndicator" class="message-content">{{item.content}}</div>
       <div ng-if="item.fileIndicator" class="message-content">{{item.content}}</div>
       <div ng-if="item.fileIndicator == 1"><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a></div>
-      <pre ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</pre>
+      <div ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</div>
+      <div ng-if="item.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
+      <div ng-if="item.fileIndicator == 4" class="file-status">file download error</div>
     </div>
 
     <md-menu>
@@ -241,13 +243,19 @@ class P2PMessagesViewerComponent {
   //download message's file
   downloadFile(item) {
     //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
+    item['fileIndicator'] = 3
     this.heat.api.downloadFile(item.msgId).then(encryptedFileContent => {
+      item['fileIndicator'] = 1
       this.p2pMessaging.onFile(
         encryptedFileContent, this.room, item.msgId, item['fileDescriptor'], () => item['fileIndicator'] = 2
       )
     }).catch(reason => {
       this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
       console.error(reason)
+      item['fileIndicator'] = 4
+      let ei = this.room.getMessageHistory().getExtraInfo(item.msgId)
+      ei.status.fileIndicator = 4
+      this.room.getMessageHistory().putExtraInfo(item.msgId, ei)
     })
   }
 

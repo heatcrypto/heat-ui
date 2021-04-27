@@ -27,7 +27,8 @@ module p2p {
     status: {
       stage: number // 1 - delivered, 2 - read, 3 - rejected by server
       remark?: string
-      fileIndicator?: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded
+      fileIndicator?: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded;
+      // 3 - file is downloading (in progress); 4 - error on download
     }
   }
 
