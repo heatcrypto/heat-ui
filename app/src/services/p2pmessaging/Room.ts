@@ -124,8 +124,10 @@ module p2p {
       for (const file of files) {
         if (file.size > 0) {
           let m = new p2p.U2UMessage("file", Date.now(), null, file)
-          this.connector.messenger.sendFile(m.id, file, recipientPublicKey).then(value => {
-            if (value == "ok") this.sendMessage(m)
+          this.connector.messenger.sendFile(m.id, file, recipientPublicKey).then(responseStatusMessage => {
+            if (typeof responseStatusMessage == "string" && responseStatusMessage.toUpperCase() == "OK") {
+              this.sendMessage(m)
+            }
           })
         }
       }

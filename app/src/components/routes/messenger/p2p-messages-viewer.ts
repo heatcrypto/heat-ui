@@ -228,7 +228,7 @@ class P2PMessagesViewerComponent {
       let fileDescriptor = item['fileDescriptor']
       if (fileDescriptor) {
         if (item['outgoing']) {
-          item.content = `sent file "${fileDescriptor.fileName}", size ${fileDescriptor.fileSize} bytes`
+          item.content = `Sent file "${fileDescriptor.fileName}" (${fileDescriptor.fileSize} bytes) to server, pending receiver download`
         } else {
           item.content = `file "${fileDescriptor.fileName}", size ${fileDescriptor.fileSize} bytes`
           //link to file
@@ -253,7 +253,8 @@ class P2PMessagesViewerComponent {
       this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
       console.error(reason)
       item['fileIndicator'] = 4
-      let ei = this.room.getMessageHistory().getExtraInfo(item.msgId)
+      let ei: p2p.MessageExtraInfo = this.room.getMessageHistory().getExtraInfo(item.msgId)
+        || {status: {stage: 1, fileIndicator: 4}}
       ei.status.fileIndicator = 4
       this.room.getMessageHistory().putExtraInfo(item.msgId, ei)
     })

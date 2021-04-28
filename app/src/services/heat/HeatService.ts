@@ -181,11 +181,15 @@ class HeatService {
     let http = require(isHttps ? 'https':'http')
     let req = http.request(options, (res) => {
       if (isFile) {
-        let chunkArray = []
-        res.on('data', (chunk) => chunkArray.push(chunk))
-        res.on('end', () => {
-          onSuccess(Buffer.concat(chunkArray))
-        })
+        if (res.statusCode == 200) {
+          let chunkArray = []
+          res.on('data', (chunk) => chunkArray.push(chunk))
+          res.on('end', () => {
+            onSuccess(Buffer.concat(chunkArray))
+          })
+        } else {
+          onFailure(res.statusMessage || res)
+        }
       } else {
         res.setEncoding('utf8')
         let body = []
@@ -231,7 +235,9 @@ class HeatService {
       this.browserHttpPost(address, req,
         (response) => {
           this.logResponse(route, request, response);
-          var data = angular.isString(returns) ? response.data[returns] : response.data;
+          let data = angular.isString(response)
+            ? response
+            : (angular.isString(returns) ? response.data[returns] : response.data)
           deferred.resolve(data);
         }, (response) => {
           this.logErrorResponse(route, request, response);
@@ -253,7 +259,9 @@ class HeatService {
       this.nodeHttpPost(isHttps, address, port, '/' + route, req,
         (response) => {
           this.logResponse(route, request, response);
-          var data = angular.isString(returns) ? response.data[returns] : response.data;
+          let data = angular.isString(response)
+            ? response
+            : (angular.isString(returns) ? response.data[returns] : response.data)
           deferred.resolve(data);
         }, (response) => {
           this.logErrorResponse(route, request, response);
@@ -319,7 +327,11 @@ class HeatService {
           headers: form.getHeaders(),
         },
         response => {
-          if (response?.statusCode != 200) onFailure(response)
+          if (response?.statusCode == 200) {
+            onSuccess(response.statusMessage)
+          } else {
+            onFailure(response)
+          }
         }
       )
       req.on('error', (e) => { onFailure(e) })
