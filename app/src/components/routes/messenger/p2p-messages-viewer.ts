@@ -31,7 +31,7 @@
     }
     .message-entry {
       color: white;
-      margin-bottom: 14px;
+      margin-bottom: 24px;
       margin-right: 10px;
       // max-width: 85%;
     }
@@ -61,6 +61,32 @@
     .message-entry .file-status {
       color: green;
     }
+
+    .message-entry.outgoing .message-wrapper {
+      margin-left: 20%;
+      margin-right: 0;
+      display: flex;
+      max-width: 80%;
+    }
+
+    .message-entry.incoming .message-wrapper {
+      max-width: 80%;
+      display: flex;
+    }
+
+    .message-entry.outgoing md-menu {
+      margin-left: -60px;
+    }
+
+    .message-entry.incoming md-menu {
+      margin-left: -55px;
+    }
+
+    .message-wrapper md-menu {
+      margin-top: 10px;
+      font-weight: 800;
+    }
+
     // .outgoing {
     //   align-self: flex-end;
     // }
@@ -80,24 +106,11 @@
   template: `
 <div class="messages" ui-scroll-viewport layout="column" flex scroll-glue>
 
-  <div ui-scroll="item in vm.datasource" buffer-size="20" adapter="adapter"
-  layout="row" class="message-entry" ng-class="{outgoing: item.outgoing}">
+<div ui-scroll="item in vm.datasource" buffer-size="200" adapter="adapter"
+      layout="row" class="message-entry" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
+<div class="message-wrapper">
     <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
     <md-icon class="status" md-font-library="material-icons" ng-if="item.stage==1">check</md-icon>
-    <div layout="column" class="message">
-      <div class="header">
-        <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
-      </div>
-      <div ng-if="!item.fileIndicator" class="message-content">{{item.content}}</div>
-      <div ng-if="item.fileIndicator" class="message-content">{{item.content}}</div>
-      <div ng-if="item.fileIndicator == 1 || item.fileIndicator == 4">
-          <a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a>
-      </div>
-      <div ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</div>
-      <div ng-if="item.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
-      <div ng-if="item.fileIndicator == 4" class="file-status">file download error</div>
-    </div>
-
     <md-menu>
       <md-button aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
         <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
@@ -111,8 +124,22 @@
         </md-menu-item>
       </md-menu-content>
     </md-menu>
+    <div layout="column" class="message">
+      <div class="header">
+        <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
+      </div>
+      <div ng-if="!item.fileIndicator" class="message-content">{{item.content}}</div>
+      <div ng-if="item.fileIndicator" class="message-content">{{item.content}}</div>
+      <div ng-if="item.fileIndicator == 1 || item.fileIndicator == 4">
+          <a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a>
+      </div>
+      <div ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</div>
+      <div ng-if="item.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
+      <div ng-if="item.fileIndicator == 4" class="file-status">file download error</div>
+    </div>
+</div>
+</div>
 
-  </div>
 </div>
   `
 })
@@ -256,7 +283,7 @@ class P2PMessagesViewerComponent {
       console.error(reason)
       item['fileIndicator'] = 4
       let ei: p2p.MessageExtraInfo = this.room.getMessageHistory().getExtraInfo(item.msgId)
-        || {status: {stage: 1, fileIndicator: 4}}
+        || {status: {stage: 0, fileIndicator: 4}}
       ei.status.fileIndicator = 4
       this.room.getMessageHistory().putExtraInfo(item.msgId, ei)
     })
