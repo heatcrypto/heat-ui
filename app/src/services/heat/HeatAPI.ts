@@ -394,7 +394,18 @@ class HeatAPI implements IHeatAPI {
    * @param file file to send
    */
   uploadFile(fileName: string, arrayBuffer): angular.IPromise<any> {
-    return this.heat.post('/messaging/file/upload', {fileName: fileName, arrayBuffer: arrayBuffer}, undefined, undefined, undefined, true)
+    return this.heat.post(
+      '/messaging/file/upload',
+      {
+        fileName: fileName,
+        arrayBuffer: arrayBuffer
+      },
+      undefined,
+      undefined,
+      undefined,
+      true,
+      this.heat.settings.get(SettingsService.HEAT_MESSAGING)
+    )
   }
 
   /**
@@ -402,7 +413,14 @@ class HeatAPI implements IHeatAPI {
    * @param fileName
    */
   downloadFile(fileName: string): angular.IPromise<ArrayBuffer> {
-    return this.heat.get(`/messaging/file/download/${fileName}`, undefined, undefined, true)
+    //overwrite host and port because messaging uses the central host
+    return this.heat.get(
+      `/messaging/file/download/${fileName}`,
+      undefined,
+      undefined,
+      true,
+      this.heat.settings.get(SettingsService.HEAT_MESSAGING)
+    )
   }
 
 }

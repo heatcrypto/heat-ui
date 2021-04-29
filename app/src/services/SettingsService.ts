@@ -58,7 +58,7 @@ class SettingsService {
   public static HEAT_WEBSOCKET_REMOTE = 'settings.heat_websocket_remote';
   public static HEAT_WEBSOCKET_LOCAL = 'settings.heat_websocket_local';
   public static HEAT_WEBSOCKET = 'settings.heat_websocket';
-  public static HEAT_WEBRTC_WEBSOCKET = 'settings.heat_webrtc_websocket';
+  public static HEAT_MESSAGING = 'settings.heat_messaging';
   public static LOG_HEAT_ERRORS = 'settings.log_heat_errors';
   public static LOG_HEAT_ALL = 'settings.log_heat_all';
   public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
@@ -95,6 +95,7 @@ class SettingsService {
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
       SettingsService.FAILOVER_DESCRIPTOR =  {
+        messaging: {host: "", port: 0, websocket: ""},
         failoverEnabled: false,
         heightDeltaThreshold: 2,
         balancesMismatchesThreshold: 0.9,
@@ -250,7 +251,7 @@ class SettingsService {
 
   settings={};
 
-  public setHost(host: "local" | "remote", failoverEnabled: boolean, setSignalingToHost: boolean) {
+  public setHost(host: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean) {
     this.failoverEnabled = failoverEnabled;
     this.settings[SettingsService.HEAT_HOST] =
       this.settings[host == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
@@ -258,9 +259,13 @@ class SettingsService {
       this.settings[host == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
     this.settings[SettingsService.HEAT_WEBSOCKET] =
       this.settings[host == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
-    this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = setSignalingToHost
-      ? this.settings[host == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
-      : SettingsService.FAILOVER_DESCRIPTOR.signalingUrl
+    this.settings[SettingsService.HEAT_MESSAGING] = sameMessagingHost
+      ? {
+        host: this.settings[SettingsService.HEAT_HOST],
+        port: this.settings[SettingsService.HEAT_PORT],
+        websocket: this.settings[SettingsService.HEAT_WEBSOCKET]
+      }
+      : SettingsService.FAILOVER_DESCRIPTOR.messaging
   }
 
   public get(id:string) {
@@ -297,8 +302,7 @@ class SettingsService {
       } else {
         SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.mainnet;
       }
-
-      this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = SettingsService.FAILOVER_DESCRIPTOR.signalingUrl;
+      this.settings[SettingsService.HEAT_MESSAGING] = SettingsService.FAILOVER_DESCRIPTOR.messaging;
       SettingsService.CRYPTO_NODES = json.cryptoNodes;
       this.failoverEnabled = SettingsService.FAILOVER_DESCRIPTOR.failoverEnabled || true;
     };
@@ -350,6 +354,11 @@ interface FailoverDescriptor {
   balancesEqualityThreshold: number;  // 0 - 1
   connectedPeersThreshold: number;  // 0 - 1
   knownServers: ServerDescriptor[];
+  messaging: { //central messaging/signaling host
+    host: string;
+    port: number;
+    websocket: string;
+  }
   signalingUrl?: string;  //central WebRTC signaling server, regardless the choosed server
 }
 

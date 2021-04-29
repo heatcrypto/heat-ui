@@ -19,7 +19,12 @@
           "priority": 1
         }
       ],
-      "signalingUrl": "wss://heatwallet.com:7755/ws/"
+      "signalingUrl": "wss://heatwallet.com:7755/ws/",
+      "messaging": {
+        "host": "https://heatwallet.com",
+        "port": 7734,
+        "websocket": "wss://heatwallet.com:7755/ws/"
+      }
     },
     "testnet": {
       "failoverEnabled": false,
@@ -47,7 +52,12 @@
           "priority": 2
         }
       ],
-      "signalingUrl": "wss://alpha.heatledger.com:7755/ws/"
+      "signalingUrl": "wss://alpha.heatledger.com:7755/ws/",
+      "messaging": {
+        "host": "https://alpha.heatledger.com",
+        "port": 7734,
+        "websocket": "wss://alpha.heatledger.com:7755/ws/"
+      }
     },
     "betanet": {}
   },

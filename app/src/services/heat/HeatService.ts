@@ -52,7 +52,7 @@ class HeatService {
 
   constructor(public $q: angular.IQService,
               private $http: angular.IHttpService,
-              private settings: SettingsService,
+              public settings: SettingsService,
               private user: UserService,
               private $timeout: angular.ITimeoutService,
               private env: EnvService) {
@@ -87,10 +87,11 @@ class HeatService {
     }
   }
 
-  get(route: string, returns?: string, ignoreErrorResponse = false, isFile?: boolean): angular.IPromise<any> {
+  get(route: string, returns?: string, ignoreErrorResponse = false, isFile?: boolean,
+      hostPort?: { host: string, port: number }): angular.IPromise<any> {
     return this.getRaw(
-      this.settings.get(SettingsService.HEAT_HOST),
-      this.settings.get(SettingsService.HEAT_PORT),
+      hostPort ? hostPort.host : this.settings.get(SettingsService.HEAT_HOST),
+      hostPort ? hostPort.port : this.settings.get(SettingsService.HEAT_PORT),
       route,
       returns,
       ignoreErrorResponse,
@@ -208,13 +209,22 @@ class HeatService {
     req.end()
   }
 
-  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
-    let host = localHostOnly ? this.settings.get(SettingsService.HEAT_HOST_LOCAL) : this.settings.get(SettingsService.HEAT_HOST);
-    let port = localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) : this.settings.get(SettingsService.HEAT_PORT);
+  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean,
+       hostPort?: {host: string, port: number}): angular.IPromise<any> {
+    let host
+    let port
+    if (hostPort) {
+      host = hostPort.host
+      port = hostPort.port
+    } else {
+      host = localHostOnly ? this.settings.get(SettingsService.HEAT_HOST_LOCAL) : this.settings.get(SettingsService.HEAT_HOST);
+      port = localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) : this.settings.get(SettingsService.HEAT_PORT);
+    }
     return this.postRaw(host, port, route, request, withAuth, returns, localHostOnly, isFile);
   }
 
-  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
+  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string,
+          localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
     var req = request || {};

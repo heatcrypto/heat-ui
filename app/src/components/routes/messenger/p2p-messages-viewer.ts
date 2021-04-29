@@ -90,7 +90,9 @@
       </div>
       <div ng-if="!item.fileIndicator" class="message-content">{{item.content}}</div>
       <div ng-if="item.fileIndicator" class="message-content">{{item.content}}</div>
-      <div ng-if="item.fileIndicator == 1"><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a></div>
+      <div ng-if="item.fileIndicator == 1 || item.fileIndicator == 4">
+          <a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a>
+      </div>
       <div ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</div>
       <div ng-if="item.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
       <div ng-if="item.fileIndicator == 4" class="file-status">file download error</div>

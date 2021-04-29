@@ -406,7 +406,7 @@ class ToolbarComponent {
 
     $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
       this.heatServerLocation = settings.get(SettingsService.HEAT_HOST) + ":" + settings.get(SettingsService.HEAT_PORT);
-      this.signalingURL = this.settings.get(SettingsService.HEAT_WEBRTC_WEBSOCKET);
+      this.signalingURL = this.settings.get(SettingsService.HEAT_MESSAGING).websocket;
     });
 
     let unreadChangedListener = (rooms: p2p.Room[]) => {
