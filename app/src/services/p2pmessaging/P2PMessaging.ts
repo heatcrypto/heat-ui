@@ -190,6 +190,12 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     })
   }
 
+  onServerMessageRemoved(targetMessageId: string, fileId: string): void {
+    this.$mdToast.show(
+      this.$mdToast.simple().textContent(`The message${fileId ? " and file are" : " is"} removed on the server`).hideDelay(9000)
+    )
+  }
+
   onError(reason: string, protocol?: p2p.Protocol) {
     if (protocol == p2p.Protocol.U2U) {
       this.$mdToast.show(
@@ -389,6 +395,14 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     if (nowHasUnreadMessage != this.hasUnreadMessage) {
       this.hasUnreadMessage = nowHasUnreadMessage;
       this.emit(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadRooms);
+    }
+  }
+
+  checkToRemoveServerMessage(outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo) {
+    if (outgoing && transport == "server") {
+      if (!extraInfo || extraInfo.status?.stage != 1) {
+        this.u2uProtocol.sendRemoveMessage(targetMessageId)
+      }
     }
   }
 

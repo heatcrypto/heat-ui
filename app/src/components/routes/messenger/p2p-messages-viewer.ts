@@ -42,6 +42,9 @@
       color: green;
       margin: 0 12px 0 0;
     }
+    .message-entry md-icon.transportserver {
+      color: skyblue;
+    }
     .message-entry .header {
       padding-bottom: 6px;
       color: grey;
@@ -109,8 +112,9 @@
 <div ui-scroll="item in vm.datasource" buffer-size="200" adapter="adapter"
       layout="row" class="message-entry" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
 <div class="message-wrapper">
-    <md-icon md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
-    <md-icon class="status" md-font-library="material-icons" ng-if="item.stage==1">check</md-icon>
+    <md-icon ng-class="{transportserver: item.transport=='server'}" md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
+    <md-icon class="status" md-font-library="material-icons" ng-class="{transportserver: item.transport=='server'}"
+            ng-if="item.stage==1">check</md-icon>
     <md-menu>
       <md-button aria-label="Message menu" class="md-icon-button menu-button" ng-click="vm.openMenu($mdMenu, $event)">
         <!--<md-icon md-menu-origin md-svg-icon="call:phone"></md-icon>-->
@@ -223,12 +227,13 @@ class P2PMessagesViewerComponent {
       "Remove message",
       `Do you want to remove the message ?`
     ).then(() => {
-      this.datasource.remove(item);
+      this.datasource.remove(item)
+      this.p2pMessaging.checkToRemoveServerMessage(item["outgoing"], item.transport, item.msgId, item.extraInfo)
       // @ts-ignore
-      let adapter = this.$scope.adapter;
+      let adapter = this.$scope.adapter
       adapter.applyUpdates(function (item2) {
         if (item2 == item) {
-          return [];
+          return []
         }
       });
     });

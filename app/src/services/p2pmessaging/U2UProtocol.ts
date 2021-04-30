@@ -75,6 +75,17 @@ module p2p {
     }
 
     /**
+     * send message to remove the target message on the server
+     */
+    sendRemoveMessage(targetMessageId: string) {
+      this.connector.sendWebsocketMessage(Protocol.U2U, [{
+        type: "remove-message",
+        sender: this.connector.identity,
+        payload: targetMessageId
+      }])
+    }
+
+    /**
      * Request the file saved on the server for this recipient
      */
     requestFile(fileMessageId: string, fileSender: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string }) {
@@ -135,12 +146,18 @@ module p2p {
       },
 
       //on file downloaded
+      //deprecated
       TRANSFERFILE: (roomName: string, msg) => {
         let payload = JSON.parse(msg.payload)
         let fileDescriptor = this.awaitingDownloadingFiles.get(msg.fileMessageId)
         this.awaitingDownloadingFiles.delete(msg.fileMessageId)
         let fileContent = this.connector.decrypt(payload, fileDescriptor.fileSender)
         this.connector.messenger.onFile(fileContent, null, msg.fileMessageId, fileDescriptor)
+      },
+
+      //on file downloaded
+      "remove-message.done": (roomName: string, msg) => {
+        this.connector.messenger.onServerMessageRemoved(msg.targetMessageId, msg.fileId)
       },
 
       ERROR: (roomName: string, msg) => {

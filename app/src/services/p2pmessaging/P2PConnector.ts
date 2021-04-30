@@ -72,6 +72,12 @@ module p2p {
 
     sendFile(messageId: string, file: File, recipientPublicKey: string): Promise<any>
 
+    /**
+     * If needed send request to remove the message on the server
+     */
+    checkToRemoveServerMessage(outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo)
+
+    onServerMessageRemoved(targetMessageId: string, fileId: string): void;
   }
 
   /**
