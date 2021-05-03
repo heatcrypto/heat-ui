@@ -148,9 +148,13 @@ class HeatService {
           var data = angular.isString(returns) ? response[returns] : response;
           deferred.resolve(data);
         }, (response) => {
-          if (ignoreErrorResponse) return
-          this.logErrorResponse(route, null, response);
-          deferred.reject(new ServerEngineError({host: host, port: port, route: route, response: response}));
+          if (ignoreErrorResponse) {
+            deferred.resolve()
+          } else {
+            this.logErrorResponse(route, null, response)
+            let data = Object.assign(response, { host: host, port: port, route: route, response: response })
+            deferred.reject(new ServerEngineError(data))
+          }
         },
         isFile
       )
