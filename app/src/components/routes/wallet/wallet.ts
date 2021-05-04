@@ -1518,9 +1518,7 @@ class WalletComponent {
         if (balance.id != '0') {
           promises.push(
             this.assetInfo.getInfo(balance.id).then(info => {
-              assetInfos.push(angular.extend(info, {
-                userBalance: balance.virtualBalance
-              }))
+              assetInfos.push(angular.extend({}, info, {userBalance: balance.virtualBalance}))
             })
           );
         }
