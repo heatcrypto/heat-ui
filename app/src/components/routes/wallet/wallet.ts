@@ -4,6 +4,8 @@ module wlt {
 
     walletEntries: any
 
+    flatten()
+
     rememberAdressCreated(account: string, address: string): void
 
     loadEthereumAddresses(entry: WalletEntry): void
@@ -21,6 +23,8 @@ module wlt {
     loadLtcAddresses(entry: WalletEntry): void
 
     loadBitcoinCashAddresses(entry: WalletEntry): void
+
+    shareCurrencyAddressesWithP2pContacts(currency: string, address: string)
 
   }
 
@@ -467,5 +471,164 @@ module wlt {
       }
     }
 
+    initBTC(walletComponent: IWalletComponent, wallet: WalletType, user: UserService) {
+      let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
+      btcCurrencyAddressLoading.visible = this.expanded;
+      btcCurrencyAddressLoading.wallet = wallet;
+      this.currencies.push(btcCurrencyAddressLoading);
+
+      let btcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Bitcoin', wallet)
+      btcCurrencyAddressCreate.visible = this.expanded
+      btcCurrencyAddressCreate.parent = this
+      btcCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+      this.currencies.push(btcCurrencyAddressCreate)
+
+      walletComponent.flatten()
+      if (user.account === this.account)
+        walletComponent.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+
+      /* Only if this node is expanded will we load the addresses */
+      if (this.expanded) {
+        walletComponent.loadBitcoinAddresses(this)
+      }
+    }
+
+    initEth(walletComponent: IWalletComponent, wallet: WalletType) {
+      let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
+      ethCurrencyAddressLoading.visible = this.expanded
+      ethCurrencyAddressLoading.wallet = wallet
+      this.currencies.push(ethCurrencyAddressLoading)
+
+      let ethCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Ethereum', wallet)
+      ethCurrencyAddressCreate.visible = this.expanded
+      ethCurrencyAddressCreate.parent = this
+      ethCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+
+      this.currencies.push(ethCurrencyAddressCreate)
+
+      walletComponent.flatten()
+
+      /* Only if this node is expanded will we load the addresses */
+      if (this.expanded) {
+        walletComponent.loadEthereumAddresses(this)
+      }
+    }
+
+    initIota(walletComponent: IWalletComponent, wallet: WalletType) {
+      let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
+      iotaCurrencyAddressLoading.visible = this.expanded
+      iotaCurrencyAddressLoading.wallet = wallet
+      this.currencies.push(iotaCurrencyAddressLoading)
+
+      let iotaCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Iota', wallet)
+      iotaCurrencyAddressCreate.visible = this.expanded
+      iotaCurrencyAddressCreate.parent = this
+      iotaCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+
+      this.currencies.push(iotaCurrencyAddressCreate)
+
+      walletComponent.flatten()
+
+      /* Only if this node is expanded will we load the addresses */
+      if (this.expanded) {
+        walletComponent.loadIotaAddresses(this)
+      }
+    }
+
+    initFIMK(walletComponent: IWalletComponent, wallet: WalletType) {
+      let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
+      fimkCurrencyAddressLoading.visible = this.expanded
+      fimkCurrencyAddressLoading.wallet = wallet
+      this.currencies.push(fimkCurrencyAddressLoading)
+
+      let fimkCurrencyAddressCreate = new wlt.CurrencyAddressCreate('FIMK', wallet)
+      fimkCurrencyAddressCreate.visible = this.expanded
+      fimkCurrencyAddressCreate.parent = this
+      fimkCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+      this.currencies.push(fimkCurrencyAddressCreate)
+
+      walletComponent.flatten()
+
+      /* Only if this node is expanded will we load the addresses */
+      if (this.expanded) {
+        walletComponent.loadFIMKAddresses(this)
+      }
+    }
+
+    initNXT(walletComponent: IWalletComponent, wallet: WalletType) {
+      let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
+      nxtCurrencyAddressLoading.visible = this.expanded
+      nxtCurrencyAddressLoading.wallet = wallet
+      this.currencies.push(nxtCurrencyAddressLoading)
+
+      let nxtCurrencyAddressCreate = new wlt.CurrencyAddressCreate('NXT', wallet)
+      nxtCurrencyAddressCreate.visible = this.expanded
+      nxtCurrencyAddressCreate.parent = this
+      nxtCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+      this.currencies.push(nxtCurrencyAddressCreate)
+
+      if (this.expanded) {
+        walletComponent.loadNXTAddresses(this)
+      }
+    }
+
+    initARDOR(walletComponent: IWalletComponent, wallet: WalletType) {
+      let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
+      ardorCurrencyAddressLoading.visible = this.expanded
+      ardorCurrencyAddressLoading.wallet = wallet
+      this.currencies.push(ardorCurrencyAddressLoading)
+
+      let ardorCurrencyAddressCreate = new wlt.CurrencyAddressCreate('ARDOR', wallet)
+      ardorCurrencyAddressCreate.visible = this.expanded
+      ardorCurrencyAddressCreate.parent = this
+      ardorCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+      this.currencies.push(ardorCurrencyAddressCreate)
+
+      if (this.expanded) {
+        walletComponent.loadARDORAddresses(this)
+      }
+    }
+
+    initLTC(walletComponent: IWalletComponent, wallet: WalletType) {
+      let ltcCurrencyAddressLoading = new wlt.CurrencyAddressLoading('Litecoin')
+      ltcCurrencyAddressLoading.visible = this.expanded;
+      ltcCurrencyAddressLoading.wallet = wallet;
+      this.currencies.push(ltcCurrencyAddressLoading);
+
+      let ltcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Litecoin', wallet)
+      ltcCurrencyAddressCreate.visible = this.expanded
+      ltcCurrencyAddressCreate.parent = this
+      ltcCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+      this.currencies.push(ltcCurrencyAddressCreate)
+
+      walletComponent.flatten()
+
+      /* Only if this node is expanded will we load the addresses */
+      if (this.expanded) {
+        walletComponent.loadLtcAddresses(this)
+      }
+    }
+
+    initBCH(walletComponent: IWalletComponent, wallet: WalletType) {
+      let bchCurrencyAddressLoading = new wlt.CurrencyAddressLoading('BitcoinCash')
+      bchCurrencyAddressLoading.visible = this.expanded;
+      bchCurrencyAddressLoading.wallet = wallet;
+      this.currencies.push(bchCurrencyAddressLoading);
+
+      let bchCurrencyAddressCreate = new wlt.CurrencyAddressCreate('BitcoinCash', wallet)
+      bchCurrencyAddressCreate.visible = this.expanded
+      bchCurrencyAddressCreate.parent = this
+      bchCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+      this.currencies.push(bchCurrencyAddressCreate)
+
+      walletComponent.flatten()
+
+      /* Only if this node is expanded will we load the addresses */
+      if (this.expanded) {
+        walletComponent.loadBitcoinCashAddresses(this)
+      }
+    }
+
   }
+
 }

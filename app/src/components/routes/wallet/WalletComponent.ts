@@ -561,168 +561,41 @@ class WalletComponent implements wlt.IWalletComponent {
     if (selectedCurrencies.indexOf('BTC') > -1)
       this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
-          let btcCurrencyAddressLoading = new wlt.CurrencyAddressLoading('Bitcoin')
-          btcCurrencyAddressLoading.visible = walletEntry.expanded;
-          btcCurrencyAddressLoading.wallet = wallet;
-          walletEntry.currencies.push(btcCurrencyAddressLoading);
-
-          let btcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Bitcoin', wallet)
-          btcCurrencyAddressCreate.visible = walletEntry.expanded
-          btcCurrencyAddressCreate.parent = walletEntry
-          btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(btcCurrencyAddressCreate)
-
-          this.flatten()
-          if (this.user.account === walletEntry.account)
-            this.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
-
-          /* Only if this node is expanded will we load the addresses */
-          if (walletEntry.expanded) {
-            this.loadBitcoinAddresses(walletEntry)
-          }
+          walletEntry.initBTC(this, wallet, this.user)
         }
-      })
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('ETH') > -1)
       this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
-
-        let ethCurrencyAddressLoading = new wlt.CurrencyAddressLoading('Ethereum')
-        ethCurrencyAddressLoading.visible = walletEntry.expanded
-        ethCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(ethCurrencyAddressLoading)
-
-        let ethCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Ethereum', wallet)
-        ethCurrencyAddressCreate.visible = walletEntry.expanded
-        ethCurrencyAddressCreate.parent = walletEntry
-        ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
-
-        walletEntry.currencies.push(ethCurrencyAddressCreate)
-
-        this.flatten()
-
-        /* Only if this node is expanded will we load the addresses */
-        if (walletEntry.expanded) {
-          this.loadEthereumAddresses(walletEntry)
-        }
+        walletEntry.initEth(this, wallet)
       }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
       this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let iotaCurrencyAddressLoading = new wlt.CurrencyAddressLoading('Iota')
-        iotaCurrencyAddressLoading.visible = walletEntry.expanded
-        iotaCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(iotaCurrencyAddressLoading)
-
-        let iotaCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Iota', wallet)
-        iotaCurrencyAddressCreate.visible = walletEntry.expanded
-        iotaCurrencyAddressCreate.parent = walletEntry
-        iotaCurrencyAddressCreate.flatten = this.flatten.bind(this)
-
-        walletEntry.currencies.push(iotaCurrencyAddressCreate)
-
-        this.flatten()
-
-        /* Only if this node is expanded will we load the addresses */
-        if (walletEntry.expanded) {
-          this.loadIotaAddresses(walletEntry)
-        }
-      })
+        walletEntry.initIota(this, wallet)
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('FIM') > -1)
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let fimkCurrencyAddressLoading = new wlt.CurrencyAddressLoading('FIMK')
-        fimkCurrencyAddressLoading.visible = walletEntry.expanded
-        fimkCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(fimkCurrencyAddressLoading)
-
-        let fimkCurrencyAddressCreate = new wlt.CurrencyAddressCreate('FIMK', wallet)
-        fimkCurrencyAddressCreate.visible = walletEntry.expanded
-        fimkCurrencyAddressCreate.parent = walletEntry
-        fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(fimkCurrencyAddressCreate)
-
-        this.flatten()
-
-        /* Only if this node is expanded will we load the addresses */
-        if (walletEntry.expanded) {
-          this.loadFIMKAddresses(walletEntry)
-        }
-      })
+        walletEntry.initFIMK(this, wallet)
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('NXT') > -1)
       this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let nxtCurrencyAddressLoading = new wlt.CurrencyAddressLoading('NXT')
-        nxtCurrencyAddressLoading.visible = walletEntry.expanded
-        nxtCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(nxtCurrencyAddressLoading)
-
-        let nxtCurrencyAddressCreate = new wlt.CurrencyAddressCreate('NXT', wallet)
-        nxtCurrencyAddressCreate.visible = walletEntry.expanded
-        nxtCurrencyAddressCreate.parent = walletEntry
-        nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(nxtCurrencyAddressCreate)
-
-        if (walletEntry.expanded) {
-          this.loadNXTAddresses(walletEntry)
-        }
-      })
+        walletEntry.initNXT(this, wallet)
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('ARDR') > -1)
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        let ardorCurrencyAddressLoading = new wlt.CurrencyAddressLoading('ARDOR')
-        ardorCurrencyAddressLoading.visible = walletEntry.expanded
-        ardorCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(ardorCurrencyAddressLoading)
-
-        let ardorCurrencyAddressCreate = new wlt.CurrencyAddressCreate('ARDOR', wallet)
-        ardorCurrencyAddressCreate.visible = walletEntry.expanded
-        ardorCurrencyAddressCreate.parent = walletEntry
-        ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(ardorCurrencyAddressCreate)
-
-        if (walletEntry.expanded) {
-          this.loadARDORAddresses(walletEntry)
-        }
-      })
+        walletEntry.initARDOR(this, wallet)
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('LTC') > -1)
       this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
-          let ltcCurrencyAddressLoading = new wlt.CurrencyAddressLoading('Litecoin')
-          ltcCurrencyAddressLoading.visible = walletEntry.expanded;
-          ltcCurrencyAddressLoading.wallet = wallet;
-          walletEntry.currencies.push(ltcCurrencyAddressLoading);
-
-          let ltcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Litecoin', wallet)
-          ltcCurrencyAddressCreate.visible = walletEntry.expanded
-          ltcCurrencyAddressCreate.parent = walletEntry
-          ltcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(ltcCurrencyAddressCreate)
-
-          this.flatten()
-
-          /* Only if this node is expanded will we load the addresses */
-          if (walletEntry.expanded) {
-            this.loadLtcAddresses(walletEntry)
-          }
+          walletEntry.initLTC(this, wallet)
         }
-      })
+      }).catch(reason => {console.log(reason)})
     if (selectedCurrencies.indexOf('BCH') > -1)
       this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
-          let bchCurrencyAddressLoading = new wlt.CurrencyAddressLoading('BitcoinCash')
-          bchCurrencyAddressLoading.visible = walletEntry.expanded;
-          bchCurrencyAddressLoading.wallet = wallet;
-          walletEntry.currencies.push(bchCurrencyAddressLoading);
-
-          let bchCurrencyAddressCreate = new wlt.CurrencyAddressCreate('BitcoinCash', wallet)
-          bchCurrencyAddressCreate.visible = walletEntry.expanded
-          bchCurrencyAddressCreate.parent = walletEntry
-          bchCurrencyAddressCreate.flatten = this.flatten.bind(this)
-          walletEntry.currencies.push(bchCurrencyAddressCreate)
-
-          this.flatten()
-
-          /* Only if this node is expanded will we load the addresses */
-          if (walletEntry.expanded) {
-            this.loadBitcoinCashAddresses(walletEntry)
-          }
+          walletEntry.initBCH(this, wallet)
         }
-      })
+      }).catch(reason => {console.log(reason)})
   }
 
   public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
