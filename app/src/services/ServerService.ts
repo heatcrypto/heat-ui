@@ -1,7 +1,7 @@
 /// <reference path='../lib/EventEmitter.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2020 Heat Ledger Ltd.
+ * Copyright (c) 2021 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -35,7 +35,6 @@ class ServerService extends EventEmitter {
   private childProcess: any;
   public buffer: Array<string> = [" "," "," "]; // needs one empty line or last line is not shown in console
 
-  private justLocked: boolean
   private readonly stopServerSignalFile
   private readonly serverStoppedSignalFile
 
@@ -48,26 +47,16 @@ class ServerService extends EventEmitter {
               private $mdToast: angular.material.IToastService) {
     super();
     let onbeforeunload = () => {
-      window.onbeforeunload = null;
       if (this.isRunning) {
-        if (!this.justLocked) {
-          $timeout(() => {
-            this.stopServer();
-          }, 500);
-          this.applicationShutdown().then(() => {
-            window.close();
-          });
-          $timeout(() => {
-            window.close();
-          }, 8000);
-          return "dont close";
-        }
+        this.$mdToast.show(this.$mdToast.simple().textContent(
+          "Embedded server is running, first stop it then retry the operation")
+          .hideDelay(8000))
+        return "dont close"
       }
-    };
-    window.onbeforeunload = onbeforeunload;
+    }
+    window.onbeforeunload = onbeforeunload
 
     user.on(UserService.EVENT_LOCKED, () => {
-      this.justLocked = true
       if (this.isRunning) {
         this.stopServer()
       }

@@ -524,8 +524,10 @@ class EthTransactionRenderer {
   }
 
   private status(t: EthplorerAddressTransactionExtended) {
-    if (t.ethereumSpecific && t.ethereumSpecific.status !== 1) {
-      return "<span class='failed'>[FAILED] </span>"
+    // status 1 OK, 0 Fail, -1 pending
+    if (t.ethereumSpecific) {
+      if (t.ethereumSpecific.status == 0) return "<span class='failed'>[FAILED] </span>"
+      if (t.ethereumSpecific.status == -1) return "<span class='pending'>[PENDING] </span>"
     }
     return ""
   }

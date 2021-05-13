@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 
-declare var saveAs: any;
+//declare var saveAs: any;
 @RouteConfig('/login')
 @Component({
   selector: 'login',
