@@ -50,7 +50,7 @@ class ContactService {
 
       return contacts
     }).catch(reason => {
-      console.error("Error on getting messaging contacts from server: " + reason)
+      console.error("Error on getting messaging contacts from server: " + (reason.description || reason.data?.errorDescription))
       return localContacts
     })
   }

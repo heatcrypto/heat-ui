@@ -23,6 +23,12 @@
 
 namespace wlt {
 
+  export function getStore() {
+    let storage = <StorageService>heat.$inject.get('storage')
+    let $rootScope = heat.$inject.get('$rootScope')
+    return storage.namespace('wallet', $rootScope, true)
+  }
+
   export class TokenBalance {
     public isTokenBalance = true
     public balance: string
@@ -104,17 +110,9 @@ namespace wlt {
     constructor(public name: string, public wallet: WalletType) {
     }
 
-    private getStore() {
-      let storage = <StorageService>heat.$inject.get('storage')
-      let $rootScope = heat.$inject.get('$rootScope')
-      return storage.namespace('wallet', $rootScope, true)
-    }
-
     private getCurrencies(account: string) {
-      let currencies = this.getStore().get(account)
-      if (!currencies)
-        currencies = []
-      return currencies
+      let currencies = getStore().get(account)
+      return currencies || []
     }
 
     private distinctValues = (value, index, self) => {
@@ -122,10 +120,9 @@ namespace wlt {
     }
 
     private addCurrency(account: string, currency: string) {
-      let store = this.getStore()
       let currencies = this.getCurrencies(account)
       currencies.push(currency)
-      store.put(account, currencies.filter(this.distinctValues))
+      getStore().put(account, currencies.filter(this.distinctValues))
     }
 
     removeIsDeleted(entry) {

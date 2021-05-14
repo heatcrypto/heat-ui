@@ -233,7 +233,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.nxtCryptoService = nxtCryptoService;
     this.bitcoreService = bitcoreService;
     WalletComponent.instance = this;
-    this.store = this.storage.namespace('wallet', $rootScope, true)
+    this.store = wlt.getStore()
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
       let index = this.chains.findIndex((entry) => entry.name === nxtChain.name);
