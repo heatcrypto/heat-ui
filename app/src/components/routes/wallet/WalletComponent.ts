@@ -177,7 +177,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   selectAll = true;
   allLocked = true
 
-  entries: Array<wlt.WalletEntry | wlt.CurrencyBalance | wlt.TokenBalance> = []
   //walletEntries: Array<wlt.WalletEntry> = []
   //createdAddresses: { [key: string]: Array<string> } = {}
   chains = [{name: 'HEAT', disabled: false}, {name: 'ETH', disabled: false}, {name: 'BTC', disabled: false},
@@ -193,7 +192,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   constructor(public $scope: angular.IScope,
               public $q: angular.IQService,
-              public localKeyStore: LocalKeyStoreService,
+              localKeyStore: LocalKeyStoreService,
               private walletFile: WalletFileService,
               private $window: angular.IWindowService,
               lightwalletService: LightwalletService,
@@ -220,6 +219,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               private $rootScope: angular.IScope) {
 
     super();
+    this.localKeyStore = localKeyStore;
     this.iotaCoreService = iotaCoreService;
     this.lightwalletService = lightwalletService;
     this.fimkCryptoService = fimkCryptoService;
@@ -255,22 +255,19 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       `Enter label for account ${entry.identifier} or enter empty value to delete the label`, '').then(
       label => {
         entry.label = label?.trim()
-        this.saveLabel(entry.account, label)
+        //save label
+        let password = this.localKeyStore.getPasswordForAccount(entry.account)
+        if (password) {
+          try {
+            let key = this.localKeyStore.load(entry.account, password)
+            if (key) {
+              key.label = entry.label || null
+              this.localKeyStore.add(key)
+            }
+          } catch (e) { console.error(e) }
+        }
       }
     )
-  }
-
-  saveLabel(account: string, label: string) {
-    let password = this.localKeyStore.getPasswordForAccount(account)
-    if (password) {
-      try {
-        let key = this.localKeyStore.load(account, password)
-        if (key) {
-          key.label = label ? label.trim() : null
-          this.localKeyStore.add(key)
-        }
-      } catch (e) { console.error(e) }
-    }
   }
 
   showSecret(secret: string, currencySymbol: string) {
@@ -331,55 +328,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.$scope['vm'].selectedChain = null
   }
 
-  initLocalKeyStore() {
-    this.entries = []
-    this.walletEntries = []
-    this.localKeyStore.list().map((account: string) => {
-      let name = this.localKeyStore.keyName(account)
-      let walletEntry = new wlt.WalletEntry(account, name, this)
-      this.walletEntries.push(walletEntry)
-    });
-    this.walletEntries.sort((a, b) => {
-      return a.account.localeCompare(b.account)
-    })
-    this.walletEntries.forEach(walletEntry => {
-      let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
-      if (password) {
-        try {
-          var key = this.localKeyStore.load(walletEntry.account, password);
-          if (key) {
-            walletEntry.secretPhrase = key.secretPhrase
-            walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-            walletEntry.unlocked = true
-            walletEntry.pin = password
-            walletEntry.label = key.label
-            this.initWalletEntry(walletEntry)
-          }
-        } catch (e) { console.log(e) }
-      }
-    })
-    this.flatten()
-    this.fetchCryptoAddresses('BTC')
-  }
-
-  initCreatedAddresses() {
-    for (let i = 0; i < window.localStorage.length; i++) {
-      let key = window.localStorage.key(i)
-      let data = key.match(/eth-address-created:(.+):(.+)/)
-      if (data) {
-        let acc = data[1], addr = data[2]
-        this.createdAddresses[acc] = this.createdAddresses[acc] || []
-        this.createdAddresses[acc].push(addr)
-      }
-    }
-  }
-
-  rememberAdressCreated(account: string, ethAddress: string) {
-    this.createdAddresses[account] = this.createdAddresses[account] || []
-    this.createdAddresses[account].push(ethAddress)
-    window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`, "1")
-  }
-
   /* Iterates down all children of walletEntries and flattens them into the entries list */
   flatten() {
     this.$scope.$evalAsync(() => {
@@ -417,15 +365,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     p2pMessaging.p2pContactStore.forEach((key, contact) => {
       console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
       p2pContactsUtils.shareCryptoAddress(contact, currency, address)
-    })
-  }
-
-  fetchCryptoAddresses(currency: string) {
-    let p2pContactsUtils = <ContactService>heat.$inject.get('contactService')
-    let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
-    p2pMessaging.p2pContactStore.forEach((key, contact) => {
-      console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
-      p2pContactsUtils.fetchCryptoAddress(contact, currency)
     })
   }
 

@@ -143,7 +143,6 @@ namespace wlt {
       })
       let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
       store.put(`${currency}-${heatAddress}`, encrypted)
-
     }
 
     createAddressByName(component: WalletComponentAbstract, name: string) {
