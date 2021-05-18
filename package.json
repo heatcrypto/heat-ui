@@ -39,7 +39,6 @@
     "electron-builder-squirrel-windows": "22.8.1",
     "electron-packager": "14.2.1",
     "es6-promise": "3.3.1",
-    "form-data": "^4.0.0",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
     "gulp-less": "^4.0.1",
