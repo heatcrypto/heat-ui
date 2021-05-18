@@ -50,14 +50,17 @@ module dialogs {
     return deferred.promise
   }
 
-  export function simplePrompt($event, title:string, description:string, defaultValue:string): angular.IPromise<string> {
-    let $q = <angular.IQService> heat.$inject.get('$q');
-    let deferred = $q.defer<string>();
+  export function simplePrompt(
+    $event,
+    title: string,
+    description: string,
+    fields: { label: string, value: string }[]
+  ): angular.IPromise<string[]> {
+    let $q = <angular.IQService>heat.$inject.get('$q');
+    let deferred = $q.defer<string[]>();
     let locals = {
-      v: {
-        value: defaultValue||''
-      },
-      description: description||'',
+      description: description,
+      fields: fields
     }
     dialogs.dialog({
       id: 'prompt',
@@ -65,14 +68,20 @@ module dialogs {
       targetEvent: $event,
       template: `
         <p>{{vm.description}}</p>
-        <md-input-container flex>
-          <input id="1" type="text" ng-model="vm.v.value" autocomplete="off" auto-focus/><br>
-        </md-input-container>
+        <md-list>
+          <md-list-item class="md-2-line" ng-repeat="item in vm.fields">
+            <md-input-container flex>
+              <label>{{item.label}}</label>
+              <!--<input id="1" type="text" ng-model="item.value" autocomplete="off" auto-focus/>-->
+              <input type="text" ng-model="item.value" autocomplete="off"/>
+            </md-input-container>
+          </md-list-item>
+        </md-list>
       `,
       locals: locals
     }).then(
       () => {
-        deferred.resolve(locals.v.value)
+        deferred.resolve(locals.fields.map(v => v.value))
       },
       deferred.reject
     )
