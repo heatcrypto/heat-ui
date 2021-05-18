@@ -82,9 +82,13 @@
                 </md-button>
 
                 <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a>
-                    <span class="label">{{entry.label}}</span>
+                  <span class="visibleLabel">{{entry.visibleLabel}}</span>
+                  <span class="label">{{entry.label}}</span>
                 </div>
-                <div flex ng-if="!entry.secretPhrase" class="identifier">{{entry.identifier}}</div>
+                <div flex ng-if="!entry.secretPhrase" class="identifier">
+                  <span>{{entry.identifier}}</span>
+                  <span class="visibleLabel">{{entry.visibleLabel}}</span>
+                </div>
                 <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
 
                 <md-menu md-position-mode="target-right target" md-offset="34px 34px" ng-if="entry.unlocked">
@@ -251,11 +255,17 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   enterEntryLabel(entry: wlt.WalletEntry) {
-    dialogs.simplePrompt(null, 'Enter Label',
-      `Enter label for account ${entry.identifier} or enter empty value to delete the label`, '').then(
-      label => {
-        entry.label = label?.trim()
-        //save label
+    let p = [
+      {label: `Visible label`, value: entry.visibleLabel},
+      {label: `Invisible label until login`, value: entry.label}
+    ]
+    dialogs.simplePrompt(null, 'Enter Label', `Enter label for account ${entry.identifier} or enter empty value to delete the label`, p).then(
+      labels => {
+        //save visible label
+        entry.visibleLabel = labels[0]?.trim()
+        wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
+        //save invisible label
+        entry.label = labels[1]?.trim()
         let password = this.localKeyStore.getPasswordForAccount(entry.account)
         if (password) {
           try {

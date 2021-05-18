@@ -37,6 +37,8 @@ interface IHeatWalletFileEntry {
 
   /* Optional if this is a testnet key */
   isTestnet?: boolean;
+
+  visibleLabel?: string;
 }
 
 @Service('walletFile')

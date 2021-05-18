@@ -27,6 +27,7 @@ namespace wlt {
     public isWalletEntry = true
     public selected = true
     public identifier: string
+    public visibleLabel: string
     public label: string
     public secretPhrase: string
     public bip44Compatible: boolean
@@ -42,6 +43,7 @@ namespace wlt {
                 public component: WalletComponentAbstract //user may assign any text for wallet account
     ) {
       this.identifier = name ? `${account} | ${name}` : account
+      this.visibleLabel = getEntryVisibleLabel(this.account)
     }
 
     public toggle(forceVisible?: boolean) {

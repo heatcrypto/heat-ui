@@ -29,6 +29,19 @@ namespace wlt {
     return storage.namespace('wallet', $rootScope, true)
   }
 
+  export function getEntryVisibleLabel(account) {
+    return getStore().get("label." + account)
+  }
+
+  export function updateEntryVisibleLabel(account, visibleLabel) {
+    let storeKey = "label." + account
+    if (visibleLabel) {
+      getStore().put(storeKey, visibleLabel)
+    } else {
+      getStore().remove(storeKey)
+    }
+  }
+
   export class TokenBalance {
     public isTokenBalance = true
     public balance: string

@@ -51,8 +51,7 @@ function createBCHAccount($event, walletComponent: WalletComponent) {
           let $rootScope = heat.$inject.get('$rootScope');
           let store = storage.namespace('wallet', $rootScope, true)
           let currencies = store.get(walletEntry.account)
-          if (!currencies)
-            currencies = []
+          if (!(currencies instanceof Array)) currencies = []
           currencies.push('BCH')
           store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
           walletComponent.initWalletEntry(walletEntry)

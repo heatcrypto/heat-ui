@@ -171,7 +171,8 @@ class LocalKeyStoreService {
         account: entry.account,
         contents: entry.contents,
         isTestnet: entry.isTestnet,
-        name: entry.name
+        name: entry.name,
+        visibleLabel: wlt.getEntryVisibleLabel(entry.account)
       })
     });
     return wallet;
@@ -189,6 +190,9 @@ class LocalKeyStoreService {
       };
       if (this.addRaw(localKeyEntry)) {
         added.push(localKeyEntry);
+        if (entry.visibleLabel) {
+          wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
+        }
       }
     });
     return added;
