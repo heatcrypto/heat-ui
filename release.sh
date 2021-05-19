@@ -118,16 +118,16 @@ if [ "$MACOS" = "true" ]; then
 fi
 
 # build the full windows client
-node_modules/.bin/electron-builder --win --x64
-mv $RELEASE_DIR/*.exe $RELEASE_DIR/$WINDOWS_APP_NAME
-rm -f $RELEASE_DIR/*.exe
-rm -r -f $RELEASE_DIR/win-unpacked
+# node_modules/.bin/electron-builder --win --x64
+# mv $RELEASE_DIR/*.exe $RELEASE_DIR/$WINDOWS_APP_NAME
+# rm -f $RELEASE_DIR/*.exe
+# rm -r -f $RELEASE_DIR/win-unpacked
 
 # build the light windows client
-node_modules/.bin/electron-builder --win --x64 --c.extraResources=[]
-mv $RELEASE_DIR/*.exe $RELEASE_DIR/$WINDOWS_APP_CLIENT_NAME
-rm -f $RELEASE_DIR/*.exe
-rm -r -f $RELEASE_DIR/win-unpacked
+# node_modules/.bin/electron-builder --win --x64 --c.extraResources=[]
+# mv $RELEASE_DIR/*.exe $RELEASE_DIR/$WINDOWS_APP_CLIENT_NAME
+# rm -f $RELEASE_DIR/*.exe
+# rm -r -f $RELEASE_DIR/win-unpacked
 
 # build the full linux client
 node_modules/.bin/electron-builder --linux --x64
