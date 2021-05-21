@@ -11,12 +11,18 @@
           "host": "https://heatwallet.com",
           "port": 7734,
           "websocket": "wss://heatwallet.com:7755/ws/",
-          "priority": 2
+          "priority": 1
         },
         {
           "host": "https://heat1.heatwallet.com",
           "websocket": "wss://heat1.heatwallet.com/ws/",
-          "priority": 1
+          "priority": 2
+        },
+        {
+          "host": "http://localhost",
+          "port": 7733,
+          "websocket": "ws://localhost:7755/ws/",
+          "priority": 3
         }
       ],
       "signalingUrl": "wss://heatwallet.com:7755/ws/",
