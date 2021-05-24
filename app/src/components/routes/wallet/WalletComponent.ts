@@ -119,7 +119,7 @@
               </div>
 
               <!-- Currency Balance -->
-              <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
+              <div ng-if="entry.isCurrencyBalance && entry.address" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
@@ -285,6 +285,9 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   deleteEntry(entry) {
+    if (!entry.address) {
+      return
+    }
     dialogs.confirm(`Remove ${entry.symbol} Address`,
       `This will remove ${entry.symbol} ${entry.address} from your device.
       Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
