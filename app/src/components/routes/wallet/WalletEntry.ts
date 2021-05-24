@@ -69,7 +69,7 @@ namespace wlt {
       }
     }
 
-    initBTC(walletComponent: WalletComponentAbstract, wallet: WalletType, user: UserService) {
+    initBTC(walletComponent: WalletComponentAbstract, wallet: WalletAddresses, user: UserService) {
       let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
       btcCurrencyAddressLoading.visible = this.expanded;
       btcCurrencyAddressLoading.wallet = wallet;
@@ -91,7 +91,7 @@ namespace wlt {
       }
     }
 
-    initEth(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initEth(walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
       ethCurrencyAddressLoading.visible = this.expanded
       ethCurrencyAddressLoading.wallet = wallet
@@ -112,7 +112,7 @@ namespace wlt {
       }
     }
 
-    initIota(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initIota(walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let iotaCurrencyAddressLoading = new CurrencyAddressLoading('Iota')
       iotaCurrencyAddressLoading.visible = this.expanded
       iotaCurrencyAddressLoading.wallet = wallet
@@ -133,7 +133,7 @@ namespace wlt {
       }
     }
 
-    initFIMK(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initFIMK(walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
       fimkCurrencyAddressLoading.visible = this.expanded
       fimkCurrencyAddressLoading.wallet = wallet
@@ -153,7 +153,7 @@ namespace wlt {
       }
     }
 
-    initNXT(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initNXT(walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
       nxtCurrencyAddressLoading.visible = this.expanded
       nxtCurrencyAddressLoading.wallet = wallet
@@ -170,7 +170,7 @@ namespace wlt {
       }
     }
 
-    initARDOR(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initARDOR(walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
       ardorCurrencyAddressLoading.visible = this.expanded
       ardorCurrencyAddressLoading.wallet = wallet
@@ -187,13 +187,13 @@ namespace wlt {
       }
     }
 
-    initLTC(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initLTC(walletComponent: WalletComponentAbstract, addresses: WalletAddresses) {
       let ltcCurrencyAddressLoading = new wlt.CurrencyAddressLoading('Litecoin')
       ltcCurrencyAddressLoading.visible = this.expanded;
-      ltcCurrencyAddressLoading.wallet = wallet;
+      ltcCurrencyAddressLoading.wallet = addresses;
       this.currencies.push(ltcCurrencyAddressLoading);
 
-      let ltcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Litecoin', wallet)
+      let ltcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Litecoin', addresses)
       ltcCurrencyAddressCreate.visible = this.expanded
       ltcCurrencyAddressCreate.parent = this
       ltcCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
@@ -207,7 +207,7 @@ namespace wlt {
       }
     }
 
-    initBCH(walletComponent: WalletComponentAbstract, wallet: WalletType) {
+    initBCH(walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let bchCurrencyAddressLoading = new wlt.CurrencyAddressLoading('BitcoinCash')
       bchCurrencyAddressLoading.visible = this.expanded;
       bchCurrencyAddressLoading.wallet = wallet;

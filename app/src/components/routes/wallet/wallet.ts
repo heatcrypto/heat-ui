@@ -107,7 +107,8 @@ namespace wlt {
   export class CurrencyAddressLoading {
     public isCurrencyAddressLoading = true
     public visible = false
-    public wallet: WalletType
+    public wallet: WalletAddresses
+    public address: string
 
     constructor(public name: string) {
     }
@@ -120,7 +121,7 @@ namespace wlt {
     public parent: WalletEntry
     public flatten: () => void
 
-    constructor(public name: string, public wallet: WalletType) {
+    constructor(public name: string, public wallet: WalletAddresses) {
     }
 
     private getCurrencies(account: string) {

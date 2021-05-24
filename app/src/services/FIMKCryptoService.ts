@@ -14,7 +14,7 @@ class FIMKCryptoService {
   }
 
   /* Sets the seed to this wallet */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
       let encryptedWallet = this.store.get(`FIM-${heatAddress}`)
@@ -37,7 +37,7 @@ class FIMKCryptoService {
   }
 
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshAdressBalances(wallet: WalletAddresses) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
       let mofoSocketService: MofoSocketService = heat.$inject.get('mofoSocketService')

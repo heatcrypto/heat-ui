@@ -16,7 +16,7 @@ class BitcoreService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
       let encryptedWallet = this.store.get(`BTC-${heatAddress}`)
@@ -64,7 +64,7 @@ class BitcoreService {
     return walletType;
   }
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshBalances(wallet: WalletAddresses, btcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)
 
@@ -72,8 +72,8 @@ class BitcoreService {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses[0]
-        addresses.shift()
+        let address = addresses.shift()
+        btcCurrencyAddressLoading.address = address
 
         /* look up its data on btcBlockExplorerService */
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
@@ -82,8 +82,7 @@ class BitcoreService {
 
             /* lookup the 'real' WalletAddress */
             let walletAddress = wallet.addresses.find(x => x.address == address)
-            if (!walletAddress)
-              return
+            if (!walletAddress) return
 
             walletAddress.inUse = info.txApperances != 0
             if (!walletAddress.inUse) {

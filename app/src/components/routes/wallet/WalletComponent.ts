@@ -147,7 +147,7 @@
               <!-- Currency Address Loading -->
               <div ng-if="entry.isCurrencyAddressLoading" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
-                <div class="identifier" flex>Loading ..</div>
+                <div class="identifier" flex>{{entry.address || ''}}  loading ..</div>
               </div>
 
               <!-- Currency Address Create -->

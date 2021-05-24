@@ -13,7 +13,7 @@ class IotaCoreService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seed: string): Promise<WalletType> {
+  unlock(seed: string): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seed);
       let encryptedWallet = this.store.get(`IOTA-${heatAddress}`)
@@ -52,7 +52,7 @@ class IotaCoreService {
   }
 
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshAdressBalances(wallet: WalletAddresses) {
     return new Promise((resolve, reject) => {
       let secretPhrase = wallet.addresses[0].privateKey;
       let iotaBlockExplorerService: IotaBlockExplorerService = heat.$inject.get('iotaBlockExplorerService')

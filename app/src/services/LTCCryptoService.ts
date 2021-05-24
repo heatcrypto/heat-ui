@@ -16,7 +16,7 @@ class LTCCryptoService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
       let encryptedWallet = this.store.get(`LTC-${heatAddress}`)
@@ -62,7 +62,7 @@ class LTCCryptoService {
     return walletType;
   }
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshAdressBalances(wallet: WalletAddresses, ltcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
 
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)
@@ -72,8 +72,8 @@ class LTCCryptoService {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses[0]
-        addresses.shift()
+        let address = addresses.shift()
+        ltcCurrencyAddressLoading.address = address
 
         ltcBlockExplorerService.getAddressInfo(address).then(info => {
 

@@ -116,8 +116,7 @@ namespace wlt {
       this.nxtCryptoService.refreshAdressBalances(nxtCurrencyAddressLoading.wallet).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(nxtCurrencyAddressLoading)
         nxtCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -159,8 +158,7 @@ namespace wlt {
 
       this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(ardorCurrencyAddressLoading)
         ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -204,8 +202,7 @@ namespace wlt {
       this.fimkCryptoService.refreshAdressBalances(fimkCurrencyAddressLoading.wallet).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(fimkCurrencyAddressLoading)
         fimkCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -246,11 +243,10 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Ethereum')
       if (!ethCurrencyAddressLoading) return
 
-      this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet).then(() => {
+      this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet, ethCurrencyAddressLoading).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
         ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -293,8 +289,7 @@ namespace wlt {
       this.iotaCoreService.refreshAdressBalances(iotaCurrencyAddressLoading.wallet).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(iotaCurrencyAddressLoading)
         iotaCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -326,11 +321,13 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
       if (!btcCurrencyAddressLoading) return
 
-      this.bitcoreService.refreshAdressBalances(btcCurrencyAddressLoading.wallet).then(() => {
+      console.debug("walletEntry.currencies", walletEntry.currencies)
+      console.debug("btcCurrencyAddressLoading.address", btcCurrencyAddressLoading)
+
+      this.bitcoreService.refreshBalances(btcCurrencyAddressLoading.wallet, btcCurrencyAddressLoading).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
         btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -398,7 +395,7 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Litecoin')
       if (!ltcCurrencyAddressLoading) return
 
-      this.ltcCryptoService.refreshAdressBalances(ltcCurrencyAddressLoading.wallet).then(() => {
+      this.ltcCryptoService.refreshAdressBalances(ltcCurrencyAddressLoading.wallet, ltcCurrencyAddressLoading).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))

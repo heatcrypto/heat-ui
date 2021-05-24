@@ -14,7 +14,7 @@ class ARDORCryptoService {
   }
 
   /* Sets the seed to this wallet */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
       let encryptedWallet = this.store.get(`ARDR-${heatAddress}`)
@@ -39,7 +39,7 @@ class ARDORCryptoService {
     });
   }
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshAdressBalances(wallet: WalletAddresses) {
     let userAccount = wallet.addresses[0].accountId;
     return new Promise((resolve, reject) => {
       let ardorBlockExplorerService: ArdorBlockExplorerService = heat.$inject.get('ardorBlockExplorerService')

@@ -55,7 +55,7 @@ declare type WalletAddress = {
     address: string;
   }>
 }
-declare type WalletType = {
+declare type WalletAddresses = {
   addresses: Array<WalletAddress>
 }
 
@@ -63,7 +63,7 @@ declare type WalletType = {
 @Inject('web3', 'user', 'settings', '$rootScope', '$window', 'storage')
 class LightwalletService {
 
-  //public wallet: WalletType
+  //public wallet: WalletAddresses
   static readonly BIP44 = "m/44'/60'/0'/0";
   private lightwallet;
   private store: Store;
@@ -96,7 +96,7 @@ class LightwalletService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: string, password?: string): Promise<WalletType> {
+  unlock(seedOrPrivateKey: string, password?: string): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
       let encryptedWallet = this.store.get(`ETH-${heatAddress}`)
@@ -109,7 +109,7 @@ class LightwalletService {
         let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
         resolve(JSON.parse(decryptedWallet));
       } else {
-        let promise: Promise<WalletType>;
+        let promise: Promise<WalletAddresses>;
         if (this.validSeed(seedOrPrivateKey)) {
           promise = this.getEtherWallet(seedOrPrivateKey, password || "")
         } else if (this.validPrivateKey(seedOrPrivateKey)) {
@@ -128,7 +128,7 @@ class LightwalletService {
     });
   }
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshAdressBalances(wallet: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)
     let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
@@ -137,12 +137,14 @@ class LightwalletService {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses[0]
-        addresses.shift()
+        let address = addresses.shift()
+
         if(!address) {
           resolve(false)
           return
         }
+        ethCurrencyAddressLoading.address = address
+
         /* look up its data on ethBlockExplorerService */
         ethBlockExplorerService.refresh().then(() => {
           ethBlockExplorerService.getAddressInfo(address).then(info => {
@@ -219,7 +221,7 @@ class LightwalletService {
 
   */
 
-  getEtherWallet(seed: string, password: string): Promise<WalletType> {
+  getEtherWallet(seed: string, password: string): Promise<WalletAddresses> {
     let that = this;
     return new Promise((resolve, reject) => {
       try {
@@ -274,7 +276,7 @@ class LightwalletService {
     })
   }
 
-  getEtherWalletFromPrivateKey(privkeyHex: string, password: string): Promise<WalletType> {
+  getEtherWalletFromPrivateKey(privkeyHex: string, password: string): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       try {
         this.lightwallet.keystore.createVault({
