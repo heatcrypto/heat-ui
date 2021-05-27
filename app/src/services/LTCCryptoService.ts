@@ -78,8 +78,11 @@ class LTCCryptoService {
         ltcBlockExplorerService.getAddressInfo(address).then(info => {
 
           let walletAddress = wallet.addresses.find(x => x.address == address)
-          if (!walletAddress)
+          if (!walletAddress) {
+            console.error(`Address ${address} is not found among addresses`, wallet.addresses)
+            resolve(false)
             return
+          }
 
           walletAddress.inUse = info.txs != 0
           if (!walletAddress.inUse) {
@@ -89,7 +92,8 @@ class LTCCryptoService {
 
           walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
           resolve(true)
-        }, () => {
+        }, (reason) => {
+          console.error(reason)
           resolve(false)
         })
       })

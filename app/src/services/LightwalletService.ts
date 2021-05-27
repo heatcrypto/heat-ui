@@ -151,8 +151,11 @@ class LightwalletService {
 
             /* lookup the 'real' WalletAddress */
             let walletAddress = wallet.addresses.find(x => x.address == address)
-            if (!walletAddress)
+            if (!walletAddress) {
+              console.error(`Address ${address} is not found among addresses`, wallet.addresses)
+              resolve(false)
               return
+            }
 
             walletAddress.inUse = (info.txs || info.countTxs) > 0
             if (!walletAddress.inUse) {
@@ -178,7 +181,8 @@ class LightwalletService {
               })
             }
             resolve(true)
-          }, () => {
+          }, (reason) => {
+            console.error(reason)
             resolve(false)
           })
         })

@@ -61,10 +61,10 @@ class NXTCryptoService {
 
             Promise.all(promises).then(() => resolve(true))
 
-            if(accountAssets.length === 0)
-              resolve(true)
+            if(accountAssets.length === 0) resolve(true)
           })
         }, err => {
+          console.error(err)
           resolve(false)
         })
       }).catch(reject)

@@ -82,7 +82,11 @@ class BitcoreService {
 
             /* lookup the 'real' WalletAddress */
             let walletAddress = wallet.addresses.find(x => x.address == address)
-            if (!walletAddress) return
+            if (!walletAddress) {
+              console.error(`Address ${address} is not found among addresses`, wallet.addresses)
+              resolve(false)
+              return
+            }
 
             walletAddress.inUse = info.txApperances != 0
             if (!walletAddress.inUse) {
@@ -92,7 +96,8 @@ class BitcoreService {
 
             walletAddress.balance = info.balanceSat / 100000000 + ""
             resolve(true)
-          }, () => {
+          }).catch(reason => {
+            console.error(reason)
             resolve(false)
           })
         //})
@@ -106,8 +111,7 @@ class BitcoreService {
             setTimeout(function () {
               recurseToNext(resolve)
             }, 100)
-          }
-          else {
+          } else {
             resolve()
           }
         }

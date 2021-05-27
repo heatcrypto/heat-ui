@@ -172,6 +172,16 @@ module utils {
     return deferred.promise;
   }
 
+  const timeoutError = new Error("promise time is up")
+
+  export function timeoutPromise(promise, time) {
+    let timer
+    return Promise.race([
+      promise,
+      new Promise((resolve, reject) => timer = setTimeout(reject, time, timeoutError))
+    ]).finally(() => clearTimeout(timer))
+  }
+
   export function convertToNQT (amountNXT) {
     if (typeof amountNXT == 'undefined') {
       return '0';

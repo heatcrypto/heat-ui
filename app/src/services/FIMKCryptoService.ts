@@ -36,7 +36,6 @@ class FIMKCryptoService {
     });
   }
 
-
   refreshAdressBalances(wallet: WalletAddresses) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
@@ -64,7 +63,8 @@ class FIMKCryptoService {
             })
           })
         }, err => {
-            resolve(false)
+          console.error(err)
+          resolve(false)
         })
       }).catch(reject)
     })

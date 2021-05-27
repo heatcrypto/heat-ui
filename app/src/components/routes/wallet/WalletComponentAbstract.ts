@@ -110,10 +110,9 @@ namespace wlt {
 
       /* Find the Loading node, if thats not available we can exit */
       let nxtCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies.find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NXT')
-      if (!nxtCurrencyAddressLoading)
-        return
+      if (!nxtCurrencyAddressLoading) return
 
-      this.nxtCryptoService.refreshAdressBalances(nxtCurrencyAddressLoading.wallet).then(() => {
+      utils.timeoutPromise(this.nxtCryptoService.refreshAdressBalances(nxtCurrencyAddressLoading.wallet), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
@@ -144,7 +143,8 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != nxtCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("NXT refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, nxtCurrencyAddressLoading, 'NXT', 'NXT')
       })
     }
@@ -156,7 +156,7 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'ARDOR')
       if (!ardorCurrencyAddressLoading) return
 
-      this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
+      utils.timeoutPromise(this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet), 9000).then(() => {
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
@@ -186,7 +186,8 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("ARDOR refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, ardorCurrencyAddressLoading, 'ARDOR', 'ARDR')
       })
     }
@@ -199,7 +200,7 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'FIMK')
       if (!fimkCurrencyAddressLoading) return
 
-      this.fimkCryptoService.refreshAdressBalances(fimkCurrencyAddressLoading.wallet).then(() => {
+      utils.timeoutPromise(this.fimkCryptoService.refreshAdressBalances(fimkCurrencyAddressLoading.wallet), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
@@ -230,7 +231,8 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != fimkCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("FIMK refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, fimkCurrencyAddressLoading, 'FIMK', 'FIM')
       })
     }
@@ -243,7 +245,7 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Ethereum')
       if (!ethCurrencyAddressLoading) return
 
-      this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet, ethCurrencyAddressLoading).then(() => {
+      utils.timeoutPromise(this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet, ethCurrencyAddressLoading), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
@@ -274,7 +276,8 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != ethCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("ETH refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, ethCurrencyAddressLoading, 'Ethereum', 'ETH')
       })
     }
@@ -286,7 +289,7 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Iota')
       if (!iotaCurrencyAddressLoading) return
 
-      this.iotaCoreService.refreshAdressBalances(iotaCurrencyAddressLoading.wallet).then(() => {
+      utils.timeoutPromise(this.iotaCoreService.refreshAdressBalances(iotaCurrencyAddressLoading.wallet), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
@@ -308,12 +311,12 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != iotaCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("IOTA refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, iotaCurrencyAddressLoading, 'IOTA', 'IOTA')
       })
     }
 
-    /* Only when we expand a wallet entry do we lookup its balances */
     public loadBitcoinAddresses(walletEntry: wlt.WalletEntry) {
 
       /* Find the Loading node, if thats not available we can exit */
@@ -321,10 +324,7 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
       if (!btcCurrencyAddressLoading) return
 
-      console.debug("walletEntry.currencies", walletEntry.currencies)
-      console.debug("btcCurrencyAddressLoading.address", btcCurrencyAddressLoading)
-
-      this.bitcoreService.refreshBalances(btcCurrencyAddressLoading.wallet, btcCurrencyAddressLoading).then(() => {
+      utils.timeoutPromise(this.bitcoreService.refreshBalances(btcCurrencyAddressLoading.wallet, btcCurrencyAddressLoading), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
@@ -346,12 +346,12 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != btcCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("BTC refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, btcCurrencyAddressLoading, 'Bitcoin', 'BTC')
       })
     }
 
-    /* Only when we expand a wallet entry do we lookup its balances */
     public loadBitcoinCashAddresses(walletEntry: wlt.WalletEntry) {
 
       /* Find the Loading node, if thats not available we can exit */
@@ -359,11 +359,10 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'BitcoinCash')
       if (!bchCurrencyAddressLoading) return
 
-      this.bchCryptoService.refreshAdressBalances(bchCurrencyAddressLoading.wallet).then(() => {
+      utils.timeoutPromise(this.bchCryptoService.refreshAdressBalances(bchCurrencyAddressLoading.wallet), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(bchCurrencyAddressLoading)
         bchCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -383,7 +382,8 @@ namespace wlt {
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != bchCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("BCH refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, bchCurrencyAddressLoading, 'BitcoinCash', 'BCH')
       })
     }
@@ -395,11 +395,10 @@ namespace wlt {
         .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Litecoin')
       if (!ltcCurrencyAddressLoading) return
 
-      this.ltcCryptoService.refreshAdressBalances(ltcCurrencyAddressLoading.wallet, ltcCurrencyAddressLoading).then(() => {
+      utils.timeoutPromise(this.ltcCryptoService.refreshAdressBalances(ltcCurrencyAddressLoading.wallet, ltcCurrencyAddressLoading), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-          return
+        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(ltcCurrencyAddressLoading)
         ltcCurrencyAddressLoading.wallet.addresses.forEach(address => {
@@ -418,7 +417,8 @@ namespace wlt {
 
         walletEntry.currencies = walletEntry.currencies.filter(c => c != ltcCurrencyAddressLoading)
         this.flatten()
-      }).catch(() => {
+      }).catch((reason) => {
+        console.error("LTC refreshing balances error", reason)
         this.handleFailedCryptoRequests(walletEntry, ltcCurrencyAddressLoading, 'Litecoin', 'LTC')
       })
     }

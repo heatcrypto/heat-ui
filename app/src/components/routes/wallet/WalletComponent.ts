@@ -119,7 +119,7 @@
               </div>
 
               <!-- Currency Balance -->
-              <div ng-if="entry.isCurrencyBalance && entry.address" layout="row" class="currency-balance" flex>
+              <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
@@ -579,8 +579,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     currencyBalance.visible = walletEntry.expanded
     currencyBalance.inUse = true
     currencyBalance.walletEntry = walletEntry
+    currencyBalance.address = currencyAddressLoading.address
     walletEntry.currencies.splice(index, 0, currencyBalance)
-
     walletEntry.currencies = walletEntry.currencies.filter(c => c != currencyAddressLoading)
     this.flatten()
   }
