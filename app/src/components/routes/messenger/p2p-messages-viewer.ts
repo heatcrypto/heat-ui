@@ -223,20 +223,40 @@ class P2PMessagesViewerComponent {
   }
 
   removeMessage(event, item: p2p.MessageHistoryItem) {
-    dialogs.confirm(
-      "Remove message",
-      `Do you want to remove the message ?`
-    ).then(() => {
-      this.datasource.remove(item)
-      this.p2pMessaging.checkToRemoveServerMessage(item["outgoing"], item.transport, item.msgId, item.extraInfo)
-      // @ts-ignore
-      let adapter = this.$scope.adapter
-      adapter.applyUpdates(function (item2) {
-        if (item2 == item) {
-          return []
-        }
-      });
-    });
+    let displayDialog = (message: boolean, file: boolean) => {
+      let ss = ["local message"]
+      if (message) ss.push("message on server")
+      if (file) ss.push("file on server")
+      dialogs.confirm(
+        "Remove message",
+        "Objects to be removed: " + ss.join(", ") + " <br/><br/> Do you want to remove the message ?"
+      ).then(() => {
+        this.datasource.remove(item)
+        this.p2pMessaging.checkToRemoveServerMessage(item["outgoing"], item.transport, item.msgId, item.extraInfo)
+        // @ts-ignore
+        let adapter = this.$scope.adapter
+        adapter.applyUpdates(function (item2) {
+          if (item2 == item) {
+            return []
+          }
+        });
+      }).catch(reason => {
+        if (reason) console.error(reason)
+      })
+    }
+
+    this.p2pMessaging.requestIsMessageExists(
+      item.type, item["outgoing"], item.transport, item.msgId, item.extraInfo,
+      (message: boolean, file: boolean) => {
+        displayDialog(message, file)
+        displayDialog = null
+      }
+    )
+
+    //if will no response on requestIsMessageExists the dialog is displayed in any case
+    setTimeout(() => {
+      if (displayDialog) displayDialog(null, null)
+    }, 2000)
   }
 
   private processItem(item: p2p.MessageHistoryItem) {
@@ -262,7 +282,7 @@ class P2PMessagesViewerComponent {
       let fileDescriptor = item['fileDescriptor']
       if (fileDescriptor) {
         if (item['outgoing']) {
-          item.content = `Sent file "${fileDescriptor.fileName}" (${fileDescriptor.fileSize} bytes) to server, pending receiver download`
+          item.content = `Sent file "${fileDescriptor.fileName}" (${fileDescriptor.fileSize} bytes)`
         } else {
           item.content = `file "${fileDescriptor.fileName}", size ${fileDescriptor.fileSize} bytes`
           //link to file

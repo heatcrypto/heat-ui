@@ -85,6 +85,14 @@ module p2p {
       }])
     }
 
+    requestIsMessageExists(targetMessageId: string) {
+      this.connector.sendWebsocketMessage(Protocol.U2U, [{
+        type: "req.is-message-exists",
+        sender: this.connector.identity,
+        payload: targetMessageId
+      }])
+    }
+
     /**
      * Request the file saved on the server for this recipient
      */
@@ -155,9 +163,14 @@ module p2p {
         this.connector.messenger.onFile(fileContent, null, msg.fileMessageId, fileDescriptor)
       },
 
-      //on file downloaded
+      //on message deleted on the server
       "remove-message.done": (roomName: string, msg) => {
         this.connector.messenger.onServerMessageRemoved(msg.targetMessageId, msg.fileId)
+      },
+
+      //on server report is message (and file) exists
+      "resp.is-message-exists": (roomName: string, msg) => {
+        this.connector.messenger.onServerMessageExists(msg.targetMessageId, msg.message, msg.file)
       },
 
       ERROR: (roomName: string, msg) => {

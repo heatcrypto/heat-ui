@@ -196,6 +196,13 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     )
   }
 
+  onServerMessageExistsCallbacks: Map<string, Function> = new Map<string, Function>()
+
+  onServerMessageExists(targetMessageId: string, message: boolean, file: boolean): void {
+    let callback = this.onServerMessageExistsCallbacks.get(targetMessageId)
+    if (callback) callback(message, file)
+  }
+
   onError(reason: string, protocol?: p2p.Protocol) {
     if (protocol == p2p.Protocol.U2U) {
       this.$mdToast.show(
@@ -404,6 +411,20 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         this.u2uProtocol.sendRemoveMessage(targetMessageId)
       }
     }
+  }
+
+  requestIsMessageExists(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
+                         targetMessageId: string, extraInfo: p2p.MessageExtraInfo,
+                         callback: (message: boolean, file: boolean) => void) {
+    if (outgoing && (transport == "server" || messageType == "file")) {
+      if (messageType == "file" || !extraInfo || extraInfo.status?.stage != 1) {
+        this.onServerMessageExistsCallbacks.set(targetMessageId, callback)
+        setTimeout(() => this.onServerMessageExistsCallbacks.delete(targetMessageId), 12000)
+        this.u2uProtocol.requestIsMessageExists(targetMessageId) //the callback will be invoked by response to this request
+        return
+      }
+    }
+    callback(null, null)
   }
 
 }

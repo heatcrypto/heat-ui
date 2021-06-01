@@ -77,7 +77,9 @@ module p2p {
      */
     checkToRemoveServerMessage(outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo)
 
-    onServerMessageRemoved(targetMessageId: string, fileId: string): void;
+    onServerMessageRemoved(targetMessageId: string, fileId: string): void
+
+    onServerMessageExists(targetMessageId: string, message: boolean, file: boolean)
   }
 
   /**
