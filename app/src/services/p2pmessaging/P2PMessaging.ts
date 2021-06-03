@@ -191,8 +191,11 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   onServerMessageRemoved(targetMessageId: string, fileId: string): void {
+    let objectsRemovedOnServer = [targetMessageId ? "message" : null, fileId ? "file" : null]
+      .filter((v) => {return v}) //filter not empty elements
+      .join(", ")
     this.$mdToast.show(
-      this.$mdToast.simple().textContent(`The message${fileId ? " and file are" : " is"} removed on the server`).hideDelay(9000)
+      this.$mdToast.simple().textContent(`The objects are removed on the server: ${objectsRemovedOnServer}`).hideDelay(9000)
     )
   }
 
@@ -405,9 +408,10 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }
   }
 
-  checkToRemoveServerMessage(outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo) {
-    if (outgoing && transport == "server") {
-      if (!extraInfo || extraInfo.status?.stage != 1) {
+  checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean,
+                             transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo) {
+    if (outgoing && (transport == "server" || messageType == "file")) {
+      if (messageType == "file" || !extraInfo || extraInfo.status?.stage != 1) {
         this.u2uProtocol.sendRemoveMessage(targetMessageId)
       }
     }

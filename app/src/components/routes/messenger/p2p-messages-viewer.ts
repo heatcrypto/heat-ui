@@ -232,7 +232,7 @@ class P2PMessagesViewerComponent {
         "Objects to be removed: " + ss.join(", ") + " <br/><br/> Do you want to remove the message ?"
       ).then(() => {
         this.datasource.remove(item)
-        this.p2pMessaging.checkToRemoveServerMessage(item["outgoing"], item.transport, item.msgId, item.extraInfo)
+        this.p2pMessaging.checkToRemoveServerMessage(item.type, item["outgoing"], item.transport, item.msgId, item.extraInfo)
         // @ts-ignore
         let adapter = this.$scope.adapter
         adapter.applyUpdates(function (item2) {
