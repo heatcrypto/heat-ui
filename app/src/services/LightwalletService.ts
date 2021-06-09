@@ -175,7 +175,7 @@ class LightwalletService {
                   symbol: tokenInfo ? tokenInfo.symbol : '',
                   name: tokenInfo ? tokenInfo.name : '',
                   decimals: decimals,
-                  balance: utils.formatQNT(amount, decimals),
+                  balance: utils.formatERC20TokenAmount(amount, decimals),
                   address: token.tokenInfo.address
                 })
               })

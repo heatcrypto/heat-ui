@@ -265,7 +265,7 @@ namespace wlt {
             if (address.tokensBalances) {
               address.tokensBalances.forEach(balance => {
                 let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
-                tokenBalance.balance = utils.commaFormat(balance.balance)
+                tokenBalance.balance = balance.balance
                 tokenBalance.visible = walletEntry.expanded
                 ethCurrencyBalance.tokens.push(tokenBalance)
               })

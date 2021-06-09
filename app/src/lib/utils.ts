@@ -242,6 +242,37 @@ module utils {
     return returnNullZero && !result.match(/[^0\.]/) ? null : result;
   }
 
+  export function formatERC20TokenAmount(amount: string, decimals: number, fixed?: boolean) {
+    if (decimals == 0) return amount
+    let s = amount.padStart(amount.length > decimals ? decimals : decimals + 1, "0")
+    let decimalPos = s.length - decimals
+    let decimalPart = s.substr(decimalPos, s.length)
+    if (!fixed) {
+      //truncate tail zeros
+      let tailZeroCount = 0
+      for (let i = decimalPart.length - 1; i >= 0; i--) {
+        if (decimalPart[i] == "0") {
+          tailZeroCount++
+        } else {
+          break
+        }
+      }
+      decimalPart = decimalPart.substr(0, decimalPart.length - tailZeroCount)
+    }
+    let integerPart = utils.commaFormat(s.substr(0, decimalPos) || "0")
+    return integerPart + (decimalPart ? numberSeparator.decimal + decimalPart : "")
+  }
+
+  const numberSeparator = {decimal: getSeparator("decimal", "EN-en"), group: getSeparator("group", "EN-en")}
+
+  function getSeparator(separatorType?: "decimal" | "group", locale?) {
+    const numberWithGroupAndDecimalSeparator = 1000.1
+    return Intl.NumberFormat(locale)
+      .formatToParts(numberWithGroupAndDecimalSeparator)
+      .find(part => part.type === separatorType)
+      .value
+  }
+
   export function trimDecimals(formatted: string, decimals: number): string {
     var parts = formatted.split(".");
     if (!parts[1])
