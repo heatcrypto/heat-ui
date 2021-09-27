@@ -37,7 +37,7 @@ class DialogFieldAccount extends AbstractDialogField {
 
   search(query: string) {
     let deferred = this.$q.defer();
-    this.heat.api.searchPublicNames(query, 0, 100, true).then(accounts => {
+    this.heat.api.searchAccounts(query, 0, 100).then(accounts => {
       accounts = accounts ? accounts : []
       accounts.forEach(account => {
         if (this.numbersOnly.test(account.publicName)) {
