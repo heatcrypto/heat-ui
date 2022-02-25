@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Component({
   selector: 'downloadingBlockchain',
   template: `
@@ -72,10 +73,12 @@ class DownloadingBlockchainComponent {
         }
       }, 33 * 1000, 0, false);
 
-      if (this.settings.failoverEnabled) {
-        //Check servers health to choose the right
-        this.checkServerHealth(this.settings, true)
-      }
+      setTimeout(() => {
+        if (this.settings.failoverEnabled) {
+          //Check servers health to choose the right
+          this.checkServerHealth(this.settings, true)
+        }
+      }, 300)
     })
 
     $scope.$on('$destroy', () => {
@@ -114,23 +117,25 @@ class DownloadingBlockchainComponent {
     let knownServers: ServerDescriptor[] = SettingsService.getFailoverDescriptor().knownServers || [];
 
     let currentServerHealth: IHeatServerHealth;
-    let promises = [];
+    let promises = []
     knownServers.forEach(server => {
-      promises.push(
-        this.heat.api.getServerHealth(server.host, server.port).then(health=> {
-          server.health = health;
-          server.statusError = null;
+      let p = new Promise<any>((resolve, reject) => {
+        this.heat.api.getServerHealth(server.host, server.port).then(health => {
+          server.health = health
+          server.statusError = null
+          resolve(server)
         }).catch(function (err) {
-          server.health = null;
-          server.statusError = err;
-          return err;
+          server.health = null
+          server.statusError = err
+          reject(server)
         })
-      )
-    });
+      })
+      promises.push(p)
+    })
 
     let minEqualityServersNumber = heat.isTestnet ? 3 : 10;
 
-    Promise.all(promises).then(() => {
+    let onHealthResponse = () => {
       let currentServerIsAlive = false;
       let currentServer = null;
 
@@ -205,21 +210,25 @@ class DownloadingBlockchainComponent {
           } else {
             let message = currentServer
               ? "Client API address switched from \n" + currentServer.host + ":" + (currentServer.port || "")
-                + "<br/> to <br/>" + best.host + ":" + best.port
+              + "<br/> to <br/>" + best.host + ":" + best.port
               : "Client API address switched to\n" + best.host + ":" + (best.port || "");
             if (causeToSelectBest) message = message + " <br/>" + "Reason: " + causeToSelectBest;
             this.$mdToast.show(
-                this.$mdToast.simple()
-                  .textContent(message)
-                  .highlightAction(true)
-                  .action('close')
-                  .highlightClass('md-warn')
-                  .hideDelay(0)
+              this.$mdToast.simple()
+                .textContent(message)
+                .highlightAction(true)
+                .action('close')
+                .highlightClass('md-warn')
+                .hideDelay(0)
             )
           }
         }
       }
-    })
+    }
+
+    Promise.all(promises)
+      .then(onHealthResponse)
+      .catch(reason => {}/*nothing*/)
   }
 
   /**
