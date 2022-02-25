@@ -391,7 +391,8 @@ module p2p {
           }
         };
         pc.onicecandidateerror = event => {
-          console.log(`${event.errorCode}  ${event.hostCandidate}  ${event.url}  ${event.errorText}`);
+          // @ts-ignore
+          console.error(`${event.errorCode}  ${event.hostCandidate}  ${event.url}  ${event.errorText}`);
         };
 
         peer.peerConnection = pc;
