@@ -61,6 +61,7 @@
   `],
   template: `
     <div layout="column" flex layout-fill>
+
       <md-list flex layout="column">
         <md-list-item ng-repeat="contact in vm.contacts" aria-label="Entry">
           <!--<div class="truncate-col unread-col left">
@@ -75,11 +76,36 @@
           <div class="account-col left">
             <a href="#/messenger/{{contact.publicKey}}" ng-class="{'active':contact.publicKey==vm.activePublicKey}">{{contact.publicName || contact.account}}</a>
           </div>
+
           <a class="contact-control" ng-if="contact.newIncomingContact" ng-click="vm.acceptNewContact(contact)">Accept</a>
 <!--          <a class="contact-control" ng-if="contact.newIncomingContact && contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>-->
           <a class="contact-control" ng-if="contact.isP2POnlyContact" ng-click="vm.remove(contact)">Remove</a>
         </md-list-item>
       </md-list>
+
+      <md-menu class="right" style="margin-left: -40px; margin-bottom: -10px"
+            ng-if="vm.p2pMessaging.onlineStatus == 'online'">
+        <md-button aria-label="Contact menu" ng-click="$mdMenu.open($event)">
+          <i><img style="width: 15px" src="assets/sandwich.png"></i>
+          <md-tooltip md-direction="top">Contact Control</md-tooltip>
+        </md-button>
+        <md-menu-content width="1">
+          <div style="height: 9px;color: black;margin: 3px 5px 14px 5px;font-weight: bold;">
+              Contact "{{vm.getActiveContact().publicName || vm.getActiveContact().account}}"
+          </div>
+          <md-menu-item>
+            <md-button ng-click="vm.purgeMessages(vm.getActiveContact())">
+              Purge messages
+            </md-button>
+          </md-menu-item>
+          <md-menu-item>
+            <md-button ng-click="vm.purgeAllMessages()">
+              Purge messages of all contacts
+            </md-button>
+          </md-menu-item>
+        </md-menu-content>
+      </md-menu>
+
     </div>
   `
 })
@@ -100,7 +126,7 @@ class UserContactsComponent {
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
               storage: StorageService,
-              protected p2pMessaging: P2PMessaging,
+              public p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService,
               private contactService: ContactService) {
 
@@ -181,12 +207,42 @@ class UserContactsComponent {
       `Do you want to remove the contact ${contact.publicName || contact.privateName || contact.account}`
     ).then(() => {
       this.$scope.$evalAsync(() => {
-        //todo remove messages also
         let pr = this.getPeerAndRoom(contact)
         if (pr.peer) pr.peer.closeConnection()
         if (pr.room) pr.room.getMessageHistory().clear()
         this.p2pMessaging.p2pContactStore.remove(contact.account)
         this.refreshContacts().then(v => this.setActivePublicKey(true))
+      })
+    })
+  }
+
+  purgeMessages(contact: IHeatMessageContact) {
+    dialogs.confirm(
+      `Contact ${contact.publicName || contact.privateName || contact.account}`,
+      `Do you want to purge the contact's messages in local storage?`
+    ).then(() => {
+      this.$scope.$evalAsync(() => {
+        let pr = this.getPeerAndRoom(contact)
+        if (pr.room) pr.room.getMessageHistory().clear()
+        this.refreshMessageHistory()
+      })
+    })
+  }
+
+  /**
+   * Purge messages in local storage of all contacts
+   */
+  purgeAllMessages() {
+    dialogs.confirm(
+      "Purge all messages of all contacts",
+      "Do you want to purge all messages in local storage?"
+    ).then(() => {
+      this.$scope.$evalAsync(() => {
+        this.contacts.forEach(contact => {
+          let pr = this.getPeerAndRoom(contact)
+          if (pr.room) pr.room.getMessageHistory().clear()
+        })
+        this.refreshMessageHistory()
       })
     })
   }
@@ -217,6 +273,10 @@ class UserContactsComponent {
     }
   }
 
+  getActiveContact() {
+    return this.contacts.find(contact => contact.publicKey == this.activePublicKey);
+  }
+
   init() {
     this.refreshContacts();
   }
@@ -226,6 +286,21 @@ class UserContactsComponent {
       this.contacts = contacts
       if (this.getActivePublicKey() == "0") this.setActivePublicKey()
     })
+  }
+
+  refreshMessageHistory() {
+    let contact = this.getActiveContact()
+    if (contact == this.contacts[0]) {
+      if (this.contacts.length > 1) {
+        this.$location.path("/messenger/" + this.contacts[1].publicKey);
+      }
+      this.setActivePublicKey(false)
+    } else {
+      this.setActivePublicKey(true)
+    }
+    setTimeout(() => {
+      this.$location.path(`/messenger/${contact.publicKey}`)
+    }, 100)
   }
 
   p2pStatus(contact: IHeatMessageContact) {
