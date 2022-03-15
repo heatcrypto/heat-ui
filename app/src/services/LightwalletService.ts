@@ -86,7 +86,7 @@ class LightwalletService {
     try {
       return this.lightwallet.keystore.isSeedValid(seed)
     } catch (e) {
-      console.error(e)
+      console.error("Error on seed validation: " + e)
     }
     return false
   }

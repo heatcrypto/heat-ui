@@ -43,7 +43,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
     let ethereumValidator = () => {
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
-        let s = this.data.secretPhrase.trim()
+        let s = this.data.secretPhrase || ""
         this.data.secretPhrase = s = s.startsWith("0x") ? s.substr(2) : s
         if (utils.isHex(s) && s.length == 64) return
         return "Private key is not valid or " + bip44Invalid
@@ -53,7 +53,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
         // allowed raw hex pk or WIF pk
-        let s = this.data.secretPhrase.trim()
+        let s = this.data.secretPhrase || ""
         this.data.secretPhrase = s = s.startsWith("0x") ? s.substr(2) : s
         //check is raw private key
         if (utils.isHex(s) && s.length == 64) return
