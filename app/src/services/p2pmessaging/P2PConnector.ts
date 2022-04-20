@@ -37,6 +37,7 @@ if you use a TURN server, you need to check if you get an onicecandidate() event
 STUN and TURN servers list
 https://gist.github.com/yetithefoot/7592580
 https://gist.github.com/sagivo/3a4b2f2c7ac6e1b5267c2f1f59ac6c6b
+https://github.com/pradt2/always-online-stun
 
 https://security.stackexchange.com/questions/54579/webrtc-p2p-ssl-where-are-the-keys-generated
 All the communications are encrypted using Datagram Transport layer Security (DTLS), which is a derivative of SSL.
@@ -108,14 +109,34 @@ module p2p {
 
     private config: RTCConfiguration = {
       iceServers: [
-        {urls: "stun:stun.l.google.com:19302"},
-        {urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302", "stun:stun4.l.google.com:19302"]},
-        {urls: "stun:23.21.150.121"},
-        {urls: "stun:stun01.sipphone.com"},
-        {urls: "stun:stun.iptel.org"},
-        {urls: "stun:stun.ekiga.net"},
-        {urls: "stun:stun.fwdnet.net"},
-        {urls: "stun:stun.xten.com"}
+        {
+          urls: ["stun:stun.optdyn.com:3478",
+            "stun:stun.vavadating.com:3478",
+            "stun:stun.meowsbox.com:3478",
+            "stun:stun.voip.aebc.com:3478",
+            "stun:stun.galeriemagnet.at:3478",
+            "stun:stun.lovense.com:3478",
+            "stun:stun.verbo.be:3478",
+            "stun:stun.sipnet.ru:3478",
+            "stun:stun.eol.co.nz:3478"
+          ]
+        },
+        {
+          urls: ["stun:stun.l.google.com:19302",
+            "stun:stun1.l.google.com:19302",
+            "stun:stun2.l.google.com:19302",
+            "stun:stun3.l.google.com:19302",
+            "stun:stun4.l.google.com:19302",
+            "stun:stun.ekiga.net",
+            "stun:stun.ideasip.com",
+            "stun:stun.rixtelecom.se",
+            "stun:stun.schlund.de",
+            "stun:stun.stunprotocol.org:3478",
+            "stun:stun.voiparound.com",
+            "stun:stun.voipbuster.com",
+            "stun:stun.voipstunt.com",
+            "stun:stun.voxgratia.org"]
+        }
       ],
       /*iceTransportPolicy: "relay"*/
     };
