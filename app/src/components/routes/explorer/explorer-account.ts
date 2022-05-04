@@ -56,16 +56,16 @@
               {{vm.balanceUnconfirmed}} HEAT
             </div>
           </div>
-        </div>
-        <div layout="column">
           <div class="col-item">
             <div class="title">
-              Effective bal:
+              Effective balance:
             </div>
             <div class="value">
               {{vm.effectiveBalance}} HEAT
             </div>
           </div>
+        </div>
+        <div layout="column">
           <div class="col-item">
             <div class="title">
               Lease: [{{vm.leaseTitle}}]
@@ -86,6 +86,22 @@
               <span ng-if="vm.nextLessee!='0'">
                 <a href="#/explorer-account/{{vm.nextLessee}}/{{vm.type}}">{{vm.nextLesseeName}}</a>
               </span>
+            </div>
+          </div>
+          <div class="col-item">
+            <div class="title">
+              Amount leased in:
+            </div>
+            <div class="value">
+              {{vm.lessorsBalance}} HEAT
+            </div>
+          </div>
+          <div class="col-item" ng-if="vm.currentLessee!='0'">
+            <div class="title">
+              Amount leased out:
+            </div>
+            <div class="value">
+              {{vm.guaranteedBalance}} HEAT
             </div>
           </div>
         </div>
@@ -205,6 +221,7 @@ class ExploreAccountComponent {
   effectiveBalance: string;
   balanceUnconfirmed: string;
   balanceConfirmed: string;
+  guaranteedBalance: string;
   assetInfos: Array<AssetInfo> = [];
 
   currentLessee: string;
@@ -219,6 +236,7 @@ class ExploreAccountComponent {
   leaseTitle: string;
   nextLeaseTitle: string;
   lessors: Array<IHeatLessors>;
+  lessorsBalance: string;
 
   supervisoryAccount: string;
 
@@ -263,6 +281,7 @@ class ExploreAccountComponent {
         this.balanceConfirmed = utils.formatQNT(account.balance, 8);
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
+        this.guaranteedBalance = utils.formatQNT(account.guaranteedBalance, 8);
         this.currentLessee = account.currentLessee;
         this.currentLesseeName = account.currentLesseeName || account.currentLessee;
         this.currentLeasingHeightFrom = account.currentLeasingHeightFrom;
@@ -272,6 +291,7 @@ class ExploreAccountComponent {
         this.nextLeasingHeightFrom = account.nextLeasingHeightFrom;
         this.nextLeasingHeightTo = account.nextLeasingHeightTo;
         this.lessors = <Array<IHeatLessors>>account.lessors;
+        this.lessorsBalance = utils.formatQNT(account.lessorsBalance, 8);
         this.supervisoryAccount = account.supervisoryAccount;
         if (angular.isArray(this.lessors)) {
           this.lessors.forEach((lessor:any) => {

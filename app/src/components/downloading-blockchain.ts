@@ -210,9 +210,9 @@ class DownloadingBlockchainComponent {
           } else {
             let message = currentServer
               ? "Client API address switched from \n" + currentServer.host + ":" + (currentServer.port || "")
-              + "<br/> to <br/>" + best.host + ":" + best.port
+              + "\n to \n" + best.host + ":" + best.port
               : "Client API address switched to\n" + best.host + ":" + (best.port || "");
-            if (causeToSelectBest) message = message + " <br/>" + "Reason: " + causeToSelectBest;
+            if (causeToSelectBest) message = message + " \n" + "Reason: " + causeToSelectBest;
             this.$mdToast.show(
               this.$mdToast.simple()
                 .textContent(message)
