@@ -169,7 +169,7 @@ class LightwalletService {
             if (info.tokens) {
               info.tokens.forEach(token => {
                 let tokenInfo = ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
-                let decimals = tokenInfo ? tokenInfo.decimals : 8
+                let decimals = tokenInfo ? +(tokenInfo.decimals || 0) : 8
                 let amount = token.balance ? new Big(token.balance + "").toFixed() : "0"
                 walletAddress.tokensBalances.push({
                   symbol: tokenInfo ? tokenInfo.symbol : '',
