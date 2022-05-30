@@ -290,7 +290,7 @@ module p2p {
               resolve(socket);
             };
             socket.onerror = (error) => {
-              console.log(error);
+              console.error(error);
               reject(error);
               this.webSocketPromise = null;
             };
@@ -311,10 +311,10 @@ module p2p {
         .then(websocket => {
           let sendingData = [protocol].concat(data)  // sending data format: [protocolName, message1, message2, ...]
           websocket.send(JSON.stringify(sendingData));
-          console.log(">> \n" + JSON.stringify(sendingData));
-        }, reason => console.log(reason))
+          //console.log(">> \n" + JSON.stringify(sendingData));
+        }, reason => console.error(reason))
         .catch(reason => {
-          console.log("error on get websocket \n" + reason);
+          console.error("error on get websocket \n" + reason);
         })
     }
 
@@ -325,7 +325,7 @@ module p2p {
 
       let originalData = JSON.parse(messageEvent.data);
 
-      console.log("<< \n"+ JSON.stringify(originalData));
+      //console.log("<< \n"+ JSON.stringify(originalData));
 
       let protocolName: Protocol
       let data
@@ -420,7 +420,7 @@ module p2p {
 
         return pc;
       } catch (e) {
-        console.log(e);
+        console.error(e);
         pc = null;
         return;
       }
@@ -489,7 +489,7 @@ module p2p {
       try {
         dataChannel = peerConnection.createDataChannel(room + ":" + peerId, null);  //caller do
       } catch (e) {
-        console.log('error creating data channel ' + e);
+        console.error('error creating data channel ' + e);
         return;
       }
       this.initDataChannel(room, peerId, dataChannel);
@@ -681,7 +681,7 @@ module p2p {
           }
         }
       } catch (e) {
-        console.log(e);
+        console.error(e);
       }
     }
 
