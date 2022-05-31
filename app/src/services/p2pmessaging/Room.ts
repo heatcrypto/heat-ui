@@ -147,7 +147,6 @@ module p2p {
         content: message.text,
         transport: sending ? sendResult.transport : message.transport
       };
-      this.getMessageHistory().put(item);
       if (sending && message.transport == "p2p" && sendResult.count > 0) {
         //webrtc message is sent, it means the channel is opened, it means that delivered
         setTimeout(() => this.getMessageHistory().putExtraInfo(message.id, {status: {stage: 1}}), 100)
@@ -155,6 +154,7 @@ module p2p {
       if (this.onNewMessageHistoryItem) {
         this.onNewMessageHistoryItem(item);
       }
+      this.getMessageHistory().put(item);
     }
 
     onMessageInternal(message: U2UMessage) {

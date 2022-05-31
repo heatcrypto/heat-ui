@@ -25,6 +25,7 @@ import IEncryptedMessage = heat.crypto.IEncryptedMessage;
 
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
+type RemoveMessageDone = {roomName: string, targetMessageId: string, fileId: string, error: string}[];
 
 /**
  * This class is bridge between heat-ui components and p2p connector low level components (which intended to be independent of heat-ui).
@@ -190,12 +191,10 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     })
   }
 
-  onServerMessageRemoved(targetMessageId: string, fileId: string): void {
-    let objectsRemovedOnServer = [targetMessageId ? "message" : null, fileId ? "file" : null]
-      .filter((v) => {return v}) //filter not empty elements
-      .join(", ")
+  onServerMessageRemoved(messages: RemoveMessageDone): void {
+    messages.filter(v => !v.error)
     this.$mdToast.show(
-      this.$mdToast.simple().textContent(`The objects are removed on the server: ${objectsRemovedOnServer}`).hideDelay(9000)
+      this.$mdToast.simple().textContent(`${messages.length} messages have been deleted on the server`).hideDelay(9000)
     )
   }
 

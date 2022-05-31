@@ -165,7 +165,8 @@ module p2p {
 
       //on message deleted on the server
       "remove-message.done": (roomName: string, msg) => {
-        this.connector.messenger.onServerMessageRemoved(msg.targetMessageId, msg.fileId)
+        this.removeDoneMessages.push({roomName: roomName, targetMessageId: msg.targetMessageId, fileId: msg.fileId, error: msg.error})
+        this.onRemoveDone()
       },
 
       //on server report is message (and file) exists
@@ -181,6 +182,17 @@ module p2p {
       }
 
     })
+
+    private removeDoneMessages: RemoveMessageDone = []
+
+    private onRemoveDone = utils.debounce(
+        (roomName: string, msg) => {
+          this.connector.messenger.onServerMessageRemoved(this.removeDoneMessages)
+          this.removeDoneMessages = []
+        },
+        1000, false
+    );
+
 
   }
 

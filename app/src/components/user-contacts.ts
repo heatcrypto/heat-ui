@@ -222,8 +222,7 @@ class UserContactsComponent {
       `Do you want to purge the contact's messages in local storage?`
     ).then(() => {
       this.$scope.$evalAsync(() => {
-        let pr = this.getPeerAndRoom(contact)
-        if (pr.room) pr.room.getMessageHistory().clear()
+        this.purgeMessagesInternal(contact)
         this.refreshMessageHistory()
       })
     })
@@ -239,12 +238,24 @@ class UserContactsComponent {
     ).then(() => {
       this.$scope.$evalAsync(() => {
         this.contacts.forEach(contact => {
-          let pr = this.getPeerAndRoom(contact)
-          if (pr.room) pr.room.getMessageHistory().clear()
+          this.purgeMessagesInternal(contact)
         })
         this.refreshMessageHistory()
       })
     })
+  }
+
+  private purgeMessagesInternal(contact: IHeatMessageContact) {
+    let pr = this.getPeerAndRoom(contact)
+    if (pr.room) {
+      let mh = pr.room.getMessageHistory()
+      mh.getPageIndexes().forEach(page => {
+        mh.getItems(page).forEach(v => {
+          this.p2pMessaging.checkToRemoveServerMessage(v.type, v["outgoing"], v.transport, v.msgId, v.extraInfo)
+        })
+      })
+      pr.room.getMessageHistory().clear()
+    }
   }
 
   getActivePublicKey() {

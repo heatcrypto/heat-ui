@@ -139,6 +139,10 @@ module p2p {
       return this.pages.length;
     }
 
+    public getPageIndexes() {
+      return Array.from(Array(this.pages.length).keys())
+    }
+
     public getItemCount(): number {
       return this.pages.map(v => v[1]).reduce((previousValue, currentValue) => previousValue + currentValue);
     }
@@ -178,6 +182,20 @@ module p2p {
         return this.getPageMessages(pageIndex);
       }
       return [];
+    }
+
+    /**
+     * Be careful, may be out of memory
+     */
+    public getItemsAll() {
+      let result: MessageHistoryItem[] = []
+      for (let i = 0; i < this.pages.length; i++) {
+        let items = this.getPageMessages(i)
+        if (items?.length > 0) {
+          result = result.concat(items)
+        }
+      }
+      return result
     }
 
     private getPageMessages(pageIndex: number, page?): Array<MessageHistoryItem> {
