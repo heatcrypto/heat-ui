@@ -25,7 +25,8 @@ import IEncryptedMessage = heat.crypto.IEncryptedMessage;
 
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
-type RemoveMessageDone = {roomName: string, targetMessageId: string, fileId: string, error: string}[];
+type RemoveMessageDoneAccumulator = {roomName: string, targetMessageId: string, fileId: string, error: string}[];
+type RoomMessagesAccumulator = {msg: any, room: p2p.Room}[];
 
 /**
  * This class is bridge between heat-ui components and p2p connector low level components (which intended to be independent of heat-ui).
@@ -191,7 +192,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     })
   }
 
-  onServerMessageRemoved(messages: RemoveMessageDone): void {
+  onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void {
     messages.filter(v => !v.error)
     this.$mdToast.show(
       this.$mdToast.simple().textContent(`${messages.length} messages have been deleted on the server`).hideDelay(9000)
@@ -215,31 +216,55 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }
   }
 
+  /**
+   * Accumulated messages for debounced popup UI that display aggregated info
+   */
+  private roomMessagesAccumulator: RoomMessagesAccumulator = []
+
+  /**
+   * Display aggregated message for received messages between debounced invokes
+   */
   private displayNewMessagePopup(msg: any, room: p2p.Room) {
-    if ((msg.type == "chat" || msg.type == "file") && msg.text) {
-      let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
-      let text: string = msg.text.substring(0, 50);
-      if (msg.text.length > 50) {
-        let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
-        text = text.substring(0, lastSpaceIndex) + " ...";
-      }
-      this.$mdToast.show(
-        this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
-      );
-    } else if(msg.type == "contactUpdate") {
-      let parsedMessage = JSON.parse(msg.text);
-      let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
-      let publicKey = msg.fromPeerId
-      console.log(msg.text)
-      this.heat.api.searchPublicNames(account, 0, 100).then((accounts)=> {
-        let expectedAccount = accounts.find(value => value.publicKey == publicKey);
-          if (expectedAccount) {
-            let contactUtils = <ContactService>heat.$inject.get('contactService');
-            contactUtils.updateContactCurrencyAddress(account, parsedMessage.name, parsedMessage.address, publicKey, expectedAccount.publicName, -Date.now())
-          }
-      })
-    }
+    this.roomMessagesAccumulator.push({msg: msg, room: room})
+    this.displayNewMessagePopupDebounced(this.roomMessagesAccumulator, heat)
   }
+
+  private displayNewMessagePopupDebounced: (roomMessages: RoomMessagesAccumulator, heat) => void = utils.debounce(
+      (roomMessages: RoomMessagesAccumulator, heat) => {
+        if (roomMessages.length == 1) {
+          let msg = roomMessages[0].msg
+          if ((msg.type == "chat" || msg.type == "file") && msg.text) {
+            let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+            let text: string = msg.text.substring(0, 50);
+            if (msg.text.length > 50) {
+              let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
+              text = text.substring(0, lastSpaceIndex) + " ...";
+            }
+            this.$mdToast.show(
+                this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
+            );
+          } else if(msg.type == "contactUpdate") {
+            let parsedMessage = JSON.parse(msg.text);
+            let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+            let publicKey = msg.fromPeerId
+            this.heat.api.searchPublicNames(account, 0, 100).then((accounts)=> {
+              let expectedAccount = accounts.find(value => value.publicKey == publicKey);
+              if (expectedAccount) {
+                let contactUtils = <ContactService>heat.$inject.get('contactService');
+                contactUtils.updateContactCurrencyAddress(account, parsedMessage.name, parsedMessage.address, publicKey, expectedAccount.publicName, -Date.now())
+              }
+            })
+          }
+        } else if (roomMessages.length > 1) {
+          this.$mdToast.show(
+              this.$mdToast.simple().textContent(`${roomMessages.length} new messages`).hideDelay(6000)
+          );
+        }
+
+        roomMessages.length = 0
+      },
+      1000, false
+  );
 
   set onlineStatus(status: OnlineStatus) {
     this.connector.setOnlineStatus(status);
