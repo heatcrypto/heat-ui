@@ -4,6 +4,7 @@ class MofoSocketService {
   private socket: any;
   private url: string;
   private alive_cb: any;
+  private hostIndex = 0;
 
   constructor(
     private $q: angular.IQService,
@@ -13,7 +14,7 @@ class MofoSocketService {
     private settingsService: SettingsService) {
 
     this.settingsService.initialized.then(
-      () => this.url = SettingsService.getCryptoServerEndpoint('FIM')
+      () => this.url = SettingsService.getCryptoServerEndpoint('FIM', this.hostIndex)
     );
 
   }
@@ -24,7 +25,19 @@ class MofoSocketService {
         resolve(this.socket)
       })
     }
+    let switchUrl = reason => {
+      console.error(reason)
+      this.hostIndex++
+      this.url = SettingsService.getCryptoServerEndpoint('FIM', this.hostIndex)
+      if (!this.url) {
+        this.hostIndex = 0
+        this.url = SettingsService.getCryptoServerEndpoint('FIM', this.hostIndex)
+      }
+      return this.createSocket(this.url)
+    }
     return this.createSocket(url)
+        .then(socket => socket, switchUrl)
+        .then(socket => socket, switchUrl)
   }
 
   getSocketUrl = () => {
@@ -37,7 +50,10 @@ class MofoSocketService {
       this.socket = new WebSocket(url);
       this.socket.onclose = (evt) => { this.onclose(evt); reject() };
       this.socket.onopen = (evt) => { this.onopen(evt); resolve(this.socket) };
-      this.socket.onerror = (evt) => { this.onmessage(evt) };
+      this.socket.onerror = (evt) => {
+        this.onmessage(evt);
+        reject(evt)
+      };
       this.socket.onmessage = (evt) => { this.onmessage(evt) };
     })
   }

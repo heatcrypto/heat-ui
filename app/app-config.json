@@ -126,13 +126,19 @@
       "nodes": [
         {
           "host": "wss://cloud.mofowallet.org:7986/ws/",
+          "priority": 2,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "wss://fimk1.heatwallet.com/ws/",
           "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
           "host": "ws://localhost:7986/ws/",
-          "priority": 2,
+          "priority": 3,
           "status": "ACTIVE",
           "timeout": 5000
         }
