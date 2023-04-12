@@ -44,7 +44,7 @@ class InternalServerTimeoutError extends ServerEngineError {
 }
 
 @Service('heat')
-@Inject('$q','$http','settings','user','$timeout','env')
+@Inject('$q','$http','settings','user','$timeout','env', '$rootScope')
 class HeatService {
 
   public api = new HeatAPI(this, this.user, this.$q);
@@ -55,7 +55,8 @@ class HeatService {
               public settings: SettingsService,
               private user: UserService,
               private $timeout: angular.ITimeoutService,
-              private env: EnvService) {
+              private env: EnvService,
+              private $rootScope: angular.IScope) {
 
     this.settings.initialized.then(value => {
       this.api.baseTimestamp().then(basetimestamp => {
@@ -409,6 +410,11 @@ class HeatService {
         request: request,
         response: response
       })
+    }
+    if (route.indexOf("telemetry/health") == -1 && response && !response.data && response.status == -1) {
+      if (this.$rootScope["serverFailover"]) {
+        this.$rootScope["serverFailover"].checkServerHealth(this.settings)
+      }
     }
   }
 

@@ -70,6 +70,7 @@ class DownloadingBlockchainComponent {
       checkServerHealthInterval = $interval(() => {
         if (this.settings.failoverEnabled) {
           this.checkServerHealth(this.settings)
+          this.$rootScope["serverFailover"] = this
         }
       }, 33 * 1000, 0, false);
 
@@ -124,10 +125,10 @@ class DownloadingBlockchainComponent {
           server.health = health
           server.statusError = null
           resolve(server)
-        }).catch(function (err) {
+        }, reason => {
           server.health = null
-          server.statusError = err
-          reject(server)
+          server.statusError = reason
+          resolve(server)
         })
       })
       promises.push(p)
@@ -154,11 +155,10 @@ class DownloadingBlockchainComponent {
         }
       });
 
-      if (!currentServer)
-        return;
+      if (!currentServer) return;
 
-      if (currentServerIsAlive && ! currentServerHealth)
-        return;  //has no health (old version or monitoring API is disabled) so nothing to compare
+      //has no health (old version or monitoring API is disabled) so nothing to compare
+      if (currentServerIsAlive && ! currentServerHealth) return;
 
       //compare health of other servers with health of the current server
       knownServers.forEach(server => {
@@ -202,6 +202,7 @@ class DownloadingBlockchainComponent {
         let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
           settings.setCurrentServer(best);
+          console.debug("api server is changed from " + currentServer.host + ":" + (currentServer.port || "") + " to " +  best.host + ":" + (best.port || ""))
           this.notifyOnServerLocationUpdating();
           this.heat.resetSubscriber();
           if (firstTime) {
@@ -225,10 +226,11 @@ class DownloadingBlockchainComponent {
         }
       }
     }
-
-    Promise.all(promises)
-      .then(onHealthResponse)
-      .catch(reason => {}/*nothing*/)
+    Promise.allSettled(promises)
+      .then(onHealthResponse, reason => console.error(reason))
+      .catch(reason => {
+        console.error(reason)
+      })
   }
 
   /**
