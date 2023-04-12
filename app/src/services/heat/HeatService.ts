@@ -411,11 +411,6 @@ class HeatService {
         response: response
       })
     }
-    if (route.indexOf("telemetry/health") == -1 && response && !response.data && response.status == -1) {
-      if (this.$rootScope["serverFailover"]) {
-        this.$rootScope["serverFailover"].checkServerHealth(this.settings)
-      }
-    }
   }
 
   mock<T>(data:any): angular.IPromise<T> {

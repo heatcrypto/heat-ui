@@ -70,7 +70,6 @@ class DownloadingBlockchainComponent {
       checkServerHealthInterval = $interval(() => {
         if (this.settings.failoverEnabled) {
           this.checkServerHealth(this.settings)
-          this.$rootScope["serverFailover"] = this
         }
       }, 33 * 1000, 0, false);
 
