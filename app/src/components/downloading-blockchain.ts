@@ -225,7 +225,7 @@ class DownloadingBlockchainComponent {
         }
       }
     }
-    Promise.allSettled(promises)
+    Promise.all(promises)
       .then(onHealthResponse, reason => console.error(reason))
       .catch(reason => {
         console.error(reason)
