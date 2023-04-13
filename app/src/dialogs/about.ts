@@ -30,7 +30,7 @@ module dialogs {
       targetEvent: $event,
       template: `
         <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationBuild}}</p>
-        <p>Embedded HEAT server {{vm.heatServerVersion}}</p>
+        <p>HEAT server {{vm.heatServerVersion}}</p>
         <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
 <!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
