@@ -165,6 +165,9 @@ class BitcoreService {
             reject(error)
           }
         )
+      }).catch(reason => {
+        console.error(reason)
+        reject(reason)
       })
     })
   }

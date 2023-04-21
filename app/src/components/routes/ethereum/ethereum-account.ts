@@ -76,7 +76,7 @@
                 Pending&nbsp;<elipses-loading></elipses-loading>
               </div>
               <div class="truncate-col info-col left" flex>
-                <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/tx/{{item.txHash}}">{{item.txHash}}</a>
+                <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.txHash}}">{{item.txHash}}</a>
               </div>
             </md-list-item>
           </md-list>

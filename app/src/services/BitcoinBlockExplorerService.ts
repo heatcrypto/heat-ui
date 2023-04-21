@@ -47,15 +47,15 @@ class BtcBlockExplorerService {
   }*/
 
   private getCachedAccountBalance = (address: string) => {
-    if (this.cachedGetCachedAccountBalance.get(address))
-      return this.cachedGetCachedAccountBalance.get(address)
+    let cachedValue = this.cachedGetCachedAccountBalance.get(address)
+    if (cachedValue) return cachedValue
     let deferred = this.$q.defer<number>();
     this.cachedGetCachedAccountBalance.set(address, deferred.promise)
     this.btcProvider.getBalance(address).then(deferred.resolve, deferred.reject)
     this.cachedGetCachedAccountBalance.get(address).finally(() => {
       setTimeout(() => {
         this.cachedGetCachedAccountBalance.set(address, null);
-      }, 30 * 1000)
+      }, 5 * 60 * 1000)
     })
     return this.cachedGetCachedAccountBalance.get(address)
   }

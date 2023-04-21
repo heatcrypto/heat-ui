@@ -153,7 +153,7 @@ class BitcoinAccountComponent {
     this.balanceUnconfirmed = "";
     this.btcBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(info / 100000000).toFixed(8);
+        this.balanceUnconfirmed = isNaN(info) ? null : new Big(info / 100000000).toFixed(8);
         this.busy = false;
       })
     })

@@ -114,6 +114,7 @@ class BTCCurrency implements ICurrency {
               else {
                 message = 'Unknown reason'
               }
+              message = err && err.name ? (err.name + ": " + message) : message
               dialogs.alert(event, 'Send BTC Error', 'There was an error sending this transaction: ' +message);
             })
           }

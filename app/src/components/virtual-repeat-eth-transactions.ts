@@ -81,7 +81,7 @@
 
             <!-- ID -->
             <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-              <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/tx/{{item.hash}}">{{item.hash}}</a>
+              <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.hash}}">{{item.hash}}</a>
             </div>
 
             <!-- INOUT -->
