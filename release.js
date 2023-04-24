@@ -11,9 +11,9 @@ main()
 
 async function main() {
   try {
-    await buildApp()
-    await updateFiles(await findHeatBundleFile())
-    buildElectron()
+    //await buildApp()
+    //await updateFiles(await findHeatBundleFile())
+    await buildElectron()
   } catch (e) {
     console.error(e)
   }
@@ -23,7 +23,7 @@ async function buildApp() {
   console.log("start app build ...")
   fs.removeSync('./dist')
   return new Promise((resolve, reject) => gulp.series('build', 'electron', () => resolve(), (err) => console.error(err))())
-    .then(() => console.log("done app build"))
+    .then(() => console.log("done app build\n"))
 }
 
 function findHeatBundleFile() {
@@ -66,7 +66,7 @@ async function replaceStrInFile(file, str, replacement) {
   })
 }
 
-function buildElectron() {
+async function buildElectron() {
   /*
   previous commands (from release.sh):
   with embedded server
@@ -75,57 +75,75 @@ function buildElectron() {
   node.exe node_modules/electron-builder/out/cli/cli.js --linux --x64 --c.extraResources=[]
   node.exe node_modules/electron-builder/out/cli/cli.js --win --x64
    */
+
+  let config = {
+    "appId": "com.heatledger.heatwallet",
+    "copyright": "Copyright © 2023 HEAT",
+    "productName": "Heatwallet",
+    "compression": "normal",
+    "artifactName": "Heatclient_setup_${version}.${ext}",
+    "extraResources": [],
+    "extraFiles": [
+      {
+        "from": "./dist/app-config.json",
+        "to": "app-config.json"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "zip"
+      ]
+    },
+    "mac": {
+      "icon": "app/electron/icon.png.icns",
+      "category": "public.app-category.finance",
+      "target": [
+        "zip"
+      ]
+    },
+    "directories": {
+      "output": "releases",
+      "app": "dist"
+    }
+  }
+
+  let configWithEmbeddedServer = Object.assign(Object.assign({}, config), {
+    "artifactName": "Heatwallet_setup_${version}.${ext}",
+    "extraResources": [
+      {
+        "from": "../heatledger/build/install/heatledger",
+        "to": "heatledger"
+      }
+    ]
+  })
+
   console.log("start electron build...")
   fs.removeSync('./releases')
-  builder.build({
-    targets: builder.createTargets([Platform.LINUX, Platform.WINDOWS]),
-    //mac: ["default"],
-    //linux: ["appimage:x64"],
-    //win: ["nsis"],
-    //targets: Platform.LINUX.createTarget(/*"portable"*/),
-    config: {
-      "appId": "com.heatledger.heatwallet",
-      "copyright": "Copyright © 2019 HEAT",
-      "productName": "Heatwallet",
-      "compression": "normal",
-      "extraResources": [
-        {
-          "from": "../heatledger/build/install/heatledger",
-          "to": "heatledger"
-        }
-      ],
-      "extraFiles": [
-        {
-          "from": "./dist/app-config.json",
-          "to": "app-config.json"
-        }
-      ],
-      "win": {
-        "target": [
-          "nsis"
-        ]
-      },
-      "linux": {
-        "target": [
-          "zip"
-        ]
-      },
-      "mac": {
-        "icon": "app/electron/icon.png.icns",
-        "category": "public.app-category.finance",
-        "target": [
-          "zip"
-        ]
-      },
-      "directories": {
-        "output": "releases",
-        "app": "dist"
-      }
-    }
-  }).then(() => {
-    console.log("done electron build")
-  }).catch((error) => {
+
+  try {
+
+    await builder.build({
+      targets: builder.createTargets([Platform.WINDOWS /*, Platform.LINUX*/]),
+      config: config
+    })
+
+    console.log("done desktop app build")
+
+    await builder.build({
+      targets: builder.createTargets([Platform.WINDOWS /*, Platform.LINUX*/]),
+      config: configWithEmbeddedServer
+    })
+
+    console.log("done desktop app with embedded server build")
+
+  } catch (e) {
     console.error(error)
-  })
+  }
+
 }
 
