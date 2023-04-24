@@ -11,8 +11,8 @@ main()
 
 async function main() {
   try {
-    //await buildApp()
-    //await updateFiles(await findHeatBundleFile())
+    await buildApp()
+    await updateFiles(await findHeatBundleFile())
     await buildElectron()
   } catch (e) {
     console.error(e)
