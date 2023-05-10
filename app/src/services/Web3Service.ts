@@ -75,11 +75,11 @@ class Web3Service {
           txCount => {
             let defaultGasLimit = this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
             let txParams = {
-              nonce: '0x' + parseInt(String(txCount)).toString(16),
+              nonce: '0x' + Number(txCount).toString(16),
               gasLimit: this.web3.toHex(gasLimitParam || defaultGasLimit),
               gasPrice: this.web3.toHex(String(gasPriceParam || gasPrice)),
               to: to,
-              value: '0x' + parseInt(value).toString(16)
+              value: '0x' + Number(value).toString(16)
             };
             let tx = new this.$window.heatlibs.ethereumTx.Transaction(txParams);
             let privateKey = this.$window.heatlibs.safeBuffer.Buffer.from(account.privateKey, 'hex');

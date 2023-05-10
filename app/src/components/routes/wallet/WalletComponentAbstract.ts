@@ -24,6 +24,8 @@
 
 namespace wlt {
 
+  const DISPLAYED_CURRENCIES_NUM = 3
+
   export abstract class WalletComponentAbstract {
 
     public lightwalletService: LightwalletService;
@@ -100,7 +102,7 @@ namespace wlt {
       }
     }
 
-    rememberAdressCreated(account: string, ethAddress: string) {
+    rememberAddressCreated(account: string, ethAddress: string) {
       this.createdAddresses[account] = this.createdAddresses[account] || []
       this.createdAddresses[account].push(ethAddress)
       window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`, "1")
@@ -251,25 +253,27 @@ namespace wlt {
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
+        let n = 0
         ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
           let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
-            ethCurrencyBalance.balance = Big(address.balance).toFixed()
-            ethCurrencyBalance.visible = walletEntry.expanded
-            ethCurrencyBalance.inUse = !wasCreated
-            ethCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
-            index++;
+          let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
+          let balance = Big(address.balance)
+          ethCurrencyBalance.balance = balance.toFixed()
+          ethCurrencyBalance.visible = walletEntry.expanded
+          ethCurrencyBalance.hidden = n >= DISPLAYED_CURRENCIES_NUM && !address.inUse && !wasCreated
+          ethCurrencyBalance.inUse = !wasCreated
+          ethCurrencyBalance.walletEntry = walletEntry
+          walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
+          index++
+          n++
 
-            if (address.tokensBalances) {
-              address.tokensBalances.forEach(balance => {
-                let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
-                tokenBalance.balance = balance.balance
-                tokenBalance.visible = walletEntry.expanded
-                ethCurrencyBalance.tokens.push(tokenBalance)
-              })
-            }
+          if (address.tokensBalances) {
+            address.tokensBalances.forEach(balance => {
+              let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+              tokenBalance.balance = balance.balance
+              tokenBalance.visible = walletEntry.expanded
+              ethCurrencyBalance.tokens.push(tokenBalance)
+            })
           }
         })
 
@@ -321,7 +325,7 @@ namespace wlt {
 
       /* Find the Loading node, if thats not available we can exit */
       let btcCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
+          .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
       if (!btcCurrencyAddressLoading) return
 
       utils.timeoutPromise(this.bitcoreService.refreshBalances(btcCurrencyAddressLoading.wallet, btcCurrencyAddressLoading), 9000).then(() => {
@@ -330,17 +334,18 @@ namespace wlt {
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
+        let n = 0
         btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
           let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
-            btcCurrencyBalance.balance = (address.balance || "0") + ""
-            btcCurrencyBalance.visible = walletEntry.expanded
-            btcCurrencyBalance.inUse = !wasCreated
-            btcCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
-            index++;
-          }
+          let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
+          btcCurrencyBalance.balance = (address.balance || "0") + ""
+          btcCurrencyBalance.visible = walletEntry.expanded
+          btcCurrencyBalance.hidden = n >= DISPLAYED_CURRENCIES_NUM && !address.inUse && !wasCreated
+          btcCurrencyBalance.inUse = !wasCreated
+          btcCurrencyBalance.walletEntry = walletEntry
+          walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
+          index++
+          n++
         })
 
         // we can remove the loading entry
@@ -373,9 +378,8 @@ namespace wlt {
             bchCurrencyBalance.visible = walletEntry.expanded
             bchCurrencyBalance.inUse = !wasCreated
             bchCurrencyBalance.walletEntry = walletEntry
-
             walletEntry.currencies.splice(index, 0, bchCurrencyBalance)
-            index++;
+            index++
           }
         })
 
@@ -409,9 +413,8 @@ namespace wlt {
             ltcCurrencyBalance.visible = walletEntry.expanded
             ltcCurrencyBalance.inUse = !wasCreated
             ltcCurrencyBalance.walletEntry = walletEntry
-
             walletEntry.currencies.splice(index, 0, ltcCurrencyBalance)
-            index++;
+            index++
           }
         })
 

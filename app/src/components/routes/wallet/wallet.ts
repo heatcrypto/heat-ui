@@ -57,6 +57,7 @@ namespace wlt {
     public inUse = false
     public tokens: Array<TokenBalance> = []
     public visible = false
+    public hidden = false
     walletEntry: WalletEntry
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) {
@@ -160,7 +161,7 @@ namespace wlt {
       if (name == "Bitcoin") {
         this.createBtcAddress(component)
       } else if (name == "Ethereum") {
-        this.createAddress(component)
+        this.createEthAddress(component)
       } else if (name == "FIMK") {
         this.createFIMKAddress(component)
       } else if (name == "NXT") {
@@ -178,7 +179,7 @@ namespace wlt {
       still after an architectural change where we dont display the CREATE node anymore.
       We'll be leaving it in place where all you need to do is set this.hidden=false to
       have it displayed again. */
-    createAddress(component: WalletComponentAbstract) {
+    createEthAddress(component: WalletComponentAbstract) {
 
       // collect all CurrencyBalance of 'our' same currency type
       let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
@@ -188,7 +189,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         this.flatten()
         this.addCurrency(this.parent.account, 'ETH')
@@ -205,13 +206,12 @@ namespace wlt {
         if (this.wallet.addresses[i].address == lastAddress) {
 
           // next address is the one - but if no more addresses we exit since not possible
-          if (i == this.wallet.addresses.length - 1)
-            return
+          if (i == this.wallet.addresses.length - 1) return
 
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
           newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-          component.rememberAdressCreated(this.parent.account, nextAddress.address)
+          component.rememberAddressCreated(this.parent.account, nextAddress.address)
           newCurrencyBalance.visible = this.parent.expanded
           let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
           this.parent.currencies.splice(index, 0, newCurrencyBalance)
@@ -234,7 +234,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         this.flatten()
         this.addCurrency(this.parent.account, 'BTC')
@@ -262,7 +262,7 @@ namespace wlt {
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
           newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-          component.rememberAdressCreated(this.parent.account, nextAddress.address)
+          component.rememberAddressCreated(this.parent.account, nextAddress.address)
           newCurrencyBalance.visible = this.parent.expanded
           let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
           this.parent.currencies.splice(index, 0, newCurrencyBalance)
@@ -285,7 +285,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
@@ -303,7 +303,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
@@ -320,7 +320,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
@@ -340,7 +340,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
+        component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
         this.flatten()
         this.addCurrency(this.parent.account, 'LTC')
@@ -368,7 +368,7 @@ namespace wlt {
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey)
           newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-          component.rememberAdressCreated(this.parent.account, nextAddress.address)
+          component.rememberAddressCreated(this.parent.account, nextAddress.address)
           newCurrencyBalance.visible = this.parent.expanded
           let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
           this.parent.currencies.splice(index, 0, newCurrencyBalance)
@@ -391,7 +391,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
+        component.rememberAddressCreated(this.parent.account, nextAddress.address.split(":")[1])
         newCurrencyBalance.visible = this.parent.expanded
         this.parent.currencies.push(newCurrencyBalance)
         this.flatten()
@@ -419,7 +419,7 @@ namespace wlt {
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
           newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-          component.rememberAdressCreated(this.parent.account, nextAddress.address.split(":")[1])
+          component.rememberAddressCreated(this.parent.account, nextAddress.address.split(":")[1])
           newCurrencyBalance.visible = this.parent.expanded
           let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
           this.parent.currencies.splice(index, 0, newCurrencyBalance)
