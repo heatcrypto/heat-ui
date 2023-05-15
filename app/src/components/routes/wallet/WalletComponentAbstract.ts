@@ -24,7 +24,7 @@
 
 namespace wlt {
 
-  const DISPLAYED_CURRENCIES_NUM = 3
+  const DISPLAYED_CURRENCIES_NUM = 5
 
   export abstract class WalletComponentAbstract {
 
@@ -110,319 +110,216 @@ namespace wlt {
 
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let nxtCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies.find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NXT')
-      if (!nxtCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let nxtCurrencyBalance = new wlt.CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
+        nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+        if (address.tokensBalances) {
+          address.tokensBalances.forEach(balance => {
+            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = utils.commaFormat(balance.balance)
+            tokenBalance.visible = walletEntry.expanded
+            nxtCurrencyBalance.tokens.push(tokenBalance)
+          })
+        }
+        return nxtCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.nxtCryptoService.refreshAdressBalances(nxtCurrencyAddressLoading.wallet), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry, 'NXT', 'NXT',
+          this.nxtCryptoService.refreshAdressBalances,
+          createBalance
+      )
 
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(nxtCurrencyAddressLoading)
-        nxtCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let nxtCurrencyBalance = new wlt.CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
-            nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-            nxtCurrencyBalance.visible = walletEntry.expanded
-            nxtCurrencyBalance.inUse = !wasCreated
-            nxtCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
-            index++;
-
-            if (address.tokensBalances) {
-              address.tokensBalances.forEach(balance => {
-                let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
-                tokenBalance.balance = utils.commaFormat(balance.balance)
-                tokenBalance.visible = walletEntry.expanded
-                nxtCurrencyBalance.tokens.push(tokenBalance)
-              })
-            }
-          }
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != nxtCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("NXT refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, nxtCurrencyAddressLoading, 'NXT', 'NXT')
-      })
     }
 
     public loadARDORAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let ardorCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'ARDOR')
-      if (!ardorCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let ardrCurrencyBalance = new wlt.CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
+        ardrCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+        if (address.tokensBalances) {
+          address.tokensBalances.forEach(balance => {
+            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = utils.commaFormat(balance.balance)
+            tokenBalance.visible = walletEntry.expanded
+            ardrCurrencyBalance.tokens.push(tokenBalance)
+          })
+        }
+        return ardrCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet), 9000).then(() => {
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(ardorCurrencyAddressLoading)
-        ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let ardrCurrencyBalance = new wlt.CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
-            ardrCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-            ardrCurrencyBalance.visible = walletEntry.expanded
-            ardrCurrencyBalance.inUse = !wasCreated
-            ardrCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, ardrCurrencyBalance)
-            index++;
-
-            if (address.tokensBalances) {
-              address.tokensBalances.forEach(balance => {
-                let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
-                tokenBalance.balance = utils.commaFormat(balance.balance)
-                tokenBalance.visible = walletEntry.expanded
-                ardrCurrencyBalance.tokens.push(tokenBalance)
-              })
-            }
-          }
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("ARDOR refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, ardorCurrencyAddressLoading, 'ARDOR', 'ARDR')
-      })
+      this.loadAddresses(
+          walletEntry, 'ARDOR', 'ARDR',
+          this.ardorCryptoService.refreshAdressBalances,
+          createBalance
+      )
     }
 
     /* Only when we expand a wallet entry do we lookup its balances */
     public loadFIMKAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let fimkCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'FIMK')
-      if (!fimkCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let fimkCurrencyBalance = new wlt.CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey)
+        fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
+        if (address.tokensBalances) {
+          address.tokensBalances.forEach(balance => {
+            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = utils.commaFormat(balance.balance)
+            tokenBalance.visible = walletEntry.expanded
+            fimkCurrencyBalance.tokens.push(tokenBalance)
+          })
+        }
+        return fimkCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.fimkCryptoService.refreshAdressBalances(fimkCurrencyAddressLoading.wallet), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry, 'FIMK', 'FIM',
+          this.fimkCryptoService.refreshAdressBalances,
+          createBalance
+      )
 
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(fimkCurrencyAddressLoading)
-        fimkCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let fimkCurrencyBalance = new wlt.CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey)
-            fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-            fimkCurrencyBalance.visible = walletEntry.expanded
-            fimkCurrencyBalance.inUse = !wasCreated
-            fimkCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, fimkCurrencyBalance)
-            index++;
-
-            if (address.tokensBalances) {
-              address.tokensBalances.forEach(balance => {
-                let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
-                tokenBalance.balance = utils.commaFormat(balance.balance)
-                tokenBalance.visible = walletEntry.expanded
-                fimkCurrencyBalance.tokens.push(tokenBalance)
-              })
-            }
-          }
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != fimkCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("FIMK refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, fimkCurrencyAddressLoading, 'FIMK', 'FIM')
-      })
     }
 
     /* Only when we expand a wallet entry do we lookup its balances */
     public loadEthereumAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let ethCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Ethereum')
-      if (!ethCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
+        let balance = Big(address.balance)
+        ethCurrencyBalance.balance = balance.toFixed()
+        if (address.tokensBalances) {
+          address.tokensBalances.forEach(balance => {
+            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = balance.balance
+            tokenBalance.visible = walletEntry.expanded
+            ethCurrencyBalance.tokens.push(tokenBalance)
+          })
+        }
+        return ethCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet, ethCurrencyAddressLoading), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry,
+          'Ethereum',
+          'ETH',
+          this.lightwalletService.refreshAdressBalances,
+          createBalance
+      )
 
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
-        let n = 0
-        ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
-          let balance = Big(address.balance)
-          ethCurrencyBalance.balance = balance.toFixed()
-          ethCurrencyBalance.visible = walletEntry.expanded
-          ethCurrencyBalance.hidden = n >= DISPLAYED_CURRENCIES_NUM && !address.inUse && !wasCreated
-          ethCurrencyBalance.inUse = !wasCreated
-          ethCurrencyBalance.walletEntry = walletEntry
-          walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
-          index++
-          n++
-
-          if (address.tokensBalances) {
-            address.tokensBalances.forEach(balance => {
-              let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = balance.balance
-              tokenBalance.visible = walletEntry.expanded
-              ethCurrencyBalance.tokens.push(tokenBalance)
-            })
-          }
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != ethCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("ETH refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, ethCurrencyAddressLoading, 'Ethereum', 'ETH')
-      })
     }
 
     public loadIotaAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let iotaCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Iota')
-      if (!iotaCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let iotaCurrencyBalance = new wlt.CurrencyBalance('Iota', 'i', address.address, address.privateKey)
+        iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
+        return iotaCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.iotaCoreService.refreshAdressBalances(iotaCurrencyAddressLoading.wallet), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry,
+          'Iota',
+          'i',
+          this.iotaCoreService.refreshAdressBalances,
+          createBalance
+      )
 
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(iotaCurrencyAddressLoading)
-        iotaCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let iotaCurrencyBalance = new wlt.CurrencyBalance('Iota', 'i', address.address, address.privateKey)
-            iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
-            iotaCurrencyBalance.visible = walletEntry.expanded
-            iotaCurrencyBalance.inUse = !wasCreated
-            iotaCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, iotaCurrencyBalance)
-            index++;
-          }
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != iotaCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("IOTA refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, iotaCurrencyAddressLoading, 'IOTA', 'IOTA')
-      })
     }
 
     public loadBitcoinAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let btcCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-          .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
-      if (!btcCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
+        btcCurrencyBalance.balance = (address.balance || "0") + ""
+        return btcCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.bitcoreService.refreshBalances(btcCurrencyAddressLoading.wallet, btcCurrencyAddressLoading), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry,
+          'Bitcoin',
+          'BTC',
+          this.bitcoreService.refreshBalances,
+          createBalance
+      )
 
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
-        let n = 0
-        btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
-          btcCurrencyBalance.balance = (address.balance || "0") + ""
-          btcCurrencyBalance.visible = walletEntry.expanded
-          btcCurrencyBalance.hidden = n >= DISPLAYED_CURRENCIES_NUM && !address.inUse && !wasCreated
-          btcCurrencyBalance.inUse = !wasCreated
-          btcCurrencyBalance.walletEntry = walletEntry
-          walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
-          index++
-          n++
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != btcCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("BTC refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, btcCurrencyAddressLoading, 'Bitcoin', 'BTC')
-      })
     }
 
     public loadBitcoinCashAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let bchCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'BitcoinCash')
-      if (!bchCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let bchCurrencyBalance = new wlt.CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
+        bchCurrencyBalance.balance = address.balance + ""
+        return bchCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.bchCryptoService.refreshAdressBalances(bchCurrencyAddressLoading.wallet), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry,
+          'BitcoinCash',
+          'BCH',
+          this.bchCryptoService.refreshAdressBalances,
+          createBalance
+      )
 
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(bchCurrencyAddressLoading)
-        bchCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address.split(":")[1]) != -1
-          if (address.inUse || wasCreated) {
-            let bchCurrencyBalance = new wlt.CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
-            bchCurrencyBalance.balance = address.balance + ""
-            bchCurrencyBalance.visible = walletEntry.expanded
-            bchCurrencyBalance.inUse = !wasCreated
-            bchCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, bchCurrencyBalance)
-            index++
-          }
-        })
-
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != bchCurrencyAddressLoading)
-        this.flatten()
-      }).catch((reason) => {
-        console.error("BCH refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, bchCurrencyAddressLoading, 'BitcoinCash', 'BCH')
-      })
     }
 
     public loadLtcAddresses(walletEntry: wlt.WalletEntry) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let ltcCurrencyAddressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-        .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Litecoin')
-      if (!ltcCurrencyAddressLoading) return
+      let createBalance = (address: WalletAddress) => {
+        let ltcCurrencyBalance = new wlt.CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey)
+        ltcCurrencyBalance.balance = address.balance + ""
+        return ltcCurrencyBalance
+      }
 
-      utils.timeoutPromise(this.ltcCryptoService.refreshAdressBalances(ltcCurrencyAddressLoading.wallet, ltcCurrencyAddressLoading), 9000).then(() => {
+      this.loadAddresses(
+          walletEntry,
+          'Litecoin',
+          'LTC',
+          this.ltcCryptoService.refreshAdressBalances,
+          createBalance
+      )
+
+    }
+
+    private loadAddresses(walletEntry: wlt.WalletEntry, currencyName: string, currencySymbol: string,
+                          requestAddresses: Function, createBalance: Function) {
+
+      /* Find the Loading node, if thats not available we can exit */
+      let addressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
+          .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyName.toUpperCase())
+      if (!addressLoading) return
+
+      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 9000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
-        let index = walletEntry.currencies.indexOf(ltcCurrencyAddressLoading)
-        ltcCurrencyAddressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
-            let ltcCurrencyBalance = new wlt.CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey)
-            ltcCurrencyBalance.balance = address.balance + ""
-            ltcCurrencyBalance.visible = walletEntry.expanded
-            ltcCurrencyBalance.inUse = !wasCreated
-            ltcCurrencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, ltcCurrencyBalance)
-            index++
-          }
-        })
+        let hasDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero).
 
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != ltcCurrencyAddressLoading)
+        let index = walletEntry.currencies.indexOf(addressLoading)
+        let counter = 0
+        let emptyAddressCounter = 0
+        addressLoading.wallet.addresses.forEach(address => {
+          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
+          let currencyBalance: wlt.CurrencyBalance = createBalance(address)
+          currencyBalance.visible = walletEntry.expanded
+          currencyBalance.inUse = !wasCreated
+          currencyBalance.walletEntry = walletEntry
+          let isZeroBalance = !hasDigit.test(currencyBalance.balance)
+          if (isZeroBalance) emptyAddressCounter++
+          currencyBalance.hidden = counter >= DISPLAYED_CURRENCIES_NUM
+              && isZeroBalance  // do not hide not zero balance
+              && emptyAddressCounter > 1  // must display at least 1 empty address (zero balance)
+              && !address.inUse && !wasCreated
+          walletEntry.currencies.splice(index, 0, currencyBalance)
+          index++
+          counter++
+        })
+        // we can remove the loading entry
+        walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)
         this.flatten()
       }).catch((reason) => {
-        console.error("LTC refreshing balances error", reason)
-        this.handleFailedCryptoRequests(walletEntry, ltcCurrencyAddressLoading, 'Litecoin', 'LTC')
+        console.error(`${currencyName} refreshing balances error`, reason)
+        this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
     }
 
