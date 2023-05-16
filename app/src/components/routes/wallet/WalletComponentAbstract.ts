@@ -24,7 +24,8 @@
 
 namespace wlt {
 
-  const DISPLAYED_CURRENCIES_NUM = 5
+  const DISPLAYED_ADDRESSES_MINIMUM = 5
+  const DISPLAYED_EMPTY_ADDRESSES = 3
 
   export abstract class WalletComponentAbstract {
 
@@ -294,8 +295,6 @@ namespace wlt {
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
-        let hasDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero).
-
         let index = walletEntry.currencies.indexOf(addressLoading)
         let counter = 0
         let emptyAddressCounter = 0
@@ -305,11 +304,11 @@ namespace wlt {
           currencyBalance.visible = walletEntry.expanded
           currencyBalance.inUse = !wasCreated
           currencyBalance.walletEntry = walletEntry
-          let isZeroBalance = !hasDigit.test(currencyBalance.balance)
+          let isZeroBalance = currencyBalance.isZeroBalance()
           if (isZeroBalance) emptyAddressCounter++
-          currencyBalance.hidden = counter >= DISPLAYED_CURRENCIES_NUM
+          currencyBalance.hidden = counter >= DISPLAYED_ADDRESSES_MINIMUM
               && isZeroBalance  // do not hide not zero balance
-              && emptyAddressCounter > 1  // must display at least 1 empty address (zero balance)
+              && emptyAddressCounter > DISPLAYED_EMPTY_ADDRESSES  // must display at least 3 empty address (zero balance)
               && !address.inUse && !wasCreated
           walletEntry.currencies.splice(index, 0, currencyBalance)
           index++

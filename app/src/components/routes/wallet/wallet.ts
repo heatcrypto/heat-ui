@@ -51,7 +51,11 @@ namespace wlt {
     }
   }
 
+
   export class CurrencyBalance {
+
+    static hasDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
+
     public isCurrencyBalance = true
     public balance: string
     public inUse = false
@@ -103,6 +107,11 @@ namespace wlt {
         }
       )
     }
+
+    public isZeroBalance() {
+      return !CurrencyBalance.hasDigit.test(this.balance)
+    }
+
   }
 
   export class CurrencyAddressLoading {

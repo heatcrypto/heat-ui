@@ -178,9 +178,10 @@ class LightwalletService {
             }
 
             walletAddress.inUse = (info.txs || info.countTxs) > 0
-            if (walletAddress.inUse) displayedEmptyCounter = 0
+            if (walletAddress.inUse) displayedEmptyCounter = 0  // reset counter since need extra unused addresses
 
-            if (displayedEmptyCounter >= 3) {
+            // if there are 2 zero addresses in a row, then we do not load the addresses further
+            if (displayedEmptyCounter >= 2) {
               resolve(false)
               return
             }
