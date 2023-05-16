@@ -45,13 +45,9 @@ declare type WalletAddress = {
   /* ERC20 token balances */
   tokensBalances: Array<{
     symbol: string;
-
     name: string;
-
     decimals: number;
-
     balance: string;
-
     address: string;
   }>
 }
@@ -107,7 +103,9 @@ class LightwalletService {
           this.unlock(seedOrPrivateKey)
         }
         let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
-        resolve(JSON.parse(decryptedWallet));
+        let wa: WalletAddresses = JSON.parse(decryptedWallet)
+        wa.addresses.forEach(a => a.balance = "")
+        resolve(wa);
       } else {
         let promise: Promise<WalletAddresses>;
         if (this.validSeed(seedOrPrivateKey)) {
@@ -128,37 +126,35 @@ class LightwalletService {
     });
   }
 
-  refreshAdressBalances(wallet: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
+  refreshAdressBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
-    let addresses = wallet.addresses.map(a => a.address)
     let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
+
+    let addresses = walletAddresses.addresses.map(a => a.address)
+    let displayedEmptyCounter = 0
 
     function processNext() {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
         let address = addresses.shift()
-
         if(!address) {
           resolve(false)
           return
         }
+
         ethCurrencyAddressLoading.address = address
 
         /* look up its data on ethBlockExplorerService */
         ethBlockExplorerService.refresh().then(() => {
-          ethBlockExplorerService.getAddressInfo(address).then(info => {
+          ethBlockExplorerService.getAddressInfo(address, true).then(info => {
+            displayedEmptyCounter++
+            let walletAddressArray = walletAddresses.addresses;
 
             /* lookup the 'real' WalletAddress */
-            let walletAddress = wallet.addresses.find(x => x.address == address)
+            let walletAddress = walletAddressArray.find(x => x.address == address)
             if (!walletAddress) {
-              console.error(`Address ${address} is not found among addresses`, wallet.addresses)
-              resolve(false)
-              return
-            }
-
-            walletAddress.inUse = (info.txs || info.countTxs) > 0
-            if (!walletAddress.inUse) {
+              console.error(`Address ${address} is not found among addresses`, walletAddressArray)
               resolve(false)
               return
             }
@@ -179,6 +175,14 @@ class LightwalletService {
                   address: token.tokenInfo.address
                 })
               })
+            }
+
+            walletAddress.inUse = (info.txs || info.countTxs) > 0
+            if (walletAddress.inUse) displayedEmptyCounter = 0
+
+            if (displayedEmptyCounter >= 3) {
+              resolve(false)
+              return
             }
             resolve(true)
           }, (reason) => {
@@ -325,7 +329,7 @@ class LightwalletService {
               for (let i = 0; i < addresses.length; i++) {
                 let walletAddress = addresses[i];
                 let privateKey = ks.exportPrivateKey(walletAddress, pwDerivedKey);
-                wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "0", inUse: false }
+                wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "", inUse: false }
               }
               resolve(wallet);
 

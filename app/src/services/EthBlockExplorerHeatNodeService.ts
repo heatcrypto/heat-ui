@@ -6,6 +6,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
   public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
   private providerName = 'HEAT';
   private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
+  private cachedAddressInfo: Map<string, any> = new Map<string, any>();
 
   constructor(public $q: angular.IQService,
     private http: HttpService,
@@ -56,8 +57,8 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
   }
 
   private getCachedAccountBalance = (address: string) => {
-    if (this.cachedGetCachedAccountBalance.get(address))
-      return this.cachedGetCachedAccountBalance.get(address)
+    let v = this.cachedGetCachedAccountBalance.get(address)
+    if (v) return v
     let deferred = this.$q.defer<string>();
     this.cachedGetCachedAccountBalance.set(address, deferred.promise)
     this.getBalanceFromChain(address).then(deferred.resolve, deferred.reject)
@@ -67,6 +68,20 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
       }, 30 * 1000)
     })
     return this.cachedGetCachedAccountBalance.get(address)
+  }
+
+  private getCachedAddressInfo = (address: string) => {
+    let v = this.cachedAddressInfo.get(address)
+    if (v) return v
+    let deferred = this.$q.defer();
+    this.cachedAddressInfo.set(address, deferred.promise)
+    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
+    this.cachedAddressInfo.get(address).finally(() => {
+      setTimeout(() => {
+        this.cachedAddressInfo.set(address, null);
+      }, 60 * 1000)
+    })
+    return this.cachedAddressInfo.get(address)
   }
 
   public getBalance = (address: string) => {
@@ -116,7 +131,11 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return deferred.promise
   }
 
-  public getAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
+  public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {
+    if (useCache) {
+      return this.getCachedAddressInfo(address)
+    }
+
     let deferred = this.$q.defer<EthplorerAddressInfo>();
     let url = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=tokenBalances`
     this.http.get(url).then((response) => {

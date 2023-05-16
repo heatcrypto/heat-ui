@@ -122,7 +122,10 @@
               <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
-                <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
+                <div ng-class="{'empty':entry.balance=='0'}">
+                  <span class="balance">{{entry.balance}}</span>
+                  <span ng-if="entry.balance">&nbsp;&nbsp;&nbsp;{{entry.symbol}}</span>
+                </div>
                 <md-menu ng-hide="entry.symbol==='HEAT'" md-position-mode="target-right target" md-offset="34px 34px">
                   <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>

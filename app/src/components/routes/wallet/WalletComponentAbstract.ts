@@ -185,8 +185,9 @@ namespace wlt {
 
       let createBalance = (address: WalletAddress) => {
         let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
-        let balance = Big(address.balance)
-        ethCurrencyBalance.balance = balance.toFixed()
+        if (address.balance) {
+          ethCurrencyBalance.balance = Big(address.balance).toFixed()
+        }
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
             let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
@@ -288,7 +289,7 @@ namespace wlt {
           .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyName.toUpperCase())
       if (!addressLoading) return
 
-      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 9000).then(() => {
+      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 18000).then(() => {
 
         /* Make sure we exit if no loading node exists */
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return

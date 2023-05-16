@@ -130,8 +130,8 @@ class EthplorerTransactionPaginator {
 class EthplorerService implements IEthereumAPIList{
 
   private providerName = 'Ethplorer'
-  public tokenInfoCache: {[key:string]: EthplorerTokenInfo} = {}
-  private cachedGetCachedAddressInfo = null
+  public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
+  private cachedGetCachedAddressInfo: { [address: string]: any } = {}
   private static endPoint: string;
   constructor(public $q: angular.IQService,
               private http: HttpService,
@@ -176,25 +176,29 @@ class EthplorerService implements IEthereumAPIList{
     return deferred.promise;
   }
 
-  /* Calls ethplorer getAddressInfo and caches the result for 10 seconds,
+  /* Calls ethplorer getAddressInfo and caches the result for 60 seconds,
      this is needed since both the virtual repeat and the erc20 token list call this method
      on page load and refresh */
   private getCachedAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
-    if (this.cachedGetCachedAddressInfo)
-      return this.cachedGetCachedAddressInfo
+    let v = this.cachedGetCachedAddressInfo[address]
+    if (v) return v
 
     let deferred = this.$q.defer();
-    this.cachedGetCachedAddressInfo = deferred.promise
-    this.getAddressInfo(address).then(deferred.resolve, deferred.reject)
-    this.cachedGetCachedAddressInfo.finally(() => {
+    this.cachedGetCachedAddressInfo[address] = deferred.promise
+    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
+    this.cachedGetCachedAddressInfo[address].finally(() => {
       setTimeout(()=> {
-        this.cachedGetCachedAddressInfo = null
-      }, 5*1000)
+        this.cachedGetCachedAddressInfo[address] = null
+      }, 60 * 1000)
     })
-    return this.cachedGetCachedAddressInfo
+    return this.cachedGetCachedAddressInfo[address]
   }
 
-  public getAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
+  public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {
+    if (useCache) {
+      return this.getCachedAddressInfo(address)
+    }
+
     let deferred = this.$q.defer<EthplorerAddressInfo>();
     let url = `${EthplorerService.endPoint}/getAddressInfo/${address}?apiKey=lwA5173TDKj60`
     this.http.get(url)

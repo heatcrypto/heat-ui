@@ -11,7 +11,7 @@ interface IEthereumAPIList {
 
   getTransactionCount(address: string): angular.IPromise<number>
 
-  getAddressInfo(address: string)
+  getAddressInfo(address: string, useCache: boolean)
 
   getProviderName(): string
 

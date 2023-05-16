@@ -59,8 +59,8 @@ class EthBlockExplorerService implements IEthereumAPIList {
 
   }
 
-  public getAddressInfo(address: string) {
-    return this.ethApiProvider.getAddressInfo(address);
+  public getAddressInfo(address: string, useCache = false) {
+    return this.ethApiProvider.getAddressInfo(address, useCache);
   }
 
   private convertAddressTransactions(transactions) {
