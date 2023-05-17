@@ -62,7 +62,7 @@ class LTCCryptoService {
     return walletType;
   }
 
-  refreshAdressBalances(wallet: WalletAddresses, ltcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
+  refreshBalances(wallet: WalletAddresses, ltcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
 
     /* list all addresses in bip44 order */
     let addresses = wallet.addresses.map(a => a.address)

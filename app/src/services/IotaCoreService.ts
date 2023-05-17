@@ -52,7 +52,7 @@ class IotaCoreService {
   }
 
 
-  refreshAdressBalances(wallet: WalletAddresses) {
+  refreshBalances(wallet: WalletAddresses) {
     return new Promise((resolve, reject) => {
       let secretPhrase = wallet.addresses[0].privateKey;
       let iotaBlockExplorerService: IotaBlockExplorerService = heat.$inject.get('iotaBlockExplorerService')

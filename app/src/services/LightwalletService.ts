@@ -124,7 +124,7 @@ class LightwalletService {
     });
   }
 
-  refreshAdressBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
+  refreshBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
     let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     walletAddresses.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain

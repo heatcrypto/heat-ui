@@ -36,7 +36,7 @@ class FIMKCryptoService {
     });
   }
 
-  refreshAdressBalances(wallet: WalletAddresses) {
+  refreshBalances(wallet: WalletAddresses) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
       let mofoSocketService: MofoSocketService = heat.$inject.get('mofoSocketService')

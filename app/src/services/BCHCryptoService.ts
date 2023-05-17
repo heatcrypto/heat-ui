@@ -67,7 +67,7 @@ class BCHCryptoService {
     return walletType;
   }
 
-  refreshAdressBalances(wallet: WalletAddresses) {
+  refreshBalances(wallet: WalletAddresses) {
     /* list all addresses in bip44 ordrecurseToNextrecurseToNexter */
     let addresses = wallet.addresses.map(a => a.address)
     let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')

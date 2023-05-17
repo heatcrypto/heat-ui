@@ -35,7 +35,7 @@ class NXTCryptoService {
     });
   }
 
-  refreshAdressBalances(wallet: WalletAddresses) {
+  refreshBalances(wallet: WalletAddresses) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
       let nxtBlockExplorerService: NxtBlockExplorerService = heat.$inject.get('nxtBlockExplorerService')

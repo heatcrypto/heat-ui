@@ -127,7 +127,7 @@ namespace wlt {
 
       this.loadAddresses(
           walletEntry, 'NXT', 'NXT',
-          this.nxtCryptoService.refreshAdressBalances,
+          this.nxtCryptoService.refreshBalances,
           createBalance
       )
 
@@ -151,7 +151,7 @@ namespace wlt {
 
       this.loadAddresses(
           walletEntry, 'ARDOR', 'ARDR',
-          this.ardorCryptoService.refreshAdressBalances,
+          this.ardorCryptoService.refreshBalances,
           createBalance
       )
     }
@@ -175,7 +175,7 @@ namespace wlt {
 
       this.loadAddresses(
           walletEntry, 'FIMK', 'FIM',
-          this.fimkCryptoService.refreshAdressBalances,
+          this.fimkCryptoService.refreshBalances,
           createBalance
       )
 
@@ -204,7 +204,7 @@ namespace wlt {
           walletEntry,
           'Ethereum',
           'ETH',
-          this.lightwalletService.refreshAdressBalances,
+          this.lightwalletService.refreshBalances,
           createBalance
       )
 
@@ -222,7 +222,7 @@ namespace wlt {
           walletEntry,
           'Iota',
           'i',
-          this.iotaCoreService.refreshAdressBalances,
+          this.iotaCoreService.refreshBalances,
           createBalance
       )
 
@@ -258,7 +258,7 @@ namespace wlt {
           walletEntry,
           'BitcoinCash',
           'BCH',
-          this.bchCryptoService.refreshAdressBalances,
+          this.bchCryptoService.refreshBalances,
           createBalance
       )
 
@@ -276,7 +276,7 @@ namespace wlt {
           walletEntry,
           'Litecoin',
           'LTC',
-          this.ltcCryptoService.refreshAdressBalances,
+          this.ltcCryptoService.refreshBalances,
           createBalance
       )
 

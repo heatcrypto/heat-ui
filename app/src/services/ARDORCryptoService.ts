@@ -39,7 +39,7 @@ class ARDORCryptoService {
     });
   }
 
-  refreshAdressBalances(wallet: WalletAddresses) {
+  refreshBalances(wallet: WalletAddresses) {
     let userAccount = wallet.addresses[0].accountId;
     return new Promise((resolve, reject) => {
       let ardorBlockExplorerService: ArdorBlockExplorerService = heat.$inject.get('ardorBlockExplorerService')
