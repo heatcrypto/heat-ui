@@ -63,9 +63,10 @@ class LTCCryptoService {
   }
 
   refreshBalances(wallet: WalletAddresses, ltcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
-
     /* list all addresses in bip44 order */
+    wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
     let addresses = wallet.addresses.map(a => a.address)
+    let emptyAddressCounter = 0
     let ltcBlockExplorerService: LtcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
 
     function processNext() {
@@ -73,6 +74,11 @@ class LTCCryptoService {
 
         /* get the first element from the list */
         let address = addresses.shift()
+        if (!address) {
+          resolve(false)
+          return
+        }
+
         ltcCurrencyAddressLoading.address = address
 
         ltcBlockExplorerService.getAddressInfo(address).then(info => {
@@ -84,13 +90,18 @@ class LTCCryptoService {
             return
           }
 
+          emptyAddressCounter++
+
           walletAddress.inUse = info.txs != 0
-          if (!walletAddress.inUse) {
+          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
+
+          if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
+
+          // if there are 2 zero addresses in a row, then we do not load the addresses further
+          if (emptyAddressCounter >= 2) {
             resolve(false)
             return
           }
-
-          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
           resolve(true)
         }, (reason) => {
           console.error(reason)

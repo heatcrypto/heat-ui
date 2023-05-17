@@ -67,17 +67,24 @@ class BCHCryptoService {
     return walletType;
   }
 
-  refreshBalances(wallet: WalletAddresses) {
+  refreshBalances(wallet: WalletAddresses, currencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 ordrecurseToNextrecurseToNexter */
+    wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
     let addresses = wallet.addresses.map(a => a.address)
+    let emptyAddressCounter = 0
     let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
 
     function processNext() {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses[0]
-        addresses.shift()
+        let address = addresses.shift()
+        if (!address) {
+          resolve(false)
+          return
+        }
+
+        currencyAddressLoading.address = address
 
         /* look up its data on btcBlockExplorerService */
         bchBlockExplorerService.getAddressInfo(address).then(info => {
@@ -90,13 +97,17 @@ class BCHCryptoService {
             return
           }
 
+          emptyAddressCounter++
+
+          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
           walletAddress.inUse = info.txs != 0
-          if (!walletAddress.inUse) {
+          if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
+
+          // if there are 2 zero addresses in a row, then we do not load the addresses further
+          if (emptyAddressCounter >= 2) {
             resolve(false)
             return
           }
-
-          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
           resolve(true)
         }, (reason) => {
           console.error(reason)
