@@ -232,7 +232,7 @@ namespace wlt {
 
       let createBalance = (address: WalletAddress) => {
         let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
-        btcCurrencyBalance.balance = (address.balance || "0") + ""
+        btcCurrencyBalance.balance = address.balance + ""
         return btcCurrencyBalance
       }
 

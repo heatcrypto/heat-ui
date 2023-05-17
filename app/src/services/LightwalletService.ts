@@ -103,9 +103,7 @@ class LightwalletService {
           this.unlock(seedOrPrivateKey)
         }
         let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
-        let wa: WalletAddresses = JSON.parse(decryptedWallet)
-        wa.addresses.forEach(a => a.balance = "")
-        resolve(wa);
+        resolve(JSON.parse(decryptedWallet));
       } else {
         let promise: Promise<WalletAddresses>;
         if (this.validSeed(seedOrPrivateKey)) {
@@ -129,16 +127,16 @@ class LightwalletService {
   refreshAdressBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
     let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
-
+    walletAddresses.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
     let addresses = walletAddresses.addresses.map(a => a.address)
-    let displayedEmptyCounter = 0
+    let emptyAddressCounter = 0
 
     function processNext() {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
         let address = addresses.shift()
-        if(!address) {
+        if (!address) {
           resolve(false)
           return
         }
@@ -148,7 +146,6 @@ class LightwalletService {
         /* look up its data on ethBlockExplorerService */
         ethBlockExplorerService.refresh().then(() => {
           ethBlockExplorerService.getAddressInfo(address, true).then(info => {
-            displayedEmptyCounter++
             let walletAddressArray = walletAddresses.addresses;
 
             /* lookup the 'real' WalletAddress */
@@ -177,11 +174,13 @@ class LightwalletService {
               })
             }
 
+            emptyAddressCounter++
+
             walletAddress.inUse = (info.txs || info.countTxs) > 0
-            if (walletAddress.inUse) displayedEmptyCounter = 0  // reset counter since need extra unused addresses
+            if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
 
             // if there are 2 zero addresses in a row, then we do not load the addresses further
-            if (displayedEmptyCounter >= 2) {
+            if (emptyAddressCounter >= 2) {
               resolve(false)
               return
             }

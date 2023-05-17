@@ -66,41 +66,51 @@ class BitcoreService {
 
   refreshBalances(wallet: WalletAddresses, btcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
+    wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
     let addresses = wallet.addresses.map(a => a.address)
+    let emptyAddressCounter = 0
 
     function processNext() {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
         let address = addresses.shift()
+        if (!address) {
+          resolve(false)
+          return
+        }
+
         btcCurrencyAddressLoading.address = address
 
         /* look up its data on btcBlockExplorerService */
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-        //btcBlockExplorerService.refresh().then(() => {
-          btcBlockExplorerService.getAddressInfo(address).then(info => {
+        btcBlockExplorerService.getAddressInfo(address).then(info => {
 
-            /* lookup the 'real' WalletAddress */
-            let walletAddress = wallet.addresses.find(x => x.address == address)
-            if (!walletAddress) {
-              console.error(`Address ${address} is not found among addresses`, wallet.addresses)
-              resolve(false)
-              return
-            }
-
-            walletAddress.inUse = info.txApperances != 0
-            if (!walletAddress.inUse) {
-              resolve(false)
-              return
-            }
-
-            walletAddress.balance = info.balanceSat / 100000000 + ""
-            resolve(true)
-          }).catch(reason => {
-            console.error(reason)
+          /* lookup the 'real' WalletAddress */
+          let walletAddress = wallet.addresses.find(x => x.address == address)
+          if (!walletAddress) {
+            console.error(`Address ${address} is not found among addresses`, wallet.addresses)
             resolve(false)
-          })
-        //})
+            return
+          }
+
+          emptyAddressCounter++
+
+          walletAddress.balance = info.balanceSat / 100000000 + ""
+          walletAddress.inUse = info.txApperances != 0
+
+          if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
+
+          // if there are 2 zero addresses in a row, then we do not load the addresses further
+          if (emptyAddressCounter >= 2) {
+            resolve(false)
+            return
+          }
+          resolve(true)
+        }).catch(reason => {
+          console.error(reason)
+          resolve(false)
+        })
       })
     }
 
