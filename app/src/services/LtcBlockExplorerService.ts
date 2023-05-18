@@ -4,6 +4,7 @@
 class LtcBlockExplorerService {
   static endPoint: string;
   private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
+  private cachedAddressInfo: Map<string, any> = new Map<string, any>();
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
@@ -74,7 +75,26 @@ class LtcBlockExplorerService {
     return deferred.promise;
   }
 
-  public getAddressInfo(address: string): angular.IPromise<any> {
+  private getCachedAddressInfo = (address: string) => {
+    let v = this.cachedAddressInfo.get(address)
+    if (v) return v
+
+    let deferred = this.$q.defer();
+    deferred.promise.finally(() => {
+      setTimeout(() => {
+        this.cachedAddressInfo.set(address, null);
+      }, 60 * 1000)
+    })
+    this.cachedAddressInfo.set(address, deferred.promise)
+    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
+    return this.cachedAddressInfo.get(address)
+  }
+
+  public getAddressInfo(address: string, useCache = false): angular.IPromise<any> {
+    if (useCache) {
+      return this.getCachedAddressInfo(address)
+    }
+
     let getTransactionsApi = `${LtcBlockExplorerService.endPoint}/address/${address}?details=basic`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {

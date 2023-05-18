@@ -70,20 +70,6 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return this.cachedGetCachedAccountBalance.get(address)
   }
 
-  private getCachedAddressInfo = (address: string) => {
-    let v = this.cachedAddressInfo.get(address)
-    if (v) return v
-    let deferred = this.$q.defer();
-    this.cachedAddressInfo.set(address, deferred.promise)
-    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
-    this.cachedAddressInfo.get(address).finally(() => {
-      setTimeout(() => {
-        this.cachedAddressInfo.set(address, null);
-      }, 60 * 1000)
-    })
-    return this.cachedAddressInfo.get(address)
-  }
-
   public getBalance = (address: string) => {
     let deferred = this.$q.defer<string>();
     this.getCachedAccountBalance(address).then(parsed=> {
@@ -129,6 +115,20 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
       deferred.reject(error);
     })
     return deferred.promise
+  }
+
+  private getCachedAddressInfo = (address: string) => {
+    let v = this.cachedAddressInfo.get(address)
+    if (v) return v
+    let deferred = this.$q.defer();
+    deferred.promise.finally(() => {
+      setTimeout(() => {
+        this.cachedAddressInfo.set(address, null);
+      }, 60 * 1000)
+    })
+    this.cachedAddressInfo.set(address, deferred.promise)
+    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
+    return this.cachedAddressInfo.get(address)
   }
 
   public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {

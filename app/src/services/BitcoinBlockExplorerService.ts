@@ -5,6 +5,8 @@ class BtcBlockExplorerService {
 
   private btcProvider: IBitcoinAPIList;
   private cachedGetCachedAccountBalance: Map<string, any> = new Map<string, any>();
+  private cachedAddressInfo: Map<string, any> = new Map<string, any>();
+
   constructor(private $q: angular.IQService,
               /*private btcBlockExplorerHeatNodeService: BtcBlockExplorerHeatNodeService,
               private btcBlockExplorer3rdPartyService: BtcBlockExplorer3rdPartyService,*/
@@ -79,7 +81,25 @@ class BtcBlockExplorerService {
     return deferred.promise
   }
 
-  public getAddressInfo = (address: string): angular.IPromise<any> => {
+  private getCachedAddressInfo = (address: string) => {
+    let v = this.cachedAddressInfo.get(address)
+    if (v) return v
+
+    let deferred = this.$q.defer();
+    deferred.promise.finally(() => {
+      setTimeout(() => {
+        this.cachedAddressInfo.set(address, null);
+      }, 60 * 1000)
+    })
+    this.cachedAddressInfo.set(address, deferred.promise)
+    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
+    return this.cachedAddressInfo.get(address)
+  }
+
+  public getAddressInfo = (address: string, useCache = false): angular.IPromise<any> => {
+    if (useCache) {
+      return this.getCachedAddressInfo(address)
+    }
     let deferred = this.$q.defer<any>();
     this.btcProvider.getAddressInfo(address).then(info => {
       let data = Update3rdPartyAPIResponsesUtil.updateBTCGetAddressInfo(info, this.btcProvider)

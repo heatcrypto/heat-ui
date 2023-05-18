@@ -81,7 +81,7 @@ class LTCCryptoService {
 
         ltcCurrencyAddressLoading.address = address
 
-        ltcBlockExplorerService.getAddressInfo(address).then(info => {
+        ltcBlockExplorerService.getAddressInfo(address, true).then(info => {
 
           let walletAddress = wallet.addresses.find(x => x.address == address)
           if (!walletAddress) {
