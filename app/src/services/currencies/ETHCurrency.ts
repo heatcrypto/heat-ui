@@ -112,6 +112,23 @@ class ETHCurrency implements ICurrency {
           )
         })
       }
+
+      this.displaySignedBytesClick = function ($event) {
+        let data = $scope['vm'].data
+        let user = <UserService> heat.$inject.get('user')
+        let web3 = <Web3Service> heat.$inject.get('web3')
+        let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
+        let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
+        $scope['vm'].disableOKBtn = true
+        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit)
+            .then((rawTx) => {
+              console.log(rawTx)
+              let clipboardService: ClipboardService = heat.$inject.get('clipboard')
+              clipboardService.showTxnBytes("" + rawTx)
+            }, reason => console.error(reason))
+            .then(value => $mdDialog.cancel())
+      }
+
       this.disableOKBtn = false
       this.data = {
         amount: '',
@@ -204,6 +221,8 @@ class ETHCurrency implements ICurrency {
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
+              <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+                  class="md-primary" ng-click="vm.displaySignedBytesClick()" aria-label="OK">Signed transaction bytes</md-button>
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
