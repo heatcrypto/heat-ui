@@ -24,8 +24,8 @@
 
 namespace wlt {
 
-  const DISPLAYED_ADDRESSES_MINIMUM = 5
-  const DISPLAYED_EMPTY_ADDRESSES = 3
+  const DISPLAYED_ADDRESSES_MINIMUM = 1
+  const DISPLAYED_EMPTY_ADDRESSES = 1
 
   export abstract class WalletComponentAbstract {
 
@@ -300,7 +300,15 @@ namespace wlt {
         let emptyAddressCounter = 0
         addressLoading.wallet.addresses.forEach(address => {
           let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          let currencyBalance: wlt.CurrencyBalance = createBalance(address)
+          if (address.inUse || wasCreated) {
+            let currencyBalance: wlt.CurrencyBalance = createBalance(address)
+            currencyBalance.visible = walletEntry.expanded
+            currencyBalance.inUse = !wasCreated
+            currencyBalance.walletEntry = walletEntry
+            walletEntry.currencies.splice(index, 0, currencyBalance)
+            index++;
+          }
+          /*let currencyBalance: wlt.CurrencyBalance = createBalance(address)
           currencyBalance.visible = walletEntry.expanded
           currencyBalance.inUse = !wasCreated
           currencyBalance.walletEntry = walletEntry
@@ -312,7 +320,7 @@ namespace wlt {
               && !address.inUse && !wasCreated
           walletEntry.currencies.splice(index, 0, currencyBalance)
           index++
-          counter++
+          counter++*/
         })
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)

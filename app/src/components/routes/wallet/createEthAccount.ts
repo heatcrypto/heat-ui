@@ -61,7 +61,7 @@ function createEthAccount($event, walletComponent: WalletComponent) {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-            success = node.createAddress(walletComponent)
+            success = node.createEthAddress(walletComponent)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {

@@ -23,6 +23,8 @@
 
 namespace wlt {
 
+  const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
+
   export function getStore() {
     let storage = <StorageService>heat.$inject.get('storage')
     let $rootScope = heat.$inject.get('$rootScope')
@@ -167,21 +169,13 @@ namespace wlt {
     }
 
     createAddressByName(component: WalletComponentAbstract, name: string) {
-      if (name == "Bitcoin") {
-        this.createBtcAddress(component)
-      } else if (name == "Ethereum") {
-        this.createEthAddress(component)
-      } else if (name == "FIMK") {
-        this.createFIMKAddress(component)
-      } else if (name == "NXT") {
-        this.createNXTAddress(component)
-      } else if (name == "ARDOR") {
-        this.createARDRAddress(component)
-      } else if (name == "Litecoin") {
-        this.createLtcAddress(component)
-      } else if (name == "BitcoinCash") {
-        this.createBchAddress(component)
-      }
+      if (name == "Bitcoin") return this.createBtcAddress(component)
+      if (name == "Ethereum") return this.createEthAddress(component)
+      if (name == "FIMK") return this.createFIMKAddress(component)
+      if (name == "NXT") return this.createNXTAddress(component)
+      if (name == "ARDOR") return this.createARDRAddress(component)
+      if (name == "Litecoin") return this.createLtcAddress(component)
+      if (name == "BitcoinCash") return this.createBchAddress(component)
     }
 
     /* Handler for creating a new address, this method is declared here (on the node so to say)
@@ -191,7 +185,8 @@ namespace wlt {
     createEthAddress(component: WalletComponentAbstract) {
 
       // collect all CurrencyBalance of 'our' same currency type
-      let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+      // @ts-ignore
+      let currencyBalances: Array<CurrencyBalance> = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
 
       // if there is no address in use yet we use the first one
       if (currencyBalances.length == 0) {
@@ -205,7 +200,13 @@ namespace wlt {
         return true
       }
 
-      // determine the first 'nxt' address based of the last currencyBalance displayed
+      let emptyBalanceCounter = 0
+      for (let i = 0; i < currencyBalances.length; i++) {
+        if (currencyBalances[i].isZeroBalance()) emptyBalanceCounter++
+      }
+      if (emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES) return false
+
+      // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
       // look up the following address
@@ -215,7 +216,7 @@ namespace wlt {
         if (this.wallet.addresses[i].address == lastAddress) {
 
           // next address is the one - but if no more addresses we exit since not possible
-          if (i == this.wallet.addresses.length - 1) return
+          if (i == this.wallet.addresses.length - 1) return false
 
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
@@ -250,13 +251,11 @@ namespace wlt {
         return true
       }
 
-      // determine the first 'nxt' address based of the last currencyBalance displayed
+      // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
       // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-      if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
-        return false
-      }
+      if (!currencyBalances[currencyBalances.length - 1]['inUse']) return false
 
       // look up the following address
       for (let i = 0; i < this.wallet.addresses.length; i++) {
@@ -265,8 +264,7 @@ namespace wlt {
         if (this.wallet.addresses[i].address == lastAddress) {
 
           // next address is the one - but if no more addresses we exit since not possible
-          if (i == this.wallet.addresses.length - 1)
-            return
+          if (i == this.wallet.addresses.length - 1) return false
 
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
@@ -356,13 +354,11 @@ namespace wlt {
         return true
       }
 
-      // determine the first 'nxt' address based of the last currencyBalance displayed
+      // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
       // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-      if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
-        return false
-      }
+      if (!currencyBalances[currencyBalances.length - 1]['inUse']) return false
 
       // look up the following address
       for (let i = 0; i < this.wallet.addresses.length; i++) {
@@ -371,8 +367,7 @@ namespace wlt {
         if (this.wallet.addresses[i].address == lastAddress) {
 
           // next address is the one - but if no more addresses we exit since not possible
-          if (i == this.wallet.addresses.length - 1)
-            return
+          if (i == this.wallet.addresses.length - 1) return false
 
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey)
@@ -407,13 +402,11 @@ namespace wlt {
         return true
       }
 
-      // determine the first 'nxt' address based of the last currencyBalance displayed
+      // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
       // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-      if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
-        return false
-      }
+      if (!currencyBalances[currencyBalances.length - 1]['inUse']) return false
 
       // look up the following address
       for (let i = 0; i < this.wallet.addresses.length; i++) {
@@ -422,8 +415,7 @@ namespace wlt {
         if (this.wallet.addresses[i].address == lastAddress) {
 
           // next address is the one - but if no more addresses we exit since not possible
-          if (i == this.wallet.addresses.length - 1)
-            return
+          if (i == this.wallet.addresses.length - 1) return false
 
           let nextAddress = this.wallet.addresses[i + 1]
           let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey)
