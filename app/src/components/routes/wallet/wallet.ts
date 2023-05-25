@@ -65,6 +65,7 @@ namespace wlt {
     public visible = false
     public hidden = false
     walletEntry: WalletEntry
+    public index: number;
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) {
     }
@@ -129,11 +130,11 @@ namespace wlt {
   export class CurrencyAddressCreate {
     public isCurrencyAddressCreate = true
     public visible = false
-    public hidden = true
+    public hidden = false
     public parent: WalletEntry
     public flatten: () => void
 
-    constructor(public name: string, public wallet: WalletAddresses) {
+    constructor(public name: string, public wallet: WalletAddresses, public component?: WalletComponentAbstract) {
     }
 
     private getCurrencies(account: string) {

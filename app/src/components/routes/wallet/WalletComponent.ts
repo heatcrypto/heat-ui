@@ -120,7 +120,7 @@
 
               <!-- Currency Balance -->
               <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
-                <div class="name">{{entry.name}}</div>&nbsp;
+                <div class="name">{{entry.name}} #{{entry.index}}</div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span>{{entry.balance}}</span>
@@ -143,8 +143,8 @@
                         Remove address
                       </md-button>
                     </md-menu-item>
-                </md-menu-content>
-              </md-menu>
+                  </md-menu-content>
+                </md-menu>
               </div>
 
               <!-- Currency Address Loading -->
@@ -156,8 +156,20 @@
               <!-- Currency Address Create -->
               <div ng-if="entry.isCurrencyAddressCreate" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
-                <div class="identifier" flex></div>
-                <md-button ng-click="entry.createAddress()">Create New</md-button>
+                <md-button ng-click="entry.createEthAddress(entry.component)">Create New</md-button>
+                <md-menu ng-hide="entry.symbol==='HEAT'" md-position-mode="target-right target" md-offset="34px 34px">
+                  <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
+                    <md-icon md-font-library="material-icons">menu</md-icon>
+                  </md-button>
+                  <md-menu-content width="4">
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.restoreAddresses(entry)">
+                        Restore addresses
+                      </md-button>
+                    </md-menu-item>
+                  </md-menu-content>
+                </md-menu>
+                <!--<md-button class="name" ng-click="entry.restoreAddresses(entry.component)">Restore addresses</md-button>-->
               </div>
 
               <!-- Token Balance -->
@@ -296,9 +308,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
       if (!entry.walletEntry) return
       let remainingCurrencyBalances = this.walletEntries
-        .find((walletEntry) => entry.walletEntry.account === walletEntry.account)
-        .currencies
-        .filter((currency) => currency instanceof wlt.CurrencyBalance && entry.address !== currency.address);
+          .find((walletEntry) => entry.walletEntry.account === walletEntry.account)
+          .currencies
+          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && entry.address === currency.address)
+          );
       this.walletEntries
         .find((walletEntry) => walletEntry.account === entry.walletEntry.account)
         .currencies = remainingCurrencyBalances;
@@ -318,6 +331,18 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
       this.flatten()
     });
+  }
+
+  restoreAddresses(entry) {
+    dialogs.confirm(`Restore ${entry.name} Addresses`, `This will try to restore removed addresses`)
+        .then(() => {
+          this.lightwalletService.unlock(entry.parent.secretPhrase, "", true)
+              .then(currencyAddresses => {
+                entry.parent.currencies = []
+                this.initWalletEntry(entry.parent)
+                entry.parent.toggle()
+              })
+        });
   }
 
   createAccount($event) {

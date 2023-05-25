@@ -186,6 +186,7 @@ namespace wlt {
 
       let createBalance = (address: WalletAddress) => {
         let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
+        ethCurrencyBalance.index = address.index
         if (address.balance) {
           ethCurrencyBalance.balance = Big(address.balance).toFixed()
         }
@@ -308,6 +309,7 @@ namespace wlt {
             walletEntry.currencies.splice(index, 0, currencyBalance)
             index++;
           }
+
           /*let currencyBalance: wlt.CurrencyBalance = createBalance(address)
           currencyBalance.visible = walletEntry.expanded
           currencyBalance.inUse = !wasCreated

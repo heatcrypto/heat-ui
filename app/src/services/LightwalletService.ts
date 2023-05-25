@@ -92,10 +92,10 @@ class LightwalletService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: string, password?: string): Promise<WalletAddresses> {
+  unlock(seedOrPrivateKey: string, password?: string, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let encryptedWallet = this.store.get(`ETH-${heatAddress}`)
+      let encryptedWallet = reset ? null : this.store.get(`ETH-${heatAddress}`)
       if (encryptedWallet) {
         if (!encryptedWallet.data) {
           // Temporary fix. To remove unusable data from local storage
@@ -107,9 +107,9 @@ class LightwalletService {
       } else {
         let promise: Promise<WalletAddresses>;
         if (this.validSeed(seedOrPrivateKey)) {
-          promise = this.getEtherWallet(seedOrPrivateKey, password || "")
+          promise = this.createEtherAddresses(seedOrPrivateKey, password || "")
         } else if (this.validPrivateKey(seedOrPrivateKey)) {
-          promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
+          promise = this.createEtherAddressesFromPrivateKey(seedOrPrivateKey, password || "")
         } else {
           reject("Invalid seed or private key")
         }
@@ -229,7 +229,7 @@ class LightwalletService {
 
   */
 
-  getEtherWallet(seed: string, password: string): Promise<WalletAddresses> {
+  createEtherAddresses(seed: string, password: string): Promise<WalletAddresses> {
     let that = this;
     return new Promise((resolve, reject) => {
       try {
@@ -284,7 +284,7 @@ class LightwalletService {
     })
   }
 
-  getEtherWalletFromPrivateKey(privkeyHex: string, password: string): Promise<WalletAddresses> {
+  createEtherAddressesFromPrivateKey(privkeyHex: string, password: string): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       try {
         this.lightwallet.keystore.createVault({

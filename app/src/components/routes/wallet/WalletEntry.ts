@@ -97,7 +97,7 @@ namespace wlt {
       ethCurrencyAddressLoading.wallet = wallet
       this.currencies.push(ethCurrencyAddressLoading)
 
-      let ethCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Ethereum', wallet)
+      let ethCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Ethereum', wallet, walletComponent)
       ethCurrencyAddressCreate.visible = this.expanded
       ethCurrencyAddressCreate.parent = this
       ethCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
