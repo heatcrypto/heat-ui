@@ -125,7 +125,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
           // @ts-ignore
           let v = entry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
           if (v) {
-            v.createAddressByName(wc, selectedImport.name)
+            v.createAddressByName(entry)
           }
         }
         clearInterval(interval)

@@ -41,7 +41,8 @@ namespace wlt {
     bchCryptoService: BCHCryptoService;
 
     walletEntries: Array<wlt.WalletEntry> = []
-    createdAddresses: { [key: string]: Array<string> } = {}
+    createdAddresses: { [key: string]: Set<string> } = {}
+    removedAddresses: { [key: string]: Set<string> } = {}
 
     abstract flatten()
 
@@ -91,22 +92,65 @@ namespace wlt {
       })
     }
 
-    initCreatedAddresses() {
+    initCreatedRemovedAddresses() {
       for (let i = 0; i < window.localStorage.length; i++) {
         let key = window.localStorage.key(i)
-        let data = key.match(/eth-address-created:(.+):(.+)/)
+        // old format "eth-address-created:..." is used for backward compatibility
+        let data = key.match(/addresscreated-(.+)-(.+)/) || key.match(/eth-address-created:(.+):(.+)/)
         if (data) {
           let acc = data[1], addr = data[2]
-          this.createdAddresses[acc] = this.createdAddresses[acc] || []
-          this.createdAddresses[acc].push(addr)
+          this.createdAddresses[acc] = this.createdAddresses[acc] || new Set<string>()
+          this.createdAddresses[acc].add(addr)
+        } else {
+          // format of "removed address" item key: "addressremoved-account-currency-address". Delimiter "-" is the symbol not used in the addresses
+          let data = key.match(/addressremoved-(.+)-(.+)-(.+)/)
+          if (data) {
+            let acc = data[1], addr = data[3]
+            this.removedAddresses[acc] = this.removedAddresses[acc] || new Set<string>()
+            this.removedAddresses[acc].add(addr)
+          }
         }
       }
     }
 
-    rememberAddressCreated(account: string, ethAddress: string) {
-      this.createdAddresses[account] = this.createdAddresses[account] || []
-      this.createdAddresses[account].push(ethAddress)
-      window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`, "1")
+    rememberAddressCreated(account: string, address: string) {
+      this.createdAddresses[account] = this.createdAddresses[account] || new Set<string>()
+      this.createdAddresses[account].add(address)
+      window.localStorage.setItem(`addresscreated-${account}-${address}`, "1")
+    }
+
+    rememberAddressRemoved(account: string, currency: string, address: string) {
+      this.removedAddresses[account] = this.removedAddresses[account] || new Set<string>()
+      this.removedAddresses[account].add(address)
+      window.localStorage.setItem(`addressremoved-${account}-${currency}-${address}`, "1")
+    }
+
+    wasRemoved(address: string, walletEntry) {
+      let a = this.removedAddresses[walletEntry.account]
+      return a ? a.has(address) : false
+    }
+
+    wasCreated(address: string, walletEntry) {
+      let a = this.createdAddresses[walletEntry.account]
+
+      // backward compatibility when these items were registered without prefix "bitcoincash:"
+      if (address.startsWith("bitcoincash:")) return a ? a.has(address) || a.has(address.split(":")[1]) : false
+
+      return a ? a.has(address) : false
+    }
+
+    forgetAddressesRemoved(account: string, currency: string) {
+      let addresses = this.removedAddresses[account]
+      if (!addresses) return // nothing to delete
+      let addressesToDelete = []
+      addresses.forEach(address => {
+        let key = `addressremoved-${account}-${currency}-${address}`
+        if (window.localStorage.getItem(key)) {
+          window.localStorage.removeItem(key)
+          addressesToDelete.push(address)
+        }
+      })
+      addressesToDelete.forEach(a => addresses.delete(a))
     }
 
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
@@ -185,8 +229,7 @@ namespace wlt {
     public loadEthereumAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
-        ethCurrencyBalance.index = address.index
+        let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey, address.index)
         if (address.balance) {
           ethCurrencyBalance.balance = Big(address.balance).toFixed()
         }
@@ -232,7 +275,7 @@ namespace wlt {
     public loadBitcoinAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
+        let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey, address.index)
         btcCurrencyBalance.balance = address.balance + ""
         return btcCurrencyBalance
       }
@@ -250,7 +293,7 @@ namespace wlt {
     public loadBitcoinCashAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let bchCurrencyBalance = new wlt.CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey)
+        let bchCurrencyBalance = new wlt.CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey, address.index)
         bchCurrencyBalance.balance = address.balance + ""
         return bchCurrencyBalance
       }
@@ -268,7 +311,7 @@ namespace wlt {
     public loadLtcAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let ltcCurrencyBalance = new wlt.CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey)
+        let ltcCurrencyBalance = new wlt.CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey, address.index)
         ltcCurrencyBalance.balance = address.balance + ""
         return ltcCurrencyBalance
       }
@@ -297,11 +340,9 @@ namespace wlt {
         if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
         let index = walletEntry.currencies.indexOf(addressLoading)
-        let counter = 0
-        let emptyAddressCounter = 0
         addressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-          if (address.inUse || wasCreated) {
+          let wasCreated = this.wasCreated(address.address, walletEntry)
+          if ((address.inUse || wasCreated) && !this.wasRemoved(address.address, walletEntry)) {
             let currencyBalance: wlt.CurrencyBalance = createBalance(address)
             currencyBalance.visible = walletEntry.expanded
             currencyBalance.inUse = !wasCreated

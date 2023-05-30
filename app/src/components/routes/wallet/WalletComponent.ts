@@ -23,6 +23,8 @@
 
 ///<reference path="./WalletComponentAbstract.ts" />
 
+import WalletEntry = wlt.WalletEntry;
+
 @RouteConfig('/wallet')
 @Component({
   selector: 'wallet',
@@ -120,7 +122,7 @@
 
               <!-- Currency Balance -->
               <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
-                <div class="name">{{entry.name}} #{{entry.index}}</div>&nbsp;
+                <div class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span>{{entry.balance}}</span>
@@ -156,7 +158,7 @@
               <!-- Currency Address Create -->
               <div ng-if="entry.isCurrencyAddressCreate" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
-                <md-button ng-click="entry.createEthAddress(entry.component)">Create New</md-button>
+                <md-button ng-click="entry.createAddressByName(entry)">Create New</md-button>
                 <md-menu ng-hide="entry.symbol==='HEAT'" md-position-mode="target-right target" md-offset="34px 34px">
                   <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
                     <md-icon md-font-library="material-icons">menu</md-icon>
@@ -266,7 +268,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     })
 
     this.initLocalKeyStore()
-    this.initCreatedAddresses()
+    this.initCreatedRemovedAddresses()
   }
 
   enterEntryLabel(entry: wlt.WalletEntry) {
@@ -300,34 +302,40 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   deleteEntry(entry) {
-    if (!entry.address) {
-      return
-    }
+    if (!entry.address || !entry.walletEntry) return
+
+    let removingAddress = entry.address
     dialogs.confirm(`Remove ${entry.symbol} Address`,
-      `This will remove ${entry.symbol} ${entry.address} from your device.
+      `This will remove ${entry.symbol} ${removingAddress} from your device.
       Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
-      if (!entry.walletEntry) return
       let remainingCurrencyBalances = this.walletEntries
           .find((walletEntry) => entry.walletEntry.account === walletEntry.account)
           .currencies
-          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && entry.address === currency.address)
-          );
+          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress === currency.address));
       this.walletEntries
         .find((walletEntry) => walletEntry.account === entry.walletEntry.account)
         .currencies = remainingCurrencyBalances;
-      let currency = entry.symbol;
-      let heatAddress = entry.walletEntry.account;
-      let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-      let encryptedWallet = store.get(`${currency}-${heatAddress}`)
-      let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-      let walletType = JSON.parse(decryptedWallet)
-      if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
-        walletType.addresses[0].isDeleted = true;
-      } else {
-        walletType.addresses = walletType.addresses.filter(address => address.address !== entry.address)
-      }
-      let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
-      store.put(`${currency}-${heatAddress}`, encrypted);
+      // let currency = entry.symbol;
+      // let heatAddress = entry.walletEntry.account;
+      // let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+      // let storeKey = `${currency}-${heatAddress}`
+      // let encryptedWallet = store.get(storeKey)
+      // let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
+      // let walletAddresses: WalletAddresses = JSON.parse(decryptedWallet)
+
+      this.rememberAddressRemoved(entry.walletEntry.account, entry.name, removingAddress);
+      // let a = walletAddresses.addresses.find(value => value.address === removingAddress)
+      // if (a) {
+      //   a.isDeleted = true
+      // }
+
+      // if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
+      //   walletAddresses.addresses[0].isDeleted = true
+      // } else {
+      //   walletAddresses.addresses = walletAddresses.addresses.filter(address => address.address !== removingAddress)
+      // }
+      // let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletAddresses), heatAddress, entry.walletEntry.secretPhrase)
+      // store.put(storeKey, encrypted);
 
       this.flatten()
     });
@@ -336,11 +344,14 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   restoreAddresses(entry) {
     dialogs.confirm(`Restore ${entry.name} Addresses`, `This will try to restore removed addresses`)
         .then(() => {
+          // parameter reset is true to restore addresses
           this.lightwalletService.unlock(entry.parent.secretPhrase, "", true)
               .then(currencyAddresses => {
-                entry.parent.currencies = []
-                this.initWalletEntry(entry.parent)
-                entry.parent.toggle()
+                let walletEntry: WalletEntry = entry.parent
+                this.forgetAddressesRemoved(walletEntry.account, entry.name)
+                walletEntry.currencies = []
+                this.initWalletEntry(walletEntry)
+                walletEntry.toggle()
               })
         });
   }
