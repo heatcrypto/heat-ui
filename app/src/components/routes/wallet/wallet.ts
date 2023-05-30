@@ -201,132 +201,19 @@ namespace wlt {
       We'll be leaving it in place where all you need to do is set this.hidden=false to
       have it displayed again. */
     createEthAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
-
-      // collect all CurrencyBalance of 'our' same currency type
-      // @ts-ignore
-      let currencyBalances: Array<CurrencyBalance> = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-      // if there is no address in use yet we use the first one
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        this.flatten()
-        this.addCurrency(this.parent.account, 'ETH')
-        return true
-      }
-
-      if (this.isLimitReached(currencyBalances)) return false
-
-      // determine the first address based of the last currencyBalance displayed
-      let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
-
-      let nextAddress = this.findNextAddress(this.wallet.addresses, lastAddress, component, entry)
-
-      if (nextAddress) {
-        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        this.flatten()
-        this.addCurrency(this.parent.account, 'ETH')
-        return true
-      }
-
-
-      // look up the following address
-      // for (let i = 0; i < this.wallet.addresses.length; i++) {
-      //
-      //   // we've found the address
-      //   if (this.wallet.addresses[i].address == lastAddress) {
-      //     if (i == this.wallet.addresses.length - 1) return false  // no more addresses we exit since not possible
-      //
-      //     let nextAddress = this.wallet.addresses[++i]
-      //     while (this.wasRemoved(nextAddress, component, walletEntry)) {
-      //       if (i == this.wallet.addresses.length - 1) return false
-      //       nextAddress = this.wallet.addresses[++i]
-      //     }
-      //
-      //     if (nextAddress) {
-      //       let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-      //       newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-      //       component.rememberAddressCreated(this.parent.account, nextAddress.address)
-      //       newCurrencyBalance.visible = this.parent.expanded
-      //       let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-      //       this.parent.currencies.splice(index, 0, newCurrencyBalance)
-      //       this.flatten()
-      //       this.addCurrency(this.parent.account, 'ETH')
-      //       return true
-      //     }
-      //
-      //     // let wasRemoved = (component.removedAddresses[walletEntry.account] || []).indexOf(nextAddress.address) != -1
-      //     // if (wasRemoved) {
-      //     //   nextAddress.isDeleted = false
-      //     //   let currency = entry.symbol;
-      //     //   let heatAddress = entry.walletEntry.account;
-      //     //   let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-      //     //   let storeKey = `${currency}-${heatAddress}`
-      //     //   let encryptedWallet = store.get(storeKey)
-      //     //   let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-      //     //   let walletAddresses: WalletAddresses = JSON.parse(decryptedWallet)
-      //     //   let a = walletAddresses.addresses.find(value => value.address === removingAddress)
-      //     //   if (a) {
-      //     //     a.isDeleted = true
-      //     //   }
-      //     //   let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletAddresses), heatAddress, entry.walletEntry.secretPhrase)
-      //     //   store.put(storeKey, encrypted);
-      //     // }
-      //     // return true
-      //   }
-      // }
-
-      return false
+      return this.createAddress(entry, 'Ethereum', 'ETH')
     }
 
     createBtcAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
+      return this.createAddress(entry, 'Bitcoin', 'BTC')
+    }
 
-      // collect all CurrencyBalance of 'our' same currency type
-      // @ts-ignore
-      let currencyBalances: Array<CurrencyBalance> = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+    createLtcAddress(entry: WalletEntry) {
+      return this.createAddress(entry, 'Litecoin', 'LTC')
+    }
 
-      // if there is no address in use yet we use the first one
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        this.flatten()
-        this.addCurrency(this.parent.account, 'BTC')
-        return true
-      }
-
-      if (this.isLimitReached(currencyBalances)) return false
-
-      // determine the first address based of the last currencyBalance displayed
-      let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
-
-      let nextAddress = this.findNextAddress(this.wallet.addresses, lastAddress, component, entry)
-
-      if (nextAddress) {
-        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        this.flatten()
-        this.addCurrency(this.parent.account, 'BTC')
-        return true
-      }
-
-      return false
+    createBchAddress(entry: WalletEntry) {
+      return this.createAddress(entry, 'BitcoinCash', 'BCH')
     }
 
     createFIMKAddress(entry: WalletEntry) {
@@ -384,88 +271,6 @@ namespace wlt {
         this.addCurrency(this.parent.account, 'ARDR')
         return true
       }
-      return false
-    }
-
-    createLtcAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
-
-      // collect all CurrencyBalance of 'our' same currency type
-      // @ts-ignore
-      let currencyBalances: Array<CurrencyBalance> = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-      // if there is no address in use yet we use the first one
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        this.flatten()
-        this.addCurrency(this.parent.account, 'LTC')
-        return true
-      }
-
-      if (this.isLimitReached(currencyBalances)) return false
-
-      // determine the first address based of the last currencyBalance displayed
-      let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
-
-      let nextAddress = this.findNextAddress(this.wallet.addresses, lastAddress, component, entry)
-
-      if (nextAddress) {
-        let newCurrencyBalance = new CurrencyBalance('Litecoin', 'LTC', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        this.flatten()
-        this.addCurrency(this.parent.account, 'LTC')
-        return true
-      }
-
-      return false
-    }
-
-    createBchAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
-
-      // collect all CurrencyBalance of 'our' same currency type
-      // @ts-ignore
-      let currencyBalances: Array<CurrencyBalance> = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-      // if there is no address in use yet we use the first one
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address.split(":")[1])
-        newCurrencyBalance.visible = this.parent.expanded
-        this.parent.currencies.push(newCurrencyBalance)
-        this.flatten()
-        return true
-      }
-
-      if (this.isLimitReached(currencyBalances)) return false
-
-      // determine the first address based of the last currencyBalance displayed
-      let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
-
-      let nextAddress = this.findNextAddress(this.wallet.addresses, lastAddress, component, entry)
-
-      if (nextAddress) {
-        let newCurrencyBalance = new CurrencyBalance('BitcoinCash', 'BCH', nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        this.flatten()
-        this.addCurrency(this.parent.account, 'BCH')
-        return true
-      }
-
       return false
     }
 
