@@ -19,10 +19,10 @@ class BCHCryptoService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
+  unlock(seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let encryptedWallet = this.store.get(`BCH-${heatAddress}`)
+      let encryptedWallet = reset ? null : this.store.get(`BCH-${heatAddress}`)
       if (encryptedWallet) {
         if(!encryptedWallet.data) {
           // Temporary fix. To remove unusable data from local storage
@@ -70,7 +70,7 @@ class BCHCryptoService {
   refreshBalances(wallet: WalletAddresses, currencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 ordrecurseToNextrecurseToNexter */
     wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
-    let addresses = wallet.addresses.map(a => a.address)
+    let addresses = wallet.addresses.filter(a => !a.isDeleted).map(a => a.address)
     let emptyAddressCounter = 0
     let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
 

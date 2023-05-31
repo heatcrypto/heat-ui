@@ -125,13 +125,13 @@ namespace wlt {
       window.localStorage.setItem(`addressremoved-${account}-${currency}-${address}`, "1")
     }
 
-    wasRemoved(address: string, walletEntry) {
-      let a = this.removedAddresses[walletEntry.account]
+    wasRemoved(address: string, account: string) {
+      let a = this.removedAddresses[account]
       return a ? a.has(address) : false
     }
 
-    wasCreated(address: string, walletEntry) {
-      let a = this.createdAddresses[walletEntry.account]
+    wasCreated(address: string, account: string) {
+      let a = this.createdAddresses[account]
 
       // backward compatibility when these items were registered without prefix "bitcoincash:"
       if (address.startsWith("bitcoincash:")) return a ? a.has(address) || a.has(address.split(":")[1]) : false
@@ -139,11 +139,12 @@ namespace wlt {
       return a ? a.has(address) : false
     }
 
-    forgetAddressesRemoved(account: string, currency: string) {
+    forgetAddressesRemoved(account: string, currency: string, addressToDelete?: string) {
       let addresses = this.removedAddresses[account]
       if (!addresses) return // nothing to delete
       let addressesToDelete = []
       addresses.forEach(address => {
+        if (addressToDelete && addressToDelete != address) return
         let key = `addressremoved-${account}-${currency}-${address}`
         if (window.localStorage.getItem(key)) {
           window.localStorage.removeItem(key)
@@ -334,6 +335,8 @@ namespace wlt {
           .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyName.toUpperCase())
       if (!addressLoading) return
 
+      addressLoading.wallet.addresses.forEach(a => a.isDeleted = this.wasRemoved(a.address, walletEntry.account))
+
       utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 18000).then(() => {
 
         /* Make sure we exit if no loading node exists */
@@ -341,8 +344,8 @@ namespace wlt {
 
         let index = walletEntry.currencies.indexOf(addressLoading)
         addressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = this.wasCreated(address.address, walletEntry)
-          if ((address.inUse || wasCreated) && !this.wasRemoved(address.address, walletEntry)) {
+          let wasCreated = this.wasCreated(address.address, walletEntry.account)
+          if ((address.inUse || wasCreated) && !this.wasRemoved(address.address, walletEntry.account)) {
             let currencyBalance: wlt.CurrencyBalance = createBalance(address)
             currencyBalance.visible = walletEntry.expanded
             currencyBalance.inUse = !wasCreated

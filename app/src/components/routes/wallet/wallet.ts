@@ -185,13 +185,15 @@ namespace wlt {
       return entry?.isWalletEntry ? entry : null
     }
 
-    findNextAddress(addresses: Array<WalletAddress>, lastAddress: string, component: WalletComponentAbstract, entry): WalletAddress {
+    findNextAddress(currencyName, addresses: Array<WalletAddress>, lastAddress: string, component: WalletComponentAbstract, entry): WalletAddress {
       let walletEntry = this.findWalletEntry(entry)
       let i = addresses.findIndex(value => value.address == lastAddress) + 1
-      while (i < addresses.length) {
+      if (i < addresses.length) {
         let nextAddress = this.wallet.addresses[i]
-        if (!component.wasRemoved(nextAddress.address, walletEntry)) return nextAddress
-        i++
+        if (component.wasRemoved(nextAddress.address, walletEntry.account)) {
+          component.forgetAddressesRemoved(walletEntry.account, currencyName, nextAddress.address)
+        }
+        return nextAddress
       }
       return null
     }
@@ -298,7 +300,7 @@ namespace wlt {
       // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
 
-      let nextAddress = this.findNextAddress(this.wallet.addresses, lastAddress, component, entry)
+      let nextAddress = this.findNextAddress(currencyName, this.wallet.addresses, lastAddress, component, entry)
 
       if (nextAddress) {
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)

@@ -128,7 +128,7 @@ class LightwalletService {
     /* list all addresses in bip44 order */
     let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     walletAddresses.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
-    let addresses = walletAddresses.addresses.map(a => a.address)
+    let addresses = walletAddresses.addresses.filter(a => !a.isDeleted).map(a => a.address)
     let emptyAddressCounter = 0
 
     function processNext() {

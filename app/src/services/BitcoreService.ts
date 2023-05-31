@@ -16,10 +16,10 @@ class BitcoreService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
+  unlock(seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let encryptedWallet = this.store.get(`BTC-${heatAddress}`)
+      let encryptedWallet = reset ? null : this.store.get(`BTC-${heatAddress}`)
       if (encryptedWallet) {
         if(!encryptedWallet.data) {
           // Temporary fix. To remove unusable data from local storage
@@ -67,7 +67,7 @@ class BitcoreService {
   refreshBalances(wallet: WalletAddresses, btcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
     wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
-    let addresses = wallet.addresses.map(a => a.address)
+    let addresses = wallet.addresses.filter(a => !a.isDeleted).map(a => a.address)
     let emptyAddressCounter = 0
 
     function processNext() {
