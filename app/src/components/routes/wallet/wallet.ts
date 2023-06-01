@@ -44,6 +44,14 @@ namespace wlt {
     }
   }
 
+  export function updateEntryCurrencies(account, currencies: []) {
+    if (currencies) {
+      let mergedCurrencies: [] = getStore().get(account) || []
+      mergedCurrencies.push(...currencies)
+      getStore().put(account, mergedCurrencies.filter(this.distinctValues))
+    }
+  }
+
   export class TokenBalance {
     public isTokenBalance = true
     public balance: string
@@ -136,7 +144,7 @@ namespace wlt {
       this.isLimitReached(null)
     }
 
-    private getCurrencies(account: string) {
+    private getCurrencies(account: string): string[] {
       let currencies = getStore().get(account)
       return currencies || []
     }
@@ -145,8 +153,9 @@ namespace wlt {
       return self.indexOf(value) === index
     }
 
-    private addCurrency(account: string, currency: string) {
+    private registerCurrency(account: string, currency: string) {
       let currencies = this.getCurrencies(account)
+      if (currencies.indexOf(currency) > -1) return
       currencies.push(currency)
       getStore().put(account, currencies.filter(this.distinctValues))
     }
@@ -187,7 +196,9 @@ namespace wlt {
 
     findNextAddress(currencyName, addresses: Array<WalletAddress>, lastAddress: string, component: WalletComponentAbstract, entry): WalletAddress {
       let walletEntry = this.findWalletEntry(entry)
-      let i = addresses.findIndex(value => value.address == lastAddress) + 1
+      let i = lastAddress
+          ? addresses.findIndex(value => value.address == lastAddress) + 1
+          : 0
       if (i < addresses.length) {
         let nextAddress = this.wallet.addresses[i]
         if (component.wasRemoved(nextAddress.address, walletEntry.account)) {
@@ -233,7 +244,7 @@ namespace wlt {
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
-        this.addCurrency(this.parent.account, 'FIM')
+        this.registerCurrency(this.parent.account, 'FIM')
         return true
       }
 
@@ -252,7 +263,7 @@ namespace wlt {
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
-        this.addCurrency(this.parent.account, 'NXT')
+        this.registerCurrency(this.parent.account, 'NXT')
         return true
       }
       return false
@@ -270,7 +281,7 @@ namespace wlt {
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
-        this.addCurrency(this.parent.account, 'ARDR')
+        this.registerCurrency(this.parent.account, 'ARDR')
         return true
       }
       return false
@@ -278,27 +289,18 @@ namespace wlt {
 
     createAddress(entry: WalletEntry, currencyName: string, currencySymbol: string) {
       let component: WalletComponentAbstract = entry.component
+      let currencies = this.parent.currencies
 
       // collect all CurrencyBalance of 'our' same currency type
       // @ts-ignore
-      let currencyBalances: Array<CurrencyBalance> = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-      // if there is no address in use yet we use the first one
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address.split(":")[1])
-        newCurrencyBalance.visible = this.parent.expanded
-        this.parent.currencies.push(newCurrencyBalance)
-        this.flatten()
-        return true
-      }
+      let currencyBalances: Array<CurrencyBalance> = currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
 
       if (this.isLimitReached(currencyBalances)) return false
 
       // determine the first address based of the last currencyBalance displayed
-      let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
+      let lastAddress = currencyBalances.length == 0
+          ? null
+          : currencyBalances[currencyBalances.length - 1]['address']
 
       let nextAddress = this.findNextAddress(currencyName, this.wallet.addresses, lastAddress, component, entry)
 
@@ -307,10 +309,20 @@ namespace wlt {
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
         component.rememberAddressCreated(this.parent.account, nextAddress.address)
         newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
+        //let index = currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
+        //currencies.splice(index, 0, newCurrencyBalance)
+
+        let currencyAddressCreate: CurrencyAddressCreate =
+            <CurrencyAddressCreate><unknown> currencies.find(c => c['isCurrencyAddressCreate'] && c.name == this.name)
+        let index = currencyAddressCreate
+            ? currencies.indexOf(currencyAddressCreate)
+            : currencies.indexOf(currencyBalances[currencyBalances.length - 1])
+        index = index == -1 ? currencies.length - 1 : index
+        currencies.splice(index, 0, newCurrencyBalance)
+        //currencies.push(newCurrencyBalance)
+
+        this.registerCurrency(this.parent.account, currencySymbol)
         this.flatten()
-        this.addCurrency(this.parent.account, currencySymbol)
         return true
       }
 
