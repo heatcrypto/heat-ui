@@ -23,8 +23,6 @@
 
 ///<reference path="./WalletComponentAbstract.ts" />
 
-import WalletEntry = wlt.WalletEntry;
-
 @RouteConfig('/wallet')
 @Component({
   selector: 'wallet',
@@ -360,7 +358,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           } else if (entry.name === 'HEAT') {
           }
           resetAddressesPromise.then(currencyAddresses => {
-            let walletEntry: WalletEntry = entry.parent
+            let walletEntry: wlt.WalletEntry = entry.parent
             this.forgetAddressesRemoved(walletEntry.account, entry.name)
             walletEntry.currencies = []
             this.initWalletEntry(walletEntry)
@@ -696,7 +694,15 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   // @click
   exportWallet() {
-    let exported = this.localKeyStore.export();
+    let accountCurrencies: Map<string, []> = new Map<string, []>()
+    this.entries.forEach(entry => {
+      if (entry instanceof wlt.WalletEntry) {
+        let currencies: [] = this.store.get(entry.account)
+        if (currencies) accountCurrencies.set(entry.account, currencies)
+      }
+    })
+
+    let exported = this.localKeyStore.export(accountCurrencies);
     let encoded = this.walletFile.encode(exported);
     var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
     saveAs(blob, 'heat.wallet');

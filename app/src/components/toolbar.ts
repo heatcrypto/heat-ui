@@ -328,12 +328,12 @@
                 <span>Show private key</span>
               </md-button>
             </md-menu-item>
-            <md-menu-item>
+            <!--<md-menu-item>
               <md-button aria-label="backup" ng-click="vm.backupWallet()">
                 <md-icon md-font-library="material-icons">save</md-icon>
                 <span>Backup Wallet</span>
               </md-button>
-            </md-menu-item>
+            </md-menu-item>-->
             <md-menu-item  ng-if="vm.user.unlocked">
               <md-button aria-label="signout" ng-click="vm.signout()">
                 <md-icon md-font-library="material-icons">close</md-icon>
@@ -605,12 +605,12 @@ class ToolbarComponent {
     this.electron.openDevTools(OpenDevToolsMode.detach);
   }
 
-  backupWallet() {
+  /*backupWallet() {
     let exported = this.localKeyStore.export();
     let encoded = this.walletFile.encode(exported);
     var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
     saveAs(blob, 'heat.wallet');
-  }
+  }*/
 
   showQRCode(data) {
     let panel: PanelService = heat.$inject.get('panel')

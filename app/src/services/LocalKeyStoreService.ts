@@ -161,7 +161,7 @@ class LocalKeyStoreService {
     return entries;
   }
 
-  public export(): IHeatWalletFile {
+  public export(accountCurrencies: Map<string, []>): IHeatWalletFile {
     let wallet : IHeatWalletFile = {
       version: 1,
       entries: []
@@ -172,7 +172,8 @@ class LocalKeyStoreService {
         contents: entry.contents,
         isTestnet: entry.isTestnet,
         name: entry.name,
-        visibleLabel: wlt.getEntryVisibleLabel(entry.account)
+        visibleLabel: wlt.getEntryVisibleLabel(entry.account),
+        currencies: accountCurrencies.get(entry.account)
       })
     });
     return wallet;
@@ -193,6 +194,9 @@ class LocalKeyStoreService {
         if (entry.visibleLabel) {
           wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
         }
+      }
+      if (entry.currencies) {
+        wlt.updateEntryCurrencies(entry.account, entry.currencies)
       }
     });
     return added;

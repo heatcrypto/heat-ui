@@ -39,6 +39,8 @@ interface IHeatWalletFileEntry {
   isTestnet?: boolean;
 
   visibleLabel?: string;
+
+  currencies?: [];
 }
 
 @Service('walletFile')
