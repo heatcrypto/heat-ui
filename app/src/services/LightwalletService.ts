@@ -128,34 +128,24 @@ class LightwalletService {
     /* list all addresses in bip44 order */
     let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     walletAddresses.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
-    let addresses = walletAddresses.addresses.filter(a => !a.isDeleted).map(a => a.address)
+    let actualWalletAddresses = walletAddresses.addresses.filter(a => !a.isDeleted)
     let emptyAddressCounter = 0
 
     function processNext() {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses.shift()
-        if (!address) {
+        let walletAddress = actualWalletAddresses.shift()
+        if (!walletAddress) {
           resolve(false)
           return
         }
 
-        ethCurrencyAddressLoading.address = address
+        ethCurrencyAddressLoading.address = walletAddress.address
 
         /* look up its data on ethBlockExplorerService */
         ethBlockExplorerService.refresh().then(() => {
-          ethBlockExplorerService.getAddressInfo(address, true).then(info => {
-            let walletAddressArray = walletAddresses.addresses;
-
-            /* lookup the 'real' WalletAddress */
-            let walletAddress = walletAddressArray.find(x => x.address == address)
-            if (!walletAddress) {
-              console.error(`Address ${address} is not found among addresses`, walletAddressArray)
-              resolve(false)
-              return
-            }
-
+          ethBlockExplorerService.getAddressInfo(walletAddress.address, true).then(info => {
             walletAddress.balance = info.ETH.balance + ""
             walletAddress.tokensBalances = []
 

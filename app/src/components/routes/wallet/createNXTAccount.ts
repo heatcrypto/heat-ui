@@ -60,7 +60,7 @@ function createNXTAccount($event, walletComponent: WalletComponent) {
         var interval = setInterval(() => {
           node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
           if (node) {
-            success = node.createNXTAddress(walletComponent)
+            success = node.createNXTAddress(walletEntry)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {

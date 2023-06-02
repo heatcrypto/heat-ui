@@ -344,21 +344,21 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .then(() => {
           let resetAddressesPromise: Promise<WalletAddresses>
           if (entry.name === 'Ethereum') {
-            resetAddressesPromise = this.lightwalletService.unlock(entry.parent.secretPhrase, "", true)
+            resetAddressesPromise = this.lightwalletService.unlock(entry.walletEntry.secretPhrase, "", true)
           } else if (entry.name === 'Bitcoin') {
-            resetAddressesPromise = this.bitcoreService.unlock(entry.parent.secretPhrase, true)
+            resetAddressesPromise = this.bitcoreService.unlock(entry.walletEntry.secretPhrase, true)
           } else if (entry.name === 'FIMK') {
           } else if (entry.name === 'NXT') {
           } else if (entry.name === 'ARDOR') {
           } else if (entry.name === 'IOTA') {
           } else if (entry.name === 'Litecoin') {
-            resetAddressesPromise = this.ltcCryptoService.unlock(entry.parent.secretPhrase, true)
+            resetAddressesPromise = this.ltcCryptoService.unlock(entry.walletEntry.secretPhrase, true)
           } else if (entry.name === 'BitcoinCash') {
-            resetAddressesPromise = this.bchCryptoService.unlock(entry.parent.secretPhrase, true)
+            resetAddressesPromise = this.bchCryptoService.unlock(entry.walletEntry.secretPhrase, true)
           } else if (entry.name === 'HEAT') {
           }
           resetAddressesPromise.then(currencyAddresses => {
-            let walletEntry: wlt.WalletEntry = entry.parent
+            let walletEntry: wlt.WalletEntry = entry.walletEntry
             this.forgetAddressesRemoved(walletEntry.account, entry.name)
             walletEntry.currencies = []
             this.initWalletEntry(walletEntry)

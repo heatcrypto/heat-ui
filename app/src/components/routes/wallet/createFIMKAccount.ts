@@ -60,7 +60,7 @@ function createFIMKAccount($event, walletComponent: WalletComponent) {
         var interval = setInterval(() => {
           node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
           if (node) {
-            success = node.createFIMKAddress(walletComponent)
+            success = node.createFIMKAddress(walletEntry)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {

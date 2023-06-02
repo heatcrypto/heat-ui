@@ -192,7 +192,7 @@ namespace wlt {
 
     findWalletEntry(entry) {
       while (entry && !entry.isWalletEntry) {
-        entry = entry.parent || entry.walletEntry
+        entry = entry.walletEntry || entry.parent
       }
       return entry?.isWalletEntry ? entry : null
     }
@@ -326,11 +326,34 @@ namespace wlt {
 
         this.registerCurrency(this.walletEntry.account, currencySymbol)
 
+        this.flatten()
+
+        /*
+        // requestBalance(currencyName)
+        if (currencyName == "Ethereum") {
+          let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
+          ethCurrencyAddressLoading.visible = entry.visible
+          ethCurrencyAddressLoading.wallet = this.wallet
+          currencies.push(ethCurrencyAddressLoading)
+          component.loadEthereumAddresses(this.walletEntry)
+        }
+        setTimeout(() => this.flatten(), 1000)
+         */
+
         return true
       }
 
       return false
     }
+
+    // private requestBalance(currencyName) {
+    //
+    //   if (currencyName == "Ethereum") {
+    //     let lightwalletService = <LightwalletService>heat.$inject.get('lightwalletService')
+    //     lightwalletService.refreshBalances()
+    //   }
+    //
+    // }
 
     public isLimitReached(currencyBalances: Array<CurrencyBalance>) {
       if (!currencyBalances) {

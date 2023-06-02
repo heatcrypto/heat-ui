@@ -60,7 +60,7 @@ function createARDRAccount($event, walletComponent: WalletComponent) {
         var interval = setInterval(() => {
           node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
           if (node) {
-            success = node.createARDRAddress(walletComponent)
+            success = node.createARDRAddress(walletEntry)
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {

@@ -64,7 +64,7 @@ function createEthAccount($event, walletComponent: WalletComponent) {
               // @ts-ignore
               return c.isCurrencyAddressCreate && c.name == 'Ethereum'
             })
-            success = node ? node.createEthAddress(node.parent) : false
+            success = node ? node.createEthAddress(walletEntry) : false
             walletEntry.toggle(true)
             $mdDialog.hide(null).then(() => {
               if (!success) {

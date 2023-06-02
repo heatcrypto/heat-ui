@@ -36,7 +36,7 @@ function createLtcAccount($event, walletComponent: WalletComponent) {
         // load in next event loop to load currency addresses first
         setTimeout(() => {
           node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
-          success = node.createLtcAddress(walletComponent)
+          success = node.createLtcAddress(walletEntry)
           walletEntry.toggle(true)
           $mdDialog.hide(null).then(() => {
             if (!success) {
