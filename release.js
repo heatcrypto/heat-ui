@@ -1,11 +1,13 @@
 //"use strict"
-var gulp = require('gulp')
+const gulp = require('gulp')
 require('./gulpfile')
 
 const builder = require("electron-builder")
 const Platform = builder.Platform
 const fs = require('fs-extra')
 const glob = require("glob")
+
+const Os = require('os')
 
 main()
 
@@ -23,7 +25,7 @@ async function buildApp() {
   console.log("start app build ...")
   fs.removeSync('./dist')
   return new Promise((resolve, reject) => gulp.series('build', 'electron', () => resolve(), (err) => console.error(err))())
-    .then(() => console.log("done app build\n"))
+      .then(() => console.log("done app build\n"))
 }
 
 function findHeatBundleFile() {
@@ -125,17 +127,22 @@ async function buildElectron() {
   console.log("start electron build...")
   fs.removeSync('./releases')
 
+  let targets = []
+  if (Os.platform() === 'linux') targets.push(Platform.LINUX)
+  if (Os.platform() === 'win32') targets.push(Platform.WINDOWS)
+  if (Os.platform() === 'darwin') targets.push(Platform.MAC)
+
   try {
 
     await builder.build({
-      targets: builder.createTargets([Platform.WINDOWS /*, Platform.LINUX*/]),
+      targets: builder.createTargets(targets),
       config: config
     })
 
     console.log("done desktop app build")
 
     await builder.build({
-      targets: builder.createTargets([Platform.WINDOWS /*, Platform.LINUX*/]),
+      targets: builder.createTargets(targets),
       config: configWithEmbeddedServer
     })
 
@@ -146,4 +153,3 @@ async function buildElectron() {
   }
 
 }
-
