@@ -25,6 +25,11 @@ namespace wlt {
 
   const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
 
+
+  let distinctValues = (value, index, self) => {
+    return self.indexOf(value) === index
+  }
+
   export function getStore() {
     let storage = <StorageService>heat.$inject.get('storage')
     let $rootScope = heat.$inject.get('$rootScope')
@@ -48,7 +53,7 @@ namespace wlt {
     if (currencies) {
       let mergedCurrencies: [] = getStore().get(account) || []
       mergedCurrencies.push(...currencies)
-      getStore().put(account, mergedCurrencies.filter(this.distinctValues))
+      getStore().put(account, mergedCurrencies.filter(distinctValues))
     }
   }
 
@@ -149,15 +154,11 @@ namespace wlt {
       return currencies || []
     }
 
-    private distinctValues = (value, index, self) => {
-      return self.indexOf(value) === index
-    }
-
     private registerCurrency(account: string, currency: string) {
       let currencies = this.getCurrencies(account)
       if (currencies.indexOf(currency) > -1) return
       currencies.push(currency)
-      getStore().put(account, currencies.filter(this.distinctValues))
+      getStore().put(account, currencies.filter(distinctValues))
     }
 
     removeIsDeleted(entry) {
