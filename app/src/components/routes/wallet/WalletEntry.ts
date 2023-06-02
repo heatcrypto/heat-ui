@@ -76,7 +76,6 @@ namespace wlt {
       this.currencies.push(btcCurrencyAddressLoading);
 
       let btcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Bitcoin', wallet, this, walletComponent)
-      btcCurrencyAddressCreate.visible = this.expanded
       btcCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
       this.currencies.push(btcCurrencyAddressCreate)
 
@@ -97,9 +96,7 @@ namespace wlt {
       this.currencies.push(ethCurrencyAddressLoading)
 
       let ethCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Ethereum', wallet, this, walletComponent)
-      ethCurrencyAddressCreate.visible = this.expanded
       ethCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
-
       this.currencies.push(ethCurrencyAddressCreate)
 
       walletComponent.flatten()
@@ -117,9 +114,7 @@ namespace wlt {
       this.currencies.push(iotaCurrencyAddressLoading)
 
       let iotaCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Iota', wallet, this, walletComponent)
-      iotaCurrencyAddressCreate.visible = this.expanded
       iotaCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
-
       this.currencies.push(iotaCurrencyAddressCreate)
 
       walletComponent.flatten()
@@ -137,7 +132,6 @@ namespace wlt {
       this.currencies.push(fimkCurrencyAddressLoading)
 
       let fimkCurrencyAddressCreate = new wlt.CurrencyAddressCreate('FIMK', wallet, this, walletComponent)
-      fimkCurrencyAddressCreate.visible = this.expanded
       fimkCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
       this.currencies.push(fimkCurrencyAddressCreate)
 
@@ -156,8 +150,6 @@ namespace wlt {
       this.currencies.push(nxtCurrencyAddressLoading)
 
       let nxtCurrencyAddressCreate = new wlt.CurrencyAddressCreate('NXT', wallet, this, walletComponent)
-      nxtCurrencyAddressCreate.visible = this.expanded
-      nxtCurrencyAddressCreate.parent = this
       nxtCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
       this.currencies.push(nxtCurrencyAddressCreate)
 
@@ -173,7 +165,6 @@ namespace wlt {
       this.currencies.push(ardorCurrencyAddressLoading)
 
       let ardorCurrencyAddressCreate = new wlt.CurrencyAddressCreate('ARDOR', wallet, this, walletComponent)
-      ardorCurrencyAddressCreate.visible = this.expanded
       ardorCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
       this.currencies.push(ardorCurrencyAddressCreate)
 
@@ -189,7 +180,6 @@ namespace wlt {
       this.currencies.push(ltcCurrencyAddressLoading);
 
       let ltcCurrencyAddressCreate = new wlt.CurrencyAddressCreate('Litecoin', addresses, this, walletComponent)
-      ltcCurrencyAddressCreate.visible = this.expanded
       ltcCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
       this.currencies.push(ltcCurrencyAddressCreate)
 
@@ -208,7 +198,6 @@ namespace wlt {
       this.currencies.push(bchCurrencyAddressLoading);
 
       let bchCurrencyAddressCreate = new wlt.CurrencyAddressCreate('BitcoinCash', wallet, this, walletComponent)
-      bchCurrencyAddressCreate.visible = this.expanded
       bchCurrencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
       this.currencies.push(bchCurrencyAddressCreate)
 

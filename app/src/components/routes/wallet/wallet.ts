@@ -145,7 +145,9 @@ namespace wlt {
     public hidden = false
     public flatten: () => void
 
-    constructor(public name: string, public wallet: WalletAddresses, public parent: WalletEntry, public component?: WalletComponentAbstract) {
+    constructor(public name: string, public wallet: WalletAddresses, public walletEntry: WalletEntry, public component?: WalletComponentAbstract) {
+      this.walletEntry = walletEntry
+      this.visible = walletEntry.expanded
       this.isLimitReached(null)
     }
 
@@ -190,7 +192,7 @@ namespace wlt {
 
     findWalletEntry(entry) {
       while (entry && !entry.isWalletEntry) {
-        entry = entry.parent
+        entry = entry.parent || entry.walletEntry
       }
       return entry?.isWalletEntry ? entry : null
     }
@@ -233,19 +235,19 @@ namespace wlt {
     createFIMKAddress(entry: WalletEntry) {
       let component: WalletComponentAbstract = entry.component
       // collect all CurrencyBalance of 'our' same currency type
-      let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+      let currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
 
       // if there is no address in use yet we use the first one
       if (currencyBalances.length == 0) {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
+        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        newCurrencyBalance.visible = this.walletEntry.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
-        this.registerCurrency(this.parent.account, 'FIM')
+        this.registerCurrency(this.walletEntry.account, 'FIM')
         return true
       }
 
@@ -254,17 +256,17 @@ namespace wlt {
 
     createNXTAddress(entry: WalletEntry) {
       let component: WalletComponentAbstract = entry.component
-      let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+      let currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
       if (currencyBalances.length == 0) {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
+        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        newCurrencyBalance.visible = this.walletEntry.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
-        this.registerCurrency(this.parent.account, 'NXT')
+        this.registerCurrency(this.walletEntry.account, 'NXT')
         return true
       }
       return false
@@ -272,17 +274,17 @@ namespace wlt {
 
     createARDRAddress(entry: WalletEntry) {
       let component: WalletComponentAbstract = entry.component
-      let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+      let currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
       if (currencyBalances.length == 0) {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
+        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        newCurrencyBalance.visible = this.walletEntry.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
         this.flatten()
-        this.registerCurrency(this.parent.account, 'ARDR')
+        this.registerCurrency(this.walletEntry.account, 'ARDR')
         return true
       }
       return false
@@ -290,7 +292,7 @@ namespace wlt {
 
     createAddress(entry: WalletEntry, currencyName: string, currencySymbol: string) {
       let component: WalletComponentAbstract = entry.component
-      let currencies = this.parent.currencies
+      let currencies = this.walletEntry.currencies
 
       // collect all CurrencyBalance of 'our' same currency type
       // @ts-ignore
@@ -307,9 +309,9 @@ namespace wlt {
 
       if (nextAddress) {
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.parent.account)
-        component.rememberAddressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
+        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
+        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        newCurrencyBalance.visible = this.walletEntry.expanded
         //let index = currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         //currencies.splice(index, 0, newCurrencyBalance)
 
@@ -322,8 +324,8 @@ namespace wlt {
         currencies.splice(index, 0, newCurrencyBalance)
         //currencies.push(newCurrencyBalance)
 
-        this.registerCurrency(this.parent.account, currencySymbol)
-        this.flatten()
+        this.registerCurrency(this.walletEntry.account, currencySymbol)
+
         return true
       }
 
@@ -333,7 +335,7 @@ namespace wlt {
     public isLimitReached(currencyBalances: Array<CurrencyBalance>) {
       if (!currencyBalances) {
         // @ts-ignore
-        currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+        currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
       }
       let emptyBalanceCounter = 0
       currencyBalances.forEach(
