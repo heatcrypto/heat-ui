@@ -321,7 +321,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       // let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
       // let walletAddresses: WalletAddresses = JSON.parse(decryptedWallet)
 
-      this.rememberAddressRemoved(entry.walletEntry.account, entry.name, removingAddress);
+      wlt.rememberAddressRemoved(entry.walletEntry.account, entry.name, removingAddress);
       // let a = walletAddresses.addresses.find(value => value.address === removingAddress)
       // if (a) {
       //   a.isDeleted = true
@@ -702,7 +702,15 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       }
     })
 
-    let exported = this.localKeyStore.export(accountCurrencies);
+    // convert
+    // [[account, Set],[account, Set],...]
+    // to
+    // [[account, [address1, address2,...]],[account, [address1, address2,...]],...]
+    let accountAddressesArray = Object.entries(wlt.createdAddresses) // [[account, Set],[account, Set],...]
+    let accountAddresses = accountAddressesArray.map(item => [item[0], Array.from(item[1])])
+
+    // @ts-ignore
+    let exported = this.localKeyStore.export(accountCurrencies, accountAddresses);
     let encoded = this.walletFile.encode(exported);
     var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
     saveAs(blob, 'heat.wallet');

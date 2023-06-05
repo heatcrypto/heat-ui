@@ -122,7 +122,6 @@ class ETHCurrency implements ICurrency {
         $scope['vm'].disableOKBtn = true
         web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit)
             .then((rawTx) => {
-              console.log(rawTx)
               let clipboardService: ClipboardService = heat.$inject.get('clipboard')
               clipboardService.showTxnBytes("" + rawTx)
             }, reason => console.error(reason))

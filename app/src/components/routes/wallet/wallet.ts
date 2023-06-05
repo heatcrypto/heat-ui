@@ -25,6 +25,8 @@ namespace wlt {
 
   const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
 
+  export let createdAddresses: { [key: string]: Set<string> } = {}
+  export let removedAddresses: { [key: string]: Set<string> } = {}
 
   let distinctValues = (value, index, self) => {
     return self.indexOf(value) === index
@@ -56,6 +58,19 @@ namespace wlt {
       getStore().put(account, mergedCurrencies.filter(distinctValues))
     }
   }
+
+  export function rememberAddressCreated(account: string, address: string) {
+    createdAddresses[account] = createdAddresses[account] || new Set<string>()
+    createdAddresses[account].add(address)
+    window.localStorage.setItem(`addresscreated-${account}-${address}`, "1")
+  }
+
+  export function rememberAddressRemoved(account: string, currency: string, address: string) {
+    removedAddresses[account] = removedAddresses[account] || new Set<string>()
+    removedAddresses[account].add(address)
+    window.localStorage.setItem(`addressremoved-${account}-${currency}-${address}`, "1")
+  }
+
 
   export class TokenBalance {
     public isTokenBalance = true
@@ -242,7 +257,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
@@ -261,7 +276,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
@@ -279,7 +294,7 @@ namespace wlt {
         let nextAddress = this.wallet.addresses[0]
         let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
         this.removeIsDeleted(newCurrencyBalance)
@@ -310,7 +325,7 @@ namespace wlt {
       if (nextAddress) {
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        component.rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         //let index = currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         //currencies.splice(index, 0, newCurrencyBalance)

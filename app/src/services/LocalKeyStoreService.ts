@@ -161,13 +161,14 @@ class LocalKeyStoreService {
     return entries;
   }
 
-  public export(accountCurrencies: Map<string, []>): IHeatWalletFile {
-    let wallet : IHeatWalletFile = {
+  public export(accountCurrencies: Map<string, []>, accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
+    let walletFile : IHeatWalletFile = {
       version: 1,
-      entries: []
+      entries: [],
+      accountAddresses: accountAddresses
     };
     this.listLocalKeyEntries().forEach(entry => {
-      wallet.entries.push({
+      walletFile.entries.push({
         account: entry.account,
         contents: entry.contents,
         isTestnet: entry.isTestnet,
@@ -176,13 +177,13 @@ class LocalKeyStoreService {
         currencies: accountCurrencies.get(entry.account)
       })
     });
-    return wallet;
+    return walletFile;
   }
 
   /* Returns array of wallet entries added */
-  public import(wallet: IHeatWalletFile) : Array<ILocalKeyEntry> {
+  public import(walletFile: IHeatWalletFile) : Array<ILocalKeyEntry> {
     let added : Array<ILocalKeyEntry> = [];
-    wallet.entries.forEach(entry => {
+    walletFile.entries.forEach(entry => {
       let localKeyEntry: ILocalKeyEntry = {
         account: entry.account,
         contents: entry.contents,
@@ -197,6 +198,16 @@ class LocalKeyStoreService {
       }
       if (entry.currencies) {
         wlt.updateEntryCurrencies(entry.account, entry.currencies)
+      }
+      if (walletFile.accountAddresses) {
+        try {
+          let accountAddressesArray: any = walletFile.accountAddresses // [[account, [address1, address2,...]],[account, [address1, address2,...]],...]
+          accountAddressesArray.forEach(item => {
+            item[1].forEach(a => wlt.rememberAddressCreated(item[0], a))
+          })
+        } catch (e) {
+          console.error("Error on importing addresses: " + e.toString())
+        }
       }
     });
     return added;

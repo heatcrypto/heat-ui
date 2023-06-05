@@ -23,6 +23,7 @@
 interface IHeatWalletFile {
   version: number;
   entries: Array<IHeatWalletFileEntry>;
+  accountAddresses: {[account: string]: Array<string>};
 }
 
 interface IHeatWalletFileEntry {
@@ -56,29 +57,28 @@ class WalletFileService {
 
   decode(contents: string): IHeatWalletFile {
     let data = this.parseJSON(contents);
-    if (!data)
-      return null;
+    if (!data) return null;
 
     let version = data.version;
-    if (!angular.isNumber(version))
-      return null;
+    if (!angular.isNumber(version)) return null;
 
-    if (version != 1)
-      return null;
+    if (version != 1) return null;
 
     let entries = data.entries;
-    if (!angular.isArray(entries))
-      return null;
+    if (!angular.isArray(entries)) return null;
 
     let walletFile: IHeatWalletFile = {
       version: version,
-      entries: []
+      entries: [],
+      accountAddresses: data.accountAddresses
     };
+
     entries.forEach(entry => {
       if (angular.isString(entry.contents)) {
         walletFile.entries.push(entry);
       }
     });
+
     return walletFile;
   }
 

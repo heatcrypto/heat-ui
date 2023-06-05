@@ -24,9 +24,6 @@
 
 namespace wlt {
 
-  const DISPLAYED_ADDRESSES_MINIMUM = 1
-  const DISPLAYED_EMPTY_ADDRESSES = 1
-
   export abstract class WalletComponentAbstract {
 
     public lightwalletService: LightwalletService;
@@ -41,8 +38,6 @@ namespace wlt {
     bchCryptoService: BCHCryptoService;
 
     walletEntries: Array<wlt.WalletEntry> = []
-    createdAddresses: { [key: string]: Set<string> } = {}
-    removedAddresses: { [key: string]: Set<string> } = {}
 
     abstract flatten()
 
@@ -99,39 +94,27 @@ namespace wlt {
         let data = key.match(/addresscreated-(.+)-(.+)/) || key.match(/eth-address-created:(.+):(.+)/)
         if (data) {
           let acc = data[1], addr = data[2]
-          this.createdAddresses[acc] = this.createdAddresses[acc] || new Set<string>()
-          this.createdAddresses[acc].add(addr)
+          wlt.createdAddresses[acc] = wlt.createdAddresses[acc] || new Set<string>()
+          wlt.createdAddresses[acc].add(addr)
         } else {
           // format of "removed address" item key: "addressremoved-account-currency-address". Delimiter "-" is the symbol not used in the addresses
           let data = key.match(/addressremoved-(.+)-(.+)-(.+)/)
           if (data) {
             let acc = data[1], addr = data[3]
-            this.removedAddresses[acc] = this.removedAddresses[acc] || new Set<string>()
-            this.removedAddresses[acc].add(addr)
+            wlt.removedAddresses[acc] = wlt.removedAddresses[acc] || new Set<string>()
+            wlt.removedAddresses[acc].add(addr)
           }
         }
       }
     }
 
-    rememberAddressCreated(account: string, address: string) {
-      this.createdAddresses[account] = this.createdAddresses[account] || new Set<string>()
-      this.createdAddresses[account].add(address)
-      window.localStorage.setItem(`addresscreated-${account}-${address}`, "1")
-    }
-
-    rememberAddressRemoved(account: string, currency: string, address: string) {
-      this.removedAddresses[account] = this.removedAddresses[account] || new Set<string>()
-      this.removedAddresses[account].add(address)
-      window.localStorage.setItem(`addressremoved-${account}-${currency}-${address}`, "1")
-    }
-
     wasRemoved(address: string, account: string) {
-      let a = this.removedAddresses[account]
+      let a = wlt.removedAddresses[account]
       return a ? a.has(address) : false
     }
 
     wasCreated(address: string, account: string) {
-      let a = this.createdAddresses[account]
+      let a = wlt.createdAddresses[account]
 
       // backward compatibility when these items were registered without prefix "bitcoincash:"
       if (address.startsWith("bitcoincash:")) return a ? a.has(address) || a.has(address.split(":")[1]) : false
@@ -140,7 +123,7 @@ namespace wlt {
     }
 
     forgetAddressesRemoved(account: string, currency: string, addressToDelete?: string) {
-      let addresses = this.removedAddresses[account]
+      let addresses = wlt.removedAddresses[account]
       if (!addresses) return // nothing to delete
       let addressesToDelete = []
       addresses.forEach(address => {
@@ -353,20 +336,6 @@ namespace wlt {
             walletEntry.currencies.splice(index, 0, currencyBalance)
             index++;
           }
-
-          /*let currencyBalance: wlt.CurrencyBalance = createBalance(address)
-          currencyBalance.visible = walletEntry.expanded
-          currencyBalance.inUse = !wasCreated
-          currencyBalance.walletEntry = walletEntry
-          let isZeroBalance = currencyBalance.isZeroBalance()
-          if (isZeroBalance) emptyAddressCounter++
-          currencyBalance.hidden = counter >= DISPLAYED_ADDRESSES_MINIMUM
-              && isZeroBalance  // do not hide not zero balance
-              && emptyAddressCounter > DISPLAYED_EMPTY_ADDRESSES  // must display at least 3 empty address (zero balance)
-              && !address.inUse && !wasCreated
-          walletEntry.currencies.splice(index, 0, currencyBalance)
-          index++
-          counter++*/
         })
         // we can remove the loading entry
         walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)
