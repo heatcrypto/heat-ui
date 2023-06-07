@@ -70,10 +70,10 @@ namespace wlt {
     }
 
     private createEntries(currencyName: string, walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
-      let btcCurrencyAddressLoading = new CurrencyAddressLoading(currencyName)
-      btcCurrencyAddressLoading.visible = this.expanded;
-      btcCurrencyAddressLoading.wallet = wallet;
-      this.currencies.push(btcCurrencyAddressLoading);
+      let addressLoading = new CurrencyAddressLoading(currencyName)
+      addressLoading.visible = this.expanded;
+      addressLoading.wallet = wallet;
+      this.currencies.push(addressLoading);
 
       let currencyAddressCreate: CurrencyAddressCreate =
           <CurrencyAddressCreate><unknown> this.currencies.find(c => c['isCurrencyAddressCreate'] && c.name == currencyName)

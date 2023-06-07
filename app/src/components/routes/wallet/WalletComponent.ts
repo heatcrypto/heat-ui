@@ -266,7 +266,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     })
 
     this.initLocalKeyStore()
-    this.initCreatedRemovedAddresses()
+    wlt.initCreatedAddresses()
   }
 
   enterEntryLabel(entry: wlt.WalletEntry) {
@@ -301,39 +301,36 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   deleteEntry(entry) {
     if (!entry.address || !entry.walletEntry) return
-
     let removingAddress = entry.address
     dialogs.confirm(`Remove ${entry.symbol} Address`,
-      `This will remove ${entry.symbol} ${removingAddress} from your device.
+        `This will remove ${entry.symbol} ${removingAddress} from your device.
       Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
+      if (!entry.walletEntry) return
       let remainingCurrencyBalances = this.walletEntries
           .find((walletEntry) => entry.walletEntry.account === walletEntry.account)
           .currencies
-          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress === currency.address));
+          .filter((currency) => currency instanceof wlt.CurrencyBalance && removingAddress !== currency.address);
       this.walletEntries
-        .find((walletEntry) => walletEntry.account === entry.walletEntry.account)
-        .currencies = remainingCurrencyBalances;
-      // let currency = entry.symbol;
-      // let heatAddress = entry.walletEntry.account;
-      // let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-      // let storeKey = `${currency}-${heatAddress}`
-      // let encryptedWallet = store.get(storeKey)
-      // let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-      // let walletAddresses: WalletAddresses = JSON.parse(decryptedWallet)
-
-      wlt.rememberAddressRemoved(entry.walletEntry.account, entry.name, removingAddress);
-      // let a = walletAddresses.addresses.find(value => value.address === removingAddress)
-      // if (a) {
-      //   a.isDeleted = true
-      // }
-
-      // if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
-      //   walletAddresses.addresses[0].isDeleted = true
-      // } else {
-      //   walletAddresses.addresses = walletAddresses.addresses.filter(address => address.address !== removingAddress)
-      // }
-      // let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletAddresses), heatAddress, entry.walletEntry.secretPhrase)
-      // store.put(storeKey, encrypted);
+          .find((walletEntry) => walletEntry.account === entry.walletEntry.account)
+          .currencies = remainingCurrencyBalances;
+      let currency = entry.symbol;
+      let heatAddress = entry.walletEntry.account;
+      let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+      let encryptedWallet = store.get(`${currency}-${heatAddress}`)
+      let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
+      let walletType = JSON.parse(decryptedWallet)
+      let addressToDelete
+      if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
+        addressToDelete = walletType.addresses[0];
+      } else {
+        let address = walletType.addresses.find(address => address.address == removingAddress)
+        if (address) addressToDelete = address
+      }
+      if (addressToDelete) {
+        addressToDelete.isDeleted = true
+        let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
+        store.put(`${currency}-${heatAddress}`, encrypted);
+      }
 
       this.flatten()
     });
@@ -359,7 +356,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           }
           resetAddressesPromise.then(currencyAddresses => {
             let walletEntry: wlt.WalletEntry = entry.walletEntry
-            this.forgetAddressesRemoved(walletEntry.account, entry.name)
             walletEntry.currencies = []
             this.initWalletEntry(walletEntry)
             walletEntry.toggle()

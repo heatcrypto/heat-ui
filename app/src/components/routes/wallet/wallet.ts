@@ -23,10 +23,21 @@
 
 namespace wlt {
 
+  export const CURRENCIES = [
+    {name: 'HEAT', symbol: 'HEAT'},
+    {name: 'Ethereum', symbol: 'ETH'},
+    {name: 'Bitcoin', symbol: 'BTC'},
+    {name: 'FIMK', symbol: 'FIM'},
+    {name: 'NXT', symbol: 'NXT'},
+    {name: 'ARDOR', symbol: 'ARDR'},
+    {name: 'IOTA', symbol: 'IOTA'},
+    {name: 'Litecoin', symbol: 'LTC'},
+    {name: 'BitcoinCash', symbol: 'BCH'}
+  ]
+
   const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
 
   export let createdAddresses: { [key: string]: Set<string> } = {}
-  export let removedAddresses: { [key: string]: Set<string> } = {}
 
   let distinctValues = (value, index, self) => {
     return self.indexOf(value) === index
@@ -59,18 +70,24 @@ namespace wlt {
     }
   }
 
+  export function initCreatedAddresses() {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      let key = window.localStorage.key(i)
+      // old format "eth-address-created:..." is used for backward compatibility
+      let data = key.match(/addresscreated-(.+)-(.+)/) || key.match(/eth-address-created:(.+):(.+)/)
+      if (data) {
+        let acc = data[1], addr = data[2]
+        createdAddresses[acc] = createdAddresses[acc] || new Set<string>()
+        createdAddresses[acc].add(addr)
+      }
+    }
+  }
+
   export function rememberAddressCreated(account: string, address: string) {
     createdAddresses[account] = createdAddresses[account] || new Set<string>()
     createdAddresses[account].add(address)
     window.localStorage.setItem(`addresscreated-${account}-${address}`, "1")
   }
-
-  export function rememberAddressRemoved(account: string, currency: string, address: string) {
-    removedAddresses[account] = removedAddresses[account] || new Set<string>()
-    removedAddresses[account].add(address)
-    window.localStorage.setItem(`addressremoved-${account}-${currency}-${address}`, "1")
-  }
-
 
   export class TokenBalance {
     public isTokenBalance = true
@@ -213,15 +230,12 @@ namespace wlt {
     }
 
     findNextAddress(currencyName, addresses: Array<WalletAddress>, lastAddress: string, component: WalletComponentAbstract, entry): WalletAddress {
-      let walletEntry = this.findWalletEntry(entry)
       let i = lastAddress
           ? addresses.findIndex(value => value.address == lastAddress) + 1
           : 0
       if (i < addresses.length) {
         let nextAddress = this.wallet.addresses[i]
-        if (component.wasRemoved(nextAddress.address, walletEntry.account)) {
-          component.forgetAddressesRemoved(walletEntry.account, currencyName, nextAddress.address)
-        }
+        nextAddress.isDeleted = false
         return nextAddress
       }
       return null

@@ -37,14 +37,14 @@ interface ILocalKeyEntry {
 }
 
 @Service('localKeyStore')
-@Inject('storage','walletFile')
+@Inject('storage','walletFile','$rootScope')
 class LocalKeyStoreService {
   private store: Store;
 
   /* Remembered passwords to the localKeyStore */
   private rememberedPasswords: {[key:string]:string} = {}
 
-  constructor(storage: StorageService, private walletFile: WalletFileService) {
+  constructor(private storage: StorageService, private walletFile: WalletFileService, private $rootScope) {
     this.store = storage.namespace("keystore", null, true);
   }
 
@@ -161,27 +161,44 @@ class LocalKeyStoreService {
     return entries;
   }
 
-  public export(accountCurrencies: Map<string, []>, accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
+  public export(accountCurrencies: Map<string, []>,
+                accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
     let walletFile : IHeatWalletFile = {
       version: 1,
       entries: [],
       accountAddresses: accountAddresses
     };
+
+    let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+
     this.listLocalKeyEntries().forEach(entry => {
-      walletFile.entries.push({
+      let oldAddresses
+      wlt.CURRENCIES.forEach(c => {
+        let encryptedAddresses = store.get(`${c.symbol}-${entry.account}`)
+        if (encryptedAddresses) {
+          oldAddresses = oldAddresses || {}
+          oldAddresses[c.symbol] = encryptedAddresses
+        }
+      })
+      let item: IHeatWalletFileEntry = {
         account: entry.account,
         contents: entry.contents,
         isTestnet: entry.isTestnet,
         name: entry.name,
         visibleLabel: wlt.getEntryVisibleLabel(entry.account),
         currencies: accountCurrencies.get(entry.account)
-      })
+      }
+      if (oldAddresses) item["oldAddresses"] = oldAddresses
+      walletFile.entries.push(item)
     });
+
     return walletFile;
   }
 
   /* Returns array of wallet entries added */
   public import(walletFile: IHeatWalletFile) : Array<ILocalKeyEntry> {
+    let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+
     let added : Array<ILocalKeyEntry> = [];
     walletFile.entries.forEach(entry => {
       let localKeyEntry: ILocalKeyEntry = {
@@ -190,6 +207,15 @@ class LocalKeyStoreService {
         isTestnet: entry.isTestnet,
         name: entry.name
       };
+
+      let oldAddresses = entry["oldAddresses"]
+      if (oldAddresses) {
+        wlt.CURRENCIES.forEach(c => {
+          let encryptedAddresses = oldAddresses[c.symbol]
+          if (encryptedAddresses) store.put(`${c.symbol}-${entry.account}`, encryptedAddresses)
+        })
+      }
+
       if (this.addRaw(localKeyEntry)) {
         added.push(localKeyEntry);
         if (entry.visibleLabel) {

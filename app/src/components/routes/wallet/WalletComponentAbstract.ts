@@ -87,32 +87,6 @@ namespace wlt {
       })
     }
 
-    initCreatedRemovedAddresses() {
-      for (let i = 0; i < window.localStorage.length; i++) {
-        let key = window.localStorage.key(i)
-        // old format "eth-address-created:..." is used for backward compatibility
-        let data = key.match(/addresscreated-(.+)-(.+)/) || key.match(/eth-address-created:(.+):(.+)/)
-        if (data) {
-          let acc = data[1], addr = data[2]
-          wlt.createdAddresses[acc] = wlt.createdAddresses[acc] || new Set<string>()
-          wlt.createdAddresses[acc].add(addr)
-        } else {
-          // format of "removed address" item key: "addressremoved-account-currency-address". Delimiter "-" is the symbol not used in the addresses
-          let data = key.match(/addressremoved-(.+)-(.+)-(.+)/)
-          if (data) {
-            let acc = data[1], addr = data[3]
-            wlt.removedAddresses[acc] = wlt.removedAddresses[acc] || new Set<string>()
-            wlt.removedAddresses[acc].add(addr)
-          }
-        }
-      }
-    }
-
-    wasRemoved(address: string, account: string) {
-      let a = wlt.removedAddresses[account]
-      return a ? a.has(address) : false
-    }
-
     wasCreated(address: string, account: string) {
       let a = wlt.createdAddresses[account]
 
@@ -120,21 +94,6 @@ namespace wlt {
       if (address.startsWith("bitcoincash:")) return a ? a.has(address) || a.has(address.split(":")[1]) : false
 
       return a ? a.has(address) : false
-    }
-
-    forgetAddressesRemoved(account: string, currency: string, addressToDelete?: string) {
-      let addresses = wlt.removedAddresses[account]
-      if (!addresses) return // nothing to delete
-      let addressesToDelete = []
-      addresses.forEach(address => {
-        if (addressToDelete && addressToDelete != address) return
-        let key = `addressremoved-${account}-${currency}-${address}`
-        if (window.localStorage.getItem(key)) {
-          window.localStorage.removeItem(key)
-          addressesToDelete.push(address)
-        }
-      })
-      addressesToDelete.forEach(a => addresses.delete(a))
     }
 
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
@@ -318,8 +277,6 @@ namespace wlt {
           .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyName.toUpperCase())
       if (!addressLoading) return
 
-      addressLoading.wallet.addresses.forEach(a => a.isDeleted = this.wasRemoved(a.address, walletEntry.account))
-
       utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 18000).then(() => {
 
         /* Make sure we exit if no loading node exists */
@@ -328,7 +285,7 @@ namespace wlt {
         let index = walletEntry.currencies.indexOf(addressLoading)
         addressLoading.wallet.addresses.forEach(address => {
           let wasCreated = this.wasCreated(address.address, walletEntry.account)
-          if ((address.inUse || wasCreated) && !this.wasRemoved(address.address, walletEntry.account)) {
+          if ((address.inUse || wasCreated) && !address.isDeleted) {
             let currencyBalance: wlt.CurrencyBalance = createBalance(address)
             currencyBalance.visible = walletEntry.expanded
             currencyBalance.inUse = !wasCreated
