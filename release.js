@@ -78,12 +78,28 @@ async function buildElectron() {
   node.exe node_modules/electron-builder/out/cli/cli.js --win --x64
    */
 
+  let artifactNameSuffix
+  let targets = []
+  if (Os.platform() === 'linux') {
+    targets.push(Platform.LINUX)
+    artifactNameSuffix = "linux_${version}.${ext}"
+  }
+  if (Os.platform() === 'win32') {
+    targets.push(Platform.WINDOWS)
+    artifactNameSuffix = "setup_${version}.${ext}"
+  }
+  if (Os.platform() === 'darwin') {
+    targets.push(Platform.MAC)
+    artifactNameSuffix = "MacOS_${version}.${ext}"
+  }
+
+
   let config = {
     "appId": "com.heatledger.heatwallet",
     "copyright": "Copyright © 2023 HEAT",
     "productName": "Heatwallet",
     "compression": "normal",
-    "artifactName": "Heatclient_setup_${version}.${ext}",
+    "artifactName": "heatclient_" + artifactNameSuffix,
     "extraResources": [],
     "extraFiles": [
       {
@@ -115,7 +131,7 @@ async function buildElectron() {
   }
 
   let configWithEmbeddedServer = Object.assign(Object.assign({}, config), {
-    "artifactName": "Heatwallet_setup_${version}.${ext}",
+    "artifactName": "heatwallet_" + artifactNameSuffix,
     "extraResources": [
       {
         "from": "../heatledger/build/install/heatledger",
@@ -126,11 +142,6 @@ async function buildElectron() {
 
   console.log("start electron build...")
   fs.removeSync('./releases')
-
-  let targets = []
-  if (Os.platform() === 'linux') targets.push(Platform.LINUX)
-  if (Os.platform() === 'win32') targets.push(Platform.WINDOWS)
-  if (Os.platform() === 'darwin') targets.push(Platform.MAC)
 
   try {
 
