@@ -174,12 +174,11 @@ namespace wlt {
   export class CurrencyAddressCreate {
     public isCurrencyAddressCreate = true
     public visible = false
-    public hidden = false
+    public hidden = true
     public flatten: () => void
 
     constructor(public name: string, public wallet: WalletAddresses, public walletEntry: WalletEntry, public component?: WalletComponentAbstract) {
       this.walletEntry = walletEntry
-      this.visible = walletEntry.expanded
       this.isLimitReached(null)
     }
 
@@ -213,13 +212,14 @@ namespace wlt {
     }
 
     createAddressByName(entry) {
-      if (entry.name == "Bitcoin") return this.createBtcAddress(entry)
-      if (entry.name == "Ethereum") return this.createEthAddress(entry)
-      if (entry.name == "FIMK") return this.createFIMKAddress(entry)
-      if (entry.name == "NXT") return this.createNXTAddress(entry)
-      if (entry.name == "ARDOR") return this.createARDRAddress(entry)
-      if (entry.name == "Litecoin") return this.createLtcAddress(entry)
-      if (entry.name == "BitcoinCash") return this.createBchAddress(entry)
+      let walletEntry = this.findWalletEntry(entry)
+      if (entry.name == "Bitcoin") return this.createBtcAddress(walletEntry)
+      if (entry.name == "Ethereum") return this.createEthAddress(walletEntry)
+      if (entry.name == "FIMK") return this.createFIMKAddress(walletEntry)
+      if (entry.name == "NXT") return this.createNXTAddress(walletEntry)
+      if (entry.name == "ARDOR") return this.createARDRAddress(walletEntry)
+      if (entry.name == "Litecoin") return this.createLtcAddress(walletEntry)
+      if (entry.name == "BitcoinCash") return this.createBchAddress(walletEntry)
     }
 
     findWalletEntry(entry) {
@@ -229,13 +229,16 @@ namespace wlt {
       return entry?.isWalletEntry ? entry : null
     }
 
-    findNextAddress(currencyName, addresses: Array<WalletAddress>, lastAddress: string, component: WalletComponentAbstract, entry): WalletAddress {
+    findNextAddress(currencySymbol, addresses: WalletAddresses, lastAddress: string, component: WalletComponentAbstract, entry: WalletEntry): WalletAddress {
       let i = lastAddress
-          ? addresses.findIndex(value => value.address == lastAddress) + 1
+          ? addresses.addresses.findIndex(value => value.address == lastAddress) + 1
           : 0
-      if (i < addresses.length) {
-        let nextAddress = this.wallet.addresses[i]
-        nextAddress.isDeleted = false
+      if (i < addresses.addresses.length) {
+        let nextAddress = addresses.addresses[i]
+        if (nextAddress.isDeleted) {
+          nextAddress.isDeleted = false
+          component.saveAddresses(currencySymbol, addresses, entry)
+        }
         return nextAddress
       }
       return null
@@ -327,14 +330,17 @@ namespace wlt {
       // @ts-ignore
       let currencyBalances: Array<CurrencyBalance> = currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
 
-      if (this.isLimitReached(currencyBalances)) return false
+      if (this.isLimitReached(currencyBalances)) {
+        component.showMessage("Limit of empty addresses is reached")
+        return false
+      }
 
       // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances.length == 0
           ? null
           : currencyBalances[currencyBalances.length - 1]['address']
 
-      let nextAddress = this.findNextAddress(currencyName, this.wallet.addresses, lastAddress, component, entry)
+      let nextAddress = this.findNextAddress(currencySymbol, this.wallet, lastAddress, component, entry)
 
       if (nextAddress) {
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
@@ -395,9 +401,9 @@ namespace wlt {
             if (value.isZeroBalance()) emptyBalanceCounter++
           }
       )
-      let b = emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
-      this.hidden = b
-      return b
+      //let b = emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
+      //this.hidden = b
+      return emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
     }
   }
 

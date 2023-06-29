@@ -96,6 +96,7 @@
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>
                   </md-button>
                   <md-menu-content width="4">
+                    <!--<span>Account {{entry.account}}</span>-->
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.enterEntryLabel(entry)">
                         <md-icon md-font-library="material-icons">label</md-icon>
@@ -111,9 +112,74 @@
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.remove($event, entry)">
                         <md-icon md-font-library="material-icons">delete_forever</md-icon>
-                        Remove
+                        Remove account
                       </md-button>
                     </md-menu-item>
+                    
+                    <md-menu-divider></md-menu-divider>
+                    <md-menu-item ng-if="vm.getSelectedCurrencies(entry).length > 0">
+                      <md-menu>
+                          <md-button ng-click="$mdMenu.open()" style="text-transform: none;">
+                            <md-icon md-font-library="material-icons" style="margin-right: 16px;">library_add</md-icon>
+                            Create address
+                          </md-button>
+                          <md-menu-content>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('BTC') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'Bitcoin')">BTC</md-button>
+                            </md-menu-item>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('ETH') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'Ethereum')">ETH</md-button>
+                            </md-menu-item>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('LTC') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'Litecoin')">LTC</md-button>
+                            </md-menu-item>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('BCH') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'BitcoinCash')">BCH</md-button>
+                            </md-menu-item>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('FIM') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'FIMK')">FIM</md-button>
+                            </md-menu-item>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('NXT') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'NXT')">NXT</md-button>
+                            </md-menu-item>
+                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('ARDR') > -1">
+                              <md-button ng-click="vm.createAddress(entry, 'ARDOR')">ARDR</md-button>
+                            </md-menu-item>
+                          </md-menu-content>
+                      </md-menu>
+                    </md-menu-item>
+                    <md-menu-item>
+                      <md-menu>
+                          <md-button ng-click="$mdMenu.open()" style="text-transform: none;">
+                            <md-icon md-font-library="material-icons" style="margin-right: 16px;">restore</md-icon>
+                            Restore addresses
+                          </md-button>
+                          <md-menu-content>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'Bitcoin')">BTC</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'Ethereum')">ETH</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'Litecoin')">LTC</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'BitcoinCash')">BCH</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'FIMK')">FIM</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'NXT')">NXT</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.restoreAddresses(entry, 'ARDOR')">ARDR</md-button>
+                            </md-menu-item>
+                          </md-menu-content>
+                      </md-menu>
+                    </md-menu-item>
+                    
                   </md-menu-content>
                 </md-menu>
               </div>
@@ -306,17 +372,13 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         `This will remove ${entry.symbol} ${removingAddress} from your device.
       Please make sure you have saved the private key or you will lose access to the address.`).then(() => {
       if (!entry.walletEntry) return
-      let remainingCurrencyBalances = this.walletEntries
-          .find((walletEntry) => entry.walletEntry.account === walletEntry.account)
-          .currencies
-          .filter((currency) => currency instanceof wlt.CurrencyBalance && removingAddress !== currency.address);
-      this.walletEntries
-          .find((walletEntry) => walletEntry.account === entry.walletEntry.account)
-          .currencies = remainingCurrencyBalances;
-      let currency = entry.symbol;
+      let walletEntry = entry.walletEntry
+      walletEntry.currencies = walletEntry.currencies
+          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress == currency.address));
+      let currencySymbol = entry.symbol;
       let heatAddress = entry.walletEntry.account;
       let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-      let encryptedWallet = store.get(`${currency}-${heatAddress}`)
+      let encryptedWallet = store.get(`${currencySymbol}-${heatAddress}`)
       let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
       let walletType = JSON.parse(decryptedWallet)
       let addressToDelete
@@ -328,39 +390,55 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       }
       if (addressToDelete) {
         addressToDelete.isDeleted = true
-        let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
-        store.put(`${currency}-${heatAddress}`, encrypted);
+        this.saveAddresses(currencySymbol, walletType, entry.walletEntry)
       }
 
       this.flatten()
     });
   }
 
-  restoreAddresses(entry) {
-    dialogs.confirm(`Restore ${entry.name} Addresses`, `This will try to restore removed addresses`)
+  restoreAddresses(walletEntry: wlt.WalletEntry, currencyName) {
+    dialogs.confirm(`Restore ${currencyName} Addresses`, `This will try to restore removed addresses`)
         .then(() => {
           let resetAddressesPromise: Promise<WalletAddresses>
-          if (entry.name === 'Ethereum') {
-            resetAddressesPromise = this.lightwalletService.unlock(entry.walletEntry.secretPhrase, "", true)
-          } else if (entry.name === 'Bitcoin') {
-            resetAddressesPromise = this.bitcoreService.unlock(entry.walletEntry.secretPhrase, true)
-          } else if (entry.name === 'FIMK') {
-          } else if (entry.name === 'NXT') {
-          } else if (entry.name === 'ARDOR') {
-          } else if (entry.name === 'IOTA') {
-          } else if (entry.name === 'Litecoin') {
-            resetAddressesPromise = this.ltcCryptoService.unlock(entry.walletEntry.secretPhrase, true)
-          } else if (entry.name === 'BitcoinCash') {
-            resetAddressesPromise = this.bchCryptoService.unlock(entry.walletEntry.secretPhrase, true)
-          } else if (entry.name === 'HEAT') {
+          if (currencyName === 'Ethereum') {
+            resetAddressesPromise = this.lightwalletService.unlock(walletEntry.secretPhrase, "", true)
+          } else if (currencyName === 'Bitcoin') {
+            resetAddressesPromise = this.bitcoreService.unlock(walletEntry.secretPhrase, true)
+          } else if (currencyName === 'FIMK') {
+          } else if (currencyName === 'NXT') {
+          } else if (currencyName === 'ARDOR') {
+          } else if (currencyName === 'IOTA') {
+          } else if (currencyName === 'Litecoin') {
+            resetAddressesPromise = this.ltcCryptoService.unlock(walletEntry.secretPhrase, true)
+          } else if (currencyName === 'BitcoinCash') {
+            resetAddressesPromise = this.bchCryptoService.unlock(walletEntry.secretPhrase, true)
+          } else if (currencyName === 'HEAT') {
           }
           resetAddressesPromise.then(currencyAddresses => {
-            let walletEntry: wlt.WalletEntry = entry.walletEntry
             walletEntry.currencies = []
             this.initWalletEntry(walletEntry)
             walletEntry.toggle()
           })
         });
+  }
+
+  getSelectedCurrencies(walletEntry) {
+    let selectedCurrencies = this.store.get(walletEntry.account) || []
+    return selectedCurrencies
+  }
+
+  createAddress(walletEntry, currencyName) {
+    let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == currencyName)
+    let success
+    if (currencyName == "Bitcoin") success = node.createBtcAddress(walletEntry)
+    if (currencyName == "Ethereum") success = node.createEthAddress(walletEntry)
+    if (currencyName == "FIMK") success = node.createFIMKAddress(walletEntry)
+    if (currencyName == "NXT") success = node.createNXTAddress(walletEntry)
+    if (currencyName == "ARDOR") success = node.createARDRAddress(walletEntry)
+    if (currencyName == "Litecoin") success = node.createLtcAddress(walletEntry)
+    if (currencyName == "BitcoinCash") success = node.createBchAddress(walletEntry)
+    walletEntry.toggle(true)
   }
 
   createAccount($event) {
@@ -425,6 +503,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
       p2pContactsUtils.shareCryptoAddress(contact, currency, address)
     })
+  }
+
+  showMessage(message: string) {
+    this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
   }
 
   pageAddAddSecretPhrase($event) {
@@ -617,19 +699,19 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       }).catch(reason => {console.log(reason)})
   }
 
-  handleFailedCryptoRequests(walletEntry, currencyAddressLoading, currencyName, currencySymbol) {
-    this.$mdToast.show(this.$mdToast.simple().textContent(`Error. Cannot connect to ${currencySymbol} server.`).hideDelay(5000));
-    let index = walletEntry.currencies.indexOf(currencyAddressLoading)
-    let currencyBalance = new wlt.CurrencyBalance(currencyName, '', '', '')
-    currencyBalance.balance = "No Connection"
-    currencyBalance.visible = walletEntry.expanded
-    currencyBalance.inUse = true
-    currencyBalance.walletEntry = walletEntry
-    currencyBalance.address = currencyAddressLoading.address
-    walletEntry.currencies.splice(index, 0, currencyBalance)
-    walletEntry.currencies = walletEntry.currencies.filter(c => c != currencyAddressLoading)
-    this.flatten()
-  }
+  // handleFailedCryptoRequests(walletEntry, currencyAddressLoading, currencyName, currencySymbol) {
+  //   this.$mdToast.show(this.$mdToast.simple().textContent(`Error. Cannot connect to ${currencySymbol} server.`).hideDelay(5000));
+  //   let index = walletEntry.currencies.indexOf(currencyAddressLoading)
+  //   let currencyBalance = new wlt.CurrencyBalance(currencyName, '', '', '')
+  //   currencyBalance.balance = "No Connection"
+  //   currencyBalance.visible = walletEntry.expanded
+  //   currencyBalance.inUse = true
+  //   currencyBalance.walletEntry = walletEntry
+  //   currencyBalance.address = currencyAddressLoading.address
+  //   walletEntry.currencies.splice(index, 0, currencyBalance)
+  //   walletEntry.currencies = walletEntry.currencies.filter(c => c != currencyAddressLoading)
+  //   this.flatten()
+  // }
 
   private getAccountAssets(account: string): angular.IPromise<Array<AssetInfo>> {
     let deferred = this.$q.defer<Array<AssetInfo>>();

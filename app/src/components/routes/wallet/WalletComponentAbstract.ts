@@ -41,11 +41,13 @@ namespace wlt {
 
     abstract flatten()
 
-    abstract handleFailedCryptoRequests(walletEntry, currencyAddressLoading, currencyName, currencySymbol)
+    // abstract handleFailedCryptoRequests(walletEntry, currencyAddressLoading, currencyName, currencySymbol)
 
     abstract shareCurrencyAddressesWithP2pContacts(currency: string, address: string)
 
     abstract initWalletEntry(walletEntry: wlt.WalletEntry)
+
+    abstract showMessage(message: string)
 
     initLocalKeyStore() {
       this.entries = []
@@ -94,6 +96,14 @@ namespace wlt {
       if (address.startsWith("bitcoincash:")) return a ? a.has(address) || a.has(address.split(":")[1]) : false
 
       return a ? a.has(address) : false
+    }
+
+    public saveAddresses(currencySymbol: string, a: WalletAddresses, walletEntry: WalletEntry) {
+      let encrypted = heat.crypto.encryptMessage(JSON.stringify(a), walletEntry.account, walletEntry.secretPhrase)
+      let storage = <StorageService>heat.$inject.get('storage')
+      let $rootScope = heat.$inject.get('$rootScope')
+      let store = storage.namespace('wallet-address', $rootScope, true);
+      store.put(`${currencySymbol}-${walletEntry.account}`, encrypted);
     }
 
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
@@ -278,29 +288,35 @@ namespace wlt {
       if (!addressLoading) return
 
       utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 18000).then(() => {
-
-        /* Make sure we exit if no loading node exists */
-        if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
-
-        let index = walletEntry.currencies.indexOf(addressLoading)
-        addressLoading.wallet.addresses.forEach(address => {
-          let wasCreated = this.wasCreated(address.address, walletEntry.account)
-          if ((address.inUse || wasCreated) && !address.isDeleted) {
-            let currencyBalance: wlt.CurrencyBalance = createBalance(address)
-            currencyBalance.visible = walletEntry.expanded
-            currencyBalance.inUse = !wasCreated
-            currencyBalance.walletEntry = walletEntry
-            walletEntry.currencies.splice(index, 0, currencyBalance)
-            index++;
-          }
-        })
-        // we can remove the loading entry
-        walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)
-        this.flatten()
+        this.createBalanceEntries(walletEntry, addressLoading, createBalance, true)
       }).catch((reason) => {
         console.error(`${currencyName} refreshing balances error`, reason)
-        this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
+        this.createBalanceEntries(walletEntry, addressLoading, createBalance, false)
+        this.showMessage(`Error. Cannot connect to ${currencySymbol} server.`)
+        //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
+    }
+
+    private createBalanceEntries(walletEntry: wlt.WalletEntry, addressLoading: wlt.CurrencyAddressLoading, createBalance: Function, isSuccessLoaded: boolean) {
+      /* Make sure we exit if no loading node exists */
+      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
+
+      let index = walletEntry.currencies.indexOf(addressLoading)
+      addressLoading.wallet.addresses.forEach(address => {
+        let wasCreated = this.wasCreated(address.address, walletEntry.account)
+        if ((address.inUse || wasCreated) && !address.isDeleted) {
+          let currencyBalance: wlt.CurrencyBalance = createBalance(address)
+          currencyBalance.visible = walletEntry.expanded
+          currencyBalance.inUse = !wasCreated
+          currencyBalance.walletEntry = walletEntry
+          if (!isSuccessLoaded && !currencyBalance.balance) currencyBalance.balance = "No Connection"
+          walletEntry.currencies.splice(index, 0, currencyBalance)
+          index++;
+        }
+      })
+      // we can remove the loading entry
+      walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)
+      this.flatten()
     }
 
   }
