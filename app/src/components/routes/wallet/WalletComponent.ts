@@ -167,15 +167,6 @@
                             <md-menu-item>
                               <md-button ng-click="vm.restoreAddresses(entry, 'BitcoinCash')">BCH</md-button>
                             </md-menu-item>
-                            <md-menu-item>
-                              <md-button ng-click="vm.restoreAddresses(entry, 'FIMK')">FIM</md-button>
-                            </md-menu-item>
-                            <md-menu-item>
-                              <md-button ng-click="vm.restoreAddresses(entry, 'NXT')">NXT</md-button>
-                            </md-menu-item>
-                            <md-menu-item>
-                              <md-button ng-click="vm.restoreAddresses(entry, 'ARDOR')">ARDR</md-button>
-                            </md-menu-item>
                           </md-menu-content>
                       </md-menu>
                     </md-menu-item>
@@ -415,11 +406,13 @@ class WalletComponent extends wlt.WalletComponentAbstract {
             resetAddressesPromise = this.bchCryptoService.unlock(walletEntry.secretPhrase, true)
           } else if (currencyName === 'HEAT') {
           }
-          resetAddressesPromise.then(currencyAddresses => {
-            walletEntry.currencies = []
-            this.initWalletEntry(walletEntry)
-            walletEntry.toggle()
-          })
+          if (resetAddressesPromise) {
+            resetAddressesPromise.then(currencyAddresses => {
+              walletEntry.currencies = []
+              this.initWalletEntry(walletEntry)
+              walletEntry.toggle()
+            })
+          }
         });
   }
 

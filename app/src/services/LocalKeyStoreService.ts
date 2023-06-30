@@ -173,7 +173,7 @@ class LocalKeyStoreService {
 
     this.listLocalKeyEntries().forEach(entry => {
       let oldAddresses
-      wlt.CURRENCIES.forEach(c => {
+      wlt.CURRENCIES_LIST.forEach(c => {
         let encryptedAddresses = store.get(`${c.symbol}-${entry.account}`)
         if (encryptedAddresses) {
           oldAddresses = oldAddresses || {}
@@ -210,7 +210,7 @@ class LocalKeyStoreService {
 
       let oldAddresses = entry["oldAddresses"]
       if (oldAddresses) {
-        wlt.CURRENCIES.forEach(c => {
+        wlt.CURRENCIES_LIST.forEach(c => {
           let encryptedAddresses = oldAddresses[c.symbol]
           if (encryptedAddresses) store.put(`${c.symbol}-${entry.account}`, encryptedAddresses)
         })

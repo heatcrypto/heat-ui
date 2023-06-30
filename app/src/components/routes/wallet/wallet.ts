@@ -23,17 +23,20 @@
 
 namespace wlt {
 
-  export const CURRENCIES = [
-    {name: 'HEAT', symbol: 'HEAT'},
-    {name: 'Ethereum', symbol: 'ETH'},
-    {name: 'Bitcoin', symbol: 'BTC'},
-    {name: 'FIMK', symbol: 'FIM'},
-    {name: 'NXT', symbol: 'NXT'},
-    {name: 'ARDOR', symbol: 'ARDR'},
-    {name: 'IOTA', symbol: 'IOTA'},
-    {name: 'Litecoin', symbol: 'LTC'},
-    {name: 'BitcoinCash', symbol: 'BCH'}
-  ]
+  export const CURRENCIES = {
+    HEAT: {name: 'HEAT', symbol: 'HEAT', multiAddress: true},
+    Ethereum: {name: 'Ethereum', symbol: 'ETH', multiAddress: true},
+    Bitcoin: {name: 'Bitcoin', symbol: 'BTC', multiAddress: true},
+    FIMK: {name: 'FIMK', symbol: 'FIM', multiAddress: false},
+    NXT: {name: 'NXT', symbol: 'NXT', multiAddress: false},
+    ARDOR: {name: 'ARDOR', symbol: 'ARDR', multiAddress: false},
+    IOTA: {name: 'IOTA', symbol: 'IOTA', multiAddress: false},
+    Litecoin: {name: 'Litecoin', symbol: 'LTC', multiAddress: true},
+    BitcoinCash: {name: 'BitcoinCash', symbol: 'BCH', multiAddress: true}
+  }
+
+  export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
+
 
   const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
 
@@ -265,61 +268,15 @@ namespace wlt {
     }
 
     createFIMKAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
-      // collect all CurrencyBalance of 'our' same currency type
-      let currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-      // if there is no address in use yet we use the first one
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
-        newCurrencyBalance.visible = this.walletEntry.expanded
-        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
-        this.removeIsDeleted(newCurrencyBalance)
-        this.flatten()
-        this.registerCurrency(this.walletEntry.account, 'FIM')
-        return true
-      }
-
-      return false
+      return this.createAddress(entry, 'FIMK', 'FIM')
     }
 
     createNXTAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
-      let currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
-        newCurrencyBalance.visible = this.walletEntry.expanded
-        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
-        this.removeIsDeleted(newCurrencyBalance)
-        this.flatten()
-        this.registerCurrency(this.walletEntry.account, 'NXT')
-        return true
-      }
-      return false
+      return this.createAddress(entry, 'NXT', 'NXT')
     }
 
     createARDRAddress(entry: WalletEntry) {
-      let component: WalletComponentAbstract = entry.component
-      let currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-      if (currencyBalances.length == 0) {
-        let nextAddress = this.wallet.addresses[0]
-        let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
-        newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
-        newCurrencyBalance.visible = this.walletEntry.expanded
-        if (nextAddress.isDeleted === true) nextAddress.isDeleted = false
-        this.removeIsDeleted(newCurrencyBalance)
-        this.flatten()
-        this.registerCurrency(this.walletEntry.account, 'ARDR')
-        return true
-      }
-      return false
+      return this.createAddress(entry, 'ARDOR', 'ARDR')
     }
 
     createAddress(entry: WalletEntry, currencyName: string, currencySymbol: string) {

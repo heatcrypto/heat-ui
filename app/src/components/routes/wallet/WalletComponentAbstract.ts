@@ -123,9 +123,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry, 'NXT', 'NXT',
-          this.nxtCryptoService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.NXT, this.nxtCryptoService.refreshBalances, createBalance
       )
 
     }
@@ -147,9 +145,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry, 'ARDOR', 'ARDR',
-          this.ardorCryptoService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.ARDOR, this.ardorCryptoService.refreshBalances, createBalance
       )
     }
 
@@ -171,9 +167,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry, 'FIMK', 'FIM',
-          this.fimkCryptoService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.FIMK, this.fimkCryptoService.refreshBalances, createBalance
       )
 
     }
@@ -198,11 +192,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry,
-          'Ethereum',
-          'ETH',
-          this.lightwalletService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.Ethereum, this.lightwalletService.refreshBalances, createBalance
       )
 
     }
@@ -216,11 +206,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry,
-          'Iota',
-          'i',
-          this.iotaCoreService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.IOTA, this.iotaCoreService.refreshBalances, createBalance
       )
 
     }
@@ -234,11 +220,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry,
-          'Bitcoin',
-          'BTC',
-          this.bitcoreService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.Bitcoin, this.bitcoreService.refreshBalances, createBalance
       )
 
     }
@@ -252,11 +234,7 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry,
-          'BitcoinCash',
-          'BCH',
-          this.bchCryptoService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.BitcoinCash, this.bchCryptoService.refreshBalances, createBalance
       )
 
     }
@@ -270,41 +248,38 @@ namespace wlt {
       }
 
       this.loadAddresses(
-          walletEntry,
-          'Litecoin',
-          'LTC',
-          this.ltcCryptoService.refreshBalances,
-          createBalance
+          walletEntry, wlt.CURRENCIES.Litecoin, this.ltcCryptoService.refreshBalances, createBalance
       )
 
     }
 
-    private loadAddresses(walletEntry: wlt.WalletEntry, currencyName: string, currencySymbol: string,
+    private loadAddresses(walletEntry: wlt.WalletEntry,
+                          currencyDescriptor: {name: string, symbol: string, multiAddress: boolean},
                           requestAddresses: Function, createBalance: Function) {
 
       /* Find the Loading node, if thats not available we can exit */
       let addressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-          .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyName.toUpperCase())
+          .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyDescriptor.name.toUpperCase())
       if (!addressLoading) return
 
       utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 18000).then(() => {
-        this.createBalanceEntries(walletEntry, addressLoading, createBalance, true)
+        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, true)
       }).catch((reason) => {
-        console.error(`${currencyName} refreshing balances error`, reason)
-        this.createBalanceEntries(walletEntry, addressLoading, createBalance, false)
-        this.showMessage(`Error. Cannot connect to ${currencySymbol} server.`)
+        console.error(`${currencyDescriptor.name} refreshing balances error`, reason)
+        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, false)
+        this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
         //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
     }
 
-    private createBalanceEntries(walletEntry: wlt.WalletEntry, addressLoading: wlt.CurrencyAddressLoading, createBalance: Function, isSuccessLoaded: boolean) {
+    private createBalanceEntries(walletEntry: wlt.WalletEntry, currencyDescriptor, addressLoading: wlt.CurrencyAddressLoading, createBalance: Function, isSuccessLoaded: boolean) {
       /* Make sure we exit if no loading node exists */
       if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
       let index = walletEntry.currencies.indexOf(addressLoading)
       addressLoading.wallet.addresses.forEach(address => {
         let wasCreated = this.wasCreated(address.address, walletEntry.account)
-        if ((address.inUse || wasCreated) && !address.isDeleted) {
+        if ((address.inUse || wasCreated || !currencyDescriptor.multiAddress) && !address.isDeleted) {
           let currencyBalance: wlt.CurrencyBalance = createBalance(address)
           currencyBalance.visible = walletEntry.expanded
           currencyBalance.inUse = !wasCreated
