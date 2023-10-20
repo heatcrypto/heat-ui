@@ -114,7 +114,7 @@ class PlaceBidOrderDialog extends GenericDialog {
               readonly(this.readonly),
       builder.switcher("isSenderFeePayer", true)
         .label('Force sender pays network fee')
-        .visible(this.market.isIssuerFeePayer && (this.assetInfo.type == 1 || this.currencyInfo.type == 1))
+        .visible(this.market?.isIssuerFeePayer && (this.assetInfo.type == 1 || this.currencyInfo.type == 1))
     ]
   }
 
