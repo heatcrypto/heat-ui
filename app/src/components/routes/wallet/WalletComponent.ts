@@ -117,37 +117,7 @@
                     </md-menu-item>
                     
                     <md-menu-divider></md-menu-divider>
-                    <md-menu-item ng-if="vm.getSelectedCurrencies(entry).length > 0">
-                      <md-menu>
-                          <md-button ng-click="$mdMenu.open()" style="text-transform: none;">
-                            <md-icon md-font-library="material-icons" style="margin-right: 16px;">library_add</md-icon>
-                            Create address
-                          </md-button>
-                          <md-menu-content>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('BTC') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'Bitcoin')">BTC</md-button>
-                            </md-menu-item>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('ETH') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'Ethereum')">ETH</md-button>
-                            </md-menu-item>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('LTC') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'Litecoin')">LTC</md-button>
-                            </md-menu-item>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('BCH') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'BitcoinCash')">BCH</md-button>
-                            </md-menu-item>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('FIM') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'FIMK')">FIM</md-button>
-                            </md-menu-item>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('NXT') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'NXT')">NXT</md-button>
-                            </md-menu-item>
-                            <md-menu-item ng-if="vm.getSelectedCurrencies(entry).indexOf('ARDR') > -1">
-                              <md-button ng-click="vm.createAddress(entry, 'ARDOR')">ARDR</md-button>
-                            </md-menu-item>
-                          </md-menu-content>
-                      </md-menu>
-                    </md-menu-item>
+
                     <md-menu-item>
                       <md-menu>
                           <md-button ng-click="$mdMenu.open()" style="text-transform: none;">
@@ -188,16 +158,23 @@
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>
                   </md-button>
                   <md-menu-content width="4">
+                    <md-menu-item style="height: 26px; min-height: 26px"><span style="text-align: center">{{entry.name}}</span></md-menu-item>
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase, entry.symbol)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
                       </md-button>
                     </md-menu-item>
+                    <md-menu-item ng-if="entry.index!=undefined">
+                      <md-button aria-label="explorer" ng-click="vm.createAddress(entry.walletEntry, entry.name)">
+                        <md-icon md-font-library="material-icons">add</md-icon>
+                        Create {{entry.symbol}} address
+                      </md-button>
+                    </md-menu-item>
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.deleteEntry(entry)">
                         <md-icon md-font-library="material-icons">delete_forever</md-icon>
-                        Remove address
+                        Remove address  <span class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></span>
                       </md-button>
                     </md-menu-item>
                   </md-menu-content>
