@@ -131,6 +131,7 @@ class SettingsService {
     if (!SettingsService.CRYPTO_NODES) return "";
 
     let node = this.getCryptoServer(currency, index);
+    if (!node) return "";
     return node.port ? `${node.host}:${node.port}` : `${node.host}`;
   }
 

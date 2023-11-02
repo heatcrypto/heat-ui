@@ -125,18 +125,21 @@
       "currencyName": "FIM",
       "nodes": [
         {
-          "host": "wss://cloud.mofowallet.org:7986/ws/",
-          "priority": 2,
-          "status": "ACTIVE",
-          "timeout": 5000
-        },
-        {
+          "name": "fimk1",
           "host": "wss://fimk1.heatwallet.com/ws/",
           "priority": 1,
           "status": "ACTIVE",
           "timeout": 5000
         },
         {
+          "name": "Mofowallet",
+          "host": "wss://cloud.mofowallet.org:7986/ws/",
+          "priority": 2,
+          "status": "NOT ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "name": "localhost",
           "host": "ws://localhost:7986/ws/",
           "priority": 3,
           "status": "ACTIVE",

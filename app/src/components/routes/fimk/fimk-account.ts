@@ -63,7 +63,7 @@
     </div>
   `
 })
-@Inject('$scope', 'mofoSocketService', 'fimkPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
+@Inject('$scope', 'mofoSocketService', 'fimkPendingTransactions', '$interval', '$mdToast', 'settings', 'user', '$router')
 class FimkAccountComponent {
   account: string; // @input
   balanceUnconfirmed: any;
@@ -71,7 +71,7 @@ class FimkAccountComponent {
   prevIndex = 0
   busy = true
   sockets: any;
-  selectSocketEndPoint = 'Mofowallet'
+  selectSocketEndPoint = 'fimk1'
 
   constructor(private $scope: angular.IScope,
               private mofoSocketService: MofoSocketService,
@@ -79,7 +79,8 @@ class FimkAccountComponent {
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
-              private user: UserService) {
+              private user: UserService,
+              private router) {
   }
 
   $onInit() {
@@ -97,23 +98,20 @@ class FimkAccountComponent {
       this.$interval.cancel(promise)
     })
 
-    this.sockets = [
-      {
-        name: 'Mofowallet',
-        socketUrl: 'wss://cloud.mofowallet.org:7986/ws/'
-      },
-      {
-        name: 'Localhost',
-        socketUrl: 'ws://localhost:7986/ws/'
-      }
-    ]
+    this.sockets = SettingsService.CRYPTO_NODES.find(v => v.currencyName=='FIM').nodes.filter(v => v.status == 'ACTIVE') || []
 
-    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.mofoSocketService.getSocketUrl() == w.socketUrl).name
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.mofoSocketService.getSocketUrl() == w.host).name
   }
 
   changeSocketAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.mofoSocketService.mofoSocket(ret.socketUrl)
+    this.mofoSocketService.mofoSocket(ret.host)
+        .then(v => {
+          //refresh page
+          let url = this.router.lastNavigationAttempt
+          this.router.navigate("/")
+          setTimeout(() => this.router.navigate(url), 300)
+        }, reason => console.error("reason: " + reason))
   }
 
   timerHandler() {
