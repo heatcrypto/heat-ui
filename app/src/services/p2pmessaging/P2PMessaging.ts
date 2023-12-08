@@ -62,7 +62,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
     let closeConnector = () => {
       if (this.connector) {
-        this.connector.close(false);
+        this.connector.close(true);
         this.connector = null;
       }
     };
