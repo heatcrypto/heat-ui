@@ -445,7 +445,7 @@ class ToolbarComponent {
   }
 
   goToMessenger() {
-    this.$location.path('messenger/0')
+    this.$location.path('/messenger/0')
   }
 
   openTestPage() {

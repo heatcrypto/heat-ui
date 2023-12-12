@@ -166,8 +166,8 @@ class UserContactsComponent {
       $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
     }
 
-    $rootScope.$on('$locationChangeSuccess', () => { this.setActivePublicKey() });
-    this.setActivePublicKey();
+    $rootScope.$on('$locationChangeSuccess', () => { this.updateActivePublicKey() });
+    this.updateActivePublicKey();
 
     //let myRoom = this.p2pMessaging.register();
 
@@ -211,7 +211,7 @@ class UserContactsComponent {
         if (pr.peer) pr.peer.closeConnection()
         if (pr.room) pr.room.getMessageHistory().clear()
         this.p2pMessaging.p2pContactStore.remove(contact.account)
-        this.refreshContacts().then(v => this.setActivePublicKey(true))
+        this.refreshContacts().then(v => this.updateActivePublicKey(true))
       })
     })
   }
@@ -258,19 +258,29 @@ class UserContactsComponent {
     }
   }
 
-  getActivePublicKey() {
-    let path = this.$location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1);
-    return (route == "messenger") ? params[0] : null;
+  getActivePublicKeyParam() {
+    let path = this.$location.path().replace(/^\//,'').split('/'), route = path[0], params = path.slice(1)
+    var result = (route == "messenger") ? params[0] : null
+    return result == "0" ? null : result
   }
 
-  setActivePublicKey(reset?: boolean) {
+  updateActivePublicKey(reset?: boolean) {
     if (reset) this.$location.path("/messenger/0");
 
-    this.activePublicKey = this.getActivePublicKey();
+    this.activePublicKey = this.getActivePublicKeyParam();
+
+    if (this.activePublicKey) {
+      this.user["activeMessengerContact"] = this.activePublicKey
+    } else {
+      this.activePublicKey = this.user["activeMessengerContact"]
+      if (this.activePublicKey) {
+        this.$location.path(`/messenger/${this.activePublicKey}`)
+      }
+    }
 
     if (!this.activePublicKey || this.activePublicKey == "0") {
       if (this.contacts[0] && this.contacts[0].publicKey != "0") {
-        this.$location.path(`/messenger/${this.contacts[0].publicKey}`);
+        this.$location.path(`/messenger/${this.contacts[0].publicKey}`)
       }
     }
 
@@ -295,7 +305,7 @@ class UserContactsComponent {
   refreshContacts() {
     return this.contactService.getContacts(this.activePublicKey).then(contacts => {
       this.contacts = contacts
-      if (this.getActivePublicKey() == "0") this.setActivePublicKey()
+      if (this.getActivePublicKeyParam() == "0") this.updateActivePublicKey()
     })
   }
 
@@ -305,9 +315,9 @@ class UserContactsComponent {
       if (this.contacts.length > 1) {
         this.$location.path("/messenger/" + this.contacts[1].publicKey);
       }
-      this.setActivePublicKey(false)
+      this.updateActivePublicKey(false)
     } else {
-      this.setActivePublicKey(true)
+      this.updateActivePublicKey(true)
     }
     setTimeout(() => {
       this.$location.path(`/messenger/${contact.publicKey}`)
