@@ -175,7 +175,7 @@ class DownloadingBlockchainComponent {
       });
 
       let best: ServerDescriptor = currentServer;
-      let causeToSelectBest;
+      let causeToSelectBest: String;
       knownServers.forEach(server => {
         if (best == currentServer && !currentServerIsAlive) {
           best = server; //if current server is not alive switch to other server in any case
@@ -200,28 +200,7 @@ class DownloadingBlockchainComponent {
       if (best && best != currentServer) {
         let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
-          settings.setCurrentServer(best);
-          console.debug("api server is changed from " + currentServer.host + ":" + (currentServer.port || "") + " to " +  best.host + ":" + (best.port || ""))
-          this.notifyOnServerLocationUpdating();
-          this.heat.resetSubscriber();
-          if (firstTime) {
-            //on initializing (first time) switched silently and starts from login page
-            this.router.navigate('/login');
-          } else {
-            let message = currentServer
-              ? "Client API address switched from \n" + currentServer.host + ":" + (currentServer.port || "")
-              + "\n to \n" + best.host + ":" + best.port
-              : "Client API address switched to\n" + best.host + ":" + (best.port || "");
-            if (causeToSelectBest) message = message + " \n" + "Reason: " + causeToSelectBest;
-            this.$mdToast.show(
-              this.$mdToast.simple()
-                .textContent(message)
-                .highlightAction(true)
-                .action('close')
-                .highlightClass('md-warn')
-                .hideDelay(0)
-            )
-          }
+          this.switchToBestServer(settings, best, currentServer, firstTime, causeToSelectBest)
         }
       }
     }
@@ -230,6 +209,36 @@ class DownloadingBlockchainComponent {
       .catch(reason => {
         console.error(reason)
       })
+  }
+
+  private switchToBestServer(
+      settings: SettingsService,
+      bestServer: ServerDescriptor,
+      currentServer: ServerDescriptor,
+      firstTime: boolean,
+      causeToSelectBest: String) {
+    settings.setCurrentServer(bestServer);
+    console.debug("api server is changed from " + currentServer.host + ":" + (currentServer.port || "") + " to " +  bestServer.host + ":" + (bestServer.port || ""))
+    this.notifyOnServerLocationUpdating();
+    this.heat.resetSubscriber();
+    if (firstTime) {
+      //on initializing (first time) switched silently and starts from login page
+      this.router.navigate('/login');
+    } else {
+      let message = currentServer
+          ? "Client API address switched from \n" + currentServer.host + ":" + (currentServer.port || "")
+          + "\n to \n" + bestServer.host + ":" + bestServer.port
+          : "Client API address switched to\n" + bestServer.host + ":" + (bestServer.port || "");
+      if (causeToSelectBest) message = message + " \n" + "Reason: " + causeToSelectBest;
+      this.$mdToast.show(
+          this.$mdToast.simple()
+              .textContent(message)
+              .highlightAction(true)
+              .action('close')
+              .highlightClass('md-warn')
+              .hideDelay(0)
+      )
+    }
   }
 
   /**

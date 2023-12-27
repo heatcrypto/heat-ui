@@ -58,18 +58,22 @@ class HeatService {
               private env: EnvService,
               private $rootScope: angular.IScope) {
 
-    this.settings.initialized.then(value => {
-      this.api.baseTimestamp().then(basetimestamp => {
-        utils.setBaseTimestamp(parseInt(basetimestamp))
-      })
+    let initBaseTime = () => this.api.baseTimestamp().then(basetimestamp => {
+      utils.setBaseTimestamp(parseInt(basetimestamp))
     })
+    this.settings.initialized.then(v => initBaseTime())
     try {
-      this.api.baseTimestamp().then(basetimestamp => {
-        utils.setBaseTimestamp(parseInt(basetimestamp))
-      })
+      initBaseTime()
     } catch (e) {
       console.error(e)
     }
+    $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
+      try {
+        initBaseTime()
+      } catch (e) {
+        console.error(e)
+      }
+    });
   }
 
   public createSubscriber(url: string)  {
