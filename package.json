@@ -17,20 +17,16 @@
     "pack": "build --dir",
     "dist": "build"
   },
-  "engines": {
-    "npm": "5.6.0",
-    "node": "8.10.0"
-  },
   "devDependencies": {
     "@types/angular": "^1.7.3",
     "@types/angular-animate": "^1.5.10",
     "@types/angular-material": "^1.1.71",
-    "@types/angular-scroll": "0.0.31",
+    "@types/angular-scroll": "1.0.3",
     "@types/bytebuffer": "^5.0.41",
     "@types/file-saver": "^2.0.2",
     "@types/jsbn": "^1.2.29",
     "@types/long": "^3.0.32",
-    "@types/webrtc": "0.0.26",
+    "@types/webrtc": "0.0.41",
     "clipboard": "^2.0.6",
     "connect": "^3.7.0",
     "del": "2.2.2",
@@ -61,15 +57,15 @@
     "typescript": "^4.0.5"
   },
   "dependencies": {
-    "angular": "^1.8.0",
-    "angular-animate": "1.8.0",
-    "angular-aria": "1.8.0",
-    "angular-material": "1.1.24",
+    "angular": "1.8.3",
+    "angular-animate": "1.8.3",
+    "angular-aria": "1.8.3",
+    "angular-material": "1.1.26",
     "angular-material-data-table": "0.10.10",
-    "angular-messages": "1.8.0",
+    "angular-messages": "1.8.3",
     "angular-new-router": "0.5.3",
-    "angular-route": "1.8.0",
-    "angular-sanitize": "1.8.0",
+    "angular-route": "1.8.3",
+    "angular-sanitize": "1.8.3",
     "angular-scroll": "^1.0.2",
     "angular-ui-scroll": "^1.8.1",
     "angularjs-scroll-glue": "^2.2.0",
@@ -85,9 +81,9 @@
     "material-design-icons": "2.2.3",
     "material-design-icons-iconfont": "^6.1.0",
     "ng-popover": "^2.0.0",
-    "pako": "1.0.3",
+    "pako": "1.0.11",
     "techan": "0.8.0",
-    "webrtc-adapter": "8.1.0"
+    "webrtc-adapter": "8.2.3"
   },
   "build": {
     "appId": "com.heatledger.heatwallet",
