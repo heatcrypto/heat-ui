@@ -114,6 +114,10 @@ module utils {
 
   let BASE_DATE;
 
+  export function isBaseDate() {
+    return !!BASE_DATE
+  }
+
   export function setBaseTimestamp(timestamp: number) {
     BASE_DATE = timestamp
   }
@@ -415,6 +419,5 @@ module utils {
       (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     );
   }
-
 
 }

@@ -44,7 +44,7 @@ class InternalServerTimeoutError extends ServerEngineError {
 }
 
 @Service('heat')
-@Inject('$q','$http','settings','user','$timeout','env', '$rootScope')
+@Inject('$q','$http','settings','user','$timeout','$interval','env', '$rootScope')
 class HeatService {
 
   public api = new HeatAPI(this, this.user, this.$q);
@@ -55,6 +55,7 @@ class HeatService {
               public settings: SettingsService,
               private user: UserService,
               private $timeout: angular.ITimeoutService,
+              private $interval: angular.IIntervalService,
               private env: EnvService,
               private $rootScope: angular.IScope) {
 
@@ -74,6 +75,14 @@ class HeatService {
         console.error(e)
       }
     });
+
+    let refreshInterval = $interval(() => {
+      if (utils.isBaseDate()) {
+        $interval.cancel(refreshInterval);
+      } else {
+        initBaseTime()
+      }
+    }, 3 * 1000, 0, false);
   }
 
   public createSubscriber(url: string)  {
