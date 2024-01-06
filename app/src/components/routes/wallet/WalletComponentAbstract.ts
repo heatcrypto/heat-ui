@@ -89,13 +89,21 @@ namespace wlt {
       })
     }
 
-    wasCreated(address: string, account: string) {
+    checkCreatedAddress(address: string, account: string): {wasCreated: boolean, cachedBalance?: string} {
       let a = wlt.createdAddresses[account]
 
-      // backward compatibility when these items were registered without prefix "bitcoincash:"
-      if (address.startsWith("bitcoincash:")) return a ? a.has(address) || a.has(address.split(":")[1]) : false
+      if (!a) return {wasCreated: false}
 
-      return a ? a.has(address) : false
+      let result = {wasCreated: a.has(address), cachedBalance: null}
+
+      // backward compatibility when these items were registered without prefix "bitcoincash:"
+      if (address.startsWith("bitcoincash:")) {
+        result.cachedBalance = a.get(address) || a.get(address.split(":")[1])
+      } else {
+        result.cachedBalance = a.get(address)
+      }
+
+      return result
     }
 
     public saveAddresses(currencySymbol: string, a: WalletAddresses, walletEntry: WalletEntry) {
@@ -262,7 +270,7 @@ namespace wlt {
           .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyDescriptor.name.toUpperCase())
       if (!addressLoading) return
 
-      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 18000).then(() => {
+      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 8000).then(() => {
         this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, true)
       }).catch((reason) => {
         console.error(`${currencyDescriptor.name} refreshing balances error`, reason)
@@ -272,19 +280,31 @@ namespace wlt {
       })
     }
 
-    private createBalanceEntries(walletEntry: wlt.WalletEntry, currencyDescriptor, addressLoading: wlt.CurrencyAddressLoading, createBalance: Function, isSuccessLoaded: boolean) {
+    private createBalanceEntries(walletEntry: wlt.WalletEntry,
+                                 currencyDescriptor,
+                                 addressLoading: wlt.CurrencyAddressLoading,
+                                 createBalance: Function,
+                                 successLoaded: boolean) {
       /* Make sure we exit if no loading node exists */
       if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading'])) return
 
       let index = walletEntry.currencies.indexOf(addressLoading)
       addressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = this.wasCreated(address.address, walletEntry.account)
-        if ((address.inUse || wasCreated || !currencyDescriptor.multiAddress) && !address.isDeleted) {
+        let createdAddress = this.checkCreatedAddress(address.address, walletEntry.account)
+        if ((address.inUse || createdAddress.wasCreated || !currencyDescriptor.multiAddress) && !address.isDeleted) {
           let currencyBalance: wlt.CurrencyBalance = createBalance(address)
           currencyBalance.visible = walletEntry.expanded
-          currencyBalance.inUse = !wasCreated
+          currencyBalance.inUse = !createdAddress.wasCreated
           currencyBalance.walletEntry = walletEntry
-          if (!isSuccessLoaded && !currencyBalance.balance) currencyBalance.balance = "No Connection"
+          //currencyBalance.balance = currencyBalance.balance || addressBalance || ""
+          if (successLoaded) {
+            if (createdAddress.wasCreated) {
+              //remember balance to display it when "no connection"
+              wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
+            }
+          } else {
+            currencyBalance.balance = "No Connection" + (currencyBalance.balance ? ". Cached: " + createdAddress : "")
+          }
           walletEntry.currencies.splice(index, 0, currencyBalance)
           index++;
         }

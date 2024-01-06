@@ -40,7 +40,7 @@ namespace wlt {
 
   const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
 
-  export let createdAddresses: { [key: string]: Set<string> } = {}
+  export let createdAddresses: { [key: string]: Map<string, string> } = {}
 
   let distinctValues = (value, index, self) => {
     return self.indexOf(value) === index
@@ -79,17 +79,22 @@ namespace wlt {
       // old format "eth-address-created:..." is used for backward compatibility
       let data = key.match(/addresscreated-(.+)-(.+)/) || key.match(/eth-address-created:(.+):(.+)/)
       if (data) {
-        let acc = data[1], addr = data[2]
-        createdAddresses[acc] = createdAddresses[acc] || new Set<string>()
-        createdAddresses[acc].add(addr)
+        let s = key.substring(key.indexOf("-") + 1)
+        let acc = s.substring(0, s.indexOf("-"))
+        let addr = s.substring(s.indexOf("-") + 1)
+        let addresses = createdAddresses[acc] || new Map<string, string>()
+        let value = window.localStorage.getItem(key)
+        let balance = value.startsWith("balance") ? value.substring(7) : ""
+        addresses.set(addr, balance)
+        createdAddresses[acc] = addresses
       }
     }
   }
 
-  export function rememberAddressCreated(account: string, address: string) {
-    createdAddresses[account] = createdAddresses[account] || new Set<string>()
-    createdAddresses[account].add(address)
-    window.localStorage.setItem(`addresscreated-${account}-${address}`, "1")
+  export function rememberAddressCreated(account: string, address: string, balance?: string) {
+    createdAddresses[account] = createdAddresses[account] || new Map<string, string>()
+    createdAddresses[account].set(address, balance || "")
+    window.localStorage.setItem(`addresscreated-${account}-${address}`, balance ? "balance" + balance : "1")
   }
 
   export class TokenBalance {
@@ -214,15 +219,15 @@ namespace wlt {
       store.put(`${currency}-${heatAddress}`, encrypted)
     }
 
-    createAddressByName(entry) {
-      let walletEntry = this.findWalletEntry(entry)
-      if (entry.name == "Bitcoin") return this.createBtcAddress(walletEntry)
-      if (entry.name == "Ethereum") return this.createEthAddress(walletEntry)
-      if (entry.name == "FIMK") return this.createFIMKAddress(walletEntry)
-      if (entry.name == "NXT") return this.createNXTAddress(walletEntry)
-      if (entry.name == "ARDOR") return this.createARDRAddress(walletEntry)
-      if (entry.name == "Litecoin") return this.createLtcAddress(walletEntry)
-      if (entry.name == "BitcoinCash") return this.createBchAddress(walletEntry)
+    createAddressByName() {
+      let walletEntry = this.findWalletEntry(this)
+      if (this.name == "Bitcoin") return this.createBtcAddress(walletEntry)
+      if (this.name == "Ethereum") return this.createEthAddress(walletEntry)
+      if (this.name == "FIMK") return this.createFIMKAddress(walletEntry)
+      if (this.name == "NXT") return this.createNXTAddress(walletEntry)
+      if (this.name == "ARDOR") return this.createARDRAddress(walletEntry)
+      if (this.name == "Litecoin") return this.createLtcAddress(walletEntry)
+      if (this.name == "BitcoinCash") return this.createBchAddress(walletEntry)
     }
 
     findWalletEntry(entry) {
