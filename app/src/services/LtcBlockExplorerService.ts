@@ -19,11 +19,17 @@ class LtcBlockExplorerService {
   public isSyncing() {
     let deferred = this.$q.defer();
     this.http.get(LtcBlockExplorerService.endPoint).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      if(parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Litecoin')
+      let parsed
+      try {
+        parsed = angular.isString(response) ? JSON.parse(response) : response;
+      } catch (e) {
+        deferred.reject(response)
+      }
+      if(parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Litecoin') {
         deferred.resolve()
-      else
+      } else {
         deferred.reject()
+      }
     }, () => {
       deferred.reject();
     })

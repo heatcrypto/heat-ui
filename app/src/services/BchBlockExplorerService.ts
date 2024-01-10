@@ -16,11 +16,17 @@ class BchBlockExplorerService {
   public isSyncing() {
     let deferred = this.$q.defer();
     this.http.get(BchBlockExplorerService.endPoint).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      if(parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Bcash')
-        deferred.resolve()
-      else
+      let parsed
+      try {
+        parsed = angular.isString(response) ? JSON.parse(response) : response;
+      } catch (e) {
         deferred.reject()
+      }
+      if (parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Bcash') {
+        deferred.resolve()
+      } else {
+        deferred.reject()
+      }
     }, () => {
       deferred.reject();
     })

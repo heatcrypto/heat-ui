@@ -38,7 +38,7 @@ namespace wlt {
   export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
 
 
-  const DISPLAYED_MAX_EMPTY_ADDRESSES = 5
+  export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
 
   export let createdAddresses: { [key: string]: Map<string, string> } = {}
 
@@ -51,6 +51,12 @@ namespace wlt {
     let $rootScope = heat.$inject.get('$rootScope')
     return storage.namespace('wallet', $rootScope, true)
   }
+
+/*
+  export function getVersion(): number {
+    return parseInt(getStore().get("version", "0"))
+  }
+*/
 
   export function getEntryVisibleLabel(account) {
     return getStore().get("label." + account)
@@ -97,6 +103,25 @@ namespace wlt {
     window.localStorage.setItem(`addresscreated-${account}-${address}`, balance ? "balance" + balance : "1")
   }
 
+  export function getCurrencyBalances(walletEntry: WalletEntry, currencyName: string): Array<CurrencyBalance> {
+    // @ts-ignore
+    return walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == currencyName)
+  }
+
+  export function isLimitReached(currencyBalances: Array<CurrencyBalance>) {
+    let emptyBalanceCounter = 0
+    currencyBalances.forEach(
+        (value) => {
+          if (value.isZeroBalance()) emptyBalanceCounter++
+        }
+    )
+    //let b = emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
+    //this.hidden = b
+    return emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
+  }
+
+
+
   export class TokenBalance {
     public isTokenBalance = true
     public balance: string
@@ -105,6 +130,7 @@ namespace wlt {
     constructor(public name: string, public symbol: string, public address: string) {
     }
   }
+
 
 
   export class CurrencyBalance {
@@ -117,6 +143,7 @@ namespace wlt {
     public tokens: Array<TokenBalance> = []
     public visible = false
     public hidden = false
+    public stateMessage: string
     walletEntry: WalletEntry
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
@@ -187,7 +214,7 @@ namespace wlt {
 
     constructor(public name: string, public wallet: WalletAddresses, public walletEntry: WalletEntry, public component?: WalletComponentAbstract) {
       this.walletEntry = walletEntry
-      this.isLimitReached(null)
+      isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
     }
 
     private getCurrencies(account: string): string[] {
@@ -290,9 +317,9 @@ namespace wlt {
 
       // collect all CurrencyBalance of 'our' same currency type
       // @ts-ignore
-      let currencyBalances: Array<CurrencyBalance> = currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
+      let currencyBalances = getCurrencyBalances(this.walletEntry, this.name)
 
-      if (this.isLimitReached(currencyBalances)) {
+      if (isLimitReached(currencyBalances)) {
         component.showMessage("Limit of empty addresses is reached")
         return false
       }
@@ -352,21 +379,6 @@ namespace wlt {
     //
     // }
 
-    public isLimitReached(currencyBalances: Array<CurrencyBalance>) {
-      if (!currencyBalances) {
-        // @ts-ignore
-        currencyBalances = this.walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-      }
-      let emptyBalanceCounter = 0
-      currencyBalances.forEach(
-          (value) => {
-            if (value.isZeroBalance()) emptyBalanceCounter++
-          }
-      )
-      //let b = emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
-      //this.hidden = b
-      return emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
-    }
   }
 
 }

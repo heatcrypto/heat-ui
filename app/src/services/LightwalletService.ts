@@ -178,7 +178,7 @@ class LightwalletService {
             resolve(true)
           }, (reason) => {
             console.error(reason)
-            resolve(false)
+            reject(false)
           })
         })
       })

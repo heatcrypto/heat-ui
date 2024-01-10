@@ -150,6 +150,7 @@
                 <div class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
+                  <span class="state-message" ng-if="entry.stateMessage">{{entry.stateMessage}}</span>
                   <span>{{entry.balance}}</span>
                   <span ng-if="entry.balance">&nbsp;&nbsp;&nbsp;{{entry.symbol}}</span>
                 </div>

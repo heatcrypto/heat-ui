@@ -96,7 +96,7 @@ async function buildElectron() {
 
   let config = {
     "appId": "com.heatledger.heatwallet",
-    "copyright": "Copyright © 2023 HEAT",
+    "copyright": "Copyright © 2024 HEAT",
     "productName": "Heatwallet",
     "compression": "normal",
     "artifactName": "heatclient_" + artifactNameSuffix,

@@ -63,7 +63,7 @@ class FIMKCryptoService {
             })
           })
         }, err => {
-          console.error(err)
+          if (err) console.error(err)
           resolve(false)
         })
       }).catch(reject)
