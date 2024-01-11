@@ -22,6 +22,8 @@
  * */
 module heat {
 
+  handleURLQueryParams()
+
   export var isTestnet = window.localStorage.getItem('testnet')=='true';
   export var isBetanet = window.localStorage.getItem('betanet')=='true';
 
@@ -31,6 +33,18 @@ module heat {
      intact all initialized services, call this method after switching to the
      desired location path. */
   export function fullApplicationScopeReload() {}
+
+  function handleURLQueryParams() {
+    let url = window.location.href
+    let pos = url.indexOf("?")
+    if (pos == -1) return
+    let urlQuery = url.substring(pos + 1)
+    if (urlQuery.indexOf("network=testnet") > -1) {
+      window.localStorage.setItem('testnet','true')
+    } else if (urlQuery.indexOf("network=mainnet") > -1) {
+      window.localStorage.setItem('testnet','false')
+    }
+  }
 
   export class Loader {
 
@@ -42,8 +56,8 @@ module heat {
     private static directive_fn = [];
 
     constructor() {
-      Loader.controller('AppController', ['$router','user','$location','$scope','$rootScope',
-      function ($router, user: UserService, $location: angular.ILocationService, $scope: angular.IScope, $rootScope: angular.IScope) {
+      Loader.controller('AppController', ['$router', 'user', '$location', '$scope', '$rootScope',
+        function ($router, user: UserService, $location: angular.ILocationService, $scope: angular.IScope, $rootScope: angular.IScope) {
 
         heat.$inject = angular.element(document).injector();
 

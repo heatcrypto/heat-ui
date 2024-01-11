@@ -221,10 +221,7 @@ class DownloadingBlockchainComponent {
     console.debug("api server is changed from " + currentServer.host + ":" + (currentServer.port || "") + " to " +  bestServer.host + ":" + (bestServer.port || ""))
     this.notifyOnServerLocationUpdating();
     this.heat.resetSubscriber();
-    if (firstTime) {
-      //on initializing (first time) switched silently and starts from login page
-      this.router.navigate('/login');
-    } else {
+    if (!firstTime) {
       let message = currentServer
           ? "Client API address switched from \n" + currentServer.host + ":" + (currentServer.port || "")
           + "\n to \n" + bestServer.host + ":" + bestServer.port
