@@ -31,9 +31,9 @@
     "connect": "^3.7.0",
     "del": "2.2.2",
     "electron": "3.1.13",
-    "electron-builder": "22.8.0",
-    "electron-builder-squirrel-windows": "22.8.1",
-    "electron-packager": "14.2.1",
+    "electron-builder": "24.9.1",
+    "electron-builder-squirrel-windows": "24.13.1",
+    "electron-packager": "17.1.2",
     "es6-promise": "3.3.1",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
@@ -84,44 +84,6 @@
     "pako": "1.0.11",
     "techan": "0.8.0",
     "webrtc-adapter": "8.2.3"
-  },
-  "build": {
-    "appId": "com.heatledger.heatwallet",
-    "copyright": "Copyright © 2020 HEAT",
-    "productName": "Heatwallet",
-    "compression": "normal",
-    "extraResources": [
-      {
-        "from": "../heatledger/build/install/heatledger",
-        "to": "heatledger"
-      }
-    ],
-    "extraFiles": [
-      {
-        "from": "./dist/app-config.json",
-        "to": "app-config.json"
-      }
-    ],
-    "win": {
-      "target": [
-        "nsis"
-      ],
-      "publisherName": "Tulipfox"
-    },
-    "linux": {
-      "target": "zip"
-    },
-    "deb": {},
-    "mac": {
-      "icon": "app/electron/icon.png.icns",
-      "category": "public.app-category.finance",
-      "target": [
-        "zip"
-      ]
-    },
-    "directories": {
-      "output": "releases",
-      "app": "dist"
-    }
   }
+
 }
