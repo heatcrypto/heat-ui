@@ -96,7 +96,7 @@ module utils {
       try {
         parsed = JSON.parse(response)
       } catch(e) {
-        parsed = {heatUtilParsingError: response}
+        parsed = {heatUtilParsingError: response || e.toString()}
       }
     } else {
       parsed = response;

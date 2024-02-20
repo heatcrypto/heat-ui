@@ -49,11 +49,10 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     let deferred = this.$q.defer<any>();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = utils.parseResponse(response)
-      if(parsed.heatUtilParsingError)
-        deferred.reject()
+      if(parsed.heatUtilParsingError) deferred.reject(parsed.heatUtilParsingError)
       deferred.resolve(parsed);
-    }, () => {
-      deferred.reject();
+    }, (reason) => {
+      deferred.reject(reason);
     })
     return deferred.promise
   }

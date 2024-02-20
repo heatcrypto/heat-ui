@@ -270,10 +270,9 @@ namespace wlt {
           .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyDescriptor.name.toUpperCase())
       if (!addressLoading) return
 
-      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 8000).then(() => {
-        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, true)
+      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 8000).then((success) => {
+        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, success || success == null)
       }).catch((reason) => {
-        console.error(`${currencyDescriptor.name} refreshing balances error`, reason)
         this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, false)
         this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
         //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
@@ -301,13 +300,13 @@ namespace wlt {
           currencyBalance.walletEntry = walletEntry
           //currencyBalance.balance = currencyBalance.balance || addressBalance || ""
           if (successLoaded) {
-            if (createdAddress.wasCreated && currencyBalance.balance) {
+            if (createdAddress.wasCreated && currencyBalance.balance && /[0-9]/.test(currencyBalance.balance) ) {
               //remember balance to display it when "no connection"
               wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
             }
           } else {
-            currencyBalance.stateMessage = "No Connection" + (createdAddress?.cachedBalance ? ". Cached value" : "")
-            currencyBalance.balance = createdAddress.cachedBalance
+            currencyBalance.balance = /[0-9]/.test(createdAddress?.cachedBalance) ? createdAddress.cachedBalance : ""
+            currencyBalance.stateMessage = "No Connection" + (currencyBalance.balance ? ". Cached value" : "")
           }
           walletEntry.currencies.splice(index, 0, currencyBalance)
           index++

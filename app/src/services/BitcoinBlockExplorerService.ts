@@ -104,8 +104,8 @@ class BtcBlockExplorerService {
     this.btcProvider.getAddressInfo(address).then(info => {
       let data = Update3rdPartyAPIResponsesUtil.updateBTCGetAddressInfo(info, this.btcProvider)
       deferred.resolve(data)
-    }, () => {
-      deferred.reject()
+    }, (reason) => {
+      deferred.reject(reason)
     })
     return deferred.promise
   }

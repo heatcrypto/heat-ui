@@ -96,8 +96,8 @@ class BitcoreService {
 
           emptyAddressCounter++
 
-          walletAddress.balance = info.balanceSat / 100000000 + ""
-          walletAddress.inUse = info.txApperances != 0
+          walletAddress.balance = info.balanceSat == undefined ? "" : info.balanceSat / 100000000 + ""
+          walletAddress.inUse = info.txApperances ? info.txApperances != 0 : null
 
           if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
 
@@ -109,27 +109,27 @@ class BitcoreService {
           resolve(true)
         }).catch(reason => {
           console.error(reason)
-          resolve(false)
+          reject(reason)
         })
       })
     }
 
-    let recurseToNext = function recurseToNext(resolve) {
+    let recurseToNext = function recurseToNext(resolve, reject) {
       processNext().then(
         hasMore => {
           if (hasMore) {
             setTimeout(function () {
-              recurseToNext(resolve)
+              recurseToNext(resolve, reject)
             }, 100)
           } else {
-            resolve()
+            resolve(null)
           }
         }
-      )
+      ).catch(reason => reject(reason))
     }
 
-    return new Promise(resolve => {
-      recurseToNext(resolve)
+    return new Promise((resolve, reject) => {
+      recurseToNext(resolve, reject)
     })
   }
 
