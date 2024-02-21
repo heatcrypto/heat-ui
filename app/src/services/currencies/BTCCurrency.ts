@@ -71,14 +71,17 @@ class BTCCurrency implements ICurrency {
         let amountInSatoshi
         let to
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.currency.secretPhrase}
-        if(!isForFeeEstimation) {
+        if (isForFeeEstimation) {
+          feeInSatoshi = $scope['vm'].data.fee ? ($scope['vm'].data.fee * 100000000).toFixed(0) : 0
+          amountInSatoshi = $scope['vm'].data.amount ? ($scope['vm'].data.amount * 100000000).toFixed(0) : "0.0001";
+          to = $scope['vm'].data.recipient ? $scope['vm'].data.recipient : addressPrivateKeyPair.address
+        } else {
+          if (!$scope['vm'].data.fee || !$scope['vm'].data.amount || !$scope['vm'].data.recipient) {
+            return null
+          }
           feeInSatoshi = ($scope['vm'].data.fee * 100000000).toFixed(0);
           amountInSatoshi = ($scope['vm'].data.amount * 100000000).toFixed(0);
           to = $scope['vm'].data.recipient
-        } else {
-          feeInSatoshi = $scope['vm'].data.fee? ($scope['vm'].data.fee * 100000000).toFixed(0): 0
-          amountInSatoshi = $scope['vm'].data.amount? ($scope['vm'].data.amount * 100000000).toFixed(0) : "0.0001";
-          to = $scope['vm'].data.recipient ? $scope['vm'].data.recipient : addressPrivateKeyPair.address
         }
 
         let txObject = {
@@ -138,7 +141,7 @@ class BTCCurrency implements ICurrency {
           info => {
             $scope.$evalAsync(() => {
               let balance = (info / 100000000).toFixed(8)
-              $scope['vm'].data.recipientInfo = `Balance: ${balance} BTC`
+              $scope['vm'].data.recipientInfo = `Destination balance ${balance} BTC`
             })
           },
           error => {
@@ -148,25 +151,46 @@ class BTCCurrency implements ICurrency {
           }
         )
       }, 1000, false)
+
+      let calculateRawTx = function () {
+        let bitcoreService = <BitcoreService>heat.$inject.get('bitcoreService')
+        $scope['vm'].data.txBytes = []
+        let result = bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
+          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+          if (!$scope['vm'].data.userInputFee) {
+            $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+          }
+        })
+
+        //try to calculate raw txn
+        $scope['vm'].data.rawTx = ''
+        let tx;
+        try {
+          tx = createTx(false)
+        } catch (e) {
+        }
+        if (tx) {
+          bitcoreService.signTransaction(tx).then(rawTx => {
+            $scope['vm'].data.rawTx = rawTx
+          })
+        }
+
+        return result
+      }
+      
       this.recipientChanged = function () {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         $scope['vm'].data.recipientInfo = ''
         lookup()
-        $scope['vm'].data.txBytes = []
-        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          if(!$scope['vm'].data.userInputFee)
-            $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
-        })
+        calculateRawTx()
       }
 
       this.selectedItemChange = function(item: IHeatMessageContact) {
         $scope['vm'].value = $scope['vm'].selectedItem ? $scope['vm'].selectedItem.id : '';
         $scope['vm'].data.recipient = item.cryptoAddresses ? item.cryptoAddresses.find( i => i.name === 'BTC').address : ''
 
-        if($scope['vm'].data.recipient && $scope['vm'].data.recipient !== '')
+        if ($scope['vm'].data.recipient && $scope['vm'].data.recipient !== '') {
           $scope['vm'].recipientChanged()
-
+        }
       }
 
       this.search = function(){
@@ -181,21 +205,13 @@ class BTCCurrency implements ICurrency {
       }
 
       this.amountChanged = function () {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-        $scope['vm'].data.txBytes = []
-        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          if(!$scope['vm'].data.userInputFee)
-            $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
-        })
+        calculateRawTx()
       }
+
       this.feeChanged = function () {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-        $scope['vm'].data.txBytes = []
-        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+        $scope['vm'].data.userInputFee = true
+        calculateRawTx().then(() => {
           $scope['vm'].data.estimatedFee = ($scope['vm'].data.fee / $scope['vm'].data.txBytes.length * 100000000).toFixed(0)
-          $scope['vm'].data.userInputFee = true
         })
       }
 
@@ -246,7 +262,7 @@ class BTCCurrency implements ICurrency {
                       </div>
                     </md-item-template>
                 </md-autocomplete>
-                <md-input-container flex >
+                <md-input-container flex style="margin-top: -16px; margin-bottom: 20px">
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
                 </md-input-container>
                 <md-input-container flex >
@@ -263,6 +279,12 @@ class BTCCurrency implements ICurrency {
                   <label>Fee in BTC</label>
                   <input ng-model="vm.data.fee" ng-keydown="vm.feeChanged($event)" required name="fee">
                 </md-input-container>
+
+                <div flex class="raw-tx" ng-if="vm.data.rawTx" >
+                  <label>Transaction bytes:</label>
+                  <span>{{vm.data.rawTx}}</span>
+                </div>
+
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
