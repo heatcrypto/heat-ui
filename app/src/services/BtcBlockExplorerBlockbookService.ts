@@ -34,8 +34,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     let deferred = this.$q.defer();
     this.http.get(getTransactionsApi).then(response => {
       let parsed = utils.parseResponse(response)
-      if(parsed.heatUtilParsingError)
-        deferred.reject()
+      if (parsed.heatUtilParsingError) deferred.reject()
       deferred.resolve(parsed.transactions)
     }, () => {
       deferred.reject();
@@ -44,12 +43,11 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
   }
 
   public getAddressInfo = (address: string): angular.IPromise<any> => {
-    //let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/addr/${address}`;
-    let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/address/${address}?details=txids`;
+    let url = `${BtcBlockExplorerBlockbookService.endPoint}/address/${address}?details=txids`
     let deferred = this.$q.defer<any>();
-    this.http.get(getTransactionsApi).then(response => {
+    this.http.get(url, true).then(response => {
       let parsed = utils.parseResponse(response)
-      if(parsed.heatUtilParsingError) deferred.reject(parsed.heatUtilParsingError)
+      if (parsed.heatUtilParsingError) deferred.reject(parsed.heatUtilParsingError)
       deferred.resolve(parsed);
     }, (reason) => {
       deferred.reject(reason);
@@ -57,24 +55,20 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     return deferred.promise
   }
 
-  public getEstimatedFee = () => {
-    let getEstimatedFeeApi = `https://bitcoinfees.earn.com/api/v1/fees/list`;
+  //there is the alternative BtcFeeService.getSatByteFee
+  public getEstimatedFee = (feeBlocks = 1) => {
+    let url = `https://btc1.heatwallet.com/api/v1/estimatefee/${feeBlocks}`;
     let deferred = this.$q.defer();
-    let fee = 20;
-    this.http.get(getEstimatedFeeApi).then(response => {
+    let btcKByteFee = 0.0002;
+    this.http.get(url, true).then(response => {
       let parsed = utils.parseResponse(response)
-      if(parsed.heatUtilParsingError)
-        deferred.reject()
-      parsed.fees.forEach(feeObject => {
-        if (feeObject.maxDelay == 1) {
-          fee = feeObject.minFee
-        }
-      });
-      if (!fee)
-        fee = 20
-      deferred.resolve(fee);
-    }, () => {
-      deferred.resolve(fee);
+      if (parsed.heatUtilParsingError) deferred.reject(parsed.heatUtilParsingError)
+      btcKByteFee = parsed.result
+      if (!btcKByteFee) btcKByteFee = 20
+      deferred.resolve(btcKByteFee);
+    }, (reason) => {
+      console.log("error response on getting fee for btc. " + reason)
+      deferred.resolve(btcKByteFee);
     })
     return deferred.promise
   }
@@ -218,4 +212,5 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
       )
     })
   }
+
 }

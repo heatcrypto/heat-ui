@@ -4,7 +4,7 @@ class BTCCurrency implements ICurrency {
   public symbol = 'BTC'
   public homePath
   private pendingTransactions: BitcoinPendingTransactionsService
-  private bitcoinMessagesService: BitcoinMessagesService;
+  private bitcoinMessagesService: BitcoinMessagesService
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
@@ -60,6 +60,30 @@ class BTCCurrency implements ICurrency {
   }
 
   sendBtc($event) {
+
+    class FeeList {
+      satByteFee = {}
+      btcKByteFee = {}
+
+      update(satByteFeesPerBlocks: {}) {
+        this.fill(satByteFeesPerBlocks, 1)
+        this.fill(satByteFeesPerBlocks, 3)
+        this.fill(satByteFeesPerBlocks, 6)
+        this.fill(satByteFeesPerBlocks, 12)
+      }
+
+      private fill(satByteFeesPerBlocks: {}, blocks: number) {
+        let field = blocks.toFixed(0)
+        if (satByteFeesPerBlocks[field]) {
+          this.satByteFee[field] = satByteFeesPerBlocks[field]
+          this.btcKByteFee[field]  = this.satByteFee[field] / 100000000 * 1024
+        }
+      }
+
+    }
+
+    let feeList = new FeeList()
+
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
@@ -130,8 +154,7 @@ class BTCCurrency implements ICurrency {
         recipientInfo: '',
         fee: '0.00004540',
         message: '',
-        userInputFee: false,
-        estimatedFee: 0
+        satByteFee: 0
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -157,9 +180,6 @@ class BTCCurrency implements ICurrency {
         $scope['vm'].data.txBytes = []
         let result = bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
           $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          if (!$scope['vm'].data.userInputFee) {
-            $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
-          }
         })
 
         //try to calculate raw txn
@@ -172,12 +192,12 @@ class BTCCurrency implements ICurrency {
         if (tx) {
           bitcoreService.signTransaction(tx).then(rawTx => {
             $scope['vm'].data.rawTx = rawTx
-          })
+          }).catch(reason => console.log("cannot generate transaction bytes: " + reason))
         }
 
         return result
       }
-      
+
       this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
@@ -208,20 +228,84 @@ class BTCCurrency implements ICurrency {
         calculateRawTx()
       }
 
-      this.feeChanged = function () {
-        $scope['vm'].data.userInputFee = true
-        calculateRawTx().then(() => {
-          $scope['vm'].data.estimatedFee = ($scope['vm'].data.fee / $scope['vm'].data.txBytes.length * 100000000).toFixed(0)
+      let btcFeeService: BtcFeeService = heat.$inject.get('btcFeeService')
+
+      let loadInternetFee = function () {
+        return btcFeeService.getSatByteFee().then(satByteFeesPerBlocks => {
+          $scope.$evalAsync(() => {
+            $scope['vm'].feeList = feeList
+            feeList.update(satByteFeesPerBlocks)
+            $scope['vm'].data.satByteFee = satByteFeesPerBlocks["1"]
+            $scope['vm'].data.fee = $scope['vm'].data.satByteFee / 100000000 * 1024
+          })
         })
       }
 
-      //get Estimated Fee
-      let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService');
-      btcBlockExplorerService.getEstimatedFee().then(data => {
-        if(!$scope['vm'].data.userInputFee) {
-          $scope['vm'].data.fee = 227 * data / 100000000;
-        }
-      }).then(value => $scope['vm'].feeChanged()) //to initialize data.estimatedFee FEE/BYTE
+      this.feeChanged = function (event) {
+        calculateRawTx().then(() => {
+          $scope.$evalAsync(() => {
+            // if (!$scope['vm'].data.fee) {
+            //   loadInternetFee()
+            // }
+            if ($scope['vm'].data.fee) {
+              $scope['vm'].data.satByteFee = $scope['vm'].data.fee * 100000000 / 1024
+              if ($scope['vm'].data.txBytes) {
+                $scope['vm'].data.txnFee = ($scope['vm'].data.satByteFee * $scope['vm'].data.txBytes.length / 100000000)
+              }
+            } else {
+              $scope['vm'].data.satByteFee = ''
+            }
+          })
+        })
+      }
+
+      this.clearFeeByteDerived = function () {
+          $scope.$evalAsync(() => {
+            $scope['vm'].data.fee = ''
+            $scope['vm'].data.txnFee = ''
+            $scope['vm'].data.txnFee = ''
+            $scope['vm'].data.rawTx = ''
+          })
+      }
+
+      this.feeByteChanged = function () {
+        calculateRawTx().then(() => {
+          $scope.$evalAsync(() => {
+            if ($scope['vm'].data.satByteFee) {
+              $scope['vm'].data.fee = $scope['vm'].data.satByteFee / 100000000 * 1024
+              if ($scope['vm'].data.txBytes) {
+                $scope['vm'].data.txnFee = ($scope['vm'].data.satByteFee * $scope['vm'].data.txBytes.length / 100000000)
+              }
+            } else {
+              $scope['vm'].data.fee = ''
+            }
+          })
+        })
+      }
+
+      this.fillFeeField = function (blocks) {
+        $scope['vm'].data.satByteFee = feeList.satByteFee['' + blocks]
+        $scope['vm'].feeByteChanged()
+      }
+
+      //to initialize fee
+      loadInternetFee().then(value => $scope['vm'].feeChanged())
+
+      let $interval: angular.IIntervalService = heat.$inject.get('$interval')
+
+      let seconds = 0
+      let interval = $interval(() => {
+            seconds++
+            if ($scope['vm'].seconds % 60 == 0) {
+              loadInternetFee().then(value => seconds = 0)
+            }
+            $scope['vm'].seconds = seconds
+          },
+          1000, 0, false
+      )
+
+      $scope.$on('$destroy', () => $interval.cancel(interval))
+
     }
 
     let $q = heat.$inject.get('$q')
@@ -262,7 +346,7 @@ class BTCCurrency implements ICurrency {
                       </div>
                     </md-item-template>
                 </md-autocomplete>
-                <md-input-container flex style="margin-top: -16px; margin-bottom: 20px">
+                <md-input-container flex style="margin-top: -8px; margin-bottom: 20px">
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
                 </md-input-container>
                 <md-input-container flex >
@@ -275,20 +359,40 @@ class BTCCurrency implements ICurrency {
                   <input ng-model="vm.data.message" name="message">
                 </md-input-container>
 
-                <md-input-container flex>
-                  <label>Fee in BTC</label>
-                  <input ng-model="vm.data.fee" ng-keydown="vm.feeChanged($event)" required name="fee">
-                </md-input-container>
+              <md-input-container>
+              <div style="margin-bottom: 12px">
+                Network fee in Sat/Byte &nbsp;&nbsp; (updated {{vm.seconds}}s ago) <br>
+                <a ng-click="vm.fillFeeField(1)">1 block: <b>{{vm.feeList.satByteFee['1']}}</b></a>
+                &nbsp;&nbsp;<a ng-click="vm.fillFeeField(3)">3 blocks: <b>{{vm.feeList.satByteFee['3']}}</b></a> 
+                &nbsp;&nbsp;<a ng-click="vm.fillFeeField(6)">6 blocks: <b>{{vm.feeList.satByteFee['6']}}</b></a> 
+                &nbsp;&nbsp;<a ng-click="vm.fillFeeField(12)">12 blocks: <b>{{vm.feeList.satByteFee['12']}}</b></a>
+              </div>
+              </md-input-container>
 
-                <div flex class="raw-tx" ng-if="vm.data.rawTx" >
-                  <label>Transaction bytes:</label>
-                  <span>{{vm.data.rawTx}}</span>
-                </div>
+              <md-input-container flex>
+                <label>Fee in Sat/Byte</label>
+                <input ng-model="vm.data.satByteFee" ng-change="vm.feeByteChanged($event)" required name="feeByte">
+              </md-input-container>
+
+              <md-input-container flex>
+                <label>Fee in BTC/kByte</label>
+                <input ng-model="vm.data.fee" ng-change="vm.feeChanged($event)" required name="fee">
+              </md-input-container>
+
+              <md-input-container flex ng-if="vm.data.rawTx">
+                <label>Transaction bytes</label>
+                <textarea ng-model="vm.data.rawTx" readonly rows="3"  wrap="soft"
+                      style="overflow-y: scroll;max-height: 50px;line-height: normal;"></textarea>
+              </md-input-container>
 
               </div>
             </md-dialog-content>
             <md-dialog-actions layout="row">
-              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:150px !important">Fee/Byte <b>&nbsp;{{vm.data.estimatedFee == 0 ? '?' : vm.data.estimatedFee}}&nbsp;</b> Sat</md-button>
+
+              <div ng-if="vm.data.txnFee" class="fee" style="max-width:250px !important">
+                Transaction fee <b>&nbsp;{{vm.data.txnFee || '?'}}&nbsp;</b> BTC
+              </div>
+
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
@@ -300,6 +404,5 @@ class BTCCurrency implements ICurrency {
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
   }
-
 
 }

@@ -1,6 +1,6 @@
 
 @Service('btcBlockExplorerService')
-@Inject('$q', /*'btcBlockExplorerHeatNodeService', 'btcBlockExplorer3rdPartyService',*/ 'btcBlockExplorerBlockbookService')
+@Inject('$q', /*'btcBlockExplorerHeatNodeService', 'btcBlockExplorer3rdPartyService',*/ 'btcBlockExplorerBlockbookService', 'btcFeeService')
 class BtcBlockExplorerService {
 
   private btcProvider: IBitcoinAPIList;
@@ -10,7 +10,8 @@ class BtcBlockExplorerService {
   constructor(private $q: angular.IQService,
               /*private btcBlockExplorerHeatNodeService: BtcBlockExplorerHeatNodeService,
               private btcBlockExplorer3rdPartyService: BtcBlockExplorer3rdPartyService,*/
-              private btcBlockExplorerBlockbookService: BtcBlockExplorerBlockbookService) {
+              private btcBlockExplorerBlockbookService: BtcBlockExplorerBlockbookService,
+              private btcFeeService: BtcFeeService) {
 
     //setInterval(() => this.refresh(), 5 * 60 * 1000)
     this.btcProvider = btcBlockExplorerBlockbookService
@@ -108,10 +109,6 @@ class BtcBlockExplorerService {
       deferred.reject(reason)
     })
     return deferred.promise
-  }
-
-  public getEstimatedFee = () => {
-    return this.btcProvider.getEstimatedFee()
   }
 
   public getTxInfo = (txId: string) => {
