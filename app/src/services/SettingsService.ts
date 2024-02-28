@@ -92,6 +92,12 @@ class SettingsService {
   public initialized: Promise<any>;
   failoverEnabled: boolean = true;
 
+  /**
+   * List of URLs that require API key
+   */
+  public static REQ_API_KEY_URLS: string[]
+  static apiKey: string
+
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
       SettingsService.FAILOVER_DESCRIPTOR =  {
