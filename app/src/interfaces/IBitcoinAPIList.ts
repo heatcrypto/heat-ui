@@ -6,7 +6,7 @@ interface IBitcoinAPIList {
 
   getAddressInfo(address: string): angular.IPromise<any>
 
-  getEstimatedFee()
+  getEstimatedFee(feeBlocks: number): angular.IPromise<any>
 
   getTxInfo(txId: string)
 
