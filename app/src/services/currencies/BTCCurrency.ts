@@ -163,8 +163,12 @@ class BTCCurrency implements ICurrency {
         btcBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = (info / 100000000).toFixed(8)
-              $scope['vm'].data.recipientInfo = `Destination balance ${balance} BTC`
+              let balance
+              if (info) {
+                balance = (info / 100000000).toFixed(8)
+                $scope['vm'].data.recipientInfo = `Destination balance ${balance} BTC`
+              }
+              $scope['vm'].data.recipientInfo = balance ? `Destination balance ${balance} BTC` : ''
             })
           },
           error => {
@@ -235,8 +239,10 @@ class BTCCurrency implements ICurrency {
           $scope.$evalAsync(() => {
             $scope['vm'].feeList = feeList
             feeList.update(satByteFeesPerBlocks)
-            $scope['vm'].data.satByteFee = satByteFeesPerBlocks["1"]
-            $scope['vm'].data.fee = $scope['vm'].data.satByteFee / 100000000 * 1024
+            if (!$scope['vm'].data.satByteFee) {
+              $scope['vm'].data.satByteFee = feeList.satByteFee['1']
+              $scope['vm'].data.fee = $scope['vm'].data.satByteFee / 100000000 * 1024
+            }
           })
         })
       }
@@ -326,28 +332,30 @@ class BTCCurrency implements ICurrency {
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
             <div flex layout="column">
-                <md-autocomplete flex
-                  ng-required="true"
-                  ng-readonly="false"
-                  md-input-name="recipientBtcAddress"
-                  md-floating-label="Recipient"
-                  md-min-length="1"
-                  md-items="item in vm.search(vm.searchText)"
-                  md-item-text="item.publicName||item.id"
-                  md-search-text="vm.searchText"
-                  md-selected-item-change="vm.selectedItemChange(item)"
-                  md-search-text-change="vm.searchTextChange()"
-                  md-selected-item="vm.selectedItem">
-                    <md-item-template>
-                      <div layout="row" flex class="monospace-font">
-                        <span>{{item.publicName||''}}</span>
-                        <span flex></span>
-                        <span>{{item.id}}</span>
-                      </div>
-                    </md-item-template>
-                </md-autocomplete>
-                <md-input-container flex style="margin-top: -8px; margin-bottom: 20px">
-                  <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
+                <md-input-container flex>
+                  <md-autocomplete flex
+                    ng-required="true"
+                    ng-readonly="false"
+                    md-input-name="recipientBtcAddress"
+                    md-floating-label="Recipient"
+                    md-min-length="1"
+                    md-items="item in vm.search(vm.searchText)"
+                    md-item-text="item.publicName||item.id"
+                    md-search-text="vm.searchText"
+                    md-selected-item-change="vm.selectedItemChange(item)"
+                    md-search-text-change="vm.searchTextChange()"
+                    md-selected-item="vm.selectedItem">
+                      <md-item-template>
+                        <div layout="row" flex class="monospace-font">
+                          <span>{{item.publicName||''}}</span>
+                          <span flex></span>
+                          <span>{{item.id}}</span>
+                        </div>
+                      </md-item-template>
+                  </md-autocomplete>
+                  <div style="margin-top: -8px; margin-bottom: 20px">
+                    <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
+                  </div>
                 </md-input-container>
                 <md-input-container flex >
                   <label>Amount in BTC</label>
