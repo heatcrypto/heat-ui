@@ -352,14 +352,15 @@ class ExploreAccountComponent {
     this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
       let assetInfos: Array<AssetInfo> = [];
       let promises = [];
-      balances.forEach(balance=>{
+      balances.forEach(balance => {
         if (balance.id != '0') {
           promises.push(
-            this.assetInfo.getInfo(balance.id).then(info=>{
-              assetInfos.push(angular.extend(info, {
-                userBalance: balance.virtualBalance
-              }))
-            })
+              this.assetInfo.getInfo(balance.id).then(info => {
+                let accountAssetInfo = angular.extend({}, info, {
+                  userBalance: balance.virtualBalance
+                })
+                assetInfos.push(accountAssetInfo)
+              })
           );
         }
       });
