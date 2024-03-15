@@ -38,7 +38,8 @@
         margin: 4px;
         background-color: #b0ffb07a;
         min-width: 120px;    
-        min-height: 18px;
+        min-height: 44px;
+        white-space: nowrap;
     }
     .uploaded {
         border: solid 1px lightgrey;
@@ -47,7 +48,26 @@
         margin: 4px;
         background-color: #7175f552;
         min-width: 120px;    
-        min-height: 18px;
+        min-height: 44px;
+        white-space: nowrap;
+    }
+    .speed {
+        border: solid 1px lightgrey;
+        border-radius: 4px;
+        padding: 2px;
+        margin: 4px;
+        background-color: rgb(255 31 111 / 0.25);
+        min-width: 5px;
+        max-width: 450px;    
+        height: 18px;
+        white-space: nowrap;
+    }
+    .speed {
+        -webkit-transition: all 3s; 
+        -moz-transition: all 3s; 
+        -ms-transition: all 3s; 
+        -o-transition: all 3s; 
+        transition: all 3s;  
     }
   `],
     template: `
@@ -57,8 +77,16 @@
             <p>Connected to <span style="font-weight: bold;">{{vm.apiServerAddress}}</span>, server version <span style="font-weight: bold;">{{vm.apiServerVersion}}</span></p>
             <div ng-repeat="item in vm.peers" class="peer">
                 {{item.address}}  {{item.platform}}  {{item.application}}  {{item.version}}  <b>{{item.state}}</b>
-                <div class="downloaded" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;">downloaded {{item.downloaded}}</div>
-                <div class="uploaded" style="width: {{item.uploadedRectangle.b}}px;height: {{item.uploadedRectangle.a}}px;">uploaded {{item.uploaded}}</div>
+                <div class="downloaded" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;">downloaded {{item.downloaded}} b
+                    <div class="speed" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.downloadedSpeedMeter.speed/1000}});">
+                        speed {{item.downloadedSpeedMeter.speed}} b/s
+                    </div>
+                </div>
+                <div class="uploaded" style="width: {{item.uploadedRectangle.b}}px;height: {{item.uploadedRectangle.a}}px;">uploaded {{item.uploaded}} b
+                    <div class="speed" style="width: {{0.3 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.uploadedSpeedMeter.speed/1000}});">
+                        speed {{item.uploadedSpeedMeter.speed}} b/s
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -87,6 +115,7 @@ class PeersComponent {
         }
 
         $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
+            this.peerMap.clear()
             this.peers = []
             updateTitle()
         })
@@ -96,14 +125,18 @@ class PeersComponent {
         this.peerMap = new Map<string, PeerView>()
 
         let onPeerInfo = (peerList: IHeatPeerList) => {
-            // @ts-ignore
-            peerList.peers.forEach(p => this.peerMap.set(p.address, p))
+            peerList.peers.forEach((p) => {
+                // @ts-ignore
+                let pv: PeerView = Object.assign(this.peerMap.get(p.address) || {}, p)
+                this.peerMap.set(p.address, pv)
+            })
+
             this.$scope.$evalAsync(() => {
                 this.peers = Array.from(this.peerMap, ([name, value]) => value)
                 this.calculateDerived(this.peers)
             })
         }
-        let onPeerInfoDebounced = utils.debounce(angular.bind(this, onPeerInfo), 500, false)
+        let onPeerInfoDebounced = utils.debounce(angular.bind(this, onPeerInfo), 200, false)
 
         this.heat.subscriber.peer({}, onPeerInfoDebounced, this.$scope)
     }
@@ -122,7 +155,24 @@ class PeersComponent {
         peers.forEach(p => {
             p.downloadedRectangle = this.goldRectangle(p.downloaded, scaleRatio)
             p.uploadedRectangle = this.goldRectangle(p.uploaded, scaleRatio)
+            p.downloadedSpeedMeter = this.speedMeter(p.downloadedSpeedMeter, p.downloaded)
+            p.uploadedSpeedMeter = this.speedMeter(p.uploadedSpeedMeter, p.uploaded)
         })
+    }
+
+    speedMeter(meter: {t: number, v: number, speed: number}, volume: number): {t: number, v: number, speed: number} {
+        let now = Date.now()
+        if (meter) {
+            let interval = now - meter.t
+            if (interval > 4000) {
+                meter.speed = Math.round( (volume - meter.v) / interval * 1000)
+                meter.t = now
+                meter.v = volume
+            }
+            return meter
+        } else {
+            return {t: now, v: volume, speed: 0}
+        }
     }
 
     goldRectangle(s: number, scaleRatio: number): {a: number, b: number} {
@@ -144,4 +194,6 @@ interface IHeatPeerList {
 interface PeerView extends IHeatPeer {
     downloadedRectangle: {a: number, b: number}
     uploadedRectangle: {a: number, b: number}
+    downloadedSpeedMeter: {t: number, v: number, speed: number}
+    uploadedSpeedMeter: {t: number, v: number, speed: number}
 }
