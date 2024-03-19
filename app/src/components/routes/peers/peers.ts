@@ -69,6 +69,20 @@
         -o-transition: all 3s; 
         transition: all 3s;  
     }
+    .connected {
+        color: springgreen;  
+    }
+    .feeder-timeline {
+        font-family: monospace;
+        -webkit-transition: all 3s; 
+        -moz-transition: all 3s; 
+        -ms-transition: all 3s; 
+        -o-transition: all 3s; 
+        transition: all 3s ease-in-out;  
+    }
+    .last-feeder {
+        background-color: rgb(255 128 171 / 40%);
+    }
   `],
     template: `
     <div layout="column" flex layout-fill style="padding: 8px">
@@ -76,7 +90,9 @@
         <div style="overflow: scroll">
             <p>Connected to <span style="font-weight: bold;">{{vm.apiServerAddress}}</span>, server version <span style="font-weight: bold;">{{vm.apiServerVersion}}</span></p>
             <div ng-repeat="item in vm.peers" class="peer">
-                {{item.address}}  {{item.platform}}  {{item.application}}  {{item.version}}  <b>{{item.state}}</b>
+                {{item.address}} &nbsp;&nbsp; {{item.platform}} &nbsp;&nbsp; {{item.application}} &nbsp;&nbsp; {{item.version}} &nbsp;&nbsp; <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span>
+                <br>height: {{item.height}}
+                <div class="feeder-timeline" ng-class="{'last-feeder':item.lastFeeder}">{{vm.feederTimeLine(item)}}</div>
                 <div class="downloaded" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;">downloaded {{item.downloaded}} b
                     <div class="speed" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.downloadedSpeedMeter.speed/1000}});">
                         speed {{item.downloadedSpeedMeter.speed}} b/s
@@ -125,15 +141,21 @@ class PeersComponent {
         this.peerMap = new Map<string, PeerView>()
 
         let onPeerInfo = (peerList: IHeatPeerList) => {
+            let now = Date.now()
             peerList.peers.forEach((p) => {
                 // @ts-ignore
                 let pv: PeerView = Object.assign(this.peerMap.get(p.address) || {}, p)
+                pv.updateTime = now
                 this.peerMap.set(p.address, pv)
             })
 
+            // remove obsolete peers
+            this.peers = Array.from(this.peerMap, ([name, value]) => value).filter(pv => pv.updateTime > now - 60000)
+            this.peerMap.clear()
+            this.peers.forEach(pv => this.peerMap.set(pv.address, pv))
+
             this.$scope.$evalAsync(() => {
-                this.peers = Array.from(this.peerMap, ([name, value]) => value)
-                this.calculateDerived(this.peers)
+                this.calculateDerived(this.peers, peerList.recentFeeders)
             })
         }
         let onPeerInfoDebounced = utils.debounce(angular.bind(this, onPeerInfo), 200, false)
@@ -141,7 +163,11 @@ class PeersComponent {
         this.heat.subscriber.peer({}, onPeerInfoDebounced, this.$scope)
     }
 
-    public calculateDerived(peers: PeerView[]) {
+    public feederTimeLine(pv: PeerView) {
+        return pv.feederTimeLine
+    }
+
+    calculateDerived(peers: PeerView[], recentFeeders: [{ address: string; height: string }]) {
         let maxd = peers.reduce((p, v) => {
             return ( p.downloaded > v.downloaded ? p : v )
         })
@@ -157,6 +183,7 @@ class PeersComponent {
             p.uploadedRectangle = this.goldRectangle(p.uploaded, scaleRatio)
             p.downloadedSpeedMeter = this.speedMeter(p.downloadedSpeedMeter, p.downloaded)
             p.uploadedSpeedMeter = this.speedMeter(p.uploadedSpeedMeter, p.uploaded)
+            this.buildBlockFeederTimeLine(p, recentFeeders)
         })
     }
 
@@ -182,6 +209,12 @@ class PeersComponent {
         return {a: a, b: b}
     }
 
+    buildBlockFeederTimeLine(peerView: PeerView, recentFeeders?: [{ address: string; height: string }]) {
+        if (!recentFeeders) return
+        peerView.feederTimeLine = recentFeeders.map(v => v.address == peerView.address ? "o" : "-").join("")
+        peerView.lastFeeder = recentFeeders[recentFeeders.length - 1].address == peerView.address
+    }
+
 }
 
 // to limit max displayable size of rectangle
@@ -189,11 +222,15 @@ const MAX_RECT_SQUARE = 90000
 
 interface IHeatPeerList {
     peers: IHeatPeer[]
+    recentFeeders?: [{ address: string; height: string }]
 }
 
 interface PeerView extends IHeatPeer {
+    updateTime: number
     downloadedRectangle: {a: number, b: number}
     uploadedRectangle: {a: number, b: number}
     downloadedSpeedMeter: {t: number, v: number, speed: number}
     uploadedSpeedMeter: {t: number, v: number, speed: number}
+    lastFeeder: boolean
+    feederTimeLine: string
 }

@@ -1170,3 +1170,14 @@ interface IHEATMasternode {
   height: number,
   expirationHeight: number
 }
+
+interface IHeatPeer {
+  address: string
+  downloaded: number
+  uploaded: number
+  version: string
+  state: string
+  platform: string
+  application: string
+  height: number
+}

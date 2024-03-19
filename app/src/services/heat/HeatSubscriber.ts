@@ -77,6 +77,7 @@ class HeatSubscriber {
   private MESSAGE = "6";
   private UNCONFIRMED_TRANSACTION = "7";
   private MICROSERVICE = "8";
+  private PEER = "9";
 
   private connectedSocketPromise: angular.IPromise<WebSocket> = null;
   private subscribeTopics: Array<HeatSubscriberTopic> = [];
@@ -120,6 +121,10 @@ class HeatSubscriber {
 
   public microservice(filter: IStringHashMap<string>, callback: (any)=>void, $scope?: angular.IScope): () => void {
     return this.subscribe(new HeatSubscriberTopic(this.MICROSERVICE, filter), callback, $scope);
+  }
+
+  public peer(filter: IStringHashMap<string>, callback: (IHeatPeerList) => void, $scope?: angular.IScope): () => void {
+    return this.subscribe(new HeatSubscriberTopic(this.PEER, filter), callback, $scope);
   }
 
   public reset(url: string) {
