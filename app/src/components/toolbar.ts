@@ -109,6 +109,10 @@
                 <md-tooltip md-direction="bottom">App Server</md-tooltip>
                 <i><img src="assets/serverIcon.png"></i>
               </md-button>
+              <md-button aria-label="peers" class="md-icon-button" href="#/peers">
+                <md-tooltip md-direction="bottom">Peers</md-tooltip>
+                <i><img style="filter: invert(1);height: 28px;" src="assets/network_node.svg"></i>
+              </md-button>
               <md-button aria-label="home" class="md-icon-button" href="#/wallet" ng-if="!vm.user.unlocked">
                 <md-tooltip md-direction="bottom">Wallet</md-tooltip>
                 <i><img src="assets/walletIcon.png"></i>

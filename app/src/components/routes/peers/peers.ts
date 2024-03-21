@@ -24,8 +24,10 @@
 @Component({
     selector: 'peers',
     styles: [`
-    .peer {
+    .item {
         display: inline-block;
+    }
+    .peer {
         background-color: lightslategrey;
         border-radius: 9px;
         padding: 6px;
@@ -34,32 +36,36 @@
     .downloaded {
         border: solid 1px lightgrey;
         border-radius: 6px;
-        padding: 4px;
-        margin: 4px;
+        //padding: 4px;
+        //margin: 4px;
         background-color: #b0ffb07a;
-        min-width: 120px;    
-        min-height: 44px;
+        min-width: 5px;    
+        min-height: 16px;
+        max-height: 16px;
         white-space: nowrap;
+        //margin-top: -48px;
     }
     .uploaded {
         border: solid 1px lightgrey;
         border-radius: 6px;
-        padding: 4px;
-        margin: 4px;
+        //padding: 4px;
+        //margin: 4px;
         background-color: #7175f552;
-        min-width: 120px;    
-        min-height: 44px;
+        min-width: 5px;    
+        min-height: 16px;
+        max-height: 16px;
         white-space: nowrap;
+        //margin-top: -48px;
     }
     .speed {
         border: solid 1px lightgrey;
         border-radius: 4px;
-        padding: 2px;
-        margin: 4px;
+        //padding: 2px;
+        //margin: 4px;
         background-color: rgb(255 31 111 / 0.25);
         min-width: 5px;
         max-width: 450px;    
-        height: 18px;
+        height: 12px;
         white-space: nowrap;
     }
     .speed {
@@ -89,19 +95,25 @@
         <h2>Network peers</h2>
         <div style="overflow: scroll">
             <p>Connected to <span style="font-weight: bold;">{{vm.apiServerAddress}}</span>, server version <span style="font-weight: bold;">{{vm.apiServerVersion}}</span></p>
-            <div ng-repeat="item in vm.peers" class="peer">
-                {{item.address}} &nbsp;&nbsp; {{item.platform}} &nbsp;&nbsp; {{item.application}} &nbsp;&nbsp; {{item.version}} &nbsp;&nbsp; <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span>
-                <br>height: {{item.height}}
+            <div ng-repeat="item in vm.peers" class="peer item">
+                {{item.address}} &nbsp;&nbsp;{{item.platform}} &nbsp;&nbsp;{{item.application}} &nbsp;&nbsp;{{item.version}} &nbsp;&nbsp;
+                <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span> &nbsp;&nbsp;
+                <label>height:</label> {{item.height}} &nbsp;&nbsp; <label>was connected:</label> {{item.connectedChangedDate}}
                 <div class="feeder-timeline" ng-class="{'last-feeder':item.lastFeeder}">{{vm.feederTimeLine(item)}}</div>
-                <div class="downloaded" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;">downloaded {{item.downloaded}} b
-                    <div class="speed" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.downloadedSpeedMeter.speed/1000}});">
-                        speed {{item.downloadedSpeedMeter.speed}} b/s
-                    </div>
+                <div style="margin-top: 6px;">
+                    <div class="item">downloaded {{item.downloaded}} b</div>
+                    <div class="downloaded item" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;"></div>
+                <div>
+                    <div class="item">speed {{item.downloadedSpeedMeter.speed}} b/s</div>
+                    <div class="speed item" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.downloadedSpeedMeter.speed/1000}});"></div>
                 </div>
-                <div class="uploaded" style="width: {{item.uploadedRectangle.b}}px;height: {{item.uploadedRectangle.a}}px;">uploaded {{item.uploaded}} b
-                    <div class="speed" style="width: {{0.3 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.uploadedSpeedMeter.speed/1000}});">
-                        speed {{item.uploadedSpeedMeter.speed}} b/s
-                    </div>
+                <div style="margin-top: 6px;">
+                    <div class="item">uploaded {{item.uploaded}} b</div>
+                    <div class="uploaded item" style="width: {{item.uploadedRectangle.b}}px;height: {{item.uploadedRectangle.a}}px;">
+                </div>
+                <div>
+                    <div class="item">speed {{item.uploadedSpeedMeter.speed}} b/s</div>
+                    <div class="speed item" style="width: {{0.3 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.uploadedSpeedMeter.speed/1000}});"></div>
                 </div>
             </div>
         </div>
@@ -121,25 +133,10 @@ class PeersComponent {
                 private heat: HeatService,
                 private settings: SettingsService) {
 
-        let updateTitle = () => {
-            this.$scope.$evalAsync(() => {
-                this.apiServerAddress = settings.get(SettingsService.HEAT_HOST) + ":" + settings.get(SettingsService.HEAT_PORT)
-                this.heat.api.getBlockchainStatus().then(status => {
-                    this.apiServerVersion = status.version
-                })
-            })
-        }
-
-        $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
-            this.peerMap.clear()
-            this.peers = []
-            updateTitle()
-        })
-
-        updateTitle()
-
         this.peerMap = new Map<string, PeerView>()
+    }
 
+    $onInit() {
         let onPeerInfo = (peerList: IHeatPeerList) => {
             let now = Date.now()
             peerList.peers.forEach((p) => {
@@ -158,10 +155,37 @@ class PeersComponent {
                 this.calculateDerived(this.peers, peerList.recentFeeders)
             })
         }
+
         let onPeerInfoDebounced = utils.debounce(angular.bind(this, onPeerInfo), 200, false)
 
-        this.heat.subscriber.peer({}, onPeerInfoDebounced, this.$scope)
+        let updateTitle = () => {
+            this.$scope.$evalAsync(() => {
+                this.apiServerAddress = this.settings.get(SettingsService.HEAT_HOST) + ":" + this.settings.get(SettingsService.HEAT_PORT)
+                this.heat.api.getBlockchainStatus().then(status => {
+                    this.apiServerVersion = status.version
+                })
+            })
+        }
+
+        let unsubscribe
+        setTimeout(() => unsubscribe = this.heat.subscriber.peer({}, onPeerInfoDebounced, this.$scope), 1000)
+
+        setTimeout(() => {
+            updateTitle()
+            this.$rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
+                this.peerMap.clear()
+                this.peers = []
+                updateTitle()
+
+                //should subscribe to new connected server
+                if (unsubscribe) unsubscribe()
+                unsubscribe = this.heat.subscriber.peer({}, onPeerInfoDebounced, this.$scope)
+            })
+        }, 1500)
+
+        this.$scope.$on('$destroy', unsubscribe)
     }
+
 
     public feederTimeLine(pv: PeerView) {
         return pv.feederTimeLine
@@ -179,11 +203,12 @@ class PeersComponent {
         let scaleRatio = Math.max(1, kd, ku)
 
         peers.forEach(p => {
-            p.downloadedRectangle = this.goldRectangle(p.downloaded, scaleRatio)
-            p.uploadedRectangle = this.goldRectangle(p.uploaded, scaleRatio)
+            p.downloadedRectangle = this.calculateRectangle(p.downloaded, scaleRatio)
+            p.uploadedRectangle = this.calculateRectangle(p.uploaded, scaleRatio)
             p.downloadedSpeedMeter = this.speedMeter(p.downloadedSpeedMeter, p.downloaded)
             p.uploadedSpeedMeter = this.speedMeter(p.uploadedSpeedMeter, p.uploaded)
             this.buildBlockFeederTimeLine(p, recentFeeders)
+            p.connectedChangedDate = p.connectedChangedTime ? utils.timestampToDate(p.connectedChangedTime).toLocaleTimeString() : "-"
         })
     }
 
@@ -192,7 +217,7 @@ class PeersComponent {
         if (meter) {
             let interval = now - meter.t
             if (interval > 4000) {
-                meter.speed = Math.round( (volume - meter.v) / interval * 1000)
+                meter.speed = Math.max(0, Math.round( (volume - meter.v) / interval * 1000))
                 meter.t = now
                 meter.v = volume
             }
@@ -202,23 +227,23 @@ class PeersComponent {
         }
     }
 
-    goldRectangle(s: number, scaleRatio: number): {a: number, b: number} {
+    calculateRectangle(s: number, scaleRatio: number): {a: number, b: number} {
         s = s / scaleRatio
-        let a = Math.sqrt(s / 1.618)
-        let b = a * 1.618
+        let a = Math.sqrt(s / 8)
+        let b = a * 8
         return {a: a, b: b}
     }
 
     buildBlockFeederTimeLine(peerView: PeerView, recentFeeders?: [{ address: string; height: string }]) {
         if (!recentFeeders) return
         peerView.feederTimeLine = recentFeeders.map(v => v.address == peerView.address ? "o" : "-").join("")
-        peerView.lastFeeder = recentFeeders[recentFeeders.length - 1].address == peerView.address
+        peerView.lastFeeder = recentFeeders[recentFeeders.length - 1]?.address == peerView.address
     }
 
 }
 
 // to limit max displayable size of rectangle
-const MAX_RECT_SQUARE = 90000
+const MAX_RECT_SQUARE = 20000
 
 interface IHeatPeerList {
     peers: IHeatPeer[]
@@ -233,4 +258,5 @@ interface PeerView extends IHeatPeer {
     uploadedSpeedMeter: {t: number, v: number, speed: number}
     lastFeeder: boolean
     feederTimeLine: string
+    connectedChangedDate: string
 }
