@@ -277,17 +277,21 @@ namespace wlt {
         })
       }
 
+      if (actualWalletAddresses.addresses.length == 0) {
+        addressLoading.visible = false
+        return
+      }
+
       utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
-        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, actualWalletAddresses, createBalance, success || success == null)
+        this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, success || success == null)
       }).catch((reason) => {
-        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, actualWalletAddresses, createBalance, false)
+        this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, false)
         this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
         //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
     }
 
     private createBalanceEntries(walletEntry: wlt.WalletEntry,
-                                 currencyDescriptor,
                                  addressLoading: wlt.CurrencyAddressLoading,
                                  actualWalletAddresses: WalletAddresses,
                                  createBalance: Function,
