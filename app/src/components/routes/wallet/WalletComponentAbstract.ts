@@ -270,10 +270,17 @@ namespace wlt {
           .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyDescriptor.name.toUpperCase())
       if (!addressLoading) return
 
-      utils.timeoutPromise(requestAddresses(addressLoading.wallet, addressLoading), 8000).then((success) => {
-        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, success || success == null)
+      let actualWalletAddresses: WalletAddresses = {
+        addresses: addressLoading.wallet.addresses?.filter(a => {
+          let createdAddress = this.checkCreatedAddress(a.address, walletEntry.account)
+          return !a.isDeleted && (a.inUse || createdAddress.wasCreated || !currencyDescriptor.multiAddress)
+        })
+      }
+
+      utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
+        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, actualWalletAddresses, createBalance, success || success == null)
       }).catch((reason) => {
-        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, createBalance, false)
+        this.createBalanceEntries(walletEntry, currencyDescriptor, addressLoading, actualWalletAddresses, createBalance, false)
         this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
         //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
@@ -282,6 +289,7 @@ namespace wlt {
     private createBalanceEntries(walletEntry: wlt.WalletEntry,
                                  currencyDescriptor,
                                  addressLoading: wlt.CurrencyAddressLoading,
+                                 actualWalletAddresses: WalletAddresses,
                                  createBalance: Function,
                                  successLoaded: boolean) {
       /* Make sure we exit if no loading node exists */
@@ -289,29 +297,26 @@ namespace wlt {
 
       let index = walletEntry.currencies.indexOf(addressLoading)
       let counter = 0
-      addressLoading.wallet.addresses.forEach(address => {
-        if (address.isDeleted) return
+      actualWalletAddresses.addresses.forEach(address => {
         let createdAddress = this.checkCreatedAddress(address.address, walletEntry.account)
-        if (address.inUse || createdAddress.wasCreated || !currencyDescriptor.multiAddress) {
-          if (counter >= wlt.DISPLAYED_MAX_EMPTY_ADDRESSES && !address.inUse) return
-          let currencyBalance: wlt.CurrencyBalance = createBalance(address)
-          currencyBalance.visible = walletEntry.expanded
-          currencyBalance.inUse = !createdAddress.wasCreated
-          currencyBalance.walletEntry = walletEntry
-          //currencyBalance.balance = currencyBalance.balance || addressBalance || ""
-          if (successLoaded) {
-            if (createdAddress.wasCreated && currencyBalance.balance && /[0-9]/.test(currencyBalance.balance) ) {
-              //remember balance to display it when "no connection"
-              wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
-            }
-          } else {
-            currencyBalance.balance = /[0-9]/.test(createdAddress?.cachedBalance) ? createdAddress.cachedBalance : ""
-            currencyBalance.stateMessage = "No Connection" + (currencyBalance.balance ? ". Cached value" : "")
+        if (counter >= wlt.DISPLAYED_MAX_EMPTY_ADDRESSES && !address.inUse) return
+        let currencyBalance: wlt.CurrencyBalance = createBalance(address)
+        currencyBalance.visible = walletEntry.expanded
+        currencyBalance.inUse = !createdAddress.wasCreated
+        currencyBalance.walletEntry = walletEntry
+        //currencyBalance.balance = currencyBalance.balance || addressBalance || ""
+        if (successLoaded) {
+          if (createdAddress.wasCreated && currencyBalance.balance && /[0-9]/.test(currencyBalance.balance)) {
+            //remember balance to display it when "no connection"
+            wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
           }
-          walletEntry.currencies.splice(index, 0, currencyBalance)
-          index++
-          if (!currencyBalance.balance) counter++
+        } else {
+          currencyBalance.balance = /[0-9]/.test(createdAddress?.cachedBalance) ? createdAddress.cachedBalance : ""
+          currencyBalance.stateMessage = "No Connection" + (currencyBalance.balance ? ". Cached value" : "")
         }
+        walletEntry.currencies.splice(index, 0, currencyBalance)
+        index++
+        if (!currencyBalance.balance) counter++
       })
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)
