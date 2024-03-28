@@ -38,7 +38,8 @@
             Import File
           </label>
         </md-button>
-        <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files)" class="ng-hide" id="walet-input-file">
+        
+        <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files); angular.element(this).val(null)" class="ng-hide" id="walet-input-file">
 
         <!-- Adds a wallet seed (heat secret phrase or bip44 eth/btc seed) -->
         <md-button class="md-primary md-raised" ng-click="vm.importSeed()" aria-label="Import Seed">
@@ -512,8 +513,15 @@ class WalletComponent extends wlt.WalletComponentAbstract {
             this.$scope.$evalAsync(() => {
               this.initLocalKeyStore();
             })
-            let message = `Imported ${addedKeys.length} keys into this device`;
-            this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
+
+            let isBig = addedKeys.length > 8
+            let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
+                .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
+                .join(", ")
+            if (isBig) report = report + "\n..."
+
+            let message = `Imported ${addedKeys.length} keys into this device: \n ${report}`;
+            this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(7000));
           }
         })
       };
