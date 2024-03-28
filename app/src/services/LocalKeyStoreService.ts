@@ -227,9 +227,20 @@ class LocalKeyStoreService {
       }
       if (walletFile.accountAddresses) {
         try {
-          let accountAddressesArray: any = walletFile.accountAddresses // [[account, [address1, address2,...]],[account, [address1, address2,...]],...]
+          /* format
+          accountAddresses: [
+            ["6249084651663724620",
+              [
+                ["1Ay4bPZetKMEU7SHGF7mKt4bTUATGZfFLU","0"],
+                ["0x5efd37a8db11c3e22250f62c8cd5f0b689ad7368","0"]
+              ]
+            ],
+            ...
+          ]
+           */
+          let accountAddressesArray: any = walletFile.accountAddresses
           accountAddressesArray.forEach(item => {
-            item[1].forEach(a => wlt.rememberAddressCreated(item[0], a))
+            item[1].forEach(a => wlt.rememberAddressCreated(item[0], a[0]))
           })
         } catch (e) {
           console.error("Error on importing addresses: " + e.toString())
