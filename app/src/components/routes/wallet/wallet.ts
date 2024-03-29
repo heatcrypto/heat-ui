@@ -37,10 +37,22 @@ namespace wlt {
 
   export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
 
-
   export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
 
   export let createdAddresses: { [key: string]: Map<string, string> } = {}
+
+  export let shouldBeSaved: Blob
+
+  window.addEventListener("beforeunload", function (e) {
+    if (shouldBeSaved) {
+      try {
+        saveFile(shouldBeSaved)
+      } catch (e) {
+        console.error(e)
+      }
+      e.returnValue = "\o/"
+    }
+  })
 
   let distinctValues = (value, index, self) => {
     return self.indexOf(value) === index
@@ -364,6 +376,8 @@ namespace wlt {
         setTimeout(() => this.flatten(), 1000)
          */
 
+        shouldBeSaved = component.exportWallet(true)
+
         return true
       }
 
@@ -379,6 +393,19 @@ namespace wlt {
     //
     // }
 
+  }
+
+  export function saveFile(blob: Blob, fileName?: string) {
+    if (fileName) {
+      saveAs(blob, fileName)
+    } else {
+      let version = parseInt(getStore().get("fileVersion")) || 0
+      version++
+      if (version > 99) version = 1
+      saveAs(blob, `heat.backup.v${version}.wallet`)
+      getStore().put("fileVersion", version)
+    }
+    shouldBeSaved = null
   }
 
 }

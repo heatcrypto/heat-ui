@@ -49,6 +49,8 @@ namespace wlt {
 
     abstract showMessage(message: string)
 
+    abstract exportWallet(onlyData?: boolean)
+
     initLocalKeyStore() {
       this.entries = []
       this.walletEntries = []

@@ -750,7 +750,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   // @click
-  exportWallet() {
+  exportWallet(onlyData?: boolean) {
     let accountCurrencies: Map<string, []> = new Map<string, []>()
     this.entries.forEach(entry => {
       if (entry instanceof wlt.WalletEntry) {
@@ -769,8 +769,11 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     // @ts-ignore
     let exported = this.localKeyStore.export(accountCurrencies, accountAddresses);
     let encoded = this.walletFile.encode(exported);
-    var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
-    saveAs(blob, 'heat.wallet');
+    let blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
+
+    if (onlyData) return blob
+
+    wlt.saveFile(blob, "heat.wallet")
   }
 
 }
