@@ -63,14 +63,19 @@ module heat {
 
         $router.config({ path: '/', redirectTo: '/login' });
 
+        let unlockedRouteCheckers = [
+          /\/p2pmessagingprobe.*/,
+          /\/trader.*/,
+          /\/explorer.*/,
+          /\/explore-account.*/,
+          /\/peers.*/
+        ]
+
         function isUnlocked() {
           if (!user.unlocked) {
-            if (!/\/p2pmessagingprobe.*/.test($location.path()) &&
-                !/\/trader.*/.test($location.path()) &&
-                !/\/explorer.*/.test($location.path()) &&
-                !/\/explore-account.*/.test($location.path())) {
+            if (!unlockedRouteCheckers.find(regexp => regexp.test($location.path()))) {
               if (!/\/login\/\w+/.test($location.path())) {
-                $location.path('login');
+                $location.path('login')
               }
             }
           }

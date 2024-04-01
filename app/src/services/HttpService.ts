@@ -30,6 +30,15 @@ interface QueuedRequest {
 @Inject('$http','env','$q')
 class HttpService {
 
+  static prepareUrl(url: string, forcedApiKey = false): string {
+    if (!SettingsService.REQ_API_KEY_URLS) return url
+    if (!forcedApiKey && !SettingsService.REQ_API_KEY_URLS.find(search => url.indexOf(search) > -1)) return url
+    let s = "apiKey=" + SettingsService.apiKey
+    return url.indexOf("?") == -1
+        ? url + "?" + s
+        : url + "&" + s
+  }
+
   /**
    * The queue index in this.queues is obtained by comparing the url of the GET request
    * to the prefixes in this.throttled. If the url starts with this.throttled[0] the index
@@ -111,7 +120,9 @@ class HttpService {
     return deferred.promise
   }
 
-  public get(url:string): angular.IPromise<string> {
+  public get(url:string, forcedApiKey = false): angular.IPromise<string> {
+    url = HttpService.prepareUrl(url, forcedApiKey)
+
     let deferred = this.$q.defer<string>();
     let promise = deferred.promise
     this.waitTurn(url, promise).then(() => {
@@ -220,4 +231,5 @@ class HttpService {
     req.write(body);
     req.end();
   }
+
 }

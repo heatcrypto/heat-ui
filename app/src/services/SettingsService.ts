@@ -254,6 +254,8 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
+    this.generateApiKeyForBrowser()
+
     // this.initialized.then(value => {
     //   this.setHost("local", false, true)
     // })
@@ -342,6 +344,37 @@ class SettingsService {
         });
       }
     });
+  }
+
+  generateApiKeyForBrowser() {
+    if (!SettingsService.REQ_API_KEY_URLS) {
+      //fill list of service urls that required api key added to url
+      this.initialized.then(value => {
+        let ar: CryptoNodeDescriptor[] = []
+        SettingsService.CRYPTO_NODES.forEach(v => ar.push(...v.nodes))
+        SettingsService.REQ_API_KEY_URLS = ar.filter(v => v.status == 'ACTIVE')
+            .map(v => v.host)
+            .filter(v => v.indexOf("heatwallet.com") > -1)
+            || []
+        return value
+      })
+    }
+
+    //generate api key
+    const now = new Date()
+    const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 0))
+    // @ts-ignore
+    const diff = now - startOfYear
+    const oneDay = 1000 * 60 * 60 * 24
+    const dayOfYear = Math.floor(diff / oneDay)
+    const hashInput = `${now.getUTCFullYear()}-${dayOfYear}`
+
+    const encoder = new TextEncoder()
+    const data = encoder.encode(hashInput)
+    return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      SettingsService.apiKey = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    })
   }
 
 }
