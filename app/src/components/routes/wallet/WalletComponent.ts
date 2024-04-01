@@ -433,6 +433,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       createBCHAccount($event, this)
     } else if (selected === 'HEAT') {
       createHEATAccount($event, this)
+      wlt.shouldBeSaved = this.exportWallet(true)
     }
     this.$scope['vm'].selectedChain = null
   }

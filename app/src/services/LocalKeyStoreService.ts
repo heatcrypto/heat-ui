@@ -163,7 +163,7 @@ class LocalKeyStoreService {
 
   public export(accountCurrencies: Map<string, []>,
                 accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
-    let walletFile : IHeatWalletFile = {
+    let walletFileData : IHeatWalletFile = {
       version: 1,
       entries: [],
       accountAddresses: accountAddresses
@@ -189,10 +189,10 @@ class LocalKeyStoreService {
         currencies: accountCurrencies.get(entry.account)
       }
       if (oldAddresses) item["oldAddresses"] = oldAddresses
-      walletFile.entries.push(item)
+      walletFileData.entries.push(item)
     });
 
-    return walletFile;
+    return walletFileData;
   }
 
   /* Returns array of wallet entries added */
