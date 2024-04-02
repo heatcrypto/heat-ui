@@ -95,6 +95,7 @@
         <h2>Network peers</h2>
         <div style="overflow: scroll">
             <p>Connected to <span style="font-weight: bold;">{{vm.apiServerAddress}}</span>, server version <span style="font-weight: bold;">{{vm.apiServerVersion}}</span></p>
+            <p ng-if="vm.apiServerVersion < '4.3.0'">Connected API server should be at least 4.3.0 to provide peers info</p>
             <div ng-repeat="item in vm.peers" class="peer item">
                 {{item.address}} &nbsp;&nbsp;{{item.platform}} &nbsp;&nbsp;{{item.application}} &nbsp;&nbsp;{{item.version}} &nbsp;&nbsp;
                 <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span> &nbsp;&nbsp;

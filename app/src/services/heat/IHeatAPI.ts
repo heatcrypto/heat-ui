@@ -1180,4 +1180,5 @@ interface IHeatPeer {
   platform: string
   application: string
   height: number
+  connectedChangedTime: number
 }
