@@ -363,7 +363,7 @@ class LoginComponent {
   initLocalKeys() {
     this.localKeys = this.localKeyStore.list().map((account:string) => {
       return {
-        name: this.localKeyStore.keyName(account),
+        name: this.localKeyStore.getName(account),
         account: account
       }
     });
@@ -405,7 +405,7 @@ class LoginComponent {
       pincode: this.pageAddPincode,
       name: ''
     };
-    this.localKeyStore.add(key);
+    this.localKeyStore.put(key);
     this.user.unlock(this.pageAddSecretPhrase, key, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
       this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
@@ -573,7 +573,7 @@ class LoginComponent {
       pincode: this.pageCreatePincode,
       name: this.pageCreateUserName
     };
-    this.localKeyStore.add(key);
+    this.localKeyStore.put(key);
     this.user.unlock(this.pageCreateSecretPhrase, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
       this.$location.path('new');
     });

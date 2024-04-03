@@ -229,7 +229,7 @@ class UserService extends EventEmitter {
       // update local wallet name
       if (this.key && this.key.name != this.accountName) {
         this.key.name = this.accountName;
-        this.localKeyStore.add(this.key);
+        this.localKeyStore.put(this.key);
       }
       return true;
     }

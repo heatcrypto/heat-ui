@@ -40,7 +40,7 @@ function createHEATAccount($event, walletComponent: WalletComponent) {
         name: '',
         publicKey
       };
-      walletComponent.localKeyStore.add(key);
+      walletComponent.localKeyStore.put(key);
       $scope.$evalAsync(() => {
         walletComponent.initLocalKeyStore()
       })

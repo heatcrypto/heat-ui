@@ -323,7 +323,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
             let key = this.localKeyStore.load(entry.account, password)
             if (key) {
               key.label = entry.label || null
-              this.localKeyStore.add(key)
+              this.localKeyStore.put(key)
             }
           } catch (e) { console.error(e) }
         }
@@ -494,7 +494,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           name: '',
           publicKey
         };
-        this.localKeyStore.add(key);
+        this.localKeyStore.put(key);
         this.$scope.$evalAsync(() => {
           this.initLocalKeyStore()
         })
@@ -741,7 +741,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           name: '',
           publicKey
         };
-        this.localKeyStore.add(key);
+        this.localKeyStore.put(key);
         let message = `Seed was successfully imported under HEAT account ${account}`;
         this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
         this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase))

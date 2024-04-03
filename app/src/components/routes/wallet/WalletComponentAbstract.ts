@@ -55,7 +55,7 @@ namespace wlt {
       this.entries = []
       this.walletEntries = []
       this.localKeyStore.list().map((account: string) => {
-        let name = this.localKeyStore.keyName(account)
+        let name = this.localKeyStore.getName(account)
         let walletEntry = new wlt.WalletEntry(account, name, this)
         this.walletEntries.push(walletEntry)
       });

@@ -62,51 +62,47 @@ class LocalKeyStoreService {
     return heat.isTestnet ? '.testnet' : '';
   }
 
-  add(key: ILocalKey) {
+  put(key: ILocalKey) {
     this.rememberPassword(key.account, key.pincode)
-    this.store.put(`key.${key.account}${this.testnet()}`, this.encode(key));
-    this.store.put(`name.${key.account}${this.testnet()}`, key.name);
-  }
-
-  /* Adds a raw key entry, returns true iff entry did not exist, returns false iff already present */
-  addRaw(key: ILocalKeyEntry): boolean {
-    let key1 = `key.${key.account}${key.isTestnet?'.testnet':''}`;
-    let key2 = `name.${key.account}${key.isTestnet?'.testnet':''}`;
-    if (this.store.get(key1))
-      return false;
-
-    this.store.put(key1, key.contents);
-    this.store.put(key2, key.name||'');
-    return true;
+    this.store.put(this.key(key.account), this.encode(key))
+    this.store.put(this.nameKey(key.account), key.name)
   }
 
   /* lists all numeric account ids we have keys for */
   list(): Array<string> {
-    var test = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/;
+    const test = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/;
     return this.store.keys().
                       filter((keyName) => test.test(keyName)).
                       map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));
   }
 
   /* lookup and return the account key name - if there is any */
-  keyName(account: string) {
-    return this.store.get(`name.${account}${this.testnet()}`);
+  getName(account: string, isTestnet?: boolean) {
+    return this.store.get(this.nameKey(account, isTestnet));
+  }
+
+  nameKey(account: string, isTestnet?: boolean) {
+    return `name.${account}${isTestnet || this.testnet()}`
+  }
+
+  key(account: string, isTestnet?: boolean) {
+    return `key.${account}${isTestnet || this.testnet()}`
   }
 
   remove(account: string) {
-    this.store.remove(`key.${account}${this.testnet()}`);
-    this.store.remove(`name.${account}${this.testnet()}`);
+    this.store.remove(this.key(account))
+    this.store.remove(this.nameKey(account))
   }
 
   encode(key: ILocalKey): string {
-    var payload = JSON.stringify({
+    const payload = JSON.stringify({
       account: key.account,
       secretPhrase: key.secretPhrase,
       pincode: key.pincode,
       name: key.name,
       label: key.label
     });
-    var message = heat.crypto.passphraseEncrypt(payload, key.pincode);
+    const message = heat.crypto.passphraseEncrypt(payload, key.pincode);
     return message.encode();
   }
 
@@ -129,7 +125,7 @@ class LocalKeyStoreService {
   }
 
   load(account: string, passphrase: string): ILocalKey {
-    let contents = this.store.get(`key.${account}${this.testnet()}`);
+    let contents = this.store.get(this.key(account))
     try {
       let result = this.decode(contents, passphrase, account);
       if (result) {
@@ -143,13 +139,13 @@ class LocalKeyStoreService {
 
   private listLocalKeyEntries(): Array<ILocalKeyEntry> {
     let entries: Array<ILocalKeyEntry> = [];
-    this.store.keys().forEach(keyName => {
-      let match = keyName.match(/key\.(\d+)(\.testnet)?/);
+    this.store.keys().forEach(key => {
+      let match = key.match(/key\.(\d+)(\.testnet)?/);
       if (match) {
         let isTestnet = match[2]=='.testnet';
         let account = match[1];
-        let name = this.store.get(`name.${account}${isTestnet?'.testnet':''}`);
-        let contents = this.store.get(keyName);
+        let name = this.getName(account, isTestnet)
+        let contents = this.store.get(key);
         entries.push({
           account:account,
           contents:contents,
@@ -197,6 +193,19 @@ class LocalKeyStoreService {
 
   /* Returns array of wallet entries added */
   public import(walletFile: IHeatWalletFile) : Array<ILocalKeyEntry> {
+
+    /* Adds a raw key entry, returns true iff entry did not exist, returns false iff already present */
+    const putRaw = (key: ILocalKeyEntry): boolean => {
+      let key1 = this.key(key.account)
+      let key2 = this.nameKey(key.account)
+
+      if (this.store.get(key1)) return false
+
+      this.store.put(key1, key.contents)
+      this.store.put(key2, key.name||'')
+      return true
+    }
+
     let store = this.storage.namespace('wallet-address', this.$rootScope, true);
 
     let added : Array<ILocalKeyEntry> = [];
@@ -216,7 +225,7 @@ class LocalKeyStoreService {
         })
       }
 
-      if (this.addRaw(localKeyEntry)) {
+      if (putRaw(localKeyEntry)) {
         added.push(localKeyEntry);
         if (entry.visibleLabel) {
           wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)

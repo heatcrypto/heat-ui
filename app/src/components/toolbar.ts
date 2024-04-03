@@ -463,7 +463,7 @@ class ToolbarComponent {
   refreshLocalWallet() {
     this.localHeatMasterAccounts = [];
     this.localKeyStore.list().map((account: string) => {
-      let name = this.localKeyStore.keyName(account);
+      let name = this.localKeyStore.getName(account);
       this.localHeatMasterAccounts.push({
         account: account,
         locked: true,
