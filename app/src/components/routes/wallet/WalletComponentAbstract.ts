@@ -108,14 +108,6 @@ namespace wlt {
       return result
     }
 
-    public saveAddresses(currencySymbol: string, a: WalletAddresses, walletEntry: WalletEntry) {
-      let encrypted = heat.crypto.encryptMessage(JSON.stringify(a), walletEntry.account, walletEntry.secretPhrase)
-      let storage = <StorageService>heat.$inject.get('storage')
-      let $rootScope = heat.$inject.get('$rootScope')
-      let store = storage.namespace('wallet-address', $rootScope, true);
-      store.put(`${currencySymbol}-${walletEntry.account}`, encrypted);
-    }
-
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {

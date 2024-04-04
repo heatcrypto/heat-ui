@@ -346,11 +346,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       walletEntry.currencies = walletEntry.currencies
           .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress == currency.address));
       let currencySymbol = entry.symbol;
-      let heatAddress = entry.walletEntry.account;
-      let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-      let encryptedWallet = store.get(`${currencySymbol}-${heatAddress}`)
-      let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-      let walletType = JSON.parse(decryptedWallet)
+      let walletType = wlt.getCryptoAddresses(walletEntry, currencySymbol)
       let addressToDelete
       if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
         addressToDelete = walletType.addresses[0];
@@ -360,7 +356,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       }
       if (addressToDelete) {
         addressToDelete.isDeleted = true
-        this.saveAddresses(currencySymbol, walletType, entry.walletEntry)
+        wlt.saveCryptoAddresses(walletEntry, currencySymbol, walletType)
       }
 
       this.flatten()

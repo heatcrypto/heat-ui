@@ -58,10 +58,10 @@ namespace wlt {
     return self.indexOf(value) === index
   }
 
-  export function getStore() {
+  export function getStore(namespace = "wallet") {
     let storage = <StorageService>heat.$inject.get('storage')
     let $rootScope = heat.$inject.get('$rootScope')
-    return storage.namespace('wallet', $rootScope, true)
+    return storage.namespace(namespace, $rootScope, true)
   }
 
 /*
@@ -242,20 +242,14 @@ namespace wlt {
     }
 
     removeIsDeleted(entry) {
-      const storage = <StorageService>heat.$inject.get('storage')
-      const $rootScope = heat.$inject.get('$rootScope')
-      let currency = entry.symbol
-      let heatAddress = entry.walletEntry.account
-      let store = storage.namespace('wallet-address', $rootScope, true)
-      let encryptedWallet = store.get(`${currency}-${heatAddress}`)
-      let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, entry.walletEntry.secretPhrase)
-      let walletType = JSON.parse(decryptedWallet)
+      let currencySymbol = entry.symbol
+      let account = entry.walletEntry.account
+      let walletType = getCryptoAddresses(entry.walletEntry, currencySymbol)
       walletType.addresses.forEach(walletAddress => {
         if (walletAddress.address === entry.address)
           delete walletAddress['isDeleted']
       })
-      let encrypted = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, entry.walletEntry.secretPhrase)
-      store.put(`${currency}-${heatAddress}`, encrypted)
+      saveCryptoAddresses(entry.walletEntry, currencySymbol, walletType)
     }
 
     createAddressByName() {
@@ -276,7 +270,7 @@ namespace wlt {
       return entry?.isWalletEntry ? entry : null
     }
 
-    findNextAddress(currencySymbol, addresses: WalletAddresses, lastAddress: string, component: WalletComponentAbstract, entry: WalletEntry): WalletAddress {
+    findNextAddress(currencySymbol, addresses: WalletAddresses, lastAddress: string, component: WalletComponentAbstract, walletEntry: WalletEntry): WalletAddress {
       let i = lastAddress
           ? addresses.addresses.findIndex(value => value.address == lastAddress) + 1
           : 0
@@ -284,7 +278,7 @@ namespace wlt {
         let nextAddress = addresses.addresses[i]
         if (nextAddress.isDeleted) {
           nextAddress.isDeleted = false
-          component.saveAddresses(currencySymbol, addresses, entry)
+          saveCryptoAddresses(walletEntry, currencySymbol, addresses)
         }
         return nextAddress
       }
@@ -393,6 +387,18 @@ namespace wlt {
     //
     // }
 
+  }
+
+  export function getCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
+    let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
+    let decrypted = heat.crypto.decryptMessage(record.data, record.nonce, walletEntry.account, walletEntry.secretPhrase)
+    let addresses: WalletAddresses = JSON.parse(decrypted)
+    return addresses
+  }
+
+  export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {
+    let encrypted = heat.crypto.encryptMessage(JSON.stringify(addresses), walletEntry.account, walletEntry.secretPhrase)
+    getStore('wallet-address').put(`${currencySymbol}-${walletEntry.account}`, encrypted)
   }
 
   export function saveFile(blob: Blob, fileName?: string) {
