@@ -84,6 +84,28 @@ namespace wlt {
       }
     }
 
+    findAddressLoading(currencySymbol: string): wlt.CurrencyAddressLoading {
+      let result = this.currencies
+          .find(c => {
+            let cal = <wlt.CurrencyAddressLoading>c
+            return cal.isCurrencyAddressLoading && cal.currencySymbol == currencySymbol
+          })
+      return <wlt.CurrencyAddressLoading>result
+    }
+
+    findAddressCreate(currencySymbol: string): wlt.CurrencyAddressCreate {
+      let result = this.currencies
+          .find(c => {
+            let cal = <wlt.CurrencyAddressCreate>c
+            return cal.isCurrencyAddressCreate && cal.currencySymbol == currencySymbol
+          })
+      return <wlt.CurrencyAddressCreate>result
+    }
+
+    getCryptoAddresses(currencySymbol: string): WalletAddresses {
+      return this.findAddressLoading(currencySymbol)?.wallet || this.findAddressCreate(currencySymbol)?.wallet
+    }
+
     initBTC(walletComponent: WalletComponentAbstract, wallet: WalletAddresses, user: UserService) {
       this.createEntries('Bitcoin', walletComponent, wallet)
 

@@ -91,8 +91,14 @@ namespace wlt {
       })
     }
 
-    checkCreatedAddress(address: string, account: string): {wasCreated: boolean, cachedBalance?: string} {
-      let a = wlt.createdAddresses[account]
+    checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
+      let addresses = wlt.getCryptoAddresses(walletEntry, currencySymbol)
+      if (!addresses) return {wasCreated: false}
+      let foundAddress = addresses.addresses.find(v => v.address == address)
+      if (!foundAddress) return {wasCreated: false}
+      return {wasCreated: foundAddress.created, cachedBalance: null}
+
+      /*let a = wlt.createdAddresses[walletEntry.account]
 
       if (!a) return {wasCreated: false}
 
@@ -105,7 +111,7 @@ namespace wlt {
         result.cachedBalance = a.get(address)
       }
 
-      return result
+      return result*/
     }
 
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
@@ -259,14 +265,12 @@ namespace wlt {
                           currencyDescriptor: {name: string, symbol: string, multiAddress: boolean},
                           requestAddresses: Function, createBalance: Function) {
 
-      /* Find the Loading node, if thats not available we can exit */
-      let addressLoading = <wlt.CurrencyAddressLoading>walletEntry.currencies
-          .find(c => (<wlt.CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name.toUpperCase() == currencyDescriptor.name.toUpperCase())
+      let addressLoading = walletEntry.findAddressLoading(currencyDescriptor.symbol)
       if (!addressLoading) return
 
       let actualWalletAddresses: WalletAddresses = {
-        addresses: addressLoading.wallet.addresses?.filter(a => {
-          let createdAddress = this.checkCreatedAddress(a.address, walletEntry.account)
+        addresses: walletEntry.getCryptoAddresses(currencyDescriptor.symbol)?.addresses.filter(a => {
+          let createdAddress = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol)
           return !a.isDeleted && (a.inUse || createdAddress.wasCreated || !currencyDescriptor.multiAddress)
         })
       }
@@ -296,7 +300,7 @@ namespace wlt {
       let index = walletEntry.currencies.indexOf(addressLoading)
       let counter = 0
       actualWalletAddresses.addresses.forEach(address => {
-        let createdAddress = this.checkCreatedAddress(address.address, walletEntry.account)
+        let createdAddress = this.checkCreatedAddress(address.address, walletEntry, addressLoading.currencySymbol)
         if (counter >= wlt.DISPLAYED_MAX_EMPTY_ADDRESSES && !address.inUse) return
         let currencyBalance: wlt.CurrencyBalance = createBalance(address)
         currencyBalance.visible = walletEntry.expanded

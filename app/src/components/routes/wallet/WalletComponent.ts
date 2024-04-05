@@ -764,7 +764,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     let accountAddresses = accountAddressesArray.map(item => [item[0], Array.from(item[1])])
 
     // @ts-ignore
-    let exported = this.localKeyStore.export(accountCurrencies, accountAddresses);
+    let exported = this.localKeyStore.export(accountCurrencies/*, accountAddresses*/)
     let encoded = this.walletFile.encode(exported);
     let blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
 

@@ -42,21 +42,21 @@ function createEthAccount($event, walletComponent: WalletComponent) {
     }
 
     this.okButtonClick = function ($event) {
-      let walletEntry = this.data.selectedWalletEntry
+      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       if (walletEntry) {
         let success = false
         if (walletEntry) {
-          // let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-          // if (!node) {
-          let storage = <StorageService>heat.$inject.get('storage')
-          let $rootScope = heat.$inject.get('$rootScope');
-          let store = storage.namespace('wallet', $rootScope, true)
-          let currencies = store.get(walletEntry.account)
-          if (!(currencies instanceof Array)) currencies = []
-          currencies.push('ETH')
-          store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-          walletComponent.initWalletEntry(walletEntry)
-          // }
+          let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
+          if (!node) {
+            let storage = <StorageService>heat.$inject.get('storage')
+            let $rootScope = heat.$inject.get('$rootScope');
+            let store = storage.namespace('wallet', $rootScope, true)
+            let currencies = store.get(walletEntry.account)
+            if (!(currencies instanceof Array)) currencies = []
+            currencies.push('ETH')
+            store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
+            walletComponent.initWalletEntry(walletEntry)
+          }
           // load in next event loop to load currency addresses first
           setTimeout(() => {
             // @ts-ignore

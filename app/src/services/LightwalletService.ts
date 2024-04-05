@@ -37,6 +37,8 @@ declare type WalletAddress = {
       (not completely accurate since a user can use an address which has a zero balance) */
   inUse: boolean;
 
+  created: boolean;
+
   accountId: string;
 
   /* Allow user to soft delete address from wallet */
