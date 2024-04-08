@@ -37,6 +37,8 @@ namespace wlt {
 
   export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
 
+  export const CURRENCIES_MAP: Map<String, {name: string, symbol: string, multiAddress: boolean}> = new Map(Object.entries(CURRENCIES))
+
   export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
 
   export let createdAddresses: { [key: string]: Map<string, string> } = {}
@@ -107,6 +109,18 @@ namespace wlt {
         createdAddresses[acc] = addresses
       }
     }
+  }
+
+  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, address: string): WalletAddress  {
+    let cryptoAddresses = getCryptoAddresses(walletEntry, currencySymbol)
+    if (!cryptoAddresses) return null
+    let foundAddress = cryptoAddresses.addresses.find(a => a.address == address)
+    if (!foundAddress) return null
+    if (!foundAddress.created) {
+      foundAddress.created = true
+      saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
+    }
+    return foundAddress
   }
 
   export function rememberAddressCreated(account: string, address: string, balance?: string) {
@@ -213,8 +227,10 @@ namespace wlt {
     public visible = false
     public wallet: WalletAddresses
     public address: string
+    public currencySymbol: string
 
     constructor(public name: string) {
+      this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
     }
   }
 
@@ -222,10 +238,13 @@ namespace wlt {
     public isCurrencyAddressCreate = true
     public visible = false
     public hidden = true
+    public currencySymbol: string
+
     public flatten: () => void
 
     constructor(public name: string, public wallet: WalletAddresses, public walletEntry: WalletEntry, public component?: WalletComponentAbstract) {
       this.walletEntry = walletEntry
+      this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
       isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
     }
 
@@ -338,9 +357,11 @@ namespace wlt {
       let nextAddress = this.findNextAddress(currencySymbol, this.wallet, lastAddress, component, entry)
 
       if (nextAddress) {
+        nextAddress.isDeleted = false
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
         rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         //let index = currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         //currencies.splice(index, 0, newCurrencyBalance)
@@ -390,10 +411,12 @@ namespace wlt {
   }
 
   export function getCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
+    let result: WalletAddresses = walletEntry.getCryptoAddresses(currencySymbol)
+    if (result) return result
     let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
     let decrypted = heat.crypto.decryptMessage(record.data, record.nonce, walletEntry.account, walletEntry.secretPhrase)
-    let addresses: WalletAddresses = JSON.parse(decrypted)
-    return addresses
+    result = JSON.parse(decrypted)
+    return result
   }
 
   export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {

@@ -92,13 +92,30 @@ namespace wlt {
     }
 
     checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
+      let result = {wasCreated: false, cachedBalance: undefined}
+      let foundAddress: WalletAddress
       let addresses = wlt.getCryptoAddresses(walletEntry, currencySymbol)
-      if (!addresses) return {wasCreated: false}
-      let foundAddress = addresses.addresses.find(v => v.address == address)
-      if (!foundAddress) return {wasCreated: false}
-      return {wasCreated: foundAddress.created, cachedBalance: null}
+      if (addresses) {
+        foundAddress = addresses.addresses.find(v => v.address == address)
+        if (foundAddress) {
 
-      /*let a = wlt.createdAddresses[walletEntry.account]
+          if (!foundAddress.hasOwnProperty("created")) {
+            let compatibleToPre = this.obsoleteCheckCreatedAddress(address, walletEntry, currencySymbol)
+            if (compatibleToPre) {
+              result.wasCreated = compatibleToPre.wasCreated
+              foundAddress.created = result.wasCreated
+            }
+          }
+
+          result.wasCreated = foundAddress.created
+        }
+      }
+
+      return result
+    }
+
+    obsoleteCheckCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
+      let a = wlt.createdAddresses[walletEntry.account]
 
       if (!a) return {wasCreated: false}
 
@@ -111,7 +128,7 @@ namespace wlt {
         result.cachedBalance = a.get(address)
       }
 
-      return result*/
+      return result
     }
 
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
@@ -268,10 +285,21 @@ namespace wlt {
       let addressLoading = walletEntry.findAddressLoading(currencyDescriptor.symbol)
       if (!addressLoading) return
 
+      let cryptoAddresses = walletEntry.getCryptoAddresses(currencyDescriptor.symbol)?.addresses
+      if (!cryptoAddresses || cryptoAddresses.length == 0) return
+      if (!cryptoAddresses[0].created) {
+        let i = 0
+        while (i < 3 && i < cryptoAddresses.length) {
+          cryptoAddresses[i].created = true
+          i++
+        }
+      }
+
       let actualWalletAddresses: WalletAddresses = {
         addresses: walletEntry.getCryptoAddresses(currencyDescriptor.symbol)?.addresses.filter(a => {
-          let createdAddress = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol)
-          return !a.isDeleted && (a.inUse || createdAddress.wasCreated || !currencyDescriptor.multiAddress)
+          if (a.isDeleted) return false
+          let info = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol)
+          return a.inUse || info.wasCreated || !currencyDescriptor.multiAddress
         })
       }
 
