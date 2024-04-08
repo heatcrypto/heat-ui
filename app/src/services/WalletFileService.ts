@@ -42,6 +42,8 @@ interface IHeatWalletFileEntry {
   visibleLabel?: string;
 
   currencies?: [];
+
+  cryptoAddresses?: {};
 }
 
 @Service('walletFile')
@@ -62,7 +64,8 @@ class WalletFileService {
     let version = data.version;
     if (!angular.isNumber(version)) return null;
 
-    if (version != 1) return null;
+    let supportedDecodingVersion = [1, 2]
+    if (!supportedDecodingVersion.includes(version)) return null;
 
     let entries = data.entries;
     if (!angular.isArray(entries)) return null;

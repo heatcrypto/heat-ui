@@ -160,7 +160,7 @@ class LocalKeyStoreService {
   public export(accountCurrencies: Map<string, []>,
                 accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
     let walletFileData : IHeatWalletFile = {
-      version: 1,
+      version: 2,
       entries: [],
       accountAddresses: accountAddresses
     };
@@ -168,12 +168,12 @@ class LocalKeyStoreService {
     let store = this.storage.namespace('wallet-address', this.$rootScope, true);
 
     this.listLocalKeyEntries().forEach(entry => {
-      let oldAddresses
+      let cryptoAddresses: {}
       wlt.CURRENCIES_LIST.forEach(c => {
         let encryptedAddresses = store.get(`${c.symbol}-${entry.account}`)
         if (encryptedAddresses) {
-          oldAddresses = oldAddresses || {}
-          oldAddresses[c.symbol] = encryptedAddresses
+          cryptoAddresses = cryptoAddresses || {}
+          cryptoAddresses[c.symbol] = encryptedAddresses
         }
       })
       let item: IHeatWalletFileEntry = {
@@ -184,7 +184,7 @@ class LocalKeyStoreService {
         visibleLabel: wlt.getEntryVisibleLabel(entry.account),
         currencies: accountCurrencies.get(entry.account)
       }
-      if (oldAddresses) item["oldAddresses"] = oldAddresses
+      if (cryptoAddresses) item.cryptoAddresses = cryptoAddresses
       walletFileData.entries.push(item)
     });
 
@@ -217,10 +217,10 @@ class LocalKeyStoreService {
         name: entry.name
       };
 
-      let oldAddresses = entry["oldAddresses"]
-      if (oldAddresses) {
+      let cryptoAddresses = entry.cryptoAddresses || entry["oldAddresses"]  // use oldAddresses for compatibility to pre version
+      if (cryptoAddresses) {
         wlt.CURRENCIES_LIST.forEach(c => {
-          let encryptedAddresses = oldAddresses[c.symbol]
+          let encryptedAddresses = cryptoAddresses[c.symbol]
           if (encryptedAddresses) store.put(`${c.symbol}-${entry.account}`, encryptedAddresses)
         })
       }
