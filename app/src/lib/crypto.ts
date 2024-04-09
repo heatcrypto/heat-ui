@@ -133,6 +133,12 @@ module heat.crypto {
     return converters.byteArrayToHexString(curve25519.keygen(digest).p);
   }
 
+  export function hash(text: string): string {
+    let textBytes = converters.hexStringToByteArray(converters.stringToHexString(text))
+    let digest = simpleHash(textBytes)
+    return converters.byteArrayToHexString(digest)
+  }
+
   /**
    * ..
    * @param secretPhrase Ascii String

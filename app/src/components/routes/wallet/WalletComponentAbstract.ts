@@ -102,8 +102,7 @@ namespace wlt {
           if (!foundAddress.hasOwnProperty("created")) {
             let compatibleToPre = this.obsoleteCheckCreatedAddress(address, walletEntry, currencySymbol)
             if (compatibleToPre) {
-              result.wasCreated = compatibleToPre.wasCreated
-              foundAddress.created = result.wasCreated
+              foundAddress.created = compatibleToPre.wasCreated
             }
           }
 
@@ -285,18 +284,38 @@ namespace wlt {
       let addressLoading = walletEntry.findAddressLoading(currencyDescriptor.symbol)
       if (!addressLoading) return
 
+      // migrate crypto addresses from obsolete store to actual store
       let cryptoAddresses = walletEntry.getCryptoAddresses(currencyDescriptor.symbol)?.addresses
       if (!cryptoAddresses || cryptoAddresses.length == 0) return
-      if (!cryptoAddresses[0].created) {
+      let ca = wlt.createdAddresses[walletEntry.account]
+      let upgraded = false
+      if (ca?.size > 0) {
+        cryptoAddresses.forEach(a => {
+          let hashedAddr = wlt.HASH_PREFIX + heat.crypto.hash(a.address)
+          if (ca.has(hashedAddr)) {
+            a.created = true
+            upgraded = true
+            ca.delete(hashedAddr)
+            window.localStorage.removeItem(`addresscreated-${walletEntry.account}-${hashedAddr}`)
+          }
+        })
+      }
+      if (upgraded) {
+        wlt.saveCryptoAddresses(walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol))
+      }
+      // should be was created at least first address (probably due the bug  it was not created)
+      // so force mark created first addresses
+      /*if (!cryptoAddresses[0].created) {
         let i = 0
         while (i < 3 && i < cryptoAddresses.length) {
           cryptoAddresses[i].created = true
           i++
         }
-      }
+      }*/
+
 
       let actualWalletAddresses: WalletAddresses = {
-        addresses: walletEntry.getCryptoAddresses(currencyDescriptor.symbol)?.addresses.filter(a => {
+        addresses: cryptoAddresses.filter(a => {
           if (a.isDeleted) return false
           let info = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol)
           return a.inUse || info.wasCreated || !currencyDescriptor.multiAddress
@@ -338,7 +357,8 @@ namespace wlt {
         if (successLoaded) {
           if (createdAddress.wasCreated && currencyBalance.balance && /[0-9]/.test(currencyBalance.balance)) {
             //remember balance to display it when "no connection"
-            wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
+            //todo another way saving balance
+            // wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
           }
         } else {
           currencyBalance.balance = /[0-9]/.test(createdAddress?.cachedBalance) ? createdAddress.cachedBalance : ""

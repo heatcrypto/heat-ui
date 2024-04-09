@@ -45,6 +45,8 @@ namespace wlt {
 
   export let shouldBeSaved: Blob
 
+  export const HASH_PREFIX = "XYZ"
+
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
       try {
@@ -95,20 +97,44 @@ namespace wlt {
 
   export function initCreatedAddresses() {
     for (let i = 0; i < window.localStorage.length; i++) {
-      let key = window.localStorage.key(i)
+      let origKey = window.localStorage.key(i)
       // old format "eth-address-created:..." is used for backward compatibility
-      let data = key.match(/addresscreated-(.+)-(.+)/) || key.match(/eth-address-created:(.+):(.+)/)
+      let data = origKey.match(/addresscreated-(.+)-(.+)/) || origKey.match(/eth-address-created:(.+):(.+)/)
       if (data) {
+        let key = tryClearKey(origKey)
         let s = key.substring(key.indexOf("-") + 1)
         let acc = s.substring(0, s.indexOf("-"))
         let addr = s.substring(s.indexOf("-") + 1)
         let addresses = createdAddresses[acc] || new Map<string, string>()
         let value = window.localStorage.getItem(key)
         let balance = value.startsWith("balance") ? value.substring(7) : ""
-        addresses.set(addr, balance)
+        let addrHash = addr.startsWith(HASH_PREFIX) ? addr : null
+        if (!addrHash) {
+          addrHash = HASH_PREFIX + heat.crypto.hash(addr)
+          rememberAddressCreated(acc, addrHash, balance)  // now saved in actual format, so old one can be removed
+          window.localStorage.removeItem(origKey)
+        }
+        addresses.set(addrHash, balance)
         createdAddresses[acc] = addresses
       }
     }
+  }
+
+  /* in old versions the key format was changed several times, must be brought to the actual format
+  */
+  function tryClearKey(key: string) {
+    if (key.indexOf(HASH_PREFIX) > -1) return key
+    let s = key.replace("address-created:", "")
+    s = s.replace(":", "-")
+    s = s.replace("bitcoincash-", "bitcoincash:")
+    let i = s.indexOf(",")
+    if (i > -1) s = s.substring(0, i)
+    if (key != s) {
+      let value = window.localStorage.getItem(key)
+      window.localStorage.setItem(s, value)
+      window.localStorage.removeItem(key)
+    }
+    return s
   }
 
   export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, address: string): WalletAddress  {
@@ -123,10 +149,10 @@ namespace wlt {
     return foundAddress
   }
 
-  export function rememberAddressCreated(account: string, address: string, balance?: string) {
+  export function rememberAddressCreated(account: string, addressHash: string, balance?: string) {
     createdAddresses[account] = createdAddresses[account] || new Map<string, string>()
-    createdAddresses[account].set(address, balance || "")
-    window.localStorage.setItem(`addresscreated-${account}-${address}`, balance ? "balance" + balance : "1")
+    createdAddresses[account].set(addressHash, balance || "")
+    window.localStorage.setItem(`addresscreated-${account}-${addressHash}`, balance ? "balance" + balance : "1")
   }
 
   export function getCurrencyBalances(walletEntry: WalletEntry, currencyName: string): Array<CurrencyBalance> {
@@ -360,7 +386,7 @@ namespace wlt {
         nextAddress.isDeleted = false
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
-        rememberAddressCreated(this.walletEntry.account, nextAddress.address)
+        //rememberAddressCreated(this.walletEntry.account, nextAddress.address)
         rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         //let index = currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
