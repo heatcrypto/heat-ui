@@ -93,6 +93,15 @@ class HeatService {
     this.subscriber.reset(this.settings.get(SettingsService.HEAT_WEBSOCKET));
   }
 
+  public switchToServer(
+      connectionWay?: {way: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean},
+      serverDescriptor?: ServerDescriptor) {
+    if (connectionWay) this.settings.setConnectionWay(connectionWay)
+    if (serverDescriptor) this.settings.setCurrentServer(serverDescriptor)
+    this.resetSubscriber()
+    this.$rootScope.$emit('HEAT_SERVER_LOCATION', "nothing")
+  }
+
   getAuthData(): Object {
     var timestamp = Date.now();
     var baseMessage = this.user.account + timestamp;

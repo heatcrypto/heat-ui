@@ -253,9 +253,9 @@ class ServerComponent {
 
   failoverUsageChanged() {
     if (this.connectionWay == "failover") {
-      this.settings.setHost("remote", true, false)
+      this.heat.switchToServer({way: "remote", failoverEnabled: true, sameMessagingHost: false})
     } else if (this.connectionWay == "localhost") {
-      this.settings.setHost("local", false, false)
+      this.heat.switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: false})
     }
     this.settings["connectionWay"] = this.connectionWay
   }

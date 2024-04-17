@@ -263,15 +263,15 @@ class SettingsService {
 
   settings={};
 
-  public setHost(host: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean) {
-    this.failoverEnabled = failoverEnabled;
+  public setConnectionWay(connectionWay: {way: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean}) {
+    this.failoverEnabled = connectionWay.failoverEnabled;
     this.settings[SettingsService.HEAT_HOST] =
-      this.settings[host == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
+      this.settings[connectionWay.way == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
     this.settings[SettingsService.HEAT_PORT] =
-      this.settings[host == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
+      this.settings[connectionWay.way == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
     this.settings[SettingsService.HEAT_WEBSOCKET] =
-      this.settings[host == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
-    this.settings[SettingsService.HEAT_MESSAGING] = sameMessagingHost
+      this.settings[connectionWay.way == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
+    this.settings[SettingsService.HEAT_MESSAGING] = connectionWay.sameMessagingHost
       ? {
         host: this.settings[SettingsService.HEAT_HOST],
         port: this.settings[SettingsService.HEAT_PORT],
@@ -288,7 +288,7 @@ class SettingsService {
     return this.settings[id]=value;
   }
 
-  public setCurrentServer(server) {
+  public setCurrentServer(server: ServerDescriptor) {
     this.settings[SettingsService.HEAT_HOST] = server.host;
     this.settings[SettingsService.HEAT_PORT] = server.port;
     this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
