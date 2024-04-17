@@ -238,7 +238,9 @@ class LocalKeyStoreService {
         try {
           let accountAddressesArray: any = walletFile.accountAddresses
           accountAddressesArray.forEach(item => {
-            item[1].forEach(a => wlt.rememberAddressCreated(item[0], a[0]))
+            item[1].forEach(a => {
+              if (typeof a[0] === "string") wlt.rememberAddressCreated(item[0], a[0])
+            })
           })
         } catch (e) {
           console.error("Error on importing addresses: " + e.toString())

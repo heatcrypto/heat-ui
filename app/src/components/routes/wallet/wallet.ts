@@ -96,43 +96,58 @@ namespace wlt {
   }
 
   export function initCreatedAddresses() {
+    let removingKeys = []
+    let addingItems = []
+    let addingValues = []
+    createdAddresses = {}
     for (let i = 0; i < window.localStorage.length; i++) {
       let origKey = window.localStorage.key(i)
       // old format "eth-address-created:..." is used for backward compatibility
-      let data = origKey.match(/addresscreated-(.+)-(.+)/) || origKey.match(/eth-address-created:(.+):(.+)/)
-      if (data) {
-        let key = tryClearKey(origKey)
+      if (origKey.startsWith("addresscreated-") || origKey.startsWith("eth-address-created")) {
+        let key = tryClearKey(origKey, removingKeys, addingValues)
         let s = key.substring(key.indexOf("-") + 1)
         let acc = s.substring(0, s.indexOf("-"))
         let addr = s.substring(s.indexOf("-") + 1)
         let addresses = createdAddresses[acc] || new Map<string, string>()
         let value = window.localStorage.getItem(key)
-        let balance = value.startsWith("balance") ? value.substring(7) : ""
+        let balance = value?.startsWith("balance") ? value.substring(7) : ""
         let addrHash = addr.startsWith(HASH_PREFIX) ? addr : null
         if (!addrHash) {
           addrHash = HASH_PREFIX + heat.crypto.hash(addr)
-          rememberAddressCreated(acc, addrHash, balance)  // now saved in actual format, so old one can be removed
-          window.localStorage.removeItem(origKey)
+          addingItems.push([acc, addrHash, balance]) // now saved in actual format, so old one can be removed
+          removingKeys.push(origKey)
         }
         addresses.set(addrHash, balance)
         createdAddresses[acc] = addresses
       }
     }
+    for (const key of removingKeys) {
+      let v = window.localStorage.getItem(key)
+      window.localStorage.setItem("[obsolete]" + key, v)
+      window.localStorage.removeItem(key)
+    }
+    for (const item of addingItems) {
+      rememberAddressCreated(item[0], item[1], item[2])
+    }
+    for (const item of addingValues) {
+      window.localStorage.setItem(item[0], item[1])
+    }
   }
 
   /* in old versions the key format was changed several times, must be brought to the actual format
   */
-  function tryClearKey(key: string) {
+  function tryClearKey(key: string, removingKeys, addingValues) {
     if (key.indexOf(HASH_PREFIX) > -1) return key
-    let s = key.replace("address-created:", "")
+    let s = key.replace("eth-address-created", "addresscreated")
+    s = s.replace("address-created:", "")
     s = s.replace(":", "-")
     s = s.replace("bitcoincash-", "bitcoincash:")
     let i = s.indexOf(",")
     if (i > -1) s = s.substring(0, i)
     if (key != s) {
       let value = window.localStorage.getItem(key)
-      window.localStorage.setItem(s, value)
-      window.localStorage.removeItem(key)
+      addingValues.push([s, value])
+      removingKeys.push(key)
     }
     return s
   }

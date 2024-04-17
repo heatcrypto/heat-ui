@@ -368,21 +368,28 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .then(() => {
           let resetAddressesPromise: Promise<WalletAddresses>
           if (currencyName === 'Ethereum') {
-            resetAddressesPromise = this.lightwalletService.unlock(walletEntry.secretPhrase, "", true)
+            resetAddressesPromise = this.lightwalletService.unlock(walletEntry.secretPhrase, "")
           } else if (currencyName === 'Bitcoin') {
-            resetAddressesPromise = this.bitcoreService.unlock(walletEntry.secretPhrase, true)
+            resetAddressesPromise = this.bitcoreService.unlock(walletEntry.secretPhrase)
           } else if (currencyName === 'FIMK') {
           } else if (currencyName === 'NXT') {
           } else if (currencyName === 'ARDOR') {
           } else if (currencyName === 'IOTA') {
           } else if (currencyName === 'Litecoin') {
-            resetAddressesPromise = this.ltcCryptoService.unlock(walletEntry.secretPhrase, true)
+            resetAddressesPromise = this.ltcCryptoService.unlock(walletEntry.secretPhrase)
           } else if (currencyName === 'BitcoinCash') {
-            resetAddressesPromise = this.bchCryptoService.unlock(walletEntry.secretPhrase, true)
+            resetAddressesPromise = this.bchCryptoService.unlock(walletEntry.secretPhrase)
           } else if (currencyName === 'HEAT') {
           }
           if (resetAddressesPromise) {
-            resetAddressesPromise.then(currencyAddresses => {
+            resetAddressesPromise.then(cryptoAddresses => {
+              let forceWasCreated = true // guarantee set flag "created" from first address
+              cryptoAddresses.addresses.forEach(a => {
+                if (a.created) forceWasCreated = false
+                if (forceWasCreated) a.created = true
+                a.isDeleted = false
+              })
+              wlt.saveCryptoAddresses(walletEntry, wlt.CURRENCIES_MAP.get(currencyName).symbol, cryptoAddresses)
               walletEntry.currencies = []
               this.initWalletEntry(walletEntry)
               walletEntry.toggle()
@@ -508,7 +515,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           if (wallet) {
             let addedKeys = this.localKeyStore.import(wallet);
             this.$scope.$evalAsync(() => {
-              this.initLocalKeyStore();
+              this.initLocalKeyStore()
+              wlt.initCreatedAddresses()
             })
 
             let isBig = addedKeys.length > 8
@@ -761,7 +769,9 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     // to
     // [[account, [address1, address2,...]],[account, [address1, address2,...]],...]
     let accountAddressesArray = Object.entries(wlt.createdAddresses) // [[account, Set],[account, Set],...]
-    let accountAddresses = accountAddressesArray.map(item => [item[0], Array.from(item[1])])
+    let accountAddresses = accountAddressesArray
+        .map(item => [item[0], Array.from(item[1])])
+        .filter(v => v[1]?.length > 0)
 
     // @ts-ignore
     let exported = this.localKeyStore.export(accountCurrencies, accountAddresses)
