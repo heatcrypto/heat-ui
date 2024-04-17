@@ -89,6 +89,14 @@
     .last-feeder {
         background-color: rgb(255 128 171 / 40%);
     }
+    @keyframes scaleUp {
+      0% { transform: scale(0.1); }
+      100% { transform: scale(1)}
+    }
+    .scale-up {
+      animation: scaleUp 4s;
+    }
+
   `],
     template: `
     <div layout="column" flex layout-fill style="padding: 8px">
@@ -96,8 +104,8 @@
         <div style="overflow: scroll">
             <p>Connected to <span style="font-weight: bold;">{{vm.apiServerAddress}}</span>, server version <span style="font-weight: bold;">{{vm.apiServerVersion}}</span></p>
             <p ng-if="vm.apiServerVersion < '4.3.0'">Connected API server should be at least 4.3.0 to provide peers info</p>
-            <div ng-repeat="item in vm.peers" class="peer item">
-                {{item.address}} &nbsp;&nbsp;{{item.platform}} &nbsp;&nbsp;{{item.application}} &nbsp;&nbsp;{{item.version}} &nbsp;&nbsp;
+            <div ng-repeat="item in vm.peers" class="peer item scale-up">
+                <b>{{item.address}}</b> &nbsp;&nbsp;{{item.platform}} &nbsp;&nbsp;{{item.application}} &nbsp;&nbsp;{{item.version}} &nbsp;&nbsp;
                 <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span> &nbsp;&nbsp;
                 <label>height:</label> {{item.height}} &nbsp;&nbsp; <label>was connected:</label> {{item.connectedChangedDate}}
                 <div class="feeder-timeline" ng-class="{'last-feeder':item.lastFeeder}">{{vm.feederTimeLine(item)}}</div>
