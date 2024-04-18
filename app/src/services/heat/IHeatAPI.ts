@@ -1177,6 +1177,7 @@ interface IHeatPeer {
   uploaded: number
   version: string
   state: string
+  stateNote?: string
   platform: string
   application: string
   height: number
