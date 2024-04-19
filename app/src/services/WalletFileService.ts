@@ -23,7 +23,7 @@
 interface IHeatWalletFile {
   version: number;
   entries: Array<IHeatWalletFileEntry>;
-  accountAddresses: {[account: string]: Array<string>};
+  accountAddresses: {} //{[account: string]: Array<string>};
 }
 
 interface IHeatWalletFileEntry {

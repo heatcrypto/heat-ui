@@ -239,7 +239,9 @@ class LocalKeyStoreService {
           let accountAddressesArray: any = walletFile.accountAddresses
           accountAddressesArray.forEach(item => {
             item[1].forEach(a => {
-              if (typeof a[0] === "string") wlt.rememberAddressCreated(item[0], a[0])
+              // structure was changes several times so the code
+              if (typeof a === "string") wlt.rememberAddressCreated(item[0], a)
+              else if (typeof a[0] === "string") wlt.rememberAddressCreated(item[0], a[0])
             })
           })
         } catch (e) {
