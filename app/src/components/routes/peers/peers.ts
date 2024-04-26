@@ -106,7 +106,7 @@
             <p ng-if="vm.apiServerVersion < '4.3.0'">Connected API server should be at least 4.3.0 to provide peers info</p>
             <div ng-repeat="item in vm.peers" class="peer item scale-up">
                 <b>{{item.address}}</b> &nbsp;&nbsp;{{item.platform}} &nbsp;&nbsp;{{item.application}} &nbsp;&nbsp;{{item.version}} &nbsp;&nbsp;
-                <label>height:</label> {{item.height}} &nbsp;&nbsp; <label>was connected:</label> {{item.connectedChangedDate}}
+                <span ng-if="item.height > 0"><label>height:</label> {{item.height}}</span> &nbsp;&nbsp; <label>was connected:</label> {{item.connectedChangedDate}}
                 <div>
                     <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span>
                     <span ng-if="item.stateNote">({{item.stateNote}})</span>
