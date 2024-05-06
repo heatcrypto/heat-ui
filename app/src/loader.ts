@@ -121,6 +121,20 @@ module heat {
           })
         }
 
+        // if api was switched to another server in short time after app is started the app should be reloaded using updated api
+        // otherwise user sees empty data on page
+        let startMoment = Date.now()
+        $rootScope.$on('HEAT_SERVER_LOCATION', (event, usingServer: ServerDescriptor) => {
+          if (usingServer) {
+            if (Date.now() - startMoment < 5000) {
+              setTimeout(() => {
+                sessionStorage.setItem("heat.usingServer", JSON.stringify(usingServer))
+                window.location.reload()
+              }, 300)
+            }
+          }
+        });
+
       }]);
 
       this.init('heatApp', [

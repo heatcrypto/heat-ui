@@ -254,6 +254,18 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
+    let usingServerValue = sessionStorage.getItem("heat.usingServer")
+    if (usingServerValue) {
+      try {
+        let usingServer: ServerDescriptor = JSON.parse(usingServerValue)
+        this.settings[SettingsService.HEAT_HOST] = usingServer.host
+        this.settings[SettingsService.HEAT_PORT] = usingServer.port
+        this.settings[SettingsService.HEAT_WEBSOCKET] = usingServer.websocket
+      } catch (e) {
+        console.error("error on process sessionStorage value heat.usingServer", e)
+      }
+    }
+
     this.generateApiKeyForBrowser()
 
     // this.initialized.then(value => {

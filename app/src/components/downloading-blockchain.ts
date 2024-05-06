@@ -219,7 +219,7 @@ class DownloadingBlockchainComponent {
       causeToSelectBest: String) {
     settings.setCurrentServer(bestServer);
     console.debug("api server is changed from " + currentServer.host + ":" + (currentServer.port || "") + " to " +  bestServer.host + ":" + (bestServer.port || ""))
-    this.notifyOnServerLocationUpdating();
+    this.notifyOnServerLocationUpdating(bestServer);
     this.heat.resetSubscriber();
     if (!firstTime) {
       let message = currentServer
@@ -280,8 +280,8 @@ class DownloadingBlockchainComponent {
         : 0;
   }
 
-  private notifyOnServerLocationUpdating() {
-    this.$rootScope.$emit('HEAT_SERVER_LOCATION', "nothing")
+  private notifyOnServerLocationUpdating(bestServer?: ServerDescriptor) {
+    this.$rootScope.$emit('HEAT_SERVER_LOCATION', bestServer)
   }
 
 }
