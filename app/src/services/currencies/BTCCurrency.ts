@@ -326,37 +326,36 @@ class BTCCurrency implements ICurrency {
       controllerAs: 'vm',
       template: `
         <md-dialog>
-          <form name="dialogForm">
+          <ng-form name="dialogForm">
             <md-toolbar>
               <div class="md-toolbar-tools"><h2>Send BTC</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
             <div flex layout="column">
-                <md-input-container flex>
-                  <md-autocomplete flex
-                    ng-required="true"
-                    ng-readonly="false"
-                    md-input-name="recipientBtcAddress"
-                    md-floating-label="Recipient"
-                    md-min-length="1"
-                    md-items="item in vm.search(vm.searchText)"
-                    md-item-text="item.publicName||item.id"
-                    md-search-text="vm.searchText"
-                    md-selected-item-change="vm.selectedItemChange(item)"
-                    md-search-text-change="vm.searchTextChange()"
-                    md-selected-item="vm.selectedItem">
-                      <md-item-template>
-                        <div layout="row" flex class="monospace-font">
-                          <span>{{item.publicName||''}}</span>
-                          <span flex></span>
-                          <span>{{item.id}}</span>
-                        </div>
-                      </md-item-template>
-                  </md-autocomplete>
-                  <div style="margin-top: -8px; margin-bottom: 20px">
-                    <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
-                  </div>
-                </md-input-container>
+                <md-autocomplete
+                  ng-required="true"
+                  ng-readonly="false"
+                  md-input-name="recipientBtcAddress"
+                  md-floating-label="Recipient"
+                  md-min-length="1"
+                  md-items="item in vm.search(vm.searchText)"
+                  md-item-text="item.publicName||item.id"
+                  md-search-text="vm.searchText"
+                  md-selected-item-change="vm.selectedItemChange(item)"
+                  md-search-text-change="vm.searchTextChange()"
+                  md-selected-item="vm.selectedItem">
+                    <md-item-template>
+                      <div layout="row" flex class="monospace-font">
+                        <span>{{item.publicName||''}}</span>
+                        <span flex></span>
+                        <span>{{item.id}}</span>
+                      </div>
+                    </md-item-template>
+                </md-autocomplete>
+                <div style="margin-top: -20px; margin-bottom: 20px">
+                  <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
+                </div>
+
                 <md-input-container flex >
                   <label>Amount in BTC</label>
                   <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
@@ -406,7 +405,7 @@ class BTCCurrency implements ICurrency {
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
             </md-dialog-actions>
-          </form>
+          </ng-form>
         </md-dialog>
       `
     }).then(deferred.resolve, deferred.reject);

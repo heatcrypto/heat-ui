@@ -192,9 +192,10 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
             })
           }
           else {
-            console.log('Unrecognized broadcast response', response)
+            let responseStr = JSON.stringify(response)
+            console.log('Broadcast response', response)
             reject({
-              message: 'Unrecognized broadcast response'
+              message: 'Response: ' + responseStr
             })
           }
         },
