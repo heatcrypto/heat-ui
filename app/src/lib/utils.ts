@@ -420,4 +420,16 @@ module utils {
     );
   }
 
+  /**
+   * Helper functions for developer useful in app console.
+   */
+  export let helper = {
+    useLocalServer: () => {
+      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: false})
+    },
+    useRemoteServer: () => {
+      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "remote", failoverEnabled: false, sameMessagingHost: false})
+    }
+  }
+
 }
