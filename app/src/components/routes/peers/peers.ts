@@ -58,14 +58,14 @@
         //margin-top: -48px;
     }
     .speed {
-        border: solid 1px lightgrey;
-        border-radius: 4px;
+        //border: solid 1px lightgrey;
+        //border-radius: 4px;
         //padding: 2px;
-        //margin: 4px;
-        background-color: rgb(255 31 111 / 0.25);
+        margin: 2px;
+        //background-color: rgb(255 60 30 / 0.45);
         min-width: 5px;
-        max-width: 450px;    
-        height: 12px;
+        max-width: 320px;    
+        height: 3px;
         white-space: nowrap;
     }
     .speed {
@@ -110,24 +110,26 @@
                 <div>
                     <span ng-class="{'connected':item.state=='CONNECTED'}">{{item.state}}</span>
                     <span ng-if="item.stateNote">({{item.stateNote}})</span>
+                    &nbsp;&nbsp;<span ng-if="item.remoteServerRequestCounter">Server requests: {{item.remoteServerRequestCounter}}</span>
                 </div>
                 <div class="feeder-timeline" ng-class="{'last-feeder':item.lastFeeder}">{{vm.feederTimeLine(item)}}</div>
                 <div style="margin-top: 6px;">
-                    <div class="item">downloaded {{item.downloaded}} b</div>
-                    <div class="downloaded item" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;"></div>
-                <div>
-                    <div class="item">speed {{item.downloadedSpeedMeter.speed}} b/s</div>
-                    <div class="speed item" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.downloadedSpeedMeter.speed/1000}});"></div>
-                </div>
+                    <div class="item">downloaded {{vm.formatBytes(item.downloaded)}}</div>
+                    <div class="downloaded item" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;">
+                        <div>
+                            <div class="speed item" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(180 50 20 / {{item.downloadedSpeedMeter.speed/300}});"></div>
+                            <div class="item">speed {{item.downloadedSpeedMeter.speed}} b/s</div>
+                        </div>
+                    </div>
                 <div style="margin-top: 6px;">
-                    <div class="item">uploaded {{item.uploaded}} b</div>
+                    <div class="item">uploaded {{vm.formatBytes(item.uploaded)}}</div>
                     <div class="uploaded item" style="width: {{item.uploadedRectangle.b}}px;height: {{item.uploadedRectangle.a}}px;">
+                        <div>
+                            <div class="speed item" style="width: {{0.1 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(180 50 20 / {{item.uploadedSpeedMeter.speed/300}});"></div>
+                            <div class="item">speed {{item.uploadedSpeedMeter.speed}} b/s</div>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <div class="item">speed {{item.uploadedSpeedMeter.speed}} b/s</div>
-                    <div class="speed item" style="width: {{0.3 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(255 31 132 / {{item.uploadedSpeedMeter.speed/1000}});"></div>
-                </div>
-            </div>
         </div>
     </div>
   `
@@ -149,6 +151,12 @@ class PeersComponent {
     }
 
     $onInit() {
+        let peersCompare = (a, b) => {
+            let stateA = a.state == "CONNECTED" ? -1 : 1
+            let stateB = b.state == "CONNECTED" ? -1 : 1
+            return (stateA - stateB) || a.address?.localeCompare(b.address)
+        }
+
         let onPeerInfo = (peerList: IHeatPeerList) => {
             let now = Date.now()
             peerList.peers.forEach((p) => {
@@ -159,7 +167,9 @@ class PeersComponent {
             })
 
             // remove obsolete peers
-            this.peers = Array.from(this.peerMap, ([name, value]) => value).filter(pv => pv.updateTime > now - 60000)
+            this.peers = Array.from(this.peerMap, ([name, value]) => value)
+                .filter(pv => pv.updateTime > now - 60000 && (pv.downloaded > 0 || pv.uploaded > 0))
+            this.peers.sort(peersCompare)
             this.peerMap.clear()
             this.peers.forEach(pv => this.peerMap.set(pv.address, pv))
 
@@ -220,7 +230,7 @@ class PeersComponent {
             p.downloadedSpeedMeter = this.speedMeter(p.downloadedSpeedMeter, p.downloaded)
             p.uploadedSpeedMeter = this.speedMeter(p.uploadedSpeedMeter, p.uploaded)
             this.buildBlockFeederTimeLine(p, recentFeeders)
-            p.connectedChangedDate = p.connectedChangedTime ? utils.timestampToDate(p.connectedChangedTime).toLocaleTimeString() : "-"
+            p.connectedChangedDate = p.connectedChangedTime ? utils.timestampToDate(p.connectedChangedTime).toLocaleString() : "-"
         })
     }
 
@@ -252,6 +262,10 @@ class PeersComponent {
         peerView.lastFeeder = recentFeeders[recentFeeders.length - 1]?.address == peerView.address
     }
 
+    formatBytes(value: number) {
+        return utils.formatBytes(value, 0)
+    }
+
 }
 
 // to limit max displayable size of rectangle
@@ -271,4 +285,5 @@ interface PeerView extends IHeatPeer {
     lastFeeder: boolean
     feederTimeLine: string
     connectedChangedDate: string
+    remoteServerRequestCounter: number
 }

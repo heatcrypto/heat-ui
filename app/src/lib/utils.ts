@@ -246,6 +246,18 @@ module utils {
     return returnNullZero && !result.match(/[^0\.]/) ? null : result;
   }
 
+  export function formatBytes(bytes: number, decimals = 2) {
+    if (!+bytes) return '0 Bytes'
+
+    const k = 1024
+    const dm = decimals < 0 ? 0 : decimals
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+  }
+
   export function formatERC20TokenAmount(amount: string, decimals: number, fixed?: boolean) {
     if (decimals == 0) return amount
     let s = amount.padStart(amount.length > decimals ? decimals : decimals + 1, "0")
@@ -422,14 +434,19 @@ module utils {
 
   /**
    * Helper functions for developer useful in app console.
+   * For example switch to specified server:
+   * utils.helper.useRemoteServer({host: "http://95.226.14.252", port: 7733, websocket: "ws://95.226.14.252:7755/ws/", priority: 0})
    */
   export let helper = {
     useLocalServer: () => {
       (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: false})
     },
-    useRemoteServer: () => {
-      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "remote", failoverEnabled: false, sameMessagingHost: false})
-    }
+    useRemoteServer: (serverDescriptor?: ServerDescriptor) => {
+      (<HeatService>heat.$inject.get('heat')).switchToServer(
+          {way: "remote", failoverEnabled: true, sameMessagingHost: false},
+          serverDescriptor
+      )
+    },
   }
 
 }
