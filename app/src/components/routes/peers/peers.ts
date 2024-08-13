@@ -78,6 +78,15 @@
     .connected {
         color: springgreen;  
     }
+    .stats {
+      display: grid;
+      grid-template-columns: auto auto;
+      grid-template-rows: auto auto;
+      gap: 4px;
+      justify-content: start;
+      margin-top: 6px;
+    }
+
     .feeder-timeline {
         font-family: monospace;
         -webkit-transition: all 3s; 
@@ -96,7 +105,6 @@
     .scale-up {
       animation: scaleUp 4s;
     }
-
   `],
     template: `
     <div layout="column" flex layout-fill style="padding: 8px">
@@ -113,19 +121,18 @@
                     &nbsp;&nbsp;<span ng-if="item.remoteServerRequestCounter">Server requests: {{item.remoteServerRequestCounter}}</span>
                 </div>
                 <div class="feeder-timeline" ng-class="{'last-feeder':item.lastFeeder}">{{vm.feederTimeLine(item)}}</div>
-                <div style="margin-top: 6px;">
+                <div class="stats">
                     <div class="item">downloaded {{vm.formatBytes(item.downloaded)}}</div>
                     <div class="downloaded item" style="width: {{item.downloadedRectangle.b}}px;height: {{item.downloadedRectangle.a}}px;">
                         <div>
-                            <div class="speed item" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(180 50 20 / {{item.downloadedSpeedMeter.speed/300}});"></div>
+                            <div class="speed item" style="width: {{0.3 * item.downloadedSpeedMeter.speed}}px;background-color: rgb(180 30 30 / {{0.1 + item.downloadedSpeedMeter.speed/1200}});"></div>
                             <div class="item">speed {{item.downloadedSpeedMeter.speed}} b/s</div>
                         </div>
                     </div>
-                <div style="margin-top: 6px;">
                     <div class="item">uploaded {{vm.formatBytes(item.uploaded)}}</div>
                     <div class="uploaded item" style="width: {{item.uploadedRectangle.b}}px;height: {{item.uploadedRectangle.a}}px;">
                         <div>
-                            <div class="speed item" style="width: {{0.1 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(180 50 20 / {{item.uploadedSpeedMeter.speed/300}});"></div>
+                            <div class="speed item" style="width: {{0.2 * item.uploadedSpeedMeter.speed}}px;background-color: rgb(180 30 30 / {{0.1 + item.uploadedSpeedMeter.speed/1200}});"></div>
                             <div class="item">speed {{item.uploadedSpeedMeter.speed}} b/s</div>
                         </div>
                     </div>
@@ -263,7 +270,7 @@ class PeersComponent {
     }
 
     formatBytes(value: number) {
-        return utils.formatBytes(value, 0)
+        return utils.formatBytes(value, value > 1024 * 1024 * 1024 ? 2 : 0)
     }
 
 }
