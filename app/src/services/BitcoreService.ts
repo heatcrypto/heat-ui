@@ -50,7 +50,7 @@ class BitcoreService {
         }
       }
       else {
-        reject();
+        reject("Seed (or private key) is not valid for currency")
       }
     });
   }

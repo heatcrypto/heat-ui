@@ -393,6 +393,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               walletEntry.currencies = []
               this.initWalletEntry(walletEntry)
               walletEntry.toggle()
+            }, reason => {
+              console.warn(`Currency ${currencyName} is not reset: ` + reason)
             })
           }
         });
