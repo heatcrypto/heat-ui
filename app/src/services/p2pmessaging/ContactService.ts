@@ -37,7 +37,7 @@ class ContactService {
       contacts = contacts
         .filter(contact => contact.publicKey && contact.account != this.user.account)
         .map((contact) => {
-          if (selectedContactPublicKey && selectedContactPublicKey != contact.publicKey) {
+          if (selectedContactPublicKey != contact.publicKey) {
             contact['hasUnreadMessage'] = !contact.isP2POnlyContact && this.contactHasUnreadMessage(contact);
             contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
           }
@@ -195,6 +195,7 @@ class ContactService {
   }
 
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
+    console.log(contact.account + " " +contact.publicName + " " + contact.timestamp + " " + this.latestTimestampStore.getNumber(contact.account, 0))
     return contact.timestamp > this.latestTimestampStore.getNumber(contact.account, 0);
   }
 

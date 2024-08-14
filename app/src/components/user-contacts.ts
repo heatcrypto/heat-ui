@@ -109,6 +109,7 @@
     </div>
   `
 })
+
 @Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging', '$mdToast', 'contactService')
 class UserContactsComponent {
 
@@ -116,6 +117,7 @@ class UserContactsComponent {
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
   private store: Store;
+  private needRefreshed = false
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
@@ -130,18 +132,22 @@ class UserContactsComponent {
               private $mdToast: angular.material.IToastService,
               private contactService: ContactService) {
 
-    this.refresh = utils.debounce(
-      () => {
-        this.refreshContacts()
-      },
-      500, true);
+    this.refresh = utils.debounce(() => this.refreshContacts(), 1000);
     heat.subscriber.unconfirmedTransaction({recipient: this.user.account}, ()=>{ this.refresh() });
 
-    this.store = storage.namespace('contacts.latestTimestamp', $scope);
-    this.store.on(Store.EVENT_PUT, this.refresh);
+    let interval = $interval(() => {
+      if (this.needRefreshed) {
+        this.needRefreshed = false
+        this.refresh()
+      }
+    }, 2 * 1000)
+    $scope.$on('$destroy', () => $interval.cancel(interval))
+
+    this.store = storage.namespace('contacts.latestTimestamp', $scope)
+    this.store.on(Store.EVENT_PUT, this.refresh)
     this.p2pMessaging.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, (key: string) => {
-      if (key.indexOf("_last-message-time") > -1) return;
-      this.refresh();
+      if (key.indexOf("_last-message-time") > -1) return
+      this.needRefreshed = true
     });
 
     let contactListener: IEventListenerFunction = fullKey => {
@@ -299,7 +305,7 @@ class UserContactsComponent {
   }
 
   init() {
-    this.refreshContacts();
+    setTimeout(() => this.refreshContacts(), 300)
   }
 
   refreshContacts() {
