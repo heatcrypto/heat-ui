@@ -20,6 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
+type pendingType = Array<{
+  date: string
+  txId: string
+  time: number
+  address: string
+  message?: string //linked message
+}>
+
 @RouteConfig('/bitcoin-account/:account')
 @Component({
   selector: 'bitcoinAccount',
@@ -55,6 +64,7 @@
               <div class="truncate-col date-col left">Time</div>
               <div class="truncate-col id-col left">Status</div>
               <div class="truncate-col tx-col left" flex>Transaction Id</div>
+              <div class="truncate-col left" flex>Message</div>
             </md-list-item>
             <md-list-item ng-repeat="item in vm.pendingTransactions" class="row">
               <div class="truncate-col date-col left">{{item.date}}</div>
@@ -64,6 +74,7 @@
               <div class="truncate-col tx-col left" flex>
                 <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
+              <div class="truncate-col left">{{item.message}}</div>
             </md-list-item>
           </md-list>
           <p></p>
@@ -73,11 +84,11 @@
     </div>
   `
 })
-@Inject('$scope', 'btcBlockExplorerService', 'bitcoinPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
+@Inject('$scope', 'btcBlockExplorerService', 'bitcoinPendingTransactions', '$interval', '$mdToast', 'settings', 'user', 'heat')
 class BitcoinAccountComponent {
   account: string; // @input
   balanceUnconfirmed: any;
-  pendingTransactions: Array<{ date: string, txId: string, time: number, address: string }> = []
+  pendingTransactions: pendingType = []
   prevIndex = 0
   busy = true
 
@@ -87,7 +98,8 @@ class BitcoinAccountComponent {
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
-              private user: UserService) {
+              private user: UserService,
+              private heat: HeatService) {
   }
 
   $onInit() {
@@ -97,7 +109,7 @@ class BitcoinAccountComponent {
     this.bitcoinPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = this.$interval(this.timerHandler.bind(this), 1000)
+    let promise = this.$interval(this.timerHandler.bind(this), 5000)
     this.timerHandler()
 
     this.$scope.$on('$destroy', () => {
@@ -134,7 +146,7 @@ class BitcoinAccountComponent {
       let addr = this.user.currency.address
       let txns = this.bitcoinPendingTransactions.pending[addr]
       if (txns) {
-        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+        let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
           this.pendingTransactions.push({
             date: dateFormat(new Date(tx.time), format),
@@ -144,6 +156,7 @@ class BitcoinAccountComponent {
           })
         })
         this.pendingTransactions.sort((a, b) => b.time - a.time)
+        this.loadLinkedMessages(this.pendingTransactions)
       }
     })
   }
@@ -158,4 +171,28 @@ class BitcoinAccountComponent {
       })
     })
   }
+
+  private loadLinkedMessages(pendingTransactions: pendingType) {
+    for (const ptx of pendingTransactions) {
+      let fromTime = ptx.time - 10_000
+      let toTime = ptx.time + 180_000
+      this.heat.api.getMessagingContactMessagesByTimestampRange(
+          this.user.account, this.user.account, fromTime, toTime).then(messages => {
+            if (messages.length > 0) {
+              messages.forEach(message => {
+                let content = this.heat.getHeatMessageContents(message)
+                let pos = content.indexOf(".")
+                if (pos > 0) {
+                  let linkedTxId = content.substring(0, pos)
+                  if (linkedTxId == ptx.txId) {
+                    ptx.message = content.substring(pos + 1)
+                  }
+                }
+                console.log(this.heat.getHeatMessageContents(message))
+              })
+            }
+      })
+    }
+  }
+
 }

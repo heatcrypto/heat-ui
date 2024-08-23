@@ -31,7 +31,8 @@ class ETHCurrency implements ICurrency {
   private pendingService: EthereumPendingTransactionsService
   private user: UserService
 
-  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string,
+              private postAction?: (txId: string, message: string) => Promise<any>) {
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
@@ -59,20 +60,32 @@ class ETHCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-    this.sendEther($event).then(
-      data => {
-        if (data && data.txId) {
-          let address = this.user.currency.address
-          let timestamp = new Date().getTime()
-          this.pendingService.add(address, data.txId, timestamp)
-        }
-      },
-      err => {
-        if (err) {
-          dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: '+JSON.stringify(err))
-        }
-      }
-    )
+    let heatService = <HeatService>heat.$inject.get('heat')
+    wlt.getHeatUnavailableReason(heatService, this.user.account)
+        .then(heatUnavailableReason => this.sendEther($event, heatUnavailableReason))
+        .then(
+            data => {
+              if (data && data.txId) {
+                let address = this.user.currency.address
+                let timestamp = new Date().getTime()
+                this.pendingService.add(address, data.txId, timestamp)
+              }
+              return data
+            },
+            err => {
+              if (err) {
+                dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: ' + JSON.stringify(err))
+              }
+            })
+        .then(
+            transactionResult => {
+              if (!transactionResult) return
+              this.postAction(transactionResult.txId, transactionResult.message).then(
+                  v => console.log("ETH sending post action is performed " + v),
+                  reason => dialogs.alert($event, 'ETH sending post action is not performed', reason)
+              ).catch(reason => dialogs.alert($event, 'ETH sending post action error', reason))
+            }
+        )
   }
 
   /* Invoke SEND token dialog */
@@ -80,8 +93,12 @@ class ETHCurrency implements ICurrency {
 
   }
 
-  sendEther($event) {
+  sendEther($event, heatUnavailableReason) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      this.heatBalanceSufficient = heatUnavailableReason
+      this.heatUnavailableReason = heatUnavailableReason.description
+          || heatUnavailableReason.data?.errorDescription
+          || heatUnavailableReason
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
@@ -97,6 +114,7 @@ class ETHCurrency implements ICurrency {
           ethBlockExplorerService.broadcast(rawTx).then(
             data => {
               if (data.txId) {
+                data.message = $scope['vm'].data.message
                 $mdDialog.hide(data).then(() => {
                   dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
                 })
@@ -136,6 +154,7 @@ class ETHCurrency implements ICurrency {
         recipient: '',
         recipientInfo: '',
         fee: '0.000420',
+        message: ''
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -179,7 +198,7 @@ class ETHCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId:string }>()
+    let deferred = $q.defer<{ txId:string, message?: string }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -214,6 +233,17 @@ class ETHCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Gas limit</label>
                   <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
+                </md-input-container>
+                
+                <md-input-container flex style="margin-bottom: 14px">
+                  <label>Payment message / memo (encrypted)</label>
+                  <input ng-model="vm.data.message" name="message" ng-disabled="!vm.paymentMessageMethod">
+                  <div>Store message on:</div>
+                  <md-radio-group ng-model="vm.paymentMessageMethod" layout="row" style="margin-left: 10px;">
+                    <md-radio-button value="0" >This device</md-radio-button>
+                    <md-radio-button value="1" ng-disabled="vm.heatUnavailableReason">Heat blockchain</md-radio-button>
+                    <span ng-if="vm.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.heatUnavailableReason}})</span>
+                  </md-radio-group>
                 </md-input-container>
 
                 <p>Fee: {{vm.data.fee}} ETH</p>

@@ -225,9 +225,9 @@ namespace wlt {
       /* Create the ICurrency based on the currency type */
       let currency: ICurrency = null
       if (this.name == 'Ethereum') {
-        currency = new ETHCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
+        currency = new ETHCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address, wlt.sendingPostAction)
       } else if (this.name == 'Bitcoin') {
-        currency = new BTCCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
+        currency = new BTCCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address, wlt.sendingPostAction)
       } else if (this.name == 'FIMK') {
         currency = new FIMKCurrency(this.walletEntry.secretPhrase, this.secretPhrase, this.address)
       } else if (this.name == 'NXT') {
