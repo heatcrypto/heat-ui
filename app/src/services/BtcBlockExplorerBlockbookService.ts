@@ -28,18 +28,22 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
 
   public getTransactions = (address: string, from: number, to: number): angular.IPromise<any> => {
     //let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/addrs/${address}/txs?from=${from}&to=${to}`;
-    const pageSize = to - from;
-    const page = Math.round(to / pageSize);
-    let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/address/${address}?details=txs&page=${page}&pageSize=${pageSize}`;
-    let deferred = this.$q.defer();
+    const pageSize = to - from
+    const page = Math.round(to / pageSize)
+    let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/address/${address}?details=txs&page=${page}&pageSize=${pageSize}`
+    let deferred = this.$q.defer()
     this.http.get(getTransactionsApi).then(response => {
-      let parsed = utils.parseResponse(response)
-      if (parsed.heatUtilParsingError) deferred.reject()
-      deferred.resolve(parsed.transactions)
-    }, () => {
-      deferred.reject();
+      if (!response) {
+        deferred.reject("empty response")
+      } else {
+        let parsed = utils.parseResponse(response)
+        if (parsed.heatUtilParsingError) deferred.reject()
+        deferred.resolve(parsed.transactions)
+      }
+    }, (reason) => {
+      deferred.reject(reason)
     })
-    return deferred.promise;
+    return deferred.promise
   }
 
   public getAddressInfo = (address: string): angular.IPromise<any> => {

@@ -32,7 +32,7 @@ class ETHCurrency implements ICurrency {
   private user: UserService
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string,
-              private postAction?: (txId: string, message: string) => Promise<any>) {
+              private postAction?: (txId: string, message: string, paymentMessageMethod: number) => Promise<any>) {
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
@@ -78,9 +78,9 @@ class ETHCurrency implements ICurrency {
               }
             })
         .then(
-            transactionResult => {
-              if (!transactionResult) return
-              this.postAction(transactionResult.txId, transactionResult.message).then(
+            data => {
+              if (!data) return
+              this.postAction(data.txId, data.message, data.paymentMessageMethod).then(
                   v => console.log("ETH sending post action is performed " + v),
                   reason => dialogs.alert($event, 'ETH sending post action is not performed', reason)
               ).catch(reason => dialogs.alert($event, 'ETH sending post action error', reason))
@@ -93,12 +93,15 @@ class ETHCurrency implements ICurrency {
 
   }
 
-  sendEther($event, heatUnavailableReason) {
+  sendEther($event, heatUnavailableReasonParam) {
+
+    let heatUnavailableReason = heatUnavailableReasonParam.description
+        || heatUnavailableReasonParam.data?.errorDescription
+        || heatUnavailableReasonParam
+    let paymentMessageMethod = null
+
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       this.heatBalanceSufficient = heatUnavailableReason
-      this.heatUnavailableReason = heatUnavailableReason.description
-          || heatUnavailableReason.data?.errorDescription
-          || heatUnavailableReason
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
@@ -115,7 +118,8 @@ class ETHCurrency implements ICurrency {
             data => {
               if (data.txId) {
                 data.message = $scope['vm'].data.message
-                $mdDialog.hide(data).then(() => {
+                let sendingResult = Object.assign(data, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
+                $mdDialog.hide(sendingResult).then(() => {
                   dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
                 })
               } else {
@@ -198,7 +202,7 @@ class ETHCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId:string, message?: string }>()
+    let deferred = $q.defer<{ txId:string, message?: string, paymentMessageMethod: number }>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -237,11 +241,11 @@ class ETHCurrency implements ICurrency {
                 
                 <md-input-container flex style="margin-bottom: 14px">
                   <label>Payment message / memo (encrypted)</label>
-                  <input ng-model="vm.data.message" name="message" ng-disabled="!vm.paymentMessageMethod">
+                  <input ng-model="vm.data.message" name="message" ng-maxlength="500" ng-disabled="!vm.paymentMessageMethod">
                   <div>Store message on:</div>
                   <md-radio-group ng-model="vm.paymentMessageMethod" layout="row" style="margin-left: 10px;">
-                    <md-radio-button value="0" >This device</md-radio-button>
-                    <md-radio-button value="1" ng-disabled="vm.heatUnavailableReason">Heat blockchain</md-radio-button>
+                    <md-radio-button value=0 >This device</md-radio-button>
+                    <md-radio-button value=1 ng-disabled="vm.heatUnavailableReason">Heat blockchain</md-radio-button>
                     <span ng-if="vm.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.heatUnavailableReason}})</span>
                   </md-radio-group>
                 </md-input-container>
