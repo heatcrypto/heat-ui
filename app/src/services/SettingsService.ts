@@ -25,6 +25,8 @@
 @Inject('env', 'http')
 class SettingsService {
 
+  public static instance: SettingsService
+
   /* DO NOT TOUCH.
      Replaced with contents of VERSION file by release.sh */
   private VERSION = "%BUILD_OVERRIDE_VERSION%";
@@ -254,7 +256,7 @@ class SettingsService {
     this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
     this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    let usingServerValue = sessionStorage.getItem("heat.usingServer")
+    let usingServerValue = sessionStorage.getItem(heat.serverDescriptionKey)
     if (usingServerValue) {
       try {
         let usingServer: ServerDescriptor = JSON.parse(usingServerValue)
@@ -262,11 +264,13 @@ class SettingsService {
         this.settings[SettingsService.HEAT_PORT] = usingServer.port
         this.settings[SettingsService.HEAT_WEBSOCKET] = usingServer.websocket
       } catch (e) {
-        console.error("error on process sessionStorage value heat.usingServer", e)
+        console.error("error on process sessionStorage value by key " + heat.serverDescriptionKey, e)
       }
     }
 
     this.generateApiKeyForBrowser()
+
+    SettingsService.instance = this
 
     // this.initialized.then(value => {
     //   this.setHost("local", false, true)
