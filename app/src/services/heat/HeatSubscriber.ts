@@ -67,6 +67,7 @@ interface IHeatSubscriberUnconfirmedTransactionFilter {
 class HeatSubscriber {
 
   private RETRY_SYNC_DELAY = 2.5 * 1000; // 2.5 seconds in milliseconds
+  private errRetryDelayCoef = 1
 
   // websocket subscription topics - these match the topics in the java com.heatledger.websocket package
   private BLOCK_PUSHED = "1";
@@ -173,6 +174,7 @@ class HeatSubscriber {
   private syncTopicSubscriptions() {
     this.getConnectedSocket().then(
       (websocket)=>{
+        this.errRetryDelayCoef = 1
         if (this.needReset) {
           websocket.close(3001, "Heat subscribes reseted");
           this.needReset = false;
@@ -196,12 +198,13 @@ class HeatSubscriber {
           });
         }
       },
-      ()=>{
-        // on failure call syncTopicSubscriptions again after 5 seconds.
-        this.$timeout(this.RETRY_SYNC_DELAY).then(() => {
-          this.syncTopicSubscriptions();
-        });
-      }
+        () => {
+          this.errRetryDelayCoef = Math.min(10, ++this.errRetryDelayCoef)
+          // on failure call syncTopicSubscriptions again after 5 seconds.
+          this.$timeout(this.errRetryDelayCoef * this.RETRY_SYNC_DELAY).then(() => {
+            this.syncTopicSubscriptions()
+          });
+        }
     )
   }
 
@@ -210,7 +213,7 @@ class HeatSubscriber {
       return this.connectedSocketPromise;
     }
     let deferred  = this.$q.defer<WebSocket>();
-    var websocket = new WebSocket(this.url);
+    let websocket = new WebSocket(this.url);
     this.hookupWebsocketEventListeners(websocket, deferred);
     return this.connectedSocketPromise = deferred.promise;
   }
@@ -224,7 +227,6 @@ class HeatSubscriber {
       websocket.onerror = null;
       websocket.onmessage = null;
       this.subscribeTopics.forEach(topic => { topic.setSubscribed(false) })
-      this.syncTopicSubscriptions();
     };
     var onerror = onclose;
     var onopen = (event) => {
