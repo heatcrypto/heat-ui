@@ -26,6 +26,7 @@ module heat {
 
   export var isTestnet = window.localStorage.getItem('testnet')=='true';
   export var isBetanet = window.localStorage.getItem('betanet')=='true';
+  export var serverDescriptionKey = "heat.usingServer." + (isTestnet ? "testnet" : (isBetanet ? "betanet" : "mainnet"))
 
   export var $inject: angular.auto.IInjectorService;
 
@@ -128,7 +129,7 @@ module heat {
           if (usingServer) {
             if (Date.now() - startMoment < 5000) {
               setTimeout(() => {
-                sessionStorage.setItem("heat.usingServer", JSON.stringify(usingServer))
+                sessionStorage.setItem(heat.serverDescriptionKey, JSON.stringify(usingServer))
                 window.location.reload()
               }, 300)
             }
