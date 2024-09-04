@@ -80,8 +80,8 @@ namespace wlt {
                 }
             } else {
                 //there is no message in local store so try find the corresponded HEAT message in time range
-                let fromTime = messageTime - 10_000
-                let toTime = messageTime + 180_000
+                let fromTime = messageTime - 600_000
+                let toTime = messageTime + 600_000
                 getHeatService().api.getMessagingContactMessagesByTimestampRange(
                     user.account, user.account, fromTime, toTime).then(messages => {
                     if (messages?.length > 0) {

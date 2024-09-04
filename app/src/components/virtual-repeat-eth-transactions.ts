@@ -60,6 +60,9 @@
           <!-- INFO -->
           <div class="truncate-col info-col left" flex>Info</div>
 
+          <!-- MESSAGE -->
+          <div class="truncate-col left" flex>Message</div>
+
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
 
@@ -110,6 +113,14 @@
             <div class="truncate-col info-col left" flex>
               <span ng-bind-html="item.renderedInfo"></span>
             </div>
+
+            <!-- MESSAGE -->
+            <div ng-if="item.message" class="truncate-col left" flex>
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                {{item.message.text}}
+                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+            </div>
+            <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">---</span>
 
             <!-- JSON -->
             <div class="truncate-col json-col">
@@ -174,6 +185,13 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
             transaction['renderedInfo'] = text;
           })
         }
+
+        //processed item has message value or null so undefined only should be processed
+        if (transaction['message'] == undefined) {
+          wlt.loadPaymentMessage(transaction.hash, transaction.timestamp * 1000)
+              .then(v => transaction['message'] = v)
+        }
+
       }
     );
 
