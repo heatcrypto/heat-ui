@@ -93,15 +93,13 @@ class ETHCurrency implements ICurrency {
 
   }
 
-  sendEther($event, heatUnavailableReasonParam) {
-
-    let heatUnavailableReason = heatUnavailableReasonParam.description
-        || heatUnavailableReasonParam.data?.errorDescription
-        || heatUnavailableReasonParam
-    let paymentMessageMethod = null
+  sendEther($event, heatUnavailableReason) {
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      this.heatBalanceSufficient = heatUnavailableReason
+      this.heatUnavailableReason = heatUnavailableReason.description
+          || heatUnavailableReason.data?.errorDescription
+          || heatUnavailableReason
+      this.paymentMessageMethod = null
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }

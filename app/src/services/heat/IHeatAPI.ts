@@ -364,9 +364,11 @@ interface IHeatCreateTransactionInput {
    */
   broadcast: boolean;
   /**
-   * Either UTF-8 text or a string of hex digits (perhaps previously encoded using an arbitrary algorithm) to be converted into a bytecode with a maximum length of one kilobyte
+   * Either UTF-8 text or a string of hex digits (perhaps previously encoded using an arbitrary algorithm) to be converted into a bytecode with a maximum length of one kilobyte.
+   * It is possible when message is formed on server side on transaction creation.
+   * In this case this field should be assigned boolean false that is indicator than message appendix should not be validated on client side.
    */
-  message?: string;
+  message?: string | boolean;
   /**
    * False if the message is a hex string, otherwise the message is text (optional)
    */

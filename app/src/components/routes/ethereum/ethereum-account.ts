@@ -84,7 +84,7 @@
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
               </div>
-              <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">---</span>
+              <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">--</span>
             </md-list-item>
           </md-list>
           <p></p>
@@ -218,10 +218,11 @@ class EthereumAccountComponent {
 
   private loadPaymentMessages() {
     for (const ptx of this.pendingTransactions) {
-      //processed item has message value or null
-      if (ptx.message == undefined) {
+      //processed item has message value or null so undefined is needed to be processed
+      if (ptx.message === undefined) {
         wlt.loadPaymentMessage(ptx.txHash, ptx.timestamp)
             .then(v => ptx.message = v)
+            .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
       }
     }
   }

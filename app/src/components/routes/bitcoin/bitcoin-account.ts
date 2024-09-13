@@ -74,11 +74,12 @@ type PendingType = {
               <div class="truncate-col tx-col left" flex>
                 <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
-              <div class="truncate-col info-col left" ng-if="item.message">
+              <div class="truncate-col left" ng-if="item.message">
                 <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
               </div>
+              <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">-</span>
             </md-list-item>
           </md-list>
           <p></p>
@@ -166,12 +167,12 @@ class BitcoinAccountComponent {
   }
 
   refresh() {
-    this.busy = true;
-    this.balanceUnconfirmed = "";
+    this.busy = true
+    this.balanceUnconfirmed = ""
     this.btcBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = isNaN(info) ? null : new Big(info / 100000000).toFixed(8);
-        this.busy = false;
+        this.balanceUnconfirmed = isNaN(info) ? null : new Big(info / 100000000).toFixed(8)
+        this.busy = false
       })
     })
     this.loadPaymentMessages()
@@ -180,9 +181,10 @@ class BitcoinAccountComponent {
   private loadPaymentMessages() {
     for (const ptx of this.pendingTransactions) {
       //processed item has message value or null
-      if (ptx.message == undefined) {
+      if (ptx.message === undefined) {
         wlt.loadPaymentMessage(ptx.txId, ptx.time)
             .then(v => ptx.message = v)
+            .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
       }
     }
   }

@@ -28,6 +28,9 @@
     .failed {
       color: red;
     }
+    .pending {
+      color: coral;
+    }
   `],
   template: `
     <div layout="column" flex layout-fill>
@@ -120,7 +123,7 @@
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
             </div>
-            <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">---</span>
+            <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">-</span>
 
             <!-- JSON -->
             <div class="truncate-col json-col">
@@ -187,9 +190,10 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         }
 
         //processed item has message value or null so undefined only should be processed
-        if (transaction['message'] == undefined) {
+        if (transaction['message'] === undefined) {
           wlt.loadPaymentMessage(transaction.hash, transaction.timestamp * 1000)
               .then(v => transaction['message'] = v)
+              .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
         }
 
       }

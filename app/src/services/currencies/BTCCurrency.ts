@@ -70,7 +70,7 @@ class BTCCurrency implements ICurrency {
 
   }
 
-  sendBtc($event, heatUnavailableReasonParam) {
+  sendBtc($event, heatUnavailableReason) {
 
     class FeeList {
       satByteFee = {}
@@ -94,11 +94,12 @@ class BTCCurrency implements ICurrency {
     }
 
     let feeList = new FeeList()
-    let heatUnavailableReason = heatUnavailableReasonParam.description
-        || heatUnavailableReasonParam.data?.errorDescription
-        || heatUnavailableReasonParam
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+
+      this.heatUnavailableReason = heatUnavailableReason.description
+          || heatUnavailableReason.data?.errorDescription
+          || heatUnavailableReason
 
       this.cancelButtonClick = function () {
         $mdDialog.cancel()

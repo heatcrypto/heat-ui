@@ -3,10 +3,27 @@ namespace wlt {
     let messageStore: Store
     let heatService: HeatService
     let userService: UserService
+    const PAYMENT_MESSAGE_BIRTH_TIME = new Date(2024, 7, 20).getTime()
 
-    export function sendingPostAction(txId: string, message: string, paymentMessageMethod: number) {
+    export function storePaymentMessage(txId: string, message: string, paymentMessageMethod: number) {
         let user = getUserService()
-        let f = (resolve, reject) => {
+        let encryptedMessage = heat.crypto.encryptMessage(message, user.publicKey, user.secretPhrase)
+        let messageId = heat.crypto.calculateStringHash(txId)
+
+        let sendHeatPaymentMessage = (resolve, reject) => {
+            let errorCallback = reason => reject("linked message error: " + JSON.stringify(reason))
+
+            let createKeystoreTransaction = (transactionArgs: IHeatCreateTransactionInput) => {
+                return getHeatService().post(
+                    "/keystore/put",
+                    Object.assign(transactionArgs, {key: messageId, value: JSON.stringify(encryptedMessage)})
+                ).then(value => {
+                    //assign false to message to indicate that validation (in this app) of appendix message is not needed
+                    transactionArgs.message = false
+                    return value
+                })
+            }
+
             let builder = new TransactionBuilder(new class extends AbstractTransaction {
                 verify(transaction: any, attachment: IByteArrayWithPosition, data?: any): boolean {
                     return transaction.type === 1 && transaction.subtype === 0
@@ -15,11 +32,8 @@ namespace wlt {
             builder.secretPhrase(user.secretPhrase)
                 .feeNQT(HeatAPI.fee.standard)
                 .attachment('ArbitraryMessage', <IHeatCreateArbitraryMessage>{})
-            builder.recipient(user.account)
-            builder.recipientPublicKey(user.publicKey)
-            builder.message(`${txId}.${message}`, TransactionMessageType.TO_SELF)
-            let errorCallback = reason => reject("linked message error: " + JSON.stringify(reason))
-            builder.create()
+                .recipient(user.account)
+            builder.create(createKeystoreTransaction)
                 .then(value => builder.sign(), errorCallback)
                 .then(value => builder.broadcast(), errorCallback)
                 .then(value => {
@@ -31,16 +45,16 @@ namespace wlt {
                 }, errorCallback)
                 .catch(errorCallback)
         }
+
         return new Promise((resolve, reject) => {
             if (message) {
                 if (paymentMessageMethod == 0) {
                     //store payment message to local storage
-                    let encryptedMessage = heat.crypto.encryptMessage(message, user.publicKey, user.secretPhrase)
-                    getPaymentMessageStore().put(txId, encryptedMessage)
+                    getPaymentMessageStore().put(messageId, encryptedMessage)
                     resolve(true)
                 } else if (paymentMessageMethod == 1) {
-                    // to mask the message's time link to the time of original transaction
-                    setTimeout(f.bind(null, resolve, reject), 20_000 * Math.random())
+                    // random delay to mask the message's time link to the time of original transaction
+                    setTimeout(sendHeatPaymentMessage.bind(null, resolve, reject), 10_000 * Math.random())
                 } else {
                     resolve(false)
                 }
@@ -63,42 +77,44 @@ namespace wlt {
                 }, reason => reason)
     }
 
-    export function loadPaymentMessage(id: string, messageTime: number) {
+    export function loadPaymentMessage(txId: string, messageTime: number) {
         let store = getPaymentMessageStore()
         let user = getUserService()
+        //message id is seen for everybody so use hash to hide real tx id
+        let messageId = heat.crypto.calculateStringHash(txId)
+
+        let decrypt = (encrypted: IEncryptedMessage) => {
+            try {
+                return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, user.publicKey, user.secretPhrase)
+            } catch (e) {
+                return null
+            }
+        }
 
         return new Promise<{method: number, text: string}>((resolve, reject) => {
+            if (messageTime < PAYMENT_MESSAGE_BIRTH_TIME) resolve(null)
+
             //first try to load message from local store
-            let encryptedMessage: IEncryptedMessage = store.get(id)
+            let encryptedMessage: IEncryptedMessage = store.get(messageId)
             if (encryptedMessage) {
-                let message = heat.crypto.decryptMessage(
-                    encryptedMessage.data, encryptedMessage.nonce, user.publicKey, user.secretPhrase)
-                if (message) {
-                    resolve({method: 0, text: message})
-                } else {
-                    resolve(null)
-                }
+                let message = decrypt(encryptedMessage)
+                resolve(message ? {method: 0, text: message} : null)
             } else {
-                //there is no message in local store so try find the corresponded HEAT message in time range
-                let fromTime = messageTime - 600_000
-                let toTime = messageTime + 600_000
-                getHeatService().api.getMessagingContactMessagesByTimestampRange(
-                    user.account, user.account, fromTime, toTime).then(messages => {
-                    if (messages?.length > 0) {
-                        for (const message of messages) {
-                            let content = getHeatService().getHeatMessageContents(message)
-                            let pos = content.indexOf(".")
-                            if (pos > 0) {
-                                let linkedTxId = content.substring(0, pos)
-                                if (linkedTxId == id) {
-                                    resolve({method: 1, text: content.substring(pos + 1)})
-                                    return
-                                }
-                            }
-                        }
+                //there is no message in local store so try find the entry in HEAT Keystore
+                getHeatService().api.getKeystoreAccountEntry(user.account, messageId).then(response => {
+                    let parsed = utils.parseResponse(response)
+                    if (!parsed.errorDescription) {
+                        let encryptedMessage: IEncryptedMessage = JSON.parse(parsed.value)
+                        let message = decrypt(encryptedMessage)
+                        resolve(message ? {method: 1, text: message} : null)
                     }
-                    resolve(null)
-                }, reason => reject(reason))
+                }, reason => {
+                    if (reason.description == "Unknown key") {
+                        resolve(null)
+                    } else {
+                        reject(reason)
+                    }
+                })
             }
         })
     }
