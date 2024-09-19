@@ -136,8 +136,12 @@ namespace wlt {
     }
 
     function createMessageId(txId: string) {
-        return heat.crypto.calculateStringHash(txId)
-        // would be nice use more short messageId, for example using RIPEMD-160 hash (20 bytes)
+        return converters.byteArrayToHexString(
+            // @ts-ignore
+            hash160(converters.hexStringToByteArray(
+                converters.stringToHexString(txId)
+            ))
+        )
     }
 
     function getPaymentMessageStore() {
