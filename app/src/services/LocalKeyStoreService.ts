@@ -206,16 +206,17 @@ class LocalKeyStoreService {
       return true
     }
 
-    let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+    let store = this.storage.namespace('wallet-address', this.$rootScope, true)
 
-    let added : Array<ILocalKeyEntry> = [];
+    let added : Array<ILocalKeyEntry> = []
+
     walletFile.entries.forEach(entry => {
       let localKeyEntry: ILocalKeyEntry = {
         account: entry.account,
         contents: entry.contents,
         isTestnet: entry.isTestnet,
         name: entry.name
-      };
+      }
 
       let cryptoAddresses = entry.cryptoAddresses || entry["oldAddresses"]  // use oldAddresses for compatibility to pre version
       if (cryptoAddresses) {
@@ -226,7 +227,7 @@ class LocalKeyStoreService {
       }
 
       if (putRaw(localKeyEntry)) {
-        added.push(localKeyEntry);
+        added.push(localKeyEntry)
         if (entry.visibleLabel) {
           wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
         }
@@ -234,21 +235,25 @@ class LocalKeyStoreService {
       if (entry.currencies) {
         wlt.updateEntryCurrencies(entry.account, entry.currencies)
       }
-      if (walletFile.accountAddresses) {
-        try {
-          let accountAddressesArray: any = walletFile.accountAddresses
-          accountAddressesArray.forEach(item => {
-            item[1].forEach(a => {
-              // structure was changes several times so the code
-              if (typeof a === "string") wlt.rememberAddressCreated(item[0], a)
-              else if (typeof a[0] === "string") wlt.rememberAddressCreated(item[0], a[0])
-            })
+    })
+
+    if (walletFile.accountAddresses) {
+      try {
+        let accountAddressesArray: any = walletFile.accountAddresses
+        accountAddressesArray.forEach(item => {
+          item[1].forEach(a => {
+            // structure was changes several times so the code
+            if (typeof a === "string") wlt.rememberAddressCreated(item[0], a)
+            else if (typeof a[0] === "string") wlt.rememberAddressCreated(item[0], a[0])
           })
-        } catch (e) {
-          console.error("Error on importing addresses: " + e.toString())
-        }
+        })
+      } catch (e) {
+        console.error("Error on importing addresses: " + e.toString())
       }
-    });
-    return added;
+    }
+
+    let paymentMessagesNum = wlt.importPaymentMessages(walletFile.paymentMessages)
+
+    return added
   }
 }

@@ -8,7 +8,7 @@ namespace wlt {
     export function storePaymentMessage(txId: string, message: string, paymentMessageMethod: number) {
         let user = getUserService()
         let encryptedMessage = heat.crypto.encryptMessage(message, user.publicKey, user.secretPhrase)
-        let messageId = heat.crypto.calculateStringHash(txId)
+        let messageId = createMessageId(txId)
 
         let sendHeatPaymentMessage = (resolve, reject) => {
             let errorCallback = reason => reject("linked message error: " + JSON.stringify(reason))
@@ -81,7 +81,7 @@ namespace wlt {
         let store = getPaymentMessageStore()
         let user = getUserService()
         //message id is seen for everybody so use hash to hide real tx id
-        let messageId = heat.crypto.calculateStringHash(txId)
+        let messageId = createMessageId(txId)
 
         let decrypt = (encrypted: IEncryptedMessage) => {
             try {
@@ -117,6 +117,27 @@ namespace wlt {
                 })
             }
         })
+    }
+
+    export function exportPaymentMessages() {
+        let store = getPaymentMessageStore()
+        return store.keys().map(k => ({id: k, content: store.get(k)}))
+    }
+
+    export function importPaymentMessages(items: {id: string, content: any}[]) {
+        if (!items) return 0
+        let store = getPaymentMessageStore()
+        let n = 0
+        for (const item of items) {
+            store.put(item.id, item.content)
+            n++
+        }
+        return n
+    }
+
+    function createMessageId(txId: string) {
+        return heat.crypto.calculateStringHash(txId)
+        // would be nice use more short messageId, for example using RIPEMD-160 hash (20 bytes)
     }
 
     function getPaymentMessageStore() {
