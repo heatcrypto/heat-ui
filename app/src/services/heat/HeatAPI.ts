@@ -372,6 +372,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/keystore/get/${account}/${key}`);
   }
 
+  getKeystoreAccountEntryAllowingNull(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction> {
+    return this.heat.get(`/keystore/getAllowingNull/${account}/${key}`);
+  }
+
   listKeystoreAccountEntries(account: string, from: string, to: string): angular.IPromise<Array<IHEATKeystoreTransaction>> {
     return this.heat.get(`/keystore/list/${account}/${from}/${to}`);
   }

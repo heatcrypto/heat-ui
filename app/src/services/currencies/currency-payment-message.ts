@@ -1,13 +1,56 @@
 namespace wlt {
 
+    export type SendingResult = { txId: string, paymentMessageMethod: number, heatUnavailableReason: string, message?: string }
     let messageStore: Store
     let heatService: HeatService
     let userService: UserService
     const PAYMENT_MESSAGE_BIRTH_TIME = new Date(2024, 7, 20).getTime()
+    const SERVICE_PUBKEY = "9b3cc534be3cf8b9c0d75ac9e32c1b96b45679de7515ca367ac5637c4f32305a" //HEAT account 349054386597789736
 
-    export function storePaymentMessage(txId: string, message: string, paymentMessageMethod: number) {
+    export function paymentMemoDialog(txId: string, heatUnavailableReason: string) {
+        let locals = {
+            v: {
+                text: "",
+                paymentMessageMethod: undefined,
+                heatUnavailableReason: heatUnavailableReason,
+                sharedMemo: false
+            }
+        }
+        return dialogs.dialog({
+            id: 'paymentMemo',
+            title: "Payment Memo",
+            okButton: true,
+            cancelButton: true,
+            locals: locals,
+            template: `
+              <md-input-container flex style="margin-bottom: 16px;">
+                  <div>Store message on:</div>
+                  <md-radio-group ng-model="vm.v.paymentMessageMethod" layout="row">
+                    <md-radio-button value=0 >This device</md-radio-button>
+                    <md-radio-button value=1 ng-disabled="vm.v.heatUnavailableReason">Heat blockchain</md-radio-button>
+                    <span ng-if="vm.v.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.v.heatUnavailableReason}})</span>
+                  </md-radio-group>
+                  <md-checkbox ng-model="vm.v.sharedMemo" ng-if="vm.v.paymentMessageMethod == 1" style="margin-top: 4px;">
+                    Share memo to recipient
+                  </md-checkbox>
+              </md-input-container>
+              <md-input-container flex>
+                  <label>Payment message / memo (encrypted)</label>
+                  <input required ng-model="vm.v.text" name="message" ng-maxlength="500" ng-disabled="!vm.v.paymentMessageMethod">
+              </md-input-container>
+            `
+        }).then(value => {
+            let recipientPubKey = locals.v.paymentMessageMethod == 1 && locals.v.sharedMemo ? null : getUserService().publicKey
+            return storePaymentMessage(txId, locals.v.text, locals.v.paymentMessageMethod, recipientPubKey)
+        })
+    }
+
+    export function storePaymentMessage(txId: string, message: string, paymentMessageMethod: number, recipientPubKey?: string) {
         let user = getUserService()
-        let encryptedMessage = heat.crypto.encryptMessage(message, user.publicKey, user.secretPhrase)
+        let encryptedMessage = heat.crypto.encryptMessage(
+            message,
+            recipientPubKey || SERVICE_PUBKEY,
+            user.secretPhrase)
         let messageId = createMessageId(txId)
 
         let sendHeatPaymentMessage = (resolve, reject) => {
@@ -53,8 +96,7 @@ namespace wlt {
                     getPaymentMessageStore().put(messageId, encryptedMessage)
                     resolve(true)
                 } else if (paymentMessageMethod == 1) {
-                    // random delay to mask the message's time link to the time of original transaction
-                    setTimeout(sendHeatPaymentMessage.bind(null, resolve, reject), 10_000 * Math.random())
+                    sendHeatPaymentMessage(resolve, reject)
                 } else {
                     resolve(false)
                 }
@@ -72,10 +114,16 @@ namespace wlt {
                         let avail = new Big(balance.unconfirmedBalance)
                         return avail.gte(new Big(HeatAPI.fee.standard)) > 0 ? "" : "insufficient HEAT balance"
                     } catch (e) {
-                        return e
+                        return "Unknown HEAT balance: " + e?.toString()
                     }
-                }, reason => reason)
+                })
+            .catch(reason => {
+                console.error(reason)
+                return "Cannot recognise the state of HEAT account: " + reason?.toString()
+            })
     }
+
+    let apiGetKeystoreValueFunc
 
     export function loadPaymentMessage(txId: string, messageTime: number) {
         let store = getPaymentMessageStore()
@@ -86,36 +134,41 @@ namespace wlt {
         let decrypt = (encrypted: IEncryptedMessage) => {
             try {
                 return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, user.publicKey, user.secretPhrase)
-            } catch (e) {
-                return null
-            }
+            } catch (e) {}
+            try {
+                return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, SERVICE_PUBKEY, user.secretPhrase)
+            } catch (e) {}
+            return null
         }
 
-        return new Promise<{method: number, text: string}>((resolve, reject) => {
-            if (messageTime < PAYMENT_MESSAGE_BIRTH_TIME) resolve(null)
-
+        return new Promise<{ method: number, text: string }>((resolve, reject) => {
             //first try to load message from local store
             let encryptedMessage: IEncryptedMessage = store.get(messageId)
-            if (encryptedMessage) {
-                let message = decrypt(encryptedMessage)
-                resolve(message ? {method: 0, text: message} : null)
-            } else {
-                //there is no message in local store so try find the entry in HEAT Keystore
-                getHeatService().api.getKeystoreAccountEntry(user.account, messageId).then(response => {
-                    let parsed = utils.parseResponse(response)
-                    if (!parsed.errorDescription) {
-                        let encryptedMessage: IEncryptedMessage = JSON.parse(parsed.value)
-                        let message = decrypt(encryptedMessage)
-                        resolve(message ? {method: 1, text: message} : null)
-                    }
-                }, reason => {
-                    if (reason.description == "Unknown key") {
-                        resolve(null)
-                    } else {
-                        reject(reason)
-                    }
-                })
+            let messageText = encryptedMessage ? decrypt(encryptedMessage) : null
+            if (messageText) {
+                resolve({method: 0, text: messageText})
+                return
             }
+            if (!apiGetKeystoreValueFunc) apiGetKeystoreValueFunc = (account, messageId) => getHeatService().api.getKeystoreAccountEntryAllowingNull(account, messageId)
+            //there is no message in local store so try find the entry in HEAT Keystore
+            apiGetKeystoreValueFunc(user.account, messageId).then(response => {
+                let parsed = utils.parseResponse(response)
+                if (!parsed.errorDescription && parsed.value) {
+                    encryptedMessage = JSON.parse(parsed.value)
+                    let message = decrypt(encryptedMessage)
+                    resolve(message ? {method: 1, text: message} : null)
+                }
+            }, reason => {
+                if (reason.code == -1) {
+                    //use old API function that return error response on not found value
+                    apiGetKeystoreValueFunc = (account, messageId) => getHeatService().api.getKeystoreAccountEntry(account, messageId)
+                }
+                if (reason.description == "Unknown key") {
+                    resolve(null)
+                } else {
+                    reject(reason)
+                }
+            })
         })
     }
 

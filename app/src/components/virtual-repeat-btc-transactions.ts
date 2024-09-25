@@ -19,8 +19,8 @@
           <div class="truncate-col message-col left">TO</div>
           <!-- AMOUNT -->
           <div class="truncate-col amount-col right">Amount</div>
-          <!-- MESSAGE -->
-          <div class="truncate-col message-col left">Message</div>
+          <!-- MEMO -->
+          <div class="truncate-col message-col left">Memo</div>
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
         </md-list-item>
@@ -47,13 +47,16 @@
             <div class="truncate-col amount-col right">
               <span>{{item.amount}}</span>
             </div>
-            <!-- MESSAGE -->
+            <!-- MEMO -->
             <div ng-if="item.message" class="truncate-col message-col left" flex>
                 <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
             </div>
-            <span ng-if="!item.message" class="truncate-col message-col left" style="opacity: 0.5">-</span>
+            <span ng-if="!item.message" class="truncate-col message-col left">
+              <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">create</a>
+            </span>
+            
             <!-- JSON -->
             <div class="truncate-col json-col">
               <a ng-click="vm.jsonDetails($event, item.json)">
@@ -182,10 +185,24 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     })
   }
 
-  jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
-  }
+    jsonDetails($event, item) {
+        dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
+    }
 
-  onSelect(selectedTransaction) { }
+    paymentMemoDialog($event, item) {
+        let heatService = <HeatService>heat.$inject.get('heat')
+        wlt.getHeatUnavailableReason(heatService, this.user.account)
+            .then(heatUnavailableReason => wlt.paymentMemoDialog(item.txid, heatUnavailableReason))
+            .then(value => {
+                let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+                setTimeout(refresh, 2 * 1000)
+            })
+            .catch(reason => {
+                if (reason) console.error(reason)
+            })
+    }
+
+    onSelect(selectedTransaction) {
+    }
 
 }

@@ -63,8 +63,8 @@
           <!-- INFO -->
           <div class="truncate-col info-col left" flex>Info</div>
 
-          <!-- MESSAGE -->
-          <div class="truncate-col left" flex>Message</div>
+          <!-- Memo -->
+          <div class="truncate-col left" flex>Memo</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -117,13 +117,15 @@
               <span ng-bind-html="item.renderedInfo"></span>
             </div>
 
-            <!-- MESSAGE -->
+            <!-- MEMO -->
             <div ng-if="item.message" class="truncate-col left" flex>
                 <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
             </div>
-            <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">-</span>
+            <span ng-if="!item.message" class="truncate-col left">
+              <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">create</a>
+            </span>
 
             <!-- JSON -->
             <div class="truncate-col json-col">
@@ -199,7 +201,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
@@ -213,6 +215,19 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   jsonDetails($event, item) {
     dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
+  }
+
+  paymentMemoDialog($event, item) {
+    let heatService = <HeatService>heat.$inject.get('heat')
+    wlt.getHeatUnavailableReason(heatService, this.user.account)
+        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.txid, heatUnavailableReason))
+        .then(value => {
+          let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+          setTimeout(refresh, 2 * 1000)
+        })
+        .catch(reason => {
+          if (reason) console.error(reason)
+        })
   }
 
   imageUrl(contractAddress: string) {

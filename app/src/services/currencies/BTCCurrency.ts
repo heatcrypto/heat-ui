@@ -7,8 +7,7 @@ class BTCCurrency implements ICurrency {
   private bitcoinMessagesService: BitcoinMessagesService
   private user: UserService
 
-  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string,
-              private postAction?: (txId: string, message: string, paymentMessageMethod: number) => Promise<any>) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     this.homePath = `/bitcoin-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
@@ -38,31 +37,26 @@ class BTCCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog = ($event) => {
-    let heatService = <HeatService> heat.$inject.get('heat')
-      wlt.getHeatUnavailableReason(heatService, this.user.account)
-          .then(heatUnavailableReason => this.sendBtc($event, heatUnavailableReason))
-          .then(data => {
-                  if (data != null) {
-                      let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
-                      let timestamp = new Date().getTime()
-                      this.pendingTransactions.add(this.address, data.txId, timestamp)
-                      this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
-                  }
-                  return data
-              },
-              err => {
-                  if (err) {
-                      dialogs.alert($event, 'Send BTC Error', 'There was an error sending this transaction: ' + JSON.stringify(err))
-                  }
+    let heatService = <HeatService>heat.$inject.get('heat')
+    this.sendBtc($event)
+        .then(data => {
+              if (data && data.txId) {
+                let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
+                let timestamp = new Date().getTime()
+                this.pendingTransactions.add(this.address, data.txId, timestamp)
+                this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
+                return wlt.getHeatUnavailableReason(heatService, this.user.account)
+                    .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+                    .catch(reason => {
+                      if (reason) console.error(reason)
+                    })
               }
-          ).then(data => {
-              if (!data) return
-              this.postAction(data.txId, data.message, data.paymentMessageMethod).then(
-                  v => console.log("BTC sending post action is performed " + v),
-                  reason => dialogs.alert($event, 'BTC sending post action is not performed', reason)
-              ).catch(reason => dialogs.alert($event, 'BTC sending post action error', reason))
-          }
-      )
+            },
+            err => {
+              if (err) {
+                dialogs.alert($event, 'Send BTC Error', 'There was an error sending this transaction: ' + JSON.stringify(err))
+              }
+            })
   }
 
   /* Invoke SEND token dialog */
@@ -70,7 +64,7 @@ class BTCCurrency implements ICurrency {
 
   }
 
-  sendBtc($event, heatUnavailableReason) {
+  sendBtc($event) {
 
     class FeeList {
       satByteFee = {}
@@ -96,10 +90,6 @@ class BTCCurrency implements ICurrency {
     let feeList = new FeeList()
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-
-      this.heatUnavailableReason = heatUnavailableReason.description
-          || heatUnavailableReason.data?.errorDescription
-          || heatUnavailableReason
 
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
@@ -337,7 +327,7 @@ class BTCCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId:string, message: string, paymentMessageMethod: number}>()
+    let deferred = $q.defer<wlt.SendingResult>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -381,17 +371,6 @@ class BTCCurrency implements ICurrency {
                   <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
                 </md-input-container>
 
-                <md-input-container flex style="margin-bottom: 14px">
-                  <label>Payment message / memo (encrypted)</label>
-                  <input ng-model="vm.data.message" name="message" ng-maxlength="500" ng-disabled="!vm.paymentMessageMethod">
-                  <div>Store message on:</div>
-                  <md-radio-group ng-model="vm.paymentMessageMethod" layout="row" style="margin-left: 10px;">
-                    <md-radio-button value=0 >This device</md-radio-button>
-                    <md-radio-button value=1 ng-disabled="vm.heatUnavailableReason">Heat blockchain</md-radio-button>
-                    <span ng-if="vm.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.heatUnavailableReason}})</span>
-                  </md-radio-group>
-                </md-input-container>
-                
               <md-input-container>
               <div style="margin-bottom: 12px">
                 Network fee in Sat/Byte &nbsp;&nbsp; (updated {{vm.seconds}}s ago) <br>
