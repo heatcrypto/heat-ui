@@ -231,11 +231,18 @@ class HeatService {
         let body = []
         res.on('data', (chunk) => {body.push(chunk)})
         res.on('end', () => {
-          let response = JSON.parse(body.join(''))
-          if (angular.isDefined(response.errorDescription)) {
-            onFailure(response)
-          } else {
-            onSuccess(response)
+          let response
+          let content = body.join('')
+          try {
+            response = JSON.parse(content)
+            if (angular.isDefined(response.errorDescription)) {
+              onFailure(response)
+            } else {
+              onSuccess(response)
+            }
+          } catch (e) {
+            console.error("response in not JSON parseable: \n" + content)
+            onFailure(content)
           }
         })
       }
