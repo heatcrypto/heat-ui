@@ -189,12 +189,7 @@ namespace wlt {
     }
 
     function createMessageId(txId: string) {
-        return converters.byteArrayToHexString(
-            // @ts-ignore
-            hash160(converters.hexStringToByteArray(
-                converters.stringToHexString(txId)
-            ))
-        )
+        return heat.crypto.calculateStringHash(txId)
     }
 
     function getPaymentMessageStore() {
