@@ -220,7 +220,7 @@ class EthereumAccountComponent {
     for (const ptx of this.pendingTransactions) {
       //processed item has message value or null so undefined is needed to be processed
       if (ptx.message === undefined) {
-        wlt.loadPaymentMessage(ptx.txHash, ptx.timestamp)
+        wlt.loadPaymentMessage(ptx.txHash)
             .then(v => ptx.message = v)
             .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
       }

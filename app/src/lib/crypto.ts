@@ -334,7 +334,7 @@ module heat.crypto {
    * @param key2 ByteArray
    * @returns ByteArray
    */
-  function getSharedKey(key1, key2) {
+  export function getSharedKey(key1: Array<number>, key2: Array<number>) {
     return converters.shortArrayToByteArray(
               curve25519_(converters.byteArrayToShortArray(key1),
                           converters.byteArrayToShortArray(key2), null));

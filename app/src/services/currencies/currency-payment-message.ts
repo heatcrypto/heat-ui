@@ -4,16 +4,13 @@ namespace wlt {
     let messageStore: Store
     let heatService: HeatService
     let userService: UserService
-    const PAYMENT_MESSAGE_BIRTH_TIME = new Date(2024, 7, 20).getTime()
-    const SERVICE_PUBKEY = "9b3cc534be3cf8b9c0d75ac9e32c1b96b45679de7515ca367ac5637c4f32305a" //HEAT account 349054386597789736
 
     export function paymentMemoDialog(txId: string, heatUnavailableReason: string) {
         let locals = {
             v: {
                 text: "",
                 paymentMessageMethod: undefined,
-                heatUnavailableReason: heatUnavailableReason,
-                sharedMemo: false
+                heatUnavailableReason: heatUnavailableReason
             }
         }
         return dialogs.dialog({
@@ -30,9 +27,6 @@ namespace wlt {
                     <md-radio-button value=1 ng-disabled="vm.v.heatUnavailableReason">Heat blockchain</md-radio-button>
                     <span ng-if="vm.v.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.v.heatUnavailableReason}})</span>
                   </md-radio-group>
-                  <md-checkbox ng-model="vm.v.sharedMemo" ng-if="vm.v.paymentMessageMethod == 1" style="margin-top: 4px;">
-                    Share memo to recipient
-                  </md-checkbox>
               </md-input-container>
               <md-input-container flex>
                   <label>Payment message / memo (encrypted)</label>
@@ -40,8 +34,7 @@ namespace wlt {
               </md-input-container>
             `
         }).then(value => {
-            let recipientPubKey = locals.v.paymentMessageMethod == 1 && locals.v.sharedMemo ? null : getUserService().publicKey
-            return storePaymentMessage(txId, locals.v.text, locals.v.paymentMessageMethod, recipientPubKey)
+            return storePaymentMessage(txId, locals.v.text, locals.v.paymentMessageMethod, getUserService().publicKey)
         })
     }
 
@@ -49,9 +42,9 @@ namespace wlt {
         let user = getUserService()
         let encryptedMessage = heat.crypto.encryptMessage(
             message,
-            recipientPubKey || SERVICE_PUBKEY,
+            recipientPubKey,
             user.secretPhrase)
-        let messageId = createMessageId(txId)
+        let messageId = createMessageId(txId, recipientPubKey)
 
         let sendHeatPaymentMessage = (resolve, reject) => {
             let errorCallback = reason => reject("linked message error: " + JSON.stringify(reason))
@@ -125,18 +118,15 @@ namespace wlt {
 
     let apiGetKeystoreValueFunc
 
-    export function loadPaymentMessage(txId: string, messageTime: number) {
+    export function loadPaymentMessage(txId: string) {
         let store = getPaymentMessageStore()
         let user = getUserService()
-        //message id is seen for everybody so use hash to hide real tx id
-        let messageId = createMessageId(txId)
+        //hide original txId in message id
+        let messageId = createMessageId(txId, user.publicKey)
 
         let decrypt = (encrypted: IEncryptedMessage) => {
             try {
                 return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, user.publicKey, user.secretPhrase)
-            } catch (e) {}
-            try {
-                return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, SERVICE_PUBKEY, user.secretPhrase)
             } catch (e) {}
             return null
         }
@@ -149,13 +139,22 @@ namespace wlt {
                 resolve({method: 0, text: messageText})
                 return
             }
-            if (!apiGetKeystoreValueFunc) apiGetKeystoreValueFunc = (account, messageId) => getHeatService().api.getKeystoreAccountEntryAllowingNull(account, messageId)
-            //there is no message in local store so try find the entry in HEAT Keystore
+            if (!apiGetKeystoreValueFunc) {
+                apiGetKeystoreValueFunc = (account, messageIds) => getHeatService().api.getKeystoreAccountEntries(account, messageIds)
+            }
+            //there is no message in local store so try find the entry in HEAT Keystore using 2 ids
             apiGetKeystoreValueFunc(user.account, messageId).then(response => {
                 let parsed = utils.parseResponse(response)
-                if (!parsed.errorDescription && parsed.value) {
-                    encryptedMessage = JSON.parse(parsed.value)
-                    let message = decrypt(encryptedMessage)
+                if (parsed.errorDescription) {
+                    reject(parsed.errorDescription)
+                } else {
+                    //new api keystore function returns multiple entries, old api func returns entry directly
+                    let entry = (parsed.entries ? parsed.entries[0] : null) || parsed
+                    let message
+                    if (entry) {
+                        encryptedMessage = JSON.parse(entry.value)
+                        message = decrypt(encryptedMessage)
+                    }
                     resolve(message ? {method: 1, text: message} : null)
                 }
             }, reason => {
@@ -188,8 +187,12 @@ namespace wlt {
         return n
     }
 
-    function createMessageId(txId: string) {
-        return heat.crypto.calculateStringHash(txId)
+    function createMessageId(txId: string, recipientPubKey: string) {
+        let userPrivateKeyBytes = converters.hexStringToByteArray(
+            heat.crypto.getPrivateKey(getUserService().secretPhrase))
+        const recipientPubKeyBytes = converters.hexStringToByteArray(recipientPubKey)
+        let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, recipientPubKeyBytes)
+        return heat.crypto.calculateStringHash(txId + sharedSecret)
     }
 
     function getPaymentMessageStore() {

@@ -274,7 +274,7 @@ interface IHeatAPI {
    */
   getKeystoreEntryCountByAccount(account: string): angular.IPromise<number>;
   getKeystoreAccountEntry(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction>;
-  getKeystoreAccountEntryAllowingNull(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction>;
+  getKeystoreAccountEntries(account: string, key: string): angular.IPromise<{entries: IHEATKeystoreTransaction[]}>;
   listKeystoreAccountEntries(account: string, from: string, to: string): angular.IPromise<Array<IHEATKeystoreTransaction>>;
   saveKeystoreEntry(key: string, value: string, secretPhrase: string): angular.IPromise<IHeatCreateTransactionOutput>;
 }
