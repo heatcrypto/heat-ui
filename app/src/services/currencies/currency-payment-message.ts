@@ -34,12 +34,13 @@ namespace wlt {
               </md-input-container>
             `
         }).then(value => {
-            return storePaymentMessage(txId, locals.v.text, locals.v.paymentMessageMethod, getUserService().publicKey)
+            return storePaymentMessage(txId, locals.v.text, locals.v.paymentMessageMethod)
         })
     }
 
     export function storePaymentMessage(txId: string, message: string, paymentMessageMethod: number, recipientPubKey?: string) {
         let user = getUserService()
+        recipientPubKey = recipientPubKey || user.publicKey
         let encryptedMessage = heat.crypto.encryptMessage(
             message,
             recipientPubKey,
