@@ -372,7 +372,7 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/keystore/get/${account}/${key}`);
   }
 
-  getKeystoreAccountEntries(account: string, keys: string): angular.IPromise<{entries: IHEATKeystoreTransaction[]}> {
+  getKeystoreAccountEntryExt(account: string, keys: string): angular.IPromise<{entries: IHEATKeystoreTransaction[]}> {
     return this.heat.get(`/keystore/getExt/${account}/${keys}`);
   }
 

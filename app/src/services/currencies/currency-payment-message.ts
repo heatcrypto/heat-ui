@@ -113,7 +113,7 @@ namespace wlt {
                 })
             .catch(reason => {
                 console.error(reason)
-                return "Cannot recognise the state of HEAT account: " + reason?.toString()
+                return "Cannot recognise the state of HEAT account: " + reason?.description || JSON.stringify(reason)
             })
     }
 
@@ -141,7 +141,7 @@ namespace wlt {
                 return
             }
             if (!apiGetKeystoreValueFunc) {
-                apiGetKeystoreValueFunc = (account, messageIds) => getHeatService().api.getKeystoreAccountEntries(account, messageIds)
+                apiGetKeystoreValueFunc = (account, messageIds) => getHeatService().api.getKeystoreAccountEntryExt(account, messageIds)
             }
             //there is no message in local store so try find the entry in HEAT Keystore using 2 ids
             apiGetKeystoreValueFunc(user.account, messageId).then(response => {
@@ -150,7 +150,7 @@ namespace wlt {
                     reject(parsed.errorDescription)
                 } else {
                     //new api keystore function returns multiple entries, old api func returns entry directly
-                    let entry = (parsed.entries ? parsed.entries[0] : null) || parsed
+                    let entry = parsed.entries ? parsed.entries[0] : parsed
                     let message
                     if (entry) {
                         encryptedMessage = JSON.parse(entry.value)
