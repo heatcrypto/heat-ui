@@ -221,6 +221,7 @@ class PeersComponent {
     }
 
     calculateDerived(peers: PeerView[], recentFeeders: [{ address: string; height: string }]) {
+        if (peers.length == 0) return
         let maxd = peers.reduce((p, v) => {
             return ( p.downloaded > v.downloaded ? p : v )
         })
