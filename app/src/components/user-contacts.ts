@@ -223,6 +223,12 @@ class UserContactsComponent {
   }
 
   purgeMessages(contact: IHeatMessageContact) {
+    if (!contact) {
+      this.$mdToast.show(
+          this.$mdToast.simple().textContent("Select contact first please").hideDelay(5000)
+      )
+      return
+    }
     dialogs.confirm(
       `Contact ${contact.publicName || contact.privateName || contact.account}`,
       `Do you want to purge the contact's messages in local storage?`
