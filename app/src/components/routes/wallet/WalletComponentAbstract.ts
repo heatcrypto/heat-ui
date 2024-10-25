@@ -24,11 +24,12 @@
 
 namespace wlt {
 
+  export let walletEntriesCache: Map<string, WalletEntry> = new Map<string, wlt.WalletEntry>()
+
   export abstract class WalletComponentAbstract {
 
     public lightwalletService: LightwalletService;
     public localKeyStore: LocalKeyStoreService;
-    entries: Array<wlt.WalletEntry | wlt.CurrencyBalance | wlt.TokenBalance> = []
     bitcoreService: BitcoreService;
     nxtCryptoService: NXTCryptoService;
     ardorCryptoService: ARDORCryptoService;
@@ -37,6 +38,7 @@ namespace wlt {
     iotaCoreService: IotaCoreService;
     bchCryptoService: BCHCryptoService;
 
+    entries: Array<wlt.WalletEntry | wlt.CurrencyBalance | wlt.TokenBalance> = []
     walletEntries: Array<wlt.WalletEntry> = []
 
     abstract flatten()
@@ -56,7 +58,13 @@ namespace wlt {
       this.walletEntries = []
       this.localKeyStore.list().map((account: string) => {
         let name = this.localKeyStore.getName(account)
-        let walletEntry = new wlt.WalletEntry(account, name, this)
+        let walletEntry = walletEntriesCache.get(account)
+        if (walletEntry) {
+          walletEntry.setWalletComponent(this)
+          walletEntry["cached"] = true
+        } else {
+          walletEntry = new wlt.WalletEntry(account, name, this)
+        }
         this.walletEntries.push(walletEntry)
       });
       this.walletEntries.sort((a, b) => {
@@ -66,8 +74,8 @@ namespace wlt {
         let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
         if (password) {
           try {
-            var key = this.localKeyStore.load(walletEntry.account, password);
-            if (key) {
+            let key = this.localKeyStore.load(walletEntry.account, password);
+            if (key && !walletEntry["cached"]) {
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
               walletEntry.unlocked = true

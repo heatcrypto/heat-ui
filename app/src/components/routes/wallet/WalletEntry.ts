@@ -46,6 +46,10 @@ namespace wlt {
       this.visibleLabel = getEntryVisibleLabel(this.account)
     }
 
+    setWalletComponent(component: WalletComponentAbstract) {
+      this.component = component
+    }
+
     public toggle(forceVisible?: boolean) {
       this.expanded = forceVisible || !this.expanded
       this.currencies.forEach(curr => {

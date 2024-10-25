@@ -56,6 +56,14 @@
         <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
           <md-option style="height: 30px;"ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
+        
+        <md-checkbox ng-model="vm.displayUnlocked" style="margin: auto">
+          Display unlocked only
+        </md-checkbox>
+        
+        <md-button ng-click="vm.unlock($event)" class="md-primary md-raised" aria-label="Unlock account">
+          Unlock
+        </md-button>
       </div>
 
       <div layout="column" layout-fill  flex>
@@ -67,7 +75,7 @@
                 - per currency token balances  -->
 
           <md-list layout-fill layout="column" flex>
-            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible && !entry.hidden">
+            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible && !entry.hidden" ng-hide="entry.isWalletEntry && !entry.unlocked && vm.displayUnlocked">
 
               <!-- Wallet entry -->
               <div ng-if="entry.isWalletEntry" layout="row" class="wallet-entry" flex>
@@ -90,7 +98,6 @@
                   <span>{{entry.identifier}}</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
                 </div>
-                <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
 
                 <md-menu md-position-mode="target-right target" md-offset="34px 34px" ng-if="entry.unlocked">
                   <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
@@ -228,9 +235,12 @@
   'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
 class WalletComponent extends wlt.WalletComponentAbstract {
 
-  public static instance;
-  selectAll = true;
+  static displayUnlocked = false
+
+  public static instance
+  selectAll = true
   allLocked = true
+  displayUnlocked = false
 
   //walletEntries: Array<wlt.WalletEntry> = []
   //createdAddresses: { [key: string]: Array<string> } = {}
@@ -289,6 +299,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.bitcoreService = bitcoreService;
     WalletComponent.instance = this;
     this.store = wlt.getStore()
+
+    this.displayUnlocked = WalletComponent.displayUnlocked
+    $scope.$on('$destroy', () => WalletComponent.displayUnlocked = this.displayUnlocked)
+
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
       let index = this.chains.findIndex((entry) => entry.name === nxtChain.name);
@@ -558,7 +572,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       );
   }
 
-  unlock($event, selectedWalletEntry: wlt.WalletEntry) {
+  unlock($event, selectedWalletEntry?: wlt.WalletEntry) {
     dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin Code) to unlock', '').then(
       pin => {
         let count = 0
@@ -573,18 +587,19 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
               walletEntry.label = key.label
               walletEntry.unlocked = true
+              wlt.walletEntriesCache.set(walletEntry.account, walletEntry)
               this.initWalletEntry(walletEntry)
             }
           }
         })
         let message = `Unlocked ${count ? count : 'NO'} entries`
         this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        selectedWalletEntry.toggle(true)
+        selectedWalletEntry?.toggle(true)
 
         /* Only if no user is signed in currently, will we auto select one signin */
         if (!this.user.unlocked) {
           /* Try and unlock the selected entry */
-          if (selectedWalletEntry.unlocked) {
+          if (selectedWalletEntry?.unlocked) {
             for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
               let balance = <wlt.CurrencyBalance>selectedWalletEntry.currencies[i]
               if (balance.isCurrencyBalance) {
