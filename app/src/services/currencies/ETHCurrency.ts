@@ -59,20 +59,25 @@ class ETHCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-    this.sendEther($event).then(
-      data => {
-        if (data && data.txId) {
-          let address = this.user.currency.address
-          let timestamp = new Date().getTime()
-          this.pendingService.add(address, data.txId, timestamp)
-        }
-      },
-      err => {
-        if (err) {
-          dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: '+JSON.stringify(err))
-        }
-      }
-    )
+    let heatService = <HeatService>heat.$inject.get('heat')
+    this.sendEther($event)
+        .then(data => {
+              if (data && data.txId) {
+                let address = this.user.currency.address
+                let timestamp = new Date().getTime()
+                this.pendingService.add(address, data.txId, timestamp)
+                return wlt.getHeatUnavailableReason(heatService, this.user.account)
+                    .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+                    .catch(reason => {
+                      if (reason) console.error(reason)
+                    })
+              }
+            },
+            err => {
+              if (err) {
+                dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: ' + JSON.stringify(err))
+              }
+            })
   }
 
   /* Invoke SEND token dialog */
@@ -81,7 +86,9 @@ class ETHCurrency implements ICurrency {
   }
 
   sendEther($event) {
+
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      this.paymentMessageMethod = null
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
@@ -97,7 +104,9 @@ class ETHCurrency implements ICurrency {
           ethBlockExplorerService.broadcast(rawTx).then(
             data => {
               if (data.txId) {
-                $mdDialog.hide(data).then(() => {
+                data.message = $scope['vm'].data.message
+                let sendingResult = Object.assign(data, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
+                $mdDialog.hide(sendingResult).then(() => {
                   dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
                 })
               } else {
@@ -136,6 +145,7 @@ class ETHCurrency implements ICurrency {
         recipient: '',
         recipientInfo: '',
         fee: '0.000420',
+        message: ''
       }
 
       /* Lookup recipient info and display this in the dialog */
@@ -179,7 +189,7 @@ class ETHCurrency implements ICurrency {
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId:string }>()
+    let deferred = $q.defer<wlt.SendingResult>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -215,6 +225,20 @@ class ETHCurrency implements ICurrency {
                   <label>Gas limit</label>
                   <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
                 </md-input-container>
+                
+                <!--<md-input-container flex style="margin-bottom: 14px">
+                  <label>Payment message / memo (encrypted)</label>
+                  <input ng-model="vm.data.message" name="message" ng-maxlength="500" ng-disabled="!vm.paymentMessageMethod">
+                  <div>Store message on:</div>
+                  <md-radio-group ng-model="vm.paymentMessageMethod" layout="row">
+                    <md-radio-button value=0 >This device</md-radio-button>
+                    <md-radio-button value=1 ng-disabled="vm.heatUnavailableReason">Heat blockchain</md-radio-button>
+                    <span ng-if="vm.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.heatUnavailableReason}})</span>
+                  </md-radio-group>
+                  <md-checkbox ng-model="vm.sharedMemo" ng-if="vm.paymentMessageMethod == 1" style="margin-top: 4px;">
+                    Share memo to recipient
+                  </md-checkbox>
+                </md-input-container>-->
 
                 <p>Fee: {{vm.data.fee}} ETH</p>
               </div>

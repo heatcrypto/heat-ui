@@ -56,12 +56,13 @@ class UserBalanceComponent {
     $scope.$on('$destroy', unsubscribe)
 
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
-    $scope.$on('$destroy', () => {
-      this.user.removeListener(UserService.EVENT_UNLOCKED, refresh)
-    })
 
     let interval = $interval(() => this.refresh(), 5*1000)
-    $scope.$on('$destroy', () => { $interval.cancel(interval) })
+
+    $scope.$on('$destroy', () => {
+      $interval.cancel(interval)
+      this.user.removeListener(UserService.EVENT_UNLOCKED, refresh)
+    })
 
     this.refresh();
 

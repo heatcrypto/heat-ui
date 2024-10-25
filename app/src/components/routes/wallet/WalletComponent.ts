@@ -792,6 +792,9 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     // @ts-ignore
     let exported = this.localKeyStore.export(accountCurrencies, accountAddresses)
+    let paymentMessages = wlt.exportPaymentMessages()
+    exported = Object.assign(exported, {paymentMessages: paymentMessages})
+
     let encoded = this.walletFile.encode(exported);
     let blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
 

@@ -76,8 +76,8 @@ class BtcBlockExplorerService {
     this.btcProvider.getTransactions(address, from, to).then(info => {
       let data = Update3rdPartyAPIResponsesUtil.updateBTCGetTransactions(info, this.btcProvider)
       deferred.resolve(data)
-    }, () => {
-      deferred.reject()
+    }, (reason) => {
+      deferred.reject(reason)
     })
     return deferred.promise
   }

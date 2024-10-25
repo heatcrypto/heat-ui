@@ -189,7 +189,8 @@ class PeersComponent {
 
         let updateTitle = () => {
             this.$scope.$evalAsync(() => {
-                this.apiServerAddress = this.settings.get(SettingsService.HEAT_HOST) + ":" + this.settings.get(SettingsService.HEAT_PORT)
+                let port = this.settings.get(SettingsService.HEAT_PORT)
+                this.apiServerAddress = this.settings.get(SettingsService.HEAT_HOST) + (port ? ":" + port : "")
                 this.heat.api.getBlockchainStatus().then(status => {
                     this.apiServerVersion = status.version
                 })
@@ -221,6 +222,7 @@ class PeersComponent {
     }
 
     calculateDerived(peers: PeerView[], recentFeeders: [{ address: string; height: string }]) {
+        if (peers.length == 0) return
         let maxd = peers.reduce((p, v) => {
             return ( p.downloaded > v.downloaded ? p : v )
         })

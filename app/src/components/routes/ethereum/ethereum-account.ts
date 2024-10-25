@@ -69,6 +69,7 @@
               <div class="truncate-col date-col left">Time</div>
               <div class="truncate-col id-col left">Status</div>
               <div class="truncate-col info-col left" flex>Transaction Hash</div>
+              <div class="truncate-col left" flex>Message</div>
             </md-list-item>
             <md-list-item ng-repeat="item in vm.pendingTransactions" class="row">
               <div class="truncate-col date-col left">{{item.date}}</div>
@@ -78,6 +79,12 @@
               <div class="truncate-col info-col left" flex>
                 <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.txHash}}">{{item.txHash}}</a>
               </div>
+              <div class="truncate-col left" ng-if="item.message">
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                {{item.message.text}}
+                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+              </div>
+              <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">--</span>
             </md-list-item>
           </md-list>
           <p></p>
@@ -96,7 +103,7 @@ class EthereumAccountComponent {
   erc20Tokens: Array<{ balance: string, symbol: string, name: string, id: string }> = [];
   personalize: boolean
 
-  pendingTransactions: Array<{ date: string, txHash: string, timestamp: number, address: string }> = []
+  pendingTransactions: Array<{ date: string, txHash: string, timestamp: number, address: string, message?: {method: number, text: string} }> = []
   prevIndex = 0
 
   constructor(private $scope: angular.IScope,
@@ -183,6 +190,7 @@ class EthereumAccountComponent {
           })
         })
         this.pendingTransactions.sort((a, b) => b.timestamp - a.timestamp)
+        this.loadPaymentMessages()
       }
     })
   }
@@ -205,5 +213,18 @@ class EthereumAccountComponent {
         }
       })
     })
+    this.loadPaymentMessages()
   }
+
+  private loadPaymentMessages() {
+    for (const ptx of this.pendingTransactions) {
+      //processed item has message value or null so undefined is needed to be processed
+      if (ptx.message === undefined) {
+        wlt.loadPaymentMessage(ptx.txHash)
+            .then(v => ptx.message = v)
+            .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
+      }
+    }
+  }
+
 }

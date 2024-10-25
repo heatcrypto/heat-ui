@@ -20,6 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
+type PendingType = {
+  date: string
+  txId: string
+  time: number
+  address: string
+  message?: {method: number, text: string} //linked message
+}
+
 @RouteConfig('/bitcoin-account/:account')
 @Component({
   selector: 'bitcoinAccount',
@@ -55,6 +64,7 @@
               <div class="truncate-col date-col left">Time</div>
               <div class="truncate-col id-col left">Status</div>
               <div class="truncate-col tx-col left" flex>Transaction Id</div>
+              <div class="truncate-col info-col left" flex>Message</div>
             </md-list-item>
             <md-list-item ng-repeat="item in vm.pendingTransactions" class="row">
               <div class="truncate-col date-col left">{{item.date}}</div>
@@ -64,6 +74,12 @@
               <div class="truncate-col tx-col left" flex>
                 <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
+              <div class="truncate-col left" ng-if="item.message">
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                {{item.message.text}}
+                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+              </div>
+              <span ng-if="!item.message" class="truncate-col left" style="opacity: 0.5">-</span>
             </md-list-item>
           </md-list>
           <p></p>
@@ -73,11 +89,11 @@
     </div>
   `
 })
-@Inject('$scope', 'btcBlockExplorerService', 'bitcoinPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
+@Inject('$scope', 'btcBlockExplorerService', 'bitcoinPendingTransactions', '$interval', '$mdToast', 'settings', 'user', 'heat')
 class BitcoinAccountComponent {
   account: string; // @input
   balanceUnconfirmed: any;
-  pendingTransactions: Array<{ date: string, txId: string, time: number, address: string }> = []
+  pendingTransactions: PendingType[] = []
   prevIndex = 0
   busy = true
 
@@ -87,17 +103,18 @@ class BitcoinAccountComponent {
               private $interval: angular.IIntervalService,
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
-              private user: UserService) {
+              private user: UserService,
+              private heat: HeatService) {
   }
 
   $onInit() {
-    this.refresh();
+    this.refresh()
 
     let listener = this.updatePendingTransactions.bind(this)
     this.bitcoinPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = this.$interval(this.timerHandler.bind(this), 1000)
+    let promise = this.$interval(this.timerHandler.bind(this), 12_000)
     this.timerHandler()
 
     this.$scope.$on('$destroy', () => {
@@ -134,7 +151,7 @@ class BitcoinAccountComponent {
       let addr = this.user.currency.address
       let txns = this.bitcoinPendingTransactions.pending[addr]
       if (txns) {
-        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+        let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
           this.pendingTransactions.push({
             date: dateFormat(new Date(tx.time), format),
@@ -144,18 +161,32 @@ class BitcoinAccountComponent {
           })
         })
         this.pendingTransactions.sort((a, b) => b.time - a.time)
+        this.loadPaymentMessages()
       }
     })
   }
 
   refresh() {
-    this.busy = true;
-    this.balanceUnconfirmed = "";
+    this.busy = true
+    this.balanceUnconfirmed = ""
     this.btcBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = isNaN(info) ? null : new Big(info / 100000000).toFixed(8);
-        this.busy = false;
+        this.balanceUnconfirmed = isNaN(info) ? null : new Big(info / 100000000).toFixed(8)
+        this.busy = false
       })
     })
+    this.loadPaymentMessages()
   }
+
+  private loadPaymentMessages() {
+    for (const ptx of this.pendingTransactions) {
+      //processed item has message value or null
+      if (ptx.message === undefined) {
+        wlt.loadPaymentMessage(ptx.txId)
+            .then(v => ptx.message = v)
+            .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
+      }
+    }
+  }
+
 }

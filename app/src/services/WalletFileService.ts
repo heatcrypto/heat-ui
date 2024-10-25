@@ -21,9 +21,10 @@
  * SOFTWARE.
  * */
 interface IHeatWalletFile {
-  version: number;
-  entries: Array<IHeatWalletFileEntry>;
+  version: number
+  entries: Array<IHeatWalletFileEntry>
   accountAddresses: {} //{[account: string]: Array<string>};
+  paymentMessages?: {id: string, content: any}[]
 }
 
 interface IHeatWalletFileEntry {
@@ -73,7 +74,8 @@ class WalletFileService {
     let walletFile: IHeatWalletFile = {
       version: version,
       entries: [],
-      accountAddresses: data.accountAddresses
+      accountAddresses: data.accountAddresses,
+      paymentMessages: data.paymentMessages
     };
 
     entries.forEach(entry => {

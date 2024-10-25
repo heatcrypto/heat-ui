@@ -200,8 +200,12 @@ abstract class AbstractTransaction {
     var position = 1;
     if ((transaction.flags & position) != 0) {
       let appendix = new AppendixMessage(attachment);
-      this.confirm("Message.message", data.message, appendix.message);
-      this.confirm("Message.messageIsText", data.messageIsText, appendix.isText);
+      // if message is formed on server transaction creation the client app has no the original message,
+      // in this case the field "message" has special value boolean false that is the indicator that validation no needed (impossible)
+      if (data.message !== false) {
+        this.confirm("Message.message", data.message, appendix.message);
+        this.confirm("Message.messageIsText", data.messageIsText, appendix.isText);
+      }
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
