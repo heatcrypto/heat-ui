@@ -63,6 +63,8 @@ abstract class VirtualRepeatComponent {
 
   private fetchPageDebounced;
 
+  protected cache: {get: (key) => any, put: (key, value) => void}
+
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService) {}
 
@@ -74,7 +76,6 @@ abstract class VirtualRepeatComponent {
     this.decorator = decorator;
     this.preprocessor = preprocessor;
     this.fetchPageDebounced = utils.debounce(this.fetchPage, 300);
-
     return this.determineLength();
   }
 
@@ -101,7 +102,9 @@ abstract class VirtualRepeatComponent {
 
   /* md-virtual-repeat */
   public getLength(): number {
-    return this.numItems;
+    if (!this.cache || this.numItems != -1) return this.numItems
+    let n = this.cache.get("numItems")
+    return n || this.numItems
   }
 
   protected determineLength(retain?: boolean): angular.IPromise<number> {
@@ -109,7 +112,8 @@ abstract class VirtualRepeatComponent {
     if (this.provider) {
       this.loadedPages.dirty = true
       this.provider.getPaginatedLength().then((length) => {
-        this.numItems = length;
+        this.numItems = length
+        this.cache?.put("numItems", length)
         if (length == 0) {
           this.$scope.$evalAsync(() => { this.loading = false })
         }
@@ -125,7 +129,8 @@ abstract class VirtualRepeatComponent {
     this.loadedPages.inProgress = true
     var firstIndex = pageNumber * this.PAGE_SIZE;
     var lastIndex = firstIndex + this.PAGE_SIZE;
-    this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
+
+    let processItems = (items: any[]) => {
       this.$scope.$evalAsync(() => { this.loading = false });
       if (this.preprocessor) {
         if (angular.isArray(items)) {
@@ -142,7 +147,16 @@ abstract class VirtualRepeatComponent {
       }
       this.loadedPages[pageNumber] = items
       this.loadedPages.inProgress = false
-    });
+    }
+
+    this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
+      processItems(items)
+      this.cache?.put(pageNumber, items)
+    }, reason => {
+      console.warn("fetching eth transactions error " + (reason ? JSON.stringify(reason) : ""))
+      let items: any[] = this.cache?.get(pageNumber)
+      processItems(items)
+    })
   }
 
   public select(item) {

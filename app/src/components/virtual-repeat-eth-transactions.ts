@@ -142,7 +142,7 @@
 })
 
 @Inject('$scope','$q','ethTransactionsProviderFactory','settings','user','render',
-  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions')
+  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions', 'storage')
 class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -159,8 +159,14 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private $mdPanel: angular.material.IPanelService,
               private controlCharRender: ControlCharRenderService,
               private web3: Web3Service,
-              private ethereumPendingTransactions: EthereumPendingTransactionsService) {
-    super($scope, $q);
+              private ethereumPendingTransactions: EthereumPendingTransactionsService,
+              private storage: StorageService) {
+    super($scope, $q)
+    let store = storage.namespace('txns-eth', this.$scope, true)
+    this.cache = {
+      get: key => store.get(this.user.currency.address + "-" + key),
+      put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
+    }
   }
 
   $onInit() {
@@ -199,7 +205,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         }
 
       }
-    );
+    ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
     let timeout = setTimeout(refresh, 10 * 1000)
