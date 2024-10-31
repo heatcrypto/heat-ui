@@ -42,6 +42,7 @@
             </div>
             <div class="value">
               {{vm.balanceUnconfirmed}} ETH
+              <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
           </div>
         </div>
@@ -95,7 +96,7 @@
   `
 })
 @Inject('$scope', 'web3', 'assetInfo', '$q', 'user', 'ethBlockExplorerService',
-  'ethereumPendingTransactions', 'settings', '$interval', '$mdToast')
+  'ethereumPendingTransactions', 'settings', '$interval', '$mdToast', 'storage')
 class EthereumAccountComponent {
   account: string; // @input
 
@@ -106,6 +107,9 @@ class EthereumAccountComponent {
   pendingTransactions: Array<{ date: string, txHash: string, timestamp: number, address: string, message?: {method: number, text: string} }> = []
   prevIndex = 0
 
+  protected cache: {get: (key) => any, put: (key, value) => void}
+  public cachedItems = false
+
   constructor(private $scope: angular.IScope,
               private web3: Web3Service,
               private assetInfo: AssetInfoService,
@@ -115,7 +119,8 @@ class EthereumAccountComponent {
               private pendingService: EthereumPendingTransactionsService,
               private settings: SettingsService,
               private $interval: angular.IIntervalService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private storage: StorageService) {
   }
 
   $onInit() {
@@ -136,6 +141,12 @@ class EthereumAccountComponent {
       this.pendingService.removeListener(listener)
       this.$interval.cancel(promise)
     })
+
+    let store = this.storage.namespace('currency-cache-eth', this.$scope, true)
+    this.cache = {
+      get: key => store.get(this.user.currency.address + "-" + key),
+      put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
+    }
   }
 
   /* Continueous timer that polls for one pending txn every 20 seconds,
@@ -197,7 +208,8 @@ class EthereumAccountComponent {
 
   refresh() {
     this.balanceUnconfirmed = "*";
-    this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
+
+    let processInfo = info => {
       this.$scope.$evalAsync(() => {
         this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
         if (info.tokens) {
@@ -212,6 +224,16 @@ class EthereumAccountComponent {
           })
         }
       })
+    }
+
+    this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
+      this.cachedItems = false
+      processInfo(info)
+      this.cache?.put(this.account, info)
+    }, reason => {
+      let info = this.cache?.get(this.account)
+      this.cachedItems = true
+      if (info) processInfo(info)
     })
     this.loadPaymentMessages()
   }

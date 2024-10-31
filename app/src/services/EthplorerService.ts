@@ -224,9 +224,9 @@ class EthplorerService implements IEthereumAPIList{
 
             deferred.resolve(info);
           }
-        }, () => {
-          console.log(`HTTP reject for ${url}`)
-          deferred.reject(null);
+        }, (reason) => {
+          console.log(`HTTP reject for ${url}: ${reason}`)
+          deferred.reject()
         });
     return deferred.promise
   }

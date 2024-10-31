@@ -63,7 +63,9 @@ abstract class VirtualRepeatComponent {
 
   private fetchPageDebounced;
 
+  // if variable cache is defined in the descendant the cache is enabled for descendant
   protected cache: {get: (key) => any, put: (key, value) => void}
+  public cachedItems = false
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService) {}
@@ -150,11 +152,13 @@ abstract class VirtualRepeatComponent {
     }
 
     this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
+      this.cachedItems = false
       processItems(items)
       this.cache?.put(pageNumber, items)
     }, reason => {
       console.warn("fetching eth transactions error " + (reason ? JSON.stringify(reason) : ""))
       let items: any[] = this.cache?.get(pageNumber)
+      this.cachedItems = true
       processItems(items)
     })
   }

@@ -34,7 +34,8 @@
   `],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+        Latest Transactions <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp;&nbsp; (cached)</span>
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -162,7 +163,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private ethereumPendingTransactions: EthereumPendingTransactionsService,
               private storage: StorageService) {
     super($scope, $q)
-    let store = storage.namespace('txns-eth', this.$scope, true)
+    let store = storage.namespace('currency-cache-eth', this.$scope, true)
     this.cache = {
       get: key => store.get(this.user.currency.address + "-" + key),
       put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
