@@ -1,5 +1,5 @@
 @Service('web3')
-@Inject('$q', 'user', 'settings', '$window', 'http')
+@Inject('$q', 'user', 'settings', '$window', 'http', 'storage')
 class Web3Service {
 
   public web3: any;
@@ -12,7 +12,8 @@ class Web3Service {
     private userService: UserService,
     private settingsService: SettingsService,
     private $window: angular.IWindowService,
-    private http: HttpService) {
+    private http: HttpService,
+    private storage: StorageService) {
 
     const Web3 = $window.heatlibs.Web3
     this.safeBuffer = $window.heatlibs.safeBuffer
@@ -32,7 +33,19 @@ class Web3Service {
     return new Promise<number>((resolve, reject) => {
       this.http.get(this.blockbookEndpoint + "/address/" + address).then(
         resp => resolve((angular.isString(resp) ? JSON.parse(resp) : resp).nonce),
-        reason => reject(reason)
+        reason => {
+          let $rootScope = heat.$inject.get('$rootScope')
+          let store = this.storage.namespace('currency-cache-eth', $rootScope, true)
+          let cache = {
+            get: key => store.get(address + "-" + key)
+          }
+          let info = cache.get("info")
+          if (info) {
+              resolve(info.nonce)
+          } else {
+              reject(reason)
+          }
+        }
       );
     })
   }
@@ -49,7 +62,7 @@ class Web3Service {
             }
           );
         }
-      )
+      ).catch(reason => reject(reason))
     })
   }
 
@@ -80,10 +93,16 @@ class Web3Service {
               gasPrice: this.web3.toHex(String(gasPriceParam || gasPrice)),
               to: to,
               value: '0x' + Number(value).toString(16)
-            };
-            let tx = new this.$window.heatlibs.ethereumTx.Transaction(txParams);
-            let privateKey = this.$window.heatlibs.safeBuffer.Buffer.from(account.privateKey, 'hex');
-            tx.sign(privateKey);
+            }
+            let tx
+            try {
+                tx = new this.$window.heatlibs.ethereumTx.Transaction(txParams)
+            } catch (e) {
+                reject(e?.message || e || "ETH transaction creation error")
+                return
+            }
+            let privateKey = this.$window.heatlibs.safeBuffer.Buffer.from(account.privateKey, 'hex')
+            tx.sign(privateKey)
             resolve('0x' + tx.serialize().toString('hex'))
           },
           reason => reject(reason)

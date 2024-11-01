@@ -144,8 +144,8 @@ class EthereumAccountComponent {
 
     let store = this.storage.namespace('currency-cache-eth', this.$scope, true)
     this.cache = {
-      get: key => store.get(this.user.currency.address + "-" + key),
-      put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
+      get: key => store.get(this.account + "-" + key),
+      put: (key, value) => store.put(this.account + "-" + key, value),
     }
   }
 
@@ -229,9 +229,9 @@ class EthereumAccountComponent {
     this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
       this.cachedItems = false
       processInfo(info)
-      this.cache?.put(this.account, info)
+      this.cache?.put("info", info)
     }, reason => {
-      let info = this.cache?.get(this.account)
+      let info = this.cache?.get("info")
       this.cachedItems = true
       if (info) processInfo(info)
     })

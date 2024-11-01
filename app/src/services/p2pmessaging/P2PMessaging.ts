@@ -212,7 +212,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         this.$mdToast.simple().textContent(`Error: ${reason}`).hideDelay(9000)
       );
     } else {
-      console.log(`Messaging error: ${reason}\n Protocol: ${protocol}`);
+      console.error(`Messaging error: ${reason}\n Protocol: ${protocol}`);
     }
   }
 
