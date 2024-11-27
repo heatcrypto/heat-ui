@@ -43,15 +43,20 @@ function findHeatBundleFile() {
 
 async function updateFiles(heatBundleFile) {
   const version = fs.readFileSync("./VERSION").toString().trim()
-  const heatledgerVersion = fs.readFileSync("../heatledger/conf/VERSION").toString().trim()
-  const now = new Date()
+  const heatledgerVersionContent = fs.readFileSync("../heatledger/conf/VERSION").toString().trim().split("\n")
+  const heatledgerVersion = heatledgerVersionContent[0].trim()
+  const heatledgerBuildDate = heatledgerVersionContent[1]
+      ? new Date(parseInt(heatledgerVersionContent[1].trim())).toISOString().split('T')[0]
+      : ""
+  const buildDate = new Date().toISOString().split('T')[0]
 
   await replaceStrInFile("dist/index.html", "%BUILD_OVERRIDE_VERSION%", version)
-  await replaceStrInFile("dist/index.html", "%BUILD_OVERRIDE_LAST_MODIFIED%", now.toUTCString())
+  await replaceStrInFile("dist/index.html", "%BUILD_OVERRIDE_LAST_MODIFIED%", buildDate)
   await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_VERSION%", version)
   await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_HEATLEDGER_VERSION%", heatledgerVersion)
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_BUILD%", now.getTime())
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_LAST_MODIFIED%", now.toUTCString())
+  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_HEATLEDGER_BUILD_DATE%", heatledgerBuildDate)
+  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_BUILD%", buildDate)
+  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_LAST_MODIFIED%", buildDate)
 }
 
 async function replaceStrInFile(file, str, replacement) {

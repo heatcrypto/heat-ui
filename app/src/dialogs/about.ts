@@ -29,8 +29,8 @@ module dialogs {
       title: 'About',
       targetEvent: $event,
       template: `
-        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build: {{vm.applicationBuild}}</p>
-        <p>HEAT server {{vm.heatServerVersion}}</p>
+        <p>{{vm.applicationName}} {{vm.applicationVersion}}<br>Build date: {{vm.applicationBuild}}</p>
+        <p>HEAT server {{vm.heatServerVersion}}<br>Build date: {{vm.heatServerBuildDate}}</p>
         <p><a href="#" ng-click="vm.goTo('main')">Go to MAIN NET</a></p>
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
 <!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
@@ -53,6 +53,7 @@ module dialogs {
         applicationVersion: settings.get(SettingsService.APPLICATION_VERSION),
         applicationBuild: settings.get(SettingsService.APPLICATION_BUILD),
         heatServerVersion: SettingsService.EMBEDDED_HEATLEDGER_VERSION,
+        heatServerBuildDate: SettingsService.EMBEDDED_HEATLEDGER_BUILD_DATE,
         isTestnet: window.localStorage.getItem('testnet')=='true',
         benchmarkUrl: SettingsService.BENCHMARK_WEB_URL,
         isEnvNodeJS: env.type == EnvType.NODEJS,
