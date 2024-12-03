@@ -203,8 +203,11 @@ class EthereumAccountComponent {
         if (info.tokens) {
           this.erc20Tokens = info.tokens.map(token => {
             let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
+            let balance = token.balance
+                ? utils.formatERC20TokenAmount(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18)
+                : ""
             return {
-              balance: utils.formatERC20TokenAmount(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18),
+              balance: balance,
               symbol: token.tokenInfo.symbol,
               name: token.tokenInfo.name,
               id: ''
