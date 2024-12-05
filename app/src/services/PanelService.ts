@@ -37,13 +37,13 @@ class PanelService {
       panelClass: 'demo-dialog-example',
       position: position,
       trapFocus: false,
-      zIndex: 30,
+      zIndex: 88,
       clickOutsideToClose: true,
       escapeToClose: true,
       focusOnOpen: true,
       locals: locals
     };
-    this.$mdPanel.open(config)
+    return this.$mdPanel.open(config)
       .then(panel => this.panel = panel)
   }
   close() {

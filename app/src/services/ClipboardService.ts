@@ -141,7 +141,17 @@ class ClipboardService {
 
   showTxnBytes(txnHEX: string) {
     let panel: PanelService = heat.$inject.get('panel')
-    panel.show(`
+    setTimeout(() => {
+      new QRCode("txnHEX", {
+        text: txnHEX,
+        width: 180,
+        height: 180,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      })
+    }, 500)
+    return panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
           <textarea style="min-height: 44px; width: 600px; overflow: scroll; border: none; background: transparent;" rows="3"
@@ -161,16 +171,6 @@ class ClipboardService {
           }
         }
     )
-    setTimeout(() => {
-      new QRCode("txnHEX", {
-        text: txnHEX,
-        width: 180,
-        height: 180,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      })
-    }, 800)
   }
 
 }
