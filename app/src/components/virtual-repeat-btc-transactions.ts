@@ -59,7 +59,7 @@
             
             <!-- JSON -->
             <div class="truncate-col json-col">
-              <a ng-click="vm.jsonDetails($event, item.json)">
+              <a ng-click="vm.jsonDetails($event, item.json, item)">
                 <md-icon md-font-library="material-icons">code</md-icon>
               </a>
             </div>
@@ -185,8 +185,9 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     })
   }
 
-    jsonDetails($event, item) {
-        dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
+    jsonDetails($event, jsonObject, detailedObject?) {
+        let fields = [["txid", "id"], ["time"], ["blockheight", "block height"], ["from"], ["to"], ["amount"]]
+        dialogs.jsonDetails($event, jsonObject, 'Transaction: ' + jsonObject.txid, fields, detailedObject);
     }
 
     paymentMemoDialog($event, item) {

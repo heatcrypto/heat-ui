@@ -21,7 +21,15 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function jsonDetails($event, jsonObject: any, title: string) {
+  /**
+   *
+   * @param $event
+   * @param jsonObject
+   * @param title
+   * @param fields array of displayed field in TABLE VIEW mode, each field is array of [name, label]
+   * @param detailedObject optional object used for detailed view instead of jsonObject
+   */
+  export function jsonDetails($event, jsonObject: any, title: string, fields?: string[][], detailedObject?: any) {
     return dialogs.dialog({
       id: 'jsonDetails',
       title: title,
@@ -29,10 +37,40 @@ module dialogs {
       cancelButton: false,
       locals: {
         jsonObject: jsonObject,
+        detailedObject: detailedObject || jsonObject,
+        tableView: fields?.length > 0 ? true : undefined,
+        fields: fields,
+        toggle: function() {
+          this.tableView = !this.tableView
+        }
       },
+      style: `
+         .details td {
+            padding: 8px;
+         }
+         .value {
+            opacity: 0.6;
+         }
+        `,
       template: `
-        <div layout="column" flex>
-          <json-formatter json="vm.jsonObject" open="1" class="json-formatter-dark"></json-formatter>
+        <div layout="row" flex>
+          <md-button ng-if="vm.tableView != undefined" ng-click="vm.toggle()" style="font-size: smaller;width: 47px;height: 140px;min-width: 32px;padding: 0;margin: 0;">
+            <span style="transform: rotate(-90deg); display: inline-block; margin-left: -25px;">
+              {{vm.tableView ? 'Detailed view' : 'Table view'}}
+            </span>
+          </md-button>
+          
+          <div ng-if="vm.tableView">
+            <table class="details">
+                <tr ng-repeat="item in vm.fields" class="row">
+                    <td>{{item[1] || item[0]}}</td><td class="value" ng-bind-html="vm.detailedObject[item[0]]"></td>
+                </tr>
+            </table>
+          </div>
+          
+          <div layout="column" flex ng-if="!vm.tableView">
+            <json-formatter json="vm.jsonObject" open="1" class="json-formatter-dark"></json-formatter>
+          </div>
         </div>
       `
     });

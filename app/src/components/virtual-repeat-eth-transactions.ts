@@ -214,7 +214,8 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
+    let fields = [["txid", "id"], ["time"], ["blockHeight", "block height"], ["from"], ["to"], ["renderedAmount", "amount"]]
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid?.substring(0, 32) + "...", fields);
   }
 
   paymentMemoDialog($event, item) {
