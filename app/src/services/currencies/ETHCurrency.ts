@@ -247,7 +247,7 @@ class ETHCurrency implements ICurrency {
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>
