@@ -47,6 +47,10 @@ namespace wlt {
 
   export const HASH_PREFIX = "XYZ"
 
+  const storageMap = new Map<string, Store>()
+
+  const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 1000 * 60 // 1 minute
+
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
       try {
@@ -63,16 +67,47 @@ namespace wlt {
   }
 
   export function getStore(namespace = "wallet") {
+    let store = storageMap.get(namespace)
+    if (store) return store
     let storage = <StorageService>heat.$inject.get('storage')
     let $rootScope = heat.$inject.get('$rootScope')
-    return storage.namespace(namespace, $rootScope, true)
+    store = storage.namespace(namespace, $rootScope, true)
+    storageMap.set(namespace, store)
+    return store
   }
 
-/*
-  export function getVersion(): number {
-    return parseInt(getStore().get("version", "0"))
+  export function saveUnconfirmedCurrencyBalance(address: string, currencySymbol: string, unconfirmedBalance: string) {
+    let hash = heat.crypto.hash(address).substring(0, 16)
+    getStore().put(`unconfirmed-balance-${currencySymbol}-${hash}`, {v: unconfirmedBalance, t: Date.now()})
   }
-*/
+
+  export function getUnconfirmedCurrencyBalance(address: string, currencySymbol: string, balance: string) {
+    let hash = heat.crypto.hash(address).substring(0, 16)
+    let key = `unconfirmed-balance-${currencySymbol}-${hash}`
+    let balanceBig
+    try {
+      balanceBig = balance ? new Big(balance) : null
+    } catch (e) {
+    }
+    let r = getStore().get(key)
+    if (r) {
+      if (r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME > Date.now()) {
+        let unconfirmedBig = new Big(r.v)
+        if (!balanceBig || unconfirmedBig.lt(balanceBig)) {
+          return unconfirmedBig
+        }
+      } else {
+        getStore().remove(key)
+      }
+    }
+    return balanceBig
+  }
+
+  /*
+    export function getVersion(): number {
+      return parseInt(getStore().get("version", "0"))
+    }
+  */
 
   export function getEntryVisibleLabel(account) {
     return getStore().get("label." + account)
@@ -199,13 +234,12 @@ namespace wlt {
   }
 
 
-
   export class CurrencyBalance {
 
     static hasDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
 
     public isCurrencyBalance = true
-    public balance: string
+    private _balance: string
     public inUse = false
     public tokens: Array<TokenBalance> = []
     public visible = false
@@ -214,6 +248,18 @@ namespace wlt {
     walletEntry: WalletEntry
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
+    }
+
+    get balance(): string {
+      if (this.isCurrencyBalance && this.symbol) {
+        let r = getUnconfirmedCurrencyBalance(this.address, this.symbol, this._balance)
+        return r?.toFixed()
+      }
+      return this._balance
+    }
+
+    set balance(value: string) {
+      this._balance = value;
     }
 
     public unlock(noPathChange?: boolean) {
@@ -258,7 +304,7 @@ namespace wlt {
     }
 
     public isZeroBalance() {
-      return !CurrencyBalance.hasDigit.test(this.balance)
+      return !CurrencyBalance.hasDigit.test(this._balance)
     }
 
   }

@@ -199,7 +199,8 @@ class EthereumAccountComponent {
     this.balanceUnconfirmed = "*";
     this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
+        this.balanceUnconfirmed = wlt.getUnconfirmedCurrencyBalance(this.account, "ETH", info.ETH.balance)
+        //this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
         if (info.tokens) {
           this.erc20Tokens = info.tokens.map(token => {
             let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]

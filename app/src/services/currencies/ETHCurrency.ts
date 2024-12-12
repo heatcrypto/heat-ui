@@ -30,6 +30,7 @@ class ETHCurrency implements ICurrency {
   public homePath
   private pendingService: EthereumPendingTransactionsService
   private user: UserService
+  private recentBalance
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
@@ -40,9 +41,11 @@ class ETHCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
+    let self = this
     return this.ethBlockExplorerService.getBalance(this.address).then(
       balance => {
-        return utils.commaFormat(new Big(balance+"").toFixed(18))
+        self.recentBalance = wlt.getUnconfirmedCurrencyBalance(self.address, "ETH", balance)
+        return utils.commaFormat(self.recentBalance.toFixed(18))
       }
     )
   }
@@ -86,11 +89,19 @@ class ETHCurrency implements ICurrency {
   }
 
   sendEther($event) {
+    let self = this
+    let web3 = <Web3Service> heat.$inject.get('web3')
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
       this.paymentMessageMethod = null
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
+      }
+      let updateUnconfirmedBalance = function (value, fees) {
+        let txTotal = new Big(web3.web3.fromWei(new Big(value).plus(new Big(fees)), 'ether'))
+        //let txTotal = new Big(value).plus(new Big(fees))
+        let unconfirmedBalance = self.recentBalance.minus(txTotal)
+        wlt.saveUnconfirmedCurrencyBalance(self.address, self.symbol, unconfirmedBalance.toString())
       }
       this.okButtonClick = function ($event) {
         let data = $scope['vm'].data
@@ -106,6 +117,7 @@ class ETHCurrency implements ICurrency {
               if (data.txId) {
                 data.message = $scope['vm'].data.message
                 let sendingResult = Object.assign(data, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
+                updateUnconfirmedBalance(data.value, data.fees)
                 $mdDialog.hide(sendingResult).then(() => {
                   dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
                 })
@@ -164,7 +176,6 @@ class ETHCurrency implements ICurrency {
         )
       }, 1000, false)
 
-      let web3 = <Web3Service> heat.$inject.get('web3')
       let settingsService: any = heat.$inject.get('settings')
 
       this.recipientChanged = function () {

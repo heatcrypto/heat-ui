@@ -186,7 +186,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   }
 
     jsonDetails($event, jsonObject, detailedObject?) {
-        let fields = [["txid", "id"], ["time"], ["blockheight", "block height"], ["from"], ["to"], ["amount"]]
+        let fields = [["txid", "id"], ["time", "dateTime"], ["blockheight", "block height"], ["from"], ["to"], ["amount"]]
         dialogs.jsonDetails($event, jsonObject, 'Transaction: ' + jsonObject.txid, fields, detailedObject);
     }
 
