@@ -7,6 +7,7 @@ namespace wlt {
 
     export function paymentMemoDialog(txId: string, heatUnavailableReason: string) {
         let locals = {
+            txId: txId,
             v: {
                 text: "",
                 paymentMessageMethod: undefined,
@@ -20,8 +21,12 @@ namespace wlt {
             cancelButton: true,
             locals: locals,
             template: `
+              <p flex>
+                  <label>Transaction</label>
+                  <span>&nbsp;&nbsp;{{vm.txId}}</span>
+              </p>
               <md-input-container flex style="margin-bottom: 16px;">
-                  <div>Store message on:</div>
+                  <p>Store message on:</p>
                   <md-radio-group ng-model="vm.v.paymentMessageMethod" layout="row">
                     <md-radio-button value=0 >This device</md-radio-button>
                     <md-radio-button value=1 ng-disabled="vm.v.heatUnavailableReason">Heat blockchain</md-radio-button>
