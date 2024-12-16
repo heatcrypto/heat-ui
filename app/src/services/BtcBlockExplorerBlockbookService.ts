@@ -17,8 +17,9 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     let deferred = this.$q.defer<number>();
     this.getAddressInfo(address).then(response => {
       let parsed = utils.parseResponse(response)
-      if(parsed.heatUtilParsingError)
+      if(parsed.heatUtilParsingError) {
         deferred.reject()
+      }
       deferred.resolve(parseInt(parsed.balance) + parseInt(parsed.unconfirmedBalance))
     }, () => {
       deferred.reject()
@@ -187,16 +188,20 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     return new Promise<{ txId: string }>((resolve, reject) => {
       this.http.get(`${BtcBlockExplorerBlockbookService.endPoint}/sendtx/${rawTx}`).then(
         response => {
-          if (response['result']) {
-            resolve({ txId: response['result'] })
+          let responseObj: any
+          try {
+            responseObj = typeof response === 'string' ? JSON.parse(response) : response
+          } catch (e) {
+            responseObj = response
           }
-          else if (response['error'] && response['error']['message']) {
+          if (responseObj.result) {
+            resolve({ txId: responseObj.result })
+          } else if (responseObj.error && responseObj.error.message) {
             reject({
-              message: response['error']['message']
+              message: responseObj.error.message
             })
-          }
-          else {
-            let responseStr = JSON.stringify(response)
+          } else {
+            let responseStr = typeof response === 'string' ? response : JSON.stringify(response)
             console.log('Broadcast response', response)
             reject({
               message: 'Response: ' + responseStr
