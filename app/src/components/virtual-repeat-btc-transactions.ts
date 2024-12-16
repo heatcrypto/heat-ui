@@ -30,6 +30,7 @@
             <div class="truncate-col date-col left">{{item.dateTime}}</div>
             <!-- TX ID -->
             <div class="truncate-col tx-col left" >
+              <span ng-if="item.blockheight == -1">[unconfirmed]</span>
               <span>
                 <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
@@ -186,7 +187,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
   }
 
     jsonDetails($event, jsonObject, detailedObject?) {
-        let fields = [["txid", "id"], ["time", "dateTime"], ["blockheight", "block height"], ["from"], ["to"], ["amount"]]
+        let fields = [["txid", "id"], ["dateTime", "time"], ["blockheight", "block height"], ["from"], ["to"], ["amount"]]
         dialogs.jsonDetails($event, jsonObject, 'Transaction: ' + jsonObject.txid, fields, detailedObject);
     }
 

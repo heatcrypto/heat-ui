@@ -1,3 +1,5 @@
+const SATOSHI_COEF = new Big(100000000)
+
 class BTCCurrency implements ICurrency {
 
   private btcBlockExplorerService: BtcBlockExplorerService
@@ -6,6 +8,7 @@ class BTCCurrency implements ICurrency {
   private pendingTransactions: BitcoinPendingTransactionsService
   private bitcoinMessagesService: BitcoinMessagesService
   private user: UserService
+  private recentBalance
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
@@ -19,8 +22,8 @@ class BTCCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.btcBlockExplorerService.getBalance(this.address).then(
       balance => {
-        let balanceUnconfirmed = balance / 100000000;
-        return utils.commaFormat(new Big(balanceUnconfirmed+"").toFixed(8))
+        this.recentBalance = wlt.getUnconfirmedCurrencyBalance(this.address, this.symbol, String(balance))
+        return utils.commaFormat(this.recentBalance.div(SATOSHI_COEF).toFixed(8))
       }
     )
   }
@@ -89,7 +92,22 @@ class BTCCurrency implements ICurrency {
 
     let feeList = new FeeList()
 
+    const self = this
+
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+
+      const vm = this
+
+      vm.disableOKBtn = false
+
+      vm.data = {
+        amount: '',
+        recipient: '',
+        recipientInfo: '',
+        fee: '0.00004540',
+        message: '',
+        satByteFee: 0
+      }
 
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
@@ -102,16 +120,16 @@ class BTCCurrency implements ICurrency {
         let to
         let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.currency.secretPhrase}
         if (isForFeeEstimation) {
-          feeInSatoshi = $scope['vm'].data.fee ? ($scope['vm'].data.fee * 100000000).toFixed(0) : 0
-          amountInSatoshi = $scope['vm'].data.amount ? ($scope['vm'].data.amount * 100000000).toFixed(0) : "0.0001";
-          to = $scope['vm'].data.recipient ? $scope['vm'].data.recipient : addressPrivateKeyPair.address
+          feeInSatoshi = vm.data.fee ? (vm.data.fee * 100000000).toFixed(0) : 0
+          amountInSatoshi = vm.data.amount ? (vm.data.amount * 100000000).toFixed(0) : "0.0001";
+          to = vm.data.recipient ? vm.data.recipient : addressPrivateKeyPair.address
         } else {
-          if (!$scope['vm'].data.fee || !$scope['vm'].data.amount || !$scope['vm'].data.recipient) {
+          if (!vm.data.fee || !vm.data.amount || !vm.data.recipient) {
             return null
           }
-          feeInSatoshi = ($scope['vm'].data.fee * 100000000).toFixed(0);
-          amountInSatoshi = ($scope['vm'].data.amount * 100000000).toFixed(0);
-          to = $scope['vm'].data.recipient
+          feeInSatoshi = (vm.data.fee * 100000000).toFixed(0);
+          amountInSatoshi = (vm.data.amount * 100000000).toFixed(0);
+          to = vm.data.recipient
         }
 
         let txObject = {
@@ -125,14 +143,21 @@ class BTCCurrency implements ICurrency {
         return txObject
       }
 
+      let updateUnconfirmedBalance = function (value, fees) {
+        let txTotal = new Big(value).plus(new Big(fees))
+        let unconfirmedBalance = self.recentBalance.minus(txTotal)
+        wlt.saveUnconfirmedCurrencyBalance(self.address, self.symbol, unconfirmedBalance.toString())
+      }
+
       this.okButtonClick = function ($event) {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-        $scope['vm'].disableOKBtn = true
+        vm.disableOKBtn = true
         bitcoreService.sendBitcoins(createTx()).then(
           data => {
-            let sendingResult = Object.assign(data, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
+            let sendingResult = Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod})
+            updateUnconfirmedBalance(vm.data.amount, vm.data.fee)
             $mdDialog.hide(sendingResult).then(() => {
-              data.message = $scope['vm'].data.message;
+              data.message = vm.data.message;
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
             })
           },
@@ -154,33 +179,24 @@ class BTCCurrency implements ICurrency {
           }
         )
       }
-      this.disableOKBtn = false
-      this.data = {
-        amount: '',
-        recipient: '',
-        recipientInfo: '',
-        fee: '0.00004540',
-        message: '',
-        satByteFee: 0
-      }
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
         let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
+        btcBlockExplorerService.getBalance(vm.data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
               let balance
               if (info) {
                 balance = (info / 100000000).toFixed(8)
-                $scope['vm'].data.recipientInfo = `Destination balance ${balance} BTC`
+                vm.data.recipientInfo = `Destination balance ${balance} BTC`
               }
-              $scope['vm'].data.recipientInfo = balance ? `Destination balance ${balance} BTC` : ''
+              vm.data.recipientInfo = balance ? `Destination balance ${balance} BTC` : ''
             })
           },
           error => {
             $scope.$evalAsync(() => {
-              $scope['vm'].data.recipientInfo = (error||{}).message||'Invalid'
+              vm.data.recipientInfo = (error||{}).message||'Invalid'
             })
           }
         )
@@ -189,13 +205,13 @@ class BTCCurrency implements ICurrency {
       let calculateRawTx = function () {
         let bitcoreService = <BitcoreService>heat.$inject.get('bitcoreService')
         let errorCallback = reason => console.log("error on generation transaction bytes: " + reason);
-        $scope['vm'].data.txBytes = []
+        vm.data.txBytes = []
         let result = bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
+          vm.data.txBytes = converters.hexStringToByteArray(rawTx)
         }).catch(errorCallback)
 
         //try to calculate raw txn
-        $scope['vm'].data.rawTx = ''
+        vm.data.rawTx = ''
         let tx;
         try {
           tx = createTx(false)
@@ -203,7 +219,7 @@ class BTCCurrency implements ICurrency {
         }
         if (tx) {
           bitcoreService.signTransaction(tx).then(rawTx => {
-            $scope['vm'].data.rawTx = rawTx
+            vm.data.rawTx = rawTx
           }).catch(errorCallback)
         }
 
@@ -213,29 +229,29 @@ class BTCCurrency implements ICurrency {
       let calculateRawTxDebounced = utils.debounce(calculateRawTx, 1000)
 
       this.recipientChanged = function () {
-        $scope['vm'].data.recipientInfo = ''
+        vm.data.recipientInfo = ''
         lookup()
         calculateRawTxDebounced()
       }
 
       this.selectedItemChange = function(item: IHeatMessageContact) {
-        $scope['vm'].value = $scope['vm'].selectedItem ? $scope['vm'].selectedItem.id : '';
-        $scope['vm'].data.recipient = item.cryptoAddresses ? item.cryptoAddresses.find( i => i.name === 'BTC').address : ''
+        vm.value = vm.selectedItem ? vm.selectedItem.id : '';
+        vm.data.recipient = item.cryptoAddresses ? item.cryptoAddresses.find( i => i.name === 'BTC').address : ''
 
-        if ($scope['vm'].data.recipient && $scope['vm'].data.recipient !== '') {
-          $scope['vm'].recipientChanged()
+        if (vm.data.recipient && vm.data.recipient !== '') {
+          vm.recipientChanged()
         }
       }
 
       this.search = function(){
         let p = <ContactService> heat.$inject.get('contactService');
-        return p.lookupContact($scope['vm'].searchText.trim())
+        return p.lookupContact(vm.searchText.trim())
       }
 
       this.searchTextChange = function() {
-        $scope['vm'].value = $scope['vm'].searchText;
-        $scope['vm'].data.recipient = $scope['vm'].searchText;
-        $scope['vm'].recipientChanged()
+        vm.value = vm.searchText;
+        vm.data.recipient = vm.searchText;
+        vm.recipientChanged()
       }
 
       this.amountChanged = function () {
@@ -247,11 +263,11 @@ class BTCCurrency implements ICurrency {
       let loadInternetFee = function () {
         return btcFeeService.getSatByteFee().then(satByteFeesPerBlocks => {
           $scope.$evalAsync(() => {
-            $scope['vm'].feeList = feeList
+            vm.feeList = feeList
             feeList.update(satByteFeesPerBlocks)
-            if (!$scope['vm'].data.satByteFee) {
-              $scope['vm'].data.satByteFee = feeList.satByteFee['1']
-              $scope['vm'].data.fee = $scope['vm'].data.satByteFee / 100000000 * 1024
+            if (!vm.data.satByteFee) {
+              vm.data.satByteFee = feeList.satByteFee['1']
+              vm.data.fee = vm.data.satByteFee / 100000000 * 1024
             }
           })
         })
@@ -260,16 +276,16 @@ class BTCCurrency implements ICurrency {
       this.feeChanged = function (event) {
         calculateRawTx().then(() => {
           $scope.$evalAsync(() => {
-            // if (!$scope['vm'].data.fee) {
+            // if (!vm.data.fee) {
             //   loadInternetFee()
             // }
-            if ($scope['vm'].data.fee) {
-              $scope['vm'].data.satByteFee = $scope['vm'].data.fee * 100000000 / 1024
-              if ($scope['vm'].data.txBytes) {
-                $scope['vm'].data.txnFee = ($scope['vm'].data.satByteFee * $scope['vm'].data.txBytes.length / 100000000)
+            if (vm.data.fee) {
+              vm.data.satByteFee = vm.data.fee * 100000000 / 1024
+              if (vm.data.txBytes) {
+                vm.data.txnFee = (vm.data.satByteFee * vm.data.txBytes.length / 100000000)
               }
             } else {
-              $scope['vm'].data.satByteFee = ''
+              vm.data.satByteFee = ''
             }
           })
         })
@@ -277,45 +293,48 @@ class BTCCurrency implements ICurrency {
 
       this.clearFeeByteDerived = function () {
           $scope.$evalAsync(() => {
-            $scope['vm'].data.fee = ''
-            $scope['vm'].data.txnFee = ''
-            $scope['vm'].data.txnFee = ''
-            $scope['vm'].data.rawTx = ''
+            vm.data.fee = ''
+            vm.data.txnFee = ''
+            vm.data.txnFee = ''
+            vm.data.rawTx = ''
           })
       }
 
       this.feeByteChanged = function () {
+
+        updateUnconfirmedBalance(vm.data.amount * 100000000, vm.data.fee * 100000000)
+
         calculateRawTx().then(() => {
           $scope.$evalAsync(() => {
-            if ($scope['vm'].data.satByteFee) {
-              $scope['vm'].data.fee = $scope['vm'].data.satByteFee / 100000000 * 1024
-              if ($scope['vm'].data.txBytes) {
-                $scope['vm'].data.txnFee = ($scope['vm'].data.satByteFee * $scope['vm'].data.txBytes.length / 100000000)
+            if (vm.data.satByteFee) {
+              vm.data.fee = vm.data.satByteFee / 100000000 * 1024
+              if (vm.data.txBytes) {
+                vm.data.txnFee = (vm.data.satByteFee * vm.data.txBytes.length / 100000000)
               }
             } else {
-              $scope['vm'].data.fee = ''
+              vm.data.fee = ''
             }
           })
         })
       }
 
       this.fillFeeField = function (blocks) {
-        $scope['vm'].data.satByteFee = feeList.satByteFee['' + blocks]
-        $scope['vm'].feeByteChanged()
+        vm.data.satByteFee = feeList.satByteFee['' + blocks]
+        vm.feeByteChanged()
       }
 
       //to initialize fee
-      loadInternetFee().then(value => $scope['vm'].feeChanged())
+      loadInternetFee().then(value => vm.feeChanged())
 
       let $interval: angular.IIntervalService = heat.$inject.get('$interval')
 
       let seconds = 0
       let interval = $interval(() => {
             seconds++
-            if ($scope['vm'].seconds % 60 == 0) {
+            if (vm.seconds % 60 == 0) {
               loadInternetFee().then(value => seconds = 0)
             }
-            $scope['vm'].seconds = seconds
+            vm.seconds = seconds
           },
           1000, 0, false
       )
