@@ -47,9 +47,11 @@ namespace wlt {
 
   export const HASH_PREFIX = "XYZ"
 
+  export const SATOSHI_PER_BTC = new Big(100000000)
+
   const storageMap = new Map<string, Store>()
 
-  const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 1000 * 60 // 1 minute
+  const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 3000 * 60 // 3 minutes
 
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
@@ -76,31 +78,36 @@ namespace wlt {
     return store
   }
 
-  export function saveUnconfirmedCurrencyBalance(address: string, currencySymbol: string, unconfirmedBalance: string) {
+  export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
     let hash = heat.crypto.hash(address).substring(0, 16)
-    getStore().put(`unconfirmed-balance-${currencySymbol}-${hash}`, {v: unconfirmedBalance, t: Date.now()})
-  }
-
-  export function getUnconfirmedCurrencyBalance(address: string, currencySymbol: string, balance: string) {
-    let hash = heat.crypto.hash(address).substring(0, 16)
-    let key = `unconfirmed-balance-${currencySymbol}-${hash}`
-    let balanceBig
-    try {
-      balanceBig = balance ? new Big(balance) : null
-    } catch (e) {
-    }
+    let key = `balance-${currencySymbol}-${hash}`
     let r = getStore().get(key)
     if (r) {
-      if (r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME > Date.now()) {
-        let unconfirmedBig = new Big(r.v)
-        if (!balanceBig || unconfirmedBig.lt(balanceBig)) {
-          return unconfirmedBig
-        }
-      } else {
-        getStore().remove(key)
+      r.b = balance
+      if (unconfirmedBalance) {
+        r.ub = unconfirmedBalance
+        r.t = Date.now()
       }
+      getStore().put(key, r)
+    } else {
+      getStore().put(key, {b: balance, ub: unconfirmedBalance, t: Date.now()})
     }
-    return balanceBig
+  }
+
+  /**
+   * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
+   */
+  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
+    let hash = heat.crypto.hash(address).substring(0, 16)
+    let key = `balance-${currencySymbol}-${hash}`
+    let r = getStore().get(key)
+    if (r) {
+      if (r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()) {
+        return {confirmed: r.b}
+      }
+      return {confirmed: r.b, unconfirmed: r.ub}
+    }
+    return {confirmed: balance}
   }
 
   /*
@@ -250,12 +257,19 @@ namespace wlt {
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
     }
 
+    public formatBalance = (balance) => {
+      return balance
+    }
+
     get balance(): string {
+      let result
       if (this.isCurrencyBalance && this.symbol) {
-        let r = getUnconfirmedCurrencyBalance(this.address, this.symbol, this._balance)
-        return r?.toFixed()
+        let r = getSavedCurrencyBalance(this.address, this.symbol, this._balance)
+        result = r?.confirmed
+      } else {
+        result = this._balance
       }
-      return this._balance
+      return this.formatBalance(result)
     }
 
     set balance(value: string) {

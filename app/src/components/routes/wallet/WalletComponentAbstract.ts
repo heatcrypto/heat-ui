@@ -247,7 +247,15 @@ namespace wlt {
 
       let createBalance = (address: WalletAddress) => {
         let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey, address.index)
-        btcCurrencyBalance.balance = address.balance + ""
+        btcCurrencyBalance.balance = address.balance ? new Big(address.balance).times(new Big(100000000)).toString() : ""
+
+        btcCurrencyBalance.formatBalance = balance => {
+          if (balance) {
+            return new Big(balance).div(wlt.SATOSHI_PER_BTC).toString()
+          }
+          return balance
+        }
+
         return btcCurrencyBalance
       }
 
@@ -369,7 +377,7 @@ namespace wlt {
             // wlt.rememberAddressCreated(walletEntry.account, address.address, currencyBalance.balance);
           }
         } else {
-          currencyBalance.balance = /[0-9]/.test(createdAddress?.cachedBalance) ? createdAddress.cachedBalance : ""
+          //currencyBalance.balance = /[0-9]/.test(createdAddress?.cachedBalance) ? createdAddress.cachedBalance : ""
           currencyBalance.stateMessage = "No Connection" + (currencyBalance.balance ? ". Cached value" : "")
         }
         walletEntry.currencies.splice(index, 0, currencyBalance)

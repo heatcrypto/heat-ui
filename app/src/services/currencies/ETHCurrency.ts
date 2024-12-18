@@ -42,12 +42,15 @@ class ETHCurrency implements ICurrency {
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
     let self = this
+    self.recentBalance = wlt.getSavedCurrencyBalance(self.address, "ETH")
     return this.ethBlockExplorerService.getBalance(this.address).then(
       balance => {
-        self.recentBalance = wlt.getUnconfirmedCurrencyBalance(self.address, "ETH", balance)
-        return utils.commaFormat(self.recentBalance.toFixed(18))
+        self.recentBalance = wlt.getSavedCurrencyBalance(self.address, "ETH", balance)
+        return utils.commaFormat(new Big(self.recentBalance?.confirmed || "0").toFixed(18))
       }
-    )
+    ).catch(reason => {
+      return utils.commaFormat(new Big(self.recentBalance?.confirmed || "0").toFixed(18))
+    })
   }
 
   /* Register a balance changed observer, unregister by calling the returned
@@ -89,7 +92,7 @@ class ETHCurrency implements ICurrency {
   }
 
   sendEther($event) {
-    let self = this
+    const self = this
     let web3 = <Web3Service> heat.$inject.get('web3')
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
@@ -100,8 +103,11 @@ class ETHCurrency implements ICurrency {
       let updateUnconfirmedBalance = function (value, fees) {
         let txTotal = new Big(web3.web3.fromWei(new Big(value).plus(new Big(fees)), 'ether'))
         //let txTotal = new Big(value).plus(new Big(fees))
-        let unconfirmedBalance = self.recentBalance.minus(txTotal)
-        wlt.saveUnconfirmedCurrencyBalance(self.address, self.symbol, unconfirmedBalance.toString())
+        if (self.recentBalance) {
+          let unconfirmedBalance = self.recentBalance.confirmed
+              ? new Big(self.recentBalance.confirmed).minus(txTotal).toString() : undefined
+          wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance)
+        }
       }
       this.okButtonClick = function ($event) {
         let data = $scope['vm'].data
@@ -113,16 +119,16 @@ class ETHCurrency implements ICurrency {
         $scope['vm'].disableOKBtn = true
         web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit).then((rawTx) => {
           ethBlockExplorerService.broadcast(rawTx).then(
-            data => {
-              if (data.txId) {
-                data.message = $scope['vm'].data.message
-                let sendingResult = Object.assign(data, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
-                updateUnconfirmedBalance(data.value, data.fees)
+            result => {
+              if (result.txId) {
+                result.message = $scope['vm'].data.message
+                let sendingResult = Object.assign(result, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
+                updateUnconfirmedBalance(amountInWei, web3.web3.toWei(data.fee, 'ether'))
                 $mdDialog.hide(sendingResult).then(() => {
-                  dialogs.alert(event, 'Success', `TxHash: ${data.txId}`);
+                  dialogs.alert(event, 'Success', `TxHash: ${result.txId}`);
                 })
               } else {
-                dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(data)}`);
+                dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`);
               }
             },
             err => {
@@ -140,6 +146,7 @@ class ETHCurrency implements ICurrency {
         let web3 = <Web3Service> heat.$inject.get('web3')
         let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
+
         web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit)
             .then((rawTx) => {
               let clipboardService: ClipboardService = heat.$inject.get('clipboard')

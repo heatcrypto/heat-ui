@@ -84,7 +84,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     let deferred = this.$q.defer<number>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      deferred.resolve(parsed.txs);
+      deferred.resolve(parsed.txids?.length || parsed.txs);
     }, (e) => {
       console.log(e)
       deferred.reject(e);
@@ -154,6 +154,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
       }
       parsed.ETH = {}
       parsed.ETH.balance = this.web3.web3.fromWei(parsed.balance, 'ether')
+      wlt.saveCurrencyBalance(address, "ETH", parsed.ETH.balance)
       deferred.resolve(parsed);
     }, (error) => {
       deferred.reject(error);

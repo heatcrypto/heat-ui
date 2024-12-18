@@ -1,5 +1,3 @@
-const SATOSHI_COEF = new Big(100000000)
-
 class BTCCurrency implements ICurrency {
 
   private btcBlockExplorerService: BtcBlockExplorerService
@@ -20,10 +18,11 @@ class BTCCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
+    let self = this
     return this.btcBlockExplorerService.getBalance(this.address).then(
       balance => {
-        this.recentBalance = wlt.getUnconfirmedCurrencyBalance(this.address, this.symbol, String(balance))
-        return utils.commaFormat(this.recentBalance.div(SATOSHI_COEF).toFixed(8))
+        self.recentBalance = wlt.getSavedCurrencyBalance(self.address, self.symbol, String(balance))
+        return utils.commaFormat(new Big(self.recentBalance.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8))
       }
     )
   }
@@ -144,9 +143,10 @@ class BTCCurrency implements ICurrency {
       }
 
       let updateUnconfirmedBalance = function (value, fees) {
+        if (!self.recentBalance) return
         let txTotal = new Big(value).plus(new Big(fees))
-        let unconfirmedBalance = self.recentBalance.minus(txTotal)
-        wlt.saveUnconfirmedCurrencyBalance(self.address, self.symbol, unconfirmedBalance.toString())
+        let unconfirmedBalance = new Big(self.recentBalance.confirmed).minus(txTotal)
+        wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance.toString())
       }
 
       this.okButtonClick = function ($event) {
@@ -301,8 +301,6 @@ class BTCCurrency implements ICurrency {
       }
 
       this.feeByteChanged = function () {
-
-        updateUnconfirmedBalance(vm.data.amount * 100000000, vm.data.fee * 100000000)
 
         calculateRawTx().then(() => {
           $scope.$evalAsync(() => {

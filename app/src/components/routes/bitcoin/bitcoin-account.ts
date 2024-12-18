@@ -50,7 +50,8 @@ type PendingType = {
               Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
-              {{vm.balanceUnconfirmed}} BTC
+              {{vm.balance}} BTC
+              <span style="font-size: small" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance"><br>{{vm.balanceUnconfirmed}} (unconfirmed)</span>
             </div>
           </div>
         </div>
@@ -92,7 +93,8 @@ type PendingType = {
 @Inject('$scope', 'btcBlockExplorerService', 'bitcoinPendingTransactions', '$interval', '$mdToast', 'settings', 'user', 'heat')
 class BitcoinAccountComponent {
   account: string; // @input
-  balanceUnconfirmed: any;
+  balanceUnconfirmed: string;
+  balance: string;
   pendingTransactions: PendingType[] = []
   prevIndex = 0
   busy = true
@@ -169,12 +171,16 @@ class BitcoinAccountComponent {
   refresh() {
     this.busy = true
     this.balanceUnconfirmed = ""
-    this.btcBlockExplorerService.getBalance(this.account).then(info => {
+    let balanceUnconfirmedHolder: number
+    this.btcBlockExplorerService.getBalance(this.account).then(unconfirmedBalance => {
       this.$scope.$evalAsync(() => {
-        let b = wlt.getUnconfirmedCurrencyBalance(this.account, "BTC", String(info))
-        this.balanceUnconfirmed = b ? b.div(new Big(100000000)).toFixed(8) : null
+        balanceUnconfirmedHolder = unconfirmedBalance
         this.busy = false
       })
+    }).finally(() => {
+      let b = wlt.getSavedCurrencyBalance(this.account, "BTC", balanceUnconfirmedHolder ? String(balanceUnconfirmedHolder) : null)
+      this.balance = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
+      this.balanceUnconfirmed = b.unconfirmed ? new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
     })
     this.loadPaymentMessages()
   }

@@ -41,7 +41,8 @@
               Balance:
             </div>
             <div class="value">
-              {{vm.balanceUnconfirmed}} ETH
+              {{vm.balance}} ETH
+              <span style="font-size: small" ng-if="vm.balanceUnconfirmed"><br>{{vm.balanceUnconfirmed}} (unconfirmed)</span>
             </div>
           </div>
         </div>
@@ -99,6 +100,7 @@
 class EthereumAccountComponent {
   account: string; // @input
 
+  balance: string;
   balanceUnconfirmed: string;
   erc20Tokens: Array<{ balance: string, symbol: string, name: string, id: string }> = [];
   personalize: boolean
@@ -196,10 +198,14 @@ class EthereumAccountComponent {
   }
 
   refresh() {
-    this.balanceUnconfirmed = "*";
+    let balances = wlt.getSavedCurrencyBalance(this.account, "ETH")
+    this.balance = balances.confirmed || "*"
+    this.balanceUnconfirmed = balances.unconfirmed
     this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = wlt.getUnconfirmedCurrencyBalance(this.account, "ETH", info.ETH.balance)
+        let balances = wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance)
+        this.balance = balances.confirmed || "*"
+        this.balanceUnconfirmed = balances.unconfirmed
         //this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
         if (info.tokens) {
           this.erc20Tokens = info.tokens.map(token => {
