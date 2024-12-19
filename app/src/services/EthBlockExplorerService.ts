@@ -51,9 +51,9 @@ class EthBlockExplorerService implements IEthereumAPIList {
       this.ethApiProvider.getAddressTransactions(address, pageNum).then((response) => {
         this.convertAddressTransactions(response)
         deferred.resolve(response)
-      })
+      }, deferred.reject)
     } else {
-      this.ethApiProvider.getAddressTransactions(address).then((response) => deferred.resolve(response))
+      this.ethApiProvider.getAddressTransactions(address).then((response) => deferred.resolve(response), deferred.reject)
     }
     return deferred.promise;
 

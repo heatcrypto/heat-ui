@@ -78,11 +78,6 @@ class ETHCurrency implements ICurrency {
                       if (reason) console.error(reason)
                     })
               }
-            },
-            err => {
-              if (err) {
-                dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: ' + JSON.stringify(err))
-              }
             })
   }
 
@@ -137,6 +132,8 @@ class ETHCurrency implements ICurrency {
               })
             }
           )
+        }).catch(reason => {
+          dialogs.alert($event, 'ETH transaction creation Error', reason)
         })
       }
 
@@ -146,12 +143,15 @@ class ETHCurrency implements ICurrency {
         let web3 = <Web3Service> heat.$inject.get('web3')
         let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
-
+        $scope['vm'].disableOKBtn = true
         web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit)
             .then((rawTx) => {
               let clipboardService: ClipboardService = heat.$inject.get('clipboard')
               clipboardService.showTxnBytes("" + rawTx)
-            }, reason => console.error(reason))
+            })
+            .catch(reason => {
+              dialogs.alert($event, 'ETH transaction creation Error', reason)
+            })
       }
 
       this.disableOKBtn = false
@@ -241,20 +241,6 @@ class ETHCurrency implements ICurrency {
                   <label>Gas limit</label>
                   <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
                 </md-input-container>
-                
-                <!--<md-input-container flex style="margin-bottom: 14px">
-                  <label>Payment message / memo (encrypted)</label>
-                  <input ng-model="vm.data.message" name="message" ng-maxlength="500" ng-disabled="!vm.paymentMessageMethod">
-                  <div>Store message on:</div>
-                  <md-radio-group ng-model="vm.paymentMessageMethod" layout="row">
-                    <md-radio-button value=0 >This device</md-radio-button>
-                    <md-radio-button value=1 ng-disabled="vm.heatUnavailableReason">Heat blockchain</md-radio-button>
-                    <span ng-if="vm.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.heatUnavailableReason}})</span>
-                  </md-radio-group>
-                  <md-checkbox ng-model="vm.sharedMemo" ng-if="vm.paymentMessageMethod == 1" style="margin-top: 4px;">
-                    Share memo to recipient
-                  </md-checkbox>
-                </md-input-container>-->
 
                 <p>Fee: {{vm.data.fee}} ETH</p>
               </div>
