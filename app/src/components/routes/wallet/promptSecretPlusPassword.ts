@@ -28,11 +28,12 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       $mdDialog.cancel()
     }
     this.okButtonClick = function () {
+      let secretResult = this.data.secretPhraseProcessed || this.data.secretPhrase
       $mdDialog.hide({
         password: this.data.password1,
-        secretPhrase: this.data.secretPhrase,
+        secretPhrase: secretResult,
       })
-      importWallet(this.data.secretPhrase, this.data.selectedImport)
+      importWallet(secretResult, this.data.selectedImport)
     }
     let emptyValidator = () => null
     let bip44CompatibleValidator = () => {
@@ -43,8 +44,9 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
     let ethereumValidator = () => {
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
+        //it is not the seed, so test if it is the private key
         let s = this.data.secretPhrase || ""
-        this.data.secretPhrase = s = s.startsWith("0x") ? s.substr(2) : s
+        this.data.secretPhraseProcessed = s = s.startsWith("0x") ? s.substring(2) : s
         if (utils.isHex(s) && s.length == 64) return
         return "Private key is not valid or " + bip44Invalid
       }
@@ -54,7 +56,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       if (bip44Invalid) {
         // allowed raw hex pk or WIF pk
         let s = this.data.secretPhrase || ""
-        this.data.secretPhrase = s = s.startsWith("0x") ? s.substr(2) : s
+        this.data.secretPhraseProcessed = s = s.startsWith("0x") ? s.substring(2) : s
         //check is raw private key
         if (utils.isHex(s) && s.length == 64) return
         //check is WIF private key
@@ -78,6 +80,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       password1: '',
       password2: '',
       secretPhrase: '',
+      secretPhraseProcessed: '',
       bip44Compatible: false,
       selectedImport: null
     }
@@ -105,9 +108,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
     let $rootScope = heat.$inject.get('$rootScope');
     let store = storage.namespace('wallet', $rootScope, true);
     let accountId = heat.crypto.getAccountId(secret)
-    let currencies = store.get(accountId)
-    if (!currencies)
-      currencies = []
+    let currencies = store.get(accountId) || []
     currencies.push(selectedImport.symbol)
     let distinctValues = (value, index, walletComponent) => {
       return walletComponent.indexOf(value) === index;
