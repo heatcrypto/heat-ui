@@ -29,10 +29,17 @@ class Web3Service {
     return this.web3.toAscii(input)
   }
 
-  getTransactionCount2 = (address: string) => {
+  getAddressNonce = (address: string) => {
     return new Promise<number>((resolve, reject) => {
       this.http.get(this.blockbookEndpoint + "/address/" + address).then(
-        resp => resolve((angular.isString(resp) ? JSON.parse(resp) : resp).nonce),
+        resp => {
+            let respObj = angular.isString(resp) ? JSON.parse(resp) : resp
+            if (respObj.nonce) {
+                resolve(respObj.nonce)
+            } else {
+                reject("response has no nonce")
+            }
+        },
         reason => {
           let $rootScope = heat.$inject.get('$rootScope')
           let store = this.storage.namespace('currency-cache-eth', $rootScope, true)
@@ -81,14 +88,16 @@ class Web3Service {
     })
   }
 
-  createRawTx2 = (account, to, value, gasPriceParam?, gasLimitParam?) => {
+  createRawTx2 = (account, to, value, gasPriceParam?, gasLimitParam?,
+                  getAddressNonce?: (address: string) => Promise<number>) => {
     return new Promise((resolve, reject) => {
       this.getGasPrice().then((gasPrice) => {
-        this.getTransactionCount2(account.address).then(
-          txCount => {
+        let f = getAddressNonce || this.getAddressNonce
+        return f(account.address).then(
+          nonce => {
             let defaultGasLimit = this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
             let txParams = {
-              nonce: '0x' + Number(txCount).toString(16),
+              nonce: '0x' + Number(nonce).toString(16),
               gasLimit: this.web3.toHex(gasLimitParam || defaultGasLimit),
               gasPrice: this.web3.toHex(String(gasPriceParam || gasPrice)),
               to: to,

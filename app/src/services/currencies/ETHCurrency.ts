@@ -133,7 +133,7 @@ class ETHCurrency implements ICurrency {
             }
           )
         }).catch(reason => {
-          dialogs.alert($event, 'ETH transaction creation Error', reason)
+          dialogs.alert($event, 'ETH transaction creation error', reason)
         })
       }
 
@@ -143,14 +143,25 @@ class ETHCurrency implements ICurrency {
         let web3 = <Web3Service> heat.$inject.get('web3')
         let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
-        $scope['vm'].disableOKBtn = true
-        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit)
+
+        let getAddressNonce = (address: string) => web3.getAddressNonce(address)
+            .catch(reason => {
+              return dialogs.simplePrompt(null,
+                  'Enter ETH address nonce',
+                  "The nonce is not resolved. Nonce is the transaction count from that address (outgoing transactions)",
+                  [{label: "Nonce", value: undefined}])
+            })
+            .then(nonce => {
+              return nonce[0]
+            })
+
+        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit, getAddressNonce)
             .then((rawTx) => {
               let clipboardService: ClipboardService = heat.$inject.get('clipboard')
               clipboardService.showTxnBytes("" + rawTx)
             })
             .catch(reason => {
-              dialogs.alert($event, 'ETH transaction creation Error', reason)
+              dialogs.alert($event, 'ETH transaction creation error', reason)
             })
       }
 
