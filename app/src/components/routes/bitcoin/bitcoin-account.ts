@@ -52,6 +52,7 @@ type PendingType = {
             <div class="value">
               {{vm.balance}} BTC
               <span style="font-size: small" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance"><br>{{vm.balanceUnconfirmed}} (unconfirmed)</span>
+              <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
           </div>
         </div>

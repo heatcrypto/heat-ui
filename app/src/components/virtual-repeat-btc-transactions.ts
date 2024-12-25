@@ -5,7 +5,9 @@
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+        Latest Transactions
+        <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp;&nbsp; (cached)</span>
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -71,7 +73,7 @@
   `
 })
 
-@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions', 'user', 'bitcoinMessagesService')
+@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions', 'user', 'storage')
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -81,9 +83,15 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
               private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
               private settings: SettingsService,
               private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
-              private user: UserService) {
+              private user: UserService,
+              private storage: StorageService) {
 
     super($scope, $q);
+    let store = storage.namespace('currency-cache-btc', this.$scope, true)
+    this.cache = {
+      get: key => store.get(this.user.currency.address + "-" + key),
+      put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
+    }
   }
 
   $onInit() {
@@ -171,9 +179,10 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           message: transaction.message || ''
         }
       }
-    );
+    ).catch(reason =>
+        console.warn("initialization btc list component error " + (reason ? JSON.stringify(reason) : "")))
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
     let timeout = setTimeout(refresh, 10 * 1000)
 
     let listener = this.determineLength.bind(this)
