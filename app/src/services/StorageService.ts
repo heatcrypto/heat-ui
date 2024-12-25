@@ -193,7 +193,7 @@ class Store extends EventEmitter {
   private read(path: string, defaultValue?: any): any {
     this.ensureIsEnabled();
     var text: string = localStorage.getItem(this.prefix + path);
-    if (angular.isString(text)) {
+    if (angular.isString(text) && text != 'undefined') {
       try {
         return JSON.parse(text);
       } catch (e) {
