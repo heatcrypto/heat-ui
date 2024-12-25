@@ -19,12 +19,15 @@ class BTCCurrency implements ICurrency {
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
     let self = this
+    self.recentBalance = wlt.getSavedCurrencyBalance(self.address, self.symbol)
     return this.btcBlockExplorerService.getBalance(this.address).then(
       balance => {
         self.recentBalance = wlt.getSavedCurrencyBalance(self.address, self.symbol, String(balance))
         return utils.commaFormat(new Big(self.recentBalance.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8))
       }
-    )
+    ).catch(reason => {
+      return utils.commaFormat(new Big(self.recentBalance.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8))
+    })
   }
 
   /* Register a balance changed observer, unregister by calling the returned
