@@ -88,7 +88,8 @@
 
             <!-- ID -->
             <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-              <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.hash}}">{{item.hash}}</a>
+<!--              <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.hash}}">{{item.hash}}</a>-->
+              <a href="javascript:void(0);" ng-click="vm.txnDetails($event, item)">{{item.hash}}</a>
             </div>
 
             <!-- INOUT -->
@@ -143,7 +144,7 @@
 })
 
 @Inject('$scope','$q','ethTransactionsProviderFactory','settings','user','render',
-  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions', 'storage')
+  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions', 'storage', 'http')
 class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
@@ -161,7 +162,8 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private controlCharRender: ControlCharRenderService,
               private web3: Web3Service,
               private ethereumPendingTransactions: EthereumPendingTransactionsService,
-              private storage: StorageService) {
+              private storage: StorageService,
+              private http: HttpService) {
     super($scope, $q)
     let store = storage.namespace('currency-cache-eth', this.$scope, true)
     this.cache = {
@@ -222,7 +224,31 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   jsonDetails($event, item) {
     let fields = [["txid", "id"], ["time"], ["blockHeight", "block height"], ["from"], ["to"], ["renderedAmount", "amount"]]
-    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid?.substring(0, 32) + "...", fields);
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid?.substring(0, 32) + "...", fields)
+  }
+
+  txnDetails($event, item) {
+    this.http.get("https://eth1.heatwallet.com/api/v2/tx/" + item.hash).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      if (parsed) {
+        let fields = [["txid", "id"], ["blockTime", "block time"], ["blockHeight", "block height"], ["value"], ["fees"]]
+        dialogs.jsonDetails($event, parsed, 'Transaction: ' + parsed.txid?.substring(0, 32) + "...", fields, null, true)
+      }
+    }).catch(reason => {
+      if (reason) console.error(reason)
+    })
+  }
+
+  addressDetails(address) {
+    this.http.get("https://eth1.heatwallet.com/api/v2/address/" + address).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      if (parsed) {
+        let fields = [["txid", "id"], ["blockTime", "block time"], ["blockHeight", "block height"], ["value"], ["fees"]]
+        dialogs.jsonDetails(null, parsed, 'Transaction: ' + parsed.txid?.substring(0, 32) + "...", fields, null, true)
+      }
+    }).catch(reason => {
+      if (reason) console.error(reason)
+    })
   }
 
   paymentMemoDialog($event, item) {
