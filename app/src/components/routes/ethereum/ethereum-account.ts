@@ -161,14 +161,17 @@ class EthereumAccountComponent {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with hash ${pendingTxn.txHash} found`).hideDelay(2000));
             this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
           }
+          if (data.error && data.error.indexOf("not found") > -1) {
+            this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+          }
         },
         err => {
           console.log('Transaction not found', err || "")
           if (!err) {
             let minutesOld = (Date.now() - pendingTxn.timestamp) / (1000*60)
             if (minutesOld > 60) {
-              console.log('Transaction was pending and is disappeared. Transaction is removed from pending list', pendingTxn)
               this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
+              console.log('Transaction was pending and is disappeared. Transaction is removed from pending list', pendingTxn)
             }
           }
         }
@@ -182,7 +185,7 @@ class EthereumAccountComponent {
       let addr = this.user.currency.address
       let txns = this.pendingService.pending[addr]
       if (txns) {
-        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+        const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
           this.pendingTransactions.push({
             date: dateFormat(new Date(tx.timestamp), format),
@@ -192,7 +195,7 @@ class EthereumAccountComponent {
           })
         })
         this.pendingTransactions.sort((a, b) => b.timestamp - a.timestamp)
-        this.loadPaymentMessages()
+        setTimeout(() => this.loadPaymentMessages(), 1500)
       }
     })
   }
