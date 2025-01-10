@@ -31,6 +31,9 @@
     .pending {
       color: coral;
     }
+    .pointer {
+      cursor: pointer;
+    }
   `],
   template: `
     <div layout="column" flex layout-fill>
@@ -88,8 +91,7 @@
 
             <!-- ID -->
             <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-<!--              <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.hash}}">{{item.hash}}</a>-->
-              <a href="javascript:void(0);" ng-click="vm.txnDetails($event, item)">{{item.hash}}</a>
+              <a class="pointer" ng-click="vm.txnDetails($event, item)">{{item.hash}}</a>
             </div>
 
             <!-- INOUT -->
@@ -111,7 +113,8 @@
 
             <!-- TOFROM -->
             <div class="truncate-col tofrom-col left" ng-if="vm.personalize">
-              <span ng-bind-html="item.renderedToFrom"></span>
+              <a class="pointer" ng-click="vm.addressDetails($event, item.renderedToFrom)">{{item.renderedToFrom}}</a>
+<!--              <span ng-bind-html="item.renderedToFrom"></span>-->
             </div>
 
             <!-- INFO -->
@@ -126,7 +129,7 @@
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
             </div>
             <span ng-if="!item.message" class="truncate-col left">
-              <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">create</a>
+              <a class="pointer" ng-click="vm.paymentMemoDialog($event, item)">create</a>
             </span>
 
             <!-- JSON -->
@@ -239,12 +242,13 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     })
   }
 
-  addressDetails(address) {
+  addressDetails($event, address) {
     this.http.get("https://eth1.heatwallet.com/api/v2/address/" + address).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
       if (parsed) {
-        let fields = [["txid", "id"], ["blockTime", "block time"], ["blockHeight", "block height"], ["value"], ["fees"]]
-        dialogs.jsonDetails(null, parsed, 'Transaction: ' + parsed.txid?.substring(0, 32) + "...", fields, null, true)
+        parsed.renderedAmount = (parsed.balance || 0) / 1000000000000000000 + " ETH"
+        let fields = [["address"], ["renderedAmount", "balance"], ["txs", "number of transactions"], ["nonce"]]
+        dialogs.jsonDetails(null, parsed, 'Address: ' + parsed.address, fields, null, true)
       }
     }).catch(reason => {
       if (reason) console.error(reason)
@@ -541,10 +545,9 @@ class EthTransactionRenderer {
 
   /* Returns HTML */
   renderedToFrom(transaction: EthplorerAddressTransactionExtended): string {
-    if (transaction.from.toUpperCase() == this.provider.account.toUpperCase()) {
-      return this.account(transaction.to);
-    }
-    return this.account(transaction.from);
+    return transaction.from.toUpperCase() == this.provider.account.toUpperCase()
+        ? transaction.to
+        : transaction.from;
   }
 
   // formatAmount(amount: string, symbol: string, neg: boolean): string {

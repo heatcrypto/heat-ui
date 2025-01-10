@@ -24,6 +24,11 @@
 @Component({
   selector: 'ethereumAccount',
   inputs: ['account'],
+  styles: [`
+    .value a {
+      text-decoration: none !important;
+    }
+  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="explorer-detail">
@@ -33,7 +38,7 @@
               Address:
             </div>
             <div class="value">
-              <a href="#/ethereum-account/{{vm.account}}">{{vm.account}}</a>
+              <a ng-click="vm.addressDetails($event, vm.account)">{{vm.account}}</a>
             </div>
           </div>
           <div class="col-item">
@@ -96,7 +101,7 @@
   `
 })
 @Inject('$scope', 'web3', 'assetInfo', '$q', 'user', 'ethBlockExplorerService',
-  'ethereumPendingTransactions', 'settings', '$interval', '$mdToast')
+  'ethereumPendingTransactions', 'settings', '$interval', '$mdToast', 'http')
 class EthereumAccountComponent {
   account: string; // @input
 
@@ -117,7 +122,8 @@ class EthereumAccountComponent {
               private pendingService: EthereumPendingTransactionsService,
               private settings: SettingsService,
               private $interval: angular.IIntervalService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private http: HttpService) {
   }
 
   $onInit() {
@@ -238,6 +244,19 @@ class EthereumAccountComponent {
             .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
       }
     }
+  }
+
+  addressDetails($event, address) {
+    this.http.get("https://eth1.heatwallet.com/api/v2/address/" + address).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
+      if (parsed) {
+        parsed.renderedAmount = (parsed.balance || 0) / 1000000000000000000 + " ETH"
+        let fields = [["address"], ["renderedAmount", "balance"], ["txs", "number of transactions"], ["nonce"]]
+        dialogs.jsonDetails(null, parsed, 'Address: ' + parsed.address, fields, null, true)
+      }
+    }).catch(reason => {
+      if (reason) console.error(reason)
+    })
   }
 
 }
