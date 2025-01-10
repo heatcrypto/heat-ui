@@ -133,7 +133,8 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Block: ' + item.block);
+    let fields = [["block"], ["generator", "generator account"], ["height", "block height"], ["time"], ["amount"], ["fee"], ["pos", "POS reward"], ["pop", "POP reward"]]
+    dialogs.jsonDetails($event, item, 'Block: ' + item.block, fields)
   }
 
   onSelect(selectedBlock) {

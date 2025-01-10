@@ -163,6 +163,7 @@ class ExplorerBlockComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Block: '+item.block);
+    let fields = [["block", "block id"], ["generator", "generator account"], ["height", "block height"], ["time"], ["amount"], ["fee"], ["pos", "POS reward"], ["pop", "POP reward"]]
+    dialogs.jsonDetails($event, item, 'Block: ' + item.block, fields);
   }
 }

@@ -110,8 +110,9 @@ class VirtualRepeatPaymentsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item: IHeatPayment) {
-    let title = item.isAtomicTransfer ? "Payment (multi transfer): " : "Payment: ";
-    dialogs.jsonDetails($event, item, title + "transaction " + item.transaction);
+    let title = item.isAtomicTransfer ? "Payment (multi transfer): " : "Payment: "
+    let fields = [["transaction"], ["senderPublicName", "sender"], ["recipientPublicName", "recipient"], ["height"], ["time"], ["amount"]]
+    dialogs.jsonDetails($event, item, title + "transaction " + item.transaction, fields)
   }
 
   onSelect(selectedTrade) { }

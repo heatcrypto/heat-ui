@@ -253,7 +253,8 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
+    let fields = [["transaction"], ["senderPublicName", "sender"], ["recipientPublicName", "recipient"], ["height"], ["time"], ["amount"], ["fee"], ["messageText", "message text"], ["type"], ["subtype"]]
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.transaction, fields)
   }
 
   onSelect(selectedTransaction) {}
