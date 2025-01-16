@@ -43,8 +43,7 @@
             </div>
             <!-- TO -->
             <div class="truncate-col message-col left">
-              <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
-              <a ng-show = "item.to === 'Multiple Outputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
+              <span>{{item.to}}</span>
             </div>
             <!-- AMOUNT -->
             <div class="truncate-col amount-col right">
@@ -142,28 +141,35 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
         // if BTC were transferred from the unlocked account address then show it as "-Amount"
         if (inputs.includes(this.account)) {
-          transaction.amount = `-${transaction.amount}`;
+          let totalOut = 0
+          for (let i = 0; i < transaction.vout.length; i++) {
+            let addresses = transaction.vout[i].scriptPubKey.addresses
+            if (addresses && addresses[0] !== this.account) {
+              totalOut = totalOut + parseFloat(transaction.vout[i].value)
+            }
+          }
+          transaction.amount = `-${totalOut}`
         } else {
           // if input does not include the current unlocked account address then output will always have it
           for (let i = 0; i < transaction.vout.length; i++) {
             if (transaction.vout[i].scriptPubKey.addresses && transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
-              transaction.to = this.account;
-              transaction.amount = transaction.vout[i].value;
+              transaction.to = this.account
+              transaction.amount = transaction.vout[i].value
+              break
             }
           }
         }
         // if change address was different then show hardcoded output
         if (!outputs.includes(this.account) && transaction.vout.length > 1) {
-          transaction.to = 'Multiple Outputs';
+          transaction.to = 'Multiple Outputs'
         }
 
-          //processed item has message value or null so undefined only should be processed
-          if (transaction.message === undefined) {
-              wlt.loadPaymentMessage(transaction.txid)
-                  .then(v => transaction.message = v)
-                  .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
-          }
-
+        //processed item has message value or null so undefined only should be processed
+        if (transaction.message === undefined) {
+          wlt.loadPaymentMessage(transaction.txid)
+              .then(v => transaction.message = v)
+              .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
+        }
 
         transaction.json = {
           txid: transaction.txid,
