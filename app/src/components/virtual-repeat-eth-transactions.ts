@@ -227,7 +227,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   jsonDetails($event, item) {
     let fields = [["txid", "id"], ["time"], ["blockHeight", "block height"], ["from"], ["to"], ["renderedAmount", "amount"]]
-    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid?.substring(0, 32) + "...", fields)
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid, fields)
   }
 
   txnDetails($event, item) {
@@ -235,7 +235,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       if (parsed) {
         let fields = [["txid", "id"], ["blockTime", "block time"], ["blockHeight", "block height"], ["value"], ["fees"]]
-        dialogs.jsonDetails($event, parsed, 'Transaction: ' + parsed.txid?.substring(0, 32) + "...", fields, null, true)
+        dialogs.jsonDetails($event, parsed, 'Transaction: ' + parsed.txid + "...", fields, null, true)
       }
     }).catch(reason => {
       if (reason) console.error(reason)
