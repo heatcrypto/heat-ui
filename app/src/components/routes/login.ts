@@ -419,7 +419,14 @@ class LoginComponent {
           this.pageAddWalletInvalid = true;
           let fileContents = reader.result;
           if (typeof fileContents === "string") {
-            this.pageAddWallet = this.walletFile.createFromText(fileContents);
+            let data = this.walletFile.parseJSON(fileContents);
+            if (data && data["heatwallet-raw-data"]) {
+              let resultMessage = this.walletFile.importRawData(data)
+              this.$mdToast.show(this.$mdToast.simple().textContent(resultMessage + ".   The app will now restart...").hideDelay(7000))
+              setTimeout(() => window.location.reload(), 3000)
+            } else {
+              this.pageAddWallet = this.walletFile.createFromText(data)
+            }
           }
           if (this.pageAddWallet) {
             this.pageAddWalletInvalid = false;

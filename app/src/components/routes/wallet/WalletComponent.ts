@@ -57,7 +57,7 @@
           <md-option style="height: 30px;"ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
         
-        <md-checkbox ng-model="vm.displayUnlocked" style="margin: auto">
+        <md-checkbox ng-model="vm.displayUnlocked" style="margin: 8px 26px 0 auto;">
           Display unlocked only
         </md-checkbox>
         
@@ -527,23 +527,29 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       reader.onload = () => {
         this.$scope.$evalAsync(() => {
           let fileContents = reader.result;
-          let wallet = this.walletFile.createFromText(<string>fileContents);
-          if (wallet) {
-            let addedKeys = this.localKeyStore.import(wallet);
-            this.$scope.$evalAsync(() => {
-              this.initLocalKeyStore()
-              wlt.initCreatedAddresses()
-            })
-
-            let isBig = addedKeys.length > 8
-            let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
-                .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
-                .join(", ")
-            if (isBig) report = report + "\n..."
-
-            let message = `Imported ${addedKeys.length} keys into this device: \n ${report}`;
-            this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(7000));
+          let data = this.walletFile.parseJSON(<string>fileContents);
+          let resultMessage = "Nothing imported"
+          if (data && data["heatwallet-raw-data"]) {
+            resultMessage = this.walletFile.importRawData(data)
+            resultMessage += ".  The app will now restart..."
+            setTimeout(() => window.location.reload(), 4000)
+          } else {
+            let wallet = this.walletFile.createFromText(data);
+            if (wallet) {
+              let addedKeys = this.localKeyStore.import(wallet);
+              this.$scope.$evalAsync(() => {
+                this.initLocalKeyStore()
+                wlt.initCreatedAddresses()
+              })
+              let isBig = addedKeys.length > 8
+              let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
+                  .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
+                  .join(", ")
+              if (isBig) report = report + "\n..."
+              resultMessage = `Imported ${addedKeys.length} keys into this device: \n ${report}`
+            }
           }
+          this.$mdToast.show(this.$mdToast.simple().textContent(resultMessage).hideDelay(7000))
         })
       };
       reader.readAsText(files[0]);

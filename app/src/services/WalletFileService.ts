@@ -50,16 +50,15 @@ interface IHeatWalletFileEntry {
 @Service('walletFile')
 class WalletFileService {
 
-  createFromText(contents: string): IHeatWalletFile {
-    return this.decode(contents);
+  createFromText(data): IHeatWalletFile {
+    return this.decode(data);
   }
 
   encode(walletFile: IHeatWalletFile): string {
     return JSON.stringify(walletFile, null, 2);
   }
 
-  decode(contents: string): IHeatWalletFile {
-    let data = this.parseJSON(contents);
+  decode(data): IHeatWalletFile {
     if (!data) return null;
 
     let version = data.version;
@@ -96,5 +95,16 @@ class WalletFileService {
       console.log('Could not parse wallet file', e);
     }
   }
+
+  importRawData(data: any) {
+    try {
+      let keys = Object.keys(data)
+      keys.forEach(k => localStorage.setItem(k, data[k]))
+      return `Imported ${keys.length} items`
+    } catch (e) {
+      return " Error " + e.toString()
+    }
+  }
+
 }
 
