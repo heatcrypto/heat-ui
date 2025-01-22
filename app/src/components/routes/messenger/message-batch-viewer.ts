@@ -100,6 +100,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   /* websocket event listener */
   onMessageAdded() {
     var batch = this.getFirst();
+    if (!batch) return
     batch.loadMore().then(() => {
       var entry = batch.getLast();
       var id = entry.__id;
