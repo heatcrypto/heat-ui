@@ -62,14 +62,15 @@ module heat {
 
         heat.$inject = angular.element(document).injector();
 
-        $router.config({ path: '/', redirectTo: '/login' });
+        //$router.config({ path: '/', redirectTo: '/login' });
 
         let unlockedRouteCheckers = [
           /\/p2pmessagingprobe.*/,
           /\/trader.*/,
           /\/explorer.*/,
           /\/explore-account.*/,
-          /\/peers.*/
+          /\/peers.*/,
+          /\/wallet.*/
         ]
 
         function isUnlocked() {
