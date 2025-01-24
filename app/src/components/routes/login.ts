@@ -129,6 +129,10 @@
               <br>
               <span class="account-preview">{{vm.pageCreateAccount}}</span>
               <br>
+              Public key
+              <br>
+              <span class="account-preview">{{vm.pageCreatePublicKey}}</span>
+              <br>
               <span>BIP44 compatible = <b>{{vm.bip44Compatible?'TRUE':'FALSE'}}</b></span>
             </div>
           </div>
@@ -175,24 +179,25 @@
             <div layout="row" layout-align="center center">
               <md-button ng-click="vm.printPassphrase()">
                 <md-icon md-font-library="material-icons">print</md-icon>
-                &nbsp;&nbsp;Print
+                &nbsp;Print
               </md-button>
               <md-button ng-click="vm.savePassphrase()" ng-if="vm.isFileSaverSupported">
                 <md-icon md-font-library="material-icons">save</md-icon>
-                &nbsp;&nbsp;Save
+                &nbsp;Save
               </md-button>
               <md-button ng-click="vm.showPassphrase()">
                 <md-icon md-font-library="material-icons">content_copy</md-icon>
-                &nbsp;&nbsp;Copy
+                &nbsp;Show
               </md-button>
-              <md-button ng-click="vm.showPassphrase=!vm.showPassphrase">
+              <md-button ng-click="vm.visiblePassphrase = !vm.visiblePassphrase">
                 <md-icon md-font-library="material-icons">arrow_drop_down_circle</md-icon>
-                &nbsp;&nbsp;{{vm.showPassphrase?'Hide':'Reveal'}}
+                &nbsp;{{vm.visiblePassphrase ? 'Hide' : 'Reveal'}}
               </md-button>
             </div>
-            <div layout="column" layout-align="center center" ng-show="vm.showPassphrase">
+            <div layout="column" layout-align="center center" ng-show="vm.visiblePassphrase">
               <p>Passphrase for {{vm.pageCreateUserName}} ({{vm.pageCreateAccount}}):</p>
               <p><code id="claim2-passphrase">{{vm.pageCreateSecretPhrase}}</code></p>
+              <p>Public key:<br><code id="claim2-pubkey">{{vm.pageCreatePublicKey}}</code></p>
             </div>
             <div layout="row" layout-align="center center">
               <md-checkbox ng-model="vm.passphraseBackedUp" aria-label="I have backed up my passphrase">
@@ -325,6 +330,8 @@ class LoginComponent {
   pageCreateLoading: boolean = false;
   pageCreateError: string;
   pageCreateTransaction: string;
+
+  visiblePassphrase = true
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
@@ -533,11 +540,14 @@ class LoginComponent {
     this.panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+          <textarea rows="3" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+          <div>Public key:</div>
+          <div>{{vm.publicKey}}</div>
         </md-input-container>
       </div>
     `, {
-      secretPhrase: this.pageCreateSecretPhrase
+      secretPhrase: this.pageCreateSecretPhrase,
+      publicKey: this.pageCreatePublicKey
     })
   }
 

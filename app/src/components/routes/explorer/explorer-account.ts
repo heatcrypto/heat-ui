@@ -34,7 +34,7 @@
               Account:
             </div>
             <div class="value">
-              <a href="#/explorer-account/{{vm.account}}/{{vm.type}}">{{vm.accountName||vm.account}}</a>
+              <a ng-click="vm.showPublicKey()">{{vm.accountName||vm.account}}</a>
             </div>
             <div ng-if="vm.supervisoryAccount" style="font-size: x-small; margin-bottom: 6px;">
               under control <a href="#/explorer-account/{{vm.supervisoryAccount}}/transactions">{{vm.supervisoryAccount}}</a>
@@ -206,7 +206,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo','$q')
+@Inject('$scope','heat','assetInfo','$q', 'panel')
 class ExploreAccountComponent {
   account: string; // @input
   type: string; // @input
@@ -243,7 +243,8 @@ class ExploreAccountComponent {
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private assetInfo: AssetInfoService,
-              private $q: angular.IQService) {
+              private $q: angular.IQService,
+              private panel: PanelService) {
   }
 
   $onInit() {
@@ -345,6 +346,19 @@ class ExploreAccountComponent {
 
   showDescription($event, info: AssetInfo) {
     dialogs.assetInfo($event, info);
+  }
+
+  showPublicKey($event) {
+    this.panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>                                                                                                                                                           
+          <div>Public key:</div>
+          <div>{{vm.publicKey}}</div>
+        </md-input-container>
+      </div>
+    `, {
+      publicKey: this.publicKey
+    })
   }
 
   private getAccountAssets(): angular.IPromise<Array<AssetInfo>> {
