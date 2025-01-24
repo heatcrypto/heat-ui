@@ -42,6 +42,9 @@ class SendmessageService extends AbstractTransaction {
 }
 class SendMessageDialog extends GenericDialog {
 
+  missRecipient = false
+  missRecipientPubKey = false
+
   constructor($event,
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
@@ -63,58 +66,70 @@ class SendMessageDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
-      builder.account('recipient', this.recipient).
-              label('Recipient').
-              onchange(() => {
-                this.fields['recipientPublicKey'].value = null;
-                this.fields['message'].changed();
-                this.heat.api.getPublicKey(this.fields['recipient'].value, true).then(
-                  (publicKey) => {
-                    this.fields['recipientPublicKey'].value = publicKey;
-                    $scope.$evalAsync(()=>{
-                      this.fields['recipient']['accountExists'] = true
-                      // this.fields['message'].visible(true);
-                      this.fields['messageWarning'].visible(false);
-                    });
-                  },(reason)=>{
-                    $scope.$evalAsync(()=>{
-                      this.fields['recipient']['accountExists'] = false
-                      // this.fields['message'].visible(false);
-                      this.fields['messageWarning'].visible(true);
-                    });
-                  }
-                )
-              })
-        .asyncValidate("No recipient public key", (message) => {
-          let deferred = this.$q.defer<boolean>();
-          if (String(message).trim().length == 0) {
-            deferred.resolve();
-          } else {
-            if (this.fields['recipientPublicKey'].value) {
-              deferred.resolve();
-            } else {
-              this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+      builder.account('recipient', this.recipient)
+          .label('Recipient')
+          .onchange(() => {
+            if (this.missRecipient) {
+                this.missRecipient = false
+                return
+            }
+            this.fields['recipientPublicKey'].value = null
+            this.missRecipientPubKey = true
+            this.heat.api.getPublicKey(this.fields['recipient'].value, true).then(
                 (publicKey) => {
                   this.fields['recipientPublicKey'].value = publicKey;
-                  deferred.resolve();
-                },
-                deferred.reject
-              );
+                  $scope.$evalAsync(() => {
+                    this.fields['recipient']['accountExists'] = true
+                  });
+                }, (reason) => {
+                  $scope.$evalAsync(() => {
+                    this.fields['recipient']['accountExists'] = false
+                    this.fields['recipientPublicKey'].value = null
+                  });
+                }
+            )
+          })
+          .asyncValidate("No recipient public key", (message) => {
+            let deferred = this.$q.defer<boolean>();
+            if (String(message).trim().length == 0) {
+              deferred.resolve();
+            } else {
+              if (this.fields['recipientPublicKey'].value) {
+                deferred.resolve();
+              } else {
+                this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+                    (publicKey) => {
+                      this.fields['recipientPublicKey'].value = publicKey;
+                      deferred.resolve();
+                    },
+                    deferred.reject
+                );
+              }
             }
-          }
-          return deferred.promise;
-        })
-        .required(),
-      builder.staticText('messageWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
-             .visible(true),
+            return deferred.promise;
+          })
+          .required(),
+      // builder.staticText('messageWarning', 'Message field will be visible only if the receiver account is known by the HEAT p2p network.')
+      //        .visible(true),
+      builder.text('recipientPublicKey', this.recipientPublicKey)
+          .label("Recipient public key")
+          .onchange(() => {
+              if (this.missRecipientPubKey) {
+                  this.missRecipientPubKey = false
+                  return
+              }
+              let recipientId = heat.crypto.getAccountIdFromPublicKey(this.fields['recipientPublicKey'].value)
+              let f = <DialogFieldAccount>this.fields['recipient']
+              //f.disabled(true)//.visible(false)
+              this.missRecipient = true
+              f.setSearchText(recipientId)
+          }),
       builder.text('message', this.userMessage)
-        .rows(2)
-        .required(true)
-        // visible(false).
-        .label('Message'),
-      builder.staticText('messageWarning', 'This message will be stored encrypted in HEAT blockchain')
-        .visible(true),
-      builder.hidden('recipientPublicKey', this.recipientPublicKey)
+          .rows(2)
+          .required(true)
+          .label('Message')
+      // builder.staticText('messageWarning', 'This message will be stored encrypted in HEAT blockchain')
+      //   .visible(true),
     ]
   }
 

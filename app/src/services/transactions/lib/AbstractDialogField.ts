@@ -80,6 +80,7 @@ abstract class AbstractDialogField {
 
   setValue(value) {
     this.value = value
+    return this
   }
 
   /* Model change listener */

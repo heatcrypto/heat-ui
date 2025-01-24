@@ -91,7 +91,7 @@
             </md-button>
             <md-button id="callButton" class="md-primary" aria-label="Send" ng-click="vm.showCallDialog($event)">
               <md-tooltip md-direction="top">
-                Send message to user to establish the contact
+                Send HEAT message to user to establish the contact
               </md-tooltip>
               New Contact
             </md-button>
