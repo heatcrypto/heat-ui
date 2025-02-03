@@ -130,8 +130,10 @@ module heat {
           if (usingServer) {
             if (Date.now() - startMoment < 5000) {
               setTimeout(() => {
-                sessionStorage.setItem(heat.serverDescriptionKey, JSON.stringify(usingServer))
-                window.location.reload()
+                if (!utils.isBaseDate()) {
+                  sessionStorage.setItem(heat.serverDescriptionKey, JSON.stringify(usingServer))
+                  window.location.reload()
+                }
               }, 300)
             }
           }

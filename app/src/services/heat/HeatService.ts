@@ -63,24 +63,16 @@ class HeatService {
       utils.setBaseTimestamp(parseInt(basetimestamp))
     })
     this.settings.initialized.then(v => initBaseTime())
-    try {
-      initBaseTime()
-    } catch (e) {
-      console.error(e)
-    }
+        .catch(reason => console.error(reason))
     $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
-      try {
-        initBaseTime()
-      } catch (e) {
-        console.error(e)
-      }
-    });
+      initBaseTime().catch(reason => console.error(reason))
+    })
 
     let refreshInterval = $interval(() => {
       if (utils.isBaseDate()) {
         $interval.cancel(refreshInterval);
       } else {
-        initBaseTime()
+        initBaseTime().catch(reason => console.error(reason))
       }
     }, 3 * 1000, 0, false);
   }
