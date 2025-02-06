@@ -160,28 +160,33 @@
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span class="state-message" ng-if="entry.stateMessage">{{entry.stateMessage}}</span>
                   <span>{{entry.balance}}</span>
-                  <span ng-if="entry.balance">&nbsp;&nbsp;&nbsp;{{entry.symbol}}</span>
+                  <span ng-if="entry.hasDigit()">&nbsp;&nbsp;&nbsp;{{entry.symbol}}</span>
                 </div>
-                <md-menu ng-hide="entry.symbol==='HEAT'" md-position-mode="target-right target" md-offset="34px 34px">
+                <md-menu md-position-mode="target-right target" md-offset="34px 34px">
                   <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdMenu.open($event)" md-menu-origin >
                     <md-icon md-font-library="material-icons">more_horiz</md-icon>
                   </md-button>
                   <md-menu-content width="4">
-                    <md-menu-item style="height: 26px; min-height: 26px"><span style="text-align: center">{{entry.name}}</span></md-menu-item>
+                    <md-menu-item style="height: 26px; min-height: 26px">
+                      <span style="text-align: center">{{entry.name}}  address: {{entry.address}}</span>
+                    </md-menu-item>
+                    <md-menu-item ng-if="entry.pubKey">
+                      <span style="font-size: x-small">Public key:<br>{{entry.pubKey}}</span>
+                    </md-menu-item>
                     <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase, entry.symbol)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
                       </md-button>
                     </md-menu-item>
-                    <md-menu-item ng-if="entry.index!=undefined">
+                    <md-menu-item ng-hide="entry.symbol==='HEAT'" ng-if="entry.index!=undefined">
                       <md-button aria-label="explorer" ng-click="vm.createAddress(entry.walletEntry, entry.name)">
                         <md-icon md-font-library="material-icons">add</md-icon>
                         Create {{entry.symbol}} address
                       </md-button>
                     </md-menu-item>
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="vm.deleteEntry(entry)">
+                      <md-button aria-label="explorer" ng-hide="entry.symbol==='HEAT'" ng-click="vm.deleteEntry(entry)">
                         <md-icon md-font-library="material-icons">delete_forever</md-icon>
                         Remove address  <span class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></span>
                       </md-button>
@@ -639,7 +644,9 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.allLocked = false
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
     let heatCurrencyBalance = new wlt.CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
+    heatCurrencyBalance.walletEntry = walletEntry
     heatCurrencyBalance.visible = walletEntry.expanded
+    heatCurrencyBalance.pubKey = heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase)
     walletEntry.currencies.push(heatCurrencyBalance)
     this.flatten()
 
@@ -660,7 +667,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     }, () => {
       this.$scope.$evalAsync(() => {
         heatCurrencyBalance.balance = "Address is unused"
-        heatCurrencyBalance.symbol = ''
       })
     });
 

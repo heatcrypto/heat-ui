@@ -243,11 +243,13 @@ namespace wlt {
 
   export class CurrencyBalance {
 
-    static hasDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
+    static hasNoZeroDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
+    static hasDigit = /[0-9]/  // test is string (balance) has any not zero digit (is balance no zero)
 
     public isCurrencyBalance = true
     private _balance: string
     public inUse = false
+    public pubKey: string
     public tokens: Array<TokenBalance> = []
     public visible = false
     public hidden = false
@@ -318,7 +320,11 @@ namespace wlt {
     }
 
     public isZeroBalance() {
-      return !CurrencyBalance.hasDigit.test(this._balance)
+      return !CurrencyBalance.hasNoZeroDigit.test(this._balance)
+    }
+
+    public hasDigit() {
+      return CurrencyBalance.hasDigit.test(this._balance)
     }
 
   }
