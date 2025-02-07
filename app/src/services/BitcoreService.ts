@@ -7,12 +7,15 @@ class BitcoreService {
   private bip39;
   private store: Store;
 
+  private BITCOIN_MESSAGE_MAGIC_BYTES
+
   constructor($window: angular.IWindowService,
     storage: StorageService,
     private $rootScope: angular.IRootScopeService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
     this.store = storage.namespace('wallet-address', $rootScope, true);
+    this.BITCOIN_MESSAGE_MAGIC_BYTES = new this.bitcore.deps.Buffer('Bitcoin Signed Message:\n')
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
@@ -196,4 +199,24 @@ class BitcoreService {
       privateKey: privateKey.toString()
     }
   }
+
+  signBitcoinMessage(message: string, privateKey: string) {
+    let pk = this.bitcore.PrivateKey(privateKey)
+    let ecdsa = new this.bitcore.crypto.ECDSA()
+    ecdsa.hashbuf = this.magicHash(message)
+    ecdsa.privkey = pk
+    ecdsa.pubkey = pk.toPublicKey()
+    ecdsa.signRandomK()
+    ecdsa.calci()
+    return ecdsa.sig.toCompact().toString('base64')
+  }
+
+  private magicHash(message: string) {
+    let prefix1 = this.bitcore.encoding.BufferWriter.varintBufNum(this.BITCOIN_MESSAGE_MAGIC_BYTES.length)
+    let messageBuffer = new this.bitcore.deps.Buffer(message)
+    let prefix2 = this.bitcore.encoding.BufferWriter.varintBufNum(messageBuffer.length)
+    let buf = this.bitcore.deps.Buffer.concat([prefix1, this.BITCOIN_MESSAGE_MAGIC_BYTES, prefix2, messageBuffer])
+    return this.bitcore.crypto.Hash.sha256sha256(buf)
+  }
+
 }

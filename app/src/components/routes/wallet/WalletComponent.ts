@@ -23,6 +23,9 @@
 
 ///<reference path="./WalletComponentAbstract.ts" />
 
+import WalletEntry = wlt.WalletEntry;
+import CurrencyBalance = wlt.CurrencyBalance;
+
 @RouteConfig('/wallet')
 @Component({
   selector: 'wallet',
@@ -177,6 +180,12 @@
                       <md-button aria-label="explorer" ng-click="vm.showSecret(entry.secretPhrase, entry.symbol)">
                         <md-icon md-font-library="material-icons">file_copy</md-icon>
                         Show private key
+                      </md-button>
+                    </md-menu-item>
+                    <md-menu-item ng-if="entry.symbol==='BTC'">
+                      <md-button aria-label="explorer" ng-click="vm.signBitcoinMessage($event, entry)">
+                        <md-icon md-font-library="material-icons">spellcheck</md-icon>
+                        Sign Bitcoin Message
                       </md-button>
                     </md-menu-item>
                     <md-menu-item ng-hide="entry.symbol==='HEAT'" ng-if="entry.index!=undefined">
@@ -352,6 +361,31 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   showSecret(secret: string, currencySymbol: string) {
     this.clipboard.showSecret(secret, currencySymbol)
+  }
+
+  signBitcoinMessage($event, entry: CurrencyBalance) {
+    dialogs.simplePrompt($event,
+        "Sign Bitcoin Message",
+        "Enter the message that will be signed by address's private key and then the signature can be used to prove address ownership:",
+        [{label: "Message", value: ""}]).then(
+        result => {
+          dialogs.dialog({
+            id: 'signedBitcoinMessage',
+            title: 'Signed Bitcoin Message',
+            targetEvent: $event,
+            locals: {
+              address: entry.address,
+              message: result[0],
+              signature: this.bitcoreService.signBitcoinMessage(result[0], entry.secretPhrase)
+            },
+            template: `
+              <p><label>Address:</label><br>{{vm.address}}</p>
+              <p><label>Message:</label><br>{{vm.message}}</p>
+              <p style="max-width: 400px;overflow-wrap: anywhere;"><label>Signature:</label><br>{{vm.signature}}</p>
+            `
+          })
+        }
+    )
   }
 
   deleteEntry(entry) {
