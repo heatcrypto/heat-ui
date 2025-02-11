@@ -367,7 +367,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     dialogs.simplePrompt($event,
         "Sign Bitcoin Message",
         "Enter the message that will be signed by address's private key and then the signature can be used to prove address ownership:",
-        [{label: "Message", value: ""}]).then(
+        [{label: "Message", value: "", required: true}]).then(
         result => {
           dialogs.dialog({
             id: 'signedBitcoinMessage',
@@ -376,12 +376,18 @@ class WalletComponent extends wlt.WalletComponentAbstract {
             locals: {
               address: entry.address,
               message: result[0],
-              signature: this.bitcoreService.signBitcoinMessage(result[0], entry.secretPhrase)
+              signature: this.bitcoreService.signBitcoinMessage(entry.address, result[0], entry.secretPhrase)
             },
+            style: `.value {
+              font-family: monospace; 
+              font-size: larger; 
+              color: darkgrey;
+            }
+            `,
             template: `
-              <p><label>Address:</label><br>{{vm.address}}</p>
-              <p><label>Message:</label><br>{{vm.message}}</p>
-              <p style="max-width: 400px;overflow-wrap: anywhere;"><label>Signature:</label><br>{{vm.signature}}</p>
+              <p><label>Address:</label><br><span class="value">{{vm.address}}</span></p>
+              <p><label>Message:</label><br><span class="value">{{vm.message}}</span></p>
+              <p style="max-width: 400px;overflow-wrap: anywhere;"><label>Signature:</label><br><span class="value">{{vm.signature}}</span></p>
             `
           })
         }

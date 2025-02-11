@@ -9,7 +9,7 @@ class BitcoreService {
 
   private BITCOIN_MESSAGE_MAGIC_BYTES
 
-  constructor($window: angular.IWindowService,
+  constructor(private $window: angular.IWindowService,
     storage: StorageService,
     private $rootScope: angular.IRootScopeService) {
     this.bitcore = $window.heatlibs.bitcore;
@@ -200,23 +200,29 @@ class BitcoreService {
     }
   }
 
-  signBitcoinMessage(message: string, privateKey: string) {
-    let pk = this.bitcore.PrivateKey(privateKey)
-    let ecdsa = new this.bitcore.crypto.ECDSA()
-    ecdsa.hashbuf = this.magicHash(message)
-    ecdsa.privkey = pk
-    ecdsa.pubkey = pk.toPublicKey()
-    ecdsa.signRandomK()
-    ecdsa.calci()
-    return ecdsa.sig.toCompact().toString('base64')
+  resolveAddressType(address: string) {
+    if (address.startsWith("1")) return "p2pkh"
+    //if (address.startsWith("3")) return "p2sh"
+    if (address.startsWith("3")) return "p2wpkh_in_p2sh"
+    if (address.startsWith("bc1q")) return "p2wpkh"
+    if (address.startsWith("bc1p")) return "p2tr"
   }
 
-  private magicHash(message: string) {
-    let prefix1 = this.bitcore.encoding.BufferWriter.varintBufNum(this.BITCOIN_MESSAGE_MAGIC_BYTES.length)
-    let messageBuffer = new this.bitcore.deps.Buffer(message)
-    let prefix2 = this.bitcore.encoding.BufferWriter.varintBufNum(messageBuffer.length)
-    let buf = this.bitcore.deps.Buffer.concat([prefix1, this.BITCOIN_MESSAGE_MAGIC_BYTES, prefix2, messageBuffer])
-    return this.bitcore.crypto.Hash.sha256sha256(buf)
+  signBitcoinMessage(address: string, message: string, privateKey: string) {
+    // @ts-ignore
+    let heatAppLib = __methods__
+    let privateKeyHex = this.bitcore.PrivateKey.fromWIF(privateKey).toString()
+    let addressType = this.resolveAddressType(address)
+    let signatureHex = heatAppLib.BITCOIN_BIP137_SIGN({
+      privateKeyHex: privateKeyHex,
+      network: "bitcoin",
+      addressType: addressType,
+      message: message,
+      extraEntropyHex: "00000000000000000000000000000000000000000000000000000000000007ba",
+    })
+    const signatureBase64 = this.$window.heatlibs.safeBuffer.Buffer.from(signatureHex, "hex").toString("base64")
+    //const signatureBase64 = Buffer.from(signatureHex, "hex").toString("base64")
+    return signatureBase64
   }
 
 }

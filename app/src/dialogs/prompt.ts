@@ -54,7 +54,7 @@ module dialogs {
     $event,
     title: string,
     description: string,
-    fields: { label: string, value: string }[]
+    fields: { label: string, value: string , required?: boolean}[]
   ): angular.IPromise<string[]> {
     let $q = <angular.IQService>heat.$inject.get('$q');
     let deferred = $q.defer<string[]>();
@@ -73,7 +73,7 @@ module dialogs {
             <md-input-container flex>
               <label>{{item.label}}</label>
               <!--<input id="1" type="text" ng-model="item.value" autocomplete="off" auto-focus/>-->
-              <input type="text" ng-model="item.value" autocomplete="off"/>
+              <input type="text" ng-model="item.value" autocomplete="off" ng-required="item.required || false" auto-focus//>
             </md-input-container>
           </md-list-item>
         </md-list>
