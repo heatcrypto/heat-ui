@@ -378,16 +378,16 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               message: result[0],
               signature: this.bitcoreService.signBitcoinMessage(entry.address, result[0], entry.secretPhrase)
             },
-            style: `.value {
+            style: `.sbm-value {
               font-family: monospace; 
               font-size: larger; 
               color: darkgrey;
             }
             `,
             template: `
-              <p><label>Address:</label><br><span class="value">{{vm.address}}</span></p>
-              <p><label>Message:</label><br><span class="value">{{vm.message}}</span></p>
-              <p style="max-width: 400px;overflow-wrap: anywhere;"><label>Signature:</label><br><span class="value">{{vm.signature}}</span></p>
+              <p><label>Address:</label><br><span class="sbm-value">{{vm.address}}</span></p>
+              <p><label>Message:</label><br><span class="sbm-value">{{vm.message}}</span></p>
+              <p style="max-width: 400px;overflow-wrap: anywhere;"><label>Signature:</label><br><span class="sbm-value">{{vm.signature}}</span></p>
             `
           })
         }
