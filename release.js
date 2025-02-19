@@ -42,6 +42,8 @@ function findHeatBundleFile() {
 }
 
 async function updateFiles(heatBundleFile) {
+  await updateVersionFile()
+
   const version = fs.readFileSync("./VERSION").toString().trim()
   const heatledgerVersionContent = fs.readFileSync("../heatledger/conf/VERSION").toString().trim().split("\n")
   const heatledgerVersion = heatledgerVersionContent[0].trim()
@@ -50,21 +52,45 @@ async function updateFiles(heatBundleFile) {
       : ""
   const buildDate = new Date().toISOString().split('T')[0]
 
-  await replaceStrInFile("dist/index.html", "%BUILD_OVERRIDE_VERSION%", version)
-  await replaceStrInFile("dist/index.html", "%BUILD_OVERRIDE_LAST_MODIFIED%", buildDate)
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_VERSION%", version)
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_HEATLEDGER_VERSION%", heatledgerVersion)
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_HEATLEDGER_BUILD_DATE%", heatledgerBuildDate)
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_BUILD%", buildDate)
-  await replaceStrInFile(heatBundleFile, "%BUILD_OVERRIDE_LAST_MODIFIED%", buildDate)
+  await replaceStrInFile("dist/index.html", [
+    ["%BUILD_OVERRIDE_VERSION%", version],
+    ["%BUILD_OVERRIDE_LAST_MODIFIED%", buildDate]
+  ])
+
+  await replaceStrInFile(heatBundleFile, [
+      ["%BUILD_OVERRIDE_VERSION%", version],
+      ["%BUILD_OVERRIDE_HEATLEDGER_VERSION%", heatledgerVersion],
+      ["%BUILD_OVERRIDE_HEATLEDGER_BUILD_DATE%", heatledgerBuildDate],
+      ["%BUILD_OVERRIDE_BUILD%", buildDate],
+      ["%BUILD_OVERRIDE_LAST_MODIFIED%", buildDate]
+  ])
 }
 
-async function replaceStrInFile(file, str, replacement) {
+/**
+ * Increase last number in version string and update version file with new version value.
+ */
+async function updateVersionFile() {
+  const f = "./VERSION"
+  const version = fs.readFileSync(f).toString().trim()
+  let parts = version.split(".")
+  let lastNum = parseInt(parts[parts.length - 1])
+  parts[parts.length - 1] = String(++lastNum)
+  let newVersion = parts.join(".")
+  await replaceStrInFile(f, [[version, newVersion]])
+  return newVersion
+}
+
+async function replaceStrInFile(file, replacements) {
+  if (!Array.isArray(replacements)) throw new Error("Parameter is not an array")
   return new Promise((resolve, reject) => {
     fs.readFile(file, 'utf8', function (err, data) {
       if (err) return reject(err)
-      const re = new RegExp(str, 'g')
-      let result = data.replace(re, replacement)
+      let result = data
+      for (const replacement of replacements) {
+        if (!Array.isArray(replacement)) throw new Error("Parameter is not an array")
+        const re = new RegExp(replacement[0], 'g')
+        result = result.replace(re, replacement[1])
+      }
       fs.writeFile(file, result, 'utf8', function (err) {
         if (err) reject(err)
         resolve()
