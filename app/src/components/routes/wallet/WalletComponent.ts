@@ -188,6 +188,12 @@ import CurrencyBalance = wlt.CurrencyBalance;
                         Sign Bitcoin Message
                       </md-button>
                     </md-menu-item>
+                    <md-menu-item ng-if="entry.symbol==='ETH'">
+                      <md-button aria-label="explorer" ng-click="vm.signEthereumMessage($event, entry)">
+                        <md-icon md-font-library="material-icons">spellcheck</md-icon>
+                        Sign Ethereum Message
+                      </md-button>
+                    </md-menu-item>
                     <md-menu-item ng-hide="entry.symbol==='HEAT'" ng-if="entry.index!=undefined">
                       <md-button aria-label="explorer" ng-click="vm.createAddress(entry.walletEntry, entry.name)">
                         <md-icon md-font-library="material-icons">add</md-icon>
@@ -364,19 +370,35 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   signBitcoinMessage($event, entry: CurrencyBalance) {
-    dialogs.simplePrompt($event,
+    let sign = (message: string) => this.bitcoreService.signBitcoinMessage(entry.address, message, entry.secretPhrase)
+    this.signMessage($event, entry, sign,
         "Sign Bitcoin Message",
-        "Enter the message that will be signed by address's private key and then the signature can be used to prove address ownership:",
+        null,
+        "Signed Bitcoin Message")
+  }
+
+  signEthereumMessage($event, entry: CurrencyBalance) {
+    let sign = (message: string) => this.lightwalletService.signEthereumMessage(entry.address, message, entry.secretPhrase)
+    this.signMessage($event, entry, sign,
+        "Sign Ethereum Message",
+        null,
+        "Signed Ethereum Message")
+  }
+
+  signMessage($event, entry: wlt.CurrencyBalance, sign: (message: string) => any, title, description, resultTitle) {
+    dialogs.simplePrompt($event,
+        title,
+        description || "Enter the message that will be signed by address's private key and then the signature can be used to prove address ownership:",
         [{label: "Message", value: "", required: true}]).then(
         result => {
           dialogs.dialog({
             id: 'signedBitcoinMessage',
-            title: 'Signed Bitcoin Message',
+            title: resultTitle,
             targetEvent: $event,
             locals: {
               address: entry.address,
               message: result[0],
-              signature: this.bitcoreService.signBitcoinMessage(entry.address, result[0], entry.secretPhrase)
+              signature: sign(result[0])
             },
             style: `.sbm-value {
               font-family: monospace; 

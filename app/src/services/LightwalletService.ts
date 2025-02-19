@@ -339,4 +339,12 @@ class LightwalletService {
     })
   }
 
+  signEthereumMessage(address: string, message: string, privateKey: string) {
+    // @ts-ignore
+    let heatAppLib = __methods__
+    let signatureHex = heatAppLib.ETHEREUM_SIGN_MESSAGE_SYNC({ privateKey, message })
+    return signatureHex
+  }
+
+
 }
