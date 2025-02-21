@@ -248,14 +248,6 @@ namespace wlt {
       let createBalance = (address: WalletAddress) => {
         let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey, address.index)
         btcCurrencyBalance.balance = address.balance ? new Big(address.balance).times(new Big(100000000)).toString() : ""
-
-        btcCurrencyBalance.formatBalance = balance => {
-          if (balance) {
-            return new Big(balance).div(wlt.SATOSHI_PER_BTC).toString()
-          }
-          return balance
-        }
-
         return btcCurrencyBalance
       }
 

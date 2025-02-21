@@ -23,21 +23,28 @@
 
 namespace wlt {
 
+  const defaultFormatBalance = balance => { return balance  }
+
   export const CURRENCIES = {
-    HEAT: {name: 'HEAT', symbol: 'HEAT', multiAddress: true},
-    Ethereum: {name: 'Ethereum', symbol: 'ETH', multiAddress: true},
-    Bitcoin: {name: 'Bitcoin', symbol: 'BTC', multiAddress: true},
-    FIMK: {name: 'FIMK', symbol: 'FIM', multiAddress: false},
-    NXT: {name: 'NXT', symbol: 'NXT', multiAddress: false},
-    ARDOR: {name: 'ARDOR', symbol: 'ARDR', multiAddress: false},
-    IOTA: {name: 'IOTA', symbol: 'IOTA', multiAddress: false},
-    Litecoin: {name: 'Litecoin', symbol: 'LTC', multiAddress: true},
-    BitcoinCash: {name: 'BitcoinCash', symbol: 'BCH', multiAddress: true}
+    HEAT: {name: 'HEAT', symbol: 'HEAT', multiAddress: true, formatBalance: defaultFormatBalance},
+    Ethereum: {name: 'Ethereum', symbol: 'ETH', multiAddress: true, formatBalance: defaultFormatBalance},
+    Bitcoin: {name: 'Bitcoin', symbol: 'BTC', multiAddress: true, formatBalance: defaultFormatBalance},
+    FIMK: {name: 'FIMK', symbol: 'FIM', multiAddress: false, formatBalance: defaultFormatBalance},
+    NXT: {name: 'NXT', symbol: 'NXT', multiAddress: false, formatBalance: defaultFormatBalance},
+    ARDOR: {name: 'ARDOR', symbol: 'ARDR', multiAddress: false, formatBalance: defaultFormatBalance},
+    IOTA: {name: 'IOTA', symbol: 'IOTA', multiAddress: false, formatBalance: defaultFormatBalance},
+    Litecoin: {name: 'Litecoin', symbol: 'LTC', multiAddress: true, formatBalance: defaultFormatBalance},
+    BitcoinCash: {name: 'BitcoinCash', symbol: 'BCH', multiAddress: true, formatBalance: defaultFormatBalance}
+  }
+
+  CURRENCIES.Bitcoin.formatBalance = balance => {
+    if (balance) return new Big(balance).div(wlt.SATOSHI_PER_BTC).toString()
+    return balance
   }
 
   export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
 
-  export const CURRENCIES_MAP: Map<String, {name: string, symbol: string, multiAddress: boolean}> = new Map(Object.entries(CURRENCIES))
+  export const CURRENCIES_MAP: Map<String, {name: string, symbol: string, multiAddress: boolean, formatBalance: (string) => string}> = new Map(Object.entries(CURRENCIES))
 
   export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
 
@@ -259,10 +266,6 @@ namespace wlt {
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
     }
 
-    public formatBalance = (balance) => {
-      return balance
-    }
-
     get balance(): string {
       let result
       if (this.isCurrencyBalance && this.symbol) {
@@ -271,7 +274,7 @@ namespace wlt {
       } else {
         result = this._balance
       }
-      return this.formatBalance(result)
+      return CURRENCIES_MAP.get(this.name).formatBalance(result)
     }
 
     set balance(value: string) {
