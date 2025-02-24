@@ -352,7 +352,7 @@ namespace wlt {
 
     public flatten: () => void
 
-    constructor(public name: string, public wallet: WalletAddresses, public walletEntry: WalletEntry, public component?: WalletComponentAbstract) {
+    constructor(public name: string, public walletAddresses: WalletAddresses, public walletEntry: WalletEntry) {
       this.walletEntry = walletEntry
       this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
       isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
@@ -487,7 +487,7 @@ namespace wlt {
 
         this.registerCurrency(this.walletEntry.account, currencySymbol)
 
-        this.flatten()
+        entry.component.flatten()
 
         /*
         // requestBalance(currencyName)

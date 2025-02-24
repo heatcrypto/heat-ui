@@ -76,14 +76,13 @@ namespace wlt {
     private createEntries(currencyName: string, walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
       let addressLoading = new CurrencyAddressLoading(currencyName)
       addressLoading.visible = this.expanded;
-      addressLoading.wallet = wallet;
+      addressLoading.walletAddresses = wallet;
       this.currencies.push(addressLoading);
 
       let currencyAddressCreate: CurrencyAddressCreate =
           <CurrencyAddressCreate><unknown> this.currencies.find(c => c['isCurrencyAddressCreate'] && c.name == currencyName)
       if (!currencyAddressCreate) {
-        currencyAddressCreate = new wlt.CurrencyAddressCreate(currencyName, wallet, this, walletComponent)
-        currencyAddressCreate.flatten = walletComponent.flatten.bind(walletComponent)
+        currencyAddressCreate = new wlt.CurrencyAddressCreate(currencyName, wallet, this)
         this.currencies.push(currencyAddressCreate)
       }
     }
@@ -107,7 +106,7 @@ namespace wlt {
     }
 
     getCryptoAddresses(currencySymbol: string): WalletAddresses {
-      return this.findAddressLoading(currencySymbol)?.wallet || this.findAddressCreate(currencySymbol)?.wallet
+      return this.findAddressLoading(currencySymbol)?.walletAddresses || this.findAddressCreate(currencySymbol)?.walletAddresses
     }
 
     initBTC(walletComponent: WalletComponentAbstract, wallet: WalletAddresses, user: UserService) {
