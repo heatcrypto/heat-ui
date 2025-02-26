@@ -263,6 +263,12 @@ class BTCCurrency implements ICurrency {
 
       let btcFeeService: BtcFeeService = heat.$inject.get('btcFeeService')
 
+      let calculateTxnFee = function () {
+        if (vm.data.txBytes) {
+          vm.data.txnFee = (vm.data.satByteFee * vm.data.txBytes.length / 100000000)
+        }
+      }
+
       let loadInternetFee = function () {
         return btcFeeService.getSatByteFee().then(satByteFeesPerBlocks => {
           $scope.$evalAsync(() => {
@@ -271,6 +277,7 @@ class BTCCurrency implements ICurrency {
             if (!vm.data.satByteFee) {
               vm.data.satByteFee = feeList.satByteFee['1']
               vm.data.fee = vm.data.satByteFee / 100000000 * 1024
+              calculateRawTx().then(() => calculateTxnFee())
             }
           })
         })
@@ -279,16 +286,24 @@ class BTCCurrency implements ICurrency {
       this.feeChanged = function (event) {
         calculateRawTx().then(() => {
           $scope.$evalAsync(() => {
-            // if (!vm.data.fee) {
-            //   loadInternetFee()
-            // }
             if (vm.data.fee) {
               vm.data.satByteFee = vm.data.fee * 100000000 / 1024
-              if (vm.data.txBytes) {
-                vm.data.txnFee = (vm.data.satByteFee * vm.data.txBytes.length / 100000000)
-              }
+              calculateTxnFee()
             } else {
               vm.data.satByteFee = ''
+            }
+          })
+        })
+      }
+
+      this.feeByteChanged = function () {
+        calculateRawTx().then(() => {
+          $scope.$evalAsync(() => {
+            if (vm.data.satByteFee) {
+              vm.data.fee = vm.data.satByteFee / 100000000 * 1024
+              calculateTxnFee()
+            } else {
+              vm.data.fee = ''
             }
           })
         })
@@ -303,29 +318,13 @@ class BTCCurrency implements ICurrency {
           })
       }
 
-      this.feeByteChanged = function () {
-
-        calculateRawTx().then(() => {
-          $scope.$evalAsync(() => {
-            if (vm.data.satByteFee) {
-              vm.data.fee = vm.data.satByteFee / 100000000 * 1024
-              if (vm.data.txBytes) {
-                vm.data.txnFee = (vm.data.satByteFee * vm.data.txBytes.length / 100000000)
-              }
-            } else {
-              vm.data.fee = ''
-            }
-          })
-        })
-      }
-
       this.fillFeeField = function (blocks) {
         vm.data.satByteFee = feeList.satByteFee['' + blocks]
         vm.feeByteChanged()
       }
 
       //to initialize fee
-      loadInternetFee().then(value => vm.feeChanged())
+      loadInternetFee()
 
       let $interval: angular.IIntervalService = heat.$inject.get('$interval')
 
