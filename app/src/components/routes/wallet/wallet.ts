@@ -201,15 +201,21 @@ namespace wlt {
     return s
   }
 
-  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, address: string): WalletAddress  {
+  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): WalletAddress  {
     let cryptoAddresses = getCryptoAddresses(walletEntry, currencySymbol)
     if (!cryptoAddresses) return null
-    let foundAddress = cryptoAddresses.addresses.find(a => a.address == address)
-    if (!foundAddress) return null
-    if (!foundAddress.created) {
-      foundAddress.created = true
-      saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
+    let foundAddress = cryptoAddresses.addresses.find(a => a.address == createdAddress.address)
+    if (!foundAddress) {
+      foundAddress = cryptoAddresses.addresses.find((a) => a.index == createdAddress.index)
+      if (foundAddress) {
+        let i = cryptoAddresses.addresses.indexOf(foundAddress)
+        cryptoAddresses.addresses[i] = createdAddress
+        foundAddress = createdAddress
+      }
     }
+    foundAddress.isDeleted = false
+    foundAddress.created = true
+    saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
     return foundAddress
   }
 
@@ -254,7 +260,6 @@ namespace wlt {
     static hasDigit = /[0-9]/  // test is string (balance) has any not zero digit (is balance no zero)
 
     public isCurrencyBalance = true
-    private _balance: string
     public inUse = false
     public pubKey: string
     public tokens: Array<TokenBalance> = []
@@ -262,6 +267,7 @@ namespace wlt {
     public hidden = false
     public stateMessage: string
     walletEntry: WalletEntry
+    private _balance: string
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
     }
@@ -335,7 +341,7 @@ namespace wlt {
   export class CurrencyAddressLoading {
     public isCurrencyAddressLoading = true
     public visible = false
-    public wallet: WalletAddresses
+    public walletAddresses: WalletAddresses
     public address: string
     public currencySymbol: string
 
@@ -392,7 +398,7 @@ namespace wlt {
       if (this.name == "BitcoinCash") return this.createBchAddress(walletEntry)
     }
 
-    findWalletEntry(entry) {
+     findWalletEntry(entry) {
       while (entry && !entry.isWalletEntry) {
         entry = entry.walletEntry || entry.parent
       }
@@ -423,7 +429,8 @@ namespace wlt {
     }
 
     createBtcAddress(entry: WalletEntry) {
-      return this.createAddress(entry, 'Bitcoin', 'BTC')
+      return BTCCurrency.requestBtcAddressType(entry, 'Bitcoin')
+          .then(wa => this.createAddress(entry, 'Bitcoin', 'BTC', wa))
     }
 
     createLtcAddress(entry: WalletEntry) {
@@ -446,7 +453,7 @@ namespace wlt {
       return this.createAddress(entry, 'ARDOR', 'ARDR')
     }
 
-    createAddress(entry: WalletEntry, currencyName: string, currencySymbol: string) {
+    createAddress(entry: WalletEntry, currencyName: string, currencySymbol: string, candidateAddress?: WalletAddress) {
       let component: WalletComponentAbstract = entry.component
       let currencies = this.walletEntry.currencies
 
@@ -456,22 +463,22 @@ namespace wlt {
 
       if (isLimitReached(currencyBalances)) {
         component.showMessage("Limit of empty addresses is reached")
-        return false
+        return
       }
 
       // determine the first address based of the last currencyBalance displayed
       let lastAddress = currencyBalances.length == 0
           ? null
-          : currencyBalances[currencyBalances.length - 1]['address']
+          : currencyBalances[currencyBalances.length - 1].address
 
-      let nextAddress = this.findNextAddress(currencySymbol, this.wallet, lastAddress, component, entry)
+      let nextAddress = candidateAddress || this.findNextAddress(currencySymbol, this.walletAddresses, lastAddress, component, entry)
 
       if (nextAddress) {
         nextAddress.isDeleted = false
+        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress)
         let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
         //rememberAddressCreated(this.walletEntry.account, nextAddress.address)
-        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
         //let index = currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
         //currencies.splice(index, 0, newCurrencyBalance)
@@ -487,7 +494,7 @@ namespace wlt {
 
         this.registerCurrency(this.walletEntry.account, currencySymbol)
 
-        entry.component.flatten()
+        component.flatten()
 
         /*
         // requestBalance(currencyName)
@@ -503,10 +510,8 @@ namespace wlt {
 
         shouldBeSaved = component.exportWallet(true)
 
-        return true
+        return newCurrencyBalance
       }
-
-      return false
     }
 
     // private requestBalance(currencyName) {
@@ -521,12 +526,16 @@ namespace wlt {
   }
 
   export function getCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
-    let result: WalletAddresses = walletEntry.getCryptoAddresses(currencySymbol)
-    if (result) return result
+    return walletEntry.getCryptoAddresses(currencySymbol) || loadCryptoAddresses(walletEntry, currencySymbol)
+  }
+
+  export function loadCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
     let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
-    let decrypted = heat.crypto.decryptMessage(record.data, record.nonce, walletEntry.account, walletEntry.secretPhrase)
-    result = JSON.parse(decrypted)
-    return result
+    if (record && record.data) {
+      let decrypted = heat.crypto.decryptMessage(record.data, record.nonce, walletEntry.account, walletEntry.secretPhrase)
+      let result: WalletAddresses = JSON.parse(decrypted)
+      return result
+    }
   }
 
   export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {

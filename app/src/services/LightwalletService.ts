@@ -37,15 +37,15 @@ declare type WalletAddress = {
       (not completely accurate since a user can use an address which has a zero balance) */
   inUse: boolean;
 
-  created: boolean;
+  created?: boolean;
 
-  accountId: string;
+  accountId?: string;
 
   /* Allow user to soft delete address from wallet */
-  isDeleted: boolean;
+  isDeleted?: boolean;
 
   /* ERC20 token balances */
-  tokensBalances: Array<{
+  tokensBalances?: Array<{
     symbol: string;
     name: string;
     decimals: number;
@@ -94,21 +94,13 @@ class LightwalletService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: string, password?: string, reset?: boolean): Promise<WalletAddresses> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: string, password?: string, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let key = `ETH-${heatAddress}`
-      let encryptedWallet = reset ? null : this.store.get(key)
-      if (encryptedWallet) {
-        if (!encryptedWallet.data) {
-          // Temporary fix. To remove unusable data from local storage
-          this.store.remove(key)
-          this.unlock(seedOrPrivateKey)
-        }
-        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
-        resolve(JSON.parse(decryptedWallet));
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey)
+      if (!reset && walletAddresses) {
+        resolve(walletAddresses)
       } else {
-        let promise: Promise<WalletAddresses>;
+        let promise: Promise<WalletAddresses>
         if (this.validSeed(seedOrPrivateKey)) {
           promise = this.createEtherAddresses(seedOrPrivateKey, password || "")
         } else if (this.validPrivateKey(seedOrPrivateKey)) {
@@ -118,13 +110,13 @@ class LightwalletService {
         }
         promise.then(wallet => {
           let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(wallet), heatAddress, seedOrPrivateKey)
-          this.store.put(key, encryptedWallet);
+          this.store.put(`ETH-${heatAddress}`, encryptedWallet)
           resolve(wallet)
         }).catch(() => {
           reject()
         })
       }
-    });
+    })
   }
 
   refreshBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {

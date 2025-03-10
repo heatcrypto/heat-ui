@@ -1,5 +1,29 @@
 class BTCCurrency implements ICurrency {
 
+  /**
+   * request parameters "type of btc address" from the user for btc address creation
+   */
+  public static requestBtcAddressType = (walletEntry, currencyName) => {
+    let existing = wlt.getCurrencyBalances(walletEntry, currencyName)
+    let nextIndex = existing.length == 0
+        ? 0
+        : existing[existing.length - 1].index + 1
+    let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+    let segwitAddress = bitcoreService.generateSegwitBitcoinAddress(walletEntry.secretPhrase, nextIndex)
+    let legacyAddress = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, nextIndex)
+    return new Promise<WalletAddress>((resolve, reject) => {
+      return selectItem(`Select desired address #${nextIndex}`,
+          [["Segwit: " + segwitAddress.address, segwitAddress], ["Legacy: " + legacyAddress.address, legacyAddress]],
+          item => {
+            let wa: WalletAddress = { address: item.address, privateKey: item.privateKey, index: nextIndex, balance: "0", inUse: false}
+            resolve(wa)
+            return true
+          }
+      )
+    })
+  }
+
+
   private btcBlockExplorerService: BtcBlockExplorerService
   public symbol = 'BTC'
   public homePath
@@ -436,4 +460,27 @@ class BTCCurrency implements ICurrency {
     return deferred.promise
   }
 
+}
+
+let selectItem = (title: string, items: any[], selectionCallback: (item) => any) => {
+  let panel: PanelService = heat.$inject.get('panel')
+  return panel.show(`
+      <div flex style="padding: 10px; background-color: #4d5168; border-radius: 4px; font-size: larger">
+        <h4>{{vm.title}}</h4>
+        <md-input-container flex layout="column">
+          <button ng-repeat="item in vm.items" style="padding: 16px; margin: 4px" ng-click="vm.select(item[1])" >
+            {{item[0]}}
+          </button>
+        </md-input-container>
+      </div>
+    `, {
+        panel: panel,
+        title: title,
+        items: items,
+        select: (item) => {
+          selectionCallback(item)
+          panel.close()
+        }
+      }
+  )
 }

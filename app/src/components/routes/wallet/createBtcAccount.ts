@@ -59,13 +59,19 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
         // load in next event loop to load currency addresses first
         setTimeout(() => {
           node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
-          success = node.createBtcAddress(walletEntry)
-          walletEntry.toggle(true)
-          $mdDialog.hide(null).then(() => {
-            if (!success) {
-              dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-            }
-          })
+          //success = node.createBtcAddress(walletEntry)
+          node.createBtcAddress(walletEntry)
+              .then(value => {
+                walletEntry.toggle(true)
+                $mdDialog.hide(null)
+              })
+              .catch(reason => {
+                $mdDialog.hide(null).then(() => {
+                  if (!success) {
+                    dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+                  }
+                })
+              })
         }, 0)
       }
     }

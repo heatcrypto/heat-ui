@@ -121,13 +121,11 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       if (n > 50) clearInterval(interval)
       let wc = WalletComponent.instance
       if (wc != walletComponent) {
-        let entry = wc.entries.find(w => w instanceof wlt.WalletEntry && w.account == accountId)
+        let entry = wc.entries.find(entry => entry instanceof wlt.WalletEntry && entry.account == accountId)
         if (entry) {
-          // @ts-ignore
-          let v = entry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
-          if (v) {
-            v.createAddressByName()
-          }
+          let currencyAddressCreate: wlt.CurrencyAddressCreate =
+              entry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
+          currencyAddressCreate?.createAddressByName()
         }
         clearInterval(interval)
       }

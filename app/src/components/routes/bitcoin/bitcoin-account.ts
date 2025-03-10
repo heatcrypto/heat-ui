@@ -58,7 +58,7 @@ type PendingType = {
         </div>
       </div>
 
-      <div flex layout="column">
+      <div flex layout="column" style="margin-top: 6px">
         <div layout="column" ng-if="vm.pendingTransactions.length">
           <div layout="row" class="trader-component-title">Pending Transactions</div>
           <md-list flex layout-fill layout="column">

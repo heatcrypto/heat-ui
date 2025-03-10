@@ -19,20 +19,13 @@ class BitcoreService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let encryptedWallet = reset ? null : this.store.get(`BTC-${heatAddress}`)
-      if (encryptedWallet) {
-        if(!encryptedWallet.data) {
-          // Temporary fix. To remove unusable data from local storage
-          this.store.remove(`BTC-${heatAddress}`)
-          this.unlock(seedOrPrivateKey)
-        }
-        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
-        resolve(JSON.parse(decryptedWallet));
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey)
+      if (walletAddresses) {
+        resolve(walletAddresses)
       } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
-        let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
+        let walletType = this.generateAddresses(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
           let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
           this.store.put(`BTC-${heatAddress}`, encryptedWallet);
@@ -58,11 +51,12 @@ class BitcoreService {
     });
   }
 
-  getNWalletsFromMnemonics(mnemonic: string, keyCount: number) {
+  generateAddresses(mnemonic: string, keyCount: number) {
     let walletType = { addresses: [] }
     for (let i = 0; i < keyCount; i++) {
-      let wallet = this.getBitcoinWallet(mnemonic, i)
-      walletType.addresses[i] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
+      let a = this.generateBitcoinAddress(mnemonic, i)
+      // let a = this.generateSegwitBitcoinAddress(mnemonic, i)
+      walletType.addresses[i] = { address: a.address, privateKey: a.privateKey, index: i, balance: "0", inUse: false }
     }
     return walletType;
   }
@@ -185,8 +179,7 @@ class BitcoreService {
     })
   }
 
-  getBitcoinWallet(mnemonic: string, index: Number = 0) {
-
+  generateBitcoinAddress(mnemonic: string, index: Number = 0) {
     let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
     let HDPrivateKey = this.bitcore.HDPrivateKey;
     let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
@@ -200,12 +193,27 @@ class BitcoreService {
     }
   }
 
+  generateSegwitBitcoinAddress(mnemonic: string, index: Number = 0) {
+    // @ts-ignore
+    let heatAppLib = __methods__
+    const paths = [{path: BitcoreService.BIP44 + index, includeWif: true}]
+    const seedHex = heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic})
+    const keyPair = heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
+    const publicKey = heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: keyPair.privateKey, network: 'bitcoin' })
+    let a = heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network:'bitcoin'})
+    return {
+      address: a,
+      privateKey: keyPair.wif
+    }
+  }
+
   resolveAddressType(address: string) {
-    if (address.startsWith("1")) return "p2pkh"
+    let firstSymbol = address.substring(0, 1)
+    if (firstSymbol == "1") return "p2pkh"
     //if (address.startsWith("3")) return "p2sh"
-    if (address.startsWith("3")) return "p2wpkh_in_p2sh"
-    if (address.startsWith("bc1q")) return "p2wpkh"
-    if (address.startsWith("bc1p")) return "p2tr"
+    if (firstSymbol == "3") return "p2wpkh_in_p2sh"
+    if (firstSymbol == "bc1q") return "p2wpkh"
+    if (firstSymbol == "bc1p") return "p2tr"
   }
 
   signBitcoinMessage(address: string, message: string, privateKey: string) {
