@@ -129,4 +129,8 @@ class BtcBlockExplorerService {
   public getUnspentUtxos = (from: string): any => {
     return this.btcProvider.getUnspentUtxos(from)
   }
+
+  public getUtxos = (from: string): Promise<any[]> => {
+    return this.btcProvider.getUtxos([from])
+  }
 }

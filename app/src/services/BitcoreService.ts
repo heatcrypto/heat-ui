@@ -133,26 +133,28 @@ class BitcoreService {
   signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     return new Promise((resolve, reject) => {
-      btcBlockExplorerService.getUnspentUtxos(txObject.from).then(
-        utxos => {
-          try {
-            let tx = this.bitcore.Transaction();
-            tx.from(utxos)
-            tx.to(txObject.to, txObject.amount)
-            tx.change(txObject.from)
-            tx.fee(txObject.fee)
-            tx.sign(txObject.privateKey)
-            let rawTx;
-            if(uncheckedSerialize)
-              rawTx = tx.uncheckedSerialize()
-            else
-              rawTx = tx.serialize()
-            resolve(rawTx)
+      btcBlockExplorerService.getUtxos(txObject.from).then(utxos => {
+            const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: 'bitcoin'})
 
-          } catch (err) {
-            reject(err)
-          }
-        },
+            let inputs = utxos.map(v => ({
+              vout: v.vout,
+              txId: v.txid,
+              txHex: v.txhex,
+              value: v.value,
+              privateKey: privateKeyHex,
+              address: txObject.from,
+              addressType: this.resolveAddressType(txObject.from)
+            }))
+
+            let outputs = [
+              {
+                address: txObject.to,
+                value: txObject.amount
+              }
+            ]
+
+            return heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + ""
+          },
         err => {
           reject(err)
         }
@@ -194,13 +196,11 @@ class BitcoreService {
   }
 
   generateSegwitBitcoinAddress(mnemonic: string, index: Number = 0) {
-    // @ts-ignore
-    let heatAppLib = __methods__
     const paths = [{path: BitcoreService.BIP44 + index, includeWif: true}]
-    const seedHex = heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic})
-    const keyPair = heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
-    const publicKey = heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: keyPair.privateKey, network: 'bitcoin' })
-    let a = heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network:'bitcoin'})
+    const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic})
+    const keyPair = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
+    const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: keyPair.privateKey, network: 'bitcoin' })
+    let a = heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network:'bitcoin'})
     return {
       address: a,
       privateKey: keyPair.wif
@@ -217,11 +217,9 @@ class BitcoreService {
   }
 
   signBitcoinMessage(address: string, message: string, privateKey: string) {
-    // @ts-ignore
-    let heatAppLib = __methods__
     let privateKeyHex = this.bitcore.PrivateKey.fromWIF(privateKey).toString()
     let addressType = this.resolveAddressType(address)
-    let signatureHex = heatAppLib.BITCOIN_BIP137_SIGN({
+    let signatureHex = heat.heatAppLib.BITCOIN_BIP137_SIGN({
       privateKeyHex: privateKeyHex,
       network: "bitcoin",
       addressType: addressType,

@@ -10,7 +10,9 @@ interface IBitcoinAPIList {
 
   getTxInfo(txId: string)
 
-  getUnspentUtxos(form: string)
+  getUnspentUtxos(from: string)
+
+  getUtxos(addresses: [string]): Promise<any[]>
 
   broadcast(rawTx: string)
 }

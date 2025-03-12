@@ -28,6 +28,9 @@ module heat {
   export var isBetanet = window.localStorage.getItem('betanet')=='true';
   export var serverDescriptionKey = "heat.usingServer." + (isTestnet ? "testnet" : (isBetanet ? "betanet" : "mainnet"))
 
+  // @ts-ignore
+  export var heatAppLib = __methods__
+
   export var $inject: angular.auto.IInjectorService;
 
   /* Allows us to fully reload all components that make up the app while leaving

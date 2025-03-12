@@ -186,6 +186,37 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     })
   }
 
+  public getUtxos(addresses: [string]): Promise<any[]> {
+    const getUtxos = (address): Promise<any> => new Promise((resolve, reject) => {
+      const getUnspentUtxos = `${BtcBlockExplorerBlockbookService.endPoint}/utxo/${address}?confirmed=true`
+      this.http.get(getUnspentUtxos).then(response => {
+        const parsed = utils.parseResponse(response)
+        if (Array.isArray(parsed)) {
+          let txHexes = parsed.map(utxo => this.getTxInfo(utxo.txid).then(txInfo => utxo.txhex = txInfo.hex))
+          Promise.all(txHexes).then(
+              () => resolve(parsed),
+              error => reject(error)
+          )
+        } else {
+          resolve([])
+        }
+      }, (e) => {
+        reject(e)
+      }).catch(e => {
+        reject(e)
+      })
+    })
+
+    return new Promise<any[]>((resolve, reject) => {
+      const utxos = []
+      const promises = addresses.map(address => getUtxos(address).then(_utxos => _utxos.forEach(utxo => utxos.push(utxo))))
+      Promise.all(promises).then(
+        () => resolve(utxos),
+        error => reject(error)
+      )
+    })
+  }
+
   public broadcast = (rawTx: string) => {
     return new Promise<{ txId: string }>((resolve, reject) => {
       this.http.get(`${BtcBlockExplorerBlockbookService.endPoint}/sendtx/${rawTx}`).then(
