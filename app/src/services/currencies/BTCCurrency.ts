@@ -253,7 +253,7 @@ class BTCCurrency implements ICurrency {
         return result
       }
 
-      let calculateRawTxDebounced = utils.debounce(calculateRawTx, 1000)
+      let calculateRawTxDebounced = utils.debounce(calculateRawTx, 1000, false)
 
       this.recipientChanged = function () {
         vm.data.recipientInfo = ''
@@ -282,7 +282,7 @@ class BTCCurrency implements ICurrency {
       }
 
       this.amountChanged = function () {
-        calculateRawTx()
+        calculateRawTxDebounced()
       }
 
       let btcFeeService: BtcFeeService = heat.$inject.get('btcFeeService')

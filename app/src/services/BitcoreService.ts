@@ -153,12 +153,12 @@ class BitcoreService {
               }
             ]
 
-            return heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + ""
+            resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + "")
           },
         err => {
           reject(err)
         }
-      )
+      ).catch(reason => reject(reason))
     })
   }
 
