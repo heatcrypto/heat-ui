@@ -72,10 +72,14 @@ async function updateFiles(heatBundleFile) {
 async function updateVersionFile() {
   const f = "./VERSION"
   const version = fs.readFileSync(f).toString().trim()
-  let parts = version.split(".")
-  let lastNum = parseInt(parts[parts.length - 1])
-  parts[parts.length - 1] = String(++lastNum)
-  let newVersion = parts.join(".")
+
+  //update number in last part of version
+  let lastPart = version.substring(version.indexOf(" ") + 1)
+  let lastNumStr = version.substring(version.indexOf(" ") + 1).replace(/\D/g,'')
+  let newLastNum = parseInt(lastNumStr) + 1
+  let newLastPart = lastPart.replace(/\d+/g, newLastNum)
+  let newVersion = version.replaceAll(lastPart, newLastPart)
+
   await replaceStrInFile(f, [[version, newVersion]])
   return newVersion
 }
@@ -88,8 +92,7 @@ async function replaceStrInFile(file, replacements) {
       let result = data
       for (const replacement of replacements) {
         if (!Array.isArray(replacement)) throw new Error("Parameter is not an array")
-        const re = new RegExp(replacement[0], 'g')
-        result = result.replace(re, replacement[1])
+        result = result.replaceAll(replacement[0], replacement[1])
       }
       fs.writeFile(file, result, 'utf8', function (err) {
         if (err) reject(err)
