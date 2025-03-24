@@ -63,6 +63,8 @@ function createWindow () {
         mainWindow.webContents.executeJavaScript(contents);
     });
   });
+
+  //mainWindow.webContents.openDevTools();
 }
 
 app.on('ready', createWindow)

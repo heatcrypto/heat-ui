@@ -75,9 +75,9 @@ async function updateVersionFile() {
 
   //update number in last part of version
   let lastPart = version.substring(version.indexOf(" ") + 1)
-  let lastNumStr = version.substring(version.indexOf(" ") + 1).replace(/\D/g,'')
+  let lastNumStr = lastPart.replace(/\D/g,'')
   let newLastNum = parseInt(lastNumStr) + 1
-  let newLastPart = lastPart.replace(/\d+/g, newLastNum)
+  let newLastPart = lastPart.replaceAll(lastNumStr, newLastNum)
   let newVersion = version.replaceAll(lastPart, newLastPart)
 
   await replaceStrInFile(f, [[version, newVersion]])
