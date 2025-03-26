@@ -20,29 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-enum EnvType {
-  NODEJS,
-  BROWSER
-}
 
 @Service('env')
 class EnvService {
-  public type: EnvType;
+
+  public isElectron: boolean
+  public isNodeEnv: boolean
+  public isBrowser: boolean
 
   constructor() {
     try {
+      this.isElectron = typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0
       if (typeof window['require'] == 'function' && window['require']('child_process')) {
-        this.type = EnvType.NODEJS;
+        this.isNodeEnv = true
       } else {
-        this.type = EnvType.BROWSER;
+        this.isBrowser = true
       }
     } catch (e) {
-      this.type = EnvType.BROWSER;
+      this.isBrowser = true
+      console.error(e?.toString())
     }
-  }
-
-  isBrowser() {
-    return this.type == EnvType.BROWSER
   }
 
 }

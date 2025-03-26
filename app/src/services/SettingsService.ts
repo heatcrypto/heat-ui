@@ -313,10 +313,10 @@ class SettingsService {
 
   getHeatwalletConfigFilePath() {
     let fileName = 'app-config.json'
-    if (this.env.type == EnvType.BROWSER) {
+    if (this.env.isBrowser) {
       return fileName
     }
-    if (this.env.type == EnvType.NODEJS) {
+    if (this.env.isNodeEnv) {
       let path = require('path')
       return path.join(__dirname, '..', '..', fileName)
     }
@@ -336,7 +336,7 @@ class SettingsService {
       this.failoverEnabled = SettingsService.FAILOVER_DESCRIPTOR.failoverEnabled || true;
     };
     this.initialized = new Promise<void>((resolve, reject) => {
-      if (this.env.type == EnvType.BROWSER) {
+      if (this.env.isBrowser) {
         this.http.get('app-config.json').then((json: any) => {
           resolveFailoverDescriptor(json);
           resolve();
@@ -345,7 +345,7 @@ class SettingsService {
           console.log(message);
           reject(message);
         });
-      } else if (this.env.type == EnvType.NODEJS) {
+      } else if (this.env.isNodeEnv) {
         // @ts-ignore
         const fs = require('fs');
         fs.readFile(this.getHeatwalletConfigFilePath(), (err, data) => {

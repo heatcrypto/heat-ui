@@ -125,7 +125,7 @@ class HeatService {
   getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
-    if (this.env.type == EnvType.BROWSER) {
+    if (this.env.isBrowser) {
       let portStr = port ? `:${port}` : ""
       let config
       if (isFile) {
@@ -159,7 +159,7 @@ class HeatService {
           }
         }
       );
-    } else if (this.env.type == EnvType.NODEJS) {
+    } else if (this.env.isNodeEnv) {
       var isHttps = host.indexOf('https://') == 0;
       this.nodeHttpGet(
         isHttps,
@@ -265,7 +265,7 @@ class HeatService {
     if (withAuth) {
       req = angular.extend(req, this.getAuthData());
     }
-    if (this.env.isBrowser()) {
+    if (this.env.isBrowser) {
       let portStr = port ? `:${port}` : ""
       let address = [host, portStr, '/', route].join('');
       if (localHostOnly) {
@@ -289,7 +289,7 @@ class HeatService {
         },
         isFile
       );
-    } else if (this.env.type == EnvType.NODEJS) {
+    } else if (this.env.isNodeEnv) {
       let address = host.replace(/^(\w+:\/\/)/, '');
       if (localHostOnly) {
         if (address.indexOf('localhost') != 0) {

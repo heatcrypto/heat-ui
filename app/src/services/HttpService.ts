@@ -126,7 +126,7 @@ class HttpService {
     let deferred = this.$q.defer<string>();
     let promise = deferred.promise
     this.waitTurn(url, promise).then(() => {
-      if (this.env.type == EnvType.BROWSER) {
+      if (this.env.isBrowser) {
         this.browserHttpGet(url, deferred.resolve, deferred.reject);
       }
       else {
@@ -175,7 +175,7 @@ class HttpService {
 
   public post(url:string, data:{[key:string]:any}): angular.IPromise<Object> {
     let deferred = this.$q.defer<Object>();
-    if (this.env.type == EnvType.BROWSER) {
+    if (this.env.isBrowser) {
       this.browserHttpPost(url, data, deferred.resolve, deferred.reject);
     }
     else {

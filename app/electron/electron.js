@@ -40,6 +40,7 @@ function createWindow () {
     autoHideMenuBar: true,
     icon:`${APP_DIR}/electron/icon.png`,
     webPreferences: {
+      contextIsolation: false, //it is needed to allow access to require() but is not recommended for security
       nodeIntegration: true
     }
   })

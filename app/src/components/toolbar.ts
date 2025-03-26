@@ -105,7 +105,7 @@
                 <md-tooltip md-direction="bottom">Exchange</md-tooltip>
                 <i><img src="assets/exchangeIcon.png"></i>
               </md-button>
-              <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.isNodeEnv">
+              <md-button aria-label="server" class="md-icon-button" href="#/server" ng-show="vm.env.isElectron">
                 <md-tooltip md-direction="bottom">App Server</md-tooltip>
                 <i><img src="assets/serverIcon.png"></i>
               </md-button>
@@ -168,7 +168,7 @@
                     Exchange
                   </md-button>
                 </md-menu-item>
-                <md-menu-item ng-show="vm.isNodeEnv">
+                <md-menu-item ng-show="vm.env.isNodeEnv">
                   <md-button aria-label="server" href="#/server">
                     <md-icon md-font-library="material-icons">settings</md-icon>
                     App Server
@@ -240,7 +240,6 @@
             <i><img src="assets/sandwich.png"></i>
           </md-button>
           <md-menu-content width="4">
-
               <md-menu-item ng-if="vm.user.unlocked">
                 <md-button aria-label="transfer asset" ng-click="vm.showAssetTransferDialog($event)">
                   <md-icon md-font-library="material-icons">swap_horiz</md-icon>
@@ -308,12 +307,6 @@
 
             <md-menu-divider ng-if="vm.user.unlocked"></md-menu-divider>
 
-            <md-menu-item ng-show="vm.isNodeEnv">
-              <md-button aria-label="dev-tools" ng-click="vm.opendevTools($event)">
-                <md-icon md-font-library="material-icons">developer_board</md-icon>
-                Developer tools
-              </md-button>
-            </md-menu-item>
             <md-menu-item>
               <md-button aria-label="about" ng-click="vm.about($event)">
                 <md-icon md-font-library="material-icons">info_outline</md-icon>
@@ -350,11 +343,14 @@
                 Sign in
               </md-button>
             </md-menu-item>
-            <md-menu-item ng-if="vm.isNodeEnv">
+            <md-menu-item ng-if="vm.env.isNodeEnv">
               <md-button aria-label="exit" ng-click="vm.exit()">
                 <md-icon md-font-library="material-icons">exit_to_app</md-icon>
                 Exit
               </md-button>
+            </md-menu-item>
+            <md-menu-item ng-show="vm.env.isElectron" style="color: grey; height: 22px; min-height: 22px;">
+                <div>Press Ctrl-Shift-I to open Developer Tools</div>
             </md-menu-item>
           </md-menu-content>
         </md-menu>
@@ -368,7 +364,6 @@
   'walletFile', 'localKeyStore', 'panel', '$location', 'clipboard', 'P2PMessaging', 'settings')
 class ToolbarComponent {
 
-  isNodeEnv = false;
   isTestnet = heat.isTestnet;
   isBetanet = heat.isBetanet;
   heatServerLocation;
@@ -402,7 +397,6 @@ class ToolbarComponent {
               private clipboard: ClipboardService,
               private p2pMessaging: P2PMessaging,
               private settings: SettingsService) {
-    this.isNodeEnv = env.type == EnvType.NODEJS;
 
     var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
     this.user.on(UserService.EVENT_UNLOCKED, refresh)

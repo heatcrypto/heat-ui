@@ -351,7 +351,7 @@ class LoginComponent {
     try {
       this.isFileSaverSupported = !!new Blob;
     } catch (e) {}
-    this.useExternalCaptcha = env.type!=EnvType.BROWSER;
+    this.useExternalCaptcha = !env.isBrowser
     this.generateNewSecretPhrase();
     this.initLocalKeys();
 

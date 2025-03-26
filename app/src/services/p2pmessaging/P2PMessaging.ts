@@ -133,7 +133,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   sendFile(messageId: string, file: File, recipientPublicKey: string) {
-    if (this.env.isBrowser()) {
+    if (this.env.isBrowser) {
       return file.arrayBuffer().then(arrayBuffer => {
         let encrypted = this.encrypt(arrayBuffer, recipientPublicKey)
         let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))

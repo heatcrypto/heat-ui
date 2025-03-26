@@ -37,7 +37,7 @@ class ElectronService {
 
   /* @see https://github.com/electron/electron/blob/master/docs/api/web-contents.md */
   constructor(env: EnvService) {
-    this.enabled = env.type == EnvType.NODEJS;
+    this.enabled = env.isNodeEnv;
   }
 
   /* Return the first instance since the second one is the dev-tools window,

@@ -56,7 +56,7 @@ module dialogs {
         heatServerBuildDate: SettingsService.EMBEDDED_HEATLEDGER_BUILD_DATE,
         isTestnet: window.localStorage.getItem('testnet')=='true',
         benchmarkUrl: SettingsService.BENCHMARK_WEB_URL,
-        isEnvNodeJS: env.type == EnvType.NODEJS,
+        isEnvNodeJS: env.isNodeEnv,
         goTo: (target) => {
           // defaults to main net
           window.localStorage.setItem('testnet','false');
@@ -66,7 +66,7 @@ module dialogs {
           } else if (target == 'beta') {
             window.localStorage.setItem('betanet','true');
           } else if (target == 'bench') {
-            if (env.type == EnvType.NODEJS) {
+            if (env.isNodeEnv) {
               /*let shell = require('electron').shell
               shell.openExternal(SettingsService.BENCHMARK_WEB_URL)*/
               //open site in the electron window in browser mode
