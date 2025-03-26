@@ -178,6 +178,9 @@ class HeatSubscriber {
         if (this.needReset) {
           websocket.close(3001, "Heat subscribes reseted");
           this.needReset = false;
+          this.$timeout(this.RETRY_SYNC_DELAY).then(() => {
+            this.syncTopicSubscriptions();
+          });
           return;
         }
         this.unsubscribeTopics.forEach(topic => {

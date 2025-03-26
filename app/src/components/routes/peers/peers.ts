@@ -211,7 +211,7 @@ class PeersComponent {
                 if (unsubscribe) unsubscribe()
                 unsubscribe = this.heat.subscriber.peer({}, onPeerInfoDebounced, this.$scope)
             })
-        }, 1500)
+        }, 50)
 
         this.$scope.$on('$destroy', unsubscribe)
     }
