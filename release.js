@@ -44,7 +44,10 @@ function findHeatBundleFile() {
 async function updateFiles(heatBundleFile) {
   await updateVersionFile()
 
-  const version = fs.readFileSync("./VERSION").toString().trim()
+  const versionContent = fs.readFileSync("./VERSION").toString().trim()
+  const versionLines = versionContent.split('\n')
+  const version = versionLines[0].trim()
+  const buildNum = versionLines[1]
   const heatledgerVersionContent = fs.readFileSync("../heatledger/conf/VERSION").toString().trim().split("\n")
   const heatledgerVersion = heatledgerVersionContent[0].trim()
   const heatledgerBuildDate = heatledgerVersionContent[1]
@@ -59,6 +62,7 @@ async function updateFiles(heatBundleFile) {
 
   await replaceStrInFile(heatBundleFile, [
       ["%BUILD_OVERRIDE_VERSION%", version],
+      ["%BUILD_OVERRIDE_NUM%", buildNum],
       ["%BUILD_OVERRIDE_HEATLEDGER_VERSION%", heatledgerVersion],
       ["%BUILD_OVERRIDE_HEATLEDGER_BUILD_DATE%", heatledgerBuildDate],
       ["%BUILD_OVERRIDE_BUILD%", buildDate],
@@ -74,7 +78,8 @@ async function updateVersionFile() {
   const version = fs.readFileSync(f).toString().trim()
 
   //update number in last part of version
-  let lastPart = version.substring(version.indexOf(" ") + 1)
+  const versionLines = version.split('\n')
+  let lastPart = versionLines[1]
   let lastNumStr = lastPart.replace(/\D/g,'')
   let newLastNum = parseInt(lastNumStr) + 1
   let newLastPart = lastPart.replaceAll(lastNumStr, newLastNum)
