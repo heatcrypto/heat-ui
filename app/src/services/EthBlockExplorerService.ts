@@ -49,7 +49,17 @@ class EthBlockExplorerService implements IEthereumAPIList {
     let deferred = this.$q.defer<any>();
     if (this.ethApiProvider.getProviderName() === 'HEAT') {
       this.ethApiProvider.getAddressTransactions(address, pageNum).then((response) => {
-        this.convertAddressTransactions(response)
+        let txs:any[] = response
+        for (const tx of txs) {
+          tx.hash = tx.txid
+          tx.input = ''
+          tx.success = ''
+          if (tx.getTxInfo) {
+            tx.getTxInfo.then(info => this.convertAddressTransaction(tx, info))
+          } else {
+            this.convertAddressTransaction(tx, tx)
+          }
+        }
         deferred.resolve(response)
       }, deferred.reject)
     } else {
@@ -63,16 +73,13 @@ class EthBlockExplorerService implements IEthereumAPIList {
     return this.ethApiProvider.getAddressInfo(address, useCache);
   }
 
-  private convertAddressTransactions(transactions) {
-    transactions.forEach(tx => {
-      tx.from = tx.vin[0].addresses[0];
-      tx.to = tx.vout[0].addresses[0];
-      tx.hash = tx.txid;
-      tx.value = this.web3.web3.fromWei(tx.vout[0].value, 'ether');
-      tx.input = '';
-      tx.success = '';
-      tx.timestamp = tx.blockTime;
-    });
+  private convertAddressTransaction(tx, info) {
+    if (info.vin) {
+      tx.from = info.vin[0].addresses[0];
+      tx.to = info.vout[0].addresses ? info.vout[0].addresses[0] : undefined;
+      tx.value = this.web3.web3.fromWei(info.vout[0].value, 'ether');
+      tx.timestamp = info.blockTime;
+    }
   }
 
 }

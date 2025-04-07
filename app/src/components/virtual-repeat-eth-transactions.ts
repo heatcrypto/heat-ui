@@ -178,39 +178,49 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
   $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
-      this.ethTransactionsProviderFactory.createProvider(this.account),
-      /* decorator function */
-      (transaction: EthplorerAddressTransactionExtended) => {
-        var date = new Date(0); // 0 sets date to epoch time
-        date.setUTCSeconds(<any>transaction.timestamp);
-        transaction['time'] = dateFormat(date, format);
-        transaction['heightDisplay'] = 'no height'
-        if (this.personalize) {
-          transaction['outgoing'] = this.user.currency.address.toUpperCase() == transaction.from.toUpperCase();
+        this.ethTransactionsProviderFactory.createProvider(this.account),
+        /* decorator function */
+        (transaction: EthplorerAddressTransactionExtended) => {
+          let f = () => {
+            if (transaction.timestamp) {
+              var date = new Date(0); // 0 sets date to epoch time
+              date.setUTCSeconds(<any>transaction.timestamp);
+              transaction['time'] = dateFormat(date, format);
+              transaction['heightDisplay'] = 'no height'
+              if (this.personalize) {
+                transaction['outgoing'] = this.user.currency.address.toUpperCase() == transaction.from.toUpperCase();
 
-          //transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
-          let amountVal = this.renderer.renderAmount(transaction);
-          transaction['renderedAmount'] = amountVal;
-          transaction['renderedToFrom'] = this.renderer.renderedToFrom(transaction);
+                //transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
+                let amountVal = this.renderer.renderAmount(transaction);
+                transaction['renderedAmount'] = amountVal;
+                transaction['renderedToFrom'] = this.renderer.renderedToFrom(transaction);
+              }
+
+              let renderedInfo = this.renderer.renderInfo(transaction);
+              if (angular.isString(renderedInfo)) {
+                transaction['renderedInfo'] = renderedInfo;
+              } else if (angular.isObject(renderedInfo)) {
+                renderedInfo.then((text) => {
+                  transaction['renderedInfo'] = text;
+                })
+              }
+            }
+          }
+          if (transaction["getTxInfo"]) {
+            // @ts-ignore
+            transaction.getTxInfo.then(info => f())
+          } else {
+            f()
+          }
+
+          //processed item has message value or null so undefined only should be processed
+          if (transaction['message'] === undefined) {
+            wlt.loadPaymentMessage(transaction.hash)
+                .then(v => transaction['message'] = v)
+                .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
+          }
+
         }
-
-        let renderedInfo = this.renderer.renderInfo(transaction);
-        if (angular.isString(renderedInfo)) {
-          transaction['renderedInfo'] = renderedInfo;
-        } else if (angular.isObject(renderedInfo)) {
-          renderedInfo.then((text) => {
-            transaction['renderedInfo'] = text;
-          })
-        }
-
-        //processed item has message value or null so undefined only should be processed
-        if (transaction['message'] === undefined) {
-          wlt.loadPaymentMessage(transaction.hash)
-              .then(v => transaction['message'] = v)
-              .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
-        }
-
-      }
     ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
