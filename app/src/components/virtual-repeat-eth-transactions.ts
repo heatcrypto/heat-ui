@@ -223,15 +223,11 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         }
     ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
-    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    let timeout = setTimeout(refresh, 10 * 1000)
-
     let listener = this.determineLength.bind(this)
     this.ethereumPendingTransactions.addListener(listener)
 
     this.$scope.$on('$destroy', () => {
       this.ethereumPendingTransactions.removeListener(listener)
-      clearTimeout(timeout)
     })
   }
 
@@ -581,6 +577,7 @@ class EthTransactionRenderer {
   }
 
   account(account: string): string {
+    if (!account) return
     if (account.toUpperCase() == this.provider.account.toUpperCase()) {
       return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/address/${account}">Myself</a>`;
     }
