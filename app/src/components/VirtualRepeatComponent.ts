@@ -129,20 +129,16 @@ abstract class VirtualRepeatComponent {
 
   protected fetchPage(pageNumber:number, reset?: boolean) {
     this.loadedPages.inProgress = true
-    var firstIndex = pageNumber * this.PAGE_SIZE;
-    var lastIndex = firstIndex + this.PAGE_SIZE;
+    let firstIndex = pageNumber * this.PAGE_SIZE
+    let lastIndex = firstIndex + this.PAGE_SIZE
 
     let processItems = (items: any[]) => {
-      this.$scope.$evalAsync(() => { this.loading = false });
-      if (this.preprocessor) {
-        if (angular.isArray(items)) {
-          this.preprocessor(firstIndex,lastIndex,items);
-        }
+      this.$scope.$evalAsync(() => { this.loading = false })
+      if (this.preprocessor && angular.isArray(items)) {
+        this.preprocessor(firstIndex, lastIndex, items)
       }
-      if (this.decorator) {
-        if (angular.isArray(items)) {
-          items.forEach((item) => { this.decorator(item, this.loadedPages) });
-        }
+      if (this.decorator && angular.isArray(items)) {
+        items.forEach(item => this.decorator(item, this.loadedPages))
       }
       if (reset) {
         this.loadedPages = {dirty: false, inProgress: false}
@@ -151,15 +147,23 @@ abstract class VirtualRepeatComponent {
       this.loadedPages.inProgress = false
     }
 
+    let loadCached = () => {
+      let items: any[] = this.cache?.get(pageNumber)
+      if (!items) return
+      this.cachedItems = true
+      processItems(items)
+    }
+
+    //try to show cached items until not loaded
+    loadCached()
+
     this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
       this.cachedItems = false
       processItems(items)
-      this.cache?.put(pageNumber, items)
+      setTimeout(args => this.cache?.put(pageNumber, items), 3000)
     }, reason => {
       console.warn("fetching eth transactions error " + (reason ? JSON.stringify(reason) : ""))
-      let items: any[] = this.cache?.get(pageNumber)
-      this.cachedItems = true
-      processItems(items)
+      loadCached()
     })
   }
 

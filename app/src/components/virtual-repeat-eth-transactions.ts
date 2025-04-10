@@ -206,7 +206,8 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               }
             }
           }
-          if (transaction["getTxInfo"]) {
+          // @ts-ignore
+          if (transaction.getTxInfo?.then) {
             // @ts-ignore
             transaction.getTxInfo.then(info => f())
           } else {
