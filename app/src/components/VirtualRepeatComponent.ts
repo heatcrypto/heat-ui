@@ -77,7 +77,7 @@ abstract class VirtualRepeatComponent {
     this.provider = provider;
     this.decorator = decorator;
     this.preprocessor = preprocessor;
-    this.fetchPageDebounced = utils.debounce(this.fetchPage, 300);
+    this.fetchPageDebounced = utils.debounce(this.fetchPage, 600);
     return this.determineLength();
   }
 
@@ -144,7 +144,9 @@ abstract class VirtualRepeatComponent {
         this.loadedPages = {dirty: false, inProgress: false}
       }
       this.loadedPages[pageNumber] = items
-      this.loadedPages.inProgress = false
+      if (!this.cachedItems) {
+        this.loadedPages.inProgress = false
+      }
     }
 
     let loadCached = () => {
@@ -154,9 +156,6 @@ abstract class VirtualRepeatComponent {
       processItems(items)
     }
 
-    //try to show cached items until not loaded
-    loadCached()
-
     this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
       this.cachedItems = false
       processItems(items)
@@ -165,6 +164,9 @@ abstract class VirtualRepeatComponent {
       console.warn("fetching eth transactions error " + (reason ? JSON.stringify(reason) : ""))
       loadCached()
     })
+
+    //try to show cached items until not loaded
+    loadCached()
   }
 
   public select(item) {
