@@ -194,13 +194,17 @@ class EthplorerService implements IEthereumAPIList{
     return this.cachedGetCachedAddressInfo[address]
   }
 
+  public getAddressInfoUrl(address: string): string {
+    return `${EthplorerService.endPoint}/getAddressInfo/${address}?apiKey=lwA5173TDKj60&showTxsCount=true`
+  }
+
   public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {
     if (useCache) {
       return this.getCachedAddressInfo(address)
     }
 
     let deferred = this.$q.defer<EthplorerAddressInfo>();
-    let url = `${EthplorerService.endPoint}/getAddressInfo/${address}?apiKey=lwA5173TDKj60`
+    let url = this.getAddressInfoUrl(address)
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;

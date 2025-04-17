@@ -70,7 +70,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return this.cachedGetCachedAccountBalance.get(address)
   }
 
-  public getBalance = (address: string) => {
+  public getBalance = (address: string): PromiseLike<string> => {
     let deferred = this.$q.defer<string>();
     this.getCachedAccountBalance(address).then(parsed=> {
       let balance = this.web3.web3.fromWei(parsed, 'ether')
@@ -79,7 +79,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return deferred.promise;
   }
 
-  public getTransactionCount(address: string) {
+  public getTransactionCount(address: string): PromiseLike<number> {
     let getTxInfoApi = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=basics`;
     let deferred = this.$q.defer<number>();
     this.http.get(getTxInfoApi).then(response => {
@@ -92,7 +92,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return deferred.promise
   }
 
-  public getTxInfo(txId: string) {
+  public getTxInfo(txId: string): PromiseLike<any> {
     let getTxInfoApi = `${EthBlockExplorerHeatNodeService.endPoint}/tx/${txId}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
@@ -131,13 +131,17 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     return this.cachedAddressInfo.get(address)
   }
 
-  public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {
+  public getAddressInfoUrl(address: string): string {
+    return `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}`
+  }
+
+  public getAddressInfo(address: string, useCache = false): PromiseLike<any> {
     if (useCache) {
       return this.getCachedAddressInfo(address)
     }
 
     let deferred = this.$q.defer<EthplorerAddressInfo>();
-    let url = `${EthBlockExplorerHeatNodeService.endPoint}/address/${address}?details=tokenBalances`
+    let url = this.getAddressInfoUrl(address)
     this.http.get(url).then((response) => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
       if (parsed.tokens) {

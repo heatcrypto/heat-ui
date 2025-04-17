@@ -24,7 +24,7 @@
 interface ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
-  getBalance(): angular.IPromise<string>;
+  getBalance(): PromiseLike<string>;
 
   /* Register a balance changed observer, unregister by calling the returned
      unregister method */

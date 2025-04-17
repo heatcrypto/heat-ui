@@ -105,8 +105,7 @@ abstract class VirtualRepeatComponent {
   /* md-virtual-repeat */
   public getLength(): number {
     if (!this.cache || this.numItems != -1) return this.numItems
-    let n = this.cache.get("numItems")
-    return n || this.numItems
+    return this.cache.get("numItems") || this.numItems
   }
 
   protected determineLength(retain?: boolean): angular.IPromise<number> {
@@ -114,8 +113,10 @@ abstract class VirtualRepeatComponent {
     if (this.provider) {
       this.loadedPages.dirty = true
       this.provider.getPaginatedLength().then((length) => {
-        this.numItems = length
-        this.cache?.put("numItems", length)
+        this.numItems = isNaN(length) ? -1 : length
+        if (length >= 0) {
+          this.cache?.put("numItems", length)
+        }
         if (length == 0) {
           this.$scope.$evalAsync(() => { this.loading = false })
         }
