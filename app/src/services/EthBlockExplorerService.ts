@@ -18,10 +18,10 @@ class EthBlockExplorerService implements IEthereumAPIList {
 
   public refresh() {
     return new Promise((resolve, reject) => {
-      this.ethBlockExplorerHeatNodeService.isSyncing().then(() => {
-        this.ethApiProvider = this.ethBlockExplorerHeatNodeService;
+      this.ethplorer.getLastBlockHeight().then(() => {
+        this.ethApiProvider = this.ethplorer
       }).catch(() => {
-        this.ethApiProvider = this.ethplorer;
+        this.ethApiProvider = this.ethBlockExplorerHeatNodeService
       }).finally(() => {
         this.tokenInfoCache = this.ethApiProvider.tokenInfoCache;
         resolve(null)

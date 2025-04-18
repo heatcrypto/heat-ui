@@ -132,6 +132,7 @@ class EthplorerService implements IEthereumAPIList{
   private providerName = 'Ethplorer'
   public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
   private cachedGetCachedAddressInfo: { [address: string]: any } = {}
+  private apiKey: string;
   private static endPoint: string;
   constructor(public $q: angular.IQService,
               private http: HttpService,
@@ -139,6 +140,7 @@ class EthplorerService implements IEthereumAPIList{
               private web3: Web3Service) {
 
     EthplorerService.endPoint = 'https://api.ethplorer.io'
+    this.apiKey = 'apiKey=lwA5173TDKj60'
 
     http.get('https://raw.githubusercontent.com/dmdeklerk/ethereum-lists/master/dist/tokens/eth/tokens-eth.min.json').then(response => {
       let array = angular.isString(response) ? JSON.parse(response) : response
@@ -195,7 +197,7 @@ class EthplorerService implements IEthereumAPIList{
   }
 
   public getAddressInfoUrl(address: string): string {
-    return `${EthplorerService.endPoint}/getAddressInfo/${address}?apiKey=lwA5173TDKj60&showTxsCount=true`
+    return `${EthplorerService.endPoint}/getAddressInfo/${address}?${this.apiKey}&showTxsCount=true`
   }
 
   public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {
@@ -247,7 +249,7 @@ class EthplorerService implements IEthereumAPIList{
   public getAddressTransactions(address: string, timestamp?: number, showZeroValues?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>();
     showZeroValues = showZeroValues || 1
-    let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?apiKey=lwA5173TDKj60&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
+    let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?${this.apiKey}&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -280,7 +282,7 @@ class EthplorerService implements IEthereumAPIList{
 
   public getTxInfo(txHash: string): angular.IPromise<EthplorerTxInfo> {
     let deferred = this.$q.defer<EthplorerTxInfo>();
-    let url = `${EthplorerService.endPoint}/getTxInfo/${txHash}?apiKey=lwA5173TDKj60`
+    let url = `${EthplorerService.endPoint}/getTxInfo/${txHash}?${this.apiKey}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -301,12 +303,29 @@ class EthplorerService implements IEthereumAPIList{
   /* This is just a temporory fix to see if Ethplorer APIs are functional */
   public getTopTokens() {
     let deferred = this.$q.defer();
-    let url = `${EthplorerService.endPoint}/getTop?apiKey=lwA5173TDKj60`;
+    let url = `${EthplorerService.endPoint}/getTop?${this.apiKey}`;
     this.http.get(url).then((response) => {
       deferred.resolve();
     }, error => {
       deferred.reject()
     }).catch(() => deferred.reject())
+
+    return deferred.promise;
+  }
+
+  public getLastBlockHeight() {
+    let deferred = this.$q.defer();
+    this.http.get(`${EthplorerService.endPoint}/getLastBlock?${this.apiKey}`).then((response) => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
+      if (parsed.error) {
+        console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
+        deferred.reject(parsed)
+      } else {
+        deferred.resolve(parsed.lastBlock)
+      }
+    }, error => {
+      deferred.reject(error)
+    }).catch((reason) => deferred.reject(reason))
 
     return deferred.promise;
   }

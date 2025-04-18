@@ -32,17 +32,18 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
   public getProviderName() {return this.providerName;}
 
   public isSyncing() {
-    let deferred = this.$q.defer();
+    let deferred = this.$q.defer()
     this.http.get(EthBlockExplorerHeatNodeService.endPoint).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response;
-      if (parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Ethereum')
+      if (parsed && parsed.blockbook && parsed.blockbook.inSync && parsed.blockbook.coin === 'Ethereum') {
         deferred.resolve()
-      else
+      } else {
         deferred.reject()
+      }
     }, () => {
       deferred.reject();
     }).catch(() => deferred.reject())
-    return deferred.promise;
+    return deferred.promise
   }
 
   public getBalanceFromChain(address: string): angular.IPromise<string> {

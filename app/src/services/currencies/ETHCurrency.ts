@@ -75,6 +75,7 @@ class ETHCurrency implements ICurrency {
                 this.pendingService.add(address, data.txId, timestamp)
                 return wlt.getHeatUnavailableReason(heatService, this.user.account)
                     .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+                    //.then(isPaymentMemo => todo refresh memo in the transaction list)
                     .catch(reason => {
                       if (reason) console.error(reason)
                     })
