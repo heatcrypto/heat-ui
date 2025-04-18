@@ -268,11 +268,12 @@ class EthplorerService implements IEthereumAPIList{
   public broadcast(rawTx: string) {
     let deferred = this.$q.defer();
     let url = `https://api.blockcypher.com/v1/eth/main/txs/push?token=d7995959366d4369976aabb3355c7216`
-    this.http.post(url, {tx: rawTx}).then((response: any) => {
+    rawTx = rawTx.startsWith("0x") ? rawTx.substring(2) : rawTx
+    this.http.post2(url, {"tx":rawTx}).then((response: any) => {
       response.txId = response.hash;
       deferred.resolve(response)
     }, (e) => {
-      deferred.reject('Error broadcasting transaction')
+      deferred.reject( e?.error ? e.error.toString() : 'Error broadcasting transaction')
     })
     return deferred.promise;
   }
