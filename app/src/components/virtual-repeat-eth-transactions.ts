@@ -154,6 +154,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
   personalize: boolean; // @input
 
   renderer: EthTransactionRenderer = new EthTransactionRenderer(this);
+  private ethBlockExplorerService: EthBlockExplorerService;
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -168,6 +169,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private storage: StorageService,
               private http: HttpService) {
     super($scope, $q)
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     let store = storage.namespace('currency-cache-eth', this.$scope, true)
     this.cache = {
       get: key => store.get(this.user.currency.address + "-" + key),
@@ -213,44 +215,43 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
       }
     ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
-    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    let timeout = setTimeout(refresh, 10 * 1000)
-
     let listener = this.determineLength.bind(this)
     this.ethereumPendingTransactions.addListener(listener)
 
     this.$scope.$on('$destroy', () => {
       this.ethereumPendingTransactions.removeListener(listener)
-      clearTimeout(timeout)
     })
   }
 
   jsonDetails($event, item) {
-    let fields = [["txid", "id"], ["time"], ["blockHeight", "block height"], ["from"], ["to"], ["renderedAmount", "amount"]]
-    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid, fields)
+    let fields = [["hash", "id"], ["time"], ["from"], ["to"], ["renderedAmount", "amount"]]
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.hash, fields)
   }
 
   txnDetails($event, item) {
-    this.http.get("https://eth1.heatwallet.com/api/v2/tx/" + item.hash).then(response => {
-      let parsed = angular.isString(response) ? JSON.parse(response) : response;
+    this.ethBlockExplorerService.getTxInfo(item.hash).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
       if (parsed) {
-        let fields = [["txid", "id"], ["blockTime", "block time"], ["blockHeight", "block height"], ["value"], ["fees"]]
-        dialogs.jsonDetails($event, parsed, 'Transaction: ' + parsed.txid + "...", fields, null, true)
+        let fields = [["hash", "id"], ["time"], ["from"], ["to"], ["renderedAmount", "amount"]]
+        dialogs.jsonDetails($event, parsed, 'Transaction: ' + parsed.hash + "...", fields, item, true)
       }
-    }).catch(reason => {
+    },
+    reason => {
       if (reason) console.error(reason)
     })
   }
 
   addressDetails($event, address) {
-    this.http.get("https://eth1.heatwallet.com/api/v2/address/" + address).then(response => {
+    this.ethBlockExplorerService.getAddressInfo(address, true).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response
       if (parsed) {
-        parsed.renderedAmount = (parsed.balance || 0) / 1000000000000000000 + " ETH"
-        let fields = [["address"], ["renderedAmount", "balance"], ["txs", "number of transactions"], ["nonce"]]
+        parsed.renderedAmount = (parsed.ETH?.balance || ((parsed.balance || 0) / 1000000000000000000)) + " ETH"
+        parsed.countTxs = parsed.countTxs || parsed.txs
+        let fields = [["address"], ["renderedAmount", "balance"], ["countTxs", "number of transactions"]]
+        if (parsed.nonce) fields.push(["nonce"])
         dialogs.jsonDetails(null, parsed, 'Address: ' + parsed.address, fields, null, true)
       }
-    }).catch(reason => {
+    },reason => {
       if (reason) console.error(reason)
     })
   }
@@ -571,18 +572,17 @@ class EthTransactionRenderer {
   }
 
   account(account: string): string {
-    if (account.toUpperCase() == this.provider.account.toUpperCase()) {
-      return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/address/${account}">Myself</a>`;
-    }
-    return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/address/${account}">${account}</a>`;
+    if (!account) return
+    let url = this.ethBlockExplorerService.getAddressInfoUrl(account)
+    let s = account.toUpperCase() == this.provider.account.toUpperCase() ? "Myself" : account
+    return `<a target="_blank" rel="noopener noreferrer" href="${url}">${s}</a>`
   }
 
   token(address: string) {
     let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[address]
-    if (tokenInfo) {
-      return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/address/${address}">${tokenInfo.symbol}</a>`;
-    }
-    return `<a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/address/${address}">${address}</a>`;
+    let url = this.ethBlockExplorerService.getAddressInfoUrl(address)
+    let s = tokenInfo ? tokenInfo.symbol : address
+    return `<a target="_blank" rel="noopener noreferrer" href="${url}">${s}</a>`
   }
 
   amount(amount: string, tokenInfo?: EthplorerTokenInfo) {

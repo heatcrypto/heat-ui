@@ -125,7 +125,7 @@ class HeatService {
   getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
-    if (this.env.isBrowser) {
+    if (this.env.isBrowser || this.env.isElectron) {
       let portStr = port ? `:${port}` : ""
       let config
       if (isFile) {
@@ -265,7 +265,7 @@ class HeatService {
     if (withAuth) {
       req = angular.extend(req, this.getAuthData());
     }
-    if (this.env.isBrowser) {
+    if (this.env.isBrowser || this.env.isElectron) {
       let portStr = port ? `:${port}` : ""
       let address = [host, portStr, '/', route].join('');
       if (localHostOnly) {

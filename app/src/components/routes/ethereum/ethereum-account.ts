@@ -247,14 +247,16 @@ class EthereumAccountComponent {
   }
 
   addressDetails($event, address) {
-    this.http.get("https://eth1.heatwallet.com/api/v2/address/" + address).then(response => {
+    this.ethBlockExplorerService.getAddressInfo(address, true).then(response => {
       let parsed = angular.isString(response) ? JSON.parse(response) : response
       if (parsed) {
-        parsed.renderedAmount = (parsed.balance || 0) / 1000000000000000000 + " ETH"
-        let fields = [["address"], ["renderedAmount", "balance"], ["txs", "number of transactions"], ["nonce"]]
+        parsed.renderedAmount = (parsed.ETH?.balance || ((parsed.balance || 0) / 1000000000000000000)) + " ETH"
+        parsed.countTxs = parsed.countTxs || parsed.txs
+        let fields = [["address"], ["renderedAmount", "balance"], ["countTxs", "number of transactions"]]
+        if (parsed.nonce) fields.push(["nonce"])
         dialogs.jsonDetails(null, parsed, 'Address: ' + parsed.address, fields, null, true)
       }
-    }).catch(reason => {
+    },reason => {
       if (reason) console.error(reason)
     })
   }

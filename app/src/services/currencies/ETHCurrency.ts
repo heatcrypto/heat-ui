@@ -40,17 +40,18 @@ class ETHCurrency implements ICurrency {
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
-  getBalance(): angular.IPromise<string> {
+  getBalance(): PromiseLike<string> {
     let self = this
     self.recentBalance = wlt.getSavedCurrencyBalance(self.address, "ETH")
     return this.ethBlockExplorerService.getBalance(this.address).then(
       balance => {
         self.recentBalance = wlt.getSavedCurrencyBalance(self.address, "ETH", balance)
         return utils.commaFormat(new Big(self.recentBalance?.confirmed || "0").toFixed(18))
+      },
+      reason => {
+        return utils.commaFormat(new Big(self.recentBalance?.confirmed || "0").toFixed(18))
       }
-    ).catch(reason => {
-      return utils.commaFormat(new Big(self.recentBalance?.confirmed || "0").toFixed(18))
-    })
+    )
   }
 
   /* Register a balance changed observer, unregister by calling the returned
@@ -74,6 +75,7 @@ class ETHCurrency implements ICurrency {
                 this.pendingService.add(address, data.txId, timestamp)
                 return wlt.getHeatUnavailableReason(heatService, this.user.account)
                     .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+                    //.then(isPaymentMemo => todo refresh memo in the transaction list)
                     .catch(reason => {
                       if (reason) console.error(reason)
                     })

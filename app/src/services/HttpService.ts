@@ -173,10 +173,21 @@ class HttpService {
     req.end();
   }
 
-  public post(url:string, data:{[key:string]:any}): angular.IPromise<Object> {
+  public post(url:string, data:{[key:string]:any}) {
+    return this.postInternal(url, data, true)
+  }
+
+  /**
+   * Do POST without request transformation.
+   */
+  public post2(url:string, data: any) {
+    return this.postInternal(url, data, false)
+  }
+
+  private postInternal(url:string, data:{[key:string]:any} | any, isTransformRequest?): angular.IPromise<Object> {
     let deferred = this.$q.defer<Object>();
     if (this.env.isBrowser) {
-      this.browserHttpPost(url, data, deferred.resolve, deferred.reject);
+      this.browserHttpPost(url, data, deferred.resolve, deferred.reject, isTransformRequest)
     }
     else {
       let a = document.createElement('a')
@@ -190,22 +201,25 @@ class HttpService {
     return deferred.promise;
   }
 
-  private browserHttpPost(url: string, data:{[key:string]:any}, onSuccess: Function, onFailure: Function) {
-    this.$http({
+  private browserHttpPost(url: string, data: {[key:string]:any} | any, onSuccess: Function, onFailure: Function, isTransformRequest) {
+    let config: any = {
       method: 'POST',
       url: url,
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      transformRequest: function(obj) {
+      data: data
+    }
+    if (isTransformRequest) {
+      config.transformRequest = function(obj) {
         var str = [];
         for(var p in obj)
           str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
         return str.join("&");
-      },
-      data: data
-  }).then(
+      }
+    }
+    this.$http(config).then(
     (response:any) => { onSuccess(response.data) },
     (response) => { onFailure(response.data) }
-  );
+    );
   }
 
   private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {

@@ -18,10 +18,10 @@ class EthBlockExplorerService implements IEthereumAPIList {
 
   public refresh() {
     return new Promise((resolve, reject) => {
-      this.ethBlockExplorerHeatNodeService.isSyncing().then(() => {
-        this.ethApiProvider = this.ethBlockExplorerHeatNodeService;
+      this.ethplorer.getLastBlockHeight().then(() => {
+        this.ethApiProvider = this.ethplorer
       }).catch(() => {
-        this.ethApiProvider = this.ethplorer;
+        this.ethApiProvider = this.ethBlockExplorerHeatNodeService
       }).finally(() => {
         this.tokenInfoCache = this.ethApiProvider.tokenInfoCache;
         resolve(null)
@@ -59,6 +59,10 @@ class EthBlockExplorerService implements IEthereumAPIList {
 
   }
 
+  public getAddressInfoUrl(address: string): string {
+    return this.ethApiProvider.getAddressInfoUrl(address)
+  }
+
   public getAddressInfo(address: string, useCache = false) {
     return this.ethApiProvider.getAddressInfo(address, useCache);
   }
@@ -66,7 +70,7 @@ class EthBlockExplorerService implements IEthereumAPIList {
   private convertAddressTransactions(transactions) {
     transactions.forEach(tx => {
       tx.from = tx.vin[0].addresses[0];
-      tx.to = tx.vout[0].addresses[0];
+      tx.to = tx.vout[0].addresses ? tx.vout[0].addresses[0] : undefined;
       tx.hash = tx.txid;
       tx.value = this.web3.web3.fromWei(tx.vout[0].value, 'ether');
       tx.input = '';

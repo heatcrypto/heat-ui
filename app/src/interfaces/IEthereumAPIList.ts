@@ -3,15 +3,17 @@ interface IEthereumAPIList {
 
   getAddressTransactions(address: string, pageNum?: number)
 
-  getTxInfo(txId: string)
+  getTxInfo(txId: string): PromiseLike<any>
 
-  getBalance(address: string)
+  getBalance(address: string): PromiseLike<string>
 
   broadcast(rawTx: string)
 
-  getTransactionCount(address: string): angular.IPromise<number>
+  getTransactionCount(address: string): PromiseLike<number>
 
-  getAddressInfo(address: string, useCache: boolean)
+  getAddressInfoUrl(address: string): string
+
+  getAddressInfo(address: string, useCache: boolean): PromiseLike<any>
 
   getProviderName(): string
 

@@ -88,7 +88,7 @@ namespace wlt {
                 .catch(errorCallback)
         }
 
-        return new Promise((resolve, reject) => {
+        return new Promise<boolean>((resolve, reject) => {
             if (message) {
                 if (paymentMessageMethod == 0) {
                     //store payment message to local storage
