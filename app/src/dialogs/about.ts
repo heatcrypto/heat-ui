@@ -35,11 +35,11 @@ module dialogs {
         <p><a href="#" ng-click="vm.goTo('test')">Go to TEST NET</a></p>
 <!--        <p><a href="#" ng-click="vm.goTo('beta')">Go to BETA NET</a></p>-->
         <p>
-<!--            <a ng-href="{{vm.benchmarkUrl}}" target="_blank" rel="noopener noreferrer">BENCHMARK application</a><br/>-->
-            <a href="#" ng-click="vm.goTo('bench')">BENCHMARK application</a>
+            <a ng-if="vm.env.isBrowser" ng-href="{{vm.benchmarkUrl}}" target="_blank" rel="noopener noreferrer">BENCHMARK application</a><br/>
+            <a ng-if="vm.env.isElectron" href="#" ng-click="vm.goTo('bench')">BENCHMARK application</a>
         </p>
         <br>
-        <p>Ethereum API <u>Powered by <a href="https://ethplorer.io">Ethplorer.io</a></u></p>
+        <p>Ethereum API <u>Powered by <a href="https://ethplorer.io" target="_blank" rel="noopener noreferrer">Ethplorer.io</a></u></p>
         <!--
         <p><button onclick="gtag_report_conversion_signup(undefined)">Signup Test</button></p>
         <p><button onclick="gtag_report_conversion_bid(undefined, Date.now()+'')">Bid Test</button></p>
@@ -57,7 +57,7 @@ module dialogs {
         heatServerBuildDate: SettingsService.EMBEDDED_HEATLEDGER_BUILD_DATE,
         isTestnet: window.localStorage.getItem('testnet')=='true',
         benchmarkUrl: SettingsService.BENCHMARK_WEB_URL,
-        isEnvNodeJS: env.isNodeEnv,
+        env: env,
         goTo: (target) => {
           // defaults to main net
           window.localStorage.setItem('testnet','false');
@@ -67,25 +67,9 @@ module dialogs {
           } else if (target == 'beta') {
             window.localStorage.setItem('betanet','true');
           } else if (target == 'bench') {
-            if (env.isNodeEnv) {
-              /*let shell = require('electron').shell
-              shell.openExternal(SettingsService.BENCHMARK_WEB_URL)*/
-              //open site in the electron window in browser mode
-              const { BrowserWindow } = require('electron').remote
-              let benchWindow = new BrowserWindow({
-                width: 1200,
-                height: 800,
-                //autoHideMenuBar: true,
-                webPreferences: {
-                  nodeIntegration: false
-                },
-                show: false,
-                backgroundColor: '#d22424'
-              })
-              benchWindow.once('ready-to-show', () => {
-                benchWindow.show()
-              })
-              benchWindow.loadURL(SettingsService.BENCHMARK_WEB_URL)
+            if (env.isElectron) {
+              let shell = require('electron').shell
+              shell.openExternal(SettingsService.BENCHMARK_WEB_URL)
             } else {
               window.location.assign(SettingsService.BENCHMARK_WEB_URL)
             }
