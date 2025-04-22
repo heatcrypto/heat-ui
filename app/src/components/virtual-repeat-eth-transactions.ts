@@ -258,11 +258,13 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   paymentMemoDialog($event, item) {
     let heatService = <HeatService>heat.$inject.get('heat')
-    wlt.getHeatUnavailableReason(heatService, this.user.account)
-        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.txid, heatUnavailableReason))
-        .then(value => {
-          let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-          setTimeout(refresh, 2 * 1000)
+    return wlt.getHeatUnavailableReason(heatService, this.user.account)
+        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.hash, heatUnavailableReason))
+        .then(paymentMessage => {
+          if (paymentMessage) {
+            item.message = paymentMessage // to display message
+          }
+          return paymentMessage
         })
         .catch(reason => {
           if (reason) console.error(reason)

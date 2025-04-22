@@ -52,7 +52,7 @@ namespace wlt {
             user.secretPhrase)
         let messageId = createMessageId(txId, recipientPubKey)
 
-        let sendHeatPaymentMessage = (resolve, reject) => {
+        let sendHeatPaymentMessage = (resolve, reject, resultMessage: {method: number, text: string}) => {
             let errorCallback = reason => reject("linked message error: " + JSON.stringify(reason))
 
             let createKeystoreTransaction = (transactionArgs: IHeatCreateTransactionInput) => {
@@ -80,7 +80,7 @@ namespace wlt {
                 .then(value => builder.broadcast(), errorCallback)
                 .then(value => {
                     if (value.success) {
-                        resolve(true)
+                        resolve(resultMessage)
                     } else {
                         errorCallback.bind(null, value.internalError || value.serverError)
                     }
@@ -88,19 +88,20 @@ namespace wlt {
                 .catch(errorCallback)
         }
 
-        return new Promise<boolean>((resolve, reject) => {
+        return new Promise<{method: number, text: string}>((resolve, reject) => {
             if (message) {
+                let result = {method: paymentMessageMethod, text: message}
                 if (paymentMessageMethod == 0) {
                     //store payment message to local storage
                     getPaymentMessageStore().put(messageId, encryptedMessage)
-                    resolve(true)
+                    resolve(result)
                 } else if (paymentMessageMethod == 1) {
-                    sendHeatPaymentMessage(resolve, reject)
+                    sendHeatPaymentMessage(resolve, reject, result)
                 } else {
-                    resolve(false)
+                    resolve(undefined)
                 }
             } else {
-                resolve(false)
+                resolve(undefined)
             }
         })
     }
