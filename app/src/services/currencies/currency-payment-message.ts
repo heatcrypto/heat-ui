@@ -131,7 +131,7 @@ namespace wlt {
         //hide original txId in message id
         let messageId = createMessageId(txId, user.publicKey)
 
-        let decrypt = (encrypted: IEncryptedMessage) => {
+        let decrypt = (encrypted: heat.crypto.IEncryptedMessage) => {
             try {
                 return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, user.publicKey, user.secretPhrase)
             } catch (e) {}
@@ -140,7 +140,7 @@ namespace wlt {
 
         return new Promise<{ method: number, text: string }>((resolve, reject) => {
             //first try to load message from local store
-            let encryptedMessage: IEncryptedMessage = store.get(messageId)
+            let encryptedMessage: heat.crypto.IEncryptedMessage = store.get(messageId)
             let messageText = encryptedMessage ? decrypt(encryptedMessage) : null
             if (messageText) {
                 resolve({method: 0, text: messageText})

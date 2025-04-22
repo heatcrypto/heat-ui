@@ -23,10 +23,6 @@
 
 ///<reference path="./WalletComponentAbstract.ts" />
 
-import WalletEntry = wlt.WalletEntry;
-import CurrencyBalance = wlt.CurrencyBalance;
-import loadCryptoAddresses = wlt.loadCryptoAddresses;
-
 @RouteConfig('/wallet')
 @Component({
   selector: 'wallet',
@@ -370,7 +366,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.clipboard.showSecret(secret, currencySymbol)
   }
 
-  signBitcoinMessage($event, entry: CurrencyBalance) {
+  signBitcoinMessage($event, entry: wlt.CurrencyBalance) {
     let sign = (message: string) => this.bitcoreService.signBitcoinMessage(entry.address, message, entry.secretPhrase)
     this.signMessage($event, entry, sign,
         "Sign Bitcoin Message",
@@ -378,7 +374,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         "Signed Bitcoin Message")
   }
 
-  signEthereumMessage($event, entry: CurrencyBalance) {
+  signEthereumMessage($event, entry: wlt.CurrencyBalance) {
     let sign = (message: string) => this.lightwalletService.signEthereumMessage(entry.address, message, entry.secretPhrase)
     this.signMessage($event, entry, sign,
         "Sign Ethereum Message",
@@ -450,10 +446,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .then(() => {
           let resetAddressesPromise: Promise<WalletAddresses>
           if (currencyName === 'Ethereum') {
-            let wa = loadCryptoAddresses(walletEntry, 'ETH')
+            let wa = wlt.loadCryptoAddresses(walletEntry, 'ETH')
             resetAddressesPromise = this.lightwalletService.unlock(wa, walletEntry.secretPhrase, "", true)
           } else if (currencyName === 'Bitcoin') {
-            let wa = loadCryptoAddresses(walletEntry, 'BTC')
+            let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
             resetAddressesPromise = this.bitcoreService.unlock(wa, walletEntry.secretPhrase, true)
           } else if (currencyName === 'FIMK') {
           } else if (currencyName === 'NXT') {
@@ -737,7 +733,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     /* Bitcoin and Ethereum integration start here */
     let selectedCurrencies = this.store.get(walletEntry.account) || []
     if (selectedCurrencies.indexOf('BTC') > -1) {
-      let wa = loadCryptoAddresses(walletEntry, 'BTC')
+      let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
       this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
           walletEntry.initBTC(this, wallet, this.user)
@@ -745,7 +741,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       }).catch(reason => {console.log(reason)})
     }
     if (selectedCurrencies.indexOf('ETH') > -1) {
-      let walletAddresses = loadCryptoAddresses(walletEntry, 'ETH')
+      let walletAddresses = wlt.loadCryptoAddresses(walletEntry, 'ETH')
       this.lightwalletService.unlock(walletAddresses, walletEntry.secretPhrase, "").then(walletAddresses => {
         walletEntry.initEth(this, walletAddresses)
       }).catch(reason => {console.log(reason)})

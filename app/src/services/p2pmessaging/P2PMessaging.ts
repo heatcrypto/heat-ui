@@ -21,8 +21,6 @@
  * SOFTWARE.
  * */
 
-import IEncryptedMessage = heat.crypto.IEncryptedMessage;
-
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
 type RemoveMessageDoneAccumulator = {roomName: string, targetMessageId: string, fileId: string, error: string}[];
@@ -168,7 +166,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   onFile(fileContent: string | ArrayBuffer, room: p2p.Room,
          fileTransferMessageId: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
          fileSavedCallback?: Function): any {
-    let encryptedMessage: IEncryptedMessage = typeof fileContent === "string"
+    let encryptedMessage: heat.crypto.IEncryptedMessage = typeof fileContent === "string"
       ? JSON.parse(fileContent)
       : JSON.parse(converters.arrayBufferToString(fileContent))
     let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
