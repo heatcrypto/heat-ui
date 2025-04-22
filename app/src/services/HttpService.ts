@@ -126,7 +126,7 @@ class HttpService {
     let deferred = this.$q.defer<string>();
     let promise = deferred.promise
     this.waitTurn(url, promise).then(() => {
-      if (this.env.isBrowser) {
+      if (this.env.isBrowser || this.env.isElectron) {
         this.browserHttpGet(url, deferred.resolve, deferred.reject);
       }
       else {
@@ -186,7 +186,7 @@ class HttpService {
 
   private postInternal(url:string, data:{[key:string]:any} | any, isTransformRequest?): angular.IPromise<Object> {
     let deferred = this.$q.defer<Object>();
-    if (this.env.isBrowser) {
+    if (this.env.isBrowser || this.env.isElectron) {
       this.browserHttpPost(url, data, deferred.resolve, deferred.reject, isTransformRequest)
     }
     else {
