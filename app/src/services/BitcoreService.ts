@@ -130,8 +130,9 @@ class BitcoreService {
     })
   }
 
-  signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
+  createOneToOneTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+
     return new Promise((resolve, reject) => {
       btcBlockExplorerService.getUtxos(txObject.from).then(utxos => {
             const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: 'bitcoin'})
@@ -146,10 +147,22 @@ class BitcoreService {
               addressType: this.resolveAddressType(txObject.from)
             }))
 
+            let inputsSum = inputs.reduce((v, {value}) => v + parseInt(value), 0)
+            let changeAmount = inputsSum - txObject.amount - txObject.fee
+
+            if (!changeAmount || changeAmount > inputsSum || changeAmount < 0) {
+              reject(`wrong value among 1) inputs sum ${inputsSum}; 2) amount ${txObject.amount}; 3) fee ${txObject.fee}`)
+              return
+            }
+
             let outputs = [
               {
                 address: txObject.to,
                 value: txObject.amount
+              },
+              {
+                address: txObject.changeAddress,
+                value: changeAmount
               }
             ]
 
@@ -165,7 +178,7 @@ class BitcoreService {
   sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     return new Promise((resolve, reject) => {
-      this.signTransaction(txObject).then(rawTx => {
+      this.createOneToOneTransaction(txObject).then(rawTx => {
         btcBlockExplorerService.broadcast(rawTx).then(
           txId => {
             resolve({txId : txId.txId, message: ''})

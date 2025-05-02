@@ -139,7 +139,7 @@ class BTCCurrency implements ICurrency {
         $mdDialog.cancel()
       }
 
-      let createTx = function(isForFeeEstimation: boolean = false) {
+      let createTxObject = function(isForFeeEstimation: boolean = false) {
         let user = <UserService> heat.$inject.get('user')
         let feeInSatoshi
         let amountInSatoshi
@@ -179,7 +179,7 @@ class BTCCurrency implements ICurrency {
       this.okButtonClick = function ($event) {
         let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         vm.disableOKBtn = true
-        bitcoreService.sendBitcoins(createTx()).then(
+        bitcoreService.sendBitcoins(createTxObject()).then(
           data => {
             let sendingResult = Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod})
             updateUnconfirmedBalance(vm.data.amount, vm.data.fee)
@@ -233,7 +233,7 @@ class BTCCurrency implements ICurrency {
         let bitcoreService = <BitcoreService>heat.$inject.get('bitcoreService')
         let errorCallback = reason => console.log("error on generation transaction bytes: " + reason);
         vm.data.txBytes = []
-        let result = bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
+        let result = bitcoreService.createOneToOneTransaction(createTxObject(true), true).then(rawTx => {
           vm.data.txBytes = converters.hexStringToByteArray(rawTx)
         }).catch(errorCallback)
 
@@ -241,11 +241,11 @@ class BTCCurrency implements ICurrency {
         vm.data.rawTx = ''
         let tx;
         try {
-          tx = createTx(false)
+          tx = createTxObject(false)
         } catch (e) {
         }
         if (tx) {
-          bitcoreService.signTransaction(tx).then(rawTx => {
+          bitcoreService.createOneToOneTransaction(tx).then(rawTx => {
             vm.data.rawTx = rawTx
           }).catch(errorCallback)
         }
