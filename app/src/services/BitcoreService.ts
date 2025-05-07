@@ -148,9 +148,14 @@ class BitcoreService {
             }))
 
             let inputsSum = inputs.reduce((v, {value}) => v + parseInt(value), 0)
-            let changeAmount = inputsSum - txObject.amount - txObject.fee
+            let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
 
-            if (!changeAmount || changeAmount > inputsSum || changeAmount < 0) {
+            if (changeAmount < 0) {
+              reject(`amount with fee is too big`)
+              return
+            }
+
+            if (isNaN(changeAmount) || changeAmount > inputsSum) {
               reject(`wrong value among 1) inputs sum ${inputsSum}; 2) amount ${txObject.amount}; 3) fee ${txObject.fee}`)
               return
             }
@@ -175,22 +180,17 @@ class BitcoreService {
     })
   }
 
-  sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
-    let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+  sendBitcoins(rawTx: string): Promise<{ txId: string, message: string }> {
     return new Promise((resolve, reject) => {
-      this.createOneToOneTransaction(txObject).then(rawTx => {
-        btcBlockExplorerService.broadcast(rawTx).then(
-          txId => {
-            resolve({txId : txId.txId, message: ''})
-          },
-          error => {
-            reject(error)
-          }
-        )
-      }).catch(reason => {
-        console.error(reason)
-        reject(reason)
-      })
+      let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+      btcBlockExplorerService.broadcast(rawTx).then(
+        txId => {
+          resolve({txId : txId.txId, message: ''})
+        },
+        error => {
+          reject(error)
+        }
+      )
     })
   }
 
