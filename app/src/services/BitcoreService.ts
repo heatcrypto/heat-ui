@@ -151,7 +151,7 @@ class BitcoreService {
             let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
 
             if (changeAmount < 0) {
-              reject(`amount with fee is too big`)
+              reject('amount with fee is too big')
               return
             }
 
@@ -164,12 +164,15 @@ class BitcoreService {
               {
                 address: txObject.to,
                 value: txObject.amount
-              },
-              {
-                address: txObject.changeAddress,
-                value: changeAmount
               }
             ]
+
+            if (changeAmount > 0) {
+              outputs.push({
+                address: txObject.changeAddress,
+                value: changeAmount
+              })
+            }
 
             resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + "")
           },

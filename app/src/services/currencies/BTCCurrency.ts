@@ -194,7 +194,8 @@ class BTCCurrency implements ICurrency {
           let decodedTxn: DecodedTransaction = heat.heatAppLib.BITCOIN_DECODE_TRANSACTION(rawTx)
           let outsTotal = 0
           let removeTrailZeros = /([^.])0+$/
-          let reportLines = isCreatedTransaction ? [`Outgoing address: ${self.address}` + "\n"] : []
+          let reportLines = [`transaction bytes size: ${converters.hexStringToByteArray(rawTx).length}` + "\n"]
+          if (isCreatedTransaction) reportLines.push(`Outgoing address: ${self.address}` + "\n")
 
           decodedTxn.decoded.outs.forEach(out => {
             let prefix = out.address == self.address ? "(change)" : "(recipient)"
@@ -220,6 +221,10 @@ class BTCCurrency implements ICurrency {
       }
 
       this.createButtonClick = function ($event) {
+        if (!vm.data.txnFeeSatoshi) {
+          vm.errorMessage = "transaction fee is not calculated"
+          return
+        }
         vm.report = ""
         calculateRawTx(false)?.then(rawTx => {
           if (rawTx && rawTx == vm.data.rawTx) {
@@ -298,7 +303,11 @@ class BTCCurrency implements ICurrency {
 
       let calculateRawTx = function (isForFeeEstimation= true) {
         if (vm.stage == 'insertedBytes') return
-        let errorCallback = reason => console.log("error on generation transaction bytes: " + reason);
+        vm.errorMessage = ""
+        let errorCallback = reason => {
+          vm.errorMessage = "error on generation transaction bytes: " + reason
+          console.log(vm.errorMessage)
+        }
         vm.data.txBytes = []
         vm.data.rawTx = ''
         let tx;
@@ -320,10 +329,22 @@ class BTCCurrency implements ICurrency {
       let calculateRawTxDebounced = utils.debounce(calculateRawTx, 1000, false)
 
       this.maxAmountClick = function() {
+        if (!vm.data.txnFeeSatoshi) {
+          if (vm.data.txBytes) {
+            calculateTxnFee()
+          } else {
+            calculateRawTx()?.then(() => calculateTxnFee())
+          }
+          if (!vm.data.txnFeeSatoshi) {
+            vm.data.amount = 0
+            return
+          }
+        }
         let txObject = createTxObject(true)
-        btcBlockExplorerService.getBalance(txObject.from).then(value => {
+        btcBlockExplorerService.getBalance(txObject.from, false).then(value => {
           let satoshiAmount = value - vm.data.txnFeeSatoshi
           vm.data.amount = new Big(satoshiAmount).div(wlt.SATOSHI_PER_BTC).toFixed(8)
+          calculateRawTxDebounced()
         })
       }
 
@@ -525,7 +546,7 @@ class BTCCurrency implements ICurrency {
                   <label>Transaction bytes</label>
                   <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
                         placeholder="paste transaction bytes in hex" 
-                        rows="3"  wrap="soft" style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
+                        rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>
                 </md-input-container>
 
                 <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
@@ -534,6 +555,10 @@ class BTCCurrency implements ICurrency {
                         style="overflow-y: scroll;height: 170px;line-height: normal;"></textarea>
                 </md-input-container>
 
+              </div>
+              
+              <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
+                {{vm.errorMessage}}
               </div>
 
               <div ng-if="vm.data.txnFee" class="fee" style="max-width:250px !important">
