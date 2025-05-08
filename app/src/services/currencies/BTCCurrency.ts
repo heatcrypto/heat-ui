@@ -180,18 +180,22 @@ class BTCCurrency implements ICurrency {
         wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance.toString())
       }
 
-      this.createButtonClick = function ($event) {
-        calculateRawTx(false)?.then(rawTx => {
-          type DecodedTransaction = {
-            transaction: any,
-            decoded: {
-              outs: {address: string, value: number}[]
-            }
+      let decodeTxn = function (rawTx: string, isCreatedTransaction = true) {
+        if (!rawTx || !rawTx.trim()) return
+
+        type DecodedTransaction = {
+          transaction: any,
+          decoded: {
+            outs: {address: string, value: number}[]
           }
-          let decodedTxn: DecodedTransaction = heat.heatAppLib.BITCOIN_DECODE_TRANSACTION(vm.data.rawTx)
+        }
+
+        try {
+          let decodedTxn: DecodedTransaction = heat.heatAppLib.BITCOIN_DECODE_TRANSACTION(rawTx)
           let outsTotal = 0
           let removeTrailZeros = /([^.])0+$/
-          let reportLines = ["\n" + `Outgoing address: ${self.address}` + "\n"]
+          let reportLines = isCreatedTransaction ? [`Outgoing address: ${self.address}` + "\n"] : []
+
           decodedTxn.decoded.outs.forEach(out => {
             let prefix = out.address == self.address ? "(change)" : "(recipient)"
             outsTotal += out.value
@@ -205,16 +209,39 @@ class BTCCurrency implements ICurrency {
             reportLines.push("")
           })
 
-          let reportFee = ((self.recentBalance.confirmed - outsTotal) / 100000000).toFixed(8).replace(removeTrailZeros, "$1")
-          reportLines.push(`fee: ${reportFee} BTC`)
-          vm.report = reportLines.join("\n").trim()
-          vm.stage = "broadcast"
+          if (isCreatedTransaction) {
+            let reportFee = ((self.recentBalance.confirmed - outsTotal) / 100000000).toFixed(8).replace(removeTrailZeros, "$1")
+            reportLines.push(`fee: ${reportFee} BTC`)
+          }
+          return reportLines.join("\n").trim()
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      this.createButtonClick = function ($event) {
+        vm.report = ""
+        calculateRawTx(false)?.then(rawTx => {
+          if (rawTx && rawTx == vm.data.rawTx) {
+            $scope.$evalAsync(() => {
+              vm.report = decodeTxn(rawTx)
+              vm.stage = "broadcast"
+            })
+          }
         }).catch(reason => console.error(reason))
       }
 
       this.backButtonClick = function ($event) {
         vm.report = ""
+        vm.data.rawTx = ""
         vm.stage = "create"
+      }
+
+      this.insertBytesButtonClick = function ($event) {
+        vm.report = ""
+        vm.data.rawTx = ""
+        vm.data.txnFee = ""
+        vm.stage = "insertedBytes"
       }
 
       this.okButtonClick = function ($event) {
@@ -270,6 +297,7 @@ class BTCCurrency implements ICurrency {
       }, 1000, false)
 
       let calculateRawTx = function (isForFeeEstimation= true) {
+        if (vm.stage == 'insertedBytes') return
         let errorCallback = reason => console.log("error on generation transaction bytes: " + reason);
         vm.data.txBytes = []
         vm.data.rawTx = ''
@@ -392,6 +420,18 @@ class BTCCurrency implements ICurrency {
         vm.feeByteChanged()
       }
 
+      let decodeTxnDebounced = utils.debounce(() => {
+        $scope.$evalAsync(() => {
+          vm.report = decodeTxn(vm.data.rawTx, false)
+        })
+      }, 1000, false)
+
+      this.txnBytesChanged = function (event) {
+        if (vm.stage != 'insertedBytes') return
+        vm.report = ""
+        decodeTxnDebounced()
+      }
+
       //to initialize fee
       loadInternetFee()
 
@@ -481,33 +521,36 @@ class BTCCurrency implements ICurrency {
                   <input ng-model="vm.data.fee" ng-change="vm.feeChanged($event)" required name="fee">
                 </md-input-container>
   
-                <md-input-container flex ng-if="vm.stage=='broadcast'">
+                <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <label>Transaction bytes</label>
-                  <textarea ng-model="vm.data.rawTx" readonly rows="3"  wrap="soft"
-                        style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
+                  <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
+                        placeholder="paste transaction bytes in hex" 
+                        rows="3"  wrap="soft" style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
                 </md-input-container>
 
-                <md-input-container flex ng-if="vm.stage=='broadcast'">
-                  <label>Created transaction report</label>
+                <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                  <label>Parsed transaction bytes report</label>
                   <textarea ng-model="vm.report" readonly rows="8"  wrap="soft"
                         style="overflow-y: scroll;height: 170px;line-height: normal;"></textarea>
                 </md-input-container>
 
               </div>
-            </md-dialog-content>
-            
-            <md-dialog-actions layout="row">
 
               <div ng-if="vm.data.txnFee" class="fee" style="max-width:250px !important">
                 Transaction fee <b>&nbsp;{{vm.data.txnFee || '?'}}&nbsp;</b> BTC
               </div>
+              
+            </md-dialog-content>
 
+            <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button class="md-warn" ng-if="vm.stage=='broadcast'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
+              <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
               <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.createButtonClick()" aria-label="Create">Create transaction</md-button>
-              <md-button ng-if="vm.stage=='broadcast'"
+              <md-button ng-if="vm.stage=='create'"
+                  class="md-primary" ng-click="vm.insertBytesButtonClick()" aria-label="Create">Use transaction bytes</md-button>
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send">Send</md-button>
             </md-dialog-actions>
           </ng-form>
