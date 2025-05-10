@@ -49,9 +49,11 @@ class BtcBlockExplorerService {
     this.btcProvider = newProvider
   }*/
 
-  private getCachedAccountBalance = (address: string) => {
-    let cachedValue = this.cachedGetCachedAccountBalance.get(address)
-    if (cachedValue) return cachedValue
+  private getCachedAccountBalance = (address: string, useCache = true) => {
+    if (useCache) {
+      let cachedValue = this.cachedGetCachedAccountBalance.get(address)
+      if (cachedValue) return cachedValue
+    }
     let deferred = this.$q.defer<number>();
     this.cachedGetCachedAccountBalance.set(address, deferred.promise)
     this.btcProvider.getBalance(address).then(deferred.resolve, deferred.reject)
@@ -63,9 +65,9 @@ class BtcBlockExplorerService {
     return this.cachedGetCachedAccountBalance.get(address)
   }
 
-  public getBalance = (address: string) => {
-    let deferred = this.$q.defer<number>();
-    this.getCachedAccountBalance(address).then(info => {
+  public getBalance = (address: string, useCache = true) => {
+    let deferred = this.$q.defer<number>()
+    this.getCachedAccountBalance(address, useCache).then(info => {
       deferred.resolve(info)
     }, deferred.reject)
     return deferred.promise;
