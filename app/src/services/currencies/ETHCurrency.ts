@@ -93,10 +93,68 @@ class ETHCurrency implements ICurrency {
     let web3 = <Web3Service> heat.$inject.get('web3')
 
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+      const vm = this
       this.paymentMessageMethod = null
+      vm.stage = "create"
+
+      this.data = {
+        amount: '',
+        gasPrice: '',
+        gasLimit: '',
+        recipient: '',
+        recipientInfo: '',
+        fee: '0.000420',
+        message: '',
+        rawTx: ''
+      }
+
+      vm.generateTxnBytes = function () {
+        let user = <UserService> heat.$inject.get('user')
+        let web3 = <Web3Service> heat.$inject.get('web3')
+        let amountInWei = web3.web3.toWei(this.data.amount.replace(',',''), 'ether')
+        let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
+
+        let getAddressNonce = (address: string) => web3.getAddressNonce(address)
+            .catch(reason => {
+              return dialogs.simplePrompt(null,
+                  'Enter ETH address nonce',
+                  "The nonce is not resolved. Nonce is the transaction count from that address (outgoing transactions)",
+                  [{label: "Nonce", value: undefined}])
+            }).then(nonce => {
+              return nonce[0]
+            }, reason => {
+              console.log('Dialog Get Address Nonce is escaped. ' + reason)
+            })
+
+        return web3.createRawTx2(from, this.data.recipient, amountInWei, this.data.gasPrice * GWEI_SCALE, this.data.gasLimit, getAddressNonce)
+            // .then((rawTx) => {
+            //   let clipboardService: ClipboardService = heat.$inject.get('clipboard')
+            //   clipboardService.showTxnBytes("" + rawTx)
+            // })
+            .catch(reason => {
+              dialogs.alert($event, 'ETH transaction creation error', reason)
+            })
+      }
+
+      this.createTxnButtonClick = function ($event) {
+        vm.generateTxnBytes().then(rawTx => {
+          $scope.$evalAsync(() => {
+            vm.data.rawTx = rawTx
+            vm.stage = "broadcast"
+            //just visual effect:
+          })
+          if (!rawTx) setTimeout(() => this.stage = "create", 1500)
+        }).catch(reason => console.error(reason))
+      }
+
+      this.backButtonClick = function ($event) {
+        this.stage = "create"
+      }
+
       this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
+
       let updateUnconfirmedBalance = function (value, fees) {
         let txTotal = new Big(web3.web3.fromWei(new Big(value).plus(new Big(fees)), 'ether'))
         //let txTotal = new Big(value).plus(new Big(fees))
@@ -106,77 +164,34 @@ class ETHCurrency implements ICurrency {
           wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance)
         }
       }
+
       this.okButtonClick = function ($event) {
-        let data = $scope['vm'].data
-        let user = <UserService> heat.$inject.get('user')
-        let web3 = <Web3Service> heat.$inject.get('web3')
         let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
-        let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
-        let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
-        $scope['vm'].disableOKBtn = true
-        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit).then((rawTx) => {
-          ethBlockExplorerService.broadcast(rawTx).then(
-            result => {
-              if (result.txId) {
-                result.message = $scope['vm'].data.message
-                let sendingResult = Object.assign(result, {paymentMessageMethod: $scope['vm'].paymentMessageMethod})
-                updateUnconfirmedBalance(amountInWei, web3.web3.toWei(data.fee, 'ether'))
-                $mdDialog.hide(sendingResult).then(() => {
-                  dialogs.alert(event, 'Success', `TxHash: ${result.txId}`);
-                })
-              } else {
-                dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`);
-              }
-            },
-            err => {
-              $mdDialog.hide(null).then(() => {
-                dialogs.alert(event, 'Error', err ? (err.message || err.error ||  err) : "Error, see details in the console output");
+        vm.disableOKBtn = true
+        ethBlockExplorerService.broadcast(vm.data.rawTx).then(
+          result => {
+            if (result.txId) {
+              result.message = vm.data.message
+              let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod})
+              let web3 = <Web3Service> heat.$inject.get('web3')
+              let amountInWei = web3.web3.toWei(vm.data.amount.replace(',',''), 'ether')
+              updateUnconfirmedBalance(amountInWei, web3.web3.toWei(vm.data.fee, 'ether'))
+              $mdDialog.hide(sendingResult).then(() => {
+                dialogs.alert(event, 'Success', `TxHash: ${result.txId}`)
               })
+            } else {
+              dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`)
             }
-          )
-        }).catch(reason => {
-          dialogs.alert($event, 'ETH transaction creation error', reason)
-        })
-      }
-
-      this.displaySignedBytesClick = function ($event) {
-        let data = $scope['vm'].data
-        let user = <UserService> heat.$inject.get('user')
-        let web3 = <Web3Service> heat.$inject.get('web3')
-        let amountInWei = web3.web3.toWei(data.amount.replace(',',''), 'ether')
-        let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
-
-        let getAddressNonce = (address: string) => web3.getAddressNonce(address)
-            .catch(reason => {
-              return dialogs.simplePrompt(null,
-                  'Enter ETH address nonce',
-                  "The nonce is not resolved. Nonce is the transaction count from that address (outgoing transactions)",
-                  [{label: "Nonce", value: undefined}])
+          },
+          err => {
+            $mdDialog.hide(null).then(() => {
+              dialogs.alert(event, 'Error', err ? (err.message || err.error ||  err) : "Error, see details in the console output")
             })
-            .then(nonce => {
-              return nonce[0]
-            })
-
-        web3.createRawTx2(from, data.recipient, amountInWei, data.gasPrice * GWEI_SCALE, data.gasLimit, getAddressNonce)
-            .then((rawTx) => {
-              let clipboardService: ClipboardService = heat.$inject.get('clipboard')
-              clipboardService.showTxnBytes("" + rawTx)
-            })
-            .catch(reason => {
-              dialogs.alert($event, 'ETH transaction creation error', reason)
-            })
+          }
+        )
       }
 
       this.disableOKBtn = false
-      this.data = {
-        amount: '',
-        gasPrice: '',
-        gasLimit: '',
-        recipient: '',
-        recipientInfo: '',
-        fee: '0.000420',
-        message: ''
-      }
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
@@ -232,7 +247,7 @@ class ETHCurrency implements ICurrency {
               <div class="md-toolbar-tools"><h2>Send Ether</h2></div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
+              <div flex layout="column" ng-if="vm.stage=='create'">
 
                 <md-input-container flex >
                   <label>Recipient</label>
@@ -257,14 +272,27 @@ class ETHCurrency implements ICurrency {
 
                 <p>Fee: {{vm.data.fee}} ETH</p>
               </div>
+              
+              <md-input-container flex ng-if="vm.stage=='broadcast'">
+                  <label>Transaction bytes</label>
+                  <textarea ng-model="vm.data.rawTx" readonly rows="3"  wrap="soft"
+                        style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
+              </md-input-container>
+                
             </md-dialog-content>
+            
             <md-dialog-actions layout="row">
+<!--
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.displaySignedBytesClick()" aria-label="Signed bytes">Signed transaction bytes</md-button>
+-->
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
+                            <md-button class="md-warn" ng-if="vm.stage=='broadcast'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
+              <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+                  class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
+              <md-button ng-if="vm.stage=='broadcast'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

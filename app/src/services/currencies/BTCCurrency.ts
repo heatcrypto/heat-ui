@@ -572,7 +572,7 @@ class BTCCurrency implements ICurrency {
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
               <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.createButtonClick()" aria-label="Create">Create transaction</md-button>
+                  class="md-primary" ng-click="vm.createButtonClick()" aria-label="Create">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.insertBytesButtonClick()" aria-label="Create">Use transaction bytes</md-button>
               <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)"

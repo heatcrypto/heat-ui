@@ -68,14 +68,15 @@ module dialogs {
     return <angular.material.IDialogService> heat.$inject.get('$mdDialog');
   }
 
-  export function dialog(options: IDialogOptions): angular.IPromise<any> {
+  export function dialog(options: IDialogOptions, extOptions?: angular.material.IDialogOptions): angular.IPromise<any> {
     if (angular.isString(options.style)) {
       var styleId = 'dialog-style-' + options.id;
       if (!document.getElementById(styleId)) {
         angular.element(document).find('head').append(`<style type="text/css" id="${styleId}">${options.style}</style>`);
       }
     }
-    return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
+    const dialogOptions: angular.material.IDialogOptions = {
+      // @ts-ignore
       controller: options.controller || function () {},
       locals: angular.extend({
         isBetanet: heat.isBetanet,
@@ -113,7 +114,11 @@ module dialogs {
         </form>
       </md-dialog>
       `
-    });
+    }
+    if (extOptions) {
+      Object.assign(dialogOptions, extOptions)
+    }
+    return dialogs.$mdDialog().show(<angular.material.IDialogOptions> dialogOptions);
   }
 
   export function wizard(options: IWizardOptions): angular.IPromise<any> {

@@ -79,7 +79,7 @@ module dialogs {
         </md-list>
       `,
       locals: locals
-    }).then(
+    }, {multiple: true}).then(
       () => {
         deferred.resolve(locals.fields.map(v => v.value))
       },

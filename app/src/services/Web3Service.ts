@@ -92,9 +92,13 @@ class Web3Service {
                   getAddressNonce?: (address: string) => Promise<number>) => {
     return new Promise((resolve, reject) => {
       this.getGasPrice().then((gasPrice) => {
-        let f = getAddressNonce || this.getAddressNonce
-        return f(account.address).then(
+        let getNonce = getAddressNonce || this.getAddressNonce
+        return getNonce(account.address).then(
           nonce => {
+            if (!nonce) {
+                resolve(null)
+                return
+            }
             let defaultGasLimit = this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
             let txParams = {
               nonce: '0x' + Number(nonce).toString(16),
