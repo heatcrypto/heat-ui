@@ -49,11 +49,15 @@ type PendingType = {
             <div class="title">
               Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
-            <div class="value">
+            <div class="value" ng-if="vm.balanceUnconfirmed">
               {{vm.balanceUnconfirmed}} BTC
-              <span style="font-size: small; opacity: 0.7" ng-if="vm.balanceUnconfirmed"><br>{{vm.balance}} (confirmed)</span>
+              <span style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
+            </div>
+            <div class="value" ng-if="!vm.balanceUnconfirmed">
+              {{vm.balance}} BTC
               <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
+
           </div>
         </div>
       </div>

@@ -45,9 +45,12 @@
             <div class="title">
               Balance:
             </div>
-            <div class="value">
+            <div class="value" ng-if="vm.balanceUnconfirmed">
+              {{vm.balanceUnconfirmed}} ETH
+              <span style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
+            </div>
+            <div class="value" ng-if="!vm.balanceUnconfirmed">
               {{vm.balance}} ETH
-              <span style="font-size: small" ng-if="vm.balanceUnconfirmed"><br>{{vm.balanceUnconfirmed}} (unconfirmed)</span>
             </div>
           </div>
         </div>
