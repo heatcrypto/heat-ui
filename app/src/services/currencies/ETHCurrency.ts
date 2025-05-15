@@ -96,6 +96,7 @@ class ETHCurrency implements ICurrency {
       const vm = this
       this.paymentMessageMethod = null
       vm.stage = "create"
+      vm.broadcastProviderAlternative = true
 
       this.data = {
         amount: '',
@@ -166,9 +167,12 @@ class ETHCurrency implements ICurrency {
       }
 
       this.okButtonClick = function ($event) {
-        let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
         vm.disableOKBtn = true
-        ethBlockExplorerService.broadcast(vm.data.rawTx).then(
+        const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
+        let ethService = vm.broadcastProviderAlternative
+            ? <EthBlockExplorerService> ethBlockExplorerService.ethApiProviderAlternative
+            : <EthBlockExplorerService> ethBlockExplorerService.ethApiProvider
+        ethService.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
               result.message = vm.data.message
@@ -286,7 +290,14 @@ class ETHCurrency implements ICurrency {
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.displaySignedBytesClick()" aria-label="Signed bytes">Signed transaction bytes</md-button>
 -->
+              <md-switch ng-if="vm.stage=='broadcast'" ng-model="vm.broadcastProviderAlternative" ng-change="vm.broadcastProviderChanged()">
+                <label>Broadcast provider</label>
+                <span ng-show="vm.broadcastProviderAlternative">Alternative</span>
+                <span ng-hide="vm.broadcastProviderAlternative">Default</span>
+              </md-switch>
+        
               <span flex></span>
+        
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
                             <md-button class="md-warn" ng-if="vm.stage=='broadcast'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
               <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
