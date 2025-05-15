@@ -185,15 +185,13 @@ class ETHCurrency implements ICurrency {
                 dialogs.alert(event, 'Success', `TxHash: ${result.txId}`)
               })
             } else {
-              dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`)
+              dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`, {multiple: true})
             }
           },
           err => {
-            $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err ? (err.message || err.error ||  err) : "Error, see details in the console output")
-            })
+            dialogs.alert(event, 'Error', err ? (err.message || err.error ||  err) : "Error, see details in the console output", {multiple: true})
           }
-        )
+        ).finally(() => vm.disableOKBtn = false)
       }
 
       this.disableOKBtn = false

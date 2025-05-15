@@ -95,7 +95,7 @@ class Web3Service {
         let getNonce = getAddressNonce || this.getAddressNonce
         return getNonce(account.address).then(
           nonce => {
-            if (!nonce) {
+            if (nonce == undefined) {
                 resolve(null)
                 return
             }
