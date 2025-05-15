@@ -119,12 +119,13 @@ class ETHCurrency implements ICurrency {
             .catch(reason => {
               return dialogs.simplePrompt(null,
                   'Enter ETH address nonce',
-                  "The nonce is not resolved. Nonce is the transaction count from that address (outgoing transactions)",
+                  "The nonce is not resolved. Nonce is the outgoing transaction count from that address",
                   [{label: "Nonce", value: undefined}])
+                  .then(value => value[0],
+                          reason => {console.log('Dialog Get Address Nonce is escaped. ' + reason)}
+                  )
             }).then(nonce => {
-              return nonce[0]
-            }, reason => {
-              console.log('Dialog Get Address Nonce is escaped. ' + reason)
+              if (typeof nonce === "string") return parseInt(nonce)
             })
 
         return web3.createRawTx2(from, this.data.recipient, amountInWei, this.data.gasPrice * GWEI_SCALE, this.data.gasLimit, getAddressNonce)

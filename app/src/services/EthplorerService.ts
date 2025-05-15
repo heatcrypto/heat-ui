@@ -227,7 +227,7 @@ class EthplorerService implements IEthereumAPIList{
                 }
               })
             }
-
+            wlt.saveCurrencyBalance(address, "ETH", info.ETH.balance)
             deferred.resolve(info);
           }
         }, (reason) => {
