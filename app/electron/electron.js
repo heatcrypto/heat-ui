@@ -37,6 +37,7 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 800,
+    show: false,
     autoHideMenuBar: true,
     icon:`${APP_DIR}/electron/icon.png`,
     webPreferences: {
@@ -44,10 +45,36 @@ function createWindow () {
       nodeIntegration: true
     }
   })
-  mainWindow.loadURL(`file://${APP_DIR}/index.html`)
+
+  let splash = new BrowserWindow({
+        width: 500,
+        height: 340,
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,
+        autoHideMenuBar: true,
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false
+        }
+  })
+
+  splash.loadURL(`file://${APP_DIR}/splash-electron.html`).then(() => {
+    splash.center()
+    mainWindow.loadURL(`file://${APP_DIR}/index.html`).then(() => {
+      mainWindow.center()
+      mainWindow.show()
+    })
+  }).catch(error => {
+    console.error('Error loading splash window:', error);
+  })
 
   mainWindow.on('closed', function () {
     mainWindow = null
+  })
+
+  mainWindow.once("show", () => {
+    setTimeout(() => splash.destroy(), 2000)
   })
 
   electron.ipcMain.on('userData-is-where-request', (event, arg) => {
@@ -55,15 +82,16 @@ function createWindow () {
     event.sender.send('userData-is-here-reply', userDataDir)
   })
 
-  mainWindow.webContents.on('did-finish-load', ()=>{
+  mainWindow.webContents.on('did-finish-load', () => {
     // inject the context menu logic
     fs.readFile(path.join(__dirname, 'run-in-renderer.js'), 'utf8', function(err, contents) {
-      if (err)
+      if (err) {
         console.log(err)
-      else
-        mainWindow.webContents.executeJavaScript(contents);
-    });
-  });
+      } else {
+        mainWindow.webContents.executeJavaScript(contents)
+      }
+    })
+  })
 
   //mainWindow.webContents.openDevTools();
 }
@@ -82,17 +110,17 @@ app.on('activate', function () {
   }
 })
 
-var run = function(args, done) {
-  var updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
+let run = function(args, done) {
+  let updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
   spawn(updateExe, args, {
     detached: true
-  }).on('close', done);
-};
+  }).on('close', done)
+}
 
-var check = function() {
+let check = function() {
   if (process.platform === 'win32') {
-    var cmd = process.argv[1];
-    var target = path.basename(process.execPath);
+    let cmd = process.argv[1];
+    let target = path.basename(process.execPath);
     if (cmd === '--squirrel-install' || cmd === '--squirrel-updated') {
       run(['--createShortcut=' + target + ''], app.quit);
       return true;
