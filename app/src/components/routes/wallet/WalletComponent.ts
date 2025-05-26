@@ -26,6 +26,9 @@
 @RouteConfig('/wallet')
 @Component({
   selector: 'wallet',
+  style: `
+    .bip44-label {font-size: smaller;color: deepskyblue;}
+  `,
   template: `
    <!--  layout-align="start center" -->
     <div layout="column"  flex layout-padding>
@@ -90,12 +93,15 @@
                   <md-icon md-font-library="material-icons">{{entry.expanded?'expand_less':'expand_more'}}</md-icon>
                 </md-button>
 
-                <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a>
+                <div flex ng-if="entry.secretPhrase" class="identifier">
+                  <a ng-click="entry.toggle()">{{entry.identifier}}</a>
+                  <span ng-if="entry.bip44Compatible" class="bip44-label">BIP44</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
                   <span class="label">{{entry.label}}</span>
                 </div>
                 <div flex ng-if="!entry.secretPhrase" class="identifier">
                   <span>{{entry.identifier}}</span>
+                  <span ng-if="entry.bip44Compatible" class="bip44-label">BIP44</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
                 </div>
 
@@ -656,6 +662,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               walletEntry.pin = pin
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+              wlt.saveEntryBip44Compatible(walletEntry.account, walletEntry.bip44Compatible)
               walletEntry.label = key.label
               walletEntry.unlocked = true
               wlt.walletEntriesCache.set(walletEntry.account, walletEntry)

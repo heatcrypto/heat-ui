@@ -36,7 +36,6 @@ namespace wlt {
     public unlocked = false
     public visible = true
     public expanded = false
-    public btcWalletAddressIndex = 0
 
     constructor(public account: string,
                 public name: string,
@@ -44,6 +43,7 @@ namespace wlt {
     ) {
       this.identifier = name ? `${account} | ${name}` : account
       this.visibleLabel = getEntryVisibleLabel(this.account)
+      this.bip44Compatible = getEntryBip44Compatible(this.account)
     }
 
     setWalletComponent(component: WalletComponentAbstract) {

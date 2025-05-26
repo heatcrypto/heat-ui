@@ -136,6 +136,16 @@ namespace wlt {
     }
   }
 
+  export function getEntryBip44Compatible(account) {
+    return !!getStore().get("bip44." + account)
+  }
+
+  export function saveEntryBip44Compatible(account, bip44Compatible) {
+    if (bip44Compatible && !getEntryBip44Compatible(account)) {
+      getStore().put("bip44." + account, 1)
+    }
+  }
+
   export function updateEntryCurrencies(account, currencies: []) {
     if (currencies) {
       let mergedCurrencies: [] = getStore().get(account) || []

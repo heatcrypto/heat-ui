@@ -37,6 +37,8 @@ interface IHeatWalletFileEntry {
   /* Optional name, also contained in encrypted contents */
   name?: string;
 
+  bip44Compatible?: boolean;
+
   /* Optional if this is a testnet key */
   isTestnet?: boolean;
 

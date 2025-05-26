@@ -180,11 +180,13 @@ class LocalKeyStoreService {
         account: entry.account,
         contents: entry.contents,
         isTestnet: entry.isTestnet,
-        name: entry.name,
-        visibleLabel: wlt.getEntryVisibleLabel(entry.account),
         currencies: accountCurrencies.get(entry.account)
       }
+      if (entry.name) item.name = entry.name
+      if (wlt.getEntryBip44Compatible(entry.account)) item.bip44Compatible = true
       if (cryptoAddresses) item.cryptoAddresses = cryptoAddresses
+      let vl = wlt.getEntryVisibleLabel(entry.account)
+      if (vl) item.visibleLabel = vl
       walletFileData.entries.push(item)
     });
 
@@ -228,12 +230,15 @@ class LocalKeyStoreService {
 
       if (putRaw(localKeyEntry)) {
         added.push(localKeyEntry)
-        if (entry.visibleLabel) {
-          wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
-        }
+      }
+      if (entry.visibleLabel) {
+        wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
       }
       if (entry.currencies) {
         wlt.updateEntryCurrencies(entry.account, entry.currencies)
+      }
+      if (entry.bip44Compatible) {
+        wlt.saveEntryBip44Compatible(entry.account, entry.bip44Compatible)
       }
     })
 
