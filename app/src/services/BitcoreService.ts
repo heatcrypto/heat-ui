@@ -3,6 +3,7 @@
 class BitcoreService {
 
   static readonly BIP44 = "m/44'/0'/0'/0/";
+  static readonly BIP49 = "m/49'/0'/0'/0/";
   private bitcore;
   private bip39;
   private store: Store;
@@ -36,7 +37,7 @@ class BitcoreService {
           let privateKey = this.bitcore.PrivateKey.fromWIF(seedOrPrivateKey)
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
-          walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
+          walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toWIF() }
           let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
           this.store.put(`BTC-${heatAddress}`, encryptedWallet);
           resolve(walletType)
@@ -197,29 +198,47 @@ class BitcoreService {
     })
   }
 
-  generateBitcoinAddress(mnemonic: string, index: Number = 0) {
-    let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
-    let HDPrivateKey = this.bitcore.HDPrivateKey;
-    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
-
-    let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index);
-    let address = derived.privateKey.toAddress();
-    let privateKey = derived.privateKey.toWIF();
-    return {
-      address: address.toString(),
-      privateKey: privateKey.toString()
+  generateBitcoinAddress(secret: string, index: Number = 0) {
+    if (this.bip39.validateMnemonic(secret)) {
+      let seedHex = this.bip39.mnemonicToSeedHex(secret)
+      let HDPrivateKey = this.bitcore.HDPrivateKey
+      let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
+      let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index)
+      let address = derived.privateKey.toAddress()
+      let privateKey = derived.privateKey.toWIF()
+      return {
+        address: address.toString(),
+        privateKey: privateKey.toString()
+      }
+    } else {
+      let privateKey = this.bitcore.PrivateKey(secret)
+      let address = privateKey.toAddress()
+      return {
+        address: address.toString(),
+        privateKey: privateKey.toWIF()
+      }
     }
   }
 
-  generateSegwitBitcoinAddress(mnemonic: string, index: Number = 0) {
-    const paths = [{path: BitcoreService.BIP44 + index, includeWif: true}]
-    const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic})
-    const keyPair = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
-    const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: keyPair.privateKey, network: 'bitcoin' })
+  generateSegwitBitcoinAddress(secret: string, index: Number = 0) {
+    let privateKey: string
+    let privateKeyWif: string
+    if (this.bip39.validateMnemonic(secret)) {
+      const paths = [{path: BitcoreService.BIP49 + index, includeWif: true}]
+      const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic: secret})
+      const keyPair = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
+      privateKey = keyPair.privateKey
+      privateKeyWif = keyPair.wif
+    } else {
+      let pk = this.bitcore.PrivateKey.fromWIF(secret)
+      privateKey = pk.toString()
+      privateKeyWif = pk.toWIF()
+    }
+    const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: privateKey, network: 'bitcoin' })
     let a = heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network:'bitcoin'})
     return {
       address: a,
-      privateKey: keyPair.wif
+      privateKey: privateKeyWif
     }
   }
 
@@ -245,6 +264,16 @@ class BitcoreService {
     const signatureBase64 = this.$window.heatlibs.safeBuffer.Buffer.from(signatureHex, "hex").toString("base64")
     //const signatureBase64 = Buffer.from(signatureHex, "hex").toString("base64")
     return signatureBase64
+  }
+
+  privateKeyToWIF(hexOrWIF: string) {
+    let pk
+    try {
+      pk = new this.bitcore.PrivateKey(hexOrWIF)
+    } catch (e) {
+      pk = this.bitcore.PrivateKey.fromWIF(hexOrWIF)
+    }
+    return pk?.toWIF()
   }
 
 }

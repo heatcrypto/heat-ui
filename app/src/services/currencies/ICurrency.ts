@@ -38,7 +38,7 @@ interface ICurrency {
   /* Returns the native address */
   address: string;
 
-  /* Returns the private key / secret phrase */
+  /* Returns the private key (WIF for BTC) or secret phrase */
   secretPhrase: string;
 
   /* Returns the currency symbol */

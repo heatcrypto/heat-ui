@@ -3,7 +3,7 @@ class BTCCurrency implements ICurrency {
   /**
    * request parameters "type of btc address" from the user for btc address creation
    */
-  public static requestBtcAddressType = (walletEntry, currencyName) => {
+  public static requestBtcAddressType = (walletEntry: wlt.WalletEntry, currencyName) => {
     let existing = wlt.getCurrencyBalances(walletEntry, currencyName)
     let nextIndex = existing.length == 0
         ? 0
@@ -15,7 +15,13 @@ class BTCCurrency implements ICurrency {
       return selectItem(`Select desired address #${nextIndex}`,
           [["Segwit: " + segwitAddress.address, segwitAddress], ["Legacy: " + legacyAddress.address, legacyAddress]],
           item => {
-            let wa: WalletAddress = { address: item.address, privateKey: item.privateKey, index: nextIndex, balance: "0", inUse: false}
+            let wa: WalletAddress = {
+              address: item.address,
+              privateKey: item.privateKey,
+              index: walletEntry.bip44Compatible ? nextIndex : undefined, // do not show index for btc address created from private key (non mnemonic)
+              balance: "0",
+              inUse: false
+            }
             resolve(wa)
             return true
           }
@@ -25,6 +31,7 @@ class BTCCurrency implements ICurrency {
 
 
   private btcBlockExplorerService: BtcBlockExplorerService
+  private bitcoreService: BitcoreService
   public symbol = 'BTC'
   public homePath
   private pendingTransactions: BitcoinPendingTransactionsService
@@ -34,6 +41,7 @@ class BTCCurrency implements ICurrency {
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+    this.bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
     this.homePath = `/bitcoin-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
     this.bitcoinMessagesService = heat.$inject.get('bitcoinMessagesService')
@@ -147,7 +155,9 @@ class BTCCurrency implements ICurrency {
         let feeInSatoshi
         let amountInSatoshi
         let to
-        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.currency.secretPhrase}
+
+        let privateKeyWIF = self.bitcoreService.privateKeyToWIF(user.currency.secretPhrase)
+        let addressPrivateKeyPair = {address: user.currency.address, privateKey: privateKeyWIF}
         if (isForFeeEstimation) {
           feeInSatoshi = vm.data.fee ? (vm.data.fee * 100000000).toFixed(0) : 0
           amountInSatoshi = vm.data.amount ? (vm.data.amount * 100000000).toFixed(0) : "0.0001";
@@ -250,9 +260,8 @@ class BTCCurrency implements ICurrency {
       }
 
       this.okButtonClick = function ($event) {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
         vm.disableOKBtn = true
-        bitcoreService.sendBitcoins(vm.data.rawTx).then(
+        self.bitcoreService.sendBitcoins(vm.data.rawTx).then(
           data => {
             let sendingResult = Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod})
             updateUnconfirmedBalance(vm.data.amount, vm.data.txnFeeSatoshi)
@@ -317,8 +326,7 @@ class BTCCurrency implements ICurrency {
           errorCallback(e)
         }
         if (tx) {
-          let bitcoreService = <BitcoreService>heat.$inject.get('bitcoreService')
-          return bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation).then(rawTx => {
+          return self.bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation).then(rawTx => {
             vm.data.rawTx = rawTx
             vm.data.txBytes = converters.hexStringToByteArray(rawTx)
             return rawTx

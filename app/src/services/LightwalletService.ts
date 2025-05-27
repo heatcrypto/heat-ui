@@ -27,7 +27,7 @@ declare type WalletAddress = {
   /* ks.exportPrivateKey */
   privateKey: string;
 
-  /* BIP44 key index */
+  /* BIP44,BIP49 key index */
   index: number;
 
   /* Balance is full ETH */
