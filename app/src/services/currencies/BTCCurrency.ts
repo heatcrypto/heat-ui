@@ -12,7 +12,7 @@ class BTCCurrency implements ICurrency {
     let segwitAddress = bitcoreService.generateSegwitBitcoinAddress(walletEntry.secretPhrase, nextIndex)
     let legacyAddress = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, nextIndex)
     return new Promise<WalletAddress>((resolve, reject) => {
-      return selectItem(`Select desired address #${nextIndex}`,
+      return selectItem(`Select desired address #${nextIndex || ""}`,
           [["Segwit: " + segwitAddress.address, segwitAddress], ["Legacy: " + legacyAddress.address, legacyAddress]],
           item => {
             let wa: WalletAddress = {

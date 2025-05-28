@@ -215,14 +215,13 @@ namespace wlt {
     let cryptoAddresses = getCryptoAddresses(walletEntry, currencySymbol)
     if (!cryptoAddresses) return null
     let foundAddress = cryptoAddresses.addresses.find(a => a.address == createdAddress.address)
-    if (!foundAddress) {
-      foundAddress = cryptoAddresses.addresses.find((a) => a.index == createdAddress.index)
-      if (foundAddress) {
-        let i = cryptoAddresses.addresses.indexOf(foundAddress)
-        cryptoAddresses.addresses[i] = createdAddress
-        foundAddress = createdAddress
+    if (!foundAddress && !walletEntry.bip44Compatible && cryptoAddresses.addresses?.length == 1) {
+      if (cryptoAddresses.addresses[0].address != createdAddress.address) {
+        cryptoAddresses.addresses.push(createdAddress)
       }
+      foundAddress = createdAddress
     }
+    if (!foundAddress) return
     foundAddress.isDeleted = false
     foundAddress.created = true
     saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
