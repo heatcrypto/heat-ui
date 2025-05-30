@@ -213,15 +213,15 @@ namespace wlt {
 
   export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): WalletAddress  {
     let cryptoAddresses = getCryptoAddresses(walletEntry, currencySymbol)
-    if (!cryptoAddresses) return null
-    let foundAddress = cryptoAddresses.addresses.find(a => a.address == createdAddress.address)
-    if (!foundAddress && !walletEntry.bip44Compatible && cryptoAddresses.addresses?.length == 1) {
-      if (cryptoAddresses.addresses[0].address != createdAddress.address) {
-        cryptoAddresses.addresses.push(createdAddress)
-      }
+    let addresses = cryptoAddresses?.addresses
+    if (!addresses) return null
+    let foundAddress = addresses.find(a => a.address == createdAddress.address)
+    if (!foundAddress && !walletEntry.bip44Compatible) {
+      addresses.push(createdAddress)
       foundAddress = createdAddress
     }
     if (!foundAddress) return
+    if (foundAddress.index != undefined && !walletEntry.bip44Compatible) delete foundAddress.index
     foundAddress.isDeleted = false
     foundAddress.created = true
     saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
