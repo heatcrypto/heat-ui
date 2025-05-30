@@ -54,13 +54,15 @@ module dialogs {
     $event,
     title: string,
     description: string,
-    fields: { label: string, value: string , required?: boolean}[]
+    fields: {label: string, value: string, rows?: number, required?: boolean}[],
+    actions?: {label: string, execute: Function}[]
   ): angular.IPromise<string[]> {
     let $q = <angular.IQService>heat.$inject.get('$q');
     let deferred = $q.defer<string[]>();
     let locals = {
       description: description,
-      fields: fields
+      fields: fields,
+      actions: actions
     }
     dialogs.dialog({
       id: 'prompt',
@@ -73,10 +75,22 @@ module dialogs {
             <md-input-container flex>
               <label>{{item.label}}</label>
               <!--<input id="1" type="text" ng-model="item.value" autocomplete="off" auto-focus/>-->
-              <input type="text" ng-model="item.value" autocomplete="off" ng-required="item.required || false" auto-focus//>
+              <input type="text" ng-if="!(item.rows > 1)" ng-model="item.value" autocomplete="off" ng-required="item.required || false" auto-focus />
+              <textarea ng-if="item.rows > 1" ng-model="item.value" rows="{{item.rows}}" wrap="soft" style="overflow: scroll;line-height: normal;max-height: 80px;"></textarea>
             </md-input-container>
           </md-list-item>
         </md-list>
+        <div>
+          <md-list layout="row">
+            <md-list-item class="md-1-line" ng-repeat="item in vm.actions">
+              <md-button ng-click="item.execute()" aria-label="{{item.label}}">{{item.label}}</md-button>
+              <!--<md-input-container flex>
+                <label>{{item.label}}</label>
+                <input type="text" ng-model="item.value" autocomplete="off" ng-required="item.required || false" auto-focus//>
+              </md-input-container>-->
+            </md-list-item>
+          </md-list>
+        </div>
       `,
       locals: locals
     }, {multiple: true}).then(
