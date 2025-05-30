@@ -131,56 +131,63 @@ class BitcoreService {
     })
   }
 
-  createOneToOneTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
+  createOneToOneTransaction(txObject: any, uncheckedSerialize: boolean = false, utxoData?: string): Promise<string> {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
 
     return new Promise((resolve, reject) => {
-      btcBlockExplorerService.getUtxos(txObject.from).then(utxos => {
-            const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: 'bitcoin'})
+      const createTx = (utxos) => {
+        const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: 'bitcoin'})
 
-            let inputs = utxos.map(v => ({
-              vout: v.vout,
-              txId: v.txid,
-              txHex: v.txhex,
-              value: v.value,
-              privateKey: privateKeyHex,
-              address: txObject.from,
-              addressType: this.resolveAddressType(txObject.from)
-            }))
+        let inputs = utxos.map(v => ({
+          vout: v.vout,
+          txId: v.txid,
+          txHex: v.txhex,
+          value: v.value,
+          privateKey: privateKeyHex,
+          address: txObject.from,
+          addressType: this.resolveAddressType(txObject.from)
+        }))
 
-            let inputsSum = inputs.reduce((v, {value}) => v + parseInt(value), 0)
-            let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
+        let inputsSum = inputs.reduce((v, {value}) => v + parseInt(value), 0)
+        let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
 
-            if (changeAmount < 0) {
-              reject('amount with fee is too big')
-              return
-            }
-
-            if (isNaN(changeAmount) || changeAmount > inputsSum) {
-              reject(`wrong value among 1) inputs sum ${inputsSum}; 2) amount ${txObject.amount}; 3) fee ${txObject.fee}`)
-              return
-            }
-
-            let outputs = [
-              {
-                address: txObject.to,
-                value: txObject.amount
-              }
-            ]
-
-            if (changeAmount > 0) {
-              outputs.push({
-                address: txObject.changeAddress,
-                value: changeAmount
-              })
-            }
-
-            resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + "")
-          },
-        err => {
-          reject(err)
+        if (changeAmount < 0) {
+          reject('amount with fee is too big')
+          return
         }
-      ).catch(reason => reject(reason))
+
+        if (isNaN(changeAmount) || changeAmount > inputsSum) {
+          reject(`wrong value among 1) inputs sum ${inputsSum}; 2) amount ${txObject.amount}; 3) fee ${txObject.fee}`)
+          return
+        }
+
+        let outputs = [
+          {
+            address: txObject.to,
+            value: txObject.amount
+          }
+        ]
+
+        if (changeAmount > 0) {
+          outputs.push({
+            address: txObject.changeAddress,
+            value: changeAmount
+          })
+        }
+
+        resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + "")
+      }
+
+      if (utxoData) {
+        createTx(JSON.parse(utxoData))
+      } else {
+        btcBlockExplorerService.getUtxos(txObject.from).then(
+            utxos => createTx(utxos),
+            err => {
+              reject(err)
+            }
+        ).catch(reason => reject(reason))
+      }
     })
   }
 

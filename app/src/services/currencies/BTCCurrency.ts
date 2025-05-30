@@ -252,11 +252,40 @@ class BTCCurrency implements ICurrency {
         vm.stage = "create"
       }
 
-      this.insertBytesButtonClick = function ($event) {
+      this.useTxBytesButtonClick = function ($event) {
         vm.report = ""
         vm.data.rawTx = ""
         vm.data.txnFee = ""
         vm.stage = "insertedBytes"
+      }
+
+      this.fetchUtxoButtonClick = function ($event) {
+        btcBlockExplorerService.getUtxos(self.address).then(utxo => {
+          vm.data.utxoData = JSON.stringify(utxo)
+        })
+      }
+
+      this.useUtxoButtonClick = function ($event) {
+        //vm.stage = "utxo"
+        let fields = [{label: 'UTXO data', value: vm.data.utxoData, rows: 8}]
+        let fetchUtxo = () => {
+          btcBlockExplorerService.getUtxos(self.address).then(utxo => {
+            fields[0].value = JSON.stringify(utxo)
+          })
+        }
+        let copyUtxo = () => {
+          let clipboard: ClipboardService = <ClipboardService> heat.$inject.get('clipboard')
+          clipboard.copyText(fields[0].value)
+        }
+        dialogs.simplePrompt($event,
+            'Use UTXO',
+            undefined,
+            fields,
+            [{label: 'Fetch UTXO', execute: fetchUtxo}, {label: 'Copy', execute: copyUtxo}],
+            ).then(
+            result => {
+              vm.data.utxoData = result[0]
+            })
       }
 
       this.okButtonClick = function ($event) {
@@ -326,7 +355,7 @@ class BTCCurrency implements ICurrency {
           errorCallback(e)
         }
         if (tx) {
-          return self.bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation).then(rawTx => {
+          return self.bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation, vm.data.utxoData).then(rawTx => {
             vm.data.rawTx = rawTx
             vm.data.txBytes = converters.hexStringToByteArray(rawTx)
             return rawTx
@@ -497,7 +526,7 @@ class BTCCurrency implements ICurrency {
             <md-toolbar>
               <div class="md-toolbar-tools"><h2>Send BTC</h2></div>
             </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+            <md-dialog-content style="min-width:500px;max-width:800px" layout="column" layout-padding>
               <div flex layout="column">
                 <md-autocomplete ng-if="vm.stage=='create'"
                   ng-required="true"
@@ -565,6 +594,16 @@ class BTCCurrency implements ICurrency {
 
               </div>
               
+              <!--<div flex layout="column">
+                <md-input-container flex ng-if="vm.stage=='utxo' || vm.stage=='create'">
+                  <label>UTXO data</label>
+                  <textarea ng-model="vm.data.utxoData"
+                        placeholder="paste UTXO data in JSON" 
+                        rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>
+                  <md-button class="md-primary" ng-click="vm.fetchUtxoButtonClick()" aria-label="Fetch UTXO">Fetch UTXO</md-button>
+                </md-input-container>
+              </div>-->
+              
               <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
                 {{vm.errorMessage}}
               </div>
@@ -578,11 +617,13 @@ class BTCCurrency implements ICurrency {
             <md-dialog-actions layout="row">
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
+              <md-button class="md-warn" ng-if="vm.stage!='create'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
               <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.createButtonClick()" aria-label="Create">Next</md-button>
+                  class="md-primary" ng-click="vm.createButtonClick()" aria-label="Next">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
-                  class="md-primary" ng-click="vm.insertBytesButtonClick()" aria-label="Create">Use transaction bytes</md-button>
+                  class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
+              <md-button ng-if="vm.stage=='create'"
+                  class="md-primary" ng-click="vm.useUtxoButtonClick()" aria-label="Use UTXO">Use UTXO</md-button>
               <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send">Send</md-button>
             </md-dialog-actions>
