@@ -143,8 +143,8 @@ class ETHCurrency implements ICurrency {
           $scope.$evalAsync(() => {
             vm.data.rawTx = rawTx
             vm.stage = "broadcast"
-            //just visual effect:
           })
+          //just visual effect
           if (!rawTx) setTimeout(() => this.stage = "create", 1500)
         }).catch(reason => console.error(reason))
       }
@@ -216,15 +216,22 @@ class ETHCurrency implements ICurrency {
 
       let settingsService: any = heat.$inject.get('settings')
 
-      this.recipientChanged = function () {
-        $scope['vm'].data.recipientInfo = ''
+      this.recipientChanged = () => {
+        this.data.recipientInfo = ''
         lookup()
       }
+
       this.gasChanged = () => {
         $scope.$evalAsync(() => {
           this.data.fee = web3.web3.fromWei((this.data.gasPrice * GWEI_SCALE) * this.data.gasLimit, 'ether')
         })
       }
+
+      this.showQRCode = (rawTx: string) => {
+        let clipboardService: ClipboardService = heat.$inject.get('clipboard')
+        clipboardService.showQRCode(rawTx, 320, 320)
+      }
+
       web3.getGasPrice().then((gasprice) => {
         let data = $scope['vm'].data
         data.gasPrice = gasprice / GWEI_SCALE
@@ -280,6 +287,10 @@ class ETHCurrency implements ICurrency {
                   <label>Transaction bytes</label>
                   <textarea ng-model="vm.data.rawTx" readonly rows="3"  wrap="soft"
                         style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
+                  <a ng-click="vm.showQRCode(vm.data.rawTx)" class="qrcode-link">
+                    <md-tooltip>Show QR code</md-tooltip>
+                    <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
+                  </a>
               </md-input-container>
                 
             </md-dialog-content>

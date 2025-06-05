@@ -51,8 +51,8 @@
     font-size: 35px;
   }
   .qrcodeBox {
-    padding: 20px;
-    margin-top: 15px;
+    padding: 60px;
+    margin-top: 60px;
     background: white;
     border-radius: 10px;
     width: min-content;
@@ -611,29 +611,7 @@ class ToolbarComponent {
   }*/
 
   showQRCode(data) {
-    let panel: PanelService = heat.$inject.get('panel')
-    panel.show(`
-      <div layout="column" flex>
-        <md-input-container flex>
-          <div class="qrcodeBox" id="addressQRCode"></div>
-          <p>
-          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right">Close</md-button>
-          </p>
-        </md-input-container>
-      </div>
-    `,
-      {panel: panel}
-    )
-    setTimeout(() => {
-      new QRCode("addressQRCode", {
-        text: data,
-        width: 160,
-        height: 160,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-      })
-    }, 800);
+    this.clipboard.showQRCode(data)
   }
 
   showSecretPhrase() {

@@ -268,10 +268,14 @@ class BTCCurrency implements ICurrency {
       this.useUtxoButtonClick = function ($event) {
         //vm.stage = "utxo"
         let fields = [{label: 'UTXO data', value: vm.data.utxoData, rows: 8}]
+        let t = 0
         let fetchUtxo = () => {
-          btcBlockExplorerService.getUtxos(self.address).then(utxo => {
-            fields[0].value = JSON.stringify(utxo)
-          })
+          if (Date.now() - t > 1500) {
+            t = Date.now()
+            btcBlockExplorerService.getUtxos(self.address).then(utxo => {
+              fields[0].value = JSON.stringify(utxo)
+            })
+          }
         }
         let copyUtxo = () => {
           let clipboard: ClipboardService = <ClipboardService> heat.$inject.get('clipboard')
@@ -286,6 +290,11 @@ class BTCCurrency implements ICurrency {
             result => {
               vm.data.utxoData = result[0]
             })
+      }
+
+      this.showQRCode = function (rawTx: string) {
+        let clipboardService: ClipboardService = heat.$inject.get('clipboard')
+        clipboardService.showQRCode(rawTx, 400, 400)
       }
 
       this.okButtonClick = function ($event) {
@@ -548,7 +557,7 @@ class BTCCurrency implements ICurrency {
                       </div>
                     </md-item-template>
                 </md-autocomplete>
-                
+
                 <div ng-if="vm.stage=='create'" style="margin-top: -20px; margin-bottom: 20px">
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
                 </div>
@@ -563,27 +572,31 @@ class BTCCurrency implements ICurrency {
                   <div style="margin-bottom: 12px">
                     Network fee in Sat/Byte &nbsp;&nbsp; (updated {{vm.seconds}}s ago) <br>
                     <a ng-click="vm.fillFeeField(1)">1 block: <b>{{vm.feeList.satByteFee['1']}}</b></a>
-                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(3)">3 blocks: <b>{{vm.feeList.satByteFee['3']}}</b></a> 
-                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(6)">6 blocks: <b>{{vm.feeList.satByteFee['6']}}</b></a> 
+                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(3)">3 blocks: <b>{{vm.feeList.satByteFee['3']}}</b></a>
+                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(6)">6 blocks: <b>{{vm.feeList.satByteFee['6']}}</b></a>
                     &nbsp;&nbsp;<a ng-click="vm.fillFeeField(12)">12 blocks: <b>{{vm.feeList.satByteFee['12']}}</b></a>
                   </div>
                 </md-input-container>
-  
+
                 <md-input-container ng-if="vm.stage=='create'" flex>
                   <label>Fee in Sat/Byte</label>
                   <input ng-model="vm.data.satByteFee" ng-change="vm.feeByteChanged($event)" required name="feeByte">
                 </md-input-container>
-  
+
                 <md-input-container ng-if="vm.stage=='create'" flex>
                   <label>Fee in BTC/kByte</label>
                   <input ng-model="vm.data.fee" ng-change="vm.feeChanged($event)" required name="fee">
                 </md-input-container>
-  
+
                 <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <label>Transaction bytes</label>
                   <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
-                        placeholder="paste transaction bytes in hex" 
+                        placeholder="paste transaction bytes in hex"
                         rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>
+                  <a ng-click="vm.showQRCode(vm.data.rawTx)" class="qrcode-link">
+                    <md-tooltip>Show QR code</md-tooltip>
+                    <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
+                  </a>
                 </md-input-container>
 
                 <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
@@ -593,17 +606,17 @@ class BTCCurrency implements ICurrency {
                 </md-input-container>
 
               </div>
-              
+
               <!--<div flex layout="column">
                 <md-input-container flex ng-if="vm.stage=='utxo' || vm.stage=='create'">
                   <label>UTXO data</label>
                   <textarea ng-model="vm.data.utxoData"
-                        placeholder="paste UTXO data in JSON" 
+                        placeholder="paste UTXO data in JSON"
                         rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>
                   <md-button class="md-primary" ng-click="vm.fetchUtxoButtonClick()" aria-label="Fetch UTXO">Fetch UTXO</md-button>
                 </md-input-container>
               </div>-->
-              
+
               <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
                 {{vm.errorMessage}}
               </div>
@@ -611,7 +624,7 @@ class BTCCurrency implements ICurrency {
               <div ng-if="vm.data.txnFee" class="fee" style="max-width:250px !important">
                 Transaction fee <b>&nbsp;{{vm.data.txnFee || '?'}}&nbsp;</b> BTC
               </div>
-              
+
             </md-dialog-content>
 
             <md-dialog-actions layout="row">

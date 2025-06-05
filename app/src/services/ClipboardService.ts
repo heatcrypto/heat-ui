@@ -139,13 +139,13 @@ class ClipboardService {
     }, 800)
   }
 
-  showTxnBytes(txnHEX: string) {
+  showTxnBytes(txnHEX: string, width= 180, height= 180) {
     let panel: PanelService = heat.$inject.get('panel')
     setTimeout(() => {
       new QRCode("txnHEX", {
         text: txnHEX,
-        width: 180,
-        height: 180,
+        width: width,
+        height: height,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
@@ -171,6 +171,32 @@ class ClipboardService {
           }
         }
     )
+  }
+
+  showQRCode(data, width = 160, height = 160) {
+    let panel: PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex>
+        <md-input-container flex>
+          <div class="qrcodeBox" id="addressQRCode"></div>
+          <p>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right; margin: -50px 12px">Close</md-button>
+          </p>
+        </md-input-container>
+      </div>
+    `,
+        {panel: panel}
+    )
+    setTimeout(() => {
+      new QRCode("addressQRCode", {
+        text: data,
+        width: width,
+        height: height,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      })
+    }, 800);
   }
 
 }
