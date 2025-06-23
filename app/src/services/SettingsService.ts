@@ -173,20 +173,20 @@ class SettingsService {
     this.settings[SettingsService.BASE_FEE] = '0.1';*/
 
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
-    this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
-    this.settings[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
+    this.values[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
+    this.values[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
 
-    this.settings[SettingsService.APPLICATION_NAME] = 'Heatwallet';
-    this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
-    this.settings[SettingsService.APPLICATION_BUILD] = this.BUILD;
-    this.settings[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
-    this.settings[SettingsService.LOG_API_ERRORS] = true;
-    this.settings[SettingsService.LOG_API_ALL] = false;
-    this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
+    this.values[SettingsService.APPLICATION_NAME] = 'Heatwallet';
+    this.values[SettingsService.APPLICATION_VERSION] = this.VERSION;
+    this.values[SettingsService.APPLICATION_BUILD] = this.BUILD;
+    this.values[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
+    this.values[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
+    this.values[SettingsService.LOG_API_ERRORS] = true;
+    this.values[SettingsService.LOG_API_ALL] = false;
+    this.values[SettingsService.LOG_NOTIFY_ALL] = false;
 
-    this.settings[SettingsService.DICE_WORD_FOLDER] = "dice-words";
-    this.settings[SettingsService.DICE_WORD_SUPPORTED_LANG] = {
+    this.values[SettingsService.DICE_WORD_FOLDER] = "dice-words";
+    this.values[SettingsService.DICE_WORD_SUPPORTED_LANG] = {
       "de": ["de.txt","677da2d5148342780f3cd1b09eaf489fac4ba00fe1083ba3296d41bdf088f471"],
       "en": ["en.txt","b329cea782bdd8b1de49bbb9fbdef9e8230e15eb08f0d7952613992246c38f96"],
       "fi": ["fi.txt","62323e0dc9ee39e191c98a361f20aa1417cb58da2eb5e40b9008d7973017d138"],
@@ -200,71 +200,71 @@ class SettingsService {
 
     // Uncomment to switch between backend servers..
 
-    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heat1.heatwallet.com/ws/";
-    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heat1.heatwallet.com"; // mainnet
-    this.settings[SettingsService.HEAT_PORT_REMOTE] = "";
+    this.values[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heat1.heatwallet.com/ws/";
+    this.values[SettingsService.HEAT_HOST_REMOTE] = "https://heat1.heatwallet.com"; // mainnet
+    this.values[SettingsService.HEAT_PORT_REMOTE] = "";
 
     // this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
     // this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
     // this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
 
-    this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
-    this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
-    this.settings[SettingsService.LOG_HEAT_ALL] = false;
-    this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
-    this.settings[SettingsService.LOG_HEAT_SERVER_ALL] = false;
+    this.values[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
+    this.values[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
+    this.values[SettingsService.LOG_HEAT_ERRORS] = true;
+    this.values[SettingsService.LOG_HEAT_ALL] = false;
+    this.values[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
+    this.values[SettingsService.LOG_HEAT_SERVER_ALL] = false;
 
-    this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
-    this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
-    this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
-    this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '5592059897546023466';
-    this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '14439304480879065693';
+    this.values[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
+    this.values[SettingsService.HEAT_PORT_LOCAL] = "7733";
+    this.values[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
+    this.values[SettingsService.HEATLEDGER_BTC_ASSET] = '5592059897546023466';
+    this.values[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '14439304480879065693';
 
-    this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
-    this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
-    this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
+    this.values[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
+    this.values[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
+    this.values[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
 
-    this.settings[SettingsService.ETHPLORER_INFO_URL] = "https://api.ethplorer.io/getAddressInfo/:address?apiKey=lwA5173TDKj60";
-    this.settings[SettingsService.ETHERSCAN_BALANCES_URL] = "https://api.etherscan.io/api?module=account&action=balancemulti&address=:addresses&tag=latest&apikey=:apiToken";
-    this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "https://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
-    this.settings[SettingsService.ETHERSCAN_CONTRACT_ABI] = "https://api.etherscan.io/api?module=contract&action=getabi&address=:address&apikey=:apiToken"
+    this.values[SettingsService.ETHPLORER_INFO_URL] = "https://api.ethplorer.io/getAddressInfo/:address?apiKey=lwA5173TDKj60";
+    this.values[SettingsService.ETHERSCAN_BALANCES_URL] = "https://api.etherscan.io/api?module=account&action=balancemulti&address=:addresses&tag=latest&apikey=:apiToken";
+    this.values[SettingsService.ETHERSCAN_TRANSACTION_URL] = "https://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
+    this.values[SettingsService.ETHERSCAN_CONTRACT_ABI] = "https://api.etherscan.io/api?module=contract&action=getabi&address=:address&apikey=:apiToken"
 
-    this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "S54GZXNCVGEAVCF1AQZZ8A8WDMQ9811HW9";
-    this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/OT4wn16VtAydG2y9NVna";
-    this.settings[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;
-    this.settings[SettingsService.ETH_TX_GAS_REQUIRED] = 21000;
-    this.settings[SettingsService.BIP44_WALLET] = "m/44'/60'/0'/0";
+    this.values[SettingsService.ETHERSCAN_API_TOKEN] = "S54GZXNCVGEAVCF1AQZZ8A8WDMQ9811HW9";
+    this.values[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/OT4wn16VtAydG2y9NVna";
+    this.values[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;
+    this.values[SettingsService.ETH_TX_GAS_REQUIRED] = 21000;
+    this.values[SettingsService.BIP44_WALLET] = "m/44'/60'/0'/0";
 
     /* Override with test endpoints */
     if (heat.isTestnet) {
-      this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://alpha.heatledger.com"; // testnet
-      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
-      this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
-      this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
-      this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
-      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
+      this.values[SettingsService.HEAT_HOST_REMOTE] = "https://alpha.heatledger.com"; // testnet
+      this.values[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
+      this.values[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
+      this.values[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
+      this.values[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
+      this.values[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
     }
 
     /* betanet overrides */
     if (heat.isBetanet) {
-      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7762";
-      this.settings[SettingsService.HEAT_PORT_LOCAL] = "7761";
-      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7763/ws/";
-      this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7763/ws/";
+      this.values[SettingsService.HEAT_PORT_REMOTE] = "7762";
+      this.values[SettingsService.HEAT_PORT_LOCAL] = "7761";
+      this.values[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7763/ws/";
+      this.values[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7763/ws/";
     }
 
-    this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
-    this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
-    this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
+    this.values[SettingsService.HEAT_HOST] = this.values[SettingsService.HEAT_HOST_REMOTE];
+    this.values[SettingsService.HEAT_PORT] = this.values[SettingsService.HEAT_PORT_REMOTE];
+    this.values[SettingsService.HEAT_WEBSOCKET] = this.values[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
     let usingServerValue = sessionStorage.getItem(heat.serverDescriptionKey)
     if (usingServerValue) {
       try {
         let usingServer: ServerDescriptor = JSON.parse(usingServerValue)
-        this.settings[SettingsService.HEAT_HOST] = usingServer.host
-        this.settings[SettingsService.HEAT_PORT] = usingServer.port
-        this.settings[SettingsService.HEAT_WEBSOCKET] = usingServer.websocket
+        this.values[SettingsService.HEAT_HOST] = usingServer.host
+        this.values[SettingsService.HEAT_PORT] = usingServer.port
+        this.values[SettingsService.HEAT_WEBSOCKET] = usingServer.websocket
       } catch (e) {
         console.error("error on process sessionStorage value by key " + heat.serverDescriptionKey, e)
       }
@@ -279,37 +279,37 @@ class SettingsService {
     // })
   }
 
-  settings={};
+  values = {}
 
   public setConnectionWay(connectionWay: {way: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean}) {
     this.failoverEnabled = connectionWay.failoverEnabled;
-    this.settings[SettingsService.HEAT_HOST] =
-      this.settings[connectionWay.way == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
-    this.settings[SettingsService.HEAT_PORT] =
-      this.settings[connectionWay.way == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
-    this.settings[SettingsService.HEAT_WEBSOCKET] =
-      this.settings[connectionWay.way == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
-    this.settings[SettingsService.HEAT_MESSAGING] = connectionWay.sameMessagingHost
+    this.values[SettingsService.HEAT_HOST] =
+      this.values[connectionWay.way == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
+    this.values[SettingsService.HEAT_PORT] =
+      this.values[connectionWay.way == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
+    this.values[SettingsService.HEAT_WEBSOCKET] =
+      this.values[connectionWay.way == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
+    this.values[SettingsService.HEAT_MESSAGING] = connectionWay.sameMessagingHost
       ? {
-        host: this.settings[SettingsService.HEAT_HOST],
-        port: this.settings[SettingsService.HEAT_PORT],
-        websocket: this.settings[SettingsService.HEAT_WEBSOCKET]
+        host: this.values[SettingsService.HEAT_HOST],
+        port: this.values[SettingsService.HEAT_PORT],
+        websocket: this.values[SettingsService.HEAT_WEBSOCKET]
       }
       : SettingsService.FAILOVER_DESCRIPTOR.messaging
   }
 
   public get(id:string) {
-    return this.settings[id];
+    return this.values[id];
   }
 
   public put(id:string,value:string) {
-    return this.settings[id]=value;
+    return this.values[id]=value;
   }
 
   public setCurrentServer(server: ServerDescriptor) {
-    this.settings[SettingsService.HEAT_HOST] = server.host;
-    this.settings[SettingsService.HEAT_PORT] = server.port;
-    this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+    this.values[SettingsService.HEAT_HOST] = server.host;
+    this.values[SettingsService.HEAT_PORT] = server.port;
+    this.values[SettingsService.HEAT_WEBSOCKET] = server.websocket;
   }
 
   getHeatwalletConfigFilePath() {
@@ -332,7 +332,7 @@ class SettingsService {
       } else {
         SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.mainnet;
       }
-      this.settings[SettingsService.HEAT_MESSAGING] = SettingsService.FAILOVER_DESCRIPTOR.messaging;
+      this.values[SettingsService.HEAT_MESSAGING] = SettingsService.FAILOVER_DESCRIPTOR.messaging;
       SettingsService.CRYPTO_NODES = json.cryptoNodes;
       this.failoverEnabled = SettingsService.FAILOVER_DESCRIPTOR.failoverEnabled || true;
     };

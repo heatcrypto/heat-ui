@@ -26,14 +26,18 @@
   template: `
     <div layout="column" flex layout-fill ng-show="vm.showComponent">
       <md-progress-linear md-mode="indeterminate"></md-progress-linear>
-      <center><div><b>Attention!!</b></div>
-      <div>Downloading blockchain last block height: {{vm.lastBlockHeight}}, time {{vm.lastBlockTime}}</div></center>
+      <div style="text-align: center;">
+        Downloading blockchain last block height: {{vm.lastBlockHeight}}, time {{vm.lastBlockTime}}.
+        &nbsp;&nbsp;
+        <span><i>Server: {{vm.serverUrl}}</i></span>
+      </div>
     </div>
   `
 })
 @Inject('$rootScope', '$scope','heat','$interval','settings', '$router', '$mdToast')
 class DownloadingBlockchainComponent {
   showComponent = false;
+  serverUrl = ''
   lastBlockHeight = 0;
   lastBlockTime = 0;
   refreshInterval;
@@ -48,8 +52,16 @@ class DownloadingBlockchainComponent {
 
     setTimeout(() => this.refresh(), 1000)
 
+    let currentServerUrl = () => this.settings.get(SettingsService.HEAT_HOST) + ':' + this.settings.get(SettingsService.HEAT_PORT)
+    this.serverUrl = currentServerUrl()
+
     let skip = 0  //control the speed of refreshing depending on the download blocks count
     this.refreshInterval = $interval(() => {
+      if (this.serverUrl != currentServerUrl()) {
+        this.serverUrl = currentServerUrl()
+        this.refresh()
+        return
+      }
       if (skip > 0) {
         skip--
         return
@@ -94,12 +106,7 @@ class DownloadingBlockchainComponent {
         let date = utils.timestampToDate(status.lastBlockTimestamp);
         this.lastBlockTime = dateFormat(date, format);
         this.lastBlockHeight = status.numberOfBlocks;
-        if ((Date.now() - date.getTime()) > 1000 * 60 * 60) {
-          this.showComponent = true;
-        }
-        else {
-          this.showComponent = false;
-        }
+        this.showComponent = (Date.now() - date.getTime()) > 1000 * 60 * 5;
       })
     }, ()=>{
       this.$scope.$evalAsync(()=>{
@@ -200,7 +207,9 @@ class DownloadingBlockchainComponent {
       if (best && best != currentServer) {
         let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
-          this.switchToBestServer(settings, best, currentServer, firstTime, causeToSelectBest)
+          if (this.settings.failoverEnabled) {
+            this.switchToBestServer(settings, best, currentServer, firstTime, causeToSelectBest)
+          }
         }
       }
     }
