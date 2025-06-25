@@ -124,6 +124,12 @@
                       </md-button>
                     </md-menu-item>
                     <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.changePincode($event, entry)">
+                        <md-icon md-font-library="material-icons">vpn_key</md-icon>
+                        Change pin code
+                      </md-button>
+                    </md-menu-item>
+                    <md-menu-item>
                       <md-button aria-label="explorer" ng-click="vm.remove($event, entry)">
                         <md-icon md-font-library="material-icons">delete_forever</md-icon>
                         Remove account
@@ -370,6 +376,22 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   showSecret(secret: string, currencySymbol: string) {
     this.clipboard.showSecret(secret, currencySymbol)
+  }
+
+  changePincode($event, entry: wlt.WalletEntry) {
+    dialogs.prompt($event, `Enter Password (or Pin) for ${entry.account}`, 'Please enter your Password (or Pin Code) to confirm you wish to change it', '').then(pin => {
+      if (pin != entry.pin) {
+        this.showMessage('Wrong password')
+        return
+      }
+      const key: ILocalKey = this.localKeyStore.load(entry.account, pin)
+      dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`, 'Please enter your new Password (or Pin Code) for entry', '').then(newPincode => {
+        key.pincode = newPincode
+        this.localKeyStore.put(key)
+        entry.pin = key.pincode
+        this.showMessage(`Password is changed for ${entry.account}`)
+      })
+    })
   }
 
   signBitcoinMessage($event, entry: wlt.CurrencyBalance) {
