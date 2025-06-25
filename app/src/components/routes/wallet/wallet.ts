@@ -466,6 +466,10 @@ namespace wlt {
       let component: WalletComponentAbstract = entry.component
       let currencies = this.walletEntry.currencies
 
+      if (candidateAddress?.index != undefined) {
+        this.walletAddresses.addresses[candidateAddress.index] = candidateAddress
+      }
+
       // collect all CurrencyBalance of 'our' same currency type
       // @ts-ignore
       let currencyBalances = getCurrencyBalances(this.walletEntry, this.name)
