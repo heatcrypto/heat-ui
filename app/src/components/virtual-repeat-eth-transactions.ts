@@ -96,7 +96,7 @@
 
             <!-- INOUT -->
             <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">
-              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
+              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: item.outgoing==false}">
                 {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
               </md-icon>
             </div>
@@ -215,11 +215,15 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
       }
     ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
+    let interval = setInterval(refresh, 60 * 1000)
+
     let listener = this.determineLength.bind(this)
     this.ethereumPendingTransactions.addListener(listener)
 
     this.$scope.$on('$destroy', () => {
       this.ethereumPendingTransactions.removeListener(listener)
+      clearInterval(interval)
     })
   }
 

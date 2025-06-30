@@ -379,13 +379,13 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   changePincode($event, entry: wlt.WalletEntry) {
-    dialogs.prompt($event, `Enter Password (or Pin) for ${entry.account}`, 'Please enter your Password (or Pin Code) to confirm you wish to change it', '').then(pin => {
+    dialogs.prompt($event, `Enter Password (or Pin) for ${entry.account}`, 'Please enter current Password (or Pin code) to confirm you wish to change it', '').then(pin => {
       if (pin != entry.pin) {
         this.showMessage('Wrong password')
         return
       }
       const key: ILocalKey = this.localKeyStore.load(entry.account, pin)
-      dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`, 'Please enter your new Password (or Pin Code) for entry', '').then(newPincode => {
+      dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`, 'Please enter new Password (or Pin code) for entry', '').then(newPincode => {
         key.pincode = newPincode
         this.localKeyStore.put(key)
         entry.pin = key.pincode

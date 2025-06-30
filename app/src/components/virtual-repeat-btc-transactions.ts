@@ -15,6 +15,8 @@
           <div class="truncate-col date-col left">Time</div>
           <!-- TX ID  -->
           <div class="truncate-col tx-col left">Transaction ID</div>
+          <!-- INOUT -->
+          <div class="truncate-col inoutgoing-col left">In/Out</div>
           <!-- FROM -->
           <div class="truncate-col message-col left">FROM</div>
           <!-- TO -->
@@ -36,6 +38,12 @@
               <span>
                 <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
+            </div>
+            <!-- INOUT -->
+            <div class="truncate-col inoutgoing-col left">
+              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: item.outgoing==false}">
+                {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
+              </md-icon>
             </div>
             <!-- FROM -->
             <div class="truncate-col message-col left">
@@ -103,6 +111,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         transaction.amount = transaction.vout[0].value;
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
+        transaction['outgoing'] = this.user.currency.address.toUpperCase() == transaction.from.toUpperCase();
         let totalInputs = 0;
         let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {
@@ -190,6 +199,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
     let timeout = setTimeout(refresh, 10 * 1000)
+    let interval = setInterval(refresh, 60 * 1000)
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
@@ -198,6 +208,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     this.$scope.$on('$destroy', () => {
       this.bitcoinPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
+      clearInterval(interval)
     })
   }
 
