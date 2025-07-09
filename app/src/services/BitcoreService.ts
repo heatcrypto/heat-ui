@@ -2,8 +2,9 @@
 @Inject('$window', 'storage', '$rootScope')
 class BitcoreService {
 
-  static readonly BIP44 = "m/44'/0'/0'/0/";
-  static readonly BIP49 = "m/49'/0'/0'/0/";
+  static readonly BIP44_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/44'/0'/0'/0/" : "m/44'/1'/0'/0/"
+  static readonly BIP49_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/49'/0'/0'/0/" : "m/49'/1'/0'/0/"
+  static readonly BIP84_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/84'/0'/0'/0/" : "m/84'/1'/0'/0/"
   private bitcore;
   private bip39;
   private store: Store;
@@ -136,7 +137,7 @@ class BitcoreService {
 
     return new Promise((resolve, reject) => {
       const createTx = (utxos) => {
-        const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: 'bitcoin'})
+        const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: wlt.CURRENCIES.Bitcoin.network})
 
         let inputs = utxos.map(v => ({
           vout: v.vout,
@@ -145,9 +146,10 @@ class BitcoreService {
           value: v.value,
           privateKey: privateKeyHex,
           address: txObject.from,
-          addressType: this.resolveAddressType(txObject.from)
+          addressType: this.resolveAddressType(txObject.from, wlt.CURRENCIES.Bitcoin.network)
         }))
 
+        //todo include min sufficient of inputs for sending amount only
         let inputsSum = inputs.reduce((v, {value}) => v + parseInt(value), 0)
         let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
 
@@ -175,7 +177,7 @@ class BitcoreService {
           })
         }
 
-        resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: "bitcoin"}) + "")
+        resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: wlt.CURRENCIES.Bitcoin.network}) + "")
       }
 
       if (utxoData) {
@@ -209,8 +211,8 @@ class BitcoreService {
     if (this.bip39.validateMnemonic(secret)) {
       let seedHex = this.bip39.mnemonicToSeedHex(secret)
       let HDPrivateKey = this.bitcore.HDPrivateKey
-      let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
-      let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index)
+      let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? 'mainnet' : wlt.CURRENCIES.Bitcoin.network)
+      let derived = hdPrivateKey.derive(BitcoreService.BIP44_PATH() + index)
       let address = derived.privateKey.toAddress()
       let privateKey = derived.privateKey.toWIF()
       return {
@@ -231,7 +233,7 @@ class BitcoreService {
     let privateKey: string
     let privateKeyWif: string
     if (this.bip39.validateMnemonic(secret)) {
-      const paths = [{path: BitcoreService.BIP49 + index, includeWif: true}]
+      const paths = [{path: BitcoreService.BIP44_PATH() + index, includeWif: true}]
       const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic: secret})
       const keyPair = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
       privateKey = keyPair.privateKey
@@ -241,21 +243,33 @@ class BitcoreService {
       privateKey = pk.toString()
       privateKeyWif = pk.toWIF()
     }
-    const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: privateKey, network: 'bitcoin' })
-    let a = heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network:'bitcoin'})
+    const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: privateKey, network: wlt.CURRENCIES.Bitcoin.network })
+    let a = heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
     return {
       address: a,
       privateKey: privateKeyWif
     }
   }
 
-  resolveAddressType(address: string) {
-    let firstSymbol = address.substring(0, 1)
-    if (firstSymbol == "1") return "p2pkh"
-    //if (address.startsWith("3")) return "p2sh"
-    if (firstSymbol == "3") return "p2wpkh_in_p2sh"
-    if (firstSymbol == "bc1q") return "p2wpkh"
-    if (firstSymbol == "bc1p") return "p2tr"
+  resolveAddressType(address: string, network = 'bitcoin') {
+    const prefixes = {
+      bitcoin: {
+        '1': 'p2pkh',
+        '3': 'p2wpkh_in_p2sh',
+        'bc1q': 'p2wpkh',
+        'bc1p': 'p2tr'
+      },
+      testnet: {
+        'm': 'p2pkh',
+        'n': 'p2pkh',
+        '2': 'p2wpkh_in_p2sh',
+        'tb1': 'p2wpkh'
+      }
+    }
+    let p = prefixes[network]
+    for (const [key, value] of Object.entries(p)) {
+      if (address.startsWith(key)) return value
+    }
   }
 
   signBitcoinMessage(address: string, message: string, privateKey: string) {
@@ -263,7 +277,7 @@ class BitcoreService {
     let addressType = this.resolveAddressType(address)
     let signatureHex = heat.heatAppLib.BITCOIN_BIP137_SIGN({
       privateKeyHex: privateKeyHex,
-      network: "bitcoin",
+      network: wlt.CURRENCIES.Bitcoin.network,
       addressType: addressType,
       message: message,
       extraEntropyHex: "00000000000000000000000000000000000000000000000000000000000007ba",

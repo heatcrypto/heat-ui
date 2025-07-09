@@ -2,8 +2,8 @@
 @Inject('http', '$q', '$window')
 class BtcFeeService {
 
-    static endPoint1 = 'https://bitcoinfees.net/api.json'
-    static endPoint2 = 'https://btc1.heatwallet.com/api/v1/estimatefee'
+    static endPoint1 = () => 'https://bitcoinfees.net/api.json'
+    static endPoint2 = () => BtcBlockExplorerBlockbookService.endPoint() + '/estimatefee'
 
     constructor(private http: HttpService,
                 private $q: angular.IQService,
@@ -39,7 +39,7 @@ class BtcFeeService {
         {
             "1":18059,"3":18059,"6":14090
         }*/
-        return this.http.get(BtcFeeService.endPoint1).then(response => {
+        return this.http.get(BtcFeeService.endPoint1()).then(response => {
             let parsed = utils.parseResponse(response)
             if (parsed.heatUtilParsingError) throw new Error(parsed.heatUtilParsingError)
             let fees = parsed.fee_by_block_target
@@ -64,13 +64,13 @@ class BtcFeeService {
             return result
         }
 
-        return this.http.get(`${BtcFeeService.endPoint2}/1`, true)
+        return this.http.get(`${BtcFeeService.endPoint2()}/1`, true)
             .then(responseHandler(1))
-            .then((v) => this.http.get(`${BtcFeeService.endPoint2}/3`, true))
+            .then((v) => this.http.get(`${BtcFeeService.endPoint2()}/3`, true))
             .then(responseHandler(3))
-            .then((v) => this.http.get(`${BtcFeeService.endPoint2}/6`, true))
+            .then((v) => this.http.get(`${BtcFeeService.endPoint2()}/6`, true))
             .then(responseHandler(6))
-            .then((v) => this.http.get(`${BtcFeeService.endPoint2}/12`, true))
+            .then((v) => this.http.get(`${BtcFeeService.endPoint2()}/12`, true))
             .then(responseHandler(12))
     }
 

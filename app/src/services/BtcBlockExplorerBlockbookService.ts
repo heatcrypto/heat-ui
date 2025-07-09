@@ -3,14 +3,15 @@
 @Inject('http', '$q', '$window')
 class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
 
-  static endPoint: string;
+  static endPoint: Function;
   private bitcore;
 
   constructor(private http: HttpService,
               private $q: angular.IQService,
               private $window: angular.IWindowService) {
-    BtcBlockExplorerBlockbookService.endPoint = 'https://btc1.heatwallet.com/api/v2';
-    this.bitcore = $window.heatlibs.bitcore;
+    BtcBlockExplorerBlockbookService.endPoint = () =>
+        wlt.CURRENCIES.Bitcoin.network == 'testnet' ? 'https://tbtc1.trezor.io/api/v2' : 'https://btc1.heatwallet.com/api/v2'
+    this.bitcore = $window.heatlibs.bitcore
   }
 
   public getBalance = (address: string) => {
@@ -28,10 +29,10 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
   }
 
   public getTransactions = (address: string, from: number, to: number): angular.IPromise<any> => {
-    //let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/addrs/${address}/txs?from=${from}&to=${to}`;
+    //let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint()}/addrs/${address}/txs?from=${from}&to=${to}`;
     const pageSize = to - from
     const page = Math.round(to / pageSize)
-    let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint}/address/${address}?details=txs&page=${page}&pageSize=${pageSize}`
+    let getTransactionsApi = `${BtcBlockExplorerBlockbookService.endPoint()}/address/${address}?details=txs&page=${page}&pageSize=${pageSize}`
     let deferred = this.$q.defer()
     this.http.get(getTransactionsApi).then(response => {
       if (!response) {
@@ -48,7 +49,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
   }
 
   public getAddressInfo = (address: string): angular.IPromise<any> => {
-    let url = `${BtcBlockExplorerBlockbookService.endPoint}/address/${address}?details=txids`
+    let url = `${BtcBlockExplorerBlockbookService.endPoint()}/address/${address}?details=txids`
     let deferred = this.$q.defer<any>();
     this.http.get(url, true).then(response => {
       let parsed = utils.parseResponse(response)
@@ -64,7 +65,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
 
   //there is the alternative BtcFeeService.getSatByteFee
   public getEstimatedFee = (feeBlocks = 1) => {
-    let url = `https://btc1.heatwallet.com/api/v1/estimatefee/${feeBlocks}`;
+    let url = BtcBlockExplorerBlockbookService.endPoint() + `/estimatefee/${feeBlocks}`;
     let deferred = this.$q.defer();
     let btcKByteFee = 0.0002;
     this.http.get(url, true).then(response => {
@@ -81,7 +82,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
   }
 
   public getTxInfo = (txId: string) => {
-    let getTxInfoApi = `${BtcBlockExplorerBlockbookService.endPoint}/tx/${txId}`;
+    let getTxInfoApi = `${BtcBlockExplorerBlockbookService.endPoint()}/tx/${txId}`;
     let deferred = this.$q.defer<any>();
     this.http.get(getTxInfoApi).then(response => {
       let parsed = utils.parseResponse(response)
@@ -95,7 +96,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
   }
 
   public getLatestBlockHash = () => {
-    let getLatestBlockHash = `${BtcBlockExplorerBlockbookService.endPoint}/status?q=getLastBlockHash`
+    let getLatestBlockHash = `${BtcBlockExplorerBlockbookService.endPoint()}/status?q=getLastBlockHash`
     let deferred = this.$q.defer<any>();
     this.http.get(getLatestBlockHash).then(response => {
       let parsed = utils.parseResponse(response)
@@ -125,7 +126,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
   }
 
   public getBlockByHash = (blockHash) => {
-    let getBlockByHash = `${BtcBlockExplorerBlockbookService.endPoint}/block/${blockHash}`
+    let getBlockByHash = `${BtcBlockExplorerBlockbookService.endPoint()}/block/${blockHash}`
     let deferred = this.$q.defer<any>();
     this.http.get(getBlockByHash).then(response => {
       let parsed = utils.parseResponse(response)
@@ -147,7 +148,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     // utxos should be looked up on blockbook api through https://github.com/trezor/blockbook/blob/master/docs/api.md#get-utxo
     function getUtxos(address): Promise<any> {
       return new Promise((resolve, reject) => {
-        const getUnspentUtxos = `${BtcBlockExplorerBlockbookService.endPoint}/utxo/${address}?confirmed=true`
+        const getUnspentUtxos = `${BtcBlockExplorerBlockbookService.endPoint()}/utxo/${address}?confirmed=true`
         that.http.get(getUnspentUtxos).then(response => {
           const parsed = utils.parseResponse(response)
           const utxos = []
@@ -188,7 +189,8 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
 
   public getUtxos(addresses: [string]): Promise<any[]> {
     const getUtxos = (address): Promise<any> => new Promise((resolve, reject) => {
-      const getUnspentUtxos = `${BtcBlockExplorerBlockbookService.endPoint}/utxo/${address}?confirmed=true`
+      //const getUnspentUtxos = `${BtcBlockExplorerBlockbookService.endPoint()}/utxo/${address}?confirmed=true`
+      const getUnspentUtxos = `${BtcBlockExplorerBlockbookService.endPoint()}/utxo/${address}`
       this.http.get(getUnspentUtxos).then(response => {
         const parsed = utils.parseResponse(response)
         if (Array.isArray(parsed)) {
@@ -219,7 +221,7 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
 
   public broadcast = (rawTx: string) => {
     return new Promise<{ txId: string }>((resolve, reject) => {
-      this.http.get(`${BtcBlockExplorerBlockbookService.endPoint}/sendtx/${rawTx}`).then(
+      this.http.get(`${BtcBlockExplorerBlockbookService.endPoint()}/sendtx/${rawTx}`).then(
         response => {
           let responseObj: any
           try {
