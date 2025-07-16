@@ -23,7 +23,7 @@
 
 namespace wlt {
 
-  export class WalletEntry {
+  export class WalletEntry extends EntryAbstract {
     public isWalletEntry = true
     public selected = true
     public identifier: string
@@ -34,13 +34,14 @@ namespace wlt {
     public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
     public pin: string
     public unlocked = false
-    public visible = true
     public expanded = false
 
     constructor(public account: string,
                 public name: string,
                 public component: WalletComponentAbstract //user may assign any text for wallet account
     ) {
+      super()
+      this.visible = true
       this.identifier = name ? `${account} | ${name}` : account
       this.visibleLabel = getEntryVisibleLabel(this.account)
       this.bip44Compatible = getEntryBip44Compatible(this.account)
@@ -193,6 +194,10 @@ namespace wlt {
       if (this.expanded) {
         walletComponent.loadBitcoinCashAddresses(this)
       }
+    }
+
+    applyFilter(walletFilter: WalletFilter) {
+      this.filtered = this.name.indexOf(walletFilter.tmp) > -1 || this.account.indexOf(walletFilter.tmp) > -1
     }
 
   }

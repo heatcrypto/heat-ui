@@ -69,6 +69,8 @@
         </md-button>
       </div>
 
+      <wallet-search layout="column" wallet-component="vm" query="''"></wallet-search>
+
       <div layout="column" layout-fill  flex>
         <div layout-fill layout="column" class="wallet-entries" flex>
 
@@ -78,7 +80,7 @@
                 - per currency token balances  -->
 
           <md-list layout-fill layout="column" flex>
-            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible && !entry.hidden" ng-hide="entry.isWalletEntry && !entry.unlocked && vm.displayUnlocked">
+            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.displayed()" ng-hide="entry.isWalletEntry && !entry.unlocked && vm.displayUnlocked">
 
               <!-- Wallet entry -->
               <div ng-if="entry.isWalletEntry" layout="row" class="wallet-entry" flex>
