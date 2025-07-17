@@ -386,11 +386,7 @@ namespace wlt {
     applyFilter(query: string) {
       let cleanedQuery = query.trim()
       if (cleanedQuery) {
-        this.walletFilter = new wlt.WalletFilter()
-        this.walletFilter.tmp = query
-        if (wlt.SYM_CURRENCIES_MAP.has(cleanedQuery)) {
-          this.walletFilter.currencies.push({symbol: cleanedQuery})
-        }
+        this.walletFilter = new wlt.WalletFilter(cleanedQuery)
         this.entries.forEach(entry => {
           if (entry instanceof wlt.WalletEntry) (<wlt.WalletEntry>entry).applyFilter(this.walletFilter)
         })

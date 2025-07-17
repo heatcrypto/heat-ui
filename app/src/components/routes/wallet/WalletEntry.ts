@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016-2021 HEAT DEX.
+ * Copyright (c) 2016-2025 HEAT DEX.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -197,7 +197,32 @@ namespace wlt {
     }
 
     applyFilter(walletFilter: WalletFilter) {
-      this.filtered = this.name.indexOf(walletFilter.tmp) > -1 || this.account.indexOf(walletFilter.tmp) > -1
+      this.filtered = false
+      if (walletFilter.test(this.account) || walletFilter.test(this.name)) {
+        this.filtered = true
+        return
+      }
+
+      let entryCurrencies: string[] = wlt.getStore().get(this.account)
+      if (entryCurrencies?.length > 0) {
+        //const intersection = wlt.CURRENCY_SYMBOLS.filter(item => entryCurrencies.includes(item));
+        for (let c of entryCurrencies) {
+          if (walletFilter.test(c, true)) {
+            this.filtered = true
+            return
+          }
+          let addresses = this.getCryptoAddresses(c)?.addresses
+          if (addresses) {
+            for (let a of addresses) {
+              if (walletFilter.test(a.address)) {
+                this.filtered = true
+                return
+              }
+            }
+          }
+        }
+      }
+
     }
 
   }

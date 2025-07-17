@@ -48,6 +48,9 @@ namespace wlt {
 
   export const SYM_CURRENCIES_MAP = new Map<string, any>(CURRENCIES_LIST.map(v => [v.symbol, v]))
 
+  // @ts-ignore
+  export const CURRENCY_SYMBOLS = wlt.SYM_CURRENCIES_MAP.keys().toArray()
+
   export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
 
   export let createdAddresses: { [key: string]: Map<string, string> } = {}
@@ -255,11 +258,14 @@ namespace wlt {
 
   export abstract class EntryAbstract {
     public visible = false
+    /**
+     * if not null the filter is enabled
+     */
     public filtered = null
     public hidden = false
 
     displayed() {
-      return this.visible && !this.hidden && (this.filtered == null || this.filtered == true)
+      return this.visible && !this.hidden && this.filtered != false
     }
   }
 
