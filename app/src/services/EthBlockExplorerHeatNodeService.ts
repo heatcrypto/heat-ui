@@ -29,6 +29,10 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
     })
   }
 
+  getEndPoint(): string {
+    return EthBlockExplorerHeatNodeService.endPoint
+  }
+
   public getProviderName() {return this.providerName;}
 
   public isSyncing() {

@@ -17,6 +17,8 @@ interface IEthereumAPIList {
 
   getProviderName(): string
 
+  getEndPoint(): string
+
 }
 
 interface EthplorerTokenInfo {

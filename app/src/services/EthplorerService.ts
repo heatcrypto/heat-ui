@@ -330,4 +330,8 @@ class EthplorerService implements IEthereumAPIList{
     return deferred.promise;
   }
 
+  getEndPoint(): string {
+    return EthplorerService.endPoint
+  }
+
 }

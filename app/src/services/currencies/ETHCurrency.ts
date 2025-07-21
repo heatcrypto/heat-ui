@@ -96,7 +96,10 @@ class ETHCurrency implements ICurrency {
       const vm = this
       this.paymentMessageMethod = null
       vm.stage = "create"
-      vm.broadcastProviderAlternative = true
+
+      const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
+      vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
+      vm.broadcastProviderIndex = 0
 
       this.data = {
         amount: '',
@@ -150,7 +153,14 @@ class ETHCurrency implements ICurrency {
       }
 
       this.backButtonClick = function ($event) {
-        this.stage = "create"
+        vm.data.rawTx = ""
+        vm.stage = "create"
+      }
+
+      this.useTxBytesButtonClick = function ($event) {
+        vm.data.rawTx = ""
+        vm.data.fee = ""
+        vm.stage = "insertedBytes"
       }
 
       this.cancelButtonClick = function () {
@@ -167,13 +177,12 @@ class ETHCurrency implements ICurrency {
         }
       }
 
+      this.disableOKBtn = false
+
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
-        const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
-        let ethService = vm.broadcastProviderAlternative
-            ? <EthBlockExplorerService> ethBlockExplorerService.ethApiProviderAlternative
-            : <EthBlockExplorerService> ethBlockExplorerService.ethApiProvider
-        ethService.broadcast(vm.data.rawTx).then(
+        let provider = vm.broadcastProvider[vm.broadcastProviderIndex]
+        provider.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
               result.message = vm.data.message
@@ -193,8 +202,6 @@ class ETHCurrency implements ICurrency {
           }
         ).finally(() => vm.disableOKBtn = false)
       }
-
-      this.disableOKBtn = false
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
@@ -283,14 +290,22 @@ class ETHCurrency implements ICurrency {
                 <p>Fee: {{vm.data.fee}} ETH</p>
               </div>
               
-              <md-input-container flex ng-if="vm.stage=='broadcast'">
+              <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <label>Transaction bytes</label>
-                  <textarea ng-model="vm.data.rawTx" readonly rows="3"  wrap="soft"
+                  <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" rows="3"  wrap="soft"
                         style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
                   <a ng-click="vm.showQRCode(vm.data.rawTx)" class="qrcode-link">
                     <md-tooltip>Show QR code</md-tooltip>
                     <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
                   </a>
+              </md-input-container>
+              
+              <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                  <p>Broadcast provider: <code>&nbsp;&nbsp;{{vm.broadcastProvider[vm.broadcastProviderIndex].getEndPoint()}}</code></p>
+                  <md-radio-group ng-model="vm.broadcastProviderIndex" layout="row" ng-change="vm.broadcastProviderChanged()">
+                    <md-radio-button value = 0>{{vm.broadcastProvider[0].getProviderName()}}</md-radio-button>
+                    <md-radio-button value = 1>{{vm.broadcastProvider[1].getProviderName()}}</md-radio-button>
+                  </md-radio-group>
               </md-input-container>
                 
             </md-dialog-content>
@@ -300,19 +315,24 @@ class ETHCurrency implements ICurrency {
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.displaySignedBytesClick()" aria-label="Signed bytes">Signed transaction bytes</md-button>
 -->
-              <md-switch ng-if="vm.stage=='broadcast'" ng-model="vm.broadcastProviderAlternative" ng-change="vm.broadcastProviderChanged()">
+<!--
+              <md-switch ng-if="vm.stage=='broadcast'" ng-model="vm.broadcastProvider" ng-change="vm.broadcastProviderChanged()">
                 <label>Broadcast provider</label>
-                <span ng-show="vm.broadcastProviderAlternative">Alternative</span>
-                <span ng-hide="vm.broadcastProviderAlternative">Default</span>
+                <span ng-show="vm.broadcastProvider">Alternative</span>
+                <span ng-hide="vm.broadcastProvider">Default</span>
               </md-switch>
+-->
         
               <span flex></span>
         
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-                            <md-button class="md-warn" ng-if="vm.stage=='broadcast'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
+              <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
               <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
-              <md-button ng-if="vm.stage=='broadcast'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+              <md-button ng-if="vm.stage=='create'"
+                  class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
+              <md-button ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" 
+                  ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send</md-button>
             </md-dialog-actions>
           </form>

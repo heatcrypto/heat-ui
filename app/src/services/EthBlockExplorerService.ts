@@ -17,6 +17,10 @@ class EthBlockExplorerService implements IEthereumAPIList {
 
   public getProviderName() { return this.ethApiProvider.getProviderName(); }
 
+  getEndPoint(): string {
+    return this.ethApiProvider.getEndPoint()
+  }
+
   public refresh() {
     return new Promise((resolve, reject) => {
       this.ethplorer.getLastBlockHeight().then(() => {
