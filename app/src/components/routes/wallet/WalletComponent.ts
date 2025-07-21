@@ -69,7 +69,7 @@
         </md-button>
       </div>
 
-      <wallet-search layout="column" wallet-component="vm" query="''"></wallet-search>
+      <wallet-search layout="column" wallet-component="vm" query="''" tokens=""></wallet-search>
 
       <div layout="column" layout-fill  flex>
         <div layout-fill layout="column" class="wallet-entries" flex>

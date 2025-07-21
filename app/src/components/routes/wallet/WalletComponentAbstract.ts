@@ -390,6 +390,7 @@ namespace wlt {
         this.entries.forEach(entry => {
           if (entry instanceof wlt.WalletEntry) (<wlt.WalletEntry>entry).applyFilter(this.walletFilter)
         })
+        return this.walletFilter.queryTokens
       } else {
         this.walletFilter = null
         this.entries.forEach(entry => {
