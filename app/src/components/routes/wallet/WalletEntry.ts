@@ -75,7 +75,7 @@ namespace wlt {
     }
 
     private createEntries(currencyName: string, walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
-      let addressLoading = new CurrencyAddressLoading(currencyName)
+      let addressLoading = new CurrencyAddressLoading(currencyName, this)
       addressLoading.visible = this.expanded;
       addressLoading.walletAddresses = wallet;
       this.currencies.push(addressLoading);
@@ -196,7 +196,12 @@ namespace wlt {
       }
     }
 
-    applyFilter(walletFilter: WalletFilter) {
+    applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
+      if (logicalOperator == "or") this.applyFilterOr(walletFilter)
+      if (logicalOperator == "and") this.applyFilterAnd(walletFilter)
+    }
+
+    private applyFilterOr(walletFilter: WalletFilter) {
       this.filtered = false
       if (walletFilter.test(this.account) || walletFilter.test(this.name)) {
         this.filtered = true
@@ -222,7 +227,37 @@ namespace wlt {
           }
         }
       }
+    }
 
+    private applyFilterAnd(walletFilter: WalletFilter) {
+      this.filtered = false
+
+      let tokens = Array.from(walletFilter.queryTokens)
+
+      let token = walletFilter.test(this.account) || walletFilter.test(this.name)
+      tokens = tokens.filter(v => v != token)
+
+      let entryCurrencySymbols: string[] = wlt.getStore().get(this.account)
+      if (entryCurrencySymbols?.length > 0) {
+        for (let c of entryCurrencySymbols) {
+          token = walletFilter.test(c, true)
+          if (token) {
+            tokens = tokens.filter(v => v.toUpperCase() != token.toUpperCase())
+            let addresses = this.getCryptoAddresses(c)?.addresses
+            if (addresses) {
+              for (let a of addresses) {
+                token = walletFilter.test(a.address)
+                if (token) {
+                  tokens = tokens.filter(v => v.toUpperCase() != token.toUpperCase())
+                }
+              }
+            }
+          }
+        }
+
+      }
+
+      if (tokens.length == 0) this.filtered = true
     }
 
   }

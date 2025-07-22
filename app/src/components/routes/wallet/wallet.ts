@@ -269,17 +269,27 @@ namespace wlt {
     }
   }
 
+  export abstract class SubEntryAbstract extends EntryAbstract{
 
-  export class TokenBalance extends EntryAbstract {
+    public walletEntry: WalletEntry
+
+    displayed() {
+      return super.displayed() && this.walletEntry.displayed()
+    }
+
+  }
+
+
+  export class TokenBalance extends SubEntryAbstract {
     public isTokenBalance = true
     public balance: string
 
-    constructor(public name: string, public symbol: string, public address: string) {
+    constructor(public walletEntry: WalletEntry, public name: string, public symbol: string, public address: string) {
       super()
     }
   }
 
-  export class CurrencyBalance extends EntryAbstract {
+  export class CurrencyBalance extends SubEntryAbstract {
 
     static hasNoZeroDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
     static hasDigit = /[0-9]/  // test is string (balance) has any not zero digit (is balance no zero)
@@ -288,7 +298,6 @@ namespace wlt {
     public pubKey: string
     public tokens: Array<TokenBalance> = []
     public stateMessage: string
-    walletEntry: WalletEntry
     private _balance: string
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
@@ -361,19 +370,19 @@ namespace wlt {
 
   }
 
-  export class CurrencyAddressLoading extends EntryAbstract {
+  export class CurrencyAddressLoading extends SubEntryAbstract {
     public isCurrencyAddressLoading = true
     public walletAddresses: WalletAddresses
     public address: string
     public currencySymbol: string
 
-    constructor(public name: string) {
+    constructor(public name: string, public walletEntry: WalletEntry) {
       super()
       this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
     }
   }
 
-  export class CurrencyAddressCreate extends EntryAbstract {
+  export class CurrencyAddressCreate extends SubEntryAbstract {
     public isCurrencyAddressCreate = true
     public hidden = true
     public currencySymbol: string
@@ -382,7 +391,6 @@ namespace wlt {
 
     constructor(public name: string, public walletAddresses: WalletAddresses, public walletEntry: WalletEntry) {
       super()
-      this.walletEntry = walletEntry
       this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
       isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
     }

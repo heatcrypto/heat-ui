@@ -69,7 +69,7 @@
         </md-button>
       </div>
 
-      <wallet-search layout="column" wallet-component="vm" query="''" tokens=""></wallet-search>
+      <wallet-search layout="column" wallet-component="vm" query="''" query-tokens=""></wallet-search>
 
       <div layout="column" layout-fill  flex>
         <div layout-fill layout="column" class="wallet-entries" flex>
@@ -748,7 +748,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       this.getAccountAssets(heatAccount).then((assetInfos) => {
         heatCurrencyBalance.tokens = []
         assetInfos.forEach(assetInfo => {
-          let tokenBalance = new wlt.TokenBalance(assetInfo.name, assetInfo.symbol, assetInfo.id)
+          let tokenBalance = new wlt.TokenBalance(walletEntry, assetInfo.name, assetInfo.symbol, assetInfo.id)
           tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, assetInfo.decimals)
           tokenBalance.visible = walletEntry.expanded
           heatCurrencyBalance.tokens.push(tokenBalance)
