@@ -26,18 +26,20 @@
       </div>
 <!--      <span style="margin: 7px; max-width: 200px; color: #7e88d2">{{vm.expression}}</span>-->
       <button style="height: 28px;" ng-click="vm.applyFilter()">search</button>
+      <a ng-if="vm.reasoning" ng-click="vm.showResult()">result</a>
     </span>
   `
 })
-@Inject('$scope','$location')
+@Inject('$scope','$location', 'panel')
 class WalletSearchComponent {
   walletComponent: wlt.WalletComponentAbstract // @input
   query: string // @input
   queryTokens: string[] // @input
+  reasoning: any[]
   logicalOperator: 'and' | 'or' = "or"
   expression: string[]
 
-  constructor(private $scope: angular.IScope, private $location: angular.ILocationService) {}
+  constructor(private $scope: angular.IScope, private $location: angular.ILocationService, private panel: PanelService) {}
 
   onKeyPress($event) {
     if ($event.keyCode == 13) {
@@ -59,7 +61,26 @@ class WalletSearchComponent {
   }
 
   applyFilter() {
-    this.queryTokens = this.walletComponent.applyFilter(this.query, this.logicalOperator)
+    let filterResult = this.walletComponent.applyFilter(this.query, this.logicalOperator)
+    this.queryTokens = filterResult?.queryTokens
+    this.reasoning = filterResult?.result.map(v => {
+      let fr: Map<string, string[]> = v.filterResult
+      let entryStr = Array.from(fr.entries()).map(e => `    ${e[0]} => ${e[1]}`).join('\n')
+      return `${v.account}:\n${entryStr}`
+    })
+  }
+
+  showResult($event) {
+    this.panel.show(`
+      <div layout="column" flex style="padding: 10px; background-color: #4d5168; border-radius: 4px;">
+        <md-input-container flex>                                                                                                                                                           
+          <div>Result:</div>
+          <div style="white-space: pre-wrap; font-family: monospace">{{vm.result}}</div>
+        </md-input-container>
+      </div>
+    `, {
+      result: this.reasoning?.join('\n')
+    })
   }
 
 }

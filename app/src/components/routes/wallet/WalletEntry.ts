@@ -218,6 +218,7 @@ namespace wlt {
       if (logicalOperator == "and") this.applyFilterAnd(walletFilter, registry)
       if (registry.finds.size > 0) {
         console.log(this.account, this.filtered, registry.finds)
+        return registry.finds
       }
     }
 
@@ -266,11 +267,13 @@ namespace wlt {
 
       if (detection)  tokens = tokens.filter(v => v != detection.token)
 
+      let currencySymbolDetected = false
       let entryCurrencySymbols: string[] = wlt.getStore().get(this.account)
       if (entryCurrencySymbols?.length > 0) {
         for (let c of entryCurrencySymbols) {
           detection = find('currency', c, true)
           if (detection) {
+            currencySymbolDetected = true
             tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
             let addresses = this.getCryptoAddresses(c)?.addresses
             if (addresses) {
@@ -279,6 +282,17 @@ namespace wlt {
                 if (detection) {
                   tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
                 }
+              }
+            }
+          }
+        }
+        // no any currency symbol in query, so search addresses not grouped by currency
+        if (!currencySymbolDetected) {
+          for (let c of entryCurrencySymbols) {
+            for (let a of (this.getCryptoAddresses(c)?.addresses || [])) {
+              detection = find('address', a.address)
+              if (detection) {
+                tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
               }
             }
           }
