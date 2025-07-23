@@ -11,7 +11,7 @@
   template: `
     <span layout="row" flex layout-fill>
       <md-input-container flex style="height: 34px; margin-top: 8px; margin-bottom: 2px;">
-        <label>Search for currency, address, account</label>
+        <label>Search for wallet entry by currency, address, account</label>
         <input name="search-text" ng-model="vm.query" ng-keypress="vm.onKeyPress($event)"/>
       </md-input-container>
       <div class="md-button" style="align-content: center; border: solid 1px deepskyblue; border-radius: 24px; color: grey !important; font-size: 12px; height: 30px;"

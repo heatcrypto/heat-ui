@@ -196,14 +196,38 @@ namespace wlt {
       }
     }
 
-    applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
-      if (logicalOperator == "or") this.applyFilterOr(walletFilter)
-      if (logicalOperator == "and") this.applyFilterAnd(walletFilter)
+    registerFinds = (walletFilter: WalletFilter) => {
+      let finds = new Map<string, string[]>()
+
+      let find = (name: string, item: string, exact = false) => {
+        let detection = walletFilter.test(item, exact)
+        if (!detection) return
+        let key = `[${name}] ${detection.token}`
+        let v = finds.get(key) || []
+        v.push(detection.item)
+        finds.set(key, v)
+        return detection
+      }
+
+      return {find, finds}
     }
 
-    private applyFilterOr(walletFilter: WalletFilter) {
+    applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
+      let registry = this.registerFinds(walletFilter)
+      if (logicalOperator == "or") this.applyFilterOr(walletFilter, registry)
+      if (logicalOperator == "and") this.applyFilterAnd(walletFilter, registry)
+      if (registry.finds.size > 0) {
+        console.log(this.account, this.filtered, registry.finds)
+      }
+    }
+
+    private applyFilterOr(walletFilter: wlt.WalletFilter, registry: { finds: Map<string, string[]>; find: (name: string, item: string, exact?: boolean) => { token: string; item: string } }) {
+      let find = registry.find
       this.filtered = false
-      if (walletFilter.test(this.account) || walletFilter.test(this.name)) {
+      if (find('account', this.account)
+          || find('account name', this.name)
+          || find('account label', this.visibleLabel)
+          || find('account private label', this.label)) {
         this.filtered = true
         return
       }
@@ -212,14 +236,14 @@ namespace wlt {
       if (entryCurrencies?.length > 0) {
         //const intersection = wlt.CURRENCY_SYMBOLS.filter(item => entryCurrencies.includes(item));
         for (let c of entryCurrencies) {
-          if (walletFilter.test(c, true)) {
+          if (find('currency', c, true)) {
             this.filtered = true
             return
           }
           let addresses = this.getCryptoAddresses(c)?.addresses
           if (addresses) {
             for (let a of addresses) {
-              if (walletFilter.test(a.address)) {
+              if (find('address ' + c, a.address)) {
                 this.filtered = true
                 return
               }
@@ -229,32 +253,36 @@ namespace wlt {
       }
     }
 
-    private applyFilterAnd(walletFilter: WalletFilter) {
+    private applyFilterAnd(walletFilter: wlt.WalletFilter, registry: { finds: Map<string, string[]>; find: (name: string, item: string, exact?: boolean) => { token: string; item: string } }) {
+      let find = registry.find
       this.filtered = false
 
-      let tokens = Array.from(walletFilter.queryTokens)
+      let tokens = Array.from(walletFilter.queryTokensUpperCase)
 
-      let token = walletFilter.test(this.account) || walletFilter.test(this.name)
-      tokens = tokens.filter(v => v != token)
+      let detection = find('account', this.account)
+          || find('account name', this.name)
+          || find('account label', this.visibleLabel)
+          || find('account private label', this.label)
+
+      if (detection)  tokens = tokens.filter(v => v != detection.token)
 
       let entryCurrencySymbols: string[] = wlt.getStore().get(this.account)
       if (entryCurrencySymbols?.length > 0) {
         for (let c of entryCurrencySymbols) {
-          token = walletFilter.test(c, true)
-          if (token) {
-            tokens = tokens.filter(v => v.toUpperCase() != token.toUpperCase())
+          detection = find('currency', c, true)
+          if (detection) {
+            tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
             let addresses = this.getCryptoAddresses(c)?.addresses
             if (addresses) {
               for (let a of addresses) {
-                token = walletFilter.test(a.address)
-                if (token) {
-                  tokens = tokens.filter(v => v.toUpperCase() != token.toUpperCase())
+                detection = find('address', a.address)
+                if (detection) {
+                  tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
                 }
               }
             }
           }
         }
-
       }
 
       if (tokens.length == 0) this.filtered = true
