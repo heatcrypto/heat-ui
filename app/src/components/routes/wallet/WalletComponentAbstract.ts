@@ -387,14 +387,14 @@ namespace wlt {
       let cleanedQuery = query.trim()
       if (cleanedQuery) {
         this.walletFilter = new wlt.WalletFilter(cleanedQuery)
-        let result = []
+        let searchResultExplained: {account: string, finds: Map<string, string[]>}[] = []
         this.entries.forEach(entry => {
           if (entry instanceof wlt.WalletEntry) {
-            let r = (<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator)
-            if (r && entry.filtered) result.push({account: entry.account, filterResult: r})
+            let finds = (<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator)
+            if (finds && entry.filtered) searchResultExplained.push({account: entry.account, finds: finds})
           }
         })
-        return {result, queryTokens: this.walletFilter.queryTokens}
+        return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
       } else {
         this.walletFilter = null
         this.entries.forEach(entry => {

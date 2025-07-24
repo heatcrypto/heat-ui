@@ -26,7 +26,7 @@
       </div>
 <!--      <span style="margin: 7px; max-width: 200px; color: #7e88d2">{{vm.expression}}</span>-->
       <button style="height: 28px;" ng-click="vm.applyFilter()">search</button>
-      <a ng-if="vm.reasoning" ng-click="vm.showResult()">result</a>
+      <a style="margin-left: 7px; width: 60px;" ng-if="vm.reasoning" ng-click="vm.showExplainedFinds()">Explain finds</a>
     </span>
   `
 })
@@ -63,19 +63,19 @@ class WalletSearchComponent {
   applyFilter() {
     let filterResult = this.walletComponent.applyFilter(this.query, this.logicalOperator)
     this.queryTokens = filterResult?.queryTokens
-    this.reasoning = filterResult?.result.map(v => {
-      let fr: Map<string, string[]> = v.filterResult
-      let entryStr = Array.from(fr.entries()).map(e => `    ${e[0]} => ${e[1]}`).join('\n')
+    this.reasoning = filterResult?.searchResultExplained.map(v => {
+      let finds: Map<string, string[]> = v.finds
+      let entryStr = Array.from(finds.entries()).map(e => `    ${e[0]} => ${e[1]}`).join('\n')
       return `${v.account}:\n${entryStr}`
     })
   }
 
-  showResult($event) {
+  showExplainedFinds($event) {
     this.panel.show(`
       <div layout="column" flex style="padding: 10px; background-color: #4d5168; border-radius: 4px;">
         <md-input-container flex>                                                                                                                                                           
-          <div>Result:</div>
-          <div style="white-space: pre-wrap; font-family: monospace">{{vm.result}}</div>
+          <h3>Explained finds:</h3>
+          <textarea readonly style="white-space: pre-wrap; font-family: monospace; overflow: auto; min-width: 400px; max-height: 400px;">{{vm.result}}</textarea>
         </md-input-container>
       </div>
     `, {

@@ -23,6 +23,17 @@
 
 namespace wlt {
 
+  export type WalletSearchTracker = {
+    /**
+     * find items matching token
+     */
+    find: (name: string, item: string, exact?: boolean) => { token: string, item: string },
+    /**
+     * detailed info of finds (where it were found)
+     */
+    finds: Map<string, string[]>
+  }
+
   export class WalletEntry extends EntryAbstract {
     public isWalletEntry = true
     public selected = true
@@ -198,7 +209,7 @@ namespace wlt {
       }
     }
 
-    registerFinds = (walletFilter: WalletFilter) => {
+    trackFinds = (walletFilter: WalletFilter) => {
       let finds = new Map<string, string[]>()
 
       let find = (name: string, item: string, exact = false) => {
@@ -215,7 +226,7 @@ namespace wlt {
     }
 
     applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
-      let registry = this.registerFinds(walletFilter)
+      let registry = this.trackFinds(walletFilter)
       if (logicalOperator == "or") this.applyFilterOr(walletFilter, registry)
       if (logicalOperator == "and") this.applyFilterAnd(walletFilter, registry)
       if (registry.finds.size > 0) {
@@ -224,7 +235,7 @@ namespace wlt {
       }
     }
 
-    private applyFilterOr(walletFilter: wlt.WalletFilter, registry: { finds: Map<string, string[]>; find: (name: string, item: string, exact?: boolean) => { token: string; item: string } }) {
+    private applyFilterOr(walletFilter: wlt.WalletFilter, registry: wlt.WalletSearchTracker) {
       let find = registry.find
       this.filtered = false
       if (find('account', this.account)
@@ -256,8 +267,8 @@ namespace wlt {
       }
     }
 
-    private applyFilterAnd(walletFilter: wlt.WalletFilter, registry: { finds: Map<string, string[]>; find: (name: string, item: string, exact?: boolean) => { token: string; item: string } }) {
-      let find = registry.find
+    private applyFilterAnd(walletFilter: wlt.WalletFilter, walletSearchRegister: wlt.WalletSearchTracker) {
+      let find = walletSearchRegister.find
       this.filtered = false
 
       let tokens = Array.from(walletFilter.queryTokensUpperCase)
