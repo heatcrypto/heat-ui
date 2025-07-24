@@ -30,6 +30,7 @@ namespace wlt {
     public visibleLabel: string
     public label: string
     public secretPhrase: string
+    public selectedCurrencies: string[]
     public bip44Compatible: boolean
     public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
     public pin: string
@@ -45,6 +46,7 @@ namespace wlt {
       this.identifier = name ? `${account} | ${name}` : account
       this.visibleLabel = getEntryVisibleLabel(this.account)
       this.bip44Compatible = getEntryBip44Compatible(this.account)
+      this.selectedCurrencies = (wlt.getStore().get(this.account) || []).sort()
     }
 
     setWalletComponent(component: WalletComponentAbstract) {
@@ -233,10 +235,10 @@ namespace wlt {
         return
       }
 
-      let entryCurrencies: string[] = wlt.getStore().get(this.account)
-      if (entryCurrencies?.length > 0) {
+      //this.selectedCurrencies = wlt.getStore().get(this.account) || []
+      if (this.selectedCurrencies.length > 0) {
         //const intersection = wlt.CURRENCY_SYMBOLS.filter(item => entryCurrencies.includes(item));
-        for (let c of entryCurrencies) {
+        for (let c of this.selectedCurrencies) {
           if (find('currency', c, true)) {
             this.filtered = true
             return
