@@ -71,16 +71,47 @@ class WalletSearchComponent {
   }
 
   showExplainedFinds($event) {
-    this.panel.show(`
+    let f = (title, content) => {
+      dialogs.dialog({
+        id: 'explainedFinds',
+        title: title,
+        //targetEvent: $event,
+        okButton: false,
+        cancelButton: false,
+        locals: {
+          close: function() {
+            dialogs.$mdDialog().hide();
+          },
+          content: content
+        },
+        template: `
+        <!--<md-input-container flex>-->
+          <textarea readonly rows="20" ng-model="vm.content" id="content-textarea" style="font-family: monospace;"></textarea>
+        <!--</md-input-container>-->
+        <div layout="row" layout-align="center center" style="margin-top: 6px; min-height: 25px">
+          <md-button class="md-primary" ng-click="vm.close()">Close</md-button>
+        </div>
+      `,
+        style: `
+        #content-textarea {
+            width: 100%;
+        }
+      `
+      })
+    }
+
+    f("Explained finds", this.reasoning?.join('\n\n'))
+
+    /*this.panel.show(`
       <div layout="column" flex style="padding: 10px; background-color: #4d5168; border-radius: 4px;">
         <md-input-container flex>                                                                                                                                                           
           <h3>Explained finds:</h3>
-          <textarea readonly style="white-space: pre-wrap; font-family: monospace; overflow: auto; min-width: 400px; max-height: 400px;">{{vm.result}}</textarea>
+          <md-content readonly style="white-space: pre-wrap; font-family: monospace; overflow: auto; min-width: 400px; max-height: 400px;">{{vm.result}}</md-content>
         </md-input-container>
       </div>
     `, {
       result: this.reasoning?.join('\n')
-    })
+    })*/
   }
 
 }
