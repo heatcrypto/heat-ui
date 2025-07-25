@@ -221,8 +221,14 @@ class BTCCurrency implements ICurrency {
           })
 
           if (isCreatedTransaction && txWrapper.inputsSum) {
-            let reportFee = ((txWrapper.inputsSum - outsTotal) / 100000000).toFixed(8).replace(removeTrailZeros, "$1")
+            let feeAmount = (txWrapper.inputsSum - outsTotal) / 100000000
+            let reportFee = feeAmount.toFixed(8).replace(removeTrailZeros, "$1")
             reportLines.push(`fee: ${reportFee} BTC`)
+
+            let checkFeeIndicator = vm.data?.txnFee / feeAmount
+            if (checkFeeIndicator != 1) {
+              vm.errorMessage = "Pay attention to transaction fee"
+            }
           }
           return reportLines.join("\n").trim()
         } catch (e) {
