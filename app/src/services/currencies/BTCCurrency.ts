@@ -37,7 +37,7 @@ class BTCCurrency implements ICurrency {
   private pendingTransactions: BitcoinPendingTransactionsService
   private bitcoinMessagesService: BitcoinMessagesService
   private user: UserService
-  private recentBalance
+  private recentBalance: {confirmed: string, unconfirmed?: string}
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
@@ -190,8 +190,8 @@ class BTCCurrency implements ICurrency {
         wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance.toString())
       }
 
-      let decodeTxn = function (rawTx: string, isCreatedTransaction = true) {
-        if (!rawTx || !rawTx.trim()) return
+      let decodeTxn = function (txWrapper: { inputsSum: number; rawTx: string }, isCreatedTransaction = true) {
+        if (!txWrapper.rawTx || !txWrapper.rawTx.trim()) return
 
         type DecodedTransaction = {
           transaction: any,
@@ -201,10 +201,10 @@ class BTCCurrency implements ICurrency {
         }
 
         try {
-          let decodedTxn: DecodedTransaction = heat.heatAppLib.BITCOIN_DECODE_TRANSACTION(rawTx)
+          let decodedTxn: DecodedTransaction = heat.heatAppLib.BITCOIN_DECODE_TRANSACTION(txWrapper.rawTx)
           let outsTotal = 0
           let removeTrailZeros = /([^.])0+$/
-          let reportLines = [`transaction bytes size: ${converters.hexStringToByteArray(rawTx).length}` + "\n"]
+          let reportLines = [`transaction bytes size: ${converters.hexStringToByteArray(txWrapper.rawTx).length}` + "\n"]
           if (isCreatedTransaction) reportLines.push(`Outgoing address: ${self.address}` + "\n")
 
           decodedTxn.decoded.outs.forEach(out => {
@@ -220,8 +220,8 @@ class BTCCurrency implements ICurrency {
             reportLines.push("")
           })
 
-          if (isCreatedTransaction) {
-            let reportFee = ((self.recentBalance.confirmed - outsTotal) / 100000000).toFixed(8).replace(removeTrailZeros, "$1")
+          if (isCreatedTransaction && txWrapper.inputsSum) {
+            let reportFee = ((txWrapper.inputsSum - outsTotal) / 100000000).toFixed(8).replace(removeTrailZeros, "$1")
             reportLines.push(`fee: ${reportFee} BTC`)
           }
           return reportLines.join("\n").trim()
@@ -236,10 +236,10 @@ class BTCCurrency implements ICurrency {
           return
         }
         vm.report = ""
-        calculateRawTx(false)?.then(rawTx => {
-          if (rawTx && rawTx == vm.data.rawTx) {
+        calculateRawTx(false)?.then(txWrapper => {
+          if (txWrapper && txWrapper.rawTx == vm.data.rawTx) {
             $scope.$evalAsync(() => {
-              vm.report = decodeTxn(rawTx)
+              vm.report = decodeTxn(txWrapper)
               vm.stage = "broadcast"
             })
           }
@@ -364,10 +364,10 @@ class BTCCurrency implements ICurrency {
           errorCallback(e)
         }
         if (tx) {
-          return self.bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation, vm.data.utxoData).then(rawTx => {
-            vm.data.rawTx = rawTx
-            vm.data.txBytes = converters.hexStringToByteArray(rawTx)
-            return rawTx
+          return self.bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation, vm.data.utxoData).then(txWrapper => {
+            vm.data.rawTx = txWrapper.rawTx
+            vm.data.txBytes = converters.hexStringToByteArray(txWrapper.rawTx)
+            return txWrapper
           }).catch(errorCallback)
         }
       }
@@ -489,7 +489,7 @@ class BTCCurrency implements ICurrency {
 
       let decodeTxnDebounced = utils.debounce(() => {
         $scope.$evalAsync(() => {
-          vm.report = decodeTxn(vm.data.rawTx, false)
+          vm.report = decodeTxn({rawTx: vm.data.rawTx, inputsSum: null}, false)
         })
       }, 1000, false)
 

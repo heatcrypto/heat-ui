@@ -132,7 +132,7 @@ class BitcoreService {
     })
   }
 
-  createOneToOneTransaction(txObject: any, uncheckedSerialize: boolean = false, utxoData?: string): Promise<string> {
+  createOneToOneTransaction(txObject: any, uncheckedSerialize: boolean = false, utxoData?: string): Promise<{inputsSum: number, rawTx: string}> {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
 
     return new Promise((resolve, reject) => {
@@ -150,7 +150,7 @@ class BitcoreService {
         }))
 
         //todo include min sufficient of inputs for sending amount only
-        let inputsSum = inputs.reduce((v, {value}) => v + parseInt(value), 0)
+        let inputsSum: number = inputs.reduce((v, {value}) => v + parseInt(value), 0)
         let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
 
         if (changeAmount < 0) {
@@ -177,7 +177,10 @@ class BitcoreService {
           })
         }
 
-        resolve(heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: wlt.CURRENCIES.Bitcoin.network}) + "")
+        resolve({
+          inputsSum: inputsSum,
+          rawTx: heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: wlt.CURRENCIES.Bitcoin.network}) + ""
+        })
       }
 
       if (utxoData) {
