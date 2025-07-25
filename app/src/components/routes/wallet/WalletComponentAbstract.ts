@@ -145,7 +145,7 @@ namespace wlt {
         nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
-            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = utils.commaFormat(balance.balance)
             tokenBalance.visible = walletEntry.expanded
             nxtCurrencyBalance.tokens.push(tokenBalance)
@@ -167,7 +167,7 @@ namespace wlt {
         ardrCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
-            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = utils.commaFormat(balance.balance)
             tokenBalance.visible = walletEntry.expanded
             ardrCurrencyBalance.tokens.push(tokenBalance)
@@ -189,7 +189,7 @@ namespace wlt {
         fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
-            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = utils.commaFormat(balance.balance)
             tokenBalance.visible = walletEntry.expanded
             fimkCurrencyBalance.tokens.push(tokenBalance)
@@ -214,7 +214,7 @@ namespace wlt {
         }
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
-            let tokenBalance = new wlt.TokenBalance(balance.name, balance.symbol, balance.address)
+            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = balance.balance
             tokenBalance.visible = walletEntry.expanded
             ethCurrencyBalance.tokens.push(tokenBalance)
@@ -379,6 +379,28 @@ namespace wlt {
       // we can remove the loading entry
       walletEntry.currencies = walletEntry.currencies.filter(c => c != addressLoading)
       this.flatten()
+    }
+
+    walletFilter: wlt.WalletFilter
+
+    applyFilter(query: string, logicalOperator: 'and' | 'or') {
+      let cleanedQuery = query.trim()
+      if (cleanedQuery) {
+        this.walletFilter = new wlt.WalletFilter(cleanedQuery)
+        let searchResultExplained: {account: string, finds: Map<string, string[]>}[] = []
+        this.entries.forEach(entry => {
+          if (entry instanceof wlt.WalletEntry) {
+            let finds = (<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator)
+            if (finds && entry.filtered) searchResultExplained.push({account: entry.account, finds: finds})
+          }
+        })
+        return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
+      } else {
+        this.walletFilter = null
+        this.entries.forEach(entry => {
+          entry.filtered = null
+        })
+      }
     }
 
   }

@@ -46,6 +46,11 @@ namespace wlt {
 
   export const CURRENCIES_MAP: Map<String, {name: string, symbol: string, multiAddress: boolean, formatBalance: (string) => string}> = new Map(Object.entries(CURRENCIES))
 
+  export const SYM_CURRENCIES_MAP = new Map<string, any>(CURRENCIES_LIST.map(v => [v.symbol, v]))
+
+  // @ts-ignore
+  export const CURRENCY_SYMBOLS = wlt.SYM_CURRENCIES_MAP.keys().toArray()
+
   export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
 
   export let createdAddresses: { [key: string]: Map<string, string> } = {}
@@ -251,34 +256,52 @@ namespace wlt {
     return emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
   }
 
-
-
-  export class TokenBalance {
-    public isTokenBalance = true
-    public balance: string
+  export abstract class EntryAbstract {
     public visible = false
+    /**
+     * if not null the filter is enabled
+     */
+    public filtered = null
+    public hidden = false
 
-    constructor(public name: string, public symbol: string, public address: string) {
+    displayed() {
+      return this.visible && !this.hidden && this.filtered != false
     }
   }
 
+  export abstract class SubEntryAbstract extends EntryAbstract{
 
-  export class CurrencyBalance {
+    public walletEntry: WalletEntry
+
+    displayed() {
+      return super.displayed() && this.walletEntry.displayed()
+    }
+
+  }
+
+
+  export class TokenBalance extends SubEntryAbstract {
+    public isTokenBalance = true
+    public balance: string
+
+    constructor(public walletEntry: WalletEntry, public name: string, public symbol: string, public address: string) {
+      super()
+    }
+  }
+
+  export class CurrencyBalance extends SubEntryAbstract {
 
     static hasNoZeroDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
     static hasDigit = /[0-9]/  // test is string (balance) has any not zero digit (is balance no zero)
-
     public isCurrencyBalance = true
     public inUse = false
     public pubKey: string
     public tokens: Array<TokenBalance> = []
-    public visible = false
-    public hidden = false
     public stateMessage: string
-    walletEntry: WalletEntry
     private _balance: string
 
     constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
+      super()
     }
 
     get balance(): string {
@@ -347,28 +370,27 @@ namespace wlt {
 
   }
 
-  export class CurrencyAddressLoading {
+  export class CurrencyAddressLoading extends SubEntryAbstract {
     public isCurrencyAddressLoading = true
-    public visible = false
     public walletAddresses: WalletAddresses
     public address: string
     public currencySymbol: string
 
-    constructor(public name: string) {
+    constructor(public name: string, public walletEntry: WalletEntry) {
+      super()
       this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
     }
   }
 
-  export class CurrencyAddressCreate {
+  export class CurrencyAddressCreate extends SubEntryAbstract {
     public isCurrencyAddressCreate = true
-    public visible = false
     public hidden = true
     public currencySymbol: string
 
     public flatten: () => void
 
     constructor(public name: string, public walletAddresses: WalletAddresses, public walletEntry: WalletEntry) {
-      this.walletEntry = walletEntry
+      super()
       this.currencySymbol = CURRENCIES_MAP.get(name)?.symbol
       isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
     }

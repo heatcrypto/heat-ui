@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016-2021 HEAT DEX.
+ * Copyright (c) 2016-2025 HEAT DEX.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,27 +23,41 @@
 
 namespace wlt {
 
-  export class WalletEntry {
+  export type WalletSearchTracker = {
+    /**
+     * find items matching token
+     */
+    find: (name: string, item: string, exact?: boolean) => { token: string, item: string },
+    /**
+     * detailed info of finds (where it were found)
+     */
+    finds: Map<string, string[]>
+  }
+
+  export class WalletEntry extends EntryAbstract {
     public isWalletEntry = true
     public selected = true
     public identifier: string
     public visibleLabel: string
     public label: string
     public secretPhrase: string
+    public selectedCurrencies: string[]
     public bip44Compatible: boolean
     public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
     public pin: string
     public unlocked = false
-    public visible = true
     public expanded = false
 
     constructor(public account: string,
                 public name: string,
                 public component: WalletComponentAbstract //user may assign any text for wallet account
     ) {
+      super()
+      this.visible = true
       this.identifier = name ? `${account} | ${name}` : account
       this.visibleLabel = getEntryVisibleLabel(this.account)
       this.bip44Compatible = getEntryBip44Compatible(this.account)
+      this.selectedCurrencies = (wlt.getStore().get(this.account) || []).sort()
     }
 
     setWalletComponent(component: WalletComponentAbstract) {
@@ -74,7 +88,7 @@ namespace wlt {
     }
 
     private createEntries(currencyName: string, walletComponent: WalletComponentAbstract, wallet: WalletAddresses) {
-      let addressLoading = new CurrencyAddressLoading(currencyName)
+      let addressLoading = new CurrencyAddressLoading(currencyName, this)
       addressLoading.visible = this.expanded;
       addressLoading.walletAddresses = wallet;
       this.currencies.push(addressLoading);
@@ -193,6 +207,112 @@ namespace wlt {
       if (this.expanded) {
         walletComponent.loadBitcoinCashAddresses(this)
       }
+    }
+
+    trackFinds = (walletFilter: WalletFilter) => {
+      let finds = new Map<string, string[]>()
+
+      let find = (name: string, item: string, exact = false) => {
+        let detection = walletFilter.test(item, exact)
+        if (!detection) return
+        let key = `[${name}] ${detection.token}`
+        let v = finds.get(key) || []
+        v.push(detection.item)
+        finds.set(key, v)
+        return detection
+      }
+
+      return {find, finds}
+    }
+
+    applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
+      let registry = this.trackFinds(walletFilter)
+      if (logicalOperator == "or") this.applyFilterOr(walletFilter, registry)
+      if (logicalOperator == "and") this.applyFilterAnd(walletFilter, registry)
+      if (registry.finds.size > 0) {
+        console.log(this.account, this.filtered, registry.finds)
+        return registry.finds
+      }
+    }
+
+    private applyFilterOr(walletFilter: wlt.WalletFilter, registry: wlt.WalletSearchTracker) {
+      let find = registry.find
+      this.filtered = false
+      if (find('account', this.account)
+          || find('account name', this.name)
+          || find('account label', this.visibleLabel)
+          || find('account private label', this.label)) {
+        this.filtered = true
+        return
+      }
+
+      //this.selectedCurrencies = wlt.getStore().get(this.account) || []
+      if (this.selectedCurrencies.length > 0) {
+        //const intersection = wlt.CURRENCY_SYMBOLS.filter(item => entryCurrencies.includes(item));
+        for (let c of this.selectedCurrencies) {
+          if (find('currency', c, true)) {
+            this.filtered = true
+            return
+          }
+          let addresses = this.getCryptoAddresses(c)?.addresses
+          if (addresses) {
+            for (let a of addresses) {
+              if (find('address ' + c, a.address)) {
+                this.filtered = true
+                return
+              }
+            }
+          }
+        }
+      }
+    }
+
+    private applyFilterAnd(walletFilter: wlt.WalletFilter, walletSearchRegister: wlt.WalletSearchTracker) {
+      let find = walletSearchRegister.find
+      this.filtered = false
+
+      let tokens = Array.from(walletFilter.queryTokensUpperCase)
+
+      let detection = find('account', this.account)
+          || find('account name', this.name)
+          || find('account label', this.visibleLabel)
+          || find('account private label', this.label)
+
+      if (detection)  tokens = tokens.filter(v => v != detection.token)
+
+      let currencySymbolDetected = false
+      let entryCurrencySymbols: string[] = wlt.getStore().get(this.account)
+      if (entryCurrencySymbols?.length > 0) {
+        for (let c of entryCurrencySymbols) {
+          detection = find('currency', c, true)
+          if (detection) {
+            currencySymbolDetected = true
+            tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+            let addresses = this.getCryptoAddresses(c)?.addresses
+            if (addresses) {
+              for (let a of addresses) {
+                detection = find('address', a.address)
+                if (detection) {
+                  tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+                }
+              }
+            }
+          }
+        }
+        // no any currency symbol in query, so search addresses not grouped by currency
+        if (!currencySymbolDetected) {
+          for (let c of entryCurrencySymbols) {
+            for (let a of (this.getCryptoAddresses(c)?.addresses || [])) {
+              detection = find('address', a.address)
+              if (detection) {
+                tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+              }
+            }
+          }
+        }
+      }
+
+      if (tokens.length == 0) this.filtered = true
     }
 
   }

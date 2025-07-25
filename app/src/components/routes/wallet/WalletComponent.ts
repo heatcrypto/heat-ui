@@ -27,7 +27,18 @@
 @Component({
   selector: 'wallet',
   style: `
-    .bip44-label {font-size: smaller;color: deepskyblue;}
+    .bip44-label {
+      font-size: smaller;
+      color: deepskyblue;
+    }
+    .selected-currency {
+      padding: 2px;
+      margin-left: 2px;
+      font-size: smaller;
+      color: darkcyan;
+      border: solid 1px darkcyan;
+      border-radius: 6px;
+    }
   `,
   template: `
    <!--  layout-align="start center" -->
@@ -69,6 +80,8 @@
         </md-button>
       </div>
 
+      <wallet-search layout="column" wallet-component="vm" query="''" query-tokens=""></wallet-search>
+
       <div layout="column" layout-fill  flex>
         <div layout-fill layout="column" class="wallet-entries" flex>
 
@@ -78,7 +91,7 @@
                 - per currency token balances  -->
 
           <md-list layout-fill layout="column" flex>
-            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible && !entry.hidden" ng-hide="entry.isWalletEntry && !entry.unlocked && vm.displayUnlocked">
+            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.displayed()" ng-hide="entry.isWalletEntry && !entry.unlocked && vm.displayUnlocked">
 
               <!-- Wallet entry -->
               <div ng-if="entry.isWalletEntry" layout="row" class="wallet-entry" flex>
@@ -96,12 +109,14 @@
                 <div flex ng-if="entry.secretPhrase" class="identifier">
                   <a ng-click="entry.toggle()">{{entry.identifier}}</a>
                   <span ng-if="entry.bip44Compatible" class="bip44-label">BIP44</span>
+                  <span ng-repeat="sym in entry.selectedCurrencies" class="selected-currency">{{sym}}</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
                   <span class="label">{{entry.label}}</span>
                 </div>
                 <div flex ng-if="!entry.secretPhrase" class="identifier">
                   <span>{{entry.identifier}}</span>
                   <span ng-if="entry.bip44Compatible" class="bip44-label">BIP44</span>
+                  <span ng-repeat="sym in entry.selectedCurrencies" class="selected-currency">{{sym}}</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
                 </div>
 
@@ -746,7 +761,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       this.getAccountAssets(heatAccount).then((assetInfos) => {
         heatCurrencyBalance.tokens = []
         assetInfos.forEach(assetInfo => {
-          let tokenBalance = new wlt.TokenBalance(assetInfo.name, assetInfo.symbol, assetInfo.id)
+          let tokenBalance = new wlt.TokenBalance(walletEntry, assetInfo.name, assetInfo.symbol, assetInfo.id)
           tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, assetInfo.decimals)
           tokenBalance.visible = walletEntry.expanded
           heatCurrencyBalance.tokens.push(tokenBalance)
@@ -760,8 +775,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     });
 
     /* Bitcoin and Ethereum integration start here */
-    let selectedCurrencies = this.store.get(walletEntry.account) || []
-    if (selectedCurrencies.indexOf('BTC') > -1) {
+    if (walletEntry.selectedCurrencies.indexOf('BTC') > -1) {
       let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
       this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
@@ -769,35 +783,35 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         }
       }).catch(reason => {console.log(reason)})
     }
-    if (selectedCurrencies.indexOf('ETH') > -1) {
+    if (walletEntry.selectedCurrencies.indexOf('ETH') > -1) {
       let walletAddresses = wlt.loadCryptoAddresses(walletEntry, 'ETH')
       this.lightwalletService.unlock(walletAddresses, walletEntry.secretPhrase, "").then(walletAddresses => {
         walletEntry.initEth(this, walletAddresses)
       }).catch(reason => {console.log(reason)})
     }
-    if (selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
+    if (walletEntry.selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
       this.iotaCoreService.unlock(walletEntry.secretPhrase).then(wallet => {
         walletEntry.initIota(this, wallet)
       }).catch(reason => {console.log(reason)})
-    if (selectedCurrencies.indexOf('FIM') > -1)
+    if (walletEntry.selectedCurrencies.indexOf('FIM') > -1)
       this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         walletEntry.initFIMK(this, wallet)
       }).catch(reason => {console.log(reason)})
-    if (selectedCurrencies.indexOf('NXT') > -1)
+    if (walletEntry.selectedCurrencies.indexOf('NXT') > -1)
       this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         walletEntry.initNXT(this, wallet)
       }).catch(reason => {console.log(reason)})
-    if (selectedCurrencies.indexOf('ARDR') > -1)
+    if (walletEntry.selectedCurrencies.indexOf('ARDR') > -1)
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         walletEntry.initARDOR(this, wallet)
       }).catch(reason => {console.log(reason)})
-    if (selectedCurrencies.indexOf('LTC') > -1)
+    if (walletEntry.selectedCurrencies.indexOf('LTC') > -1)
       this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
           walletEntry.initLTC(this, wallet)
         }
       }).catch(reason => {console.log(reason)})
-    if (selectedCurrencies.indexOf('BCH') > -1)
+    if (walletEntry.selectedCurrencies.indexOf('BCH') > -1)
       this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         if (wallet !== undefined) {
           walletEntry.initBCH(this, wallet)
