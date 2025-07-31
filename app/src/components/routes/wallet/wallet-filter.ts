@@ -13,8 +13,8 @@ namespace wlt {
         public queryTokensUpperCase: string[]
 
         test(str: string, exact = false): {token: string, item: string} {
-            let r = this.queryTokensUpperCase.find(s => exact ? str == s : str?.toUpperCase().indexOf(s) > -1)
-            if (r)  return {token: r, item: str}
+            let tokenIndex = this.queryTokensUpperCase.findIndex(s => exact ? str == s : str?.toUpperCase().indexOf(s) > -1)
+            if (tokenIndex > -1)  return {token: this.queryTokens[tokenIndex], item: str}
         }
 
         /*test(str: string, exact = false, matchCase = false) {

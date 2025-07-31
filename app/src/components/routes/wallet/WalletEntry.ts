@@ -594,7 +594,7 @@ namespace wlt {
             let addresses = this.getCryptoAddresses(c)?.addresses
             if (addresses) {
               for (let a of addresses) {
-                detection = find('address', a.address)
+                detection = find(`${wlt.SYM_CURRENCIES_MAP.get(c).name} #${a.index}`, a.address)
                 if (detection) {
                   tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
                 }
