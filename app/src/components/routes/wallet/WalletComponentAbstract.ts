@@ -141,7 +141,7 @@ namespace wlt {
     public loadNXTAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let nxtCurrencyBalance = new wlt.CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
+        let nxtCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'NXT', 'NXT', address.address, address.privateKey)
         nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
@@ -163,7 +163,7 @@ namespace wlt {
     public loadARDORAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let ardrCurrencyBalance = new wlt.CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
+        let ardrCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'ARDOR', 'ARDR', address.address, address.privateKey)
         ardrCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
@@ -185,7 +185,7 @@ namespace wlt {
     public loadFIMKAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let fimkCurrencyBalance = new wlt.CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey)
+        let fimkCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'FIMK', 'FIM', address.address, address.privateKey)
         fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
         if (address.tokensBalances) {
           address.tokensBalances.forEach(balance => {
@@ -208,7 +208,7 @@ namespace wlt {
     public loadEthereumAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let ethCurrencyBalance = new wlt.CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey, address.index)
+        let ethCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Ethereum', 'ETH', address.address, address.privateKey, address.index)
         if (address.balance) {
           ethCurrencyBalance.balance = Big(address.balance).toFixed()
         }
@@ -232,7 +232,7 @@ namespace wlt {
     public loadIotaAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let iotaCurrencyBalance = new wlt.CurrencyBalance('Iota', 'i', address.address, address.privateKey)
+        let iotaCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Iota', 'i', address.address, address.privateKey)
         iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
         return iotaCurrencyBalance
       }
@@ -246,7 +246,7 @@ namespace wlt {
     public loadBitcoinAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let btcCurrencyBalance = new wlt.CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey, address.index)
+        let btcCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Bitcoin', 'BTC', address.address, address.privateKey, address.index)
         btcCurrencyBalance.balance = address.balance ? new Big(address.balance).times(new Big(100000000)).toString() : ""
         return btcCurrencyBalance
       }
@@ -260,7 +260,7 @@ namespace wlt {
     public loadBitcoinCashAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let bchCurrencyBalance = new wlt.CurrencyBalance('BitcoinCash', 'BCH', address.address, address.privateKey, address.index)
+        let bchCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'BitcoinCash', 'BCH', address.address, address.privateKey, address.index)
         bchCurrencyBalance.balance = address.balance + ""
         return bchCurrencyBalance
       }
@@ -274,7 +274,7 @@ namespace wlt {
     public loadLtcAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let ltcCurrencyBalance = new wlt.CurrencyBalance('Litecoin', 'LTC', address.address, address.privateKey, address.index)
+        let ltcCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Litecoin', 'LTC', address.address, address.privateKey, address.index)
         ltcCurrencyBalance.balance = address.balance + ""
         return ltcCurrencyBalance
       }
@@ -360,7 +360,6 @@ namespace wlt {
         let currencyBalance: wlt.CurrencyBalance = createBalance(address)
         currencyBalance.visible = walletEntry.expanded
         currencyBalance.inUse = !createdAddress.wasCreated
-        currencyBalance.walletEntry = walletEntry
         //currencyBalance.balance = currencyBalance.balance || addressBalance || ""
         if (successLoaded) {
           if (createdAddress.wasCreated && currencyBalance.balance && /[0-9]/.test(currencyBalance.balance)) {

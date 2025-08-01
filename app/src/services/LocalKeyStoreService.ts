@@ -232,7 +232,7 @@ class LocalKeyStoreService {
         added.push(localKeyEntry)
       }
       if (entry.visibleLabel) {
-        wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
+        wlt.updateEntryVisibleLabel(entry.visibleLabel, entry.account)
       }
       if (entry.currencies) {
         wlt.updateEntryCurrencies(entry.account, entry.currencies)

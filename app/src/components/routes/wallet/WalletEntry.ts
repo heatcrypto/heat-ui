@@ -41,13 +41,14 @@ namespace wlt {
      */
     public filtered = null
     public hidden = false
+    public visibleLabel: string
 
     displayed() {
       return this.visible && !this.hidden && this.filtered != false
     }
   }
 
-  export abstract class SubEntryAbstract extends EntryAbstract{
+  export abstract class SubEntryAbstract extends EntryAbstract {
 
     public walletEntry: WalletEntry
 
@@ -77,8 +78,14 @@ namespace wlt {
     public stateMessage: string
     private _balance: string
 
-    constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
+    constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()
+      this.walletEntry = walletEntry
+      this.visibleLabel = wlt.getEntryVisibleLabel(this.walletEntry.account, address)
+    }
+
+    toString(): string {
+      return `${this.index ? '#' + this.index : ''} ${this.name}`
     }
 
     get balance(): string {
@@ -288,7 +295,7 @@ namespace wlt {
       if (nextAddress) {
         nextAddress.isDeleted = false
         rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress)
-        let newCurrencyBalance = new CurrencyBalance(currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
+        let newCurrencyBalance = new CurrencyBalance(this.walletEntry, currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
         //rememberAddressCreated(this.walletEntry.account, nextAddress.address)
         newCurrencyBalance.visible = this.walletEntry.expanded
@@ -341,7 +348,6 @@ namespace wlt {
     public isWalletEntry = true
     public selected = true
     public identifier: string
-    public visibleLabel: string
     public label: string
     public secretPhrase: string
     public selectedCurrencies: string[]
@@ -402,6 +408,15 @@ namespace wlt {
         currencyAddressCreate = new wlt.CurrencyAddressCreate(currencyName, wallet, this)
         this.currencies.push(currencyAddressCreate)
       }
+    }
+
+    findCurrencyBalance(currencySymbol: string): wlt.CurrencyBalance {
+      let result = this.currencies
+          .find(c => {
+            let cal = <wlt.CurrencyBalance>c
+            return cal.isCurrencyBalance && cal.symbol == currencySymbol
+          })
+      return <wlt.CurrencyBalance>result
     }
 
     findAddressLoading(currencySymbol: string): wlt.CurrencyAddressLoading {
@@ -549,18 +564,28 @@ namespace wlt {
         return
       }
 
+      // find currency addresses labels
+      let labels = wlt.getEntryVisibleLabelList(this.account)
+      for (let label of labels) {
+        if (find(`${this.account} address label`, label)) {
+          this.filtered = true
+          return
+        }
+      }
+
       //this.selectedCurrencies = wlt.getStore().get(this.account) || []
       if (this.selectedCurrencies.length > 0) {
         //const intersection = wlt.CURRENCY_SYMBOLS.filter(item => entryCurrencies.includes(item));
         for (let c of this.selectedCurrencies) {
-          if (find('currency', c, true)) {
+          let currencyName = wlt.SYM_CURRENCIES_MAP.get(c).name
+          if (find('currency', c, true) || find('currency', currencyName)) {
             this.filtered = true
             return
           }
           let addresses = this.getCryptoAddresses(c)?.addresses
           if (addresses) {
             for (let a of addresses) {
-              if (find('address ' + c, a.address)) {
+              if (find(`${wlt.SYM_CURRENCIES_MAP.get(c).name} #${a.index}`, a.address)) {
                 this.filtered = true
                 return
               }
@@ -574,48 +599,65 @@ namespace wlt {
       let find = walletSearchRegister.find
       this.filtered = false
 
-      let tokens = Array.from(walletFilter.queryTokensUpperCase)
+      let queryTokens = Array.from(walletFilter.queryTokensUpperCase)
 
       let detection = find('account', this.account)
           || find('account name', this.name)
           || find('account label', this.visibleLabel)
           || find('account private label', this.label)
 
-      if (detection)  tokens = tokens.filter(v => v != detection.token)
+      if (detection)  queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+
+      // find currency address label
+      let findCurrencyAddressLabel = (account: string) => {
+        let labels = wlt.getEntryVisibleLabelList(account)
+        for (let label of labels) {
+          detection = find(`${this.account} address label`, label)
+          if (detection) {
+            queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+          }
+        }
+      }
+
+      findCurrencyAddressLabel(this.account)
 
       let currencySymbolDetected = false
       let entryCurrencySymbols: string[] = wlt.getStore().get(this.account)
+
       if (entryCurrencySymbols?.length > 0) {
+
+        const findAddresses = (currencySymbol) => {
+          let currencyName = wlt.SYM_CURRENCIES_MAP.get(currencySymbol).name
+          for (let a of (this.getCryptoAddresses(currencySymbol)?.addresses || [])) {
+            detection = find(`${currencyName} #${a.index}`, a.address)
+            if (detection) {
+              queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+            }
+          }
+        }
+
         for (let c of entryCurrencySymbols) {
-          detection = find('currency', c, true)
+          let currencyName = wlt.SYM_CURRENCIES_MAP.get(c).name
+          detection = find('currency', c, true) || find('currency', currencyName)
           if (detection) {
             currencySymbolDetected = true
-            tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            let addresses = this.getCryptoAddresses(c)?.addresses
-            if (addresses) {
-              for (let a of addresses) {
-                detection = find(`${wlt.SYM_CURRENCIES_MAP.get(c).name} #${a.index}`, a.address)
-                if (detection) {
-                  tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-                }
-              }
-            }
+            queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+            findAddresses(c)
           }
         }
         // no any currency symbol in query, so search addresses not grouped by currency
         if (!currencySymbolDetected) {
           for (let c of entryCurrencySymbols) {
-            for (let a of (this.getCryptoAddresses(c)?.addresses || [])) {
-              detection = find('address', a.address)
-              if (detection) {
-                tokens = tokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-              }
-            }
+            findAddresses(c)
           }
         }
       }
 
-      if (tokens.length == 0) this.filtered = true
+      if (queryTokens.length == 0) this.filtered = true
+    }
+
+    toString(): string {
+      return `${this.account} ${this.name || ''}`
     }
 
   }

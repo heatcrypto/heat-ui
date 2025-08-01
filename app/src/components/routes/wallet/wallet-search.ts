@@ -37,14 +37,13 @@ class WalletSearchComponent {
   queryTokens: string[] // @input
   reasoning: any[]
   logicalOperator: 'and' | 'or' = "or"
-  expression: string[]
+  expression: string
 
   constructor(private $scope: angular.IScope, private $location: angular.ILocationService, private panel: PanelService) {}
 
   onKeyPress($event) {
     if ($event.keyCode == 13) {
       this.applyFilter()
-      //this.expression = this.queryTokens?.join(' <code>' + this.logicalOperator + '</code> ')
       // this.expression = []
       // if (this.queryTokens?.length > 0) {
       //   this.expression = [this.queryTokens[0]]
@@ -63,6 +62,7 @@ class WalletSearchComponent {
   applyFilter() {
     let filterResult = this.walletComponent.applyFilter(this.query, this.logicalOperator)
     this.queryTokens = filterResult?.queryTokens
+    this.expression = this.queryTokens?.join(' ' + this.logicalOperator.toUpperCase() + ' ')
     this.reasoning = filterResult?.searchResultExplained.map(v => {
       let finds: Map<string, string[]> = v.finds
       let entryStr = Array.from(finds.entries()).map(e => `    ${e[0]} => ${e[1]}`).join('\n')
@@ -71,7 +71,7 @@ class WalletSearchComponent {
   }
 
   showExplainedFinds($event) {
-    let f = (title, content) => {
+    let f = (title, expression, content) => {
       dialogs.dialog({
         id: 'explainedFinds',
         title: title,
@@ -82,9 +82,13 @@ class WalletSearchComponent {
           close: function() {
             dialogs.$mdDialog().hide();
           },
-          content: content
+          content: content,
+          expression: expression
         },
         template: `
+        <p>
+          <label>Expression: </label><br><code>{{vm.expression}}</code>
+        </p>
         <!--<md-input-container flex>-->
           <textarea readonly rows="20" ng-model="vm.content" id="content-textarea" style="font-family: monospace;"></textarea>
         <!--</md-input-container>-->
@@ -100,7 +104,7 @@ class WalletSearchComponent {
       })
     }
 
-    f("Explained finds", this.reasoning?.join('\n\n'))
+    f("Explained finds", this.expression, this.reasoning?.join('\n\n'))
 
     /*this.panel.show(`
       <div layout="column" flex style="padding: 10px; background-color: #4d5168; border-radius: 4px;">

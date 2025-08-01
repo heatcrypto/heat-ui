@@ -128,12 +128,23 @@ namespace wlt {
     }
   */
 
-  export function getEntryVisibleLabel(account) {
-    return getStore().get("label." + account)
+  export function getEntryVisibleLabelList(account): string[] {
+    const store = getStore()
+    return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => store.get(k))
   }
 
-  export function updateEntryVisibleLabel(account, visibleLabel) {
-    let storeKey = "label." + account
+  export function getEntryVisibleLabel(account, address?: string) {
+    if (address) {
+      let subEntryKey = converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address))
+      return getStore().get(`label.${account}.${subEntryKey || ''}`)
+    }
+    return getStore().get(`label.${account}`)
+  }
+
+  export function updateEntryVisibleLabel(visibleLabel, account, address?: string) {
+    const storeKey = address
+        ? `label.${account}.${converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address)) || ''}`
+        : `label.${account}`
     if (visibleLabel) {
       getStore().put(storeKey, visibleLabel)
     } else {

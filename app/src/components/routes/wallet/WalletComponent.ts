@@ -127,7 +127,7 @@
                   <md-menu-content width="4">
                     <!--<span>Account {{entry.account}}</span>-->
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="vm.enterEntryLabel(entry)">
+                      <md-button aria-label="explorer" ng-click="vm.enterWalletEntryLabel(entry)">
                         <md-icon md-font-library="material-icons">label</md-icon>
                         Enter label
                       </md-button>
@@ -184,6 +184,7 @@
               <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
                 <div class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
+                <span class="visibleLabel flex" style="margin-top: 8px;">{{entry.visibleLabel}}</span>
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span class="state-message" ng-if="entry.stateMessage">{{entry.stateMessage}}</span>
                   <span>{{entry.balance}}</span>
@@ -216,6 +217,12 @@
                       <md-button aria-label="explorer" ng-click="vm.signEthereumMessage($event, entry)">
                         <md-icon md-font-library="material-icons">spellcheck</md-icon>
                         Sign Ethereum Message
+                      </md-button>
+                    </md-menu-item>
+                    <md-menu-item>
+                      <md-button aria-label="explorer" ng-click="vm.enterCurrencyBalanceLabel(entry)">
+                        <md-icon md-font-library="material-icons">label</md-icon>
+                        Enter label
                       </md-button>
                     </md-menu-item>
                     <md-menu-item ng-hide="entry.symbol==='HEAT'" ng-if="entry.index!=undefined">
@@ -363,28 +370,41 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     wlt.initCreatedAddresses()
   }
 
-  enterEntryLabel(entry: wlt.WalletEntry) {
+  enterWalletEntryLabel(walletEntry: wlt.WalletEntry) {
     let p = [
-      {label: `Visible label`, value: entry.visibleLabel},
-      {label: `Invisible label until login`, value: entry.label}
+      {label: `Visible label`, value: walletEntry.visibleLabel},
+      {label: `Invisible label until login`, value: walletEntry.label}
     ]
-    dialogs.simplePrompt(null, 'Enter Label', `Enter label for account ${entry.identifier} or enter empty value to delete the label`, p).then(
+    dialogs.simplePrompt(null, 'Enter Label', `Enter label for account ${walletEntry.identifier} or enter empty value to delete the label`, p).then(
       labels => {
         //save visible label
-        entry.visibleLabel = labels[0]?.trim()
-        wlt.updateEntryVisibleLabel(entry.account, entry.visibleLabel)
+        walletEntry.visibleLabel = labels[0]?.trim()
+        wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account)
         //save invisible label
-        entry.label = labels[1]?.trim()
-        let password = this.localKeyStore.getPasswordForAccount(entry.account)
+        walletEntry.label = labels[1]?.trim()
+        let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
         if (password) {
           try {
-            let key = this.localKeyStore.load(entry.account, password)
+            let key = this.localKeyStore.load(walletEntry.account, password)
             if (key) {
-              key.label = entry.label || null
+              key.label = walletEntry.label || null
               this.localKeyStore.put(key)
             }
           } catch (e) { console.error(e) }
         }
+      }
+    )
+  }
+
+  enterCurrencyBalanceLabel(currencyBalance: wlt.CurrencyBalance) {
+    let p = [
+      {label: `Label`, value: currencyBalance.visibleLabel}
+    ]
+    dialogs.simplePrompt(null, 'Enter Label', `Enter label for entry "${currencyBalance.toString()}" or enter empty value to delete the label`, p).then(
+      labels => {
+        //save visible label
+        currencyBalance.visibleLabel = labels[0]?.trim()
+        wlt.updateEntryVisibleLabel(currencyBalance.visibleLabel, currencyBalance.walletEntry.account, currencyBalance.address)
       }
     )
   }
@@ -747,8 +767,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   initWalletEntry(walletEntry: wlt.WalletEntry) {
     this.allLocked = false
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
-    let heatCurrencyBalance = new wlt.CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
-    heatCurrencyBalance.walletEntry = walletEntry
+    let heatCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
     heatCurrencyBalance.visible = walletEntry.expanded
     heatCurrencyBalance.pubKey = heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase)
     walletEntry.currencies.push(heatCurrencyBalance)
