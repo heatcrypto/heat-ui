@@ -160,16 +160,18 @@ module heat.crypto {
   }
 
   /**
-   * @param secretPhrase Hex String
+   * @param publicKey public key Hex String
    * @returns String
    */
   export function getAccountIdFromPublicKey(publicKey: string) {
-    _hash.init();
-    _hash.update(converters.hexStringToByteArray(publicKey));
+    return byteArrayToBigInteger(hexToHash8Bytes(publicKey)).toString()
+  }
 
-    var account   = _hash.getBytes();
-    var slice     = (converters.hexStringToByteArray(converters.byteArrayToHexString(account))).slice(0, 8);
-    return byteArrayToBigInteger(slice).toString();
+  export function hexToHash8Bytes(hex: string) {
+    _hash.init()
+    _hash.update(converters.hexStringToByteArray(hex))
+    let hashBytes = _hash.getBytes()
+    return (converters.hexStringToByteArray(converters.byteArrayToHexString(hashBytes))).slice(0, 8)
   }
 
 
