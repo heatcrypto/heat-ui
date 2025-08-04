@@ -2,15 +2,22 @@ namespace wlt {
 
     export class WalletFilter {
 
-        //finds: Map<string, string[]> // token => found item
+        //static wordRegex = /"[^"]*"|\w+/g  //special symbols are separators also   'This4!-rr' => 'This4', 'rr'
+        static wordRegex = /"[^"]*"|\S+/g  // 'This4!-rr' => 'This4!-rr'
 
         constructor(query: string) {
-            this.queryTokens = utils.tokenize(query)
+            this.queryTokens = this.tokenize(query)
+            // remove quotes
+            this.queryTokens = this.queryTokens.map(s => s.replace(/"/gi, ''))
             this.queryTokensUpperCase = this.queryTokens.map(s => s.toUpperCase())
         }
 
         public queryTokens: string[]
         public queryTokensUpperCase: string[]
+
+        tokenize(input) {
+            return input.match(WalletFilter.wordRegex)
+        }
 
         test(str: string, exact = false): {token: string, item: string} {
             let tokenIndex = this.queryTokensUpperCase.findIndex(s => exact ? str == s : str?.toUpperCase().indexOf(s) > -1)
