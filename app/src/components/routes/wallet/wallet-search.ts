@@ -90,7 +90,7 @@ class WalletSearchComponent {
           <label>Expression: </label><br><code>{{vm.expression}}</code>
         </p>
         <!--<md-input-container flex>-->
-          <textarea readonly rows="20" ng-model="vm.content" id="content-textarea" style="font-family: monospace;"></textarea>
+          <textarea readonly rows="20" ng-model="vm.content" id="content-textarea" style="font-family: monospace; width: 540px;"></textarea>
         <!--</md-input-container>-->
         <div layout="row" layout-align="center center" style="margin-top: 6px; min-height: 25px">
           <md-button class="md-primary" ng-click="vm.close()">Close</md-button>

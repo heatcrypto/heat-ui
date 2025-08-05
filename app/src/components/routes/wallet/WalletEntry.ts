@@ -531,6 +531,7 @@ namespace wlt {
       let finds = new Map<string, string[]>()
 
       let find = (name: string, item: string, exact = false) => {
+        if (!item) return
         let detection = walletFilter.test(item, exact)
         if (!detection) return
         let key = `[${name}] ${detection.token}`
@@ -548,7 +549,7 @@ namespace wlt {
       if (logicalOperator == "or") this.applyFilterOr(walletFilter, registry)
       if (logicalOperator == "and") this.applyFilterAnd(walletFilter, registry)
       if (registry.finds.size > 0) {
-        console.log(this.account, this.filtered, registry.finds)
+        //console.log(this.account, this.filtered, registry.finds)
         return registry.finds
       }
     }
@@ -585,7 +586,7 @@ namespace wlt {
           let addresses = this.getCryptoAddresses(c)?.addresses
           if (addresses) {
             for (let a of addresses) {
-              if (find(`${wlt.SYM_CURRENCIES_MAP.get(c).name} #${a.index}`, a.address)) {
+              if (find(`${wlt.SYM_CURRENCIES_MAP.get(c).name} #${a.index || ''}`, a.address)) {
                 this.filtered = true
                 return
               }
@@ -599,7 +600,7 @@ namespace wlt {
       let find = walletSearchRegister.find
       this.filtered = false
 
-      let queryTokens = Array.from(walletFilter.queryTokensUpperCase)
+      let queryTokens = Array.from(walletFilter.queryTokens)
 
       let detection = find('account', this.account)
           || find('account name', this.name)
@@ -629,7 +630,7 @@ namespace wlt {
         const findAddresses = (currencySymbol) => {
           let currencyName = wlt.SYM_CURRENCIES_MAP.get(currencySymbol).name
           for (let a of (this.getCryptoAddresses(currencySymbol)?.addresses || [])) {
-            detection = find(`${currencyName} #${a.index}`, a.address)
+            detection = find(`${currencyName} #${a.index || ''}`, a.address)
             if (detection) {
               queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
             }
