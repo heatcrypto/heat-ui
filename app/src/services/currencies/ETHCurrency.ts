@@ -96,6 +96,7 @@ class ETHCurrency implements ICurrency {
       const vm = this
       this.paymentMessageMethod = null
       vm.stage = "create"
+      vm.enterNonceManually = false
 
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
       vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
@@ -112,21 +113,29 @@ class ETHCurrency implements ICurrency {
         rawTx: ''
       }
 
-      vm.generateTxnBytes = function () {
+      vm.generateTxnBytes = function (forceEnterNonce = false) {
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
         let amountInWei = web3.web3.toWei(this.data.amount.replace(',',''), 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
 
+        let enterAddressNonce = (nonce?) => dialogs.simplePrompt(null,
+            'Enter ETH address nonce',
+            `${parseInt(nonce) >= 0 ? '' : 'The nonce is not defined. '}Nonce is the outgoing transaction count from that address`,
+            [{label: "Nonce", value: nonce}])
+            .then(value => value[0],
+                reason => {
+                  console.log('Dialog Get Address Nonce is escaped. ' + reason)
+                }
+            )
+
         let getAddressNonce = (address: string) => web3.getAddressNonce(address)
             .catch(reason => {
-              return dialogs.simplePrompt(null,
-                  'Enter ETH address nonce',
-                  "The nonce is not resolved. Nonce is the outgoing transaction count from that address",
-                  [{label: "Nonce", value: undefined}])
-                  .then(value => value[0],
-                          reason => {console.log('Dialog Get Address Nonce is escaped. ' + reason)}
-                  )
+              console.info(reason)
+              forceEnterNonce = true
+              return null
+            }).then(nonce => {
+              return forceEnterNonce ? enterAddressNonce(nonce) : nonce
             }).then(nonce => {
               if (typeof nonce === "string") return parseInt(nonce)
             })
@@ -142,13 +151,12 @@ class ETHCurrency implements ICurrency {
       }
 
       this.createTxnButtonClick = function ($event) {
-        vm.generateTxnBytes().then(rawTx => {
+        vm.generateTxnBytes(vm.enterNonceManually).then(rawTx => {
           $scope.$evalAsync(() => {
             vm.data.rawTx = rawTx
             vm.stage = "broadcast"
           })
-          //just visual effect
-          if (!rawTx) setTimeout(() => this.stage = "create", 1500)
+          if (!rawTx) setTimeout(() => $scope.$evalAsync(() => {this.stage = "create"}), 500)
         }).catch(reason => console.error(reason))
       }
 
@@ -287,7 +295,12 @@ class ETHCurrency implements ICurrency {
                   <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
                 </md-input-container>
 
-                <p>Fee: {{vm.data.fee}} ETH</p>
+                <p>
+                  Fee: {{vm.data.fee}} ETH
+                  <md-checkbox ng-model="vm.enterNonceManually" style="float:right">
+                    Enter nonce manually
+                  </md-checkbox>
+                </p>
               </div>
               
               <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">

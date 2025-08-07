@@ -39,7 +39,7 @@ namespace wlt {
                             pos++
                         }
                     } else {
-                        if (utils.stringSimilarity(str, t) > 0.51)  return {token: WalletFilter.FUZZY_PREFIX + t, item: str}
+                        if (utils.stringSimilarity(str, t) > 0.51)  return {token: fuzzyToken, item: str}
                     }
                 }
             }
