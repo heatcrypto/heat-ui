@@ -48,6 +48,7 @@
             <div class="value" ng-if="vm.balanceUnconfirmed">
               {{vm.balanceUnconfirmed}} ETH
               <span style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
+              <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
             <div class="value" ng-if="!vm.balanceUnconfirmed">
               {{vm.balance}} ETH
@@ -235,6 +236,11 @@ class EthereumAccountComponent {
         }
       })
     })
+
+    // to cache nonce
+    let web3 = <Web3Service> heat.$inject.get('web3')
+    web3.getAddressNonce(this.account)
+
     this.loadPaymentMessages()
   }
 

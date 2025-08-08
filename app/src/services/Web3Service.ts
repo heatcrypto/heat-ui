@@ -36,26 +36,20 @@ class Web3Service {
             let respObj = angular.isString(resp) ? JSON.parse(resp) : resp
             if (respObj.nonce) {
                 resolve(respObj.nonce)
+                let $rootScope = heat.$inject.get('$rootScope')
+                let store = this.storage.namespace('currency-cache-eth', $rootScope, true)
+                store.put(address + '-' + 'info', resp)
             } else {
                 reject("response has no nonce")
             }
         },
         reason => {
-          let $rootScope = heat.$inject.get('$rootScope')
-          let store = this.storage.namespace('currency-cache-eth', $rootScope, true)
-          let cache = {
-            get: key => store.get(address + "-" + key)
-          }
-          let info = cache.get("info")
-          if (info) {
-              resolve(info.nonce)
-          } else {
-              reject(reason)
-          }
+            reject(reason)
         }
       );
     })
   }
+
   sendEther(account: any, _to: string, _value: any): Promise<{ txHash: string }> {
     return new Promise((resolve, reject) => {
       this.createRawTx2(account, _to, _value).then(

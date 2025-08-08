@@ -133,7 +133,8 @@ class ETHCurrency implements ICurrency {
             .catch(reason => {
               console.info(reason)
               forceEnterNonce = true
-              return null
+              let info = wlt.getStore('currency-cache-eth').get(address + '-' + 'info')
+              return info?.nonce
             }).then(nonce => {
               return forceEnterNonce ? enterAddressNonce(nonce) : nonce
             }).then(nonce => {
