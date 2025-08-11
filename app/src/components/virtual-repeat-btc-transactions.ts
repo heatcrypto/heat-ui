@@ -175,9 +175,9 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
         //processed item has message value or null so undefined only should be processed
         if (transaction.message === undefined) {
-          wlt.loadPaymentMessage(transaction.txid)
-              .then(v => transaction.message = v)
-              .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
+            let p = <Promise<{ method: number; text: string; }>>wlt.loadPaymentMessage(transaction.txid)
+            p.then(v => transaction.message = v)
+                .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
         }
 
         transaction.json = {

@@ -194,8 +194,8 @@ class BitcoinAccountComponent {
     for (const ptx of this.pendingTransactions) {
       //processed item has message value or null
       if (ptx.message === undefined) {
-        wlt.loadPaymentMessage(ptx.txId)
-            .then(v => ptx.message = v)
+        let p = <Promise<{ method: number; text: string; }>>wlt.loadPaymentMessage(ptx.txId)
+        p.then(v => ptx.message = v)
             .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
       }
     }

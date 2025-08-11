@@ -207,8 +207,8 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
         //processed item has message value or null so undefined only should be processed
         if (transaction['message'] === undefined) {
-          wlt.loadPaymentMessage(transaction.hash)
-              .then(v => transaction['message'] = v)
+          let p = <Promise<{ method: number; text: string; }>>wlt.loadPaymentMessage(transaction.hash)
+          p.then(v => transaction['message'] = v)
               .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
         }
 

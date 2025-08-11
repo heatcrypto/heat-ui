@@ -36,7 +36,7 @@ class WalletSearchComponent {
   query: string // @input
   queryTokens: string[] // @input
   reasoning: any[]
-  logicalOperator: 'and' | 'or' = "or"
+  logicalOperator: 'and' | 'or' = "and"
   expression: string
 
   constructor(private $scope: angular.IScope, private $location: angular.ILocationService, private panel: PanelService) {}

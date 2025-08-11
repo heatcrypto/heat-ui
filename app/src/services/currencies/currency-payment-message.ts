@@ -125,30 +125,43 @@ namespace wlt {
 
     let apiGetKeystoreValueFunc
 
-    export function loadPaymentMessage(txId: string) {
+    export function loadPaymentMessage(txId: string, accountSecretPhrase?: string, localOnly = false) {
         let store = getPaymentMessageStore()
         let user = getUserService()
+        let pair = accountSecretPhrase
+            ? {pubKey: heat.crypto.secretPhraseToPublicKey(accountSecretPhrase), secret: accountSecretPhrase}
+            : {pubKey: user.publicKey, secret: user.secretPhrase}
+
+        //todo не работает сканирование payment messages из WalletEntry
+        //pair = {pubKey: user.publicKey, secret: user.secretPhrase}  // DEBUG
+
         //hide original txId in message id
-        let messageId = createMessageId(txId, user.publicKey)
+        let messageId = createMessageId(txId, pair.pubKey)
 
         let decrypt = (encrypted: heat.crypto.IEncryptedMessage) => {
             try {
-                return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, user.publicKey, user.secretPhrase)
+                return heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, pair.pubKey, pair.secret)
             } catch (e) {}
             return null
         }
 
-        return new Promise<{ method: number, text: string }>((resolve, reject) => {
-            //first try to load message from local store
-            let encryptedMessage: heat.crypto.IEncryptedMessage = store.get(messageId)
-            let messageText = encryptedMessage ? decrypt(encryptedMessage) : null
-            if (messageText) {
-                resolve({method: 0, text: messageText})
+        let encryptedMessage: heat.crypto.IEncryptedMessage = store.get(messageId)
+        let messageText = encryptedMessage ? decrypt(encryptedMessage) : null
+        let localResult = messageText ? {method: 0, text: messageText} : null
+        if (localOnly) {
+            return localResult
+        }
+
+        return new Promise<{method: number, text: string}>((resolve, reject) => {
+            if (localResult) {
+                resolve(localResult)
                 return
             }
+
             if (!apiGetKeystoreValueFunc) {
                 apiGetKeystoreValueFunc = (account, messageIds) => getHeatService().api.getKeystoreAccountEntryExt(account, messageIds)
             }
+
             //there is no message in local store so try find the entry in HEAT Keystore using 2 ids
             apiGetKeystoreValueFunc(user.account, messageId).then(response => {
                 let parsed = utils.parseResponse(response)

@@ -544,6 +544,37 @@ namespace wlt {
       return {find, finds}
     }
 
+    findInTransactions = (find, queryTokens, currency, a) => {
+      let isFind = false
+      let page = 0
+      let store = wlt.getStore('currency-cache-' + currency.symbol.toLowerCase())
+      while (page < 100500) {
+        let txsPage: any[] = store.get(a.address + '-' + page)
+        if (!txsPage) break
+        for (const tx of txsPage) {
+          //find tx id
+          let txId = tx.hash || tx.txid
+          let detection = find(`Transaction ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, txId)
+          if (detection) {
+            isFind = true
+            queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+          }
+          //find payment memo
+          let localPaymentMessages: {method: number, text: string} = tx.message
+          if (localPaymentMessages?.text) {
+            detection = find(`Payment memo ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, localPaymentMessages.text)
+            if (detection) {
+              isFind = true
+              queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+            }
+          }
+        }
+        page++
+      }
+      if (queryTokens == null) return isFind  //for applying OR operator
+      return queryTokens  //for applying AND operator
+    }
+
     applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
       let registry = this.trackFinds(walletFilter)
       if (logicalOperator == "or") this.applyFilterOr(walletFilter, registry)
@@ -576,17 +607,21 @@ namespace wlt {
 
       //this.selectedCurrencies = wlt.getStore().get(this.account) || []
       if (this.selectedCurrencies.length > 0) {
-        //const intersection = wlt.CURRENCY_SYMBOLS.filter(item => entryCurrencies.includes(item));
-        for (let c of this.selectedCurrencies) {
-          let currencyName = wlt.SYM_CURRENCIES_MAP.get(c).name
-          if (find('currency', c, true) || find('currency', currencyName)) {
+        for (let currencySymbol of this.selectedCurrencies) {
+          let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
+          if (find('currency', currencySymbol, true) || find('currency', c.name)) {
             this.filtered = true
             return
           }
-          let addresses = this.getCryptoAddresses(c)?.addresses
+          let addresses = this.getCryptoAddresses(currencySymbol)?.addresses
           if (addresses) {
             for (let a of addresses) {
-              if (find(`${wlt.SYM_CURRENCIES_MAP.get(c).name} #${a.index || ''}`, a.address)) {
+              if (find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)) {
+                this.filtered = true
+                return
+              }
+              // search in cached transactions
+              if (this.findInTransactions(find, null, c, a)) {
                 this.filtered = true
                 return
               }
@@ -628,12 +663,16 @@ namespace wlt {
       if (entryCurrencySymbols?.length > 0) {
 
         const findAddresses = (currencySymbol) => {
-          let currencyName = wlt.SYM_CURRENCIES_MAP.get(currencySymbol).name
+          if (!this.secretPhrase) return
+          let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
           for (let a of (this.getCryptoAddresses(currencySymbol)?.addresses || [])) {
-            detection = find(`${currencyName} #${a.index || ''}`, a.address)
+            detection = find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)
             if (detection) {
               queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
             }
+
+            // search in cached transactions
+            queryTokens = this.findInTransactions(find, queryTokens, c, a)
           }
         }
 
@@ -654,7 +693,10 @@ namespace wlt {
         }
       }
 
-      if (queryTokens.length == 0) this.filtered = true
+      if (queryTokens.length == 0) {
+        this.filtered = true
+        return
+      }
     }
 
     toString(): string {
