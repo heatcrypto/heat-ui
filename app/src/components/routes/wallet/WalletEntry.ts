@@ -23,17 +23,6 @@
 
 namespace wlt {
 
-  export type WalletSearchTracker = {
-    /**
-     * find items matching token
-     */
-    find: (name: string, item: string, exact?: boolean) => { token: string, item: string },
-    /**
-     * detailed info of finds (where it were found)
-     */
-    finds: Map<string, string[]>
-  }
-
   export abstract class EntryAbstract {
     public visible = false
     /**
@@ -356,6 +345,7 @@ namespace wlt {
     public pin: string
     public unlocked = false
     public expanded = false
+    private filter: wlt.WalletEntryFilter;
 
     constructor(public account: string,
                 public name: string,
@@ -367,6 +357,8 @@ namespace wlt {
       this.visibleLabel = getEntryVisibleLabel(this.account)
       this.bip44Compatible = getEntryBip44Compatible(this.account)
       this.selectedCurrencies = (wlt.getStore().get(this.account) || []).sort()
+
+      this.filter = new WalletEntryFilter(this)
     }
 
     setWalletComponent(component: WalletComponentAbstract) {
@@ -527,176 +519,8 @@ namespace wlt {
       }
     }
 
-    trackFinds = (walletFilter: WalletFilter) => {
-      let finds = new Map<string, string[]>()
-
-      let find = (name: string, item: string, exact = false) => {
-        if (!item) return
-        let detection = walletFilter.test(item, exact)
-        if (!detection) return
-        let key = `[${name}] ${detection.token}`
-        let v = finds.get(key) || []
-        v.push(detection.item)
-        finds.set(key, v)
-        return detection
-      }
-
-      return {find, finds}
-    }
-
-    findInTransactions = (find, queryTokens, currency, a) => {
-      let isFind = false
-      let page = 0
-      let store = wlt.getStore('currency-cache-' + currency.symbol.toLowerCase())
-      while (page < 100500) {
-        let txsPage: any[] = store.get(a.address + '-' + page)
-        if (!txsPage) break
-        for (const tx of txsPage) {
-          //find tx id
-          let txId = tx.hash || tx.txid
-          let detection = find(`Transaction ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, txId)
-          if (detection) {
-            isFind = true
-            queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-          }
-          //find payment memo
-          let localPaymentMessages: {method: number, text: string} = tx.message
-          if (localPaymentMessages?.text) {
-            detection = find(`Payment memo ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, localPaymentMessages.text)
-            if (detection) {
-              isFind = true
-              queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            }
-          }
-        }
-        page++
-      }
-      if (queryTokens == null) return isFind  //for applying OR operator
-      return queryTokens  //for applying AND operator
-    }
-
     applyFilter(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
-      let registry = this.trackFinds(walletFilter)
-      if (logicalOperator == "or") this.applyFilterOr(walletFilter, registry)
-      if (logicalOperator == "and") this.applyFilterAnd(walletFilter, registry)
-      if (registry.finds.size > 0) {
-        //console.log(this.account, this.filtered, registry.finds)
-        return registry.finds
-      }
-    }
-
-    private applyFilterOr(walletFilter: wlt.WalletFilter, registry: wlt.WalletSearchTracker) {
-      let find = registry.find
-      this.filtered = false
-      if (find('account', this.account)
-          || find('account name', this.name)
-          || find('account label', this.visibleLabel)
-          || find('account private label', this.label)) {
-        this.filtered = true
-        return
-      }
-
-      // find currency addresses labels
-      let labels = wlt.getEntryVisibleLabelList(this.account)
-      for (let label of labels) {
-        if (find(`${this.account} address label`, label)) {
-          this.filtered = true
-          return
-        }
-      }
-
-      //this.selectedCurrencies = wlt.getStore().get(this.account) || []
-      if (this.selectedCurrencies.length > 0) {
-        for (let currencySymbol of this.selectedCurrencies) {
-          let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
-          if (find('currency', currencySymbol, true) || find('currency', c.name)) {
-            this.filtered = true
-            return
-          }
-          let addresses = this.getCryptoAddresses(currencySymbol)?.addresses
-          if (addresses) {
-            for (let a of addresses) {
-              if (find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)) {
-                this.filtered = true
-                return
-              }
-              // search in cached transactions
-              if (this.findInTransactions(find, null, c, a)) {
-                this.filtered = true
-                return
-              }
-            }
-          }
-        }
-      }
-    }
-
-    private applyFilterAnd(walletFilter: wlt.WalletFilter, walletSearchRegister: wlt.WalletSearchTracker) {
-      let find = walletSearchRegister.find
-      this.filtered = false
-
-      let queryTokens = Array.from(walletFilter.queryTokens)
-
-      let detection = find('account', this.account)
-          || find('account name', this.name)
-          || find('account label', this.visibleLabel)
-          || find('account private label', this.label)
-
-      if (detection)  queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-
-      // find currency address label
-      let findCurrencyAddressLabel = (account: string) => {
-        let labels = wlt.getEntryVisibleLabelList(account)
-        for (let label of labels) {
-          detection = find(`${this.account} address label`, label)
-          if (detection) {
-            queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-          }
-        }
-      }
-
-      findCurrencyAddressLabel(this.account)
-
-      let currencySymbolDetected = false
-      let entryCurrencySymbols: string[] = wlt.getStore().get(this.account)
-
-      if (entryCurrencySymbols?.length > 0) {
-
-        const findAddresses = (currencySymbol) => {
-          if (!this.secretPhrase) return
-          let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
-          for (let a of (this.getCryptoAddresses(currencySymbol)?.addresses || [])) {
-            detection = find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)
-            if (detection) {
-              queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            }
-
-            // search in cached transactions
-            queryTokens = this.findInTransactions(find, queryTokens, c, a)
-          }
-        }
-
-        for (let c of entryCurrencySymbols) {
-          let currencyName = wlt.SYM_CURRENCIES_MAP.get(c).name
-          detection = find('currency', c, true) || find('currency', currencyName)
-          if (detection) {
-            currencySymbolDetected = true
-            queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            findAddresses(c)
-          }
-        }
-        // no any currency symbol in query, so search addresses not grouped by currency
-        if (!currencySymbolDetected) {
-          for (let c of entryCurrencySymbols) {
-            findAddresses(c)
-          }
-        }
-      }
-
-      if (queryTokens.length == 0) {
-        this.filtered = true
-        return
-      }
+      return this.filter.apply(walletFilter, logicalOperator)
     }
 
     toString(): string {
