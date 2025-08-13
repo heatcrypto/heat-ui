@@ -90,6 +90,7 @@ namespace wlt {
 
     apply(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
       let registry = this.trackFinds(walletFilter)
+      this.we.filtered = false
       if (logicalOperator == "or") this.applyOperatorOr(walletFilter, registry)
       if (logicalOperator == "and") this.applyOperatorAnd(walletFilter, registry)
       if (registry.finds.size > 0) {
@@ -100,21 +101,17 @@ namespace wlt {
 
     private applyOperatorOr(walletFilter: wlt.WalletFilter, registry: WalletSearchTracker) {
       let find = registry.find
-      this.we.filtered = false
-      if (find('account', this.we.account)
+
+      this.we.filtered = !!(find('account', this.we.account)
           || find('account name', this.we.name)
           || find('account label', this.we.visibleLabel)
-          || find('account private label', this.we.label)) {
-        this.we.filtered = true
-        return
-      }
+          || find('account private label', this.we.label))
 
       // find currency addresses labels
       let labels = wlt.getEntryVisibleLabelList(this.we.account)
       for (let label of labels) {
         if (find(`${this.we.account} address label`, label)) {
           this.we.filtered = true
-          return
         }
       }
 
@@ -124,19 +121,16 @@ namespace wlt {
           let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
           if (find('currency', currencySymbol, true) || find('currency', c.name)) {
             this.we.filtered = true
-            return
           }
           let addresses = this.we.getCryptoAddresses(currencySymbol)?.addresses
           if (addresses) {
             for (let a of addresses) {
               if (find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)) {
                 this.we.filtered = true
-                return
               }
               // search in cached transactions
               if (this.findInTransactions(find, null, c, a)) {
                 this.we.filtered = true
-                return
               }
             }
           }
@@ -144,9 +138,8 @@ namespace wlt {
       }
     }
 
-    private applyOperatorAnd(walletFilter: wlt.WalletFilter, walletSearchRegister: WalletSearchTracker) {
-      let find = walletSearchRegister.find
-      this.we.filtered = false
+    private applyOperatorAnd(walletFilter: wlt.WalletFilter, register: WalletSearchTracker) {
+      let find = register.find
 
       let queryTokens = Array.from(walletFilter.queryTokens)
 
@@ -156,6 +149,8 @@ namespace wlt {
           || find('account private label', this.we.label)
 
       if (detection)  queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+
+      if ((this.we.filtered = (queryTokens.length == 0))) return
 
       // find currency address label
       let findCurrencyAddressLabel = (account: string) => {
@@ -169,6 +164,8 @@ namespace wlt {
       }
 
       findCurrencyAddressLabel(this.we.account)
+
+      if ((this.we.filtered = (queryTokens.length == 0))) return
 
       let currencySymbolDetected = false
       let entryCurrencySymbols: string[] = wlt.getStore().get(this.we.account)
@@ -206,10 +203,7 @@ namespace wlt {
         }
       }
 
-      if (queryTokens.length == 0) {
-        this.we.filtered = true
-        return
-      }
+      if ((this.we.filtered = (queryTokens.length == 0))) return
     }
 
     toString(): string {
