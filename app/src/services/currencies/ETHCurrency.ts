@@ -156,6 +156,19 @@ class ETHCurrency implements ICurrency {
           $scope.$evalAsync(() => {
             vm.data.rawTx = rawTx
             vm.stage = "broadcast"
+
+            vm.report = null
+            try {
+              let tx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTx})
+              vm.report = JSON.stringify(tx)
+            } catch (e) {
+              console.error(e)
+            }
+            // vm.report = `
+            // hash ${tx.hash}
+            // from ${tx.from}
+            // to ${tx.to}
+            // `
           })
           if (!rawTx) setTimeout(() => $scope.$evalAsync(() => {this.stage = "create"}), 500)
         }).catch(reason => console.error(reason))
@@ -315,6 +328,12 @@ class ETHCurrency implements ICurrency {
               </md-input-container>
               
               <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                <label>Parsed transaction bytes report</label>
+                <textarea ng-model="vm.report" readonly rows="4"  wrap="soft"
+                      style="overflow-y: scroll;height: 100px;line-height: normal;"></textarea>
+              </md-input-container>
+              
+              <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <p>Broadcast provider: <code>&nbsp;&nbsp;{{vm.broadcastProvider[vm.broadcastProviderIndex].getEndPoint()}}</code></p>
                   <md-radio-group ng-model="vm.broadcastProviderIndex" layout="row" ng-change="vm.broadcastProviderChanged()">
                     <md-radio-button value = 0>{{vm.broadcastProvider[0].getProviderName()}}</md-radio-button>
@@ -345,7 +364,7 @@ class ETHCurrency implements ICurrency {
                   class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
-              <md-button ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" 
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)" 
                   ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send</md-button>
             </md-dialog-actions>
