@@ -152,23 +152,21 @@ class ETHCurrency implements ICurrency {
       }
 
       this.createTxnButtonClick = function ($event) {
+        vm.data.rawTx = null
+        vm.parsedTx = null
         vm.generateTxnBytes(vm.enterNonceManually).then(rawTx => {
           $scope.$evalAsync(() => {
-            vm.data.rawTx = rawTx
             vm.stage = "broadcast"
-
-            vm.report = null
+            vm.data.rawTx = rawTx
             try {
-              let tx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTx})
-              vm.report = JSON.stringify(tx)
+              vm.parsedTx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTx})
+              vm.parsedTx.valueEth = web3.web3.fromWei(vm.parsedTx.value, 'ether')
+              vm.parsedTx.gasPriceGwei = vm.parsedTx.gasPrice / GWEI_SCALE  + ' GWei'
+              vm.parsedTx.feeEth = web3.web3.fromWei(vm.parsedTx.gasPrice * vm.parsedTx.gasLimit, 'ether') + ' ETH'
+              vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
             } catch (e) {
               console.error(e)
             }
-            // vm.report = `
-            // hash ${tx.hash}
-            // from ${tx.from}
-            // to ${tx.to}
-            // `
           })
           if (!rawTx) setTimeout(() => $scope.$evalAsync(() => {this.stage = "create"}), 500)
         }).catch(reason => console.error(reason))
@@ -182,6 +180,7 @@ class ETHCurrency implements ICurrency {
       this.useTxBytesButtonClick = function ($event) {
         vm.data.rawTx = ""
         vm.data.fee = ""
+        vm.parsedTx = null
         vm.stage = "insertedBytes"
       }
 
@@ -327,11 +326,10 @@ class ETHCurrency implements ICurrency {
                   </a>
               </md-input-container>
               
-              <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+              <div flex ng-if="(vm.stage=='broadcast' || vm.stage=='insertedBytes') && vm.parsedTx">
                 <label>Parsed transaction bytes report</label>
-                <textarea ng-model="vm.report" readonly rows="4"  wrap="soft"
-                      style="overflow-y: scroll;height: 100px;line-height: normal;"></textarea>
-              </md-input-container>
+                <json-details data="vm.parsedTx" detailed-object="vm.parsedTx" fields="vm.parsedTxFields" compact="true"></json-details>
+              </div>
               
               <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <p>Broadcast provider: <code>&nbsp;&nbsp;{{vm.broadcastProvider[vm.broadcastProviderIndex].getEndPoint()}}</code></p>
@@ -364,7 +362,7 @@ class ETHCurrency implements ICurrency {
                   class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
-              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)" 
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.parsedTx)" 
                   ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send</md-button>
             </md-dialog-actions>
