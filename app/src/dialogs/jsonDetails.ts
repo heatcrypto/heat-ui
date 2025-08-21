@@ -80,7 +80,7 @@ module dialogs {
                 Table view
             </md-button>
             <md-button ng-class="{'on': vm.viewNum == 1}" ng-click="vm.toggle(1)" class="switcher">
-                JSON formatted
+                Details
             </md-button>
             <md-button ng-if="vm.jsonText" ng-class="{'on': vm.viewNum == 2}" ng-click="vm.toggle(2)" class="switcher">
                 JSON text
