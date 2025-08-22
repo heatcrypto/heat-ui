@@ -237,7 +237,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
       let parsed = angular.isString(response) ? JSON.parse(response) : response
       if (parsed) {
         let fields = [["hash", "id"], ["time"], ["from"], ["to"], ["renderedAmount", "amount"]]
-        dialogs.jsonDetails($event, parsed, 'Transaction: ' + (parsed.txid || parsed.hash) + "...", fields, item, true)
+        dialogs.jsonDetails($event, parsed, 'Transaction: ' + (parsed.txid || parsed.hash), fields, item, true)
       }
     },
     reason => {

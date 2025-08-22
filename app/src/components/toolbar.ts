@@ -312,6 +312,10 @@
                 <md-icon md-font-library="material-icons">info_outline</md-icon>
                 About HEAT
               </md-button>
+              <div style="font-size:9px; font-weight:normal; color:lightslategray">
+                API provider:<br/>
+                {{vm.heatServerLocation}}<br/>
+              </div>
             </md-menu-item>
             <md-menu-item>
               <md-button aria-label="about" href="https://heatwallet.com/api" target="_blank" rel="noopener noreferrer">

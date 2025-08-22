@@ -312,6 +312,14 @@ class SettingsService {
     this.values[SettingsService.HEAT_WEBSOCKET] = server.websocket;
   }
 
+  public getCurrentServer(): ServerDescriptor {
+    return {
+      host: this.values[SettingsService.HEAT_HOST],
+      port: this.values[SettingsService.HEAT_PORT],
+      websocket: this.values[SettingsService.HEAT_WEBSOCKET]
+    }
+  }
+
   getHeatwalletConfigFilePath() {
     let fileName = 'app-config.json'
     if (this.env.isBrowser) {
