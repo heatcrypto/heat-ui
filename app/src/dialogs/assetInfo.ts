@@ -21,6 +21,7 @@
  * SOFTWARE.
  * */
 module dialogs {
+
   export function assetInfo($event, info: AssetInfo) {
     let assetInfoService = <AssetInfoService> heat.$inject.get('assetInfo');
     let unsafeWarning = `This asset is operated by a third party.
@@ -29,34 +30,41 @@ It's possible the asset does NOT represent what you think it does.
 Please ensure from asset issuer that the asset is valid before purchasing it, as there may be no refunds or redemptions available.
 Asset purchases are non-refundable.`;
 
-    assetInfoService.getAssetDescription(info).then((description)=>{
       let orderFeePercentage = parseInt(info.orderFee || '0') / 1000000
       let tradeFeePercentage = parseInt(info.tradeFee || '0') / 1000000
       let feeRecipient = (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
       info.expired = utils.isAssetExpired(info.expiration)
+
+      let $rootScope = heat.$inject.get('$rootScope')
+      let desc = 'loading description...'
+      assetInfoService.getAssetDescription(info).then((description)=>{
+          $rootScope.$evalAsync(() => desc = description)
+      });
+      let getDescription = () => desc
+
       dialogs.dialog({
-        id: 'assetInfo',
-        title: 'Asset Info',
-        targetEvent: $event,
-        cancelButton: false,
-        locals: {
-          description: description,
-          info: info,
-          unsafeWarning: unsafeWarning,
-          createdDate: utils.timestampToDate(info.timestamp).toLocaleString(),
-          expirationDate: info.expiration == 0
-            ? "no expiration"
-            : (info.expiration ? utils.timestampToDate(info.expiration).toLocaleString() : null),
-          orderFeePercentage: parseInt(info.orderFee || '0') / 1000000,
-          tradeFeePercentage: parseInt(info.tradeFee || '0') / 1000000,
-          feeRecipient: (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
-        },
-        style: `
+          id: 'assetInfo',
+          title: 'Asset Info',
+          targetEvent: $event,
+          cancelButton: false,
+          locals: {
+              getDescription: getDescription,
+              info: info,
+              unsafeWarning: unsafeWarning,
+              createdDate: utils.timestampToDate(info.timestamp).toLocaleString(),
+              expirationDate: info.expiration == 0
+                  ? "no expiration"
+                  : (info.expiration ? utils.timestampToDate(info.expiration).toLocaleString() : null),
+              orderFeePercentage: parseInt(info.orderFee || '0') / 1000000,
+              tradeFeePercentage: parseInt(info.tradeFee || '0') / 1000000,
+              feeRecipient: (info.feeRecipient || '0') == '0' ? info.issuer : info.feeRecipient
+          },
+          style: `
           .grey {
             color: darkgrey;
           }
         `,
-        template: `
+          template: `
           <div layout="column">
             <span ng-if="!vm.info.certified">{{vm.unsafeWarning}}<br><br></span>
             <span><b>{{vm.info.symbol}}</b> {{vm.info.name}}</span>
@@ -70,11 +78,11 @@ Asset purchases are non-refundable.`;
                 expiration: {{vm.expirationDate || "-"}} &nbsp;&nbsp;<b>{{vm.info.expired ? "EXPIRED" : ""}}</b><br/>
                 issuer: {{vm.info.issuerPublicName || vm.info.issuer}}
             </p>
-            <pre>{{vm.description}}</pre>
+            <pre>{{vm.getDescription()}}</pre>
           </div>
         `
       })
-    });
+
   }
 }
 
