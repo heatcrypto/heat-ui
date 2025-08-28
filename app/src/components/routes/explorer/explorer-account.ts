@@ -329,6 +329,8 @@ class ExploreAccountComponent {
             return info;
           });
       })
+    }).catch(reason => {
+      console.error(reason)
     })
 
     this.heat.api.rewardsAccount(this.account).then(info=>{

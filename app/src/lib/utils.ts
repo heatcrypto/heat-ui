@@ -447,6 +447,12 @@ module utils {
           serverDescriptor
       )
     },
+    getCurrentServer: () => {
+      return SettingsService.instance.getCurrentServer()
+    },
+    getFailoverDescriptor: () => {
+      return SettingsService.FAILOVER_DESCRIPTOR
+    }
   }
 
   export function stringSimilarity(str1: string, str2: string, gramSize: number = 2) {
