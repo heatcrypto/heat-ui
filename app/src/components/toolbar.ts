@@ -407,9 +407,10 @@ class ToolbarComponent {
     this.refreshLocalWallet()
 
     $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
-      this.heatServerLocation = settings.get(SettingsService.HEAT_HOST) + ":" + settings.get(SettingsService.HEAT_PORT);
-      this.signalingURL = this.settings.get(SettingsService.HEAT_MESSAGING).websocket;
-    });
+      let port = settings.get(SettingsService.HEAT_PORT)
+      this.heatServerLocation = settings.get(SettingsService.HEAT_HOST) + (port ? ':' + port : '')
+      this.signalingURL = this.settings.get(SettingsService.HEAT_MESSAGING).websocket
+    })
 
     let unreadChangedListener = (rooms: p2p.Room[]) => {
       this.$scope.$evalAsync(() => {
