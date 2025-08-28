@@ -176,14 +176,7 @@ class EthereumAccountComponent {
           }
         },
         err => {
-          console.log('Transaction not found', err || "")
-          if (!err) {
-            let minutesOld = (Date.now() - pendingTxn.timestamp) / (1000*60)
-            if (minutesOld > 60) {
-              this.pendingService.remove(pendingTxn.address, pendingTxn.txHash, pendingTxn.timestamp)
-              console.log('Transaction was pending and is disappeared. Transaction is removed from pending list', pendingTxn)
-            }
-          }
+          console.log('Error on load transaction using pending transaction hash', JSON.stringify(err || ""))
         }
       )
     }
@@ -242,6 +235,15 @@ class EthereumAccountComponent {
     web3.getAddressNonce(this.account)
 
     this.loadPaymentMessages()
+
+    // remove obsolete pending transactions
+    for (const ptx of this.pendingTransactions) {
+      let minutesOld = (Date.now() - ptx.timestamp) / (1000*60)
+      if (minutesOld > 60) {
+        this.pendingService.remove(ptx.address, ptx.txHash, ptx.timestamp)
+        console.log('Pending ETH transaction is removed from pending list due overtimed', JSON.stringify(ptx))
+      }
+    }
   }
 
   private loadPaymentMessages() {

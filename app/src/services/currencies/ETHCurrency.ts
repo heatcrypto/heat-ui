@@ -100,7 +100,7 @@ class ETHCurrency implements ICurrency {
 
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
       vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
-      vm.broadcastProviderIndex = 0
+      vm.broadcastProviderIndex = 1
 
       this.data = {
         amount: '',
