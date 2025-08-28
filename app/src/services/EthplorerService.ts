@@ -25,6 +25,7 @@ class EthplorerTransactionPaginator {
   private $q: angular.IQService
   private pool: Array<EthplorerAddressTransaction> = []
   private endReached = false
+  private newTxsAdded = 0
 
   constructor(private address: string, private ethplorer: EthplorerService) {
     this.$q = this.ethplorer.$q
@@ -36,18 +37,28 @@ class EthplorerTransactionPaginator {
     let deferred = this.$q.defer<boolean>();
     if (this.endReached) {
       deferred.resolve(false)
-    }
-    else {
+    } else {
       // the last timestamp is where we start
-      let timestamp = this.pool.length ? this.pool[this.pool.length-1].timestamp : 0
-      this.ethplorer.getAddressTransactions(this.address, timestamp).then(
+      let timestamp = this.pool.length ? this.pool[this.pool.length - 1].timestamp : 0
+      // it is mystery that if timestamp less ~1730000000 the response is Invalid timestamp
+      timestamp = timestamp == 0 ? 0 : Math.max(timestamp, 1730000000)
+      let specificParams
+      if (this.newTxsAdded > 0) {
+        timestamp = 0
+        specificParams = {limit: 2}
+      }
+      this.ethplorer.getAddressTransactions(this.address, timestamp, null, specificParams).then(
         transactions => {
+          let len = this.pool.length
           /* To prevent overlap check if transaction exists before placing in pool */
           transactions.forEach(txn => {
             if (!this.pool.find(tx => tx.hash == txn.hash)) {
               this.pool.push(txn)
             }
           })
+          if (len != this.pool.length) {
+            this.pool.sort((a, b) => b.timestamp - a.timestamp)
+          }
           this.endReached = transactions.length != 50
           deferred.resolve(!this.endReached)
         },
@@ -69,30 +80,23 @@ class EthplorerTransactionPaginator {
     /* We have enough entries in our pool */
     if (this.pool.length > minLength) {
       deferred.resolve(this.pool.length)
-    }
-    else {
+    } else {
       /* Loads and stores in pool the next batch of 50 transactions */
       this.getNextBatch().then(hasMore => {
-        if (this.pool.length-1 > minLength || !hasMore) {
+        if (this.pool.length - 1 > minLength || !hasMore) {
           deferred.resolve(this.pool.length)
-        }
-        else {
-
+        } else {
           // we simply place the next batch to load in here - when supporting unlimited
           // number of transactions this has to updated of course.
-
           this.getNextBatch().then(hasMore => {
-            if (this.pool.length-1 > minLength || !hasMore) {
+            if (this.pool.length - 1 > minLength || !hasMore) {
               deferred.resolve(this.pool.length)
-            }
-            else {
-
+            } else {
               // we simply place the next batch to load in here - when supporting unlimited
               // number of transactions this has to updated of course.
               this.getNextBatch().then(hasMore => {
                 deferred.resolve(this.pool.length)
               }, deferred.reject)
-
             }
           }, deferred.reject)
         }
@@ -106,6 +110,9 @@ class EthplorerTransactionPaginator {
     let deferred = this.$q.defer<number>();
     this.ethplorer.getTransactionCount(this.address).then(
       count => {
+        let delta = count - this.pool.length
+        this.newTxsAdded = this.endReached ? delta : 0
+        this.endReached = delta <= 0
         deferred.resolve(Math.min(count, 1000))
       }, deferred.reject
     )
@@ -246,10 +253,10 @@ class EthplorerService implements IEthereumAPIList{
    *
    *    var ts = Math.round((new Date()).getTime() / 1000);
    */
-  public getAddressTransactions(address: string, timestamp?: number, showZeroValues?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
+  public getAddressTransactions(address: string, timestamp?: number, showZeroValues?: number, specificParams?: any): angular.IPromise<Array<EthplorerAddressTransaction>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>();
     showZeroValues = showZeroValues || 1
-    let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?${this.apiKey}&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
+    let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?${this.apiKey}&limit=${specificParams?.limit || 50}&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;

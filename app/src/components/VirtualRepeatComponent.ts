@@ -112,6 +112,7 @@ abstract class VirtualRepeatComponent {
     let deferred = this.$q.defer<number>();
     if (this.provider) {
       this.loadedPages.dirty = true
+      this.loadedPages.inProgress = false
       this.provider.getPaginatedLength().then((length) => {
         this.numItems = isNaN(length) ? -1 : length
         if (length >= 0) {
