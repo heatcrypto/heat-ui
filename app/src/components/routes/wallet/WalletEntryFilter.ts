@@ -67,7 +67,7 @@ namespace wlt {
         for (const tx of txsPage) {
           //find tx id
           let txId = tx.hash || tx.txid
-          let detection = find(`Transaction ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, txId)
+          let detection = find(`transaction ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, txId)
           if (detection) {
             isFind = true
             queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
@@ -75,7 +75,7 @@ namespace wlt {
           //find payment memo
           let localPaymentMessages: {method: number, text: string} = tx.message
           if (localPaymentMessages?.text) {
-            detection = find(`Payment memo ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, localPaymentMessages.text)
+            detection = find(`payment memo ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, localPaymentMessages.text)
             if (detection) {
               isFind = true
               queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
@@ -115,23 +115,44 @@ namespace wlt {
         }
       }
 
+      let entryCurrencySymbols = Array.from(this.we.selectedCurrencies)
+      entryCurrencySymbols.push(wlt.CURRENCIES.HEAT.symbol)
+
       //this.walletEntry.selectedCurrencies = wlt.getStore().get(this.walletEntry.account) || []
-      if (this.we.selectedCurrencies.length > 0) {
-        for (let currencySymbol of this.we.selectedCurrencies) {
-          let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
-          if (find('currency', currencySymbol, true) || find('currency', c.name)) {
+      for (let currencySymbol of this.we.selectedCurrencies) {
+        let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
+        if (find('currency', currencySymbol, true) || find('currency', c.name)) {
+          this.we.filtered = true
+        }
+        let addresses = this.we.getCryptoAddresses(currencySymbol)?.addresses
+        if (addresses) {
+          for (let a of addresses) {
+            if (find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)) {
+              this.we.filtered = true
+            }
+            // search in cached transactions
+            if (this.findInTransactions(find, null, c, a)) {
+              this.we.filtered = true
+            }
+          }
+        }
+        let cb = this.we.findCurrencyBalance(currencySymbol)
+        if (cb) {
+          if (find(`${cb.name} balance`, cb.balance)) {
             this.we.filtered = true
           }
-          let addresses = this.we.getCryptoAddresses(currencySymbol)?.addresses
-          if (addresses) {
-            for (let a of addresses) {
-              if (find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)) {
-                this.we.filtered = true
-              }
-              // search in cached transactions
-              if (this.findInTransactions(find, null, c, a)) {
-                this.we.filtered = true
-              }
+          for (let t of (cb.tokens || [])) {
+            if (find(`${c.name} token '${t.symbol}'`, t.name)) {
+              this.we.filtered = true
+            }
+            if (find(`${c.name} token symbol '${t.symbol}'`, t.symbol)) {
+              this.we.filtered = true
+            }
+            if (find(`${c.name} token '${t.symbol}' address`, t.address)) {
+              this.we.filtered = true
+            }
+            if (find(`${c.name} token '${t.symbol}' balance`, t.balance)) {
+              this.we.filtered = true
             }
           }
         }
@@ -152,14 +173,18 @@ namespace wlt {
 
       if ((this.we.filtered = (queryTokens.length == 0))) return
 
+      let doFind = (queryTokens: string[], name: string, item: string, exact?: boolean) => {
+        let detection = find(name, item, exact)
+        return detection
+            ? queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+            : queryTokens
+      }
+
       // find currency address label
       let findCurrencyAddressLabel = (account: string) => {
         let labels = wlt.getEntryVisibleLabelList(account)
         for (let label of labels) {
-          detection = find(`${this.we.account} address label`, label)
-          if (detection) {
-            queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-          }
+          queryTokens = doFind(queryTokens,`${this.we.account} address label`, label)
         }
       }
 
@@ -168,38 +193,44 @@ namespace wlt {
       if ((this.we.filtered = (queryTokens.length == 0))) return
 
       let currencySymbolDetected = false
-      let entryCurrencySymbols: string[] = wlt.getStore().get(this.we.account)
+      let entryCurrencySymbols = wlt.getStore().get(this.we.account) || []
+      entryCurrencySymbols.push(wlt.CURRENCIES.HEAT.symbol)
 
-      if (entryCurrencySymbols?.length > 0) {
-
-        const findAddresses = (currencySymbol) => {
-          if (!this.we.secretPhrase) return
-          let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
-          for (let a of (this.we.getCryptoAddresses(currencySymbol)?.addresses || [])) {
-            detection = find(`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)
-            if (detection) {
-              queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            }
-
-            // search in cached transactions
-            queryTokens = this.findInTransactions(find, queryTokens, c, a)
-          }
+      const findInCurrency = (currencySymbol) => {
+        if (!this.we.secretPhrase) return
+        let c = wlt.SYM_CURRENCIES_MAP.get(currencySymbol)
+        for (let a of (this.we.getCryptoAddresses(currencySymbol)?.addresses || [])) {
+          queryTokens = doFind(queryTokens,`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)
+          // search in cached transactions
+          queryTokens = this.findInTransactions(find, queryTokens, c, a)
         }
 
+        //find tokens, balances in CurrencyBalance
+        let cb = this.we.findCurrencyBalance(currencySymbol)
+        if (cb) {
+          queryTokens = doFind(queryTokens,`${cb.name} balance`, cb.balance)
+          for (let t of (cb.tokens || [])) {
+            queryTokens = doFind(queryTokens,`${c.name} token '${t.symbol}'`, t.name)
+            queryTokens = doFind(queryTokens,`${c.name} token symbol '${t.symbol}'`, t.symbol)
+            queryTokens = doFind(queryTokens,`${c.name} token '${t.symbol}' address`, t.address)
+            queryTokens = doFind(queryTokens,`${c.name} token '${t.symbol}' balance`, t.balance)
+          }
+        }
+      }
+
+      for (let c of entryCurrencySymbols) {
+        let currencyName = wlt.SYM_CURRENCIES_MAP.get(c).name
+        detection = find('currency', c, true) || find('currency', currencyName)
+        if (detection) {
+          currencySymbolDetected = true
+          queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+          findInCurrency(c)
+        }
+      }
+      // no any currency symbol in query, so search addresses not grouped by currency
+      if (!currencySymbolDetected) {
         for (let c of entryCurrencySymbols) {
-          let currencyName = wlt.SYM_CURRENCIES_MAP.get(c).name
-          detection = find('currency', c, true) || find('currency', currencyName)
-          if (detection) {
-            currencySymbolDetected = true
-            queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            findAddresses(c)
-          }
-        }
-        // no any currency symbol in query, so search addresses not grouped by currency
-        if (!currencySymbolDetected) {
-          for (let c of entryCurrencySymbols) {
-            findAddresses(c)
-          }
+          findInCurrency(c)
         }
       }
 

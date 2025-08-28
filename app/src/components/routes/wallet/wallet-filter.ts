@@ -26,6 +26,7 @@ namespace wlt {
         }
 
         test(str: string, exact = false): {token: string, item: string} {
+            str = str?.toString()
             let upCaseToken = this.queryTokensUpperCase.find(s => exact ? str == s : str?.toUpperCase().indexOf(s) > -1)
             if (upCaseToken)  return {token: this.queryTokens.find(v => v.toUpperCase() == upCaseToken), item: str}
             if (this.fuzzyTokens.length > 0) {

@@ -65,7 +65,15 @@ class WalletSearchComponent {
     this.expression = this.queryTokens?.join(' ' + this.logicalOperator.toUpperCase() + ' ')
     this.reasoning = filterResult?.searchResultExplained.map(v => {
       let finds: Map<string, string[]> = v.finds
-      let entryStr = Array.from(finds.entries()).map(e => `    ${e[0]} => ${e[1]}`).join('\n')
+      let entryStr = Array.from(finds.entries())
+          .map(e => {
+            // move braces fragment from left side to right side, for example "[label] red => red sky" to "red => [label] red sky"
+            let valueInBraces: any = e[0].match(/\[(.*?)\]/)
+            valueInBraces = valueInBraces ? valueInBraces[0] : ''
+            let left = e[0].replace(valueInBraces, '')
+            return `   ${left} => ${valueInBraces} ${e[1]}`
+          })
+          .join('\n')
       return `${v.account}:\n${entryStr}`
     })
   }
