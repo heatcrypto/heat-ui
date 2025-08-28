@@ -218,13 +218,20 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
     let interval = setInterval(refresh, 60 * 1000)
 
-    let listener = this.determineLength.bind(this)
+    let listener = this.updateOnNewTransaction.bind(this)
     this.ethereumPendingTransactions.addListener(listener)
 
     this.$scope.$on('$destroy', () => {
       this.ethereumPendingTransactions.removeListener(listener)
       clearInterval(interval)
     })
+  }
+
+  updateOnNewTransaction(pendingTxRemoved) {
+    if (!pendingTxRemoved) {
+      let interval = setInterval(this.determineLength.bind(this), 7 * 1000)
+      setTimeout(() => clearInterval(interval), 50 * 1000)
+    }
   }
 
   jsonDetails($event, item) {
