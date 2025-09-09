@@ -74,6 +74,7 @@
     "bytebuffer": "5.0.1",
     "child-process-promise": "^2.2.0",
     "dateformat": "1.0.12",
+    "dexie": "^4.2.0",
     "file-saver": "^2.0.5",
     "heat-libs": "github:heatcrypto/heat-libs#release-coins",
     "jsonformatter": "^0.6.0",
@@ -85,5 +86,4 @@
     "techan": "0.8.0",
     "webrtc-adapter": "8.2.3"
   }
-
 }

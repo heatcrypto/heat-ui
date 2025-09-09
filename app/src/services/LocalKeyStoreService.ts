@@ -31,7 +31,7 @@ interface ILocalKey {
 
 interface ILocalKeyEntry {
   account: string;
-  name: string;
+  name: string;  // account name, for example mega@heatwallet.com
   contents: string;
   isTestnet: boolean;
 }
@@ -194,23 +194,26 @@ class LocalKeyStoreService {
   }
 
   /* Returns array of wallet entries added */
-  public import(walletFile: IHeatWalletFile) : Array<ILocalKeyEntry> {
+  public import(walletFile: IHeatWalletFile) : Promise<Array<ILocalKeyEntry>> {
+
+    let added : Array<ILocalKeyEntry> = []
 
     /* Adds a raw key entry, returns true iff entry did not exist, returns false iff already present */
-    const putRaw = (key: ILocalKeyEntry): boolean => {
+    const putRaw = (key: ILocalKeyEntry) => {
       let key1 = this.key(key.account)
       let key2 = this.nameKey(key.account)
 
-      if (this.store.get(key1)) return false
+      //if (this.store.get(key1)) return false
 
       this.store.put(key1, key.contents)
       this.store.put(key2, key.name||'')
-      return true
+
+      return storage.addWalletRecord(key.account, heat.isTestnet, key.contents, key.name || '')
     }
 
-    let store = this.storage.namespace('wallet-address', this.$rootScope, true)
+    let promises = []
 
-    let added : Array<ILocalKeyEntry> = []
+    let walletStore = this.storage.namespace('wallet-address', this.$rootScope, true)
 
     walletFile.entries.forEach(entry => {
       let localKeyEntry: ILocalKeyEntry = {
@@ -223,14 +226,18 @@ class LocalKeyStoreService {
       let cryptoAddresses = entry.cryptoAddresses || entry["oldAddresses"]  // use oldAddresses for compatibility to pre version
       if (cryptoAddresses) {
         wlt.CURRENCIES_LIST.forEach(c => {
-          let encryptedAddresses = cryptoAddresses[c.symbol]
-          if (encryptedAddresses) store.put(`${c.symbol}-${entry.account}`, encryptedAddresses)
+          let v = cryptoAddresses[c.symbol]
+          if (v) {
+            walletStore.put(`${c.symbol}-${entry.account}`, v)
+            storage.putAddresses(entry.account, c.symbol, v.addresses)
+          }
         })
       }
 
-      if (putRaw(localKeyEntry)) {
-        added.push(localKeyEntry)
-      }
+      promises.push(putRaw(localKeyEntry).then(id => {
+        if (id) added.push(localKeyEntry)
+      }))
+
       if (entry.visibleLabel) {
         wlt.updateEntryVisibleLabel(entry.visibleLabel, entry.account)
       }
@@ -259,6 +266,7 @@ class LocalKeyStoreService {
 
     let paymentMessagesNum = wlt.importPaymentMessages(walletFile.paymentMessages)
 
-    return added
+    return Promise.all(promises).then(ids => added)
   }
+
 }

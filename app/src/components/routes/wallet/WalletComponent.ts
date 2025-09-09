@@ -651,36 +651,40 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   pageAddFileInputChange(files) {
     if (files && files[0]) {
-      let reader = new FileReader();
+      let reader = new FileReader()
       reader.onload = () => {
         this.$scope.$evalAsync(() => {
-          let fileContents = reader.result;
-          let data = this.walletFile.parseJSON(<string>fileContents);
-          let resultMessage = "Nothing imported"
+          let fileContents = reader.result
+          let data = this.walletFile.parseJSON(<string>fileContents)
+          let p = Promise.resolve("Nothing imported")
+          //let resultMessage = "Nothing imported"
           if (data && data["heatwallet-raw-data"]) {
-            resultMessage = this.walletFile.importRawData(data)
-            resultMessage += ".  The app will now restart..."
+            //resultMessage = this.walletFile.importRawData(data)
+            //resultMessage += ".  The app will now restart..."
+            p = p.then(s => this.walletFile.importRawData(data) + ".  The app will now restart...")
             setTimeout(() => window.location.reload(), 4000)
           } else {
             let wallet = this.walletFile.createFromText(data);
             if (wallet) {
-              let addedKeys = this.localKeyStore.import(wallet);
-              this.$scope.$evalAsync(() => {
-                this.initLocalKeyStore()
-                wlt.initCreatedAddresses()
-              })
-              let isBig = addedKeys.length > 8
-              let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
-                  .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
-                  .join(", ")
-              if (isBig) report = report + "\n..."
-              resultMessage = `Imported ${addedKeys.length} keys into this device: \n ${report}`
+              this.localKeyStore.import(wallet).then(addedKeys => {
+                this.$scope.$evalAsync(() => {
+                  this.initLocalKeyStore()
+                  wlt.initCreatedAddresses()
+                })
+                let isBig = addedKeys.length > 8
+                let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
+                    .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
+                    .join(", ")
+                if (isBig) report = report + "\n..."
+                p = p.then(s => `Imported ${addedKeys.length} keys into this device: \n ${report}`)
+                //resultMessage = `Imported ${addedKeys.length} keys into this device: \n ${report}`
+              }).catch(reason => console.error(reason))
             }
           }
-          this.$mdToast.show(this.$mdToast.simple().textContent(resultMessage).hideDelay(7000))
+          p = p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
         })
-      };
-      reader.readAsText(files[0]);
+      }
+      reader.readAsText(files[0])
     }
   }
 

@@ -445,13 +445,14 @@ class LoginComponent {
   }
 
   pageAddWalletImportContinue() {
-    let addedKeys = this.localKeyStore.import(this.pageAddWallet);
-    this.initLocalKeys();
-    let message = `Imported ${addedKeys.length} keys into this device`;
-    this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-    this.$scope.$evalAsync(()=>{
-      this.page = '';
-    });
+    this.localKeyStore.import(this.pageAddWallet).then(addedKeys => {
+      this.initLocalKeys()
+      let message = `Imported ${addedKeys.length} keys into this device`
+      this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000))
+      this.$scope.$evalAsync(() => {
+        this.page = ''
+      })
+    }).catch(reason => console.error(reason))
   }
 
   pageSinginLogin() {
