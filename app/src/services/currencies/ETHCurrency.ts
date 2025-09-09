@@ -101,6 +101,7 @@ class ETHCurrency implements ICurrency {
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
       vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
       vm.broadcastProviderIndex = 1
+      vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
 
       this.data = {
         amount: '',
@@ -151,6 +152,18 @@ class ETHCurrency implements ICurrency {
             })
       }
 
+      let decodeRawTxHex = function (rawTxHex: string) {
+        try {
+          let parsedTx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTxHex})
+          parsedTx.valueEth = web3.web3.fromWei(parsedTx.value, 'ether')
+          parsedTx.gasPriceGwei = parsedTx.gasPrice / GWEI_SCALE  + ' GWei'
+          parsedTx.feeEth = web3.web3.fromWei(parsedTx.gasPrice * parsedTx.gasLimit, 'ether') + ' ETH'
+          return parsedTx
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
       this.createTxnButtonClick = function ($event) {
         vm.data.rawTx = null
         vm.parsedTx = null
@@ -158,15 +171,7 @@ class ETHCurrency implements ICurrency {
           $scope.$evalAsync(() => {
             vm.stage = "broadcast"
             vm.data.rawTx = rawTx
-            try {
-              vm.parsedTx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTx})
-              vm.parsedTx.valueEth = web3.web3.fromWei(vm.parsedTx.value, 'ether')
-              vm.parsedTx.gasPriceGwei = vm.parsedTx.gasPrice / GWEI_SCALE  + ' GWei'
-              vm.parsedTx.feeEth = web3.web3.fromWei(vm.parsedTx.gasPrice * vm.parsedTx.gasLimit, 'ether') + ' ETH'
-              vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
-            } catch (e) {
-              console.error(e)
-            }
+            vm.parsedTx = decodeRawTxHex(rawTx)
           })
           if (!rawTx) setTimeout(() => $scope.$evalAsync(() => {this.stage = "create"}), 500)
         }).catch(reason => console.error(reason))
@@ -249,6 +254,18 @@ class ETHCurrency implements ICurrency {
         lookup()
       }
 
+      let decodeTxnDebounced = utils.debounce(() => {
+        vm.parsedTx = decodeRawTxHex(vm.data.rawTx)
+      }, 500, false)
+      
+      this.txnBytesChanged = function (event) {
+        if (vm.stage != 'insertedBytes') return
+        $scope.$evalAsync(() => {
+          vm.report = ""
+          decodeTxnDebounced()
+        })
+      }
+
       this.gasChanged = () => {
         $scope.$evalAsync(() => {
           this.data.fee = web3.web3.fromWei((this.data.gasPrice * GWEI_SCALE) * this.data.gasLimit, 'ether')
@@ -318,8 +335,8 @@ class ETHCurrency implements ICurrency {
               
               <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <label>Transaction bytes</label>
-                  <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" rows="3"  wrap="soft"
-                        style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
+                  <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
+                        rows="3" wrap="soft" style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
                   <a ng-click="vm.showQRCode(vm.data.rawTx)" class="qrcode-link">
                     <md-tooltip>Show QR code</md-tooltip>
                     <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
@@ -362,9 +379,9 @@ class ETHCurrency implements ICurrency {
                   class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
-              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.parsedTx)" 
-                  ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send</md-button>
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes')" 
+                  ng-disabled="!vm.parsedTx" ng-click="vm.okButtonClick()"
+                  class="md-primary" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

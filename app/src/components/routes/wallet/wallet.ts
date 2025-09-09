@@ -128,9 +128,16 @@ namespace wlt {
     }
   */
 
-  export function getEntryVisibleLabelList(account): string[] {
+  export function getEntryVisibleLabelList(account): string[][] {
     const store = getStore()
-    return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => store.get(k))
+    return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
+  }
+
+  export function updateEntryVisibleLabelList(account, list: string[][]) {
+    const store = getStore()
+    for (let ss of list) {
+      store.put(ss[0], ss[1])
+    }
   }
 
   export function getEntryVisibleLabel(account, address?: string) {

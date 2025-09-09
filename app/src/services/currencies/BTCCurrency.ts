@@ -644,7 +644,7 @@ class BTCCurrency implements ICurrency {
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.useUtxoButtonClick()" aria-label="Use UTXO">Use UTXO</md-button>
               <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send">Send</md-button>
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </ng-form>
         </md-dialog>

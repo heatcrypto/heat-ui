@@ -108,7 +108,7 @@ namespace wlt {
           || find('account private label', this.we.label))
 
       // find currency addresses labels
-      let labels = wlt.getEntryVisibleLabelList(this.we.account)
+      let labels = wlt.getEntryVisibleLabelList(this.we.account).map(ss => ss[1])
       for (let label of labels) {
         if (find(`${this.we.account} address label`, label)) {
           this.we.filtered = true
@@ -182,7 +182,7 @@ namespace wlt {
 
       // find currency address label
       let findCurrencyAddressLabel = (account: string) => {
-        let labels = wlt.getEntryVisibleLabelList(account)
+        let labels = wlt.getEntryVisibleLabelList(account).map(ss => ss[1])
         for (let label of labels) {
           queryTokens = doFind(queryTokens,`${this.we.account} address label`, label)
         }

@@ -187,6 +187,10 @@ class LocalKeyStoreService {
       if (cryptoAddresses) item.cryptoAddresses = cryptoAddresses
       let vl = wlt.getEntryVisibleLabel(entry.account)
       if (vl) item.visibleLabel = vl
+
+      let subLabels = wlt.getEntryVisibleLabelList(entry.account)
+      if (subLabels?.length > 0) item.visibleLabels = subLabels
+
       walletFileData.entries.push(item)
     });
 
@@ -240,6 +244,9 @@ class LocalKeyStoreService {
 
       if (entry.visibleLabel) {
         wlt.updateEntryVisibleLabel(entry.visibleLabel, entry.account)
+      }
+      if (entry.visibleLabels?.length > 0) {
+        wlt.updateEntryVisibleLabelList(entry.account, entry.visibleLabels)
       }
       if (entry.currencies) {
         wlt.updateEntryCurrencies(entry.account, entry.currencies)
