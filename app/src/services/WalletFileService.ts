@@ -44,6 +44,8 @@ interface IHeatWalletFileEntry {
 
   visibleLabel?: string;
 
+  visibleLabels?: string[][];
+
   currencies?: [];
 
   cryptoAddresses?: {};
