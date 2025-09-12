@@ -199,12 +199,10 @@ namespace wlt {
     export function importPaymentMessages(items: {id: string, content: any}[]) {
         if (!items) return 0
         let store = getPaymentMessageStore()
-        let n = 0
         for (const item of items) {
             store.put(item.id, item.content)
-            n++
         }
-        return n
+        return items.length
     }
 
     function createMessageId(txId: string, recipientPubKey: string) {

@@ -212,28 +212,28 @@ class LocalKeyStoreService {
       this.store.put(key1, key.contents)
       this.store.put(key2, key.name||'')
 
-      return storage.addWalletRecord(key.account, heat.isTestnet, key.contents, key.name || '')
+      return storage.importWalletRecord(key.isTestnet, key.account, key.contents, key.name || '')
     }
 
-    let promises = []
+    let promises: Promise<any>[] = []
 
     let walletStore = this.storage.namespace('wallet-address', this.$rootScope, true)
 
-    walletFile.entries.forEach(entry => {
+    walletFile.entries.forEach(importEntry => {
       let localKeyEntry: ILocalKeyEntry = {
-        account: entry.account,
-        contents: entry.contents,
-        isTestnet: entry.isTestnet,
-        name: entry.name
+        account: importEntry.account,
+        contents: importEntry.contents,
+        isTestnet: importEntry.isTestnet,
+        name: importEntry.name
       }
 
-      let cryptoAddresses = entry.cryptoAddresses || entry["oldAddresses"]  // use oldAddresses for compatibility to pre version
+      let cryptoAddresses = importEntry.cryptoAddresses || importEntry["oldAddresses"]  // use oldAddresses for compatibility to pre version
       if (cryptoAddresses) {
         wlt.CURRENCIES_LIST.forEach(c => {
-          let v = cryptoAddresses[c.symbol]
-          if (v) {
-            walletStore.put(`${c.symbol}-${entry.account}`, v)
-            storage.putAddresses(entry.account, c.symbol, v.addresses)
+          let addresses = cryptoAddresses[c.symbol]
+          if (addresses) {
+            walletStore.put(`${c.symbol}-${importEntry.account}`, addresses)
+            storage.importAddresses(importEntry.isTestnet, importEntry.account, c.symbol, addresses)
           }
         })
       }
@@ -242,20 +242,35 @@ class LocalKeyStoreService {
         if (id) added.push(localKeyEntry)
       }))
 
-      if (entry.visibleLabel) {
-        wlt.updateEntryVisibleLabel(entry.visibleLabel, entry.account)
+      if (importEntry.visibleLabel) {
+        wlt.updateEntryVisibleLabel(importEntry.visibleLabel, importEntry.account)
+        promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, importEntry.account, importEntry.visibleLabel))
       }
-      if (entry.visibleLabels?.length > 0) {
-        wlt.updateEntryVisibleLabelList(entry.account, entry.visibleLabels)
+      if (importEntry.visibleLabels?.length > 0) {
+        wlt.updateEntryVisibleLabelList(importEntry.account, importEntry.visibleLabels)
+
+        for (let ss of importEntry.visibleLabels) {
+          //  ["label.7245392807741217901.05dfa6a3f22afc28", "invoice #34"]
+          let lastDotPos = ss[0].lastIndexOf('.')
+          let itemKey = lastDotPos > 0 ? ss[0].substring(lastDotPos + 1) : null
+          if (itemKey) {
+            promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, itemKey, ss[1]))
+          }
+        }
       }
-      if (entry.currencies) {
-        wlt.updateEntryCurrencies(entry.account, entry.currencies)
+      let walletEntryProps = {}  // accumulate wallet entry properties for saving to Indexeddb
+      if (importEntry.currencies) {
+        wlt.updateEntryCurrencies(importEntry.account, importEntry.currencies)
+        Object.assign(walletEntryProps, {selectedCurrencies: importEntry.currencies})
       }
-      if (entry.bip44Compatible) {
-        wlt.saveEntryBip44Compatible(entry.account, entry.bip44Compatible)
+      if (importEntry.bip44Compatible) {
+        wlt.saveEntryBip44Compatible(importEntry.account, importEntry.bip44Compatible)
+        Object.assign(walletEntryProps, {bip44Compatible: importEntry.bip44Compatible})
       }
+      promises.push(storage.updateWalletEntry(importEntry.isTestnet, importEntry.account, walletEntryProps))
     })
 
+    // backward compatibility
     if (walletFile.accountAddresses) {
       try {
         let accountAddressesArray: any = walletFile.accountAddresses
@@ -272,6 +287,13 @@ class LocalKeyStoreService {
     }
 
     let paymentMessagesNum = wlt.importPaymentMessages(walletFile.paymentMessages)
+    if (walletFile.paymentMessages) {
+      walletFile.paymentMessages.forEach(pm => {
+        // todo import to both testnet and mainnet dbs because of old format (without testnet indicator)
+        promises.push(storage.importTransactionMemo(true, pm.id, pm.content))
+        promises.push(storage.importTransactionMemo(false, pm.id, pm.content))
+      })
+    }
 
     return Promise.all(promises).then(ids => added)
   }
