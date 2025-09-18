@@ -487,20 +487,21 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       walletEntry.currencies = walletEntry.currencies
           .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress == currency.address));
       let currencySymbol = entry.symbol;
-      let walletType = wlt.getCryptoAddresses(walletEntry, currencySymbol)
-      let addressToDelete
-      if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
-        addressToDelete = walletType.addresses[0];
-      } else {
-        let address = walletType.addresses.find(address => address.address == removingAddress)
-        if (address) addressToDelete = address
-      }
-      if (addressToDelete) {
-        addressToDelete.isDeleted = true
-        wlt.saveCryptoAddresses(walletEntry, currencySymbol, walletType)
-      }
-
-      this.flatten()
+      wlt.getCryptoAddresses(walletEntry, currencySymbol).then(walletType => {
+        let addressToDelete
+        if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
+          addressToDelete = walletType.addresses[0];
+        } else {
+          let address = walletType.addresses.find(address => address.address == removingAddress)
+          if (address) addressToDelete = address
+        }
+        if (addressToDelete) {
+          addressToDelete.isDeleted = true
+          wlt.saveCryptoAddresses(walletEntry, currencySymbol, walletType).then(() => this.flatten())
+        } else {
+          this.flatten()
+        }
+      })
     });
   }
 
@@ -509,11 +510,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .then(() => {
           let resetAddressesPromise: Promise<WalletAddresses>
           if (currencyName === 'Ethereum') {
-            let wa = wlt.loadCryptoAddresses(walletEntry, 'ETH')
-            resetAddressesPromise = this.lightwalletService.unlock(wa, walletEntry.secretPhrase, "", true)
+            resetAddressesPromise = this.lightwalletService.unlock(null, walletEntry.secretPhrase, true)
           } else if (currencyName === 'Bitcoin') {
-            let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
-            resetAddressesPromise = this.bitcoreService.unlock(wa, walletEntry.secretPhrase, true)
+            resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'BTC')
+                .then(wa => this.bitcoreService.unlock(wa, walletEntry.secretPhrase, true))
           } else if (currencyName === 'FIMK') {
           } else if (currencyName === 'NXT') {
           } else if (currencyName === 'ARDOR') {
@@ -532,10 +532,11 @@ class WalletComponent extends wlt.WalletComponentAbstract {
                 if (forceWasCreated) a.created = true
                 a.isDeleted = false
               })
-              wlt.saveCryptoAddresses(walletEntry, wlt.CURRENCIES_MAP.get(currencyName).symbol, cryptoAddresses)
-              walletEntry.currencies = []
-              this.initWalletEntry(walletEntry)
-              walletEntry.toggle()
+              wlt.saveCryptoAddresses(walletEntry, wlt.CURRENCIES_MAP.get(currencyName).symbol, cryptoAddresses).then(() => {
+                walletEntry.currencies = []
+                this.initWalletEntry(walletEntry)
+                walletEntry.toggle()
+              })
             }, reason => {
               console.warn(`Currency ${currencyName} is not reset: ` + reason)
             })
@@ -799,17 +800,17 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     /* Bitcoin and Ethereum integration start here */
     if (walletEntry.selectedCurrencies.indexOf('BTC') > -1) {
-      let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
-      this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          walletEntry.initBTC(this, wallet, this.user)
-        }
+      wlt.loadCryptoAddresses(walletEntry, 'BTC').then(wa => {
+        this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
+          if (wallet !== undefined) walletEntry.initBTC(this, wallet, this.user)
+        })
       }).catch(reason => {console.log(reason)})
     }
     if (walletEntry.selectedCurrencies.indexOf('ETH') > -1) {
-      let walletAddresses = wlt.loadCryptoAddresses(walletEntry, 'ETH')
-      this.lightwalletService.unlock(walletAddresses, walletEntry.secretPhrase, "").then(walletAddresses => {
-        walletEntry.initEth(this, walletAddresses)
+      wlt.loadCryptoAddresses(walletEntry, 'ETH').then(wa => {
+        this.lightwalletService.unlock(wa, walletEntry.secretPhrase).then(walletAddresses => {
+          walletEntry.initEth(this, walletAddresses)
+        })
       }).catch(reason => {console.log(reason)})
     }
     if (walletEntry.selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console

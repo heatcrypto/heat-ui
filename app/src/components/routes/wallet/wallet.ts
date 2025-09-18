@@ -234,21 +234,21 @@ namespace wlt {
     return s
   }
 
-  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): WalletAddress  {
-    let cryptoAddresses = getCryptoAddresses(walletEntry, currencySymbol)
-    let addresses = cryptoAddresses?.addresses
-    if (!addresses) return null
-    let foundAddress = addresses.find(a => a.address == createdAddress.address)
-    if (!foundAddress && !walletEntry.bip44Compatible) {
-      addresses.push(createdAddress)
-      foundAddress = createdAddress
-    }
-    if (!foundAddress) return
-    if (foundAddress.index != undefined && !walletEntry.bip44Compatible) delete foundAddress.index
-    foundAddress.isDeleted = false
-    foundAddress.created = true
-    saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
-    return foundAddress
+  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): Promise<WalletAddress> {
+    return getCryptoAddresses(walletEntry, currencySymbol).then(cryptoAddresses => {
+      let addresses = cryptoAddresses?.addresses
+      if (!addresses) return null
+      let address = addresses.find(a => a.address == createdAddress.address)
+      if (!address && !walletEntry.bip44Compatible) {
+        addresses.push(createdAddress)
+        address = createdAddress
+      }
+      if (!address) return
+      if (address.index != undefined && !walletEntry.bip44Compatible) delete address.index
+      address.isDeleted = false
+      address.created = true
+      return saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses).then(() => address)
+    })
   }
 
   export function rememberAddressCreated(account: string, addressHash: string, balance?: string) {
@@ -275,21 +275,25 @@ namespace wlt {
   }
 
   export function getCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
-    return walletEntry.getCryptoAddresses(currencySymbol) || loadCryptoAddresses(walletEntry, currencySymbol)
+    return Promise.resolve(walletEntry.getCryptoAddresses(currencySymbol)) || loadCryptoAddresses(walletEntry, currencySymbol)
   }
 
   export function loadCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
-    let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
-    if (record && record.data) {
-      let decrypted = heat.crypto.decryptMessage(record.data, record.nonce, walletEntry.account, walletEntry.secretPhrase)
-      let result: WalletAddresses = JSON.parse(decrypted)
-      return result
-    }
+    //let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
+    return storage.getCryptoAddresses(walletEntry.account, currencySymbol).then(record => {
+      let enc = record?.addresses
+      if (enc) {
+        let decrypted = heat.crypto.decryptMessage(enc.data, enc.nonce, walletEntry.account, walletEntry.secretPhrase)
+        let result: WalletAddresses = JSON.parse(decrypted)
+        return result
+      }
+    })
   }
 
   export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {
     let encrypted = heat.crypto.encryptMessage(JSON.stringify(addresses), walletEntry.account, walletEntry.secretPhrase)
     getStore('wallet-address').put(`${currencySymbol}-${walletEntry.account}`, encrypted)
+    return storage.putCryptoAddresses(walletEntry.account, currencySymbol, encrypted)
   }
 
   export function saveFile(blob: Blob, fileName?: string) {

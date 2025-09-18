@@ -19,6 +19,18 @@ namespace storage {
 
     export const db = heat.isTestnet ? dbTestnet : dbMainnet
 
+    export function getCryptoAddresses(account: string, currencySymbol: string): Promise<any> {
+        return db.cryptoAddresses.get({account, currencySymbol}).catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function putCryptoAddresses(account: string, currencySymbol: string, addresses): Promise<any> {
+        return db.cryptoAddresses.put({account, currencySymbol, addresses}).catch(error => {
+            console.error(error)
+        })
+    }
+
     export function importAddresses(isTestnet: boolean, account: string, currencySymbol: string, addresses: any): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
         return actualDb.cryptoAddresses.put({account, currencySymbol, addresses}).then(id => {

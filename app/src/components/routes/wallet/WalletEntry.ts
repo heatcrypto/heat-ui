@@ -183,12 +183,13 @@ namespace wlt {
     removeIsDeleted(entry) {
       let currencySymbol = entry.symbol
       let account = entry.walletEntry.account
-      let walletType = getCryptoAddresses(entry.walletEntry, currencySymbol)
-      walletType.addresses.forEach(walletAddress => {
-        if (walletAddress.address === entry.address)
-          delete walletAddress['isDeleted']
+      getCryptoAddresses(entry.walletEntry, currencySymbol).then(walletType => {
+        walletType.addresses.forEach(walletAddress => {
+          if (walletAddress.address === entry.address)
+            delete walletAddress['isDeleted']
+        })
+        return saveCryptoAddresses(entry.walletEntry, currencySymbol, walletType)
       })
-      saveCryptoAddresses(entry.walletEntry, currencySymbol, walletType)
     }
 
     createAddressByName() {
@@ -283,7 +284,6 @@ namespace wlt {
 
       if (nextAddress) {
         nextAddress.isDeleted = false
-        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress)
         let newCurrencyBalance = new CurrencyBalance(this.walletEntry, currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
         //rememberAddressCreated(this.walletEntry.account, nextAddress.address)
@@ -316,7 +316,9 @@ namespace wlt {
         setTimeout(() => this.flatten(), 1000)
          */
 
-        shouldBeSaved = component.exportWallet(true)
+        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress).then(value => {
+          shouldBeSaved = component.exportWallet(true)
+        })
 
         return newCurrencyBalance
       }

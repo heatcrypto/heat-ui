@@ -99,30 +99,25 @@ namespace wlt {
       })
     }
 
-    checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
+    checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string, addresses: WalletAddress[]): {wasCreated: boolean, cachedBalance?: string} {
       let result = {wasCreated: false, cachedBalance: undefined}
+      if (!addresses) return result
       let foundAddress: WalletAddress
-      let addresses = wlt.getCryptoAddresses(walletEntry, currencySymbol)
-      if (addresses) {
-        foundAddress = addresses.addresses.find(v => v.address == address)
-        if (foundAddress) {
-
-          if (!foundAddress.hasOwnProperty("created")) {
-            let compatibleToPre = this.obsoleteCheckCreatedAddress(address, walletEntry, currencySymbol)
-            if (compatibleToPre) {
-              foundAddress.created = compatibleToPre.wasCreated
-            }
+      foundAddress = addresses.find(v => v.address == address)
+      if (foundAddress) {
+        if (!foundAddress.hasOwnProperty("created")) {
+          let compatibleToPre = this.obsoleteCheckCreatedAddress(address, walletEntry.account, currencySymbol)
+          if (compatibleToPre) {
+            foundAddress.created = compatibleToPre.wasCreated
           }
-
-          result.wasCreated = foundAddress.created
         }
+        result.wasCreated = foundAddress.created
       }
-
       return result
     }
 
-    obsoleteCheckCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
-      let a = wlt.createdAddresses[walletEntry.account]
+    obsoleteCheckCreatedAddress(address: string, account: string, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
+      let a = wlt.createdAddresses[account]
 
       if (!a) return {wasCreated: false}
 
@@ -308,9 +303,6 @@ namespace wlt {
           }
         })
       }
-      if (upgraded) {
-        wlt.saveCryptoAddresses(walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol))
-      }
       // should be was created at least first address (probably due the bug  it was not created)
       // so force mark created first addresses
       /*if (!cryptoAddresses[0].created) {
@@ -320,28 +312,36 @@ namespace wlt {
           i++
         }
       }*/
+      let f = () => wlt.getCryptoAddresses(walletEntry, currencyDescriptor.symbol).then(addresses => {
+        let actualWalletAddresses: WalletAddresses = {
+          addresses: cryptoAddresses.filter(a => {
+            if (a.isDeleted) return false
+            let info = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol, addresses.addresses)
+            return a.inUse || info.wasCreated || !currencyDescriptor.multiAddress
+          })
+        }
 
+        if (actualWalletAddresses.addresses.length == 0) {
+          addressLoading.visible = false
+          return
+        }
 
-      let actualWalletAddresses: WalletAddresses = {
-        addresses: cryptoAddresses.filter(a => {
-          if (a.isDeleted) return false
-          let info = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol)
-          return a.inUse || info.wasCreated || !currencyDescriptor.multiAddress
+        utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
+          this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, success || success == null)
+        }).catch((reason) => {
+          this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, false)
+          this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
+          //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
         })
-      }
-
-      if (actualWalletAddresses.addresses.length == 0) {
-        addressLoading.visible = false
-        return
-      }
-
-      utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
-        this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, success || success == null)
-      }).catch((reason) => {
-        this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, false)
-        this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
-        //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
+
+      if (upgraded) {
+        wlt.saveCryptoAddresses(walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol))
+            .then(() => f())
+      } else {
+        f()
+      }
+
     }
 
     private createBalanceEntries(walletEntry: wlt.WalletEntry,
@@ -354,8 +354,9 @@ namespace wlt {
 
       let index = walletEntry.currencies.indexOf(addressLoading)
       let counter = 0
-      actualWalletAddresses.addresses.forEach(address => {
-        let createdAddress = this.checkCreatedAddress(address.address, walletEntry, addressLoading.currencySymbol)
+      let addresses = actualWalletAddresses.addresses
+      addresses.forEach(address => {
+        let createdAddress = this.checkCreatedAddress(address.address, walletEntry, addressLoading.currencySymbol, addresses)
         if (counter >= wlt.DISPLAYED_MAX_EMPTY_ADDRESSES && !address.inUse) return
         let currencyBalance: wlt.CurrencyBalance = createBalance(address)
         currencyBalance.visible = walletEntry.expanded
