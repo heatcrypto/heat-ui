@@ -5,8 +5,8 @@ namespace storage {
 
         db.version(1).stores({
             walletEntry: 'account, name', // optional name of account, for example road@heatwallet.com
-            cryptoAddresses: '[account+currencySymbol]',
-            walletItem: '[account+itemKey]', //name is name of item subEntry, for example hash of currency address
+            cryptoAddresses: '[account+currencySym]',
+            walletItem: '[itemKey+currencySym], account', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
             transactionMemo: 'id' // id (PK), content: any
         })
 
@@ -19,21 +19,31 @@ namespace storage {
 
     export const db = heat.isTestnet ? dbTestnet : dbMainnet
 
-    export function getCryptoAddresses(account: string, currencySymbol: string): Promise<any> {
-        return db.cryptoAddresses.get({account, currencySymbol}).catch(error => {
+    export function compactHash(str: string): string {
+        return converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(str))
+    }
+
+    export function getCryptoAddresses(account: string, currencySym: string): Promise<any> {
+        return db.cryptoAddresses.get({account, currencySym}).catch(error => {
             console.error(error)
         })
     }
 
-    export function putCryptoAddresses(account: string, currencySymbol: string, addresses): Promise<any> {
-        return db.cryptoAddresses.put({account, currencySymbol, addresses}).catch(error => {
+    export function putCryptoAddresses(account: string, currencySym: string, addresses): Promise<any> {
+        return db.cryptoAddresses.put({account, currencySym, addresses}).catch(error => {
             console.error(error)
         })
     }
 
-    export function importAddresses(isTestnet: boolean, account: string, currencySymbol: string, addresses: any): Promise<any> {
+    export function updateBalance(itemKey: string, currencySym: string, balance): Promise<any> {
+        return db.walletItem.update({itemKey, currencySym}, {balance}).catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function importAddresses(isTestnet: boolean, account: string, currencySym: string, addresses: any): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
-        return actualDb.cryptoAddresses.put({account, currencySymbol, addresses}).then(id => {
+        return actualDb.cryptoAddresses.put({account, currencySym, addresses}).then(id => {
             console.log(`addresses added with ID: ${id}`)
             return id
         }).catch(error => {
@@ -55,9 +65,29 @@ namespace storage {
         })
     }
 
-    export function importWalletLabel(isTestnet: boolean, account: string, itemKey: string, label: string): Promise<any> {
+    export function putItemLabel(itemKey: string, currencySym: string, account: string = '', label: string): Promise<any> {
+        return db.walletItem.get({itemKey, currencySym}).then(item => {
+            if (item) {
+                return db.walletItem.update({itemKey: itemKey, currencySym}, {label: label})
+            } else {
+                return db.walletItem.put({itemKey: itemKey, currencySym, label: label})
+            }
+        }).catch(error => {
+            console.error("Error adding record:", error)
+        })
+    }
+
+    export function getItemLabel(itemKey: string, currencySym: string): Promise<any> {
+        return db.walletItem.get({itemKey, currencySym}).then(item => {
+            return item?.label
+        }).catch(error => {
+            console.error("Error adding record:", error)
+        })
+    }
+
+    export function importWalletLabel(isTestnet: boolean, account: string, itemKey: string, currencySym: string, label: string): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
-        return actualDb.walletItem.put({account: account, itemKey: itemKey, label: label}).then(id => {
+        return actualDb.walletItem.put({itemKey: itemKey, currencySym, account: account, label: label}).then(id => {
             console.log(`wallet label added with ID: ${id}`)
             return id
         }).catch(error => {

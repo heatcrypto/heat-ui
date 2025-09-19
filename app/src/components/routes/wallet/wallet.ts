@@ -92,18 +92,9 @@ namespace wlt {
 
   export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
     let hash = heat.crypto.hash(address).substring(0, 16)
-    let key = `balance-${currencySymbol}-${hash}`
-    let r = getStore().get(key)
-    if (r) {
-      r.b = balance
-      if (unconfirmedBalance) {
-        r.ub = unconfirmedBalance
-        r.t = Date.now()
-      }
-      getStore().put(key, r)
-    } else {
-      getStore().put(key, {b: balance, ub: unconfirmedBalance, t: Date.now()})
-    }
+    let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
+    getStore().put(`balance-${currencySymbol}-${hash}`, balanceRecord)
+    //return storage.updateBalance(storage.compactHash(address), currencySymbol, balanceRecord)
   }
 
   /**
@@ -140,23 +131,32 @@ namespace wlt {
     }
   }
 
-  export function getEntryVisibleLabel(account, address?: string) {
+  /**
+   * @deprecated
+   */
+  export function getEntryVisibleLabelOld(account, address?: string) {
     if (address) {
-      let subEntryKey = converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address))
+      let subEntryKey = storage.compactHash(address)
       return getStore().get(`label.${account}.${subEntryKey || ''}`)
     }
     return getStore().get(`label.${account}`)
   }
 
-  export function updateEntryVisibleLabel(visibleLabel, account, address?: string) {
-    const storeKey = address
-        ? `label.${account}.${converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address)) || ''}`
+  export function getEntryVisibleLabel(account, currencySym, address?: string) {
+    return storage.getItemLabel(storage.compactHash(address || account), '')
+  }
+
+  export function updateEntryVisibleLabel(visibleLabel, itemName: string, currencySym: string = '', account: string = '') {
+    let itemKey = storage.compactHash(itemName)
+    const storeKey = itemName
+        ? `label.${account}.${itemKey || ''}`
         : `label.${account}`
     if (visibleLabel) {
       getStore().put(storeKey, visibleLabel)
     } else {
       getStore().remove(storeKey)
     }
+    return storage.putItemLabel(itemKey, currencySym, account, visibleLabel || '')
   }
 
   export function getEntryBip44Compatible(account) {

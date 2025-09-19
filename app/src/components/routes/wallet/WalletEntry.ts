@@ -70,7 +70,7 @@ namespace wlt {
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()
       this.walletEntry = walletEntry
-      this.visibleLabel = wlt.getEntryVisibleLabel(this.walletEntry.account, address)
+      wlt.getEntryVisibleLabel(this.walletEntry.account, symbol, address).then(value => this.visibleLabel = value)
     }
 
     toString(): string {
@@ -356,7 +356,8 @@ namespace wlt {
       super()
       this.visible = true
       this.identifier = name ? `${account} | ${name}` : account
-      this.visibleLabel = getEntryVisibleLabel(this.account)
+      //this.visibleLabel = getEntryVisibleLabel(this.account)
+      wlt.getEntryVisibleLabel(this.account, '').then(value => this.visibleLabel = value)
       this.bip44Compatible = getEntryBip44Compatible(this.account)
       this.selectedCurrencies = (wlt.getStore().get(this.account) || []).sort()
 

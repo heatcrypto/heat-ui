@@ -185,7 +185,7 @@ class LocalKeyStoreService {
       if (entry.name) item.name = entry.name
       if (wlt.getEntryBip44Compatible(entry.account)) item.bip44Compatible = true
       if (cryptoAddresses) item.cryptoAddresses = cryptoAddresses
-      let vl = wlt.getEntryVisibleLabel(entry.account)
+      let vl = wlt.getEntryVisibleLabelOld(entry.account)
       if (vl) item.visibleLabel = vl
 
       let subLabels = wlt.getEntryVisibleLabelList(entry.account)
@@ -243,20 +243,20 @@ class LocalKeyStoreService {
       }))
 
       if (importEntry.visibleLabel) {
-        wlt.updateEntryVisibleLabel(importEntry.visibleLabel, importEntry.account)
-        promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, importEntry.account, importEntry.visibleLabel))
+        wlt.updateEntryVisibleLabel(importEntry.visibleLabel, importEntry.account, '', importEntry.account)
+        //promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, importEntry.account, importEntry.visibleLabel))
       }
       if (importEntry.visibleLabels?.length > 0) {
         wlt.updateEntryVisibleLabelList(importEntry.account, importEntry.visibleLabels)
 
-        for (let ss of importEntry.visibleLabels) {
+        /*for (let ss of importEntry.visibleLabels) {
           //  ["label.7245392807741217901.05dfa6a3f22afc28", "invoice #34"]
           let lastDotPos = ss[0].lastIndexOf('.')
           let itemKey = lastDotPos > 0 ? ss[0].substring(lastDotPos + 1) : null
           if (itemKey) {
             promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, itemKey, ss[1]))
           }
-        }
+        }*/
       }
       let walletEntryProps = {}  // accumulate wallet entry properties for saving to Indexeddb
       if (importEntry.currencies) {
