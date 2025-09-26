@@ -51,21 +51,47 @@ namespace storage {
         })
     }
 
-    export function importWalletRecord(isTestnet: boolean, account: string, contents: string, name: string): Promise<any> {
+    export function importWalletEntry(isTestnet: boolean, account: string, name: string, contents: string): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
         return actualDb.walletEntry.add({account, name, contents}).catch(error => {
             console.error("Error adding record:", error)
         })
     }
 
-    export function updateWalletEntry(isTestnet: boolean, account: string, props: any): Promise<any> {
+    export function importWalletEntryProps(isTestnet: boolean, account: string, props: any): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
         return actualDb.walletEntry.update(account, props).catch(error => {
             console.error("Error updating record:", error)
         })
     }
 
-    export function putItemLabel(itemKey: string, currencySym: string, account: string = '', label: string): Promise<any> {
+    export function saveWalletEntry(account: string, name: string, contents: string): Promise<any> {
+        return db.walletEntry.get({account}).then(item => {
+            if (item) {
+                return db.walletEntry.update({account}, {name, contents})
+            } else {
+                return db.walletEntry.put({account, name, contents})
+            }
+        }).catch(error => {
+            console.error("Error saving record:", error)
+        })
+    }
+
+    export function removeWalletEntry(account: string): Promise<any> {
+        return db.walletEntry.delete({account}).catch(error => console.error("Error saving record:", error))
+    }
+
+    export function listWalletEntries(): Promise<any[]> {
+        return db.walletEntry.toArray().catch(error => console.error("Error adding record:", error))
+    }
+
+    export function getWalletEntry(account: string): Promise<any> {
+        return db.walletEntry.get({account}).catch(error => {
+            console.error("Error getting wallet entry:", error)
+        })
+    }
+
+    export function saveItemLabel(itemKey: string, currencySym: string, account: string = '', label: string): Promise<any> {
         return db.walletItem.get({itemKey, currencySym}).then(item => {
             if (item) {
                 return db.walletItem.update({itemKey: itemKey, currencySym}, {label: label})
@@ -73,7 +99,7 @@ namespace storage {
                 return db.walletItem.put({itemKey: itemKey, currencySym, label: label})
             }
         }).catch(error => {
-            console.error("Error adding record:", error)
+            console.error("Error saving record:", error)
         })
     }
 

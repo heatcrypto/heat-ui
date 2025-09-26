@@ -89,21 +89,7 @@ function createFIMKAccount($event, walletComponent: WalletComponent) {
     }
 
     this.passwordChanged = function () {
-      let password = this.data.password
-      let account = this.data.selected
-      let walletEntry = walletEntries.find(w => w.account == account)
-      try {
-        var key = walletComponent.localKeyStore.load(account, password);
-        if (key) {
-          walletComponent.localKeyStore.rememberPassword(walletEntry.account, password)
-          walletEntry.pin = password
-          walletEntry.secretPhrase = key.secretPhrase
-          walletEntry.bip44Compatible = walletComponent.lightwalletService.validSeed(key.secretPhrase)
-          walletEntry.unlocked = true
-          walletComponent.initWalletEntry(walletEntry)
-          walletEntry.toggle(true)
-        }
-      } catch (e) { }
+      walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
     }
   }
 

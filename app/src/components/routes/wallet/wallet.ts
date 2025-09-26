@@ -124,13 +124,6 @@ namespace wlt {
     return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
   }
 
-  export function updateEntryVisibleLabelList(account, list: string[][]) {
-    const store = getStore()
-    for (let ss of list) {
-      store.put(ss[0], ss[1])
-    }
-  }
-
   /**
    * @deprecated
    */
@@ -146,9 +139,9 @@ namespace wlt {
     return storage.getItemLabel(storage.compactHash(address || account), '')
   }
 
-  export function updateEntryVisibleLabel(visibleLabel, itemName: string, currencySym: string = '', account: string = '') {
-    let itemKey = storage.compactHash(itemName)
-    const storeKey = itemName
+  export function updateEntryVisibleLabel(visibleLabel, itemUniqueName: string, currencySym: string = '', account: string = '') {
+    let itemKey = storage.compactHash(itemUniqueName)
+    const storeKey = itemUniqueName
         ? `label.${account}.${itemKey || ''}`
         : `label.${account}`
     if (visibleLabel) {
@@ -156,7 +149,7 @@ namespace wlt {
     } else {
       getStore().remove(storeKey)
     }
-    return storage.putItemLabel(itemKey, currencySym, account, visibleLabel || '')
+    return storage.saveItemLabel(itemKey, currencySym, account, visibleLabel || '')
   }
 
   export function getEntryBip44Compatible(account) {

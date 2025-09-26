@@ -56,38 +56,53 @@ namespace wlt {
     initLocalKeyStore() {
       this.entries = []
       this.walletEntries = []
-      this.localKeyStore.list().map((account: string) => {
-        let name = this.localKeyStore.getName(account)
-        let walletEntry = walletEntriesCache.get(account)
-        if (walletEntry) {
-          walletEntry.setWalletComponent(this)
-          walletEntry["cached"] = true
-        } else {
-          walletEntry = new wlt.WalletEntry(account, name, this)
-        }
-        this.walletEntries.push(walletEntry)
-      });
-      this.walletEntries.sort((a, b) => {
-        return a.account.localeCompare(b.account)
+      this.localKeyStore.list().then(walletEntries => {
+        walletEntries.map(entry => {
+          let walletEntry = walletEntriesCache.get(entry.account)
+          if (walletEntry) {
+            walletEntry.setWalletComponent(this)
+            walletEntry["cached"] = true
+          } else {
+            walletEntry = new wlt.WalletEntry(entry.account, entry.name, this)
+          }
+          this.walletEntries.push(walletEntry)
+        });
+        this.walletEntries.sort((a, b) => {
+          return a.account.localeCompare(b.account)
+        })
+        this.walletEntries.forEach(walletEntry => {
+          let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
+          if (password) {
+            this.localKeyStore.load(walletEntry.account, password).then(key => {
+              if (key && !walletEntry["cached"]) {
+                walletEntry.secretPhrase = key.secretPhrase
+                walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+                walletEntry.unlocked = true
+                walletEntry.pin = password
+                walletEntry.label = key.label
+                this.initWalletEntry(walletEntry)
+              }
+            }).catch((e) => console.error(e))
+          }
+        })
+        this.flatten()
+        this.fetchCryptoAddresses('BTC')
       })
-      this.walletEntries.forEach(walletEntry => {
-        let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
-        if (password) {
-          try {
-            let key = this.localKeyStore.load(walletEntry.account, password);
-            if (key && !walletEntry["cached"]) {
-              walletEntry.secretPhrase = key.secretPhrase
-              walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-              walletEntry.unlocked = true
-              walletEntry.pin = password
-              walletEntry.label = key.label
-              this.initWalletEntry(walletEntry)
-            }
-          } catch (e) { console.log(e) }
+    }
+
+    updateWalletEntryOnPasswordChanged(account, password) {
+      let walletEntry = this.walletEntries.find(w => w.account == account)
+      this.localKeyStore.load(account, password).then(key => {
+        if (key) {
+          this.localKeyStore.rememberPassword(walletEntry.account, password)
+          walletEntry.pin = password
+          walletEntry.secretPhrase = key.secretPhrase
+          walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+          walletEntry.unlocked = true
+          this.initWalletEntry(walletEntry)
+          walletEntry.toggle(true)
         }
-      })
-      this.flatten()
-      this.fetchCryptoAddresses('BTC')
+      }).catch(reason => console.warn(reason))
     }
 
     fetchCryptoAddresses(currency: string) {

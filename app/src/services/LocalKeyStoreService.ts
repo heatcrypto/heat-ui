@@ -64,68 +64,42 @@ class LocalKeyStoreService {
 
   put(key: ILocalKey) {
     this.rememberPassword(key.account, key.pincode)
-    this.store.put(this.key(key.account), this.encode(key))
-    this.store.put(this.nameKey(key.account), key.name)
+    /*this.store.put(this.key(key.account), this.encode(key))
+    this.store.put(this.nameKey(key.account), key.name)*/
+
+    return storage.saveWalletEntry(key.account, key.name, this.encode(key))
   }
 
   /* lists all numeric account ids we have keys for */
-  list(): Array<string> {
-    const test = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/;
+  list(): Promise<any[]> {
+    /*const test = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/;
     return this.store.keys().
                       filter((keyName) => test.test(keyName)).
-                      map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));
+                      map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));*/
+    return storage.listWalletEntries()
   }
 
   /* lookup and return the account key name - if there is any */
-  getName(account: string, isTestnet?: boolean) {
-    return this.store.get(this.nameKey(account, isTestnet));
-  }
-
-  nameKey(account: string, isTestnet?: boolean) {
-    return `name.${account}${isTestnet || this.testnet()}`
-  }
-
-  key(account: string, isTestnet?: boolean) {
-    return `key.${account}${isTestnet || this.testnet()}`
-  }
+  /*getName(account: string, isTestnet?: boolean) {
+    //return this.store.get(this.nameKey(account, isTestnet));
+    return storage.getWalletEntry(account).then(v => v.name)
+  }*/
 
   remove(account: string) {
-    this.store.remove(this.key(account))
-    this.store.remove(this.nameKey(account))
+    return storage.removeWalletEntry(account)
+
+    /*this.store.remove(this.key(account))
+    this.store.remove(this.nameKey(account))*/
   }
 
-  encode(key: ILocalKey): string {
-    const payload = JSON.stringify({
-      account: key.account,
-      secretPhrase: key.secretPhrase,
-      pincode: key.pincode,
-      name: key.name,
-      label: key.label
-    });
-    const message = heat.crypto.passphraseEncrypt(payload, key.pincode);
-    return message.encode();
-  }
+  load(account: string, passphrase: string): Promise<ILocalKey> {
+    return storage.getWalletEntry(account).then(v => {
+      let result = this.decode(v.contents, passphrase, account)
+      if (result) this.rememberPassword(account, passphrase)
+      return result
+    })
 
-  decode(encoded: string, passphrase: string, account?: string): ILocalKey {
-    let message = heat.crypto.PassphraseEncryptedMessage.decode(encoded);
-    let json_str = heat.crypto.passphraseDecrypt(message, passphrase);
-    if (json_str) {
-      let json = JSON.parse(json_str);
-      //console.log(`decrypting is success for account ${account}`);
-      return {
-        account: json['account'],
-        secretPhrase: json['secretPhrase'],
-        pincode: json['pincode'],
-        name: json['name'],
-        label: json['label']
-      }
-    } else {
-      //console.log(`decrypting is not success for account ${account}`);
-    }
-  }
-
-  load(account: string, passphrase: string): ILocalKey {
-    let contents = this.store.get(this.key(account))
+    /*let contents = this.store.get(this.key(account))
     try {
       let result = this.decode(contents, passphrase, account);
       if (result) {
@@ -134,27 +108,7 @@ class LocalKeyStoreService {
       }
     } catch (e) {
       console.log(e);
-    }
-  }
-
-  private listLocalKeyEntries(): Array<ILocalKeyEntry> {
-    let entries: Array<ILocalKeyEntry> = [];
-    this.store.keys().forEach(key => {
-      let match = key.match(/key\.(\d+)(\.testnet)?/);
-      if (match) {
-        let isTestnet = match[2]=='.testnet';
-        let account = match[1];
-        let name = this.getName(account, isTestnet)
-        let contents = this.store.get(key);
-        entries.push({
-          account:account,
-          contents:contents,
-          name:name,
-          isTestnet:isTestnet
-        });
-      }
-    });
-    return entries;
+    }*/
   }
 
   public export(accountCurrencies: Map<string, []>,
@@ -167,6 +121,7 @@ class LocalKeyStoreService {
 
     let store = this.storage.namespace('wallet-address', this.$rootScope, true);
 
+    /* todo
     this.listLocalKeyEntries().forEach(entry => {
       let cryptoAddresses: {}
       wlt.CURRENCIES_LIST.forEach(c => {
@@ -192,7 +147,7 @@ class LocalKeyStoreService {
       if (subLabels?.length > 0) item.visibleLabels = subLabels
 
       walletFileData.entries.push(item)
-    });
+    });*/
 
     return walletFileData;
   }
@@ -212,7 +167,7 @@ class LocalKeyStoreService {
       this.store.put(key1, key.contents)
       this.store.put(key2, key.name||'')
 
-      return storage.importWalletRecord(key.isTestnet, key.account, key.contents, key.name || '')
+      return storage.importWalletEntry(key.isTestnet, key.account, key.name || '', key.contents)
     }
 
     let promises: Promise<any>[] = []
@@ -247,7 +202,16 @@ class LocalKeyStoreService {
         //promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, importEntry.account, importEntry.visibleLabel))
       }
       if (importEntry.visibleLabels?.length > 0) {
-        wlt.updateEntryVisibleLabelList(importEntry.account, importEntry.visibleLabels)
+        const store = wlt.getStore()
+        for (let ss of importEntry.visibleLabels) {
+          store.put(ss[0], ss[1])
+          //cannot store to IndexedDB storage because old import format does not provide currency symbol
+          //storage.putItemLabel(itemKey, currencySym, account, visibleLabel || '')
+        }
+
+
+
+        //wlt.updateEntryVisibleLabelList(importEntry.account, importEntry.visibleLabels)
 
         /*for (let ss of importEntry.visibleLabels) {
           //  ["label.7245392807741217901.05dfa6a3f22afc28", "invoice #34"]
@@ -267,7 +231,7 @@ class LocalKeyStoreService {
         wlt.saveEntryBip44Compatible(importEntry.account, importEntry.bip44Compatible)
         Object.assign(walletEntryProps, {bip44Compatible: importEntry.bip44Compatible})
       }
-      promises.push(storage.updateWalletEntry(importEntry.isTestnet, importEntry.account, walletEntryProps))
+      promises.push(storage.importWalletEntryProps(importEntry.isTestnet, importEntry.account, walletEntryProps))
     })
 
     // backward compatibility
@@ -296,6 +260,78 @@ class LocalKeyStoreService {
     }
 
     return Promise.all(promises).then(ids => added)
+  }
+
+  private nameKey(account: string, isTestnet?: boolean) {
+    return `name.${account}${isTestnet || this.testnet()}`
+  }
+
+  private key(account: string, isTestnet?: boolean) {
+    return `key.${account}${isTestnet || this.testnet()}`
+  }
+
+  private encode(key: ILocalKey): string {
+    const payload = JSON.stringify({
+      account: key.account,
+      secretPhrase: key.secretPhrase,
+      pincode: key.pincode,
+      name: key.name,
+      label: key.label
+    });
+    const message = heat.crypto.passphraseEncrypt(payload, key.pincode);
+    return message.encode();
+  }
+
+  private decode(encoded: string, passphrase: string, account?: string): ILocalKey {
+    let message = heat.crypto.PassphraseEncryptedMessage.decode(encoded);
+    let json_str = heat.crypto.passphraseDecrypt(message, passphrase);
+    if (json_str) {
+      let json = JSON.parse(json_str);
+      //console.log(`decrypting is success for account ${account}`);
+      return {
+        account: json['account'],
+        secretPhrase: json['secretPhrase'],
+        pincode: json['pincode'],
+        name: json['name'],
+        label: json['label']
+      }
+    } else {
+      //console.log(`decrypting is not success for account ${account}`);
+    }
+  }
+
+  private listLocalKeyEntries(): Promise<Array<ILocalKeyEntry>> {
+
+    return storage.listWalletEntries().then(walletEntries => {
+      let entries: Array<ILocalKeyEntry> = []
+      for (const we of walletEntries) {
+        entries.push({
+          account: we.account,
+          contents: we.contents,
+          name: we.name,
+          isTestnet: heat.isTestnet
+        })
+      }
+      return entries
+    })
+
+    /*let entries: Array<ILocalKeyEntry> = []
+    this.store.keys().forEach(key => {
+      let match = key.match(/key\.(\d+)(\.testnet)?/);
+      if (match) {
+        let isTestnet = match[2]=='.testnet';
+        let account = match[1];
+        let name = this.getName(account, isTestnet)
+        let contents = this.store.get(key);
+        entries.push({
+          account:account,
+          contents:contents,
+          name:name,
+          isTestnet:isTestnet
+        });
+      }
+    });
+    return entries;*/
   }
 
 }

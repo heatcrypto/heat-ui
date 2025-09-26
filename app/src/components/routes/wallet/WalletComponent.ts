@@ -376,23 +376,22 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       {label: `Invisible label until login`, value: walletEntry.label}
     ]
     dialogs.simplePrompt(null, 'Enter Label', `Enter label for account ${walletEntry.identifier} or enter empty value to delete the label`, p).then(
-      labels => {
-        //save visible label
-        walletEntry.visibleLabel = labels[0]?.trim()
-        wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account, '', walletEntry.account)
-        //save invisible label
-        walletEntry.label = labels[1]?.trim()
-        let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
-        if (password) {
-          try {
-            let key = this.localKeyStore.load(walletEntry.account, password)
-            if (key) {
-              key.label = walletEntry.label || null
-              this.localKeyStore.put(key)
-            }
-          } catch (e) { console.error(e) }
+        labels => {
+          //save visible label
+          walletEntry.visibleLabel = labels[0]?.trim()
+          wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account, '', walletEntry.account)
+          //save invisible label
+          walletEntry.label = labels[1]?.trim()
+          let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
+          if (password) {
+            this.localKeyStore.load(walletEntry.account, password).then(key => {
+              if (key) {
+                key.label = walletEntry.label || null
+                this.localKeyStore.put(key)
+              }
+            }).catch((e) => console.error(e))
+          }
         }
-      }
     )
   }
 
@@ -419,12 +418,14 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         this.showMessage('Wrong password')
         return
       }
-      const key: ILocalKey = this.localKeyStore.load(entry.account, pin)
-      dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`, 'Please enter new Password (or Pin code) for entry', '').then(newPincode => {
-        key.pincode = newPincode
-        this.localKeyStore.put(key)
-        entry.pin = key.pincode
-        this.showMessage(`Password is changed for ${entry.account}`)
+      this.localKeyStore.load(entry.account, pin).then(key => {
+        dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`,
+            'Please enter new Password (or Pin code) for entry', '').then(newPincode => {
+          key.pincode = newPincode
+          this.localKeyStore.put(key)
+          entry.pin = key.pincode
+          this.showMessage(`Password is changed for ${entry.account}`)
+        })
       })
     })
   }
@@ -695,15 +696,16 @@ class WalletComponent extends wlt.WalletComponentAbstract {
        Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
         pin => {
           if (pin == entry.pin) {
-            this.localKeyStore.remove(entry.account)
-            this.initLocalKeyStore()
-            if (entry.account === this.user.account) {
-              this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
-                if (count > 0) {
-                  this.shareCurrencyAddressesWithP2pContacts('BTC', '')
-                }
-              })
-            }
+            this.localKeyStore.remove(entry.account).then(() => {
+              this.initLocalKeyStore()
+              if (entry.account === this.user.account) {
+                this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
+                  if (count > 0) {
+                    this.shareCurrencyAddressesWithP2pContacts('BTC', '')
+                  }
+                })
+              }
+            })
           } else {
             this.$mdToast.show(this.$mdToast.simple().textContent('Incorrect Password (or Pin Code). Wallet Entry not removed.').hideDelay(5000));
           }
@@ -714,11 +716,12 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   unlock($event, selectedWalletEntry?: wlt.WalletEntry) {
     dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin Code) to unlock', '').then(
       pin => {
+        let promises: Promise<any>[] = []
         let count = 0
         this.walletEntries.forEach(walletEntry => {
           if (!walletEntry.secretPhrase) {
-            var key = this.localKeyStore.load(walletEntry.account, pin);
-            if (key) {
+            promises.push(this.localKeyStore.load(walletEntry.account, pin).then(key => {
+              if (!key) return
               count += 1
               this.localKeyStore.rememberPassword(walletEntry.account, pin)
               walletEntry.pin = pin
@@ -729,42 +732,42 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               walletEntry.unlocked = true
               wlt.walletEntriesCache.set(walletEntry.account, walletEntry)
               this.initWalletEntry(walletEntry)
-            }
+            }).catch((e) => console.error(e)))
           }
         })
-        let message = `Unlocked ${count ? count : 'NO'} entries`
-        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        selectedWalletEntry?.toggle(true)
+        Promise.all(promises).then(() => {
+          let message = `Unlocked ${count ? count : 'NO'} entries`
+          this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
+          selectedWalletEntry?.toggle(true)
 
-        /* Only if no user is signed in currently, will we auto select one signin */
-        if (!this.user.unlocked) {
-          /* Try and unlock the selected entry */
-          if (selectedWalletEntry?.unlocked) {
-            for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
-              let balance = <wlt.CurrencyBalance>selectedWalletEntry.currencies[i]
-              if (balance.isCurrencyBalance) {
-                balance.unlock(true)
-                return
-              }
-            }
-          }
-
-          /* Try and find another wallet.CurrencyBalance */
-          for (let i = 0; i < this.entries.length; i++) {
-            let entry = <wlt.WalletEntry>this.entries[i];
-            if (entry.unlocked) {
-              for (let k = 0; k < entry.currencies.length; k++) {
-                let balance = <wlt.CurrencyBalance>entry.currencies[k];
+          /* Only if no user is signed in currently, will we auto select one signin */
+          if (!this.user.unlocked) {
+            /* Try and unlock the selected entry */
+            if (selectedWalletEntry?.unlocked) {
+              for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
+                let balance = <wlt.CurrencyBalance>selectedWalletEntry.currencies[i]
                 if (balance.isCurrencyBalance) {
-                  balance.unlock(true);
+                  balance.unlock(true)
                   return
                 }
               }
             }
+
+            /* Try and find another wallet.CurrencyBalance */
+            for (let i = 0; i < this.entries.length; i++) {
+              let entry = <wlt.WalletEntry>this.entries[i];
+              if (entry.unlocked) {
+                for (let k = 0; k < entry.currencies.length; k++) {
+                  let balance = <wlt.CurrencyBalance>entry.currencies[k];
+                  if (balance.isCurrencyBalance) {
+                    balance.unlock(true);
+                    return
+                  }
+                }
+              }
+            }
           }
-
-        }
-
+        })
       }
     )
   }

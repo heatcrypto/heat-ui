@@ -368,12 +368,14 @@ class LoginComponent {
   }
 
   initLocalKeys() {
-    this.localKeys = this.localKeyStore.list().map((account:string) => {
-      return {
-        name: this.localKeyStore.getName(account),
-        account: account
-      }
-    });
+    this.localKeyStore.list().then(walletEntries => {
+      this.localKeys = walletEntries.map(entry => {
+        return {
+          name: entry.name,
+          account: entry.account
+        }
+      })
+    })
   }
 
   apiServerChanged() {
@@ -456,17 +458,17 @@ class LoginComponent {
   }
 
   pageSinginLogin() {
-    this.$scope.$evalAsync(()=>{
-      this.pageSigninWrongPincode = false;
-      var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
-      if (key) {
-        this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
-          this.$location.path(`explorer-account/${this.user.account}/transactions`);
-        });
-      }
-      else {
-        this.pageSigninWrongPincode = true;
-      }
+    this.$scope.$evalAsync(() => {
+      this.pageSigninWrongPincode = false
+      this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode).then(key => {
+        if (key) {
+          this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
+            this.$location.path(`explorer-account/${this.user.account}/transactions`)
+          })
+        } else {
+          this.pageSigninWrongPincode = true
+        }
+      }).catch(e => console.log(e))
     })
   }
 
