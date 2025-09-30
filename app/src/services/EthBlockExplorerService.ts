@@ -12,6 +12,8 @@ class EthBlockExplorerService implements IEthereumAPIList {
     public http: HttpService,
     private web3: Web3Service) {
 
+    this.refresh()
+
     setInterval(() => this.refresh(), 5 * 60 * 1000)
   }
 

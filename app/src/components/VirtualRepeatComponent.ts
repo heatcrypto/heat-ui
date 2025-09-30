@@ -163,7 +163,7 @@ abstract class VirtualRepeatComponent {
       processItems(items)
       setTimeout(args => this.cache?.put(pageNumber, items), 3000)
     }, reason => {
-      console.warn("fetching eth transactions error " + (reason ? JSON.stringify(reason) : ""))
+      console.warn("fetching transactions page error " + (reason ? JSON.stringify(reason) : ""))
       loadCached()
     })
 
