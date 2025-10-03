@@ -37,15 +37,15 @@ interface ILocalKeyEntry {
 }
 
 @Service('localKeyStore')
-@Inject('storage','walletFile','$rootScope')
+@Inject('walletFile', '$rootScope')
 class LocalKeyStoreService {
-  private store: Store;
+  //private store: Store;
 
   /* Remembered passwords to the localKeyStore */
   private rememberedPasswords: {[key:string]:string} = {}
 
-  constructor(private storage: StorageService, private walletFile: WalletFileService, private $rootScope) {
-    this.store = storage.namespace("keystore", null, true);
+  constructor(private walletFile: WalletFileService, private $rootScope) {
+    //this.store = storage.namespace("keystore", null, true);
   }
 
   /* Remembers a password for an account in the key store */
@@ -67,7 +67,7 @@ class LocalKeyStoreService {
     /*this.store.put(this.key(key.account), this.encode(key))
     this.store.put(this.nameKey(key.account), key.name)*/
 
-    return storage.saveWalletEntry(key.account, key.name, this.encode(key))
+    return storage.saveWalletEntry(key.account, {name: key.name, contents: this.encode(key)})
   }
 
   /* lists all numeric account ids we have keys for */
@@ -119,7 +119,7 @@ class LocalKeyStoreService {
       accountAddresses: accountAddresses
     };
 
-    let store = this.storage.namespace('wallet-address', this.$rootScope, true);
+    //let store = this.storage.namespace('wallet-address', this.$rootScope, true);
 
     /* todo
     this.listLocalKeyEntries().forEach(entry => {
@@ -159,20 +159,20 @@ class LocalKeyStoreService {
 
     /* Adds a raw key entry, returns true iff entry did not exist, returns false iff already present */
     const putRaw = (key: ILocalKeyEntry) => {
-      let key1 = this.key(key.account)
+      /*let key1 = this.key(key.account)
       let key2 = this.nameKey(key.account)
 
-      //if (this.store.get(key1)) return false
+      if (this.store.get(key1)) return false
 
       this.store.put(key1, key.contents)
-      this.store.put(key2, key.name||'')
+      this.store.put(key2, key.name||'')*/
 
       return storage.importWalletEntry(key.isTestnet, key.account, key.name || '', key.contents)
     }
 
     let promises: Promise<any>[] = []
 
-    let walletStore = this.storage.namespace('wallet-address', this.$rootScope, true)
+    //let walletStore = this.storage.namespace('wallet-address', this.$rootScope, true)
 
     walletFile.entries.forEach(importEntry => {
       let localKeyEntry: ILocalKeyEntry = {
@@ -187,7 +187,7 @@ class LocalKeyStoreService {
         wlt.CURRENCIES_LIST.forEach(c => {
           let addresses = cryptoAddresses[c.symbol]
           if (addresses) {
-            walletStore.put(`${c.symbol}-${importEntry.account}`, addresses)
+            //walletStore.put(`${c.symbol}-${importEntry.account}`, addresses)
             storage.importAddresses(importEntry.isTestnet, importEntry.account, c.symbol, addresses)
           }
         })
@@ -262,6 +262,7 @@ class LocalKeyStoreService {
     return Promise.all(promises).then(ids => added)
   }
 
+/*
   private nameKey(account: string, isTestnet?: boolean) {
     return `name.${account}${isTestnet || this.testnet()}`
   }
@@ -269,6 +270,7 @@ class LocalKeyStoreService {
   private key(account: string, isTestnet?: boolean) {
     return `key.${account}${isTestnet || this.testnet()}`
   }
+*/
 
   private encode(key: ILocalKey): string {
     const payload = JSON.stringify({

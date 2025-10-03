@@ -35,8 +35,8 @@
       padding: 2px;
       margin-left: 2px;
       font-size: smaller;
-      color: darkcyan;
-      border: solid 1px darkcyan;
+      color: deepskyblue;
+      border: solid 1px deepskyblue;
       border-radius: 6px;
     }
   `,
@@ -643,9 +643,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           name: '',
           publicKey
         };
-        this.localKeyStore.put(key);
-        this.$scope.$evalAsync(() => {
-          this.initLocalKeyStore()
+        this.localKeyStore.put(key).then(value => {
+          this.$scope.$evalAsync(() => {
+            this.initLocalKeyStore()
+          })
         })
       }
     )
@@ -692,7 +693,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   remove($event, entry: wlt.WalletEntry) {
     dialogs.prompt($event, 'Remove Wallet Entry',
-      `This completely removes the wallet entry from your device.
+      `This completely removes the wallet entry '${entry.name}' from your device.
        Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
         pin => {
           if (pin == entry.pin) {
@@ -907,12 +908,13 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           pincode: data.password,
           name: '',
           publicKey
-        };
-        this.localKeyStore.put(key);
-        let message = `Seed was successfully imported under HEAT account ${account}`;
-        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase))
-          .then(() => heat.fullApplicationScopeReload())
+        }
+        return this.localKeyStore.put(key).then(value => {
+          let message = `Seed was successfully imported under HEAT account ${account}`
+          this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
+          this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase))
+              .then(() => heat.fullApplicationScopeReload())
+        })
       }
     )
   }

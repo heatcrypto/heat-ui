@@ -63,7 +63,7 @@ namespace wlt {
             walletEntry.setWalletComponent(this)
             walletEntry["cached"] = true
           } else {
-            walletEntry = new wlt.WalletEntry(entry.account, entry.name, this)
+            walletEntry = new wlt.WalletEntry(this, entry.account, entry.name, entry.selectedCurrencies)
           }
           this.walletEntries.push(walletEntry)
         });

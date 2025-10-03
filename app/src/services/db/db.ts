@@ -65,20 +65,26 @@ namespace storage {
         })
     }
 
-    export function saveWalletEntry(account: string, name: string, contents: string): Promise<any> {
+    export function saveWalletEntry(account: string, props: any): Promise<any> {
         return db.walletEntry.get({account}).then(item => {
             if (item) {
-                return db.walletEntry.update({account}, {name, contents})
+                return db.walletEntry.update(account, props)
             } else {
-                return db.walletEntry.put({account, name, contents})
+                return db.walletEntry.put(Object.assign({account}, props))
             }
         }).catch(error => {
             console.error("Error saving record:", error)
         })
     }
 
+    export function updateWalletEntryProps(account: string, props: any): Promise<any> {
+        return db.walletEntry.update(account, props).catch(error => {
+            console.error("Error updating record:", error)
+        })
+    }
+
     export function removeWalletEntry(account: string): Promise<any> {
-        return db.walletEntry.delete({account}).catch(error => console.error("Error saving record:", error))
+        return db.walletEntry.delete(account).catch(error => console.error("Error saving record:", error))
     }
 
     export function listWalletEntries(): Promise<any[]> {

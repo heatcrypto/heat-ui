@@ -349,9 +349,10 @@ namespace wlt {
     public expanded = false
     private filter: wlt.WalletEntryFilter;
 
-    constructor(public account: string,
-                public name: string,
-                public component: WalletComponentAbstract //user may assign any text for wallet account
+    constructor(public component: wlt.WalletComponentAbstract,
+                public account: string,
+                public name: string, //user may assign any text for wallet account
+                selectedCurrencies: string[]
     ) {
       super()
       this.visible = true
@@ -359,7 +360,7 @@ namespace wlt {
       //this.visibleLabel = getEntryVisibleLabel(this.account)
       wlt.getEntryVisibleLabel(this.account, '').then(value => this.visibleLabel = value)
       this.bip44Compatible = getEntryBip44Compatible(this.account)
-      this.selectedCurrencies = (wlt.getStore().get(this.account) || []).sort()
+      this.selectedCurrencies = (selectedCurrencies || []).sort()
 
       this.filter = new WalletEntryFilter(this)
     }

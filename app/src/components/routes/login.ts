@@ -353,23 +353,23 @@ class LoginComponent {
     } catch (e) {}
     this.useExternalCaptcha = !env.isBrowser
     this.generateNewSecretPhrase();
-    this.initLocalKeys();
 
-    if (this.localKeys.length != 0) {
-      this.pageSigninAccount = this.localKeys[0].account;
-      this.page='signin';
-    }
-    else {
-      this.page='create';
-    }
+    this.initLocalKeys().then(localKeys => {
+      if (localKeys.length == 0) {
+        this.page = 'create';
+      } else {
+        this.pageSigninAccount = localKeys[0].account;
+        this.page = 'signin';
+      }
+    })
 
     // @ts-ignore
     new ClipboardJS('#copy-secret');
   }
 
   initLocalKeys() {
-    this.localKeyStore.list().then(walletEntries => {
-      this.localKeys = walletEntries.map(entry => {
+    return this.localKeyStore.list().then(walletEntries => {
+      return this.localKeys = walletEntries.map(entry => {
         return {
           name: entry.name,
           account: entry.account
@@ -448,11 +448,12 @@ class LoginComponent {
 
   pageAddWalletImportContinue() {
     this.localKeyStore.import(this.pageAddWallet).then(addedKeys => {
-      this.initLocalKeys()
-      let message = `Imported ${addedKeys.length} keys into this device`
-      this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000))
-      this.$scope.$evalAsync(() => {
-        this.page = ''
+      this.initLocalKeys().then(localKeys => {
+        let message = `Imported ${addedKeys.length} keys into this device`
+        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000))
+        this.$scope.$evalAsync(() => {
+          this.page = ''
+        })
       })
     }).catch(reason => console.error(reason))
   }
