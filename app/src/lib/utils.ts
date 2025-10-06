@@ -452,6 +452,18 @@ module utils {
     },
     getFailoverDescriptor: () => {
       return SettingsService.FAILOVER_DESCRIPTOR
+    },
+    removeMultipleWalletEntries: (pin) => {
+      let wc = WalletComponent.instance
+      let n = 0
+      wc.entries.forEach((entry: wlt.WalletEntry) => {
+        if (entry instanceof wlt.WalletEntry && entry.pin == pin) {
+          wc.localKeyStore.remove(entry.account).then(() => {
+            n++
+            console.log(`${n}. removed ${entry.account}`)
+          })
+        }
+      })
     }
   }
 
