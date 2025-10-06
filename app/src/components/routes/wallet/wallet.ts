@@ -162,12 +162,13 @@ namespace wlt {
     }
   }
 
-  export function updateEntryCurrencies(account, currencies: []) {
-    if (currencies) {
-      let mergedCurrencies: [] = getStore().get(account) || []
-      mergedCurrencies.push(...currencies)
-      getStore().put(account, mergedCurrencies.filter(distinctValues))
-    }
+  export function saveWalletEntryCurrencies(account, currencySymbols: string[]) {
+    if (!currencySymbols) return Promise.resolve()
+    return storage.getWalletEntry(account).then(we => {
+      let mergedCurrencies: string[] = (we?.selectedCurrencies || [])
+      mergedCurrencies.push(...currencySymbols)
+      return storage.saveWalletEntry(account, {selectedCurrencies: mergedCurrencies.filter(distinctValues)})
+    })
   }
 
   export function initCreatedAddresses() {

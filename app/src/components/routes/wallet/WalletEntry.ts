@@ -168,18 +168,6 @@ namespace wlt {
       isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
     }
 
-    private getCurrencies(account: string): string[] {
-      let currencies = getStore().get(account)
-      return currencies || []
-    }
-
-    private registerCurrency(account: string, currency: string) {
-      let currencies = this.getCurrencies(account)
-      if (currencies.indexOf(currency) > -1) return
-      currencies.push(currency)
-      getStore().put(account, currencies.filter(wlt.distinctValues))
-    }
-
     removeIsDeleted(entry) {
       let currencySymbol = entry.symbol
       let account = entry.walletEntry.account
@@ -300,21 +288,9 @@ namespace wlt {
         currencies.splice(index, 0, newCurrencyBalance)
         //currencies.push(newCurrencyBalance)
 
-        this.registerCurrency(this.walletEntry.account, currencySymbol)
+        wlt.saveWalletEntryCurrencies(this.walletEntry.account, [currencySymbol])
 
         component.flatten()
-
-        /*
-        // requestBalance(currencyName)
-        if (currencyName == "Ethereum") {
-          let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
-          ethCurrencyAddressLoading.visible = entry.visible
-          ethCurrencyAddressLoading.wallet = this.wallet
-          currencies.push(ethCurrencyAddressLoading)
-          component.loadEthereumAddresses(this.walletEntry)
-        }
-        setTimeout(() => this.flatten(), 1000)
-         */
 
         rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress).then(value => {
           shouldBeSaved = component.exportWallet(true)

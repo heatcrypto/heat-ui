@@ -224,7 +224,6 @@ class LocalKeyStoreService {
       }
       let walletEntryProps = {}  // accumulate wallet entry properties for saving to Indexeddb
       if (importEntry.currencies) {
-        wlt.updateEntryCurrencies(importEntry.account, importEntry.currencies)
         Object.assign(walletEntryProps, {selectedCurrencies: importEntry.currencies})
       }
       if (importEntry.bip44Compatible) {

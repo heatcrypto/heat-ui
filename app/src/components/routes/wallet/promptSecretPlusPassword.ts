@@ -108,25 +108,16 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
   function importWallet(secret: string, selectedImport) {
     if (typeof selectedImport == "string") selectedImport = JSON.parse(selectedImport)
     let accountId = heat.crypto.getAccountId(secret)
-    return storage.getWalletEntry(accountId).then(entry => {
-      let currencies = entry?.selectedCurrencies || []
-      currencies.push(selectedImport.symbol)
-      let distinctValues = (value, index, walletComponent) => {
-        return walletComponent.indexOf(value) === index;
-      }
-      let p = storage.saveWalletEntry(accountId, {selectedCurrencies: currencies.filter(distinctValues)})
-
+    return wlt.saveWalletEntryCurrencies(accountId, [selectedImport.symbol]).then(() => {
       setTimeout(() => {
         let recreatedWalletComponent = WalletComponent.instance
-        let entry = recreatedWalletComponent.entries.find(entry => entry instanceof wlt.WalletEntry && entry.account == accountId)
-        if (entry) {
+        let walletEntry = recreatedWalletComponent.entries.find(entry => entry instanceof wlt.WalletEntry && entry.account == accountId)
+        if (walletEntry) {
           let currencyAddressCreate: wlt.CurrencyAddressCreate =
-              entry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
+              walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
           currencyAddressCreate?.createAddressByName()
         }
       }, 2500)
-
-      return p
     })
   }
 

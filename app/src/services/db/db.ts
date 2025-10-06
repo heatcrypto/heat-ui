@@ -84,6 +84,7 @@ namespace storage {
     }
 
     export function removeWalletEntry(account: string): Promise<any> {
+        //todo remove derived records (addresses, walletItem ...) also
         return db.walletEntry.delete(account).catch(error => console.error("Error saving record:", error))
     }
 
