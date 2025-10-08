@@ -728,12 +728,14 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               walletEntry.pin = pin
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-              wlt.saveEntryBip44Compatible(walletEntry.account, walletEntry.bip44Compatible)
+              if (walletEntry.bip44Compatible) {
+                wlt.saveEntryBip44Compatible(walletEntry.account, walletEntry.bip44Compatible)
+              }
               walletEntry.label = key.label
               walletEntry.unlocked = true
               wlt.walletEntriesCache.set(walletEntry.account, walletEntry)
               this.initWalletEntry(walletEntry)
-            }).catch((e) => console.error(e)))
+            }).catch((e) => console.error(`Error loading wallet entry for account ${walletEntry.account}: ${e}`)))
           }
         })
         Promise.all(promises).then(() => {

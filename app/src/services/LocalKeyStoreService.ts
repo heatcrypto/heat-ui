@@ -227,7 +227,7 @@ class LocalKeyStoreService {
         Object.assign(walletEntryProps, {selectedCurrencies: importEntry.currencies})
       }
       if (importEntry.bip44Compatible) {
-        wlt.saveEntryBip44Compatible(importEntry.account, importEntry.bip44Compatible)
+        //wlt.saveEntryBip44Compatible(importEntry.account, importEntry.bip44Compatible)
         Object.assign(walletEntryProps, {bip44Compatible: importEntry.bip44Compatible})
       }
       promises.push(storage.importWalletEntryProps(importEntry.isTestnet, importEntry.account, walletEntryProps))

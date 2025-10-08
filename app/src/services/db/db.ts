@@ -35,12 +35,6 @@ namespace storage {
         })
     }
 
-    export function updateBalance(itemKey: string, currencySym: string, balance): Promise<any> {
-        return db.walletItem.update({itemKey, currencySym}, {balance}).catch(error => {
-            console.error(error)
-        })
-    }
-
     export function importAddresses(isTestnet: boolean, account: string, currencySym: string, addresses: any): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
         return actualDb.cryptoAddresses.put({account, currencySym, addresses}).then(id => {
@@ -95,6 +89,38 @@ namespace storage {
     export function getWalletEntry(account: string): Promise<any> {
         return db.walletEntry.get({account}).catch(error => {
             console.error("Error getting wallet entry:", error)
+        })
+    }
+
+    export function updateBalance(itemKey: string, currencySym: string, balance): Promise<any> {
+        return db.walletItem.update({itemKey, currencySym}, {balance}).catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function saveWalletItem(itemKey: string, currencySym: string, props: any): Promise<any> {
+        let id = {itemKey, currencySym}
+        return db.walletItem.get(id).then(item => {
+            if (item) {
+                return db.walletItem.update(id, props)
+            } else {
+                return db.walletItem.put(Object.assign(id, props))
+            }
+        }).catch(error => {
+            console.error("Error saving record:", error)
+        })
+    }
+
+    export function updateWalletItem(itemKey: string, currencySym: string, props: any): Promise<any> {
+        let id = {itemKey, currencySym}
+        return db.walletItem.update(id, props).catch(error => {
+            console.error("Error saving record:", error)
+        })
+    }
+
+    export function getWalletItem(itemKey: string, currencySym: string): Promise<any> {
+        return db.walletItem.get({itemKey, currencySym}).catch(error => {
+            console.error("Error adding record:", error)
         })
     }
 

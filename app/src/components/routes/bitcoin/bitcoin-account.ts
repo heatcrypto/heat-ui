@@ -183,9 +183,12 @@ class BitcoinAccountComponent {
         this.busy = false
       })
     }).finally(() => {
-      let b = wlt.getSavedCurrencyBalance(this.account, "BTC", balanceUnconfirmedHolder ? String(balanceUnconfirmedHolder) : null)
-      this.balance = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
-      this.balanceUnconfirmed = b.unconfirmed ? new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
+      wlt.getSavedCurrencyBalance(this.account, "BTC", balanceUnconfirmedHolder ? String(balanceUnconfirmedHolder) : null).then(b => {
+        this.$scope.$evalAsync(() => {
+          this.balance = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
+          this.balanceUnconfirmed = b.unconfirmed ? new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
+        })
+      })
     })
     this.loadPaymentMessages()
   }

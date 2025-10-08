@@ -71,6 +71,12 @@ namespace wlt {
       super()
       this.walletEntry = walletEntry
       wlt.getEntryVisibleLabel(this.walletEntry.account, symbol, address).then(value => this.visibleLabel = value)
+
+      if (this.isCurrencyBalance && this.symbol) {
+        getSavedCurrencyBalance(this.address, this.symbol, this._balance).then(r => {
+          this._balance = r?.confirmed || this._balance
+        })
+      }
     }
 
     toString(): string {
@@ -78,14 +84,7 @@ namespace wlt {
     }
 
     get balance(): string {
-      let result
-      if (this.isCurrencyBalance && this.symbol) {
-        let r = getSavedCurrencyBalance(this.address, this.symbol, this._balance)
-        result = r?.confirmed
-      } else {
-        result = this._balance
-      }
-      return CURRENCIES_MAP.get(this.name).formatBalance(result)
+      return this._balance ? CURRENCIES_MAP.get(this.name).formatBalance(this._balance) : null
     }
 
     set balance(value: string) {
@@ -335,7 +334,7 @@ namespace wlt {
       this.identifier = name ? `${account} | ${name}` : account
       //this.visibleLabel = getEntryVisibleLabel(this.account)
       wlt.getEntryVisibleLabel(this.account, '').then(value => this.visibleLabel = value)
-      this.bip44Compatible = getEntryBip44Compatible(this.account)
+      getEntryBip44Compatible(this.account).then(bip44 => this.bip44Compatible = bip44)
       this.selectedCurrencies = (selectedCurrencies || []).sort()
 
       this.filter = new WalletEntryFilter(this)

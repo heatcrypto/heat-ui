@@ -204,29 +204,31 @@ class EthereumAccountComponent {
   }
 
   refresh() {
-    let balances = wlt.getSavedCurrencyBalance(this.account, "ETH")
-    this.balance = balances.confirmed || "*"
-    this.balanceUnconfirmed = balances.unconfirmed
-    this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
-      this.$scope.$evalAsync(() => {
-        let balances = wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance)
-        this.balance = balances.confirmed || "*"
-        this.balanceUnconfirmed = balances.unconfirmed
-        //this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
-        if (info.tokens) {
-          this.erc20Tokens = info.tokens.map(token => {
-            let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
-            let balance = token.balance
-                ? utils.formatERC20TokenAmount(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18)
-                : ""
-            return {
-              balance: balance,
-              symbol: token.tokenInfo.symbol,
-              name: token.tokenInfo.name,
-              id: ''
+    wlt.getSavedCurrencyBalance(this.account, "ETH").then(balances => {
+      this.balance = balances.confirmed || "*"
+      this.balanceUnconfirmed = balances.unconfirmed
+      this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
+        this.$scope.$evalAsync(() => {
+          wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance).then(balances => {
+            this.balance = balances.confirmed || "*"
+            this.balanceUnconfirmed = balances.unconfirmed
+            //this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
+            if (info.tokens) {
+              this.erc20Tokens = info.tokens.map(token => {
+                let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
+                let balance = token.balance
+                    ? utils.formatERC20TokenAmount(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18)
+                    : ""
+                return {
+                  balance: balance,
+                  symbol: token.tokenInfo.symbol,
+                  name: token.tokenInfo.name,
+                  id: ''
+                }
+              })
             }
           })
-        }
+        })
       })
     })
 

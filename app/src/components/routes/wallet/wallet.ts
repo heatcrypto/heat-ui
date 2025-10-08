@@ -91,16 +91,30 @@ namespace wlt {
   }
 
   export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
-    let hash = heat.crypto.hash(address).substring(0, 16)
+    let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
+    return storage.saveWalletItem(storage.compactHash(address), currencySymbol, {balance: balanceRecord})
+
+    /*let hash = heat.crypto.hash(address).substring(0, 16)
     let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
     getStore().put(`balance-${currencySymbol}-${hash}`, balanceRecord)
     //return storage.updateBalance(storage.compactHash(address), currencySymbol, balanceRecord)
+    */
   }
 
   /**
    * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
    */
-  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
+  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): Promise<{confirmed: string, unconfirmed?: string}> {
+    return storage.getWalletItem(storage.compactHash(address), currencySymbol).then(item => {
+      let r = item?.balance
+      if (!r) return {confirmed: balance}
+      return r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()
+          ? {confirmed: r.b}
+          : {confirmed: r.b, unconfirmed: r.ub}
+    })
+  }
+
+  /*export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
     let hash = heat.crypto.hash(address).substring(0, 16)
     let key = `balance-${currencySymbol}-${hash}`
     let r = getStore().get(key)
@@ -111,7 +125,7 @@ namespace wlt {
       return {confirmed: r.b, unconfirmed: r.ub}
     }
     return {confirmed: balance}
-  }
+  }*/
 
   /*
     export function getVersion(): number {
@@ -127,38 +141,44 @@ namespace wlt {
   /**
    * @deprecated
    */
-  export function getEntryVisibleLabelOld(account, address?: string) {
+  /*export function getEntryVisibleLabelOld(account, address?: string) {
     if (address) {
       let subEntryKey = storage.compactHash(address)
       return getStore().get(`label.${account}.${subEntryKey || ''}`)
     }
     return getStore().get(`label.${account}`)
-  }
+  }*/
 
   export function getEntryVisibleLabel(account, currencySym, address?: string) {
-    return storage.getItemLabel(storage.compactHash(address || account), '')
+    return storage.getItemLabel(storage.compactHash(address || account), currencySym)
   }
 
   export function updateEntryVisibleLabel(visibleLabel, itemUniqueName: string, currencySym: string = '', account: string = '') {
     let itemKey = storage.compactHash(itemUniqueName)
-    const storeKey = itemUniqueName
+    /*const storeKey = itemUniqueName
         ? `label.${account}.${itemKey || ''}`
         : `label.${account}`
     if (visibleLabel) {
       getStore().put(storeKey, visibleLabel)
     } else {
       getStore().remove(storeKey)
-    }
+    }*/
     return storage.saveItemLabel(itemKey, currencySym, account, visibleLabel || '')
   }
 
   export function getEntryBip44Compatible(account) {
-    return !!getStore().get("bip44." + account)
+    return storage.getWalletEntry(account).then(entry => {
+      return entry?.bip44
+    })
+    //return !!getStore().get("bip44." + account)
   }
 
   export function saveEntryBip44Compatible(account, bip44Compatible) {
-    if (bip44Compatible && !getEntryBip44Compatible(account)) {
-      getStore().put("bip44." + account, 1)
+    if (bip44Compatible) {
+      return getEntryBip44Compatible(account).then(bip44 => {
+        if (!bip44) return storage.saveWalletEntry(account, {bip44: true})
+      })
+      //getStore().put("bip44." + account, 1)
     }
   }
 
@@ -286,7 +306,7 @@ namespace wlt {
 
   export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {
     let encrypted = heat.crypto.encryptMessage(JSON.stringify(addresses), walletEntry.account, walletEntry.secretPhrase)
-    getStore('wallet-address').put(`${currencySymbol}-${walletEntry.account}`, encrypted)
+    //getStore('wallet-address').put(`${currencySymbol}-${walletEntry.account}`, encrypted)
     return storage.putCryptoAddresses(walletEntry.account, currencySymbol, encrypted)
   }
 

@@ -32,12 +32,13 @@ class BTCCurrency implements ICurrency {
 
   private btcBlockExplorerService: BtcBlockExplorerService
   private bitcoreService: BitcoreService
-  public symbol = 'BTC'
+  public symbol = wlt.CURRENCIES.Bitcoin.symbol
   public homePath
   private pendingTransactions: BitcoinPendingTransactionsService
   private bitcoinMessagesService: BitcoinMessagesService
   private user: UserService
-  private recentBalance: {confirmed: string, unconfirmed?: string}
+  private recentBalance: {confirmed: string, unconfirmed?: string} = {confirmed: ""}
+  private format: (string) => string
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
@@ -46,20 +47,22 @@ class BTCCurrency implements ICurrency {
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
     this.bitcoinMessagesService = heat.$inject.get('bitcoinMessagesService')
     this.user = heat.$inject.get('user')
+    this.format = wlt.CURRENCIES_MAP.get(wlt.CURRENCIES.Bitcoin.name).formatBalance
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
-    let self = this
-    self.recentBalance = wlt.getSavedCurrencyBalance(self.address, self.symbol)
-    return this.btcBlockExplorerService.getBalance(this.address).then(
-      balance => {
-        self.recentBalance = wlt.getSavedCurrencyBalance(self.address, self.symbol, String(balance))
-        return utils.commaFormat(new Big(self.recentBalance.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8))
-      }
-    ).catch(reason => {
-      return utils.commaFormat(new Big(self.recentBalance.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8))
-    })
+    return wlt.getSavedCurrencyBalance(this.address, this.symbol)
+        .then(r => this.recentBalance = r)
+        .then(r => {
+          return this.btcBlockExplorerService.getBalance(this.address).then(
+              balance => {
+                // todo save actual balance (if it is changed)
+                this.recentBalance.confirmed = String(balance)
+                return this.format(this.recentBalance.confirmed)
+              }
+          )
+        }).finally(() => this.format(this.recentBalance.confirmed))
   }
 
   /* Register a balance changed observer, unregister by calling the returned
@@ -187,7 +190,7 @@ class BTCCurrency implements ICurrency {
         if (!self.recentBalance) return
         let txTotal = new Big(value).plus(new Big(fees))
         let unconfirmedBalance = new Big(self.recentBalance.confirmed).minus(txTotal)
-        wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance.toString())
+        return wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance.toString())
       }
 
       let decodeTxn = function (txWrapper: { inputsSum: number; rawTx: string }, isCreatedTransaction = true) {
@@ -308,10 +311,11 @@ class BTCCurrency implements ICurrency {
         self.bitcoreService.sendBitcoins(vm.data.rawTx).then(
           data => {
             let sendingResult = Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod})
-            updateUnconfirmedBalance(vm.data.amount, vm.data.txnFeeSatoshi)
-            $mdDialog.hide(sendingResult).then(() => {
-              data.message = vm.data.message;
-              dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
+            updateUnconfirmedBalance(vm.data.amount, vm.data.txnFeeSatoshi).finally(() => {
+              $mdDialog.hide(sendingResult).then(() => {
+                data.message = vm.data.message;
+                dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
+              })
             })
           },
           err => {

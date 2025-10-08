@@ -163,8 +163,7 @@ class EthBlockExplorerHeatNodeService implements IEthereumAPIList {
       }
       parsed.ETH = {}
       parsed.ETH.balance = this.web3.web3.fromWei(parsed.balance, 'ether')
-      wlt.saveCurrencyBalance(address, "ETH", parsed.ETH.balance)
-      deferred.resolve(parsed);
+      wlt.saveCurrencyBalance(address, "ETH", parsed.ETH.balance).then(() => deferred.resolve(parsed))
     }, (error) => {
       deferred.reject(error);
     })
