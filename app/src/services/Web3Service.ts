@@ -39,6 +39,7 @@ class Web3Service {
                 let $rootScope = heat.$inject.get('$rootScope')
                 let store = this.storage.namespace('currency-cache-eth', $rootScope, true)
                 store.put(address + '-' + 'info', resp)
+                //return db.putValue(wlt.CACHE_KEY.addressInfo('ETH', address), resp)
             } else {
                 reject("response has no nonce")
             }

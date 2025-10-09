@@ -34,6 +34,11 @@ namespace wlt {
     finds: Map<string, string[]>
   }
 
+  function getEntryVisibleLabelList(account): string[][] {
+    const store = wlt.getStore()
+    return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
+  }
+
 
   export class WalletEntryFilter {
 
@@ -108,7 +113,7 @@ namespace wlt {
           || find('account private label', this.we.label))
 
       // find currency addresses labels
-      let labels = wlt.getEntryVisibleLabelList(this.we.account).map(ss => ss[1])
+      let labels = getEntryVisibleLabelList(this.we.account).map(ss => ss[1])
       for (let label of labels) {
         if (find(`${this.we.account} address label`, label)) {
           this.we.filtered = true
@@ -182,7 +187,7 @@ namespace wlt {
 
       // find currency address label
       let findCurrencyAddressLabel = (account: string) => {
-        let labels = wlt.getEntryVisibleLabelList(account).map(ss => ss[1])
+        let labels = getEntryVisibleLabelList(account).map(ss => ss[1])
         for (let label of labels) {
           queryTokens = doFind(queryTokens,`${this.we.account} address label`, label)
         }

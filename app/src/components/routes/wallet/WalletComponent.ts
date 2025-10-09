@@ -36,7 +36,7 @@
       margin-left: 2px;
       font-size: smaller;
       color: deepskyblue;
-      border: solid 1px deepskyblue;
+      border: solid 1px steelblue;
       border-radius: 6px;
     }
   `,
@@ -299,7 +299,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     {name: 'FIMK', disabled: false}, {name: 'NXT', disabled: true}, {name: 'ARDR', disabled: true},
     {name: 'IOTA',disabled: false}, {name: 'LTC', disabled: false}, {name: 'BCH', disabled: false}];
   selectedChain = '';
-  store: Store;
 
   private ltcBlockExplorerService: LtcBlockExplorerService;
   private bchBlockExplorerService: BchBlockExplorerService;
@@ -349,7 +348,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.nxtCryptoService = nxtCryptoService;
     this.bitcoreService = bitcoreService;
     WalletComponent.instance = this;
-    this.store = wlt.getStore()
 
     this.displayUnlocked = WalletComponent.displayUnlocked
     $scope.$on('$destroy', () => WalletComponent.displayUnlocked = this.displayUnlocked)
@@ -543,11 +541,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
             })
           }
         });
-  }
-
-  getSelectedCurrencies(walletEntry) {
-    let selectedCurrencies = this.store.get(walletEntry.account) || []
-    return selectedCurrencies
   }
 
   createAddress(walletEntry, currencyName) {
@@ -924,9 +917,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   // @click
   exportWallet(onlyData?: boolean) {
     let accountCurrencies: Map<string, []> = new Map<string, []>()
+    let store = wlt.getStore()
     this.entries.forEach(entry => {
       if (entry instanceof wlt.WalletEntry) {
-        let currencies: [] = this.store.get(entry.account)
+        let currencies: [] = store.get(entry.account)
         if (currencies) accountCurrencies.set(entry.account, currencies)
       }
     })

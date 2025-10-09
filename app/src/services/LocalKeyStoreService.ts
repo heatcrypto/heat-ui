@@ -67,7 +67,7 @@ class LocalKeyStoreService {
     /*this.store.put(this.key(key.account), this.encode(key))
     this.store.put(this.nameKey(key.account), key.name)*/
 
-    return storage.saveWalletEntry(key.account, {name: key.name, contents: this.encode(key)})
+    return db.saveWalletEntry(key.account, {name: key.name, contents: this.encode(key)})
   }
 
   /* lists all numeric account ids we have keys for */
@@ -76,7 +76,7 @@ class LocalKeyStoreService {
     return this.store.keys().
                       filter((keyName) => test.test(keyName)).
                       map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""));*/
-    return storage.listWalletEntries()
+    return db.listWalletEntries()
   }
 
   /* lookup and return the account key name - if there is any */
@@ -86,14 +86,14 @@ class LocalKeyStoreService {
   }*/
 
   remove(account: string) {
-    return storage.removeWalletEntry(account)
+    return db.removeWalletEntry(account)
 
     /*this.store.remove(this.key(account))
     this.store.remove(this.nameKey(account))*/
   }
 
   load(account: string, passphrase: string): Promise<ILocalKey> {
-    return storage.getWalletEntry(account).then(v => {
+    return db.getWalletEntry(account).then(v => {
       let result = this.decode(v.contents, passphrase, account)
       if (result) this.rememberPassword(account, passphrase)
       return result
@@ -167,7 +167,7 @@ class LocalKeyStoreService {
       this.store.put(key1, key.contents)
       this.store.put(key2, key.name||'')*/
 
-      return storage.importWalletEntry(key.isTestnet, key.account, key.name || '', key.contents)
+      return db.importWalletEntry(key.isTestnet, key.account, key.name || '', key.contents)
     }
 
     let promises: Promise<any>[] = []
@@ -188,7 +188,7 @@ class LocalKeyStoreService {
           let addresses = cryptoAddresses[c.symbol]
           if (addresses) {
             //walletStore.put(`${c.symbol}-${importEntry.account}`, addresses)
-            storage.importAddresses(importEntry.isTestnet, importEntry.account, c.symbol, addresses)
+            db.importAddresses(importEntry.isTestnet, importEntry.account, c.symbol, addresses)
           }
         })
       }
@@ -205,7 +205,7 @@ class LocalKeyStoreService {
         const store = wlt.getStore()
         for (let ss of importEntry.visibleLabels) {
           store.put(ss[0], ss[1])
-          //cannot store to IndexedDB storage because old import format does not provide currency symbol
+          //cannot store to IndexedDB storage because old import format does not provide currency symbol needed for id of label
           //storage.putItemLabel(itemKey, currencySym, account, visibleLabel || '')
         }
 
@@ -230,7 +230,7 @@ class LocalKeyStoreService {
         //wlt.saveEntryBip44Compatible(importEntry.account, importEntry.bip44Compatible)
         Object.assign(walletEntryProps, {bip44Compatible: importEntry.bip44Compatible})
       }
-      promises.push(storage.importWalletEntryProps(importEntry.isTestnet, importEntry.account, walletEntryProps))
+      promises.push(db.importWalletEntryProps(importEntry.isTestnet, importEntry.account, walletEntryProps))
     })
 
     // backward compatibility
@@ -253,8 +253,8 @@ class LocalKeyStoreService {
     if (walletFile.paymentMessages) {
       walletFile.paymentMessages.forEach(pm => {
         // todo import to both testnet and mainnet dbs because of old format (without testnet indicator)
-        promises.push(storage.importTransactionMemo(true, pm.id, pm.content))
-        promises.push(storage.importTransactionMemo(false, pm.id, pm.content))
+        promises.push(db.importTransactionMemo(true, pm.id, pm.content))
+        promises.push(db.importTransactionMemo(false, pm.id, pm.content))
       })
     }
 
@@ -303,7 +303,7 @@ class LocalKeyStoreService {
 
   private listLocalKeyEntries(): Promise<Array<ILocalKeyEntry>> {
 
-    return storage.listWalletEntries().then(walletEntries => {
+    return db.listWalletEntries().then(walletEntries => {
       let entries: Array<ILocalKeyEntry> = []
       for (const we of walletEntries) {
         entries.push({

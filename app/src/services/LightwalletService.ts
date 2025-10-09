@@ -108,7 +108,7 @@ class LightwalletService {
         }
         promise.then(walletAddresses => {
           let encryptedAddresses = heat.crypto.encryptMessage(JSON.stringify(walletAddresses), heatAddress, seedOrPrivateKey)
-          return storage.putCryptoAddresses(heatAddress, 'ETH', encryptedAddresses)
+          return db.putCryptoAddresses(heatAddress, 'ETH', encryptedAddresses)
               .then(recordId => resolve(walletAddresses))
         }).catch(reject)
       }
