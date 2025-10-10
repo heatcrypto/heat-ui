@@ -42,23 +42,24 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
     }
 
     this.okButtonClick = function ($event) {
-      let walletEntry = this.data.selectedWalletEntry
+      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       let success = false
       if (walletEntry) {
-        let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
         if (!node) {
-          let storage = <StorageService>heat.$inject.get('storage')
-          let $rootScope = heat.$inject.get('$rootScope');
-          let store = storage.namespace('wallet', $rootScope, true)
-          let currencies = store.get(walletEntry.account)
-          if (!(currencies instanceof Array)) currencies = []
-          currencies.push('BTC')
-          store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-          walletComponent.initWalletEntry(walletEntry)
+          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), 'BTC']
+          wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+              () => walletComponent.initWalletEntry(walletEntry)
+          )
         }
         // load in next event loop to load currency addresses first
         setTimeout(() => {
-          node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
+          // @ts-ignore
+          let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
+            // @ts-ignore
+            return c.isCurrencyAddressCreate && c.name == 'Bitcoin'
+          })
+          //node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
           //success = node.createBtcAddress(walletEntry)
           node.createBtcAddress(walletEntry)
               .then(value => {

@@ -42,23 +42,23 @@ function createARDRAccount($event, walletComponent: WalletComponent) {
     }
 
     this.okButtonClick = function ($event) {
-      let walletEntry = this.data.selectedWalletEntry
+      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       let success = false
       if (walletEntry) {
-        let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.ARDOR.symbol)
         if (!node) {
-          let storage = <StorageService>heat.$inject.get('storage')
-          let $rootScope = heat.$inject.get('$rootScope');
-          let store = storage.namespace('wallet', $rootScope, true)
-          let currencies = store.get(walletEntry.account)
-          if (!(currencies instanceof Array)) currencies = []
-          currencies.push('ARDR')
-          store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-          walletComponent.initWalletEntry(walletEntry)
+          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), wlt.CURRENCIES.ARDOR.symbol]
+          wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+              () => walletComponent.initWalletEntry(walletEntry)
+          )
         }
         // load in next event loop to load currency addresses first
-        var interval = setInterval(() => {
-          node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
+        let interval = setInterval(() => {
+          // @ts-ignore
+          let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
+            // @ts-ignore
+            return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.Ethereum.name
+          })
           if (node) {
             success = node.createARDRAddress(walletEntry)
             walletEntry.toggle(true)

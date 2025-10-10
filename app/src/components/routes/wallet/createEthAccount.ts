@@ -43,36 +43,30 @@ function createEthAccount($event, walletComponent: WalletComponent) {
 
     this.okButtonClick = function ($event) {
       let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
+      let success = false
       if (walletEntry) {
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
-          if (!node) {
-            let storage = <StorageService>heat.$inject.get('storage')
-            let $rootScope = heat.$inject.get('$rootScope');
-            let store = storage.namespace('wallet', $rootScope, true)
-            let currencies = store.get(walletEntry.account)
-            if (!(currencies instanceof Array)) currencies = []
-            currencies.push('ETH')
-            store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-            walletComponent.initWalletEntry(walletEntry)
-          }
-          // load in next event loop to load currency addresses first
-          setTimeout(() => {
-            // @ts-ignore
-            let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
-              // @ts-ignore
-              return c.isCurrencyAddressCreate && c.name == 'Ethereum'
-            })
-            success = node ? node.createEthAddress(walletEntry) : false
-            walletEntry.toggle(true)
-            $mdDialog.hide(null).then(() => {
-              if (!success) {
-                dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-              }
-            })
-          }, 0)
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
+        if (!node) {
+          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), wlt.CURRENCIES.Ethereum.symbol]
+          wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+              () => walletComponent.initWalletEntry(walletEntry)
+          )
         }
+        // load in next event loop to load currency addresses first
+        setTimeout(() => {
+          // @ts-ignore
+          let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
+            // @ts-ignore
+            return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.Ethereum.name
+          })
+          success = node?.createEthAddress(walletEntry)
+          walletEntry.toggle(true)
+          $mdDialog.hide(null).then(() => {
+            if (!success) {
+              dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+            }
+          })
+        }, 100)
       }
     }
 

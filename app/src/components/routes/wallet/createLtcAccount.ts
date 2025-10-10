@@ -19,24 +19,21 @@ function createLtcAccount($event, walletComponent: WalletComponent) {
     }
 
     this.okButtonClick = function ($event) {
-      let walletEntry = this.data.selectedWalletEntry
+      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       let success = false
       if (walletEntry) {
-        let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Litecoin.symbol)
         if (!node) {
-          let storage = <StorageService>heat.$inject.get('storage')
-          let $rootScope = heat.$inject.get('$rootScope');
-          let store = storage.namespace('wallet', $rootScope, true)
-          let currencies = store.get(walletEntry.account)
-          if (!(currencies instanceof Array)) currencies = []
-          currencies.push('LTC')
-          store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-          walletComponent.initWalletEntry(walletEntry)
+          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), 'LTC']
+          wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+              () => walletComponent.initWalletEntry(walletEntry)
+          )
         }
         // load in next event loop to load currency addresses first
         setTimeout(() => {
-          node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
-          success = node.createLtcAddress(walletEntry)
+          // @ts-ignore
+          let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.Litecoin.name})
+          success = node?.createLtcAddress(walletEntry)
           walletEntry.toggle(true)
           $mdDialog.hide(null).then(() => {
             if (!success) {
