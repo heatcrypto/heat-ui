@@ -62,7 +62,7 @@ namespace wlt {
   export const SATOSHI_PER_BTC = new Big(100000000)
 
   export const CACHE_KEY = {
-    addressInfo: (currencySym, address) => `cache-addressinfo-${currencySym}-${address}`
+    addressInfo: (currencySym, address) => `cache-ai-${currencySym}-${db.compactHash(address)}`
   }
 
   const storageMap = new Map<string, Store>()

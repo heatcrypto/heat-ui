@@ -93,11 +93,10 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
               private user: UserService,
               private storage: StorageService) {
 
-    super($scope, $q);
-    let store = storage.namespace('currency-cache-btc', this.$scope, true)
+    super($scope, $q)
     this.cache = {
-      get: key => store.get(this.user.currency.address + "-" + key),
-      put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
+        get: key => db.getValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key),
+        put: (key, value) => db.putValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key, value),
     }
   }
 

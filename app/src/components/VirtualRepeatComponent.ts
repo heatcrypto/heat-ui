@@ -64,7 +64,7 @@ abstract class VirtualRepeatComponent {
   private fetchPageDebounced;
 
   // if variable cache is defined in the descendant the cache is enabled for descendant
-  protected cache: {get: (key) => any, put: (key, value) => void}
+  protected cache: {get: (key) => Promise<any>, put: (key, value) => Promise<any>}
   public cachedItems = false
 
   constructor(protected $scope: angular.IScope,
@@ -104,18 +104,18 @@ abstract class VirtualRepeatComponent {
 
   /* md-virtual-repeat */
   public getLength(): number {
-    if (!this.cache || this.numItems != -1) return this.numItems
-    return this.cache.get("numItems") || this.numItems
+    return this.numItems
   }
 
   protected determineLength(retain?: boolean): angular.IPromise<number> {
-    let deferred = this.$q.defer<number>();
+    if (!(this.numItems >=0)) this.cache?.get("numItems").then(numItems => this.numItems = numItems ? numItems : this.numItems)
+    let deferred = this.$q.defer<number>()
     if (this.provider) {
       this.loadedPages.dirty = true
       this.loadedPages.inProgress = false
       this.provider.getPaginatedLength().then((length) => {
-        this.numItems = isNaN(length) ? -1 : length
-        if (length >= 0) {
+        if (length >= 0 && this.numItems != length) {
+          this.numItems = length
           this.cache?.put("numItems", length)
         }
         if (length == 0) {
@@ -152,16 +152,17 @@ abstract class VirtualRepeatComponent {
     }
 
     let loadCached = () => {
-      let items: any[] = this.cache?.get(pageNumber)
-      if (!items) return
-      this.cachedItems = true
-      processItems(items)
+      this.cache?.get(pageNumber).then((items: any[]) => {
+        if (!items) return
+        this.cachedItems = true
+        processItems(items)
+      })
     }
 
     this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
       this.cachedItems = false
       processItems(items)
-      setTimeout(args => this.cache?.put(pageNumber, items), 3000)
+      this.cache?.put(pageNumber, items)
     }, reason => {
       console.warn("fetching transactions page error " + (reason ? JSON.stringify(reason) : ""))
       loadCached()

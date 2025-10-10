@@ -4,7 +4,7 @@ namespace db {
         let dexie = new globalThis.Dexie(name)
 
         dexie.version(1).stores({
-            settings: 'key',
+            values_v2: '',
             walletEntry: 'account, name', // optional name of account, for example road@heatwallet.com
             cryptoAddresses: '[account+currencySym]',
             walletItem: '[itemKey+currencySym], account', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
@@ -25,13 +25,13 @@ namespace db {
     }
 
     export function getValue(key: string): Promise<any> {
-        return db0.settings.get(key).catch(error => {
+        return db0.values_v2.get(key).catch(error => {
             console.error(error)
         })
     }
 
     export function putValue(key: string, value: any): Promise<any> {
-        return db0.settings.put({key, value}).catch(error => {
+        return db0.values_v2.put(value, key).catch(error => {
             console.error(error)
         })
     }
