@@ -45,6 +45,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
         : "Seed of the chosen currency must be compatible with BIP44"
     }
     let ethereumValidator = () => {
+      this.data.secretPhraseProcessed = null
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
         //it is not the seed, so test if it is the private key
@@ -55,6 +56,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       }
     }
     let bitcoinValidator = () => {
+      this.data.secretPhraseProcessed = null
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
         // allowed raw hex pk or WIF pk
