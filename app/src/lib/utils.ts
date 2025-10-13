@@ -452,6 +452,9 @@ module utils {
     },
     getFailoverDescriptor: () => {
       return SettingsService.FAILOVER_DESCRIPTOR
+    },
+    fullExport: () => {
+      return wltStandalone.exportLocalstorage()
     }
   }
 

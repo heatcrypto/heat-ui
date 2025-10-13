@@ -2,6 +2,40 @@
 
 namespace wltStandalone {
 
+    export function exportLocalstorage() {
+        localStorage.setItem("heatwallet-raw-data", "1")
+        let dataStr = JSON.stringify(localStorage, null, 2)
+        const anchorElement = document.createElement('a')
+        let blob = new Blob([dataStr], {type: "octet/stream"})
+        let objectURL = window.webkitURL.createObjectURL(blob)
+        anchorElement.setAttribute('href', objectURL)
+        anchorElement.setAttribute('download', objectURL.split('/')[2] + '-export.json')
+        anchorElement.click()
+        return `size ${blob.size}`
+
+        /*const option = document.querySelector('input[name="options"]:checked')?.value
+        let data = {}
+        if (option == "all") {
+            data = localStorage
+        }
+        if (option == "keys") {
+            function* storageEntries(storage) {
+                for (let i = 0; i < storage.length; i++) {
+                    const key = storage.key(i)
+                    if (key.indexOf("keystore.") == 0) {
+                        yield [key, storage.getItem(key)]
+                    }
+                }
+            }
+
+            for (const [key, val] of storageEntries(localStorage)) {
+                data[key] = val
+            }
+        }
+        let dataStr = JSON.stringify(data, null, 2)*/
+
+    }
+
     export function exportWallet(onlyData?: boolean) {
         let accountCurrencies: Map<string, []> = new Map<string, []>()
         this.entries.forEach(entry => {
