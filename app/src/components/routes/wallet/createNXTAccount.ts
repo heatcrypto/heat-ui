@@ -71,7 +71,7 @@ function createNXTAccount($event, walletComponent: WalletComponent) {
             })
             clearInterval(interval);
           }
-        }, 0)
+        }, 200)
         setTimeout(() => {
           $mdDialog.hide(null).then(() => {
             if (!success) {

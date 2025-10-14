@@ -513,14 +513,16 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           } else if (currencyName === 'Bitcoin') {
             resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'BTC')
                 .then(wa => this.bitcoreService.unlock(wa, walletEntry.secretPhrase, true))
+          } else if (currencyName === 'BitcoinCash') {
+            resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'BCH')
+                .then(wa => this.bchCryptoService.unlock(wa, walletEntry.secretPhrase))
+          } else if (currencyName === 'Litecoin') {
+            resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'LTC')
+                .then(wa => this.ltcCryptoService.unlock(wa, walletEntry.secretPhrase))
           } else if (currencyName === 'FIMK') {
           } else if (currencyName === 'NXT') {
           } else if (currencyName === 'ARDOR') {
           } else if (currencyName === 'IOTA') {
-          } else if (currencyName === 'Litecoin') {
-            resetAddressesPromise = this.ltcCryptoService.unlock(walletEntry.secretPhrase)
-          } else if (currencyName === 'BitcoinCash') {
-            resetAddressesPromise = this.bchCryptoService.unlock(walletEntry.secretPhrase)
           } else if (currencyName === 'HEAT') {
           }
           if (resetAddressesPromise) {
@@ -801,14 +803,26 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     if (walletEntry.selectedCurrencies.indexOf('BTC') > -1) {
       wlt.loadCryptoAddresses(walletEntry, 'BTC').then(wa => {
         this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
-          if (wallet !== undefined) walletEntry.initBTC(this, wallet, this.user)
+          if (wallet) walletEntry.initBTC(this, wallet, this.user)
         })
       }).catch(reason => {console.log(reason)})
     }
+    if (walletEntry.selectedCurrencies.indexOf('BCH') > -1)
+      wlt.loadCryptoAddresses(walletEntry, 'BCH').then(wa => {
+        this.bchCryptoService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
+          if (wallet) walletEntry.initBCH(this, wallet)
+        }).catch(reason => {console.log(reason)})
+      })
+    if (walletEntry.selectedCurrencies.indexOf('LTC') > -1)
+      wlt.loadCryptoAddresses(walletEntry, 'LTC').then(wa => {
+        this.ltcCryptoService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
+          if (wallet) walletEntry.initLTC(this, wallet)
+        }).catch(reason => {console.log(reason)})
+      })
     if (walletEntry.selectedCurrencies.indexOf('ETH') > -1) {
       wlt.loadCryptoAddresses(walletEntry, 'ETH').then(wa => {
         this.lightwalletService.unlock(wa, walletEntry.secretPhrase).then(walletAddresses => {
-          walletEntry.initEth(this, walletAddresses)
+          if (walletAddresses) walletEntry.initEth(this, walletAddresses)
         })
       }).catch(reason => {console.log(reason)})
     }
@@ -827,18 +841,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     if (walletEntry.selectedCurrencies.indexOf('ARDR') > -1)
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         walletEntry.initARDOR(this, wallet)
-      }).catch(reason => {console.log(reason)})
-    if (walletEntry.selectedCurrencies.indexOf('LTC') > -1)
-      this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          walletEntry.initLTC(this, wallet)
-        }
-      }).catch(reason => {console.log(reason)})
-    if (walletEntry.selectedCurrencies.indexOf('BCH') > -1)
-      this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          walletEntry.initBCH(this, wallet)
-        }
       }).catch(reason => {console.log(reason)})
   }
 

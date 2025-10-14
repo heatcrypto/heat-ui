@@ -1,46 +1,30 @@
 @Service('ltcCryptoService')
-@Inject('$window', 'storage', '$rootScope')
+@Inject('$window')
 class LTCCryptoService {
 
-  static readonly BIP44 = "m/44'/2'/0'/0/";
-  private litecore;
-  private bip39;
-  private store: Store;
+  static readonly BIP44 = "m/44'/2'/0'/0/"
+  private litecore
+  private bip39
 
-  constructor($window: angular.IWindowService,
-    storage: StorageService,
-    private $rootScope: angular.IRootScopeService) {
-    this.litecore = $window.heatlibs.litecore;
-    this.bip39 = $window.heatlibs.bip39;
-    this.store = storage.namespace('wallet-address', $rootScope, true);
+  constructor($window: angular.IWindowService) {
+    this.litecore = $window.heatlibs.litecore
+    this.bip39 = $window.heatlibs.bip39
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let encryptedWallet = reset ? null : this.store.get(`LTC-${heatAddress}`)
-      if (encryptedWallet) {
-        if(!encryptedWallet.data) {
-          // Temporary fix. To remove unusable data from local storage
-          this.store.remove(`LTC-${heatAddress}`)
-          this.unlock(seedOrPrivateKey)
-        }
-        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
-        resolve(JSON.parse(decryptedWallet));
+      if (walletAddresses) {
+        resolve(walletAddresses)
       } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
-        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
-        this.store.put(`LTC-${heatAddress}`, encryptedWallet);
-        resolve(walletType);
+        resolve(walletType)
       } else if (this.litecore.PrivateKey.isValid(seedOrPrivateKey)) {
         try {
           let privateKey = this.litecore.PrivateKey.fromWIF(seedOrPrivateKey)
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
-          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
-          this.store.put(`LTC-${heatAddress}`, encryptedWallet);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
@@ -48,9 +32,9 @@ class LTCCryptoService {
         }
       }
       else {
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   getNWalletsFromMnemonics(mnemonic: string, keyCount: number) {
@@ -59,7 +43,7 @@ class LTCCryptoService {
       let wallet = this.getLitecoinWallet(mnemonic, i)
       walletType.addresses[i] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
     }
-    return walletType;
+    return walletType
   }
 
   refreshBalances(wallet: WalletAddresses, ltcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {

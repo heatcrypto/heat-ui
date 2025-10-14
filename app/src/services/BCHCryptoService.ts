@@ -1,42 +1,27 @@
 @Service('bchCryptoService')
-@Inject('$window', 'http', 'storage', '$rootScope')
+@Inject('$window')
 class BCHCryptoService {
 
   static readonly BIP44 = "m/44'/145'/0'/0/";
   private bitcore;
   private bip39;
   private bitcoreCash;
-  private store: Store;
 
-  constructor($window: angular.IWindowService,
-    private http: HttpService,
-    storage: StorageService,
-    private $rootScope: angular.IRootScopeService) {
+  constructor($window: angular.IWindowService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
     this.bitcoreCash = $window.heatlibs.bitcoreCash;
-    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
-      let encryptedWallet = reset ? null : this.store.get(`BCH-${heatAddress}`)
-      if (encryptedWallet) {
-        if(!encryptedWallet.data) {
-          // Temporary fix. To remove unusable data from local storage
-          this.store.remove(`BCH-${heatAddress}`)
-          this.unlock(seedOrPrivateKey)
-        }
-        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
-        resolve(JSON.parse(decryptedWallet));
+      if (walletAddresses) {
+        resolve(walletAddresses)
       } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
-          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
-          this.store.put(`BCH-${heatAddress}`, encryptedWallet);
-          resolve(walletType);
+          resolve(walletType)
         }
       } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
         try {
@@ -44,18 +29,15 @@ class BCHCryptoService {
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
-          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
-          this.store.put(`BCH-${heatAddress}`, encryptedWallet);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
           resolve(null)
         }
+      } else {
+        reject()
       }
-      else {
-        reject();
-      }
-    });
+    })
   }
 
   getNWalletsFromMnemonics(mnemonic: string, keyCount: number) {

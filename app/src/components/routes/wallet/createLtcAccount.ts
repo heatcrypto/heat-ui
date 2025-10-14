@@ -24,7 +24,8 @@ function createLtcAccount($event, walletComponent: WalletComponent) {
       if (walletEntry) {
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Litecoin.symbol)
         if (!node) {
-          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), 'LTC']
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Litecoin.symbol)
           wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
@@ -40,7 +41,7 @@ function createLtcAccount($event, walletComponent: WalletComponent) {
               dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
             }
           })
-        }, 0)
+        }, 200)
       }
     }
 

@@ -292,7 +292,6 @@ namespace wlt {
   }
 
   export function loadCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
-    //let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
     return db.getCryptoAddresses(walletEntry.account, currencySymbol).then(record => {
       let enc = record?.addresses
       if (enc) {
@@ -305,7 +304,6 @@ namespace wlt {
 
   export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {
     let encrypted = heat.crypto.encryptMessage(JSON.stringify(addresses), walletEntry.account, walletEntry.secretPhrase)
-    //getStore('wallet-address').put(`${currencySymbol}-${walletEntry.account}`, encrypted)
     return db.putCryptoAddresses(walletEntry.account, currencySymbol, encrypted)
   }
 

@@ -47,7 +47,8 @@ function createEthAccount($event, walletComponent: WalletComponent) {
       if (walletEntry) {
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
         if (!node) {
-          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), wlt.CURRENCIES.Ethereum.symbol]
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Ethereum.symbol)
           wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
@@ -66,7 +67,7 @@ function createEthAccount($event, walletComponent: WalletComponent) {
               dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
             }
           })
-        }, 100)
+        }, 200)
       }
     }
 

@@ -47,7 +47,8 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
       if (walletEntry) {
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
         if (!node) {
-          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), 'BTC']
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
           wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
@@ -73,7 +74,7 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
                   }
                 })
               })
-        }, 0)
+        }, 200)
       }
     }
 

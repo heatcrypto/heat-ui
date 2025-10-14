@@ -47,7 +47,8 @@ function createFIMKAccount($event, walletComponent: WalletComponent) {
       if (walletEntry) {
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.FIMK.symbol)
         if (!node) {
-          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), wlt.CURRENCIES.FIMK.symbol]
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.FIMK.symbol)
           wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
@@ -71,7 +72,7 @@ function createFIMKAccount($event, walletComponent: WalletComponent) {
             })
             clearInterval(interval);
           }
-        }, 0)
+        }, 200)
         setTimeout(() => {
           $mdDialog.hide(null).then(() => {
             if (!success) {

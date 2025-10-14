@@ -47,7 +47,8 @@ function createBCHAccount($event, walletComponent: WalletComponent) {
       if (walletEntry) {
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.BitcoinCash.symbol)
         if (!node) {
-          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), 'BCH']
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.BitcoinCash.symbol)
           wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
@@ -63,7 +64,7 @@ function createBCHAccount($event, walletComponent: WalletComponent) {
               dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
             }
           })
-        }, 0)
+        }, 200)
       }
     }
 

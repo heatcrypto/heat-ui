@@ -47,7 +47,8 @@ function createARDRAccount($event, walletComponent: WalletComponent) {
       if (walletEntry) {
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.ARDOR.symbol)
         if (!node) {
-          walletEntry.selectedCurrencies = [...(walletEntry.selectedCurrencies || []), wlt.CURRENCIES.ARDOR.symbol]
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.ARDOR.symbol)
           wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
@@ -70,7 +71,7 @@ function createARDRAccount($event, walletComponent: WalletComponent) {
             })
             clearInterval(interval);
           }
-        }, 0)
+        }, 200)
         setTimeout(() => {
           $mdDialog.hide(null).then(() => {
             if (!success) {

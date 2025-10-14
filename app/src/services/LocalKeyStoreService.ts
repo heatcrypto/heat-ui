@@ -119,8 +119,6 @@ class LocalKeyStoreService {
       accountAddresses: accountAddresses
     };
 
-    //let store = this.storage.namespace('wallet-address', this.$rootScope, true);
-
     /* todo
     this.listLocalKeyEntries().forEach(entry => {
       let cryptoAddresses: {}
