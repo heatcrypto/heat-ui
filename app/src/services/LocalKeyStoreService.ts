@@ -196,7 +196,7 @@ class LocalKeyStoreService {
       }))
 
       if (importEntry.visibleLabel) {
-        wlt.updateEntryVisibleLabel(importEntry.visibleLabel, importEntry.account, '', importEntry.account)
+        wlt.updateEntryVisibleLabel(importEntry.visibleLabel, importEntry.account, '')
         //promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, importEntry.account, importEntry.visibleLabel))
       }
       if (importEntry.visibleLabels?.length > 0) {

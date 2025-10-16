@@ -23,6 +23,14 @@
 
 namespace wlt {
 
+  export type SearchResultExplainedType = {
+    searchResultExplained: {
+      account: string;
+      finds: Map<string, string[]>;
+    }[];
+    queryTokens: string[];
+  }
+
   const defaultFormatBalance = balance => { return balance  }
 
   export const CURRENCIES = {
@@ -68,6 +76,8 @@ namespace wlt {
   const storageMap = new Map<string, Store>()
 
   const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 3000 * 60 // 3 minutes
+
+  export const DB_VALUE_SALT = 'F<SH'  //do not change it, otherwise DB data becomes non-consistent
 
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
@@ -152,8 +162,11 @@ namespace wlt {
     return db.getItemLabel(db.compactHash(address || account), currencySym)
   }
 
-  export function updateEntryVisibleLabel(visibleLabel, itemUniqueName: string, currencySym: string = '', account: string = '') {
+  export function updateEntryVisibleLabel(visibleLabel, itemUniqueName: string, currencySym: string = '', parent: string = '') {
     let itemKey = db.compactHash(itemUniqueName)
+    let parentHashed = parent ? db.compactHash(parent + DB_VALUE_SALT) : ''
+    return db.saveItemLabel(itemKey, currencySym, parentHashed, visibleLabel || '')
+
     /*const storeKey = itemUniqueName
         ? `label.${account}.${itemKey || ''}`
         : `label.${account}`
@@ -162,7 +175,6 @@ namespace wlt {
     } else {
       getStore().remove(storeKey)
     }*/
-    return db.saveItemLabel(itemKey, currencySym, account, visibleLabel || '')
   }
 
   export function getEntryBip44Compatible(account) {

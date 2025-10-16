@@ -398,26 +398,30 @@ namespace wlt {
 
     walletFilter: wlt.WalletFilter
 
-    applyFilter(query: string, logicalOperator: 'and' | 'or') {
+    applyFilter(query: string, logicalOperator: 'and' | 'or'): Promise<wlt.SearchResultExplainedType> {
+      let promises: Promise<any>[] = []
       let cleanedQuery = query.trim()
       if (cleanedQuery) {
         this.walletFilter = new wlt.WalletFilter(cleanedQuery)
-        let searchResultExplained: {account: string, finds: Map<string, string[]>}[] = []
+        let searchResultExplained = []
         this.entries.forEach(entry => {
           if (entry instanceof wlt.WalletEntry) {
-            let finds = (<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator)
-            if (finds && entry.filtered) searchResultExplained.push({account: entry.account, finds: finds})
+            promises.push((<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator).then(finds => {
+              if (finds && entry.filtered) searchResultExplained.push({account: entry.account, finds: finds})
+            }))
           }
         })
-        return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
+        return Promise.all(promises).then(() => {
+          return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
+        })
       } else {
         this.walletFilter = null
         this.entries.forEach(entry => {
           entry.filtered = null
         })
+        return Promise.resolve(null)
       }
     }
-
   }
 
 }

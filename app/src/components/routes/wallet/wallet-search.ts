@@ -60,21 +60,25 @@ class WalletSearchComponent {
   }
 
   applyFilter() {
-    let filterResult = this.walletComponent.applyFilter(this.query, this.logicalOperator)
-    this.queryTokens = filterResult?.queryTokens
-    this.expression = this.queryTokens?.join(' ' + this.logicalOperator.toUpperCase() + ' ')
-    this.reasoning = filterResult?.searchResultExplained.map(v => {
-      let finds: Map<string, string[]> = v.finds
-      let entryStr = Array.from(finds.entries())
-          .map(e => {
-            // move braces fragment from left side to right side, for example "[label] red => red sky" to "red => [label] red sky"
-            let valueInBraces: any = e[0].match(/\[(.*?)\]/)
-            valueInBraces = valueInBraces ? valueInBraces[0] : ''
-            let left = e[0].replace(valueInBraces, '')
-            return `   ${left} => ${valueInBraces} ${e[1]}`
-          })
-          .join('\n')
-      return `${v.account}:\n${entryStr}`
+    this.walletComponent.applyFilter(this.query, this.logicalOperator).then(filterResult => {
+      this.$scope.$evalAsync(() => {
+        this.queryTokens = filterResult?.queryTokens
+        this.expression = this.queryTokens?.join(' ' + this.logicalOperator.toUpperCase() + ' ')
+
+        //fill reasoning (report of finds)
+        this.reasoning = filterResult?.searchResultExplained.map(v => {
+          let entryStr = Array.from(v.finds.entries())
+              .map(e => {
+                // move braces fragment from left side to right side, for example "[label] red => red sky" to "red => [label] red sky"
+                let valueInBraces: any = e[0].match(/\[(.*?)\]/)
+                valueInBraces = valueInBraces ? valueInBraces[0] : ''
+                let left = e[0].replace(valueInBraces, '')
+                return `   ${left} => ${valueInBraces} ${e[1].join(', ')}`
+              })
+              .join('\n')
+          return `${v.account}:\n${entryStr}`
+        })
+      })
     })
   }
 

@@ -34,9 +34,13 @@ namespace wlt {
     finds: Map<string, string[]>
   }
 
-  function getEntryVisibleLabelList(account): string[][] {
+  function getSubEntryVisibleLabelList(account): Promise<string[]> {
+    let parentHashed = db.compactHash(account + wlt.DB_VALUE_SALT)
+    return db.listWalletItems(parentHashed).then((list: any[]) => list.map(v => v.label))
+    /*
     const store = wlt.getStore()
     return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
+     */
   }
 
 
@@ -64,44 +68,65 @@ namespace wlt {
 
     findInTransactions = (find, queryTokens, currency, a) => {
       let isFind = false
-      let page = 0
-      let store = wlt.getStore('currency-cache-' + currency.symbol.toLowerCase())
-      while (page < 100500) {
-        let txsPage: any[] = store.get(a.address + '-' + page)
-        if (!txsPage) break
-        for (const tx of txsPage) {
-          //find tx id
-          let txId = tx.hash || tx.txid
-          let detection = find(`transaction ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, txId)
-          if (detection) {
-            isFind = true
-            queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+
+      //load each page sequentially until the empty page. Do not look behind 100th page
+      let pages: any[] = []
+      let num = 0
+      let p = () => {
+        return db.getValue(wlt.CACHE_KEY.addressInfo(currency.symbol, a.address) + '-' + num).then((page: any[]) => {
+          if (page && num < 100) {
+            pages.push(page)
+            num++
+            return p()
           }
-          //find payment memo
-          let localPaymentMessages: {method: number, text: string} = tx.message
-          if (localPaymentMessages?.text) {
-            detection = find(`payment memo ${currency.name} #${typeof a.index === "number" ? a.index : ''}`, localPaymentMessages.text)
+        })
+      }
+
+      return p().then(() => {
+        for (const page of pages) {
+          for (const tx of page) {
+            let txStr = `${currency.name} ${typeof a.index === "number" ? '#' + a.index : ''}`
+            //find tx id
+            let txId = tx.hash || tx.txid
+            let detection = find(`${txStr} transaction id`, txId)
             if (detection) {
               isFind = true
               queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
             }
+            //find tx from/to
+            detection = find(`${txStr} transaction from/to`, `${tx.from} / ${tx.to}`)
+            if (detection) {
+              isFind = true
+              queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+            }
+            //find payment memo
+            let localPaymentMessages: {method: number, text: string} = tx.message
+            if (localPaymentMessages?.text) {
+              detection = find(`${txStr} payment memo`, localPaymentMessages.text)
+              if (detection) {
+                isFind = true
+                queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
+              }
+            }
           }
         }
-        page++
-      }
-      if (queryTokens == null) return isFind  //for applying OR operator
-      return queryTokens  //for applying AND operator
+        if (queryTokens == null) return isFind  //for applying OR operator
+        return queryTokens  //for applying AND operator
+      })
     }
 
     apply(walletFilter: WalletFilter, logicalOperator: 'and' | 'or') {
       let registry = this.trackFinds(walletFilter)
       this.we.filtered = false
-      if (logicalOperator == "or") this.applyOperatorOr(walletFilter, registry)
-      if (logicalOperator == "and") this.applyOperatorAnd(walletFilter, registry)
-      if (registry.finds.size > 0) {
-        //console.log(this.walletEntry.account, this.walletEntry.filtered, registry.finds)
-        return registry.finds
-      }
+      let p: Promise<any[]>
+      if (logicalOperator == "or") p = this.applyOperatorOr(walletFilter, registry)
+      if (logicalOperator == "and") p = this.applyOperatorAnd(walletFilter, registry)
+      return p.then(value => {
+        if (registry.finds.size > 0) {
+          //console.log(this.walletEntry.account, this.walletEntry.filtered, registry.finds)
+          return registry.finds
+        }
+      })
     }
 
     private applyOperatorOr(walletFilter: wlt.WalletFilter, registry: WalletSearchTracker) {
@@ -112,13 +137,16 @@ namespace wlt {
           || find('account label', this.we.visibleLabel)
           || find('account private label', this.we.label))
 
+      let promises: Promise<any>[] = []
+
       // find currency addresses labels
-      let labels = getEntryVisibleLabelList(this.we.account).map(ss => ss[1])
-      for (let label of labels) {
-        if (find(`${this.we.account} address label`, label)) {
-          this.we.filtered = true
+      promises.push(getSubEntryVisibleLabelList(this.we.account).then(labels => {
+        for (let label of labels) {
+          if (find(`${this.we.account} address label`, label)) {
+            this.we.filtered = true
+          }
         }
-      }
+      }))
 
       let entryCurrencySymbols = Array.from(this.we.selectedCurrencies)
       entryCurrencySymbols.push(wlt.CURRENCIES.HEAT.symbol)
@@ -136,9 +164,9 @@ namespace wlt {
               this.we.filtered = true
             }
             // search in cached transactions
-            if (this.findInTransactions(find, null, c, a)) {
-              this.we.filtered = true
-            }
+            promises.push(this.findInTransactions(find, null, c, a).then(v => {
+              if (v) this.we.filtered = true
+            }))
           }
         }
         let cb = this.we.findCurrencyBalance(currencySymbol)
@@ -162,10 +190,14 @@ namespace wlt {
           }
         }
       }
+
+      return Promise.all(promises)
     }
 
     private applyOperatorAnd(walletFilter: wlt.WalletFilter, register: WalletSearchTracker) {
       let find = register.find
+
+      let promises: Promise<any>[] = []
 
       let queryTokens = Array.from(walletFilter.queryTokens)
 
@@ -176,7 +208,7 @@ namespace wlt {
 
       if (detection)  queryTokens = queryTokens.filter(v => v.toUpperCase() != detection.token.toUpperCase())
 
-      if ((this.we.filtered = (queryTokens.length == 0))) return
+      if ((this.we.filtered = (queryTokens.length == 0))) return Promise.all(promises)
 
       let doFind = (queryTokens: string[], name: string, item: string, exact?: boolean) => {
         let detection = find(name, item, exact)
@@ -186,19 +218,16 @@ namespace wlt {
       }
 
       // find currency address label
-      let findCurrencyAddressLabel = (account: string) => {
-        let labels = getEntryVisibleLabelList(account).map(ss => ss[1])
+      promises.push(getSubEntryVisibleLabelList(this.we.account).then(labels => {
         for (let label of labels) {
-          queryTokens = doFind(queryTokens,`${this.we.account} address label`, label)
+          queryTokens = doFind(queryTokens, `${this.we.account} address label`, label)
         }
-      }
+      }))
 
-      findCurrencyAddressLabel(this.we.account)
-
-      if ((this.we.filtered = (queryTokens.length == 0))) return
+      if ((this.we.filtered = (queryTokens.length == 0))) return Promise.all(promises)
 
       let currencySymbolDetected = false
-      let entryCurrencySymbols = wlt.getStore().get(this.we.account) || []
+      let entryCurrencySymbols = Array.from(this.we.selectedCurrencies)
       entryCurrencySymbols.push(wlt.CURRENCIES.HEAT.symbol)
 
       const findInCurrency = (currencySymbol) => {
@@ -207,7 +236,9 @@ namespace wlt {
         for (let a of (this.we.getCryptoAddresses(currencySymbol)?.addresses || [])) {
           queryTokens = doFind(queryTokens,`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)
           // search in cached transactions
-          queryTokens = this.findInTransactions(find, queryTokens, c, a)
+          promises.push(
+              this.findInTransactions(find, queryTokens, c, a).then(queryTokensUpdated => queryTokens = queryTokensUpdated)
+          )
         }
 
         //find tokens, balances in CurrencyBalance
@@ -239,7 +270,9 @@ namespace wlt {
         }
       }
 
-      if ((this.we.filtered = (queryTokens.length == 0))) return
+      this.we.filtered = (queryTokens.length == 0)
+
+      return Promise.all(promises)
     }
 
     toString(): string {

@@ -7,7 +7,7 @@ namespace db {
             values_v2: '',
             walletEntry: 'account, name', // optional name of account, for example road@heatwallet.com
             cryptoAddresses: '[account+currencySym]',
-            walletItem: '[itemKey+currencySym], account', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
+            walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
             transactionMemo: 'id' // id (PK), content: any
         })
 
@@ -137,12 +137,12 @@ namespace db {
         })
     }
 
-    export function saveItemLabel(itemKey: string, currencySym: string, account: string = '', label: string): Promise<any> {
+    export function saveItemLabel(itemKey: string, currencySym: string, parent, label: string): Promise<any> {
         return db0.walletItem.get({itemKey, currencySym}).then(item => {
             if (item) {
-                return db0.walletItem.update({itemKey: itemKey, currencySym}, {label: label})
+                return db0.walletItem.update({itemKey: itemKey, currencySym}, {label: label, parent: parent})
             } else {
-                return db0.walletItem.put({itemKey: itemKey, currencySym, label: label})
+                return db0.walletItem.put({itemKey: itemKey, currencySym, label: label, parent: parent})
             }
         }).catch(error => {
             console.error("Error saving record:", error)
@@ -155,6 +155,11 @@ namespace db {
         }).catch(error => {
             console.error("Error adding record:", error)
         })
+    }
+
+    export function listWalletItems(parent: string): Promise<any> {
+        return db0.walletItem.where('parent').equals(parent).toArray()
+            .catch(error => console.error("Error get records:", error))
     }
 
     export function importWalletLabel(isTestnet: boolean, account: string, itemKey: string, currencySym: string, label: string): Promise<any> {

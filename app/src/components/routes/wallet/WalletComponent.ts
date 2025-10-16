@@ -377,7 +377,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         labels => {
           //save visible label
           walletEntry.visibleLabel = labels[0]?.trim()
-          wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account, '', walletEntry.account)
+          wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account, '')
           //save invisible label
           walletEntry.label = labels[1]?.trim()
           let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
