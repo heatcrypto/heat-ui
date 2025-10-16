@@ -83,6 +83,7 @@ abstract class VirtualRepeatComponent {
 
   /* md-virtual-repeat */
   public getItemAtIndex(index: number) {
+    if (index >= this.getLength()) return
     let pageNumber = Math.floor(index / this.PAGE_SIZE);
     let item
     let page = this.loadedPages[pageNumber];
@@ -99,7 +100,7 @@ abstract class VirtualRepeatComponent {
         this.loadedPages.dirty = false
       }
     }
-    return item;
+    return item
   }
 
   /* md-virtual-repeat */
