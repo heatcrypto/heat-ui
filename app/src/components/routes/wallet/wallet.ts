@@ -202,6 +202,7 @@ namespace wlt {
     })
   }
 
+  /*
   export function initCreatedAddresses() {
     let removingKeys = []
     let addingItems = []
@@ -240,6 +241,7 @@ namespace wlt {
       window.localStorage.setItem(item[0], item[1])
     }
   }
+   */
 
   /* in old versions the key format was changed several times, must be brought to the actual format
   */

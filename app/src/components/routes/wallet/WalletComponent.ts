@@ -365,7 +365,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     })
 
     this.initLocalKeyStore()
-    wlt.initCreatedAddresses()
+    //wlt.initCreatedAddresses()
   }
 
   enterWalletEntryLabel(walletEntry: wlt.WalletEntry) {
@@ -662,24 +662,28 @@ class WalletComponent extends wlt.WalletComponentAbstract {
             p = p.then(s => this.walletFile.importRawData(data) + ".  The app will now restart...")
             setTimeout(() => window.location.reload(), 4000)
           } else {
-            let wallet = this.walletFile.createFromText(data);
+            let wallet = this.walletFile.createFromText(data)
             if (wallet) {
-              this.localKeyStore.import(wallet).then(addedKeys => {
-                this.$scope.$evalAsync(() => {
-                  this.initLocalKeyStore()
-                  wlt.initCreatedAddresses()
+              p = p.then(s => {
+                return this.localKeyStore.import(wallet).then(addedKeys => {
+                  this.$scope.$evalAsync(() => {
+                    this.initLocalKeyStore()
+                    //wlt.initCreatedAddresses()
+                  })
+                  let isBig = addedKeys.length > 8
+                  let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
+                      .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
+                      .join(", ")
+                  if (isBig) report = report + "\n..."
+                  return `Imported ${addedKeys.length} keys into this device: \n ${report}`
+                }).catch(reason => {
+                  console.error(reason)
+                  return `Error on processing file content: ${reason}`
                 })
-                let isBig = addedKeys.length > 8
-                let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
-                    .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
-                    .join(", ")
-                if (isBig) report = report + "\n..."
-                p = p.then(s => `Imported ${addedKeys.length} keys into this device: \n ${report}`)
-                //resultMessage = `Imported ${addedKeys.length} keys into this device: \n ${report}`
-              }).catch(reason => console.error(reason))
+              })
             }
           }
-          p = p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
+          p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
         })
       }
       reader.readAsText(files[0])

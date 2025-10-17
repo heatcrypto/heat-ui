@@ -182,4 +182,16 @@ namespace db {
         })
     }
 
+    export function putTransactionMemo(id: string, content: any): Promise<any> {
+        return db0.transactionMemo.put({id, content}).catch(error => {
+            console.error("Error putting record:", error)
+        })
+    }
+
+    export function getTransactionMemo(id: string): Promise<any> {
+        return db0.transactionMemo.get(id).catch(error => {
+            console.error("Error adding record:", error)
+        })
+    }
+
 }

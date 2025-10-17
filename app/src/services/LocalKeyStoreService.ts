@@ -200,12 +200,12 @@ class LocalKeyStoreService {
         //promises.push(storage.importWalletLabel(importEntry.isTestnet, importEntry.account, importEntry.account, importEntry.visibleLabel))
       }
       if (importEntry.visibleLabels?.length > 0) {
-        const store = wlt.getStore()
+        /*const store = wlt.getStore()
         for (let ss of importEntry.visibleLabels) {
           store.put(ss[0], ss[1])
           //cannot store to IndexedDB storage because old import format does not provide currency symbol needed for id of label
           //storage.putItemLabel(itemKey, currencySym, account, visibleLabel || '')
-        }
+        }*/
 
 
 
@@ -232,7 +232,7 @@ class LocalKeyStoreService {
     })
 
     // backward compatibility
-    if (walletFile.accountAddresses) {
+    /*if (walletFile.accountAddresses) {
       try {
         let accountAddressesArray: any = walletFile.accountAddresses
         accountAddressesArray.forEach(item => {
@@ -245,9 +245,13 @@ class LocalKeyStoreService {
       } catch (e) {
         console.error("Error on importing addresses: " + e.toString())
       }
-    }
+    }*/
 
-    let paymentMessagesNum = wlt.importPaymentMessages(walletFile.paymentMessages)
+    /*promises.push(
+        this.importPaymentMessages(walletFile.paymentMessages)
+            .then(messagesNum => console.log(`imported ${messagesNum} payment messages`))
+    )*/
+
     if (walletFile.paymentMessages) {
       walletFile.paymentMessages.forEach(pm => {
         // todo import to both testnet and mainnet dbs because of old format (without testnet indicator)
@@ -259,15 +263,27 @@ class LocalKeyStoreService {
     return Promise.all(promises).then(ids => added)
   }
 
-/*
-  private nameKey(account: string, isTestnet?: boolean) {
-    return `name.${account}${isTestnet || this.testnet()}`
-  }
+  /*private importPaymentMessages(items: {id: string, content: any}[]) {
+    if (!items) return Promise.resolve(0)
+    // let store = getPaymentMessageStore()
+    let promises: Promise<any>[] = []
+    for (const item of items) {
+      promises.push(db.putValue(item.id, item.content))
+      //store.put(item.id, item.content)
+    }
+    return Promise.all(promises).then(() => items.length)
+  }*/
 
-  private key(account: string, isTestnet?: boolean) {
-    return `key.${account}${isTestnet || this.testnet()}`
-  }
-*/
+
+  /*
+    private nameKey(account: string, isTestnet?: boolean) {
+      return `name.${account}${isTestnet || this.testnet()}`
+    }
+
+    private key(account: string, isTestnet?: boolean) {
+      return `key.${account}${isTestnet || this.testnet()}`
+    }
+  */
 
   private encode(key: ILocalKey): string {
     const payload = JSON.stringify({
