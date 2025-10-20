@@ -464,6 +464,9 @@ module utils {
           })
         }
       })
+    },
+    fullExport: () => {
+      return wltStandalone.exportLocalstorage()
     }
   }
 
