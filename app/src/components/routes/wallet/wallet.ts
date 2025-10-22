@@ -94,6 +94,9 @@ namespace wlt {
     return self.indexOf(value) === index
   }
 
+  /**
+   * @deprecated due migrated on IndexedDB
+   */
   export function getStore(namespace = "wallet") {
     let store = storageMap.get(namespace)
     if (store) return store
@@ -150,13 +153,21 @@ namespace wlt {
   /**
    * @deprecated
    */
-  /*export function getEntryVisibleLabelOld(account, address?: string) {
+  export function getEntryVisibleLabelListOld(account): string[][] {
+    const store = getStore()
+    return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
+  }
+
+  /**
+   * @deprecated
+   */
+  export function getEntryVisibleLabelOld(account, address?: string) {
     if (address) {
-      let subEntryKey = storage.compactHash(address)
+      let subEntryKey = converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address))
       return getStore().get(`label.${account}.${subEntryKey || ''}`)
     }
     return getStore().get(`label.${account}`)
-  }*/
+  }
 
   export function getEntryVisibleLabel(account, currencySym, address?: string) {
     return db.getItemLabel(db.compactHash(address || account), currencySym)

@@ -30,6 +30,7 @@ namespace wlt {
 
     public lightwalletService: LightwalletService;
     public localKeyStore: LocalKeyStoreService;
+    allLocked = true
     bitcoreService: BitcoreService;
     nxtCryptoService: NXTCryptoService;
     ardorCryptoService: ARDORCryptoService;
@@ -73,6 +74,7 @@ namespace wlt {
         this.walletEntries.forEach(walletEntry => {
           let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
           if (password) {
+            this.allLocked = false
             this.localKeyStore.load(walletEntry.account, password).then(key => {
               if (key && !walletEntry["cached"]) {
                 walletEntry.secretPhrase = key.secretPhrase

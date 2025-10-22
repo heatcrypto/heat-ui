@@ -68,7 +68,7 @@ namespace wltStandalone {
     }
 
 
-    function exportInternal(accountCurrencies: Map<string, []>,
+    /*function exportInternal(accountCurrencies: Map<string, []>,
               accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
         let walletFileData : IHeatWalletFile = {
             version: 2,
@@ -101,9 +101,9 @@ namespace wltStandalone {
         });
 
         return walletFileData;
-    }
+    }*/
 
-    function initLocalKeyStore() {
+    /*function initLocalKeyStore() {
         // this.entries = []
         let walletEntries = []
         this.localKeyStore.list().map((account: string) => {
@@ -132,7 +132,7 @@ namespace wltStandalone {
         })
         this.flatten()
         this.fetchCryptoAddresses('BTC')
-    }
+    }*/
 
     /*class WalletEntry {
         public isWalletEntry = true

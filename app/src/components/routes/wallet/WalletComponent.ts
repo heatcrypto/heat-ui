@@ -290,7 +290,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   public static instance
   selectAll = true
-  allLocked = true
   displayUnlocked = false
 
   //walletEntries: Array<wlt.WalletEntry> = []
@@ -941,7 +940,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .filter(v => v[1]?.length > 0)
 
     // @ts-ignore
-    let exported = this.localKeyStore.export(accountCurrencies, accountAddresses)
+    let exported = this.localKeyStore.exportOld(accountCurrencies, accountAddresses)
     let paymentMessages = wlt.exportPaymentMessages()
     exported = Object.assign(exported, {paymentMessages: paymentMessages})
 

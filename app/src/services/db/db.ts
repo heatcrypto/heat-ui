@@ -58,6 +58,12 @@ namespace db {
         })
     }
 
+    export function walletEntryCount(): Promise<number> {
+        return db0.walletEntry.count().catch(error => {
+            console.error("Error count record:", error)
+        })
+    }
+
     export function importWalletEntry(isTestnet: boolean, account: string, name: string, contents: string): Promise<any> {
         let actualDb = isTestnet ? dbTestnet : dbMainnet
         return actualDb.walletEntry.add({account, name, contents}).catch(error => {
