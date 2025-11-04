@@ -43,37 +43,41 @@ function createEthAccount($event, walletComponent: WalletComponent) {
 
     this.okButtonClick = function ($event) {
       let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
-      let success = false
       if (walletEntry) {
+        if (!walletEntry.expanded) walletEntry.toggle()
         let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
-        if (!node) {
+        let p: Promise<any>
+        if (node) {
+          p = Promise.resolve()
+        } else {
           walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
           walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Ethereum.symbol)
-          wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+          p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
               () => walletComponent.initWalletEntry(walletEntry)
           )
         }
-        // load in next event loop to load currency addresses first
-        setTimeout(() => {
-          // @ts-ignore
-          let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
-            // @ts-ignore
-            return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.Ethereum.name
-          })
-          success = node?.createEthAddress(walletEntry)
-          walletEntry.toggle(true)
-          $mdDialog.hide(null).then(() => {
-            if (!success) {
-              dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-            }
-          })
-        }, 200)
+        p.then(v => {
+          // load in next event loop to load currency addresses first
+          setTimeout(() => {
+            let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
+            let currencyBalance = node?.createEthAddress(walletEntry)
+            $mdDialog.hide(null).then(() => {
+              if (!currencyBalance) {
+                dialogs.alert($event, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
+              }
+            })
+          }, 600)
+        })
       }
     }
 
     this.selectedWalletEntryChanged = function () {
       this.data.password = ''
       this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
+      let we: wlt.WalletEntry = this.data.selectedWalletEntry
+      if (we && we.unlocked && we.bip44Compatible) {
+        if (!we.expanded) we.toggle()
+      }
     }
 
     this.passwordChanged = function () {

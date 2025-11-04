@@ -343,7 +343,7 @@ namespace wlt {
           return
         }
 
-        utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
+        return utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
           this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, success || success == null)
         }).catch((reason) => {
           this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, false)
@@ -352,13 +352,13 @@ namespace wlt {
         })
       })
 
-      if (upgraded) {
-        wlt.saveCryptoAddresses(walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol))
-            .then(() => f())
-      } else {
-        f()
-      }
-
+      let p = upgraded
+          ? wlt.saveCryptoAddresses(
+              walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol)).then(() => f()
+          )
+          : Promise.resolve()
+      p.then(() => f())
+          .finally(() => addressLoading.visible = false)
     }
 
     private createBalanceEntries(walletEntry: wlt.WalletEntry,

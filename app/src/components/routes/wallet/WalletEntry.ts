@@ -374,7 +374,7 @@ namespace wlt {
       this.currencies.push(addressLoading);
 
       let currencyAddressCreate: CurrencyAddressCreate =
-          <CurrencyAddressCreate><unknown> this.currencies.find(c => c['isCurrencyAddressCreate'] && c.name == currencyName)
+          <CurrencyAddressCreate> this.currencies.find(c => c['isCurrencyAddressCreate'] && c.name == currencyName)
       if (!currencyAddressCreate) {
         currencyAddressCreate = new wlt.CurrencyAddressCreate(currencyName, wallet, this)
         this.currencies.push(currencyAddressCreate)
@@ -418,7 +418,11 @@ namespace wlt {
       walletComponent.flatten()
 
       if (user.account === this.account) {
-        walletComponent.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+        try {
+          walletComponent.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+        } catch (e) {
+          console.error(e)
+        }
       }
 
       /* Only if this node is expanded will we load the addresses */
