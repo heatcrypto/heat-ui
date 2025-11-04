@@ -77,6 +77,10 @@
       display: flex;
     }
 
+    .message-entry.selected {
+      background: #3c4d6abd;
+    }
+
     .message-entry.outgoing md-menu {
       margin-left: -60px;
     }
@@ -107,10 +111,11 @@
     }
   `],
   template: `
+
 <div class="messages" ui-scroll-viewport layout="column" flex scroll-glue>
 
-<div ui-scroll="item in vm.datasource" buffer-size="200" adapter="adapter"
-      layout="row" class="message-entry" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
+<div ui-scroll="item in vm.datasource" buffer-size="20" start-index="10" adapter="adapter"
+      layout="row" class="message-entry" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing, selected: item.selected}">
 <div class="message-wrapper">
     <md-icon ng-class="{transportserver: item.transport=='server'}" md-font-library="material-icons">{{item.outgoing ? 'chat_bubble_outline' : 'comment'}}</md-icon>
     <md-icon class="status" md-font-library="material-icons" ng-class="{transportserver: item.transport=='server'}"
@@ -147,20 +152,19 @@
 </div>
   `
 })
-@Inject('$scope', '$q', '$timeout', '$document', 'heat', 'user', 'settings',
-  'render', 'controlCharRender', 'storage', 'P2PMessaging', '$mdToast')
+@Inject('$rootScope', '$scope', '$q', '$timeout', '$document', 'heat', 'user', 'settings',
+  'render', 'controlCharRender', 'P2PMessaging', '$mdToast')
 class P2PMessagesViewerComponent {
 
   private publickey: string; // @input
   private containerId: string; // @input
-  private store: Store;
   private dateFormat;
-  // items: Array<p2p.MessageHistoryItem>;
   datasource: P2PMessagesDataSource;
   private room: p2p.Room;
   private items: p2p.MessageHistoryItem[] = []
 
-  constructor(private $scope: angular.IScope,
+  constructor(private $rootScope: angular.IRootScopeService,
+              private $scope: any,
               $q: angular.IQService,
               $timeout: angular.ITimeoutService,
               private $document: angular.IDocumentService,
@@ -169,53 +173,53 @@ class P2PMessagesViewerComponent {
               private settings: SettingsService,
               private render: RenderService,
               private controlCharRender: ControlCharRenderService,
-              private storage: StorageService,
               private p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService) {
   }
 
   $onInit() {
     if (this.publickey == this.user.publicKey) {
-      throw Error("Same public key as logged in user");
+      throw Error("Same public key as logged in user")
     }
 
-    this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT)
 
-    if (this.publickey != '0') {
-      this.room = this.p2pMessaging.getOneToOneRoom(this.publickey, true);
-      if (this.room) {
-        /* set seen time to future, so no need to update seen time on each new incoming message.
-        The seen time will be updated to the real value on destroying this component*/
-        this.p2pMessaging.updateSeenTime(this.room.name, Date.now() + 1000 * 60 * 60 * 24);
+    if (this.publickey == '0') return
 
-        this.datasource = new P2PMessagesDataSource(this.room.getMessageHistory(), item => this.processItem(item));
-        this.room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
-          this.datasource.first++;
-          // @ts-ignore
-          let adapter = this.$scope.adapter;
-          if (adapter.isEOF()) {
-            adapter.append([this.processItem(item)]);
-          }
-        };
+    let r = this.room = this.p2pMessaging.getOneToOneRoom(this.publickey, true)
 
-        let $rootScope = heat.$inject.get('$rootScope')
-        $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
-          this.items.forEach(item => {
-            if (item.msgId == msgId) {
-              this.$scope.$evalAsync(() => {
-                item.extraInfo = info
-                this.processItem(item)
-              })
-            }
+    if (!r) return
+
+    this.p2pMessaging.updateSeenTime(r.key, Date.now() + 1000 * 60 * 60 * 24);
+
+    this.datasource = new P2PMessagesDataSource(r.key, r.getMessageHistory(), item => this.processItem(item));
+
+    // scroll to the end of list
+    db.getMessagesScrollableCount(this.room.key).then(c => {
+      if (c && this.$scope.adapter) this.$scope.adapter.reload(c)
+    })
+
+    r.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
+      this.datasource.first++
+      let adapter = this.$scope.adapter
+      adapter.append([this.processItem(item)])
+    }
+
+    this.$rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageStatus) => {
+      this.items.forEach(item => {
+        if (item.msgId == msgId) {
+          this.$scope.$evalAsync(() => {
+            item.extraInfo = info
+            this.processItem(item)
           })
-        })
+        }
+      })
+    })
 
-        this.$scope.$on('$destroy', () => {
-          this.p2pMessaging.updateSeenTime(this.room.name, Date.now());
-          this.room.onNewMessageHistoryItem = null;
-        });
-      }
-    }
+    this.$scope.$on('$destroy', () => {
+      this.p2pMessaging.updateSeenTime(r.key, Date.now())
+      r.onNewMessageHistoryItem = null
+    })
   }
 
   openMenu($mdMenu, event) {
@@ -227,11 +231,13 @@ class P2PMessagesViewerComponent {
       let ss = ["local message"]
       if (message) ss.push("message on server")
       if (file) ss.push("file on server")
+      item.selected = true
       dialogs.confirm(
         "Remove message",
         "Objects to be removed: " + ss.join(", ") + " <br/><br/> Do you want to remove the message ?"
       ).then(() => {
-        this.datasource.remove(item)
+        return this.datasource.remove(item)
+      }).then(() => {
         this.p2pMessaging.checkToRemoveServerMessage(item.type, item["outgoing"], item.transport, item.msgId, item.extraInfo)
         // @ts-ignore
         let adapter = this.$scope.adapter
@@ -242,7 +248,7 @@ class P2PMessagesViewerComponent {
         });
       }).catch(reason => {
         if (reason) console.error(reason)
-      })
+      }).finally(() => item.selected = false)
     }
 
     this.p2pMessaging.requestIsMessageExists(
@@ -295,7 +301,7 @@ class P2PMessagesViewerComponent {
   }
 
   //download message's file
-  downloadFile(item) {
+  /*downloadFile(item) {
     //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
     item['fileIndicator'] = 3
     this.heat.api.downloadFile(item.msgId).then(encryptedFileContent => {
@@ -312,33 +318,33 @@ class P2PMessagesViewerComponent {
       ei.status.fileIndicator = 4
       this.room.getMessageHistory().putExtraInfo(item.msgId, ei)
     })
-  }
+  }*/
 
 }
 
 class P2PMessagesDataSource {
-  data = [];
-  first = 1;  //index pointed to the head of datasource's list of items. Increased on adding item.
+  data = []
+  first = 1  //index pointed to the head of datasource's list of items. Increased on adding item.
 
-  constructor(private messageHistory: p2p.MessageHistory,
+  constructor(private roomKey: string,
+              private messageHistory: p2p.MessageHistory,
               private processItem: (item: p2p.MessageHistoryItem) => {}) {
   }
 
   get(index: number, count: number, success) {
-    let start = index;
-    let end = Math.min(index + count - 1, this.first);
-    if (start <= end) {
-      let lastIndex = this.messageHistory.getItemCount() - 1;
-      let items = this.messageHistory.getItemsScrollable(lastIndex + start - this.first, lastIndex + end - this.first + 1)
-        .map(item => this.processItem(item));
-      success(items);
-    } else {
-      success([]);
-    }
+    let offset = Math.max(0, index)
+    let limit = index < 0 ? count + index : count
+    if (limit == 0) success([])
+
+    db.getMessagesScrollable(this.roomKey, offset, limit)
+        .then((items: []) => {
+          // console.log(index, count, ' | ', offset, limit, ' | ', items.length)
+          success(items.map(v => this.processItem(v)))
+        })
   }
 
   remove(item: p2p.MessageHistoryItem) {
-    this.messageHistory.remove(item.timestamp);
+    return this.messageHistory.remove(item.msgId)
   }
 
 }

@@ -439,7 +439,7 @@ module utils {
    */
   export let helper = {
     useLocalServer: () => {
-      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: false})
+      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: true})
     },
     useRemoteServer: (serverDescriptor?: ServerDescriptor) => {
       (<HeatService>heat.$inject.get('heat')).switchToServer(
@@ -467,6 +467,19 @@ module utils {
     },
     fullExport: () => {
       return wltStandalone.exportLocalstorage()
+    },
+    tmp: () => {
+      Object.keys(localStorage).forEach(key => {
+        if (key.indexOf('p2pContacts') > 0) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key))
+            let parts = key.split('.')
+            db.putContact(parts[0], value.publicKey, value)
+          } catch (e) {
+            console.error('error import p2p contact', e)
+          }
+        }
+      })
     }
   }
 

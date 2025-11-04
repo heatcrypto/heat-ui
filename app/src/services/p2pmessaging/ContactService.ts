@@ -1,22 +1,27 @@
 @Service('contactService')
 @Inject('storage', 'heat', '$q', 'user')
-class ContactService {
+class ContactService extends EventEmitter {
+
+  public static SAVE_CONTACT = 'SAVE_CONTACT'
+
   private static numbersOnly = /^[0-9]+$/;
   private p2pContactStore: Store;
   private latestTimestampStore: Store;
 
   constructor(
-    private storage: StorageService,
-    private heat: HeatService,
-    private $q: angular.IQService,
-    private user: UserService)
-  {
+      private storage: StorageService,
+      private heat: HeatService,
+      private $q: angular.IQService,
+      private user: UserService) {
+
+    super()
+
     this.p2pContactStore = storage.namespace('p2pContacts')
     this.latestTimestampStore = storage.namespace('contacts.latestTimestamp')
   }
 
   /**
-   * Reurn merged offchain contacts with onchain contacts
+   * Return merged offchain contacts with onchain contacts
    * @param selectedContactPublicKey
    */
   getContacts(selectedContactPublicKey?) {
@@ -94,22 +99,23 @@ class ContactService {
       privateName: '',
       publicKey: contactPublicKey
     }
-    publicName && (props.publicName = publicName)
-    calledTimestamp && (props.activityTimestamp = calledTimestamp)
+    if (publicName) props.publicName = publicName
+    if (calledTimestamp) props.activityTimestamp = calledTimestamp
     if (properties) Object.assign(props, properties)
 
     let p
+    let f = () => db.saveContact(this.user.account, contactPublicKey, props).then(() => this.emit(ContactService.SAVE_CONTACT, contactPublicKey))
 
     if (publicName) {
-      p = db.saveContact(this.user.account, contactPublicKey, props)
+      p = f()
       //save(publicName)
     } else {
       let contactAccount = heat.crypto.getAccountIdFromPublicKey(contactPublicKey)
       p = this.heat.api.searchPublicNames(contactAccount, 0, 100).then(accounts => {
         let expectedAccount = accounts.find(v => v.publicKey == contactPublicKey)
         //save(expectedAccount ? expectedAccount.publicName : null)
-        expectedAccount?.publicName && (props.publicName = expectedAccount.publicName)
-        return db.saveContact(this.user.account, contactPublicKey, props)
+        if (expectedAccount?.publicName) props.publicName = expectedAccount.publicName
+        return f()
       })
     }
     return p.catch(e => {
@@ -233,7 +239,7 @@ class ContactService {
   }
 
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
-    console.log(contact.account + " " +contact.publicName + " " + contact.timestamp + " " + this.latestTimestampStore.getNumber(contact.account, 0))
+    // console.log(contact.account + " " +contact.publicName + " " + contact.timestamp + " " + this.latestTimestampStore.getNumber(contact.account, 0))
     return contact.timestamp > this.latestTimestampStore.getNumber(contact.account, 0);
   }
 
@@ -241,7 +247,7 @@ class ContactService {
     let p2pMessaging: P2PMessaging = heat.$inject.get('P2PMessaging')
     let room = p2pMessaging.getOneToOneRoom(contact.publicKey, true);
     if (room) {
-      return p2pMessaging.roomHasUnreadMessage(room);
+      return room.hasUnreadMessage
     }
     return false;
   }

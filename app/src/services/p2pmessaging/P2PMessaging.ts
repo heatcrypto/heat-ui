@@ -38,9 +38,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   public static EVENT_HAS_UNREAD_CHANGED = 'EVENT_HAS_UNREAD_CHANGED';
   public static EVENT_ON_OPEN_DATA_CHANNEL = 'EVENT_ON_OPEN_DATA_CHANNEL';
   public static EVENT_ON_CLOSE_DATA_CHANNEL = 'EVENT_ON_CLOSE_DATA_CHANNEL';
+  public static EVENT_UPDATE_SEEN_TIME = 'EVENT_UPDATE_SEEN_TIME';
 
-  public p2pContactStore: Store;
-  public seenP2PMessageTimestampStore: Store;
   public hasUnreadMessage: boolean = false;
 
   public connector: p2p.P2PConnector;
@@ -50,6 +49,13 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   private baseProtocol: p2p.BaseProtocol;
   u2uProtocol: p2p.U2UProtocol;
   private signalingProtocol: p2p.SignalingProtocol;
+
+  moment = {
+    registerLastMessageTime: (roomKey) => db.putValue(roomKey + "_last-message-time", Date.now()),
+    getLastMessageTime: (roomKey) => db.getValue(roomKey + "_last-message-time"),
+    registerSeenTime: (roomKey, timestamp: number) => db.putValue(roomKey, timestamp || (Date.now() - 500)),
+    getSeenTime: (roomKey) => db.getValue(roomKey)
+  }
 
   constructor(private settings: SettingsService,
               private user: UserService,
@@ -70,9 +76,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         this._state = 'connection is closed'
       }
     };
-
-    this.p2pContactStore = storage.namespace('p2pContacts');
-    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
 
     user.on(UserService.EVENT_UNLOCKED, () => {
       closeConnector()
@@ -127,19 +130,21 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
     this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
-    this.seenP2PMessageTimestampStore.put(room.name + "_last-message-time", Date.now());
-    this.updateSeenTime(null);
-    this.displayNewMessagePopup(msg, room);
-
-    this.contactService.getContacts().then(contacts => {
-      let c = contacts.find(v => v.publicKey == msg.fromPeerId)
-      if (!c) {
-        let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
-        if (senderAccount) {
-          this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
+    //this.seenP2PMessageTimestampStore.put(room.key + "_last-message-time", Date.now());
+    this.moment.registerLastMessageTime(room.key).then(() => {
+      this.updateSeenTime(null);
+      this.displayNewMessagePopup(msg, room);
+    }).then(() => {
+      return this.contactService.getContacts().then(contacts => {
+        let c = contacts.find(v => v.publicKey == msg.fromPeerId)
+        if (!c) {
+          let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+          if (senderAccount) {
+            this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
+          }
         }
-      }
-    }).catch(reason => console.error(reason))
+      }).catch(reason => console.error(reason))
+    })
   }
 
   sendFile(messageId: string, file: File, recipientPublicKey: string) {
@@ -190,13 +195,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
       setTimeout(() => {
         this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
-        let extraInfo: p2p.MessageExtraInfo = room.getMessageHistory().getExtraInfo(fileTransferMessageId)
-        if (extraInfo) {
-          extraInfo.status.fileIndicator = 2
-        } else {
-          extraInfo = {status: {stage: 2, fileIndicator: 2}}
-        }
-        room.getMessageHistory().putExtraInfo(fileTransferMessageId, extraInfo)
+        let extraInfo: p2p.MessageStatus = {status: {stage: 2, fileIndicator: 2}}
+        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {status: {stage: 2, fileIndicator: 2}})
         if (fileSavedCallback) fileSavedCallback()
       }, 250)
     })
@@ -288,7 +288,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room && required) {
-      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
+      room = this.setupRoom(new p2p.Room(this, this.connector, this.user, [peerId]));
       this.connector.rooms.set(roomName, room);
     }
     if (room && room.getAllPeers().size <= 1) {
@@ -311,7 +311,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
     let room = this.connector.rooms.get(roomName);
     if (!room) {
-      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
+      room = this.setupRoom(new p2p.Room(this, this.connector, this.user, [peerId]));
       this.connector.rooms.set(roomName, room);
     }
     if (room.state.entered == "not") {
@@ -341,8 +341,9 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     room.onCloseDataChannel = peerId => {
       this.emit(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, room, peerId);
     };
-    room.lastIncomingMessageTimestamp = this.seenP2PMessageTimestampStore.getNumber(room.name + "_last-message-time", 0);
-    return room;
+    this.moment.getLastMessageTime(room.key).then(t => room.lastIncomingMessageTimestamp = t || 0)
+    room.hasUnreadMessage  // to read the value from db
+    return room
   }
 
   private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
@@ -354,7 +355,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   private createRoomOnIncomingCall(roomName: string, peerId: string) {
     let room = this.connector.rooms.get(roomName);
     if (!room) {
-      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
+      room = this.setupRoom(new p2p.Room(this, this.connector, this.user, [peerId]));
       this.connector.rooms.set(roomName, room);
     }
     return room;
@@ -416,34 +417,33 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return false;
   }
 
-  roomHasUnreadMessage(room: p2p.Room): boolean {
-    return room.lastIncomingMessageTimestamp > this.seenP2PMessageTimestampStore.getNumber(room.name, 0);
-  }
-
   /**
    * The seen time is needed to display mark for contact when it receives the new unread messages.
    */
-  updateSeenTime(roomName: string, timestamp?: number) {
-    if (roomName) {
-      this.seenP2PMessageTimestampStore.put(roomName, timestamp ? timestamp : Date.now() - 500);
+  updateSeenTime(roomKey: string, timestamp?: number) {
+    let p = Promise.resolve()
+    if (roomKey) {
+      p = p.then(() => this.moment.registerSeenTime(roomKey, timestamp))
     }
 
-    //update read status on all rooms
-    let unreadRooms = [];
-    this.connector.rooms.forEach(room => {
-      if (this.roomHasUnreadMessage(room)) {
-        unreadRooms.push(room);
+    p.then(() => {
+      //update read status on all rooms
+      let unreadRooms = [];
+      this.connector.rooms.forEach(room => {
+        if (room.hasUnreadMessage) {
+          unreadRooms.push(room);
+        }
+      });
+      let nowHasUnreadMessage = unreadRooms.length > 0;
+      if (nowHasUnreadMessage != this.hasUnreadMessage) {
+        this.hasUnreadMessage = nowHasUnreadMessage;
+        this.emit(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadRooms);
       }
-    });
-    let nowHasUnreadMessage = unreadRooms.length > 0;
-    if (nowHasUnreadMessage != this.hasUnreadMessage) {
-      this.hasUnreadMessage = nowHasUnreadMessage;
-      this.emit(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadRooms);
-    }
+    })
   }
 
   checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean,
-                             transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo) {
+                             transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageStatus) {
     if (outgoing && (transport == "server" || messageType == "file")) {
       if (messageType == "file" || !extraInfo || extraInfo.status?.stage != 1) {
         this.u2uProtocol.sendRemoveMessage(targetMessageId)
@@ -452,7 +452,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   requestIsMessageExists(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
-                         targetMessageId: string, extraInfo: p2p.MessageExtraInfo,
+                         targetMessageId: string, extraInfo: p2p.MessageStatus,
                          callback: (message: boolean, file: boolean) => void) {
     if (outgoing && (transport == "server" || messageType == "file")) {
       if (messageType == "file" || !extraInfo || extraInfo.status?.stage != 1) {

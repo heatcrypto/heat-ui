@@ -76,7 +76,7 @@ module p2p {
     /**
      * If needed send request to remove the message on the server
      */
-    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo)
+    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageStatus)
 
     onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void
 
@@ -221,7 +221,7 @@ module p2p {
     }
 
     call(toPeerId: string, caller: string, room: Room) {
-      this.sendWebsocketMessage(Protocol.signaling, [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.name}]);
+      this.sendWebsocketMessage(Protocol.signaling, [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.key}]);
     }
 
     getTmp(roomName: string): Promise<Array<string>> {
@@ -235,7 +235,7 @@ module p2p {
     }
 
     enter(room: Room, enforce?: boolean) {
-      let existingRoom = this.rooms.get(room.name);
+      let existingRoom = this.rooms.get(room.key);
       if (existingRoom && existingRoom.state.entered == "entered") {
         if (enforce) {
           existingRoom.state.entered = "not";
@@ -256,11 +256,11 @@ module p2p {
           }, 4000);
 
           //request entering to the room
-          this.sendWebsocketMessage(Protocol.signaling, [{type: "ROOM", room: room.name}]);
+          this.sendWebsocketMessage(Protocol.signaling, [{type: "ROOM", room: room.key}]);
         }
       };
 
-      this.rooms.set(room.name, room);
+      this.rooms.set(room.key, room);
 
       if (this.identity) {
         requestEnterRoom();
@@ -595,7 +595,7 @@ module p2p {
             sendingData = {
               id: msg.id,
               type: msg.type,
-              room: room.name,
+              room: room.key,
               sender: this.identity,
               recipient: peer.publicKey,
               payload: JSON.stringify(encrypted),
@@ -692,7 +692,7 @@ module p2p {
 
     processRoomMessage(msg: U2UMessage, room: Room, sender: string) {
       msg.fromPeerId = sender;
-      msg.roomName = room.name;
+      msg.roomName = room.key;
       room.onMessageInternal(msg);
       this.messenger.onMessage(msg, room);
     }

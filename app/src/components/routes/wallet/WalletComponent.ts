@@ -615,9 +615,11 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   shareCurrencyAddressesWithP2pContacts(currency: string, address: string) {
     let p2pContactsUtils = <ContactService>heat.$inject.get('contactService')
     let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
-    p2pMessaging.p2pContactStore.forEach((key, contact) => {
-      console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
-      p2pContactsUtils.shareCryptoAddress(contact, currency, address)
+    db.listContacts(this.user.account).then((contacts: any[]) => {
+      for (const contact of contacts) {
+        console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
+        p2pContactsUtils.shareCryptoAddress(contact, currency, address)
+      }
     })
   }
 

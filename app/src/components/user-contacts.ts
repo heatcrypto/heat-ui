@@ -110,13 +110,12 @@
   `
 })
 
-@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope','storage', 'P2PMessaging', '$mdToast', 'contactService')
+@Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope', 'P2PMessaging', '$mdToast', 'contactService')
 class UserContactsComponent {
 
   public contacts : Array<IHeatMessageContact> = [];
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
-  private store: Store;
   private needRefreshed = false
 
   constructor(private $scope: angular.IScope,
@@ -127,7 +126,6 @@ class UserContactsComponent {
               private $interval: angular.IIntervalService,
               private $location: angular.ILocationService,
               private $rootScope: angular.IRootScopeService,
-              storage: StorageService,
               public p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService,
               private contactService: ContactService) {
@@ -143,30 +141,25 @@ class UserContactsComponent {
     }, 2 * 1000)
     $scope.$on('$destroy', () => $interval.cancel(interval))
 
-    this.store = storage.namespace('contacts.latestTimestamp', $scope)
-    this.store.on(Store.EVENT_PUT, this.refresh)
-    this.p2pMessaging.seenP2PMessageTimestampStore.on(Store.EVENT_PUT, (key: string) => {
-      if (key.indexOf("_last-message-time") > -1) return
-      this.needRefreshed = true
-    });
+    let updateSeenTimeListener: IEventListenerFunction = () => this.needRefreshed = true
+    this.p2pMessaging.on(P2PMessaging.EVENT_UPDATE_SEEN_TIME, updateSeenTimeListener);
 
-    let contactListener: IEventListenerFunction = fullKey => {
-      let contactKey = fullKey.substr(fullKey.lastIndexOf('.') + 1);
-      let contact: IHeatMessageContact = this.p2pMessaging.p2pContactStore.get(contactKey);
-      if (contact && contact.activityTimestamp) {
-        if (contact.activityTimestamp < 0) {
-          contact.activityTimestamp = -contact.activityTimestamp;
-          this.$location.path(`/messenger/${contact.publicKey}`);
+    let contactListener: IEventListenerFunction = contactPublicKey => {
+      db.getContact(this.user.account, contactPublicKey).then((contact: IHeatMessageContact) => {
+        if (contact && contact.activityTimestamp) {
+          if (contact.activityTimestamp < 0) {
+            contact.activityTimestamp = -contact.activityTimestamp
+            this.$location.path(`/messenger/${contact.publicKey}`)
+          }
+          this.refresh()
         }
-        this.refresh();
-      }
-    };
-    this.p2pMessaging.p2pContactStore.on(Store.EVENT_PUT, contactListener);
+      })
+    }
+    this.contactService.on(ContactService.SAVE_CONTACT, contactListener)
 
     if (user.unlocked) {
       this.init();
-    }
-    else {
+    } else {
       let listener = () => { this.init() };
       user.on(UserService.EVENT_UNLOCKED, listener);
       $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
@@ -194,17 +187,20 @@ class UserContactsComponent {
     this.p2pMessaging.on(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, channelListener);
 
     $scope.$on('$destroy', () => {
-      this.p2pMessaging.removeListener(P2PMessaging.EVENT_NEW_MESSAGE, messageListener);
-      this.p2pMessaging.seenP2PMessageTimestampStore.removeListener(Store.EVENT_PUT, this.refresh);
-      this.p2pMessaging.p2pContactStore.removeListener(Store.EVENT_PUT, contactListener);
-      this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, channelListener);
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_NEW_MESSAGE, messageListener)
+      this.p2pMessaging.removeListener(Store.EVENT_PUT, updateSeenTimeListener)
+      //this.p2pMessaging.p2pContactStore.removeListener(Store.EVENT_PUT, contactListener);
+      this.contactService.removeListener(ContactService.SAVE_CONTACT, contactListener)
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, channelListener)
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, channelListener)
-    });
+    })
+
+    this.fetchCryptoAddresses('BTC')
   }
 
   acceptNewContact(contact: IHeatMessageContact) {
     delete contact.newIncomingContact
-    this.p2pMessaging.p2pContactStore.put(contact.account, contact)
+    this.contactService.saveContact(contact.publicKey, contact.publicName, null, null, contact)
   }
 
   remove(contact: IHeatMessageContact) {
@@ -216,8 +212,9 @@ class UserContactsComponent {
         let pr = this.getPeerAndRoom(contact)
         if (pr.peer) pr.peer.closeConnection()
         if (pr.room) pr.room.getMessageHistory().clear()
-        this.p2pMessaging.p2pContactStore.remove(contact.account)
-        this.refreshContacts().then(v => this.updateActivePublicKey(true))
+        db.removeContact(this.user.account, contact.publicName)
+            .then(() => this.refreshContacts())
+            .then(() => this.updateActivePublicKey(true))
       })
     })
   }
@@ -340,6 +337,15 @@ class UserContactsComponent {
     if (!contact.publicKey) return {}
     let room = this.p2pMessaging.getOneToOneRoom(contact.publicKey)
     return room ? {room: room, peer: room.getPeer(contact.publicKey)} : {}
+  }
+
+  fetchCryptoAddresses(currency: string) {
+    db.listContacts(this.user.account).then((contacts: any[]) => {
+      for (const contact of contacts) {
+        console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
+        this.contactService.fetchCryptoAddress(contact, currency)
+      }
+    })
   }
 
 }

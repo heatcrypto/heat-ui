@@ -168,8 +168,12 @@ module heat.crypto {
   }
 
   export function hexToHash8Bytes(hex: string) {
+    return bytesToHash8Bytes(converters.hexStringToByteArray(hex))
+  }
+
+  export function bytesToHash8Bytes(bytes: number[]) {
     _hash.init()
-    _hash.update(converters.hexStringToByteArray(hex))
+    _hash.update(bytes)
     let hashBytes = _hash.getBytes()
     return (converters.hexStringToByteArray(converters.byteArrayToHexString(hashBytes))).slice(0, 8)
   }

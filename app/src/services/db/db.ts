@@ -4,12 +4,13 @@ namespace db {
         let dexie = new globalThis.Dexie(name)
 
         dexie.version(1).stores({
-            values_v2: '',
+            values: 'key',
             walletEntry: 'account, name', // optional name of account, for example road@heatwallet.com
             cryptoAddresses: '[account+currencySym]',
             walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
             transactionMemo: 'id', // id (PK), content: any
-            contact: '[account+pubKey]' //account's contact public key
+            contact: '[account+pubKey]', //account's contact public key
+            message: 'msgId, [roomKey+timestamp]', //u2u (p2p) message
         })
 
         dexie.open().catch(error => console.error("Failed to open database:", error))
@@ -25,14 +26,18 @@ namespace db {
         return converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(str))
     }
 
+    export function bytesToCompactHash(bytes: number[]): string {
+        return converters.byteArrayToHexString(heat.crypto.bytesToHash8Bytes(bytes))
+    }
+
     export function getValue(key: string): Promise<any> {
-        return db0.values_v2.get(key).catch(error => {
+        return db0.values.get(key).catch(error => {
             console.error(error)
         })
     }
 
     export function putValue(key: string, value: any): Promise<any> {
-        return db0.values_v2.put(value, key).catch(error => {
+        return db0.values.put(value, key).catch(error => {
             console.error(error)
         })
     }
@@ -99,7 +104,7 @@ namespace db {
 
     export function removeWalletEntry(account: string): Promise<any> {
         //todo remove derived records (addresses, walletItem ...) also
-        return db0.walletEntry.delete(account).catch(error => console.error("Error saving record:", error))
+        return db0.walletEntry.delete(account).catch(error => console.error("Error on deleting record:", error))
     }
 
     export function listWalletEntries(): Promise<any[]> {
@@ -197,9 +202,11 @@ namespace db {
 
     export function getTransactionMemo(id: string): Promise<any> {
         return db0.transactionMemo.get(id).catch(error => {
-            console.error("Error adding record:", error)
+            console.error("Error getting record:", error)
         })
     }
+
+    // -------- P2P Messaging Contacts ----------------------------------------------------------------
 
     export function putContact(account: string, pubKey: string, value: any): Promise<any> {
         return db0.contact.put(Object.assign(value, {account, pubKey})).catch(error => {
@@ -245,6 +252,55 @@ namespace db {
             return db0.contact.filter(c => c.publicName.includes(publicNameQuery)).toArray()
                 .catch(error => {console.error(error)})
         }
+    }
+
+    export function removeContact(account: string, pubKey: string): Promise<any> {
+        return db0.contact.delete(account, pubKey).catch(error => console.error("Deletion failed:", error))
+    }
+
+    // -------- P2P Messaging ----------------------------------------------------------------
+
+    export function addMessage(message: any): Promise<any> {
+        return db0.message.add(message).catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function getMessage(msgId: string): Promise<any> {
+        return db0.message.get(msgId).catch(error => {
+            console.error("Deletion failed:", error)
+        })
+    }
+
+    export function getMessagesScrollable(roomKey: string, offset: number, limit: number): Promise<any> {
+        return db0.message
+            .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
+            .offset(offset).limit(limit).toArray()
+            .catch(error => {console.error("Error getting records:", error)})
+    }
+
+    export function getMessagesScrollableCount(roomKey: string): Promise<any> {
+        return db0.message
+            .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
+            .count()
+            .catch(error => {console.error("Error getting records:", error)})
+    }
+
+    export function updateMessage(msgId: string, props: any): Promise<any> {
+        return db0.message.update(msgId, props).catch(error => {
+            console.error("Error updating record:", error)
+        })
+    }
+
+    export function removeMessage(msgId: string): Promise<any> {
+        return db0.message.delete(msgId).catch(error => console.error("Deletion failed:", error))
+    }
+
+    export function removeMessages(roomKey: string): Promise<any> {
+        return db0.message
+            .where('roomKey').equals(roomKey)
+            .delete()
+            .catch(error => console.error(`Bulk deletion failed: ${error}`))
     }
 
 }

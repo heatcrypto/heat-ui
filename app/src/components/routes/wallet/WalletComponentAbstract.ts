@@ -88,7 +88,6 @@ namespace wlt {
           }
         })
         this.flatten()
-        this.fetchCryptoAddresses('BTC')
       })
     }
 
@@ -105,15 +104,6 @@ namespace wlt {
           walletEntry.toggle(true)
         }
       }).catch(reason => console.warn(reason))
-    }
-
-    fetchCryptoAddresses(currency: string) {
-      let p2pContactsUtils = <ContactService>heat.$inject.get('contactService')
-      let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
-      p2pMessaging.p2pContactStore.forEach((key, contact) => {
-        console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
-        p2pContactsUtils.fetchCryptoAddress(contact, currency)
-      })
     }
 
     checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string, addresses: WalletAddress[]): {wasCreated: boolean, cachedBalance?: string} {

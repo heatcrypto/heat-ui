@@ -125,7 +125,7 @@ class MessageBatchEntryComponent {
               private messaging: P2PMessaging,
               private heat: HeatService,
               private $mdToast: angular.material.IToastService) {
-    $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
+    $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageStatus) => {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
           this.message.extraInfo = info

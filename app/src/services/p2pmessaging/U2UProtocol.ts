@@ -23,7 +23,7 @@
 
 module p2p {
 
-  export interface MessageExtraInfo {
+  export interface MessageStatus {
     status: {
       stage: number // 0 - nothing (outgoing), 1 - delivered, 2 - read, 3 - rejected by server
       remark?: string
@@ -53,7 +53,7 @@ module p2p {
       let sendingData = {
           id: m.id,
           type: m.type,
-          room: room.name,
+          room: room.key,
           sender: caller,
           recipient: recipient,
           payload: JSON.stringify(encrypted)
@@ -149,7 +149,7 @@ module p2p {
         //stages: 1 - delivered, 2 - read, 3 - rejected by server
         let room: Room = this.connector.rooms.get(roomName) || this.connector.messenger.getOneToOneRoom(msg.sender || msg.fromPeer, true)
         if (room) {
-          room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
+          room.getMessageHistory().updateMessageStatus(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
         }
       },
 
