@@ -8,7 +8,8 @@ namespace db {
             walletEntry: 'account, name', // optional name of account, for example road@heatwallet.com
             cryptoAddresses: '[account+currencySym]',
             walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
-            transactionMemo: 'id' // id (PK), content: any
+            transactionMemo: 'id', // id (PK), content: any
+            contact: '[account+pubKey]' //account's contact public key
         })
 
         dexie.open().catch(error => console.error("Failed to open database:", error))
@@ -198,6 +199,52 @@ namespace db {
         return db0.transactionMemo.get(id).catch(error => {
             console.error("Error adding record:", error)
         })
+    }
+
+    export function putContact(account: string, pubKey: string, value: any): Promise<any> {
+        return db0.contact.put(Object.assign(value, {account, pubKey})).catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function saveContact(account: string, pubKey: string, props: any): Promise<any> {
+        let id = {account, pubKey}
+        return db0.contact.get(id).then(c => {
+            if (c) {
+                return db0.contact.update(id, props)
+            } else {
+                return putContact(account, pubKey, props)
+            }
+        }).catch(error => {
+            console.error("Error saving record:", error)
+        })
+    }
+
+    export function getContact(account: string, pubKey: string): Promise<any> {
+        return db0.contact.get({account, pubKey}).catch(error => {
+            console.error(error)
+        })
+    }
+
+    /**
+     * list account's contacts
+     * @param account holder of contacts
+     */
+    export function listContacts(account: string): Promise<any> {
+        return db0.contact.where({account}).toArray().catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function searchContacts(accountQuery?: string, publicNameQuery?: string): Promise<any> {
+        if (accountQuery) {
+            return db0.contact.where('account').startsWith(accountQuery).toArray()
+                .catch(error => {console.error(error)})
+        }
+        if (publicNameQuery) {
+            return db0.contact.filter(c => c.publicName.includes(publicNameQuery)).toArray()
+                .catch(error => {console.error(error)})
+        }
     }
 
 }

@@ -49,48 +49,7 @@ class LocalKeyStoreService {
 
     // try to convert data from local storage to IndexedDB
     setTimeout(() => {
-      let k = 'heatwallet-db-converted-4.10.0'
-      let storageConvertedIndicator = parseInt(localStorage.getItem(k))
-      if (storageConvertedIndicator > 3) return
-
-      db.walletEntryCount().then(num => {
-        if (num > 0) return //new db already has data
-        const regExp = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/
-        let accounts = this.store.keys()
-            .filter((keyName) => regExp.test(keyName))
-            .map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""))
-        if (accounts.length == 0) { //nothing to convert
-          localStorage.setItem(k, '11')
-          return
-        }
-
-        // increase counter to avoid data conversion confirmation question many times
-        localStorage.setItem(k, String((storageConvertedIndicator || 0) + 1))
-
-        dialogs.confirm(`Confirm`,
-            `Detected wallet data in old format. Confirm conversion it to the actual format. Then app will be reloaded`).then(() => {
-          let wltStore = storage.namespace('wallet', $rootScope, true)
-          let accountCurrencies: Map<string, []> = new Map<string, []>()
-          for (const account of accounts) {
-            let selectedCurrencies = wltStore.get(account)
-            if (selectedCurrencies) accountCurrencies.set(account, selectedCurrencies)
-          }
-          let exported = this.exportOld(accountCurrencies, {})
-          let paymentMessages = wlt.exportPaymentMessages()
-          exported = Object.assign(exported, {paymentMessages: paymentMessages})
-
-          this.import(exported).then(addedKeys => {
-            console.log(`Imported ${addedKeys.length} keys into this device.  The app will now restart...`)
-            setTimeout(() => window.location.reload(), 1500)
-            localStorage.setItem(k, '4')
-          }).catch(reason => {
-            console.error(reason)
-            return `Error on processing file content: ${reason}`
-          })
-        })
-
-      })
-
+      this.convertToIndexedDB(storage, $rootScope)
     }, 100)
   }
 
@@ -416,6 +375,65 @@ class LocalKeyStoreService {
       }
     });
     return entries
+  }
+
+  private convertToIndexedDB(storage: StorageService, $rootScope) {
+    let k = 'heatwallet-db-converted-4.10.0'
+    let storageConvertedIndicator = parseInt(localStorage.getItem(k))
+    if (storageConvertedIndicator > 3) return
+
+    db.walletEntryCount().then(num => {
+      if (num > 0) return //new db already has data
+      const regExp = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/
+      let accounts = this.store.keys()
+          .filter((keyName) => regExp.test(keyName))
+          .map((keyName) => keyName.substring("key.".length).replace(/\.testnet$/,""))
+      if (accounts.length == 0) { //nothing to convert
+        localStorage.setItem(k, '11')
+        return
+      }
+
+      // increase counter to avoid data conversion confirmation question many times
+      localStorage.setItem(k, String((storageConvertedIndicator || 0) + 1))
+
+      dialogs.confirm(`Confirm`,
+          `Detected wallet data in old format. Confirm conversion it to the actual format. Then app will be reloaded`).then(() => {
+        let wltStore = storage.namespace('wallet', $rootScope, true)
+        let accountCurrencies: Map<string, []> = new Map<string, []>()
+        for (const account of accounts) {
+          let selectedCurrencies = wltStore.get(account)
+          if (selectedCurrencies) accountCurrencies.set(account, selectedCurrencies)
+        }
+        let exported = this.exportOld(accountCurrencies, {})
+        let paymentMessages = wlt.exportPaymentMessages()
+        exported = Object.assign(exported, {paymentMessages: paymentMessages})
+
+        this.import(exported).then(addedKeys => {
+          console.log(`Imported ${addedKeys.length} keys into this device.  The app will now restart...`)
+          setTimeout(() => window.location.reload(), 1500)
+          localStorage.setItem(k, '4')
+        }).catch(reason => {
+          console.error(reason)
+          return `Error on processing file content: ${reason}`
+        })
+
+        this.convertContacts()
+      })
+    })
+  }
+
+  private convertContacts() {
+    Object.keys(localStorage).forEach(key => {
+      if (key.indexOf('p2pContacts') > 0) {
+        try {
+          const value = JSON.parse(localStorage.getItem(key))
+          let parts = key.split('.')
+          db.putContact(parts[0], value.publicKey, value)
+        } catch (e) {
+          console.error('error import p2p contact', e)
+        }
+      }
+    })
   }
 
 }

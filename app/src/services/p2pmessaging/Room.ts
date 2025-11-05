@@ -134,7 +134,7 @@ module p2p {
     }
 
     registerInHistory(sending: boolean, message, sendResult?) {
-      if (!(message.type == "chat" || message.type == "file")) return
+      if (message.type != "chat" && message.type != "file") return
       if (this.getMessageHistory().isExistingId(message.id)) {
         throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
       }
@@ -158,9 +158,6 @@ module p2p {
     }
 
     onMessageInternal(message: U2UMessage) {
-      if (this.getMessageHistory().isExistingId(message.id)) {
-        throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
-      }
       this.registerInHistory(false, message)
       if (message.type == "chat" || message.type == "file") {
         this.lastIncomingMessageTimestamp = Date.now();

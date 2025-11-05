@@ -44,6 +44,9 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   public hasUnreadMessage: boolean = false;
 
   public connector: p2p.P2PConnector;
+
+  private _state: string //empty string means is ok
+
   private baseProtocol: p2p.BaseProtocol;
   u2uProtocol: p2p.U2UProtocol;
   private signalingProtocol: p2p.SignalingProtocol;
@@ -58,10 +61,13 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
               private env: EnvService) {
     super();
 
+    this._state = 'not ready'
+
     let closeConnector = () => {
       if (this.connector) {
-        this.connector.close(true);
-        this.connector = null;
+        this.connector.close(true)
+        this.connector = null
+        this._state = 'connection is closed'
       }
     };
 
@@ -69,7 +75,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
 
     user.on(UserService.EVENT_UNLOCKED, () => {
-      closeConnector();
+      closeConnector()
 
       let protocols = [
         this.baseProtocol = new p2p.BaseProtocol(),
@@ -86,13 +92,19 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
         (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
         protocols
-      );
+      )
 
-      this.connector.setOnlineStatus("online");
-      this.enterRoom(this.user.publicKey);
+      this.connector.setOnlineStatus("online")
+      this.enterRoom(this.user.publicKey)
+
+      this._state = ''
     });
 
     user.on(UserService.EVENT_LOCKED, closeConnector);
+  }
+
+  get state(): string {
+    return this._state || this.connector.state
   }
 
   private encrypt(message: string | ArrayBuffer, recipientPublicKey: string) {
@@ -124,7 +136,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       if (!c) {
         let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
         if (senderAccount) {
-          this.contactService.saveContact(senderAccount, msg.fromPeerId, null, -Date.now(), true)
+          this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
         }
       }
     }).catch(reason => console.error(reason))
@@ -243,13 +255,13 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
             );
           } else if(msg.type == "contactUpdate") {
             let parsedMessage = JSON.parse(msg.text);
-            let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+            let contactAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
             let publicKey = msg.fromPeerId
-            this.heat.api.searchPublicNames(account, 0, 100).then((accounts)=> {
+            this.heat.api.searchPublicNames(contactAccount, 0, 100).then((accounts)=> {
               let expectedAccount = accounts.find(value => value.publicKey == publicKey);
               if (expectedAccount) {
                 let contactUtils = <ContactService>heat.$inject.get('contactService');
-                contactUtils.updateContactCurrencyAddress(account, parsedMessage.name, parsedMessage.address, publicKey, expectedAccount.publicName, -Date.now())
+                contactUtils.updateContactCurrencyAddress(contactAccount, parsedMessage.name, parsedMessage.address, publicKey, expectedAccount.publicName, -Date.now())
               }
             })
           }
@@ -265,11 +277,11 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   );
 
   set onlineStatus(status: OnlineStatus) {
-    this.connector.setOnlineStatus(status);
+    this.connector?.setOnlineStatus(status);
   }
 
   get onlineStatus(): OnlineStatus {
-    return this.connector.onlineStatus;
+    return this.connector?.onlineStatus;
   }
 
   getOneToOneRoom(peerId: string, required?: boolean): p2p.Room {
@@ -360,7 +372,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
       let updateContactCallTime = (account: string, publicKey: string, publicName?: string) => {
         //save negative time to force to select contact in contact list
-        this.contactService.saveContact(callerAccount, callerPublicKey, publicName, -Date.now());
+        this.contactService.saveContact(callerPublicKey, publicName, -Date.now());
       };
 
       this.heat.api.searchPublicNames(callerAccount, 0, 100).then(accounts => {
@@ -451,6 +463,21 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       }
     }
     callback(null, null)
+  }
+
+  contactStatus(contactPubKey) {
+    if (!contactPubKey) return
+    let room = this.getOneToOneRoom(contactPubKey)
+    if (!room) return
+    let peer = room.getPeer(contactPubKey)
+    if (peer?.isConnected()) {
+      return "channelOpened"
+    } else {
+      //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
+      if (room?.state.entered != "not") {
+        return "roomRegistered"
+      }
+    }
   }
 
 }

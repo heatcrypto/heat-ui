@@ -69,8 +69,8 @@
           </div>-->
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
           <span ng-if="contact.hasUnreadP2PMessage" class="p2p-unread-symbol">*</span>
-          <span ng-if="vm.p2pStatus(contact)=='channelOpened'" class="channelopened-status-symbol">●</span>
-          <span ng-if="vm.p2pStatus(contact)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online'"
+          <span ng-if="vm.p2pMessaging.contactStatus(contact.publicKey)=='channelOpened'" class="channelopened-status-symbol">●</span>
+          <span ng-if="vm.p2pMessaging.contactStatus(contact.publicKey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online'"
                 class="roomregistered-status-symbol">●</span>
           <span ng-if="contact.newIncomingContact" class="new-incoming-contact">new</span>
           <div class="account-col left">
@@ -334,18 +334,6 @@ class UserContactsComponent {
     setTimeout(() => {
       this.$location.path(`/messenger/${contact.publicKey}`)
     }, 100)
-  }
-
-  p2pStatus(contact: IHeatMessageContact) {
-    let pr = this.getPeerAndRoom(contact)
-    if (pr.peer && pr.peer.isConnected()) {
-      return "channelOpened"
-    } else {
-      //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
-      if (pr.room && pr.room.state.entered != "not") {
-        return "roomRegistered"
-      }
-    }
   }
 
   getPeerAndRoom(contact: IHeatMessageContact) {

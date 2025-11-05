@@ -103,9 +103,11 @@ module p2p {
 
     identity: string;
     pendingRooms: Function[] = [];
-    pendingOnlineStatus: Function;
+    pendingSendOnlineStatus: Function;
     private _onlineStatus: OnlineStatus = "offline";
     private signalingReady: boolean = null;
+
+    state: string = 'not ready'
 
     private config: RTCConfiguration = {
       iceServers: [
@@ -178,29 +180,30 @@ module p2p {
     /**
      * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
      */
-    setOnlineStatus(status: OnlineStatus) {
+    setOnlineStatus(newStatus: OnlineStatus) {
       let sendOnlineStatus = () => {
-        this.sendWebsocketMessage(Protocol.signaling, [{type: "SET_ONLINE_STATUS", status: status}]);
-        if (status == "online") {
-          this.rooms.forEach(room => {
-            if (room.state.entered == "entered") {
-              //enforce registration on the server because new room members could be entered while was offline
-              room.enter(true);
-            }
-          })
-        }
-      };
+        return this.sendWebsocketMessage(Protocol.signaling, [{type: "SET_ONLINE_STATUS", status: newStatus}]).then(value => {
+          if (this._onlineStatus == "online") {
+            this.rooms.forEach(room => {
+              if (room.state.entered == "entered") {
+                //enforce registration on the server because new room members could be entered while was offline
+                room.enter(true)
+              }
+            })
+          }
+        })
+      }
       if (this.identity) {
-        sendOnlineStatus();
+        sendOnlineStatus()
       } else {
-        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}]);
-        this.pendingOnlineStatus = sendOnlineStatus;
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}])
+        this.pendingSendOnlineStatus = sendOnlineStatus
       }
-      if (status == "offline") {
-        this.identity = null;
-        this.close();
+      if (newStatus == "offline") {
+        this.identity = null
+        this.close()
       }
-      this._onlineStatus = status;
+      this._onlineStatus = newStatus
     }
 
     get onlineStatus(): OnlineStatus {
@@ -290,6 +293,7 @@ module p2p {
               resolve(socket);
             };
             socket.onerror = (error) => {
+              this.state = 'websocket error'
               console.error(error);
               reject(error);
               this.webSocketPromise = null;
@@ -310,11 +314,12 @@ module p2p {
       return this.getWebSocket()
         .then(websocket => {
           let sendingData = [protocol].concat(data)  // sending data format: [protocolName, message1, message2, ...]
-          websocket.send(JSON.stringify(sendingData));
+          websocket.send(JSON.stringify(sendingData))
+          this.state = ''
           //console.log(">> \n" + JSON.stringify(sendingData));
-        }, reason => console.error(reason))
-        .catch(reason => {
-          console.error("error on get websocket \n" + reason);
+        }, reason => {
+          this.state = 'no websocket connection to server'
+          console.error("error on get websocket \n" + reason)
         })
     }
 
@@ -708,7 +713,7 @@ module p2p {
     close(closeWebsocket?: boolean) {
       this.identity = null;
       this.pendingRooms = [];
-      this.pendingOnlineStatus = null;
+      this.pendingSendOnlineStatus = null;
       this.rooms.forEach(room => this.closeRoom(room));
       if ((closeWebsocket === undefined || closeWebsocket) && this.signalingReady) {
         this.getWebSocket().then(socket => socket.close());
