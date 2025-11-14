@@ -137,14 +137,14 @@
       <div class="header">
         <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
       </div>
-      <div ng-if="!item.fileIndicator" class="message-content">{{item.content}}</div>
-      <div ng-if="item.fileIndicator" class="message-content">{{item.content}}</div>
-      <div ng-if="item.fileIndicator == 1 || item.fileIndicator == 4">
+      <div ng-if="!item.status.fileIndicator" class="message-content">{{item.content}}</div>
+      <div ng-if="item.status.fileIndicator" class="message-content">{{item.content}}</div>
+      <div ng-if="item.status.fileIndicator == 1 || item.status.fileIndicator == 4">
           <a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a>
       </div>
-      <div ng-if="item.fileIndicator == 2" class="file-status">File is downloaded</div>
-      <div ng-if="item.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
-      <div ng-if="item.fileIndicator == 4" class="file-status">file download error</div>
+      <div ng-if="item.status.fileIndicator == 2" class="file-status">File is downloaded</div>
+      <div ng-if="item.status.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
+      <div ng-if="item.status.fileIndicator == 4" class="file-status">file download error</div>
     </div>
 </div>
 </div>
@@ -205,11 +205,11 @@ class P2PMessagesViewerComponent {
       adapter.append([this.processItem(item)])
     }
 
-    this.$rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageStatus) => {
+    this.$rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, messageStatus: p2p.MessageStatus) => {
       this.items.forEach(item => {
         if (item.msgId == msgId) {
           this.$scope.$evalAsync(() => {
-            item.extraInfo = info
+            item.status = messageStatus
             this.processItem(item)
           })
         }
@@ -238,7 +238,7 @@ class P2PMessagesViewerComponent {
       ).then(() => {
         return this.datasource.remove(item)
       }).then(() => {
-        this.p2pMessaging.checkToRemoveServerMessage(item.type, item["outgoing"], item.transport, item.msgId, item.extraInfo)
+        this.p2pMessaging.checkToRemoveServerMessage(item.type, item["outgoing"], item.transport, item.msgId, item.status)
         // @ts-ignore
         let adapter = this.$scope.adapter
         adapter.applyUpdates(function (item2) {
@@ -252,7 +252,7 @@ class P2PMessagesViewerComponent {
     }
 
     this.p2pMessaging.requestIsMessageExists(
-      item.type, item["outgoing"], item.transport, item.msgId, item.extraInfo,
+      item.type, item["outgoing"], item.transport, item.msgId, item.status,
       (message: boolean, file: boolean) => {
         displayDialog(message, file)
         displayDialog = null
@@ -271,7 +271,7 @@ class P2PMessagesViewerComponent {
     item['outgoing'] = this.user.account == item['senderAccount'];
     item['dateFormatted'] = dateFormat(item.timestamp, this.dateFormat);
     item['fileIndicator'] = 0  // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded
-    item['stage'] = item.extraInfo?.status?.stage
+    item['stage'] = item.status?.stage
 
     if (item.type == "file") {
       if (!item['fileDescriptor']) {
@@ -279,8 +279,8 @@ class P2PMessagesViewerComponent {
         let delimiterPos = s?.indexOf("|")
         if (delimiterPos > 0) {
           item['fileDescriptor'] = {
-            fileName: s.substr(delimiterPos + 1).trim(),
-            fileSize: parseInt(s.substr(0, delimiterPos)),
+            fileName: s.substring(delimiterPos + 1).trim(),
+            fileSize: parseInt(s.substring(0, delimiterPos)),
             fileSender: item.fromPeer
           }
         }
@@ -292,7 +292,7 @@ class P2PMessagesViewerComponent {
         } else {
           item.content = `file "${fileDescriptor.fileName}", size ${fileDescriptor.fileSize} bytes`
           //link to file
-          item['fileIndicator'] = item.extraInfo?.status.fileIndicator || 1
+          item['fileIndicator'] = item.status?.fileIndicator || 1
         }
       }
     }
@@ -301,24 +301,21 @@ class P2PMessagesViewerComponent {
   }
 
   //download message's file
-  /*downloadFile(item) {
+  downloadFile(item) {
     //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
-    item['fileIndicator'] = 3
+    item.fileIndicator = 3
     this.heat.api.downloadFile(item.msgId).then(encryptedFileContent => {
-      item['fileIndicator'] = 1
+      item.fileIndicator = 1
       this.p2pMessaging.onFile(
-        encryptedFileContent, this.room, item.msgId, item['fileDescriptor'], () => item['fileIndicator'] = 2
+        encryptedFileContent, this.room, item.msgId, item.fileDescriptor, () => item.fileIndicator = 2
       )
     }).catch(reason => {
       this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
       console.error(reason)
-      item['fileIndicator'] = 4
-      let ei: p2p.MessageExtraInfo = this.room.getMessageHistory().getExtraInfo(item.msgId)
-        || {status: {stage: 0, fileIndicator: 4}}
-      ei.status.fileIndicator = 4
-      this.room.getMessageHistory().putExtraInfo(item.msgId, ei)
+      item.fileIndicator = 4
+      return this.room.getMessageHistory().updateMessageStatus(item.msgId, {'status.fileIndicator': 4, 'status.stage': 0})
     })
-  }*/
+  }
 
 }
 

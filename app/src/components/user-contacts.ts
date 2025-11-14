@@ -142,7 +142,7 @@ class UserContactsComponent {
     $scope.$on('$destroy', () => $interval.cancel(interval))
 
     let updateSeenTimeListener: IEventListenerFunction = () => this.needRefreshed = true
-    this.p2pMessaging.on(P2PMessaging.EVENT_UPDATE_SEEN_TIME, updateSeenTimeListener);
+    this.p2pMessaging.on(P2PMessaging.EVENT_UPDATE_SEEN_TIME, updateSeenTimeListener)
 
     let contactListener: IEventListenerFunction = contactPublicKey => {
       db.getContact(this.user.account, contactPublicKey).then((contact: IHeatMessageContact) => {
@@ -188,8 +188,7 @@ class UserContactsComponent {
 
     $scope.$on('$destroy', () => {
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_NEW_MESSAGE, messageListener)
-      this.p2pMessaging.removeListener(Store.EVENT_PUT, updateSeenTimeListener)
-      //this.p2pMessaging.p2pContactStore.removeListener(Store.EVENT_PUT, contactListener);
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_UPDATE_SEEN_TIME, updateSeenTimeListener)
       this.contactService.removeListener(ContactService.SAVE_CONTACT, contactListener)
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, channelListener)
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, channelListener)
@@ -242,14 +241,17 @@ class UserContactsComponent {
    */
   purgeAllMessages() {
     dialogs.confirm(
-      "Purge all messages of all contacts",
+      "Purge all messages of all contacts of current user " + this.user.accountName,
       "Do you want to purge all messages in local storage?"
     ).then(() => {
-      this.$scope.$evalAsync(() => {
-        this.contacts.forEach(contact => {
-          this.purgeMessagesInternal(contact)
+      let p: Promise<any>[] = []
+      this.contacts.forEach(contact => {
+        p.push(this.purgeMessagesInternal(contact))
+      })
+      Promise.all(p).then(() => {
+        this.$scope.$evalAsync(() => {
+          this.refreshMessageHistory()
         })
-        this.refreshMessageHistory()
       })
     })
   }
@@ -257,14 +259,11 @@ class UserContactsComponent {
   private purgeMessagesInternal(contact: IHeatMessageContact) {
     let pr = this.getPeerAndRoom(contact)
     if (pr.room) {
-      let mh = pr.room.getMessageHistory()
-      mh.getPageIndexes().forEach(page => {
-        mh.getItems(page).forEach(v => {
-          this.p2pMessaging.checkToRemoveServerMessage(v.type, v["outgoing"], v.transport, v.msgId, v.extraInfo)
-        })
-      })
-      pr.room.getMessageHistory().clear()
+      return db.getMessages(pr.room.key).then(m => {
+        this.p2pMessaging.checkToRemoveServerMessage(m.type, m["outgoing"], m.transport, m.msgId, m.status)
+      }).then(() => db.removeMessages(pr.room.key))
     }
+    return Promise.resolve()
   }
 
   getActivePublicKeyParam() {

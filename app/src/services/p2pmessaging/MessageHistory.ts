@@ -31,14 +31,8 @@ module p2p {
     receiptTimestamp?: number
     fromPeer: string
     content: string
+    status: MessageStatus,
     transport?: TransportType
-    extraInfo?: MessageStatus
-    status?: {
-      stage: number // 0 - nothing (outgoing), 1 - delivered, 2 - read, 3 - rejected by server
-      remark?: string
-      fileIndicator?: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded;
-      // 3 - file is downloading (in progress); 4 - error on download
-    },
     selected?: boolean //  used in UI
   }
 
@@ -128,10 +122,16 @@ module p2p {
       return db.addMessage(item)
     }
 
-    public updateMessageStatus(msgId: string, data: p2p.MessageStatus) {
-      return db.updateMessage(msgId, data).then(() => {
-        let $rootScope = heat.$inject.get('$rootScope')
-        $rootScope.$emit('OFFCHAIN_MESSAGE_EXTRA_INFO', msgId, data)
+    public updateMessageStatus(msgId: string, data: any) {
+      return db.updateMessage(msgId, data).then(updated => {
+        if (updated > 0) {
+          db.getMessage(msgId).then(m => {
+            if (m?.status) {
+              let $rootScope = heat.$inject.get('$rootScope')
+              $rootScope.$emit('OFFCHAIN_MESSAGE_EXTRA_INFO', msgId, m.status)
+            }
+          })
+        }
       })
     }
 

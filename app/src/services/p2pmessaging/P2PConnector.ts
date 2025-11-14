@@ -76,7 +76,8 @@ module p2p {
     /**
      * If needed send request to remove the message on the server
      */
-    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageStatus)
+    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
+                               targetMessageId: string, messageStatus: p2p.MessageStatus)
 
     onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void
 

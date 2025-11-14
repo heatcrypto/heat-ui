@@ -24,12 +24,10 @@
 module p2p {
 
   export interface MessageStatus {
-    status: {
-      stage: number // 0 - nothing (outgoing), 1 - delivered, 2 - read, 3 - rejected by server
-      remark?: string
-      fileIndicator?: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded;
-      // 3 - file is downloading (in progress); 4 - error on download
-    }
+    stage: number // 0 - nothing (outgoing), 1 - delivered, 2 - read, 3 - rejected by server
+    remark: string
+    fileIndicator: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded;
+    // 3 - file is downloading (in progress); 4 - error on download
   }
 
   export class U2UProtocol extends BaseProtocol {

@@ -37,7 +37,7 @@ namespace db {
     }
 
     export function putValue(key: string, value: any): Promise<any> {
-        return db0.values.put(value, key).catch(error => {
+        return db0.values.put({key, value}).catch(error => {
             console.error(error)
         })
     }
@@ -270,6 +270,13 @@ namespace db {
         return db0.message.get(msgId).catch(error => {
             console.error("Deletion failed:", error)
         })
+    }
+
+    export function getMessages(roomKey: string): Promise<any> {
+        return db0.message
+            .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
+            .toArray()
+            .catch(error => {console.error("Error getting records:", error)})
     }
 
     export function getMessagesScrollable(roomKey: string, offset: number, limit: number): Promise<any> {

@@ -178,7 +178,7 @@ module p2p {
           fromPeer: outgoing ? this.user.publicKey : message.fromPeerId,
           content: message.text,
           transport: outgoing ? sendResult?.transport : message.transport,
-          status: {stage: 0}
+          status: {stage: 0, remark: '', fileIndicator: !outgoing && message.type == "file" ? 1 : 0}
         }
         if (outgoing && message.transport == "p2p" && sendResult?.count > 0) {
           //webrtc message is sent, it means the channel is opened, it means that delivered

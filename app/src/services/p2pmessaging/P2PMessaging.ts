@@ -51,10 +51,10 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   private signalingProtocol: p2p.SignalingProtocol;
 
   moment = {
-    registerLastMessageTime: (roomKey) => db.putValue(roomKey + "_last-message-time", Date.now()),
-    getLastMessageTime: (roomKey) => db.getValue(roomKey + "_last-message-time"),
-    registerSeenTime: (roomKey, timestamp: number) => db.putValue(roomKey, timestamp || (Date.now() - 500)),
-    getSeenTime: (roomKey) => db.getValue(roomKey)
+    registerLastMessageTime: (roomKey) => db.putValue(roomKey + ".last-message-time", Date.now()),
+    getLastMessageTime: (roomKey) => db.getValue(roomKey + ".last-message-time"),
+    registerSeenTime: (roomKey, timestamp: number) => db.putValue(roomKey + ".seen-time", timestamp || (Date.now() - 500)),
+    getSeenTime: (roomKey) => db.getValue(roomKey + ".seen-time")
   }
 
   constructor(private settings: SettingsService,
@@ -195,8 +195,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
       setTimeout(() => {
         this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
-        let extraInfo: p2p.MessageStatus = {status: {stage: 2, fileIndicator: 2}}
-        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {status: {stage: 2, fileIndicator: 2}})
+        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 2, 'status.stage': 2})
         if (fileSavedCallback) fileSavedCallback()
       }, 250)
     })
@@ -443,19 +442,19 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean,
-                             transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageStatus) {
+                             transport: p2p.TransportType, targetMessageId: string, status: p2p.MessageStatus) {
     if (outgoing && (transport == "server" || messageType == "file")) {
-      if (messageType == "file" || !extraInfo || extraInfo.status?.stage != 1) {
+      if (messageType == "file" || !status || status?.stage != 1) {
         this.u2uProtocol.sendRemoveMessage(targetMessageId)
       }
     }
   }
 
   requestIsMessageExists(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
-                         targetMessageId: string, extraInfo: p2p.MessageStatus,
+                         targetMessageId: string, status: p2p.MessageStatus,
                          callback: (message: boolean, file: boolean) => void) {
     if (outgoing && (transport == "server" || messageType == "file")) {
-      if (messageType == "file" || !extraInfo || extraInfo.status?.stage != 1) {
+      if (messageType == "file" || !status || status?.stage != 1) {
         this.onServerMessageExistsCallbacks.set(targetMessageId, callback)
         setTimeout(() => this.onServerMessageExistsCallbacks.delete(targetMessageId), 12000)
         this.u2uProtocol.requestIsMessageExists(targetMessageId) //the callback will be invoked by response to this request
