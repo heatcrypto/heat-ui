@@ -131,14 +131,24 @@ class UserContactsComponent {
               private contactService: ContactService) {
 
     this.refresh = utils.debounce(() => this.refreshContacts(), 1000);
-    heat.subscriber.unconfirmedTransaction({recipient: this.user.account}, ()=>{ this.refresh() });
+    heat.subscriber.unconfirmedTransaction({recipient: this.user.account}, ()=>{
+      this.needRefreshed = true
+      this.refresh()
+    })
 
     let interval = $interval(() => {
       if (this.needRefreshed) {
         this.needRefreshed = false
         this.refresh()
+      } else {
+        //light refresh
+        for (const c of this.contacts) {
+          c['hasUnreadMessage'] = !c.isP2POnlyContact && contactService.contactHasUnreadMessage(c)
+          c['hasUnreadP2PMessage'] = contactService.contactHasUnreadP2PMessage(c)
+        }
       }
     }, 2 * 1000)
+
     $scope.$on('$destroy', () => $interval.cancel(interval))
 
     let updateSeenTimeListener: IEventListenerFunction = () => this.needRefreshed = true

@@ -245,11 +245,8 @@ class ContactService extends EventEmitter {
 
   contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
     let p2pMessaging: P2PMessaging = heat.$inject.get('P2PMessaging')
-    let room = p2pMessaging.getOneToOneRoom(contact.publicKey, true);
-    if (room) {
-      return room.hasUnreadMessage
-    }
-    return false;
+    let room = p2pMessaging.getOneToOneRoom(contact.publicKey, true)
+    return room?.hasUnreadMessage || false
   }
 
 }
