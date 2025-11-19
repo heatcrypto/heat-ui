@@ -171,7 +171,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     super($scope, $q)
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.cache = {
-      get: key => db.getValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key),
+      get: key => db.getValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key).then(r => r?.value),
       put: (key, value) => db.putValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key, value),
     }
   }

@@ -95,7 +95,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
     super($scope, $q)
     this.cache = {
-        get: key => db.getValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key),
+        get: key => db.getValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key).then(r => r?.value),
         put: (key, value) => db.putValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key, value),
     }
   }

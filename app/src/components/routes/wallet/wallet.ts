@@ -336,8 +336,8 @@ namespace wlt {
     if (fileName) {
       saveAs(blob, fileName)
     } else {
-      return db.getValue('fileVersion').then(v => {
-        let version = parseInt(v) || 0
+      return db.getValue('fileVersion').then(r => {
+        let version = parseInt(r?.value) || 0
         version++
         if (version > 99) version = 1
         saveAs(blob, `heat.backup.v${version}.wallet`)

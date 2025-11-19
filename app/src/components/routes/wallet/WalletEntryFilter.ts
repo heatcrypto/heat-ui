@@ -73,7 +73,8 @@ namespace wlt {
       let pages: any[] = []
       let num = 0
       let p = () => {
-        return db.getValue(wlt.CACHE_KEY.addressInfo(currency.symbol, a.address) + '-' + num).then((page: any[]) => {
+        return db.getValue(wlt.CACHE_KEY.addressInfo(currency.symbol, a.address) + '-' + num).then(r => {
+          let page: any[] = r?.value
           if (page && num < 100) {
             pages.push(page)
             num++
