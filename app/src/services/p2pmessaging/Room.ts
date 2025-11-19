@@ -187,13 +187,13 @@ module p2p {
     onMessageInternal(message: U2UMessage) {
       if (message.type == "chat" || message.type == "file") {
         if (ContactService.contactsStatusesUpdated) {
-          this.messaging.moment.getUnreadStatus(message.fromPeerId).then(status => {
+          this.messaging.unreadStatusAccessor.getUnreadStatus(message.fromPeerId).then(status => {
             // status 1 means active contact, status positive number means timestamp (already has unread message), both not need status unread
             // status undefined or 0 should be updated to unread status (timestamp of message)
-            if (!status) this.messaging.moment.putUnreadStatus(message.fromPeerId, message.timestamp)
+            if (!status) this.messaging.unreadStatusAccessor.putUnreadStatus(message.fromPeerId, message.timestamp)
           })
         } else {
-          this.messaging.moment.putUnreadStatus(message.fromPeerId, message.timestamp)
+          this.messaging.unreadStatusAccessor.putUnreadStatus(message.fromPeerId, message.timestamp)
         }
       }
       return this.registerInHistory(false, message).then(() => {

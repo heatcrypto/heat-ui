@@ -412,13 +412,13 @@ class ToolbarComponent {
       this.signalingURL = this.settings.get(SettingsService.HEAT_MESSAGING).websocket
     })
 
-    let unreadChangedListener = (rooms: p2p.Room[]) => {
+    let unreadStatusChangedListener = (n => {
       this.$scope.$evalAsync(() => {
-        this.hasUnreadP2PMessage = rooms.length > 0;
-      });
-    };
-    this.p2pMessaging.on(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener);
-    $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener));
+        this.hasUnreadP2PMessage = n > 0
+      })
+    })
+    this.p2pMessaging.on(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener);
+    $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener));
   }
 
   localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []

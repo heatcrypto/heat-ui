@@ -35,7 +35,7 @@ type RoomMessagesAccumulator = {msg: any, room: p2p.Room}[];
 class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public static EVENT_NEW_MESSAGE = 'EVENT_NEW_MESSAGE';
-  public static EVENT_HAS_UNREAD_CHANGED = 'EVENT_HAS_UNREAD_CHANGED';
+  public static EVENT_UNREAD_STATUS_CHANGED = 'EVENT_UNREAD_STATUS_CHANGED';
   public static EVENT_ON_OPEN_DATA_CHANNEL = 'EVENT_ON_OPEN_DATA_CHANNEL';
   public static EVENT_ON_CLOSE_DATA_CHANNEL = 'EVENT_ON_CLOSE_DATA_CHANNEL';
   public static EVENT_UPDATE_SEEN_TIME = 'EVENT_UPDATE_SEEN_TIME';
@@ -60,9 +60,19 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
    *
    * @param reset
    */
-  moment = {
+  unreadStatusAccessor = {
     getUnreadStatus: (key) => db.getValue(`unread-status.${this.user.account}.${db.compactHash(key)}`).then(r => r?.value),
     putUnreadStatus: (key, status) => db.putValue(`unread-status.${this.user.account}.${db.compactHash(key)}`, status),
+  }
+
+  updateUnreadStatus = () => {
+    db.getValuesStartWith(`unread-status.${this.user.account}`).then((records: any[]) => {
+      let n = 0
+      for (const r of records) {
+        if (r.value > 1) n++
+      }
+      this.emit(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, n)
+    })
   }
 
   constructor(private settings: SettingsService,
@@ -112,6 +122,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     });
 
     user.on(UserService.EVENT_LOCKED, closeConnector);
+
+    setInterval(this.updateUnreadStatus, 6000)
   }
 
   get state(): string {

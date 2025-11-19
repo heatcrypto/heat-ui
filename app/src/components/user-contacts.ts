@@ -183,7 +183,7 @@ class UserContactsComponent {
       for (let contact of this.contacts) {
         if (contact.unreadStatus > 0) continue //1 or saved timestamp (both are > 0) not needed to be updated
         if (msg.fromPeerId == contact.publicKey) {
-          p2pMessaging.moment.getUnreadStatus(contact.publicKey).then(status => contact.unreadStatus = status)
+          p2pMessaging.unreadStatusAccessor.getUnreadStatus(contact.publicKey).then(status => contact.unreadStatus = status)
         }
       }
     }
@@ -318,11 +318,11 @@ class UserContactsComponent {
     let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey)
     if (activeContact) {
       activeContact.unreadStatus = 1
-      this.p2pMessaging.moment.putUnreadStatus(activeContact.publicKey, 1)
+      this.p2pMessaging.unreadStatusAccessor.putUnreadStatus(activeContact.publicKey, 1)
     }
     for (const c of this.contacts) {
       if (c.publicKey != activeContact?.publicKey && c.unreadStatus == 1) {
-        this.p2pMessaging.moment.putUnreadStatus(c.publicKey, 0)
+        this.p2pMessaging.unreadStatusAccessor.putUnreadStatus(c.publicKey, 0)
         c.unreadStatus = 0
       }
     }
@@ -340,9 +340,9 @@ class UserContactsComponent {
 
       // fill contacts unreadStatuses
       for (let contact of this.contacts) {
-        this.p2pMessaging.moment.getUnreadStatus(contact.publicKey).then(status => {
+        this.p2pMessaging.unreadStatusAccessor.getUnreadStatus(contact.publicKey).then(status => {
           if (status == 1 && contact.publicKey != this.activePublicKey) {
-            this.p2pMessaging.moment.putUnreadStatus(contact.publicKey, 0)
+            this.p2pMessaging.unreadStatusAccessor.putUnreadStatus(contact.publicKey, 0)
           }
           contact.unreadStatus = status == 1 ? 0 : status
         })

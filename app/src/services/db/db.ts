@@ -4,7 +4,9 @@ namespace db {
         let dexie = new globalThis.Dexie(name)
 
         dexie.version(1).stores({
-            values: 'key',
+            values: 'key',  // todo split key to 3 keys key0, key1, key2. Compound primary key [key0+key1+key2].
+                            // Example: key0='unread-state', key1='643537283892', key1='3477a5e34874ff'
+                            // Easy query by any of keys
             walletEntry: 'account, name', // optional name of account, for example road@heatwallet.com
             cryptoAddresses: '[account+currencySym]',
             walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
@@ -38,6 +40,12 @@ namespace db {
 
     export function putValue(key: string, value: any): Promise<any> {
         return db0.values.put({key, value}).catch(error => {
+            console.error(error)
+        })
+    }
+
+    export function getValuesStartWith(keyPrefix: string): Promise<any> {
+        return db0.values.where('key').startsWith(keyPrefix).toArray().catch(error => {
             console.error(error)
         })
     }
