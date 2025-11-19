@@ -175,7 +175,7 @@ class UserContactsComponent {
       $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
     }
 
-    $rootScope.$on('$locationChangeSuccess', () => { this.updateActivePublicKey() });
+    $scope.$on('$locationChangeSuccess', () => { this.updateActivePublicKey() });
     this.updateActivePublicKey();
 
     //let myRoom = this.p2pMessaging.register();
