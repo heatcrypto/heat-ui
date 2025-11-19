@@ -190,8 +190,6 @@ class P2PMessagesViewerComponent {
 
     if (!r) return
 
-    this.p2pMessaging.updateSeenTime(r.key, Date.now() + 1000 * 60 * 60 * 24);
-
     this.datasource = new P2PMessagesDataSource(r.key, r.getMessageHistory(), item => this.processItem(item));
 
     // scroll to the end of list
@@ -217,7 +215,6 @@ class P2PMessagesViewerComponent {
     })
 
     this.$scope.$on('$destroy', () => {
-      this.p2pMessaging.updateSeenTime(r.key, Date.now())
       r.onNewMessageHistoryItem = null
     })
   }

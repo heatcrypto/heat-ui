@@ -96,16 +96,8 @@ module p2p {
       entered: "not"
     }
 
-    lastIncomingMessageTimestamp: number = 0
-
     private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>()
     private messageHistory: MessageHistory
-    private _hasUnreadMessage: boolean
-
-    get hasUnreadMessage() {
-      this.messaging.moment.getSeenTime(this.key).then(t => this._hasUnreadMessage = this.lastIncomingMessageTimestamp > (t || 0))
-      return this._hasUnreadMessage
-    }
 
     /**
      * If room not exists registers the room on the server (signaling server).
@@ -194,11 +186,15 @@ module p2p {
 
     onMessageInternal(message: U2UMessage) {
       if (message.type == "chat" || message.type == "file") {
-        this.messaging.moment.getUnreadStatus(message.fromPeerId).then(status => {
-          // status 1 means active contact, status positive number means timestamp (already has unread message), both not need status unread
-          // status undefined or 0 should be updated to unread status (timestamp of message)
-          if (!status) this.messaging.moment.putUnreadStatus(message.fromPeerId, message.timestamp)
-        })
+        if (ContactService.contactsStatusesUpdated) {
+          this.messaging.moment.getUnreadStatus(message.fromPeerId).then(status => {
+            // status 1 means active contact, status positive number means timestamp (already has unread message), both not need status unread
+            // status undefined or 0 should be updated to unread status (timestamp of message)
+            if (!status) this.messaging.moment.putUnreadStatus(message.fromPeerId, message.timestamp)
+          })
+        } else {
+          this.messaging.moment.putUnreadStatus(message.fromPeerId, message.timestamp)
+        }
       }
       return this.registerInHistory(false, message).then(() => {
         if (this.onMessage) {

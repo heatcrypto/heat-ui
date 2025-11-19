@@ -68,7 +68,7 @@
             <md-icon md-font-library="material-icons" ng-class="{'has-unread-message': contact.hasUnreadMessage}">fiber_manual_record</md-icon>
           </div>-->
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
-          <span ng-if="contact.hasUnreadP2PMessage > 1" class="p2p-unread-symbol">*</span>
+          <span ng-if="contact.unreadStatus > 1" class="p2p-unread-symbol">*</span>
           <span ng-if="vm.p2pMessaging.contactStatus(contact.publicKey)=='channelOpened'" class="channelopened-status-symbol">●</span>
           <span ng-if="vm.p2pMessaging.contactStatus(contact.publicKey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online'"
                 class="roomregistered-status-symbol">●</span>
@@ -144,7 +144,6 @@ class UserContactsComponent {
         //light refresh
         for (const c of this.contacts) {
           c['hasUnreadMessage'] = !c.isP2POnlyContact && contactService.contactHasUnreadMessage(c)
-          //c['hasUnreadP2PMessage'] = contactService.contactHasUnreadP2PMessage(c)
         }
       }
     }, 2 * 1000)
@@ -182,9 +181,9 @@ class UserContactsComponent {
 
     let messageListener = (msg: p2p.U2UMessage, room: p2p.Room) => {
       for (let contact of this.contacts) {
-        if (contact.hasUnreadP2PMessage > 0) continue //1 or saved timestamp (both are > 0) not needed to be updated
+        if (contact.unreadStatus > 0) continue //1 or saved timestamp (both are > 0) not needed to be updated
         if (msg.fromPeerId == contact.publicKey) {
-          p2pMessaging.moment.getUnreadStatus(contact.publicKey).then(status => contact.hasUnreadP2PMessage = status)
+          p2pMessaging.moment.getUnreadStatus(contact.publicKey).then(status => contact.unreadStatus = status)
         }
       }
     }
@@ -318,15 +317,16 @@ class UserContactsComponent {
   updateUnreadStatuses() {
     let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey)
     if (activeContact) {
-      activeContact.hasUnreadP2PMessage = 1
+      activeContact.unreadStatus = 1
       this.p2pMessaging.moment.putUnreadStatus(activeContact.publicKey, 1)
     }
     for (const c of this.contacts) {
-      if (c.publicKey != activeContact?.publicKey && c.hasUnreadP2PMessage == 1) {
+      if (c.publicKey != activeContact?.publicKey && c.unreadStatus == 1) {
         this.p2pMessaging.moment.putUnreadStatus(c.publicKey, 0)
-        c.hasUnreadP2PMessage = 0
+        c.unreadStatus = 0
       }
     }
+    ContactService.contactsStatusesUpdated = true
   }
 
   init() {
@@ -344,7 +344,7 @@ class UserContactsComponent {
           if (status == 1 && contact.publicKey != this.activePublicKey) {
             this.p2pMessaging.moment.putUnreadStatus(contact.publicKey, 0)
           }
-          contact.hasUnreadP2PMessage = status == 1 ? 0 : status
+          contact.unreadStatus = status == 1 ? 0 : status
         })
       }
     })

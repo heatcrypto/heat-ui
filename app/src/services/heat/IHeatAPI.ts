@@ -1121,7 +1121,7 @@ interface IHeatMessageContact {
   cryptoAddresses?: currencyAddressMap[];
   newIncomingContact?: boolean;
   isP2POnlyContact?: boolean;
-  hasUnreadP2PMessage?: number; // 0: has no unread messages;
+  unreadStatus?: number; // 0: has no unread messages;
                                 // 1: active (selected) contact (also no unread messages);
                                 // message timestamp: has unread messages
 }

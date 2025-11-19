@@ -4,6 +4,8 @@ class ContactService extends EventEmitter {
 
   public static SAVE_CONTACT = 'SAVE_CONTACT'
 
+  public static contactsStatusesUpdated = false
+
   private static numbersOnly = /^[0-9]+$/;
   private p2pContactStore: Store;
   private latestTimestampStore: Store;
@@ -47,7 +49,6 @@ class ContactService extends EventEmitter {
             .map((contact) => {
               if (selectedContactPublicKey != contact.publicKey) {
                 contact['hasUnreadMessage'] = !contact.isP2POnlyContact && this.contactHasUnreadMessage(contact);
-                //contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
               }
               // contact['p2pStatus'] = this.p2pStatus(contact);
               return contact;
@@ -241,12 +242,6 @@ class ContactService extends EventEmitter {
   contactHasUnreadMessage(contact: IHeatMessageContact): boolean {
     // console.log(contact.account + " " +contact.publicName + " " + contact.timestamp + " " + this.latestTimestampStore.getNumber(contact.account, 0))
     return contact.timestamp > this.latestTimestampStore.getNumber(contact.account, 0);
-  }
-
-  contactHasUnreadP2PMessage(contact: IHeatMessageContact): boolean {
-    let p2pMessaging: P2PMessaging = heat.$inject.get('P2PMessaging')
-    let room = p2pMessaging.getOneToOneRoom(contact.publicKey, true)
-    return room?.hasUnreadMessage || false
   }
 
 }

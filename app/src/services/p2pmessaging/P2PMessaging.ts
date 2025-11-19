@@ -51,7 +51,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   private signalingProtocol: p2p.SignalingProtocol;
 
   /**
-   * Contact's unread status 'hasUnreadP2PMessage': 0 - contact has no unread messages, 1 - active contact (selected contact), message timestamp - has p2p unread messages
+   * Contact's unread status 'unreadStatus': 0 - contact has no unread messages, 1 - active contact (selected contact), message timestamp - has p2p unread messages
    * Updating unread rooms statuses:
    *   find not active contact(s) where pub key == "1" and update it to "0" so it is allowed to be updated (to 2/3/4) on new message;
    *   update active contact (public key) to "1" and saved to db. On new message the contact marked "1" is not updated to "unread";
@@ -63,11 +63,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   moment = {
     getUnreadStatus: (key) => db.getValue(`unread-status.${this.user.account}.${db.compactHash(key)}`).then(r => r?.value),
     putUnreadStatus: (key, status) => db.putValue(`unread-status.${this.user.account}.${db.compactHash(key)}`, status),
-
-    registerLastMessageTime: (roomKey) => db.putValue(roomKey + ".last-message-time", Date.now()),
-    getLastMessageTime: (roomKey) => db.getValue(roomKey + ".last-message-time").then(r => r?.value),
-    registerSeenTime: (roomKey, timestamp: number) => db.putValue(roomKey + ".seen-time", timestamp || (Date.now() - 500)),
-    getSeenTime: (roomKey) => db.getValue(roomKey + ".seen-time").then(r => r?.value)
   }
 
   constructor(private settings: SettingsService,
@@ -142,6 +137,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
+    this.displayNewMessagePopup(msg, room)
     this.contactService.getContacts().then(contacts => {
       let c = contacts.find(v => v.publicKey == msg.fromPeerId)
       if (!c) {
@@ -351,8 +347,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     room.onCloseDataChannel = peerId => {
       this.emit(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, room, peerId);
     };
-    this.moment.getLastMessageTime(room.key).then(t => room.lastIncomingMessageTimestamp = t || 0)
-    room.hasUnreadMessage  // to read the value from db
     return room
   }
 
@@ -426,31 +420,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       return peer && peer.isConnected();
     }
     return false;
-  }
-
-  /**
-   * The seen time is needed to display mark for contact when it receives the new unread messages.
-   */
-  updateSeenTime(roomKey: string, timestamp?: number) {
-    let p = Promise.resolve()
-    if (roomKey) {
-      p = p.then(() => this.moment.registerSeenTime(roomKey, timestamp))
-    }
-
-    p.then(() => {
-      //update read status on all rooms
-      let unreadRooms = [];
-      this.connector?.rooms.forEach(room => {
-        if (room.hasUnreadMessage) {
-          unreadRooms.push(room);
-        }
-      });
-      let nowHasUnreadMessage = unreadRooms.length > 0;
-      if (nowHasUnreadMessage != this.hasUnreadMessage) {
-        this.hasUnreadMessage = nowHasUnreadMessage;
-        this.emit(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadRooms);
-      }
-    })
   }
 
   checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean,
