@@ -35,7 +35,7 @@ module p2p {
     text: string
     data?: any
     fromPeerId?: string
-    roomName?: string
+    roomKey?: string
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
     transport?: TransportType
 
@@ -84,7 +84,8 @@ module p2p {
    */
   export class Room {
 
-    constructor(private messaging: P2PMessaging,
+    constructor(public key: string,
+                private messaging: P2PMessaging,
                 private connector: p2p.P2PConnector,
                 private user: UserService,
                 public memberPublicKeys: string[]) {
@@ -97,32 +98,9 @@ module p2p {
 
     lastIncomingMessageTimestamp: number = 0
 
-    private _key: string
-
     private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>()
     private messageHistory: MessageHistory
     private _hasUnreadMessage: boolean
-
-    /* Key replaces the name of room. Name calculation:
-    let arr = [heat.crypto.getAccountIdFromPublicKey(this.user.publicKey)]
-    arr.push(...heat.crypto.getAccountIdFromPublicKey(this.memberPublicKeys))
-    arr.sort()
-    return arr.join('-')
-     */
-    get key(): string {
-      // hash('sharedSecretPeer')
-      if (!this._key) {
-        if (this.memberPublicKeys.length == 1) {
-          let peerPubKeyBytes = converters.hexStringToByteArray(this.memberPublicKeys[0])
-          let userPrivateKeyBytes = converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
-          let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, peerPubKeyBytes)
-          this._key= db.bytesToCompactHash(sharedSecret)
-        } else {
-          // todo key is provided by creator of multiuser chat
-        }
-      }
-      return this._key
-    }
 
     get hasUnreadMessage() {
       this.messaging.moment.getSeenTime(this.key).then(t => this._hasUnreadMessage = this.lastIncomingMessageTimestamp > (t || 0))
@@ -143,7 +121,7 @@ module p2p {
      * Returns count of peers to which message sent.
      */
     sendMessage(message: U2UMessage): number {
-      let result = this.connector.sendMessage(this._key, message)
+      let result = this.connector.sendMessage(this.key, message)
       this.registerInHistory(true, message, result)
       return result.count
     }
@@ -171,7 +149,7 @@ module p2p {
       }).then(() => {
         let item: MessageHistoryItem = {
           msgId: message.id,
-          roomKey: this._key,
+          roomKey: this.key,
           type: message.type,
           timestamp: message.timestamp,
           receiptTimestamp: Date.now(),
@@ -215,13 +193,18 @@ module p2p {
     }
 
     onMessageInternal(message: U2UMessage) {
-      this.registerInHistory(false, message)
       if (message.type == "chat" || message.type == "file") {
-        this.lastIncomingMessageTimestamp = Date.now();
+        this.messaging.moment.getUnreadStatus(message.fromPeerId).then(status => {
+          // status 1 means active contact, status positive number means timestamp (already has unread message), both not need status unread
+          // status undefined or 0 should be updated to unread status (timestamp of message)
+          if (!status) this.messaging.moment.putUnreadStatus(message.fromPeerId, message.timestamp)
+        })
       }
-      if (this.onMessage) {
-        this.onMessage(message);
-      }
+      return this.registerInHistory(false, message).then(() => {
+        if (this.onMessage) {
+          this.onMessage(message)
+        }
+      })
     }
 
     onNewMessageHistoryItem: (item: MessageHistoryItem) => any;

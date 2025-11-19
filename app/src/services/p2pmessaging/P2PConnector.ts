@@ -640,7 +640,8 @@ module p2p {
 
         let room: Room = this.rooms.get(roomName);
         if (room) {
-          this.processRoomMessage(msg, room, peerId);
+          let problem = this.processRoomMessage(msg, room, peerId)
+          if (problem) throw new Error(problem)
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendWebsocketMessage(Protocol.signaling, [{room: roomName}, msg]);
@@ -693,7 +694,13 @@ module p2p {
 
     processRoomMessage(msg: U2UMessage, room: Room, sender: string) {
       msg.fromPeerId = sender;
-      msg.roomName = room.key;
+      msg.roomKey = room.key;
+
+      let validateResult = this.validateMessage(msg)
+      if (validateResult) {
+        return `Message validation error: ${validateResult}`
+      }
+
       room.onMessageInternal(msg);
       this.messenger.onMessage(msg, room);
     }
@@ -721,6 +728,9 @@ module p2p {
       }
     }
 
+    private validateMessage(msg: p2p.U2UMessage) {
+      if (msg.timestamp <= 0) return "wrong timestamp"
+    }
 
     private request(request: () => void, handleResponse: (msg) => any): Promise<any> {
       let p = new Promise<any>((resolve, reject) => {
@@ -738,7 +748,6 @@ module p2p {
       });
       return promiseTimeout(3000, p);
     }
-
   }
 
   function promiseTimeout(ms, promise) {

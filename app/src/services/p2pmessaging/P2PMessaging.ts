@@ -50,11 +50,24 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   u2uProtocol: p2p.U2UProtocol;
   private signalingProtocol: p2p.SignalingProtocol;
 
+  /**
+   * Contact's unread status 'hasUnreadP2PMessage': 0 - contact has no unread messages, 1 - active contact (selected contact), message timestamp - has p2p unread messages
+   * Updating unread rooms statuses:
+   *   find not active contact(s) where pub key == "1" and update it to "0" so it is allowed to be updated (to 2/3/4) on new message;
+   *   update active contact (public key) to "1" and saved to db. On new message the contact marked "1" is not updated to "unread";
+   *   on new message the contact marked not "1" is updated to "message timestamp";
+   *   contact marked >"1" are unread.
+   *
+   * @param reset
+   */
   moment = {
+    getUnreadStatus: (key) => db.getValue(`unread-status.${this.user.account}.${db.compactHash(key)}`).then(r => r?.value),
+    putUnreadStatus: (key, status) => db.putValue(`unread-status.${this.user.account}.${db.compactHash(key)}`, status),
+
     registerLastMessageTime: (roomKey) => db.putValue(roomKey + ".last-message-time", Date.now()),
-    getLastMessageTime: (roomKey) => db.getValue(roomKey + ".last-message-time").then(r => r.value),
+    getLastMessageTime: (roomKey) => db.getValue(roomKey + ".last-message-time").then(r => r?.value),
     registerSeenTime: (roomKey, timestamp: number) => db.putValue(roomKey + ".seen-time", timestamp || (Date.now() - 500)),
-    getSeenTime: (roomKey) => db.getValue(roomKey + ".seen-time").then(r => r.value)
+    getSeenTime: (roomKey) => db.getValue(roomKey + ".seen-time").then(r => r?.value)
   }
 
   constructor(private settings: SettingsService,
@@ -129,38 +142,32 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
-    this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
-    //this.seenP2PMessageTimestampStore.put(room.key + "_last-message-time", Date.now());
-    this.moment.registerLastMessageTime(room.key).then(() => {
-      this.updateSeenTime(null);
-      this.displayNewMessagePopup(msg, room);
+    this.contactService.getContacts().then(contacts => {
+      let c = contacts.find(v => v.publicKey == msg.fromPeerId)
+      if (!c) {
+        let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+        if (senderAccount) {
+          this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
+        }
+      }
     }).then(() => {
-      return this.contactService.getContacts().then(contacts => {
-        let c = contacts.find(v => v.publicKey == msg.fromPeerId)
-        if (!c) {
-          let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
-          if (senderAccount) {
-            this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
+      if (msg.type == "contactUpdate") {
+        let parsedMessage = JSON.parse(msg.text)
+        let contactAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+        let publicKey = msg.fromPeerId
+        this.heat.api.searchPublicNames(contactAccount, 0, 100).then((accounts) => {
+          let expectedAccount = accounts.find(value => value.publicKey == publicKey)
+          if (expectedAccount) {
+            let contactUtils = <ContactService>heat.$inject.get('contactService')
+            contactUtils.updateContactCurrencyAddress(
+                contactAccount, parsedMessage.name, parsedMessage.address,
+                publicKey, expectedAccount.publicName, -Date.now()
+            )
           }
-        }
-      }).then(() => {
-        if (msg.type == "contactUpdate") {
-          let parsedMessage = JSON.parse(msg.text)
-          let contactAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
-          let publicKey = msg.fromPeerId
-          this.heat.api.searchPublicNames(contactAccount, 0, 100).then((accounts)=> {
-            let expectedAccount = accounts.find(value => value.publicKey == publicKey)
-            if (expectedAccount) {
-              let contactUtils = <ContactService>heat.$inject.get('contactService')
-              contactUtils.updateContactCurrencyAddress(
-                  contactAccount, parsedMessage.name, parsedMessage.address,
-                  publicKey, expectedAccount.publicName, -Date.now()
-              )
-            }
-          })
-        }
-      }).catch(reason => console.error(reason))
-    })
+        })
+      }
+    }).then(() => this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room))
+    .catch(reason => console.error(reason))
   }
 
   sendFile(messageId: string, file: File, recipientPublicKey: string) {
@@ -288,11 +295,11 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   getOneToOneRoom(peerId: string, required?: boolean): p2p.Room {
-    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-    let room = this.connector?.rooms.get(roomName);
+    let roomKey = this.generateOneToOneRoomKey(peerId);
+    let room = this.connector?.rooms.get(roomKey);
     if (!room && required) {
-      room = this.setupRoom(new p2p.Room(this, this.connector, this.user, [peerId]));
-      this.connector.rooms.set(roomName, room);
+      room = this.setupRoom(new p2p.Room(this.generateOneToOneRoomKey(peerId), this, this.connector, this.user, [peerId]));
+      this.connector.rooms.set(roomKey, room);
     }
     if (room && room.getAllPeers().size <= 1) {
       //todo check is opened channel
@@ -311,11 +318,11 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     if (this.onlineStatus == "offline") {
       return null;
     }
-    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-    let room = this.connector?.rooms.get(roomName);
+    let roomKey = this.generateOneToOneRoomKey(peerId);
+    let room = this.connector?.rooms.get(roomKey);
     if (!room) {
-      room = this.setupRoom(new p2p.Room(this, this.connector, this.user, [peerId]));
-      this.connector?.rooms.set(roomName, room);
+      room = this.setupRoom(new p2p.Room(this.generateOneToOneRoomKey(peerId), this, this.connector, this.user, [peerId]));
+      this.connector?.rooms.set(roomKey, room);
     }
     if (room.state.entered == "not") {
       room.enter();
@@ -349,16 +356,17 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return room
   }
 
-  private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
-    let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
-    arr.sort();
-    return arr[0] + "-" + arr[1];
+  private generateOneToOneRoomKey(contactPublicKey: string) {
+    let peerPubKeyBytes = converters.hexStringToByteArray(contactPublicKey)
+    let userPrivateKeyBytes = converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
+    let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, peerPubKeyBytes)
+    return db.bytesToCompactHash(sharedSecret)
   }
 
   private createRoomOnIncomingCall(roomName: string, peerId: string) {
     let room = this.connector?.rooms.get(roomName);
     if (!room) {
-      room = this.setupRoom(new p2p.Room(this, this.connector, this.user, [peerId]));
+      room = this.setupRoom(new p2p.Room(this.generateOneToOneRoomKey(peerId), this, this.connector, this.user, [peerId]));
       this.connector?.rooms.set(roomName, room);
     }
     return room;

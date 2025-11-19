@@ -68,7 +68,7 @@
             <md-icon md-font-library="material-icons" ng-class="{'has-unread-message': contact.hasUnreadMessage}">fiber_manual_record</md-icon>
           </div>-->
           <span ng-if="contact.hasUnreadMessage" class="unread-symbol">*</span>
-          <span ng-if="contact.hasUnreadP2PMessage" class="p2p-unread-symbol">*</span>
+          <span ng-if="contact.hasUnreadP2PMessage > 1" class="p2p-unread-symbol">*</span>
           <span ng-if="vm.p2pMessaging.contactStatus(contact.publicKey)=='channelOpened'" class="channelopened-status-symbol">●</span>
           <span ng-if="vm.p2pMessaging.contactStatus(contact.publicKey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online'"
                 class="roomregistered-status-symbol">●</span>
@@ -144,7 +144,7 @@ class UserContactsComponent {
         //light refresh
         for (const c of this.contacts) {
           c['hasUnreadMessage'] = !c.isP2POnlyContact && contactService.contactHasUnreadMessage(c)
-          c['hasUnreadP2PMessage'] = contactService.contactHasUnreadP2PMessage(c)
+          //c['hasUnreadP2PMessage'] = contactService.contactHasUnreadP2PMessage(c)
         }
       }
     }, 2 * 1000)
@@ -180,15 +180,15 @@ class UserContactsComponent {
 
     //let myRoom = this.p2pMessaging.register();
 
-    let messageListener = (msg: any, room: p2p.Room) => {
+    let messageListener = (msg: p2p.U2UMessage, room: p2p.Room) => {
       for (let contact of this.contacts) {
-        if (this.contactService.contactHasUnreadP2PMessage(contact)) {
-          this.refreshContacts();
-          return;
+        if (contact.hasUnreadP2PMessage > 0) continue //1 or saved timestamp (both are > 0) not needed to be updated
+        if (msg.fromPeerId == contact.publicKey) {
+          p2pMessaging.moment.getUnreadStatus(contact.publicKey).then(status => contact.hasUnreadP2PMessage = status)
         }
       }
-    };
-    this.p2pMessaging.on(P2PMessaging.EVENT_NEW_MESSAGE, messageListener);
+    }
+    this.p2pMessaging.on(P2PMessaging.EVENT_NEW_MESSAGE, messageListener)
 
     let channelListener: IEventListenerFunction = (room: p2p.Room, peerId: string) => {
       this.refresh();
@@ -296,19 +296,18 @@ class UserContactsComponent {
       }
     }
 
+    if (this.activePublicKey && this.activePublicKey != "0") {
+      let room = this.p2pMessaging.enterRoom(this.activePublicKey)
+      if (room) {
+      }
+    }
+
+    setTimeout(() => this.updateUnreadStatuses(), 200)
+
     if (!this.activePublicKey || this.activePublicKey == "0") {
       if (this.contacts[0] && this.contacts[0].publicKey != "0") {
         this.$location.path(`/messenger/${this.contacts[0].publicKey}`)
       }
-    }
-
-    if (this.activePublicKey && this.activePublicKey != "0") {
-      let room = this.p2pMessaging.enterRoom(this.activePublicKey);
-    }
-
-    let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey);
-    if (activeContact) {
-      activeContact["hasUnreadP2PMessage"] = false;
     }
   }
 
@@ -316,14 +315,38 @@ class UserContactsComponent {
     return this.contacts.find(contact => contact.publicKey == this.activePublicKey);
   }
 
+  updateUnreadStatuses() {
+    let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey)
+    if (activeContact) {
+      activeContact.hasUnreadP2PMessage = 1
+      this.p2pMessaging.moment.putUnreadStatus(activeContact.publicKey, 1)
+    }
+    for (const c of this.contacts) {
+      if (c.publicKey != activeContact?.publicKey && c.hasUnreadP2PMessage == 1) {
+        this.p2pMessaging.moment.putUnreadStatus(c.publicKey, 0)
+        c.hasUnreadP2PMessage = 0
+      }
+    }
+  }
+
   init() {
-    setTimeout(() => this.refreshContacts(), 300)
+    setTimeout(() => this.refreshContacts(), 100)
   }
 
   refreshContacts() {
     return this.contactService.getContacts(this.activePublicKey).then(contacts => {
       this.contacts = contacts
       if (this.getActivePublicKeyParam() == "0") this.updateActivePublicKey()
+
+      // fill contacts unreadStatuses
+      for (let contact of this.contacts) {
+        this.p2pMessaging.moment.getUnreadStatus(contact.publicKey).then(status => {
+          if (status == 1 && contact.publicKey != this.activePublicKey) {
+            this.p2pMessaging.moment.putUnreadStatus(contact.publicKey, 0)
+          }
+          contact.hasUnreadP2PMessage = status == 1 ? 0 : status
+        })
+      }
     })
   }
 

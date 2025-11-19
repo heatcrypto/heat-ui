@@ -47,7 +47,7 @@ class ContactService extends EventEmitter {
             .map((contact) => {
               if (selectedContactPublicKey != contact.publicKey) {
                 contact['hasUnreadMessage'] = !contact.isP2POnlyContact && this.contactHasUnreadMessage(contact);
-                contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
+                //contact['hasUnreadP2PMessage'] = this.contactHasUnreadP2PMessage(contact);
               }
               // contact['p2pStatus'] = this.p2pStatus(contact);
               return contact;

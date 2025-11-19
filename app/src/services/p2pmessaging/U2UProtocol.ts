@@ -113,7 +113,8 @@ module p2p {
         let chatMessage: U2UMessage = JSON.parse(<string>decrypted)
         chatMessage.transport = "server";
 
-        this.connector.processRoomMessage(chatMessage, room, msg.sender);
+        let problem = this.connector.processRoomMessage(chatMessage, room, msg.sender)
+        if (problem) throw new Error(problem)
 
         //response to server that message is delivered by the client app
         this.connector.sendWebsocketMessage(Protocol.U2U, [{
