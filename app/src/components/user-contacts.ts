@@ -140,13 +140,13 @@ class UserContactsComponent {
       if (this.needRefreshed) {
         this.needRefreshed = false
         this.refresh()
-      } else {
+      } /*else {
         //light refresh
         for (const c of this.contacts) {
           c['hasUnreadMessage'] = !c.isP2POnlyContact && contactService.contactHasUnreadMessage(c)
         }
-      }
-    }, 2 * 1000)
+      }*/
+    }, 4 * 1000)
 
     $scope.$on('$destroy', () => $interval.cancel(interval))
 
@@ -167,15 +167,17 @@ class UserContactsComponent {
     this.contactService.on(ContactService.SAVE_CONTACT, contactListener)
 
     if (user.unlocked) {
-      this.init();
+      this.init()
     } else {
-      let listener = () => { this.init() };
-      user.on(UserService.EVENT_UNLOCKED, listener);
-      $scope.$on('$destroy',()=>user.removeListener(UserService.EVENT_UNLOCKED, listener));
+      let listener = () => {
+        this.init()
+      }
+      user.on(UserService.EVENT_UNLOCKED, listener)
+      $scope.$on('$destroy', () => user.removeListener(UserService.EVENT_UNLOCKED, listener))
     }
 
-    $scope.$on('$locationChangeSuccess', () => { this.updateActivePublicKey() });
-    this.updateActivePublicKey();
+    $scope.$on('$locationChangeSuccess', () => { this.updateActivePublicKey() })
+    this.updateActivePublicKey()
 
     //let myRoom = this.p2pMessaging.register();
 
@@ -201,6 +203,8 @@ class UserContactsComponent {
       this.contactService.removeListener(ContactService.SAVE_CONTACT, contactListener)
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, channelListener)
       this.p2pMessaging.removeListener(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, channelListener)
+
+      ContactService.contactsActive = false // now all contacts accept unread status
     })
 
     this.fetchCryptoAddresses('BTC')
@@ -302,6 +306,7 @@ class UserContactsComponent {
     }
 
     setTimeout(() => this.updateUnreadStatuses(), 200)
+    ContactService.contactsActive = true
 
     if (!this.activePublicKey || this.activePublicKey == "0") {
       if (this.contacts[0] && this.contacts[0].publicKey != "0") {
@@ -315,18 +320,18 @@ class UserContactsComponent {
   }
 
   updateUnreadStatuses() {
-    let activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey)
-    if (activeContact) {
-      activeContact.unreadStatus = 1
-      this.p2pMessaging.unreadStatusAccessor.putUnreadStatus(activeContact.publicKey, 1)
-    }
+    let activeContact
+      activeContact = this.contacts.find(contact => contact.publicKey == this.activePublicKey)
+      if (activeContact) {
+        activeContact.unreadStatus = 1
+        this.p2pMessaging.unreadStatusAccessor.putUnreadStatus(activeContact.publicKey, 1)
+      }
     for (const c of this.contacts) {
-      if (c.publicKey != activeContact?.publicKey && c.unreadStatus == 1) {
+      if (c.unreadStatus == 1 && c.publicKey != activeContact?.publicKey) {
         this.p2pMessaging.unreadStatusAccessor.putUnreadStatus(c.publicKey, 0)
         c.unreadStatus = 0
       }
     }
-    ContactService.contactsStatusesUpdated = true
   }
 
   init() {

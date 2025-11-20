@@ -4,7 +4,7 @@ class ContactService extends EventEmitter {
 
   public static SAVE_CONTACT = 'SAVE_CONTACT'
 
-  public static contactsStatusesUpdated = false
+  public static contactsActive = false
 
   private static numbersOnly = /^[0-9]+$/;
   private p2pContactStore: Store;
@@ -46,13 +46,13 @@ class ContactService extends EventEmitter {
 
         contacts = contacts
             .filter(contact => contact.publicKey && contact.account != this.user.account)
-            .map((contact) => {
+            /*.map((contact) => {
               if (selectedContactPublicKey != contact.publicKey) {
                 contact['hasUnreadMessage'] = !contact.isP2POnlyContact && this.contactHasUnreadMessage(contact);
               }
               // contact['p2pStatus'] = this.p2pStatus(contact);
               return contact;
-            })
+            })*/
             .sort(
                 (c1, c2) =>
                     (c2.activityTimestamp ? Math.abs(c2.activityTimestamp) : 0) - (c1.activityTimestamp ? Math.abs(c1.activityTimestamp) : 0));

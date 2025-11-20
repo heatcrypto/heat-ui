@@ -186,7 +186,7 @@ module p2p {
 
     onMessageInternal(message: U2UMessage) {
       if (message.type == "chat" || message.type == "file") {
-        if (ContactService.contactsStatusesUpdated) {
+        if (ContactService.contactsActive) {
           this.messaging.unreadStatusAccessor.getUnreadStatus(message.fromPeerId).then(status => {
             // status 1 means active contact, status positive number means timestamp (already has unread message), both not need status unread
             // status undefined or 0 should be updated to unread status (timestamp of message)
