@@ -30,7 +30,7 @@ module p2p {
     timestamp: number
     receiptTimestamp?: number
     fromPeer: string
-    content: string
+    content?: string
     status: MessageStatus,
     transport?: TransportType
     selected?: boolean //  used in UI
@@ -118,8 +118,12 @@ module p2p {
       return db.getMessage(msgId).then(v => !!v)
     }
 
+    public getMessagesScrollable(roomKey: string, offset: number, limit: number): Promise<any> {
+      return db.getMessagesScrollable(roomKey, offset, limit).then((messages: any[]) => messages.map(v => this.decrypt(v)))
+    }
+
     public add(item: MessageHistoryItem) {
-      return db.addMessage(item)
+      return db.addMessage(this.encrypt(item))
     }
 
     public updateMessageStatus(msgId: string, data: any) {
@@ -144,6 +148,25 @@ module p2p {
 
     clear() {
       return db.removeMessages(this.room.key)
+    }
+
+    private encrypt(item: MessageHistoryItem) {
+      let updatedItem: any = Object.assign({}, item)
+      updatedItem.encrypted = heat.crypto.encryptMessage(item.content, this.user.publicKey, this.user.secretPhrase)
+      delete updatedItem.content
+      return updatedItem
+    }
+
+    private decrypt(item: MessageHistoryItem) {
+      let encrypted: heat.crypto.IEncryptedMessage = item['encrypted']
+      if (!encrypted) return item
+      try {
+        item.content = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase)
+      } catch (e) {
+        console.error('Managed error: ' + e)
+      }
+      delete item['encrypted']
+      return item
     }
 
   }

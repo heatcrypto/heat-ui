@@ -137,8 +137,7 @@
       <div class="header">
         <b ng-if="!item.outgoing">{{item.senderAccount}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::item.dateFormatted}}
       </div>
-      <div ng-if="!item.status.fileIndicator" class="message-content">{{item.content}}</div>
-      <div ng-if="item.status.fileIndicator" class="message-content">{{item.content}}</div>
+      <div class="message-content">{{item.content}}</div>
       <div ng-if="item.status.fileIndicator == 1 || item.status.fileIndicator == 4">
           <a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile(item)">download</a>
       </div>
@@ -330,7 +329,7 @@ class P2PMessagesDataSource {
     let limit = index < 0 ? count + index : count
     if (limit == 0) success([])
 
-    db.getMessagesScrollable(this.roomKey, offset, limit)
+    this.messageHistory.getMessagesScrollable(this.roomKey, offset, limit)
         .then((items: []) => {
           // console.log(index, count, ' | ', offset, limit, ' | ', items.length)
           success(items.map(v => this.processItem(v)))
