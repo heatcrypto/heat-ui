@@ -150,23 +150,39 @@ module p2p {
       return db.removeMessages(this.room.key)
     }
 
+    /**
+     * Remain several item's fields, other fields are encrypted and assigned to field 'encrypted'.
+     * Note, if message record mutable (can be updated in the db) the updatable fields MUST be not encrypted.
+     */
     private encrypt(item: MessageHistoryItem) {
-      let updatedItem: any = Object.assign({}, item)
-      updatedItem.encrypted = heat.crypto.encryptMessage(item.content, this.user.publicKey, this.user.secretPhrase)
-      delete updatedItem.content
-      return updatedItem
+      let data = Object.assign({}, item)
+      delete data.msgId
+      delete data.roomKey
+      delete data.timestamp
+      delete data.status
+      let dataStr = JSON.stringify(data)
+      return {
+        msgId: item.msgId,
+        roomKey: item.roomKey,
+        timestamp: item.timestamp,
+        status: item.status,
+        encrypted: heat.crypto.encryptMessage(dataStr, this.user.publicKey, this.user.secretPhrase)
+      }
     }
 
-    private decrypt(item: MessageHistoryItem) {
-      let encrypted: heat.crypto.IEncryptedMessage = item['encrypted']
-      if (!encrypted) return item
+    private decrypt(encryptedItem) {
+      let v
       try {
-        item.content = heat.crypto.decryptMessage(encrypted.data, encrypted.nonce, this.user.publicKey, this.user.secretPhrase)
+        let x: heat.crypto.IEncryptedMessage = encryptedItem.encrypted
+        let s = heat.crypto.decryptMessage(x.data, x.nonce, this.user.publicKey, this.user.secretPhrase)
+        v = JSON.parse(s)
+        delete encryptedItem.encrypted
+        v = Object.assign(v, encryptedItem)
       } catch (e) {
         console.error('Managed error: ' + e)
+        return encryptedItem
       }
-      delete item['encrypted']
-      return item
+      return v
     }
 
   }

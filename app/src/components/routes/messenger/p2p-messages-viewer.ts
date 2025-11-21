@@ -192,7 +192,7 @@ class P2PMessagesViewerComponent {
     this.datasource = new P2PMessagesDataSource(r.key, r.getMessageHistory(), item => this.processItem(item));
 
     // scroll to the end of list
-    db.getMessagesScrollableCount(this.room.key).then(c => {
+    db.getMessagesCount(this.room.key).then(c => {
       if (c && this.$scope.adapter) this.$scope.adapter.reload(c)
     })
 

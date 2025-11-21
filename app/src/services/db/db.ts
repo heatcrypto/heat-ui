@@ -294,7 +294,7 @@ namespace db {
             .catch(error => {console.error("Error getting records:", error)})
     }
 
-    export function getMessagesScrollableCount(roomKey: string): Promise<any> {
+    export function getMessagesCount(roomKey: string): Promise<any> {
         return db0.message
             .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
             .count()
