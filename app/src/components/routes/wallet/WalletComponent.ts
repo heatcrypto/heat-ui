@@ -956,7 +956,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   // @click
   exportWallet(onlyData?: boolean) {
     if (onlyData) return null
-    db.exportDatabase().then(blob => wlt.saveFile(blob, "heat.wallet"))
+    let suffix = heat.isTestnet ? 'testnet' : 'mainnet'
+    db.exportDatabase().then(blob => wlt.saveFile(blob, `heat.${suffix}.wallet`))
 
     /*
     let accountCurrencies: Map<string, []> = new Map<string, []>()

@@ -335,7 +335,7 @@ namespace db {
         return db0.import(blob)
     }
 
-    export function checkDatabaseEmpty() {
+    export function checkDatabaseEmpty(): Promise<any> {
         return db0.walletEntry.count().then(n => n == 0)
     }
 
