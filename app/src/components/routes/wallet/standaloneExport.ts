@@ -3,7 +3,7 @@
 namespace wltStandalone {
 
     export function exportLocalstorage() {
-        localStorage.setItem("heatwallet-raw-data", "1")
+        localStorage.setItem("heatwallet-raw-data", "1") // indicator for importing to detect what json (standard or this full storage) is used
         let dataStr = JSON.stringify(localStorage, null, 2)
         const anchorElement = document.createElement('a')
         let blob = new Blob([dataStr], {type: "octet/stream"})

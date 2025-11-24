@@ -22,7 +22,6 @@
  * */
 
 ///<reference path="./WalletComponentAbstract.ts" />
-import importDatabase = db.importDatabase;
 
 @RouteConfig('/wallet')
 @Component({
@@ -685,8 +684,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
                 })
               })
             }
-          } else {
+          } else if (data['formatName'] == 'dexie')  {
             this.importDatabaseFile(file, fileContents)
+          } else {
+            return 'Invalid wallet file'
           }
           p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
         })
@@ -720,7 +721,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         })
       }
     })
-
   }
 
   remove($event, entry: wlt.WalletEntry) {
