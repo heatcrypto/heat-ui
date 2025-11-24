@@ -292,7 +292,7 @@ namespace wlt {
         component.flatten()
 
         rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress).then(value => {
-          shouldBeSaved = component.exportWallet(true)
+          component.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
         })
 
         return newCurrencyBalance

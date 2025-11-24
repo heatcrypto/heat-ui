@@ -150,7 +150,11 @@ class LocalKeyStoreService {
     return walletFileData;
   }
 
-  /* Returns array of wallet entries added */
+  public importDatabase(blob: Blob) {
+    db.importDatabase(blob)
+  }
+
+    /* Returns array of wallet entries added */
   public import(walletFileData: IHeatWalletFile) : Promise<Array<ILocalKeyEntry>> {
 
     let added : Array<ILocalKeyEntry> = []

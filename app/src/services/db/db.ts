@@ -1,5 +1,9 @@
 namespace db {
 
+    export let dbMainnet
+    export let dbTestnet
+    export let db0
+
     let initDb = (name: string) => {
         let dexie = new globalThis.Dexie(name)
 
@@ -19,10 +23,13 @@ namespace db {
         return dexie
     }
 
-    export const dbMainnet = initDb("Heatwallet")
-    export const dbTestnet = initDb("Heatwallet-testnet")
+    let superInit = () => {
+        dbMainnet = initDb("Heatwallet")
+        dbTestnet = initDb("Heatwallet-testnet")
+        return db0 = heat.isTestnet ? dbTestnet : dbMainnet
+    }
 
-    export const db0 = heat.isTestnet ? dbTestnet : dbMainnet
+    superInit()
 
     export function compactHash(str: string): string {
         return converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(str))
@@ -318,4 +325,21 @@ namespace db {
             .catch(error => console.error(`Bulk deletion failed: ${error}`))
     }
 
+// --------------------------------------------------------------------------------
+
+    export function exportDatabase(): Promise<Blob> {
+        return db0.export()
+    }
+
+    export function importDatabase(blob): Promise<any> {
+        return db0.import(blob)
+    }
+
+    export function checkDatabaseEmpty() {
+        return db0.walletEntry.count().then(n => n == 0)
+    }
+
+    export function deleteDatabase() {
+        return db0.delete().then(() => superInit())
+    }
 }

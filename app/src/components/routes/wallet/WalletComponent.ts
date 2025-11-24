@@ -22,6 +22,7 @@
  * */
 
 ///<reference path="./WalletComponentAbstract.ts" />
+import importDatabase = db.importDatabase;
 
 @RouteConfig('/wallet')
 @Component({
@@ -576,7 +577,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       createBCHAccount($event, this)
     } else if (selected === 'HEAT') {
       createHEATAccount($event, this)
-      wlt.shouldBeSaved = this.exportWallet(true)
+      this.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -650,19 +651,20 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   pageAddFileInputChange(files) {
     if (files && files[0]) {
+      let file = files[0]
       let reader = new FileReader()
-      reader.onload = () => {
+      reader.onload = (e) => {
         this.$scope.$evalAsync(() => {
           let fileContents = reader.result
           let data = this.walletFile.parseJSON(<string>fileContents)
           let p = Promise.resolve("Nothing imported")
-          //let resultMessage = "Nothing imported"
-          if (data && data["heatwallet-raw-data"]) {
+          if (!data) return
+          if (data["heatwallet-raw-data"]) {
             //resultMessage = this.walletFile.importRawData(data)
             //resultMessage += ".  The app will now restart..."
             p = p.then(s => this.walletFile.importRawData(data) + ".  The app will now restart...")
             setTimeout(() => window.location.reload(), 4000)
-          } else {
+          } else if (data['entries'] && data['version']) {
             let wallet = this.walletFile.createFromText(data)
             if (wallet) {
               p = p.then(s => {
@@ -683,12 +685,42 @@ class WalletComponent extends wlt.WalletComponentAbstract {
                 })
               })
             }
+          } else {
+            this.importDatabaseFile(file, fileContents)
           }
           p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
         })
       }
-      reader.readAsText(files[0])
+      reader.readAsText(file)
     }
+  }
+
+  private importDatabaseFile(file, fileContent) {
+    let doWork = () => {
+      const blob = new Blob([fileContent], { type: file.type })
+      db.importDatabase(blob).then(() => {
+        setTimeout(() => window.location.reload(), 4000)
+        this.$mdToast.show(this.$mdToast.simple().textContent('Data is imported. The app will now restart...').hideDelay(7000))
+      }).catch(reason => {
+        let s = `Import error ${reason}`
+        this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+      })
+    }
+
+    db.checkDatabaseEmpty().then(isEmpty => {
+      if (isEmpty) {
+        doWork()
+      } else {
+        dialogs.confirm('Import wallet database',
+            'Detected not empty database in this app. It will be cleared and filled from the file').then(() => {
+              db.deleteDatabase().then(() => doWork()).catch(reason => {
+                let s = `Error ${reason}`
+                this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+              })
+        })
+      }
+    })
+
   }
 
   remove($event, entry: wlt.WalletEntry) {
@@ -923,6 +955,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   // @click
   exportWallet(onlyData?: boolean) {
+    if (onlyData) return null
+    db.exportDatabase().then(blob => wlt.saveFile(blob, "heat.wallet"))
+
+    /*
     let accountCurrencies: Map<string, []> = new Map<string, []>()
     let store = wlt.getStore()
     this.entries.forEach(entry => {
@@ -951,7 +987,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     if (onlyData) return blob
 
-    wlt.saveFile(blob, "heat.wallet")
+    wlt.saveFile(blob, "heat.wallet")*/
   }
 
 }
