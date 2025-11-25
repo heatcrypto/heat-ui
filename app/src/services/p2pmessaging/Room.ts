@@ -35,7 +35,7 @@ module p2p {
     text: string
     data?: any
     fromPeerId?: string
-    roomName?: string
+    roomKey?: string
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
     transport?: TransportType
 
@@ -78,15 +78,15 @@ module p2p {
   }
 
   /**
-   * Room it is the way to connect peers. When two peers (client apps) will create the room object with the same name
+   * Room it is the way to connect each to each peers in the group. When two peers (client apps) will create the room object with the same name
    * they will get the WebRTC channel between each other (if signaling happened succesfully).
-   * The room property peers may no contains entry of peer until the peer enter the room in his application.
+   * The peer is added to the property room.peers when the peer is entered room at his side (in his app).
    */
   export class Room {
 
-    constructor(public name: string,
-                private connector: P2PConnector,
-                private storage: StorageService,
+    constructor(public key: string,
+                private messaging: P2PMessaging,
+                private connector: p2p.P2PConnector,
                 private user: UserService,
                 public memberPublicKeys: string[]) {
     }
@@ -94,12 +94,10 @@ module p2p {
     state: {approved: boolean, entered: EnterRoomState} = {
       approved: false,
       entered: "not"
-    };
+    }
 
-    lastIncomingMessageTimestamp: number = 0;
-
-    private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>();
-    private messageHistory: MessageHistory;
+    private peers: Map<string, RTCPeer> = new Map<string, RTCPeer>()
+    private messageHistory: MessageHistory
 
     /**
      * If room not exists registers the room on the server (signaling server).
@@ -115,9 +113,9 @@ module p2p {
      * Returns count of peers to which message sent.
      */
     sendMessage(message: U2UMessage): number {
-      let result = this.connector.sendMessage(this.name, message);
+      let result = this.connector.sendMessage(this.key, message)
       this.registerInHistory(true, message, result)
-      return result.count;
+      return result.count
     }
 
     sendFiles(files: File[], recipientPublicKey: string) {
@@ -133,8 +131,36 @@ module p2p {
       }
     }
 
-    registerInHistory(sending: boolean, message, sendResult?) {
-      if (!(message.type == "chat" || message.type == "file")) return
+    registerInHistory(outgoing: boolean, message, sendResult?) {
+      if (message.type != "chat" && message.type != "file") return Promise.resolve()
+
+      return this.getMessageHistory().isExistingId(message.id).then(v => {
+        if (v) {
+          throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
+        }
+      }).then(() => {
+        let item: MessageHistoryItem = {
+          msgId: message.id,
+          roomKey: this.key,
+          type: message.type,
+          timestamp: message.timestamp,
+          receiptTimestamp: Date.now(),
+          fromPeer: outgoing ? this.user.publicKey : message.fromPeerId,
+          content: message.text,
+          transport: outgoing ? sendResult?.transport : message.transport,
+          status: {stage: 0, remark: '', fileIndicator: !outgoing && message.type == "file" ? 1 : 0}
+        }
+        if (outgoing && message.transport == "p2p" && sendResult?.count > 0) {
+          //webrtc message is sent, it means the channel is opened, it means that delivered
+          item.status.stage = 1
+        }
+        if (this.onNewMessageHistoryItem) {
+          this.onNewMessageHistoryItem(item)
+        }
+        return this.getMessageHistory().add(item)
+      })
+
+      /*
       if (this.getMessageHistory().isExistingId(message.id)) {
         throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
       }
@@ -154,20 +180,27 @@ module p2p {
       if (this.onNewMessageHistoryItem) {
         this.onNewMessageHistoryItem(item);
       }
-      this.getMessageHistory().put(item);
+      this.getMessageHistory().add(item);
+       */
     }
 
     onMessageInternal(message: U2UMessage) {
-      if (this.getMessageHistory().isExistingId(message.id)) {
-        throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
-      }
-      this.registerInHistory(false, message)
       if (message.type == "chat" || message.type == "file") {
-        this.lastIncomingMessageTimestamp = Date.now();
+        if (ContactService.contactsActive) {
+          this.messaging.unreadStatusAccessor.getUnreadStatus(message.fromPeerId).then(status => {
+            // status 1 means active contact, status positive number means timestamp (already has unread message), both not need status unread
+            // status undefined or 0 should be updated to unread status (timestamp of message)
+            if (!status) this.messaging.unreadStatusAccessor.putUnreadStatus(message.fromPeerId, message.timestamp)
+          })
+        } else {
+          this.messaging.unreadStatusAccessor.putUnreadStatus(message.fromPeerId, message.timestamp)
+        }
       }
-      if (this.onMessage) {
-        this.onMessage(message);
-      }
+      return this.registerInHistory(false, message).then(() => {
+        if (this.onMessage) {
+          this.onMessage(message)
+        }
+      })
     }
 
     onNewMessageHistoryItem: (item: MessageHistoryItem) => any;
@@ -208,9 +241,9 @@ module p2p {
 
     getMessageHistory() {
       if (!this.messageHistory) {
-        this.messageHistory = new MessageHistory(this, this.storage, this.user);
+        this.messageHistory = new MessageHistory(this, this.user)
       }
-      return this.messageHistory;
+      return this.messageHistory
     }
 
     /**

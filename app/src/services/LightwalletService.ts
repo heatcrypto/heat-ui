@@ -64,7 +64,6 @@ class LightwalletService {
   //public wallet: WalletAddresses
   static readonly BIP44 = "m/44'/60'/0'/0";
   private lightwallet;
-  private store: Store;
 
   constructor(private web3Service: Web3Service,
     private userService: UserService,
@@ -73,7 +72,6 @@ class LightwalletService {
     private $window: angular.IWindowService,
     storage: StorageService) {
     this.lightwallet = $window.heatlibs.lightwallet;
-    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   generateRandomSeed() {
@@ -94,7 +92,7 @@ class LightwalletService {
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: string, password?: string, reset?: boolean): Promise<WalletAddresses> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: string, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey)
       if (!reset && walletAddresses) {
@@ -102,19 +100,17 @@ class LightwalletService {
       } else {
         let promise: Promise<WalletAddresses>
         if (this.validSeed(seedOrPrivateKey)) {
-          promise = this.createEtherAddresses(seedOrPrivateKey, password || "")
+          promise = this.createEtherAddresses(seedOrPrivateKey, '')
         } else if (this.validPrivateKey(seedOrPrivateKey)) {
-          promise = this.createEtherAddressesFromPrivateKey(seedOrPrivateKey, password || "")
+          promise = this.createEtherAddressesFromPrivateKey(seedOrPrivateKey, '')
         } else {
           reject("Invalid seed or private key")
         }
-        promise.then(wallet => {
-          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(wallet), heatAddress, seedOrPrivateKey)
-          this.store.put(`ETH-${heatAddress}`, encryptedWallet)
-          resolve(wallet)
-        }).catch(() => {
-          reject()
-        })
+        promise.then(walletAddresses => {
+          let encryptedAddresses = heat.crypto.encryptMessage(JSON.stringify(walletAddresses), heatAddress, seedOrPrivateKey)
+          return db.putCryptoAddresses(heatAddress, 'ETH', encryptedAddresses)
+              .then(recordId => resolve(walletAddresses))
+        }).catch(reject)
       }
     })
   }

@@ -44,59 +44,44 @@ function createEthAccount($event, walletComponent: WalletComponent) {
     this.okButtonClick = function ($event) {
       let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       if (walletEntry) {
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
-          if (!node) {
-            let storage = <StorageService>heat.$inject.get('storage')
-            let $rootScope = heat.$inject.get('$rootScope');
-            let store = storage.namespace('wallet', $rootScope, true)
-            let currencies = store.get(walletEntry.account)
-            if (!(currencies instanceof Array)) currencies = []
-            currencies.push('ETH')
-            store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-            walletComponent.initWalletEntry(walletEntry)
-          }
+        if (!walletEntry.expanded) walletEntry.toggle()
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
+        let p: Promise<any>
+        if (node) {
+          p = Promise.resolve()
+        } else {
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Ethereum.symbol)
+          p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+              () => walletComponent.initWalletEntry(walletEntry)
+          )
+        }
+        p.then(v => {
           // load in next event loop to load currency addresses first
           setTimeout(() => {
-            // @ts-ignore
-            let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
-              // @ts-ignore
-              return c.isCurrencyAddressCreate && c.name == 'Ethereum'
-            })
-            success = node ? node.createEthAddress(walletEntry) : false
-            walletEntry.toggle(true)
+            let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
+            let currencyBalance = node?.createEthAddress(walletEntry)
             $mdDialog.hide(null).then(() => {
-              if (!success) {
-                dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+              if (!currencyBalance) {
+                dialogs.alert($event, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
               }
             })
-          }, 0)
-        }
+          }, 600)
+        })
       }
     }
 
     this.selectedWalletEntryChanged = function () {
       this.data.password = ''
       this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
+      let we: wlt.WalletEntry = this.data.selectedWalletEntry
+      if (we && we.unlocked && we.bip44Compatible) {
+        if (!we.expanded) we.toggle()
+      }
     }
 
     this.passwordChanged = function () {
-      let password = this.data.password
-      let account = this.data.selected
-      let walletEntry = walletEntries.find(w => w.account == account)
-      try {
-        var key = walletComponent.localKeyStore.load(account, password);
-        if (key) {
-          walletComponent.localKeyStore.rememberPassword(walletEntry.account, password)
-          walletEntry.pin = password
-          walletEntry.secretPhrase = key.secretPhrase
-          walletEntry.bip44Compatible = walletComponent.lightwalletService.validSeed(key.secretPhrase)
-          walletEntry.unlocked = true
-          walletComponent.initWalletEntry(walletEntry)
-          walletEntry.toggle(true)
-        }
-      } catch (e) { }
+      walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
     }
   }
 

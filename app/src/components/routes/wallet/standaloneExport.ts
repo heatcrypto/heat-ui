@@ -3,7 +3,7 @@
 namespace wltStandalone {
 
     export function exportLocalstorage() {
-        localStorage.setItem("heatwallet-raw-data", "1")
+        localStorage.setItem("heatwallet-raw-data", "1") // indicator for importing to detect what json (standard or this full storage) is used
         let dataStr = JSON.stringify(localStorage, null, 2)
         const anchorElement = document.createElement('a')
         let blob = new Blob([dataStr], {type: "octet/stream"})
@@ -68,7 +68,7 @@ namespace wltStandalone {
     }
 
 
-    function exportInternal(accountCurrencies: Map<string, []>,
+    /*function exportInternal(accountCurrencies: Map<string, []>,
               accountAddresses: {[account: string]: Array<string>}): IHeatWalletFile {
         let walletFileData : IHeatWalletFile = {
             version: 2,
@@ -101,9 +101,9 @@ namespace wltStandalone {
         });
 
         return walletFileData;
-    }
+    }*/
 
-    function initLocalKeyStore() {
+    /*function initLocalKeyStore() {
         // this.entries = []
         let walletEntries = []
         this.localKeyStore.list().map((account: string) => {
@@ -132,7 +132,7 @@ namespace wltStandalone {
         })
         this.flatten()
         this.fetchCryptoAddresses('BTC')
-    }
+    }*/
 
     /*class WalletEntry {
         public isWalletEntry = true

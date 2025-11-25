@@ -24,12 +24,14 @@
 function createHEATAccount($event, walletComponent: WalletComponent) {
 
   function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+
     this.cancelButtonClick = function () {
       $mdDialog.cancel()
     }
+
     this.okButtonClick = function () {
-      const mnemonic = this.heatSeed;
-      const pin = this.pin;
+      const mnemonic = this.heatSeed
+      const pin = this.pin
 
       let account = heat.crypto.getAccountId(mnemonic)
       let publicKey = heat.crypto.secretPhraseToPublicKey(mnemonic)
@@ -39,21 +41,29 @@ function createHEATAccount($event, walletComponent: WalletComponent) {
         pincode: pin,
         name: '',
         publicKey
-      };
-      walletComponent.localKeyStore.put(key);
-      $scope.$evalAsync(() => {
-        walletComponent.initLocalKeyStore()
+      }
+      walletComponent.localKeyStore.put(key).then(() => {
+        $scope.$evalAsync(() => {
+          walletComponent.initLocalKeyStore()
+          setTimeout(() => {
+            let created = walletComponent.walletEntries.find(we => we.account == account)
+            created?.toggle(true)
+          }, 200)
+        })
       })
 
       $mdDialog.cancel()
     }
+
     this.generateSeed = function () {
       this.heatSeed = walletComponent.lightwalletService.generateRandomSeed()
       walletComponent.$scope.$evalAsync(() => {
         this.calculatedAccountId = heat.crypto.getAccountId(this.heatSeed)
       })
     };
+
     this.generateSeed();
+
     this.copySeed = function () {
       walletComponent.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
     }

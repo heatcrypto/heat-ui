@@ -19,31 +19,29 @@ function createLtcAccount($event, walletComponent: WalletComponent) {
     }
 
     this.okButtonClick = function ($event) {
-      let walletEntry = this.data.selectedWalletEntry
+      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       let success = false
       if (walletEntry) {
-        let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Litecoin.symbol)
         if (!node) {
-          let storage = <StorageService>heat.$inject.get('storage')
-          let $rootScope = heat.$inject.get('$rootScope');
-          let store = storage.namespace('wallet', $rootScope, true)
-          let currencies = store.get(walletEntry.account)
-          if (!(currencies instanceof Array)) currencies = []
-          currencies.push('LTC')
-          store.put(walletEntry.account, currencies.filter((value, index, walletComponent) => walletComponent.indexOf(value) === index));
-          walletComponent.initWalletEntry(walletEntry)
+          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Litecoin.symbol)
+          wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+              () => walletComponent.initWalletEntry(walletEntry)
+          )
         }
         // load in next event loop to load currency addresses first
         setTimeout(() => {
-          node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Litecoin')
-          success = node.createLtcAddress(walletEntry)
+          // @ts-ignore
+          let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.Litecoin.name})
+          success = node?.createLtcAddress(walletEntry)
           walletEntry.toggle(true)
           $mdDialog.hide(null).then(() => {
             if (!success) {
               dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
             }
           })
-        }, 0)
+        }, 200)
       }
     }
 
@@ -53,21 +51,7 @@ function createLtcAccount($event, walletComponent: WalletComponent) {
     }
 
     this.passwordChanged = function () {
-      let password = this.data.password
-      let account = this.data.selected
-      let walletEntry = walletEntries.find(w => w.account == account)
-      try {
-        var key = walletComponent.localKeyStore.load(account, password);
-        if (key) {
-          walletComponent.localKeyStore.rememberPassword(walletEntry.account, password)
-          walletEntry.pin = password
-          walletEntry.secretPhrase = key.secretPhrase
-          walletEntry.bip44Compatible = walletComponent.lightwalletService.validSeed(key.secretPhrase)
-          walletEntry.unlocked = true
-          walletComponent.initWalletEntry(walletEntry)
-          walletEntry.toggle(true)
-        }
-      } catch (e) { }
+      walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
     }
   }
 

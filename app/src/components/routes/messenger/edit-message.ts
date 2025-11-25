@@ -35,6 +35,9 @@
     .edit-message-textarea.offchain {
       border-color: green;
     }
+    .edit-message-textarea.room-registered {
+      border-color: skyblue;
+    }
     .edit-message-textarea::placeholder {
       color: rgb(117, 117, 117);
     }
@@ -53,7 +56,8 @@
           </md-button>
         </form>
         <textarea hide-xs ng-model="vm.messageText" flex rows="3" class="edit-message-textarea"
-          ng-class="{'offchain': vm.p2pMessaging.onlineStatus == 'online'}"
+          ng-class="{'room-registered': vm.p2pMessaging.contactStatus(vm.publickey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online', 
+            'offchain': vm.p2pMessaging.contactStatus(vm.publickey)=='channelOpened'}"
           ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line. &#10;Drag and drop file (max 2MB) here to encrypt and send instantly"></textarea>
       </div>
       <div layout="column" class="send-button-container">

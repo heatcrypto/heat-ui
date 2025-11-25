@@ -29,11 +29,14 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
     }
     this.okButtonClick = function () {
       let secretResult = this.data.secretPhraseProcessed || this.data.secretPhrase
-      $mdDialog.hide({
-        password: this.data.password1,
-        secretPhrase: secretResult,
+      importWallet(secretResult, this.data.selectedImport).then(value => {
+        setTimeout(() => {
+          $mdDialog.hide({
+            password: this.data.password1,
+            secretPhrase: secretResult,
+          })
+        }, 200)
       })
-      importWallet(secretResult, this.data.selectedImport)
     }
     let emptyValidator = () => null
     let bip44CompatibleValidator = () => {
@@ -42,6 +45,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
         : "Seed of the chosen currency must be compatible with BIP44"
     }
     let ethereumValidator = () => {
+      this.data.secretPhraseProcessed = null
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
         //it is not the seed, so test if it is the private key
@@ -52,6 +56,7 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
       }
     }
     let bitcoinValidator = () => {
+      this.data.secretPhraseProcessed = null
       let bip44Invalid = bip44CompatibleValidator()
       if (bip44Invalid) {
         // allowed raw hex pk or WIF pk
@@ -104,32 +109,18 @@ function promptSecretPlusPassword($event, walletComponent: WalletComponent): ang
 
   function importWallet(secret: string, selectedImport) {
     if (typeof selectedImport == "string") selectedImport = JSON.parse(selectedImport)
-    let storage = <StorageService>heat.$inject.get('storage');
-    let $rootScope = heat.$inject.get('$rootScope');
-    let store = storage.namespace('wallet', $rootScope, true);
     let accountId = heat.crypto.getAccountId(secret)
-    let currencies = store.get(accountId) || []
-    currencies.push(selectedImport.symbol)
-    let distinctValues = (value, index, walletComponent) => {
-      return walletComponent.indexOf(value) === index;
-    }
-    store.put(accountId, currencies.filter(distinctValues));
-
-    let n = 0
-    let interval = setInterval(() => {
-      n++
-      if (n > 50) clearInterval(interval)
-      let wc = WalletComponent.instance
-      if (wc != walletComponent) {
-        let entry = wc.entries.find(entry => entry instanceof wlt.WalletEntry && entry.account == accountId)
-        if (entry) {
+    return wlt.saveWalletEntryCurrencies(accountId, [selectedImport.symbol]).then(() => {
+      setTimeout(() => {
+        let recreatedWalletComponent = WalletComponent.instance
+        let walletEntry = recreatedWalletComponent.entries.find(entry => entry instanceof wlt.WalletEntry && entry.account == accountId)
+        if (walletEntry) {
           let currencyAddressCreate: wlt.CurrencyAddressCreate =
-              entry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
+              walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == selectedImport.name)
           currencyAddressCreate?.createAddressByName()
         }
-        clearInterval(interval)
-      }
-    }, 200)
+      }, 2500)
+    })
   }
 
   let deferred = walletComponent.$q.defer<{ password: string, secretPhrase: string }>()

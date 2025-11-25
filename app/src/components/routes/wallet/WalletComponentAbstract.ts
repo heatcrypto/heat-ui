@@ -30,6 +30,7 @@ namespace wlt {
 
     public lightwalletService: LightwalletService;
     public localKeyStore: LocalKeyStoreService;
+    allLocked = true
     bitcoreService: BitcoreService;
     nxtCryptoService: NXTCryptoService;
     ardorCryptoService: ARDORCryptoService;
@@ -56,73 +57,74 @@ namespace wlt {
     initLocalKeyStore() {
       this.entries = []
       this.walletEntries = []
-      this.localKeyStore.list().map((account: string) => {
-        let name = this.localKeyStore.getName(account)
-        let walletEntry = walletEntriesCache.get(account)
-        if (walletEntry) {
-          walletEntry.setWalletComponent(this)
-          walletEntry["cached"] = true
-        } else {
-          walletEntry = new wlt.WalletEntry(account, name, this)
-        }
-        this.walletEntries.push(walletEntry)
-      });
-      this.walletEntries.sort((a, b) => {
-        return a.account.localeCompare(b.account)
-      })
-      this.walletEntries.forEach(walletEntry => {
-        let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
-        if (password) {
-          try {
-            let key = this.localKeyStore.load(walletEntry.account, password);
-            if (key && !walletEntry["cached"]) {
-              walletEntry.secretPhrase = key.secretPhrase
-              walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-              walletEntry.unlocked = true
-              walletEntry.pin = password
-              walletEntry.label = key.label
-              this.initWalletEntry(walletEntry)
-            }
-          } catch (e) { console.log(e) }
-        }
-      })
-      this.flatten()
-      this.fetchCryptoAddresses('BTC')
-    }
-
-    fetchCryptoAddresses(currency: string) {
-      let p2pContactsUtils = <ContactService>heat.$inject.get('contactService')
-      let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
-      p2pMessaging.p2pContactStore.forEach((key, contact) => {
-        console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
-        p2pContactsUtils.fetchCryptoAddress(contact, currency)
-      })
-    }
-
-    checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
-      let result = {wasCreated: false, cachedBalance: undefined}
-      let foundAddress: WalletAddress
-      let addresses = wlt.getCryptoAddresses(walletEntry, currencySymbol)
-      if (addresses) {
-        foundAddress = addresses.addresses.find(v => v.address == address)
-        if (foundAddress) {
-
-          if (!foundAddress.hasOwnProperty("created")) {
-            let compatibleToPre = this.obsoleteCheckCreatedAddress(address, walletEntry, currencySymbol)
-            if (compatibleToPre) {
-              foundAddress.created = compatibleToPre.wasCreated
-            }
+      this.localKeyStore.list().then(walletEntries => {
+        walletEntries.map(entry => {
+          let walletEntry = walletEntriesCache.get(entry.account)
+          if (walletEntry) {
+            walletEntry.setWalletComponent(this)
+            walletEntry["cached"] = true
+          } else {
+            walletEntry = new wlt.WalletEntry(this, entry.account, entry.name, entry.selectedCurrencies)
           }
+          this.walletEntries.push(walletEntry)
+        });
+        this.walletEntries.sort((a, b) => {
+          return a.account.localeCompare(b.account)
+        })
+        this.walletEntries.forEach(walletEntry => {
+          let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
+          if (password) {
+            this.allLocked = false
+            this.localKeyStore.load(walletEntry.account, password).then(key => {
+              if (key && !walletEntry["cached"]) {
+                walletEntry.secretPhrase = key.secretPhrase
+                walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+                walletEntry.unlocked = true
+                walletEntry.pin = password
+                walletEntry.label = key.label
+                this.initWalletEntry(walletEntry)
+              }
+            }).catch((e) => console.error(e))
+          }
+        })
+        this.flatten()
+      })
+    }
 
-          result.wasCreated = foundAddress.created
+    updateWalletEntryOnPasswordChanged(account, password) {
+      let walletEntry = this.walletEntries.find(w => w.account == account)
+      this.localKeyStore.load(account, password).then(key => {
+        if (key) {
+          this.localKeyStore.rememberPassword(walletEntry.account, password)
+          walletEntry.pin = password
+          walletEntry.secretPhrase = key.secretPhrase
+          walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+          walletEntry.unlocked = true
+          this.initWalletEntry(walletEntry)
+          walletEntry.toggle(true)
         }
-      }
+      }).catch(reason => console.warn(reason))
+    }
 
+    checkCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string, addresses: WalletAddress[]): {wasCreated: boolean, cachedBalance?: string} {
+      let result = {wasCreated: false, cachedBalance: undefined}
+      if (!addresses) return result
+      let foundAddress: WalletAddress
+      foundAddress = addresses.find(v => v.address == address)
+      if (foundAddress) {
+        if (!foundAddress.hasOwnProperty("created")) {
+          let compatibleToPre = this.obsoleteCheckCreatedAddress(address, walletEntry.account, currencySymbol)
+          if (compatibleToPre) {
+            foundAddress.created = compatibleToPre.wasCreated
+          }
+        }
+        result.wasCreated = foundAddress.created
+      }
       return result
     }
 
-    obsoleteCheckCreatedAddress(address: string, walletEntry: WalletEntry, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
-      let a = wlt.createdAddresses[walletEntry.account]
+    obsoleteCheckCreatedAddress(address: string, account: string, currencySymbol: string): {wasCreated: boolean, cachedBalance?: string} {
+      let a = wlt.createdAddresses[account]
 
       if (!a) return {wasCreated: false}
 
@@ -308,9 +310,6 @@ namespace wlt {
           }
         })
       }
-      if (upgraded) {
-        wlt.saveCryptoAddresses(walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol))
-      }
       // should be was created at least first address (probably due the bug  it was not created)
       // so force mark created first addresses
       /*if (!cryptoAddresses[0].created) {
@@ -320,28 +319,36 @@ namespace wlt {
           i++
         }
       }*/
+      let f = () => wlt.getCryptoAddresses(walletEntry, currencyDescriptor.symbol).then(addresses => {
+        let actualWalletAddresses: WalletAddresses = {
+          addresses: cryptoAddresses.filter(a => {
+            if (a.isDeleted) return false
+            let info = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol, addresses.addresses)
+            return a.inUse || info.wasCreated || !currencyDescriptor.multiAddress
+          })
+        }
 
+        if (actualWalletAddresses.addresses.length == 0) {
+          addressLoading.visible = false
+          return
+        }
 
-      let actualWalletAddresses: WalletAddresses = {
-        addresses: cryptoAddresses.filter(a => {
-          if (a.isDeleted) return false
-          let info = this.checkCreatedAddress(a.address, walletEntry, currencyDescriptor.symbol)
-          return a.inUse || info.wasCreated || !currencyDescriptor.multiAddress
+        return utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
+          this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, success || success == null)
+        }).catch((reason) => {
+          this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, false)
+          this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
+          //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
         })
-      }
-
-      if (actualWalletAddresses.addresses.length == 0) {
-        addressLoading.visible = false
-        return
-      }
-
-      utils.timeoutPromise(requestAddresses(actualWalletAddresses, addressLoading), 8000).then((success) => {
-        this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, success || success == null)
-      }).catch((reason) => {
-        this.createBalanceEntries(walletEntry, addressLoading, actualWalletAddresses, createBalance, false)
-        this.showMessage(`Error. Cannot connect to ${currencyDescriptor.symbol} server.`)
-        //this.handleFailedCryptoRequests(walletEntry, addressLoading, currencyName, currencySymbol)
       })
+
+      let p = upgraded
+          ? wlt.saveCryptoAddresses(
+              walletEntry, currencyDescriptor.symbol, walletEntry.getCryptoAddresses(currencyDescriptor.symbol)).then(() => f()
+          )
+          : Promise.resolve()
+      p.then(() => f())
+          .finally(() => addressLoading.visible = false)
     }
 
     private createBalanceEntries(walletEntry: wlt.WalletEntry,
@@ -354,8 +361,9 @@ namespace wlt {
 
       let index = walletEntry.currencies.indexOf(addressLoading)
       let counter = 0
-      actualWalletAddresses.addresses.forEach(address => {
-        let createdAddress = this.checkCreatedAddress(address.address, walletEntry, addressLoading.currencySymbol)
+      let addresses = actualWalletAddresses.addresses
+      addresses.forEach(address => {
+        let createdAddress = this.checkCreatedAddress(address.address, walletEntry, addressLoading.currencySymbol, addresses)
         if (counter >= wlt.DISPLAYED_MAX_EMPTY_ADDRESSES && !address.inUse) return
         let currencyBalance: wlt.CurrencyBalance = createBalance(address)
         currencyBalance.visible = walletEntry.expanded
@@ -382,26 +390,30 @@ namespace wlt {
 
     walletFilter: wlt.WalletFilter
 
-    applyFilter(query: string, logicalOperator: 'and' | 'or') {
+    applyFilter(query: string, logicalOperator: 'and' | 'or'): Promise<wlt.SearchResultExplainedType> {
+      let promises: Promise<any>[] = []
       let cleanedQuery = query.trim()
       if (cleanedQuery) {
         this.walletFilter = new wlt.WalletFilter(cleanedQuery)
-        let searchResultExplained: {account: string, finds: Map<string, string[]>}[] = []
+        let searchResultExplained = []
         this.entries.forEach(entry => {
           if (entry instanceof wlt.WalletEntry) {
-            let finds = (<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator)
-            if (finds && entry.filtered) searchResultExplained.push({account: entry.account, finds: finds})
+            promises.push((<wlt.WalletEntry>entry).applyFilter(this.walletFilter, logicalOperator).then(finds => {
+              if (finds && entry.filtered) searchResultExplained.push({account: entry.account, finds: finds})
+            }))
           }
         })
-        return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
+        return Promise.all(promises).then(() => {
+          return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
+        })
       } else {
         this.walletFilter = null
         this.entries.forEach(entry => {
           entry.filtered = null
         })
+        return Promise.resolve(null)
       }
     }
-
   }
 
 }

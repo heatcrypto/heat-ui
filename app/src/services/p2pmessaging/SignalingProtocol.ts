@@ -41,9 +41,8 @@ module p2p {
         this.connector.identity = this.connector.accountPublicKey;
         this.connector.pendingRooms.forEach(f => f());
         this.connector.pendingRooms = [];
-        if (this.connector.pendingOnlineStatus)
-          this.connector.pendingOnlineStatus();
-        this.connector.pendingOnlineStatus = null;
+        if (this.connector.pendingSendOnlineStatus)  this.connector.pendingSendOnlineStatus();
+        this.connector.pendingSendOnlineStatus = null;
       },
 
       WELCOME: (roomName: string, msg) => {

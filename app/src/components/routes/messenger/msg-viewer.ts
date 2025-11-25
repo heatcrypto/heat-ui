@@ -105,7 +105,7 @@ class MsgViewerComponent {
       .catch(reason => console.error('Error on getting contact messages count: ' + reason))
       .then(value => {
         if (this.room) {
-          this.p2pMessaging.updateSeenTime(this.room.name, Date.now() + 1000 * 60 * 60 * 24);
+          // this.p2pMessaging.updateSeenTime(this.room.key, Date.now() + 1000 * 60 * 60 * 24);
           this.messageHistory = this.room.getMessageHistory()
           this.offchainPages = this.messageHistory.getPageCount() - 1;
           this.room.onNewMessageHistoryItem = (item: p2p.MessageHistoryItem) => {
@@ -113,7 +113,7 @@ class MsgViewerComponent {
           }
           this.messagesCount += this.messageHistory.getItemCount();
           this.$scope.$on('$destroy', () => {
-            this.p2pMessaging.updateSeenTime(this.room.name, Date.now());
+            // this.p2pMessaging.updateSeenTime(this.room.key, Date.now());
             this.room.onNewMessageHistoryItem = null;
           });
         }
@@ -300,7 +300,7 @@ class MsgViewerComponent {
     $mdMenu.open(event);
   }
 
-  public removeOffchainMessage($event: any, item: p2p.MessageHistoryItem) {
+  /*public removeOffchainMessage($event: any, item: p2p.MessageHistoryItem) {
     dialogs.confirm(
       "Remove message",
       "Do you want to remove this message (from yourself only)?"
@@ -312,7 +312,7 @@ class MsgViewerComponent {
     }).then(() => {
       this.initMessages()  //stupid way to refresh messages after removing
     })
-  }
+  }*/
 
   getScrollContainer(): duScroll.IDocumentService {
     return <duScroll.IDocumentService>angular.element(document.getElementById(this.containerId))

@@ -1,5 +1,5 @@
 @Service('bitcoreService')
-@Inject('$window', 'storage', '$rootScope')
+@Inject('$window')
 class BitcoreService {
 
   static readonly BIP44_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/44'/0'/0'/0/" : "m/44'/1'/0'/0/"
@@ -7,30 +7,23 @@ class BitcoreService {
   static readonly BIP84_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/84'/0'/0'/0/" : "m/84'/1'/0'/0/"
   private bitcore;
   private bip39;
-  private store: Store;
 
   private BITCOIN_MESSAGE_MAGIC_BYTES
 
-  constructor(private $window: angular.IWindowService,
-    storage: StorageService,
-    private $rootScope: angular.IRootScopeService) {
+  constructor(private $window: angular.IWindowService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
-    this.store = storage.namespace('wallet-address', $rootScope, true);
     this.BITCOIN_MESSAGE_MAGIC_BYTES = new this.bitcore.deps.Buffer('Bitcoin Signed Message:\n')
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
   unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey)
       if (walletAddresses) {
         resolve(walletAddresses)
       } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
         let walletType = this.generateAddresses(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
-          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
-          this.store.put(`BTC-${heatAddress}`, encryptedWallet);
           resolve(walletType);
         }
       } else if (this.bitcore.PrivateKey.isValid(seedOrPrivateKey)) {
@@ -39,8 +32,6 @@ class BitcoreService {
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
           walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toWIF() }
-          let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
-          this.store.put(`BTC-${heatAddress}`, encryptedWallet);
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes

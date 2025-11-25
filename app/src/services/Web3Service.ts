@@ -29,26 +29,14 @@ class Web3Service {
     return this.web3.toAscii(input)
   }
 
-  getAddressNonce = (address: string) => {
-    return new Promise<number>((resolve, reject) => {
-      this.http.get(this.blockbookEndpoint + "/address/" + address).then(
-        resp => {
-            let respObj = angular.isString(resp) ? JSON.parse(resp) : resp
-            if (respObj.nonce) {
-                resolve(respObj.nonce)
-                let $rootScope = heat.$inject.get('$rootScope')
-                let store = this.storage.namespace('currency-cache-eth', $rootScope, true)
-                store.put(address + '-' + 'info', resp)
-            } else {
-                reject("response has no nonce")
-            }
-        },
-        reason => {
-            reject(reason)
+  getAddressNonce = (address: string) =>
+    this.http.get(this.blockbookEndpoint + "/address/" + address).then(resp => {
+        let respObj = angular.isString(resp) ? JSON.parse(resp) : resp
+        if (respObj.nonce) {
+            db.putValue(wlt.CACHE_KEY.addressInfo('ETH', address), resp)
+            return respObj.nonce
         }
-      );
     })
-  }
 
   sendEther(account: any, _to: string, _value: any): Promise<{ txHash: string }> {
     return new Promise((resolve, reject) => {
@@ -83,13 +71,13 @@ class Web3Service {
   }
 
   createRawTx2 = (account, to, value, gasPriceParam?, gasLimitParam?,
-                  getAddressNonce?: (address: string) => Promise<number>) => {
+                  getAddressNonce?: (address: string) => PromiseLike<number>) => {
     return new Promise((resolve, reject) => {
       this.getGasPrice().then((gasPrice) => {
         let getNonce = getAddressNonce || this.getAddressNonce
         return getNonce(account.address).then(
           nonce => {
-            if (nonce == undefined) {
+            if (!nonce) {
                 resolve(null)
                 return
             }

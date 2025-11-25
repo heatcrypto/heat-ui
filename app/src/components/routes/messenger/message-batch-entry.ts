@@ -125,11 +125,11 @@ class MessageBatchEntryComponent {
               private messaging: P2PMessaging,
               private heat: HeatService,
               private $mdToast: angular.material.IToastService) {
-    $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, info: p2p.MessageExtraInfo) => {
+    $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, messageStatus: p2p.MessageStatus) => {
       if (this.message.msgId == msgId) {
         this.$scope.$evalAsync(() => {
-          this.message.extraInfo = info
-          this.stage = this.message.extraInfo?.status?.stage
+          this.message.status = messageStatus
+          this.stage = this.message.status?.stage
         })
       }
     });
@@ -137,7 +137,7 @@ class MessageBatchEntryComponent {
 
   $onInit() {
     this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
-    this.stage = this.message.extraInfo?.status?.stage
+    this.stage = this.message.status?.stage
     if (!this.message.type || this.message.type == "chat") {
       this.text = this.message.contents
     } else if (this.message.type == "file") {
@@ -152,7 +152,7 @@ class MessageBatchEntryComponent {
         if (this.io == 'incoming') {
           this.text = `file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
           //link to file
-          this.fileIndicator = this.message.extraInfo?.status.fileIndicator || 1
+          this.fileIndicator = this.message.status?.fileIndicator || 1
         } else {
           this.text = `sent file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
         }

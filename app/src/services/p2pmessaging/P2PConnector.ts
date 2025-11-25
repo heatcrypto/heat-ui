@@ -76,7 +76,8 @@ module p2p {
     /**
      * If needed send request to remove the message on the server
      */
-    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType, targetMessageId: string, extraInfo: p2p.MessageExtraInfo)
+    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
+                               targetMessageId: string, messageStatus: p2p.MessageStatus)
 
     onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void
 
@@ -103,9 +104,11 @@ module p2p {
 
     identity: string;
     pendingRooms: Function[] = [];
-    pendingOnlineStatus: Function;
+    pendingSendOnlineStatus: Function;
     private _onlineStatus: OnlineStatus = "offline";
     private signalingReady: boolean = null;
+
+    state: string = 'not ready'
 
     private config: RTCConfiguration = {
       iceServers: [
@@ -178,29 +181,30 @@ module p2p {
     /**
      * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
      */
-    setOnlineStatus(status: OnlineStatus) {
+    setOnlineStatus(newStatus: OnlineStatus) {
       let sendOnlineStatus = () => {
-        this.sendWebsocketMessage(Protocol.signaling, [{type: "SET_ONLINE_STATUS", status: status}]);
-        if (status == "online") {
-          this.rooms.forEach(room => {
-            if (room.state.entered == "entered") {
-              //enforce registration on the server because new room members could be entered while was offline
-              room.enter(true);
-            }
-          })
-        }
-      };
+        return this.sendWebsocketMessage(Protocol.signaling, [{type: "SET_ONLINE_STATUS", status: newStatus}]).then(value => {
+          if (this._onlineStatus == "online") {
+            this.rooms.forEach(room => {
+              if (room.state.entered == "entered") {
+                //enforce registration on the server because new room members could be entered while was offline
+                room.enter(true)
+              }
+            })
+          }
+        })
+      }
       if (this.identity) {
-        sendOnlineStatus();
+        sendOnlineStatus()
       } else {
-        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}]);
-        this.pendingOnlineStatus = sendOnlineStatus;
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}])
+        this.pendingSendOnlineStatus = sendOnlineStatus
       }
-      if (status == "offline") {
-        this.identity = null;
-        this.close();
+      if (newStatus == "offline") {
+        this.identity = null
+        this.close()
       }
-      this._onlineStatus = status;
+      this._onlineStatus = newStatus
     }
 
     get onlineStatus(): OnlineStatus {
@@ -218,7 +222,7 @@ module p2p {
     }
 
     call(toPeerId: string, caller: string, room: Room) {
-      this.sendWebsocketMessage(Protocol.signaling, [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.name}]);
+      this.sendWebsocketMessage(Protocol.signaling, [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.key}]);
     }
 
     getTmp(roomName: string): Promise<Array<string>> {
@@ -232,7 +236,7 @@ module p2p {
     }
 
     enter(room: Room, enforce?: boolean) {
-      let existingRoom = this.rooms.get(room.name);
+      let existingRoom = this.rooms.get(room.key);
       if (existingRoom && existingRoom.state.entered == "entered") {
         if (enforce) {
           existingRoom.state.entered = "not";
@@ -253,11 +257,11 @@ module p2p {
           }, 4000);
 
           //request entering to the room
-          this.sendWebsocketMessage(Protocol.signaling, [{type: "ROOM", room: room.name}]);
+          this.sendWebsocketMessage(Protocol.signaling, [{type: "ROOM", room: room.key}]);
         }
       };
 
-      this.rooms.set(room.name, room);
+      this.rooms.set(room.key, room);
 
       if (this.identity) {
         requestEnterRoom();
@@ -290,6 +294,7 @@ module p2p {
               resolve(socket);
             };
             socket.onerror = (error) => {
+              this.state = 'websocket error'
               console.error(error);
               reject(error);
               this.webSocketPromise = null;
@@ -310,11 +315,12 @@ module p2p {
       return this.getWebSocket()
         .then(websocket => {
           let sendingData = [protocol].concat(data)  // sending data format: [protocolName, message1, message2, ...]
-          websocket.send(JSON.stringify(sendingData));
+          websocket.send(JSON.stringify(sendingData))
+          this.state = ''
           //console.log(">> \n" + JSON.stringify(sendingData));
-        }, reason => console.error(reason))
-        .catch(reason => {
-          console.error("error on get websocket \n" + reason);
+        }, reason => {
+          this.state = 'no websocket connection to server'
+          console.error("error on get websocket \n" + reason)
         })
     }
 
@@ -590,7 +596,7 @@ module p2p {
             sendingData = {
               id: msg.id,
               type: msg.type,
-              room: room.name,
+              room: room.key,
               sender: this.identity,
               recipient: peer.publicKey,
               payload: JSON.stringify(encrypted),
@@ -634,7 +640,8 @@ module p2p {
 
         let room: Room = this.rooms.get(roomName);
         if (room) {
-          this.processRoomMessage(msg, room, peerId);
+          let problem = this.processRoomMessage(msg, room, peerId)
+          if (problem) throw new Error(problem)
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
           this.sendWebsocketMessage(Protocol.signaling, [{room: roomName}, msg]);
@@ -687,7 +694,13 @@ module p2p {
 
     processRoomMessage(msg: U2UMessage, room: Room, sender: string) {
       msg.fromPeerId = sender;
-      msg.roomName = room.name;
+      msg.roomKey = room.key;
+
+      let validateResult = this.validateMessage(msg)
+      if (validateResult) {
+        return `Message validation error: ${validateResult}`
+      }
+
       room.onMessageInternal(msg);
       this.messenger.onMessage(msg, room);
     }
@@ -708,13 +721,16 @@ module p2p {
     close(closeWebsocket?: boolean) {
       this.identity = null;
       this.pendingRooms = [];
-      this.pendingOnlineStatus = null;
+      this.pendingSendOnlineStatus = null;
       this.rooms.forEach(room => this.closeRoom(room));
       if ((closeWebsocket === undefined || closeWebsocket) && this.signalingReady) {
         this.getWebSocket().then(socket => socket.close());
       }
     }
 
+    private validateMessage(msg: p2p.U2UMessage) {
+      if (msg.timestamp <= 0) return "wrong timestamp"
+    }
 
     private request(request: () => void, handleResponse: (msg) => any): Promise<any> {
       let p = new Promise<any>((resolve, reject) => {
@@ -732,7 +748,6 @@ module p2p {
       });
       return promiseTimeout(3000, p);
     }
-
   }
 
   function promiseTimeout(ms, promise) {

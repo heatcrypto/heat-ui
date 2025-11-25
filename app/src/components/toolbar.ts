@@ -412,13 +412,13 @@ class ToolbarComponent {
       this.signalingURL = this.settings.get(SettingsService.HEAT_MESSAGING).websocket
     })
 
-    let unreadChangedListener = (rooms: p2p.Room[]) => {
+    let unreadStatusChangedListener = (n => {
       this.$scope.$evalAsync(() => {
-        this.hasUnreadP2PMessage = rooms.length > 0;
-      });
-    };
-    this.p2pMessaging.on(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener);
-    $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadChangedListener));
+        this.hasUnreadP2PMessage = n > 0
+      })
+    })
+    this.p2pMessaging.on(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener);
+    $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener));
   }
 
   localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
@@ -461,19 +461,20 @@ class ToolbarComponent {
 
   refreshLocalWallet() {
     this.localHeatMasterAccounts = [];
-    this.localKeyStore.list().map((account: string) => {
-      let name = this.localKeyStore.getName(account);
-      this.localHeatMasterAccounts.push({
-        account: account,
-        locked: true,
-        identifier: name || account
+    this.localKeyStore.list().then(walletEntries => {
+      walletEntries.map(entry => {
+        this.localHeatMasterAccounts.push({
+          account: entry.account,
+          locked: true,
+          identifier: entry.name || entry.account
+        })
+      });
+      this.localHeatMasterAccounts.forEach(acc => {
+        let password = this.localKeyStore.getPasswordForAccount(acc.account)
+        if (password) {
+          acc.locked = false
+        }
       })
-    });
-    this.localHeatMasterAccounts.forEach(acc => {
-      let password = this.localKeyStore.getPasswordForAccount(acc.account)
-      if (password) {
-        acc.locked = false
-      }
     })
   }
 
@@ -491,25 +492,23 @@ class ToolbarComponent {
   }
 
   selectWalletAccount($event, item) {
+    let f = (account, password) => {
+      return this.localKeyStore.load(account, password).then(key => {
+        if (key) {
+          this.unlock(key.secretPhrase)
+        }
+      })
+    }
     let password = this.localKeyStore.getPasswordForAccount(item.account)
     if (password) {
-      let key = this.localKeyStore.load(item.account, password);
-      if (key) {
-        this.unlock(key.secretPhrase)
-      }
-    }
-    else {
+      f(item.account, password).catch(e => console.log(e))
+    } else {
       dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin) to unlock', '').then(
-        password => {
-          try {
-            let key = this.localKeyStore.load(item.account, password);
-            if (key) {
-              this.unlock(key.secretPhrase)
-              return
-            }
-          } catch (e) { console.log(e) }
-          this.$mdToast.show(this.$mdToast.simple().textContent("Incorrect Password (or Pin)").hideDelay(5000));
-        }
+          password => {
+            f(item.account, password).catch(e => {
+              this.$mdToast.show(this.$mdToast.simple().textContent("Incorrect Password (or Pin)").hideDelay(5000))
+            })
+          }
       )
     }
   }

@@ -170,10 +170,9 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private http: HttpService) {
     super($scope, $q)
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
-    let store = storage.namespace('currency-cache-eth', this.$scope, true)
     this.cache = {
-      get: key => store.get(this.user.currency.address + "-" + key),
-      put: (key, value) => store.put(this.user.currency.address + "-" + key, value),
+      get: key => db.getValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key).then(r => r?.value),
+      put: (key, value) => db.putValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key, value),
     }
   }
 

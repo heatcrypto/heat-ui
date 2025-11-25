@@ -439,7 +439,7 @@ module utils {
    */
   export let helper = {
     useLocalServer: () => {
-      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: false})
+      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: true})
     },
     useRemoteServer: (serverDescriptor?: ServerDescriptor) => {
       (<HeatService>heat.$inject.get('heat')).switchToServer(
@@ -453,8 +453,33 @@ module utils {
     getFailoverDescriptor: () => {
       return SettingsService.FAILOVER_DESCRIPTOR
     },
+    removeMultipleWalletEntries: (pin) => {
+      let wc = WalletComponent.instance
+      let n = 0
+      wc.entries.forEach((entry: wlt.WalletEntry) => {
+        if (entry instanceof wlt.WalletEntry && entry.pin == pin) {
+          wc.localKeyStore.remove(entry.account).then(() => {
+            n++
+            console.log(`${n}. removed ${entry.account}`)
+          })
+        }
+      })
+    },
     fullExport: () => {
       return wltStandalone.exportLocalstorage()
+    },
+    tmp: () => {
+      Object.keys(localStorage).forEach(key => {
+        if (key.indexOf('p2pContacts') > 0) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key))
+            let parts = key.split('.')
+            db.putContact(parts[0], value.publicKey, value)
+          } catch (e) {
+            console.error('error import p2p contact', e)
+          }
+        }
+      })
     }
   }
 

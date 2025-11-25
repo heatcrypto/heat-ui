@@ -23,6 +23,14 @@
 
 namespace wlt {
 
+  export type SearchResultExplainedType = {
+    searchResultExplained: {
+      account: string;
+      finds: Map<string, string[]>;
+    }[];
+    queryTokens: string[];
+  }
+
   const defaultFormatBalance = balance => { return balance  }
 
   export const CURRENCIES = {
@@ -61,9 +69,15 @@ namespace wlt {
 
   export const SATOSHI_PER_BTC = new Big(100000000)
 
+  export const CACHE_KEY = {
+    addressInfo: (currencySym, address) => `cache-ai-${currencySym}-${db.compactHash(address)}`
+  }
+
   const storageMap = new Map<string, Store>()
 
   const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 3000 * 60 // 3 minutes
+
+  export const DB_VALUE_SALT = 'F<SH'  //do not change it, otherwise DB data becomes non-consistent
 
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
@@ -80,6 +94,9 @@ namespace wlt {
     return self.indexOf(value) === index
   }
 
+  /**
+   * @deprecated due migrated on IndexedDB
+   */
   export function getStore(namespace = "wallet") {
     let store = storageMap.get(namespace)
     if (store) return store
@@ -91,25 +108,30 @@ namespace wlt {
   }
 
   export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
-    let hash = heat.crypto.hash(address).substring(0, 16)
-    let key = `balance-${currencySymbol}-${hash}`
-    let r = getStore().get(key)
-    if (r) {
-      r.b = balance
-      if (unconfirmedBalance) {
-        r.ub = unconfirmedBalance
-        r.t = Date.now()
-      }
-      getStore().put(key, r)
-    } else {
-      getStore().put(key, {b: balance, ub: unconfirmedBalance, t: Date.now()})
-    }
+    let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
+    return db.saveWalletItem(db.compactHash(address), currencySymbol, {balance: balanceRecord})
+
+    /*let hash = heat.crypto.hash(address).substring(0, 16)
+    let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
+    getStore().put(`balance-${currencySymbol}-${hash}`, balanceRecord)
+    //return storage.updateBalance(storage.compactHash(address), currencySymbol, balanceRecord)
+    */
   }
 
   /**
    * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
    */
-  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
+  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): Promise<{confirmed: string, unconfirmed?: string}> {
+    return db.getWalletItem(db.compactHash(address), currencySymbol).then(item => {
+      let r = item?.balance
+      if (!r) return {confirmed: balance}
+      return r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()
+          ? {confirmed: r.b}
+          : {confirmed: r.b, unconfirmed: r.ub}
+    })
+  }
+
+  /*export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
     let hash = heat.crypto.hash(address).substring(0, 16)
     let key = `balance-${currencySymbol}-${hash}`
     let r = getStore().get(key)
@@ -120,7 +142,7 @@ namespace wlt {
       return {confirmed: r.b, unconfirmed: r.ub}
     }
     return {confirmed: balance}
-  }
+  }*/
 
   /*
     export function getVersion(): number {
@@ -128,19 +150,18 @@ namespace wlt {
     }
   */
 
-  export function getEntryVisibleLabelList(account): string[][] {
+  /**
+   * @deprecated
+   */
+  export function getEntryVisibleLabelListOld(account): string[][] {
     const store = getStore()
     return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
   }
 
-  export function updateEntryVisibleLabelList(account, list: string[][]) {
-    const store = getStore()
-    for (let ss of list) {
-      store.put(ss[0], ss[1])
-    }
-  }
-
-  export function getEntryVisibleLabel(account, address?: string) {
+  /**
+   * @deprecated
+   */
+  export function getEntryVisibleLabelOld(account, address?: string) {
     if (address) {
       let subEntryKey = converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address))
       return getStore().get(`label.${account}.${subEntryKey || ''}`)
@@ -148,35 +169,51 @@ namespace wlt {
     return getStore().get(`label.${account}`)
   }
 
-  export function updateEntryVisibleLabel(visibleLabel, account, address?: string) {
-    const storeKey = address
-        ? `label.${account}.${converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address)) || ''}`
+  export function getEntryVisibleLabel(account, currencySym, address?: string) {
+    return db.getItemLabel(db.compactHash(address || account), currencySym)
+  }
+
+  export function updateEntryVisibleLabel(visibleLabel, itemUniqueName: string, currencySym: string = '', parent: string = '') {
+    let itemKey = db.compactHash(itemUniqueName)
+    let parentHashed = parent ? db.compactHash(parent + DB_VALUE_SALT) : ''
+    return db.saveItemLabel(itemKey, currencySym, parentHashed, visibleLabel || '')
+
+    /*const storeKey = itemUniqueName
+        ? `label.${account}.${itemKey || ''}`
         : `label.${account}`
     if (visibleLabel) {
       getStore().put(storeKey, visibleLabel)
     } else {
       getStore().remove(storeKey)
-    }
+    }*/
   }
 
   export function getEntryBip44Compatible(account) {
-    return !!getStore().get("bip44." + account)
+    return db.getWalletEntry(account).then(entry => {
+      return entry?.bip44
+    })
+    //return !!getStore().get("bip44." + account)
   }
 
   export function saveEntryBip44Compatible(account, bip44Compatible) {
-    if (bip44Compatible && !getEntryBip44Compatible(account)) {
-      getStore().put("bip44." + account, 1)
+    if (bip44Compatible) {
+      return getEntryBip44Compatible(account).then(bip44 => {
+        if (!bip44) return db.saveWalletEntry(account, {bip44: true})
+      })
+      //getStore().put("bip44." + account, 1)
     }
   }
 
-  export function updateEntryCurrencies(account, currencies: []) {
-    if (currencies) {
-      let mergedCurrencies: [] = getStore().get(account) || []
-      mergedCurrencies.push(...currencies)
-      getStore().put(account, mergedCurrencies.filter(distinctValues))
-    }
+  export function saveWalletEntryCurrencies(account, currencySymbols: string[]) {
+    if (!currencySymbols) return Promise.resolve()
+    return db.getWalletEntry(account).then(we => {
+      let mergedCurrencies: string[] = (we?.selectedCurrencies || [])
+      mergedCurrencies.push(...currencySymbols)
+      return db.saveWalletEntry(account, {selectedCurrencies: mergedCurrencies.filter(distinctValues)})
+    })
   }
 
+  /*
   export function initCreatedAddresses() {
     let removingKeys = []
     let addingItems = []
@@ -215,6 +252,7 @@ namespace wlt {
       window.localStorage.setItem(item[0], item[1])
     }
   }
+   */
 
   /* in old versions the key format was changed several times, must be brought to the actual format
   */
@@ -234,21 +272,21 @@ namespace wlt {
     return s
   }
 
-  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): WalletAddress  {
-    let cryptoAddresses = getCryptoAddresses(walletEntry, currencySymbol)
-    let addresses = cryptoAddresses?.addresses
-    if (!addresses) return null
-    let foundAddress = addresses.find(a => a.address == createdAddress.address)
-    if (!foundAddress && !walletEntry.bip44Compatible) {
-      addresses.push(createdAddress)
-      foundAddress = createdAddress
-    }
-    if (!foundAddress) return
-    if (foundAddress.index != undefined && !walletEntry.bip44Compatible) delete foundAddress.index
-    foundAddress.isDeleted = false
-    foundAddress.created = true
-    saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses)
-    return foundAddress
+  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): Promise<WalletAddress> {
+    return getCryptoAddresses(walletEntry, currencySymbol).then(cryptoAddresses => {
+      let addresses = cryptoAddresses?.addresses
+      if (!addresses) return null
+      let address = addresses.find(a => a.address == createdAddress.address)
+      if (!address && !walletEntry.bip44Compatible) {
+        addresses.push(createdAddress)
+        address = createdAddress
+      }
+      if (!address) return
+      if (address.index != undefined && !walletEntry.bip44Compatible) delete address.index
+      address.isDeleted = false
+      address.created = true
+      return saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses).then(() => address)
+    })
   }
 
   export function rememberAddressCreated(account: string, addressHash: string, balance?: string) {
@@ -275,32 +313,36 @@ namespace wlt {
   }
 
   export function getCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
-    return walletEntry.getCryptoAddresses(currencySymbol) || loadCryptoAddresses(walletEntry, currencySymbol)
+    return Promise.resolve(walletEntry.getCryptoAddresses(currencySymbol)) || loadCryptoAddresses(walletEntry, currencySymbol)
   }
 
   export function loadCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
-    let record = getStore('wallet-address').get(`${currencySymbol}-${walletEntry.account}`)
-    if (record && record.data) {
-      let decrypted = heat.crypto.decryptMessage(record.data, record.nonce, walletEntry.account, walletEntry.secretPhrase)
-      let result: WalletAddresses = JSON.parse(decrypted)
-      return result
-    }
+    return db.getCryptoAddresses(walletEntry.account, currencySymbol).then(record => {
+      let enc = record?.addresses
+      if (enc) {
+        let decrypted = heat.crypto.decryptMessage(enc.data, enc.nonce, walletEntry.account, walletEntry.secretPhrase)
+        let result: WalletAddresses = JSON.parse(decrypted)
+        return result
+      }
+    })
   }
 
   export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {
     let encrypted = heat.crypto.encryptMessage(JSON.stringify(addresses), walletEntry.account, walletEntry.secretPhrase)
-    getStore('wallet-address').put(`${currencySymbol}-${walletEntry.account}`, encrypted)
+    return db.putCryptoAddresses(walletEntry.account, currencySymbol, encrypted)
   }
 
   export function saveFile(blob: Blob, fileName?: string) {
     if (fileName) {
       saveAs(blob, fileName)
     } else {
-      let version = parseInt(getStore().get("fileVersion")) || 0
-      version++
-      if (version > 99) version = 1
-      saveAs(blob, `heat.backup.v${version}.wallet`)
-      getStore().put("fileVersion", version)
+      return db.getValue('fileVersion').then(r => {
+        let version = parseInt(r?.value) || 0
+        version++
+        if (version > 99) version = 1
+        saveAs(blob, `heat.backup.v${version}.wallet`)
+        return db.putValue('fileVersion', version)
+      })
     }
     shouldBeSaved = null
   }

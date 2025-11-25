@@ -23,13 +23,11 @@
 
 module p2p {
 
-  export interface MessageExtraInfo {
-    status: {
-      stage: number // 0 - nothing (outgoing), 1 - delivered, 2 - read, 3 - rejected by server
-      remark?: string
-      fileIndicator?: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded;
-      // 3 - file is downloading (in progress); 4 - error on download
-    }
+  export interface MessageStatus {
+    stage: number // 0 - nothing (outgoing), 1 - delivered, 2 - read, 3 - rejected by server
+    remark: string
+    fileIndicator: number // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded;
+    // 3 - file is downloading (in progress); 4 - error on download
   }
 
   export class U2UProtocol extends BaseProtocol {
@@ -53,7 +51,7 @@ module p2p {
       let sendingData = {
           id: m.id,
           type: m.type,
-          room: room.name,
+          room: room.key,
           sender: caller,
           recipient: recipient,
           payload: JSON.stringify(encrypted)
@@ -115,7 +113,8 @@ module p2p {
         let chatMessage: U2UMessage = JSON.parse(<string>decrypted)
         chatMessage.transport = "server";
 
-        this.connector.processRoomMessage(chatMessage, room, msg.sender);
+        let problem = this.connector.processRoomMessage(chatMessage, room, msg.sender)
+        if (problem) throw new Error(problem)
 
         //response to server that message is delivered by the client app
         this.connector.sendWebsocketMessage(Protocol.U2U, [{
@@ -149,7 +148,7 @@ module p2p {
         //stages: 1 - delivered, 2 - read, 3 - rejected by server
         let room: Room = this.connector.rooms.get(roomName) || this.connector.messenger.getOneToOneRoom(msg.sender || msg.fromPeer, true)
         if (room) {
-          room.getMessageHistory().putExtraInfo(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
+          room.getMessageHistory().updateMessageStatus(payload.msgId, {status: {stage: payload.stage, remark: payload.remark}})
         }
       },
 

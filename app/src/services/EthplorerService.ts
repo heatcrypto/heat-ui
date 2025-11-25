@@ -234,8 +234,7 @@ class EthplorerService implements IEthereumAPIList{
                 }
               })
             }
-            wlt.saveCurrencyBalance(address, "ETH", info.ETH.balance)
-            deferred.resolve(info);
+            wlt.saveCurrencyBalance(address, "ETH", info.ETH.balance).then(() => deferred.resolve(info))
           }
         }, (reason) => {
           console.log(`HTTP reject for ${url}: ${reason}`)

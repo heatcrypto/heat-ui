@@ -312,7 +312,7 @@ class LoginComponent {
   pageAddPincode: string;
   pageAddSecretPhraseHasHiddenChars: boolean;
   pageAddCalculatedAccountId: string = 'Enter secret phrase to see account id';
-  pageAddWallet: IHeatWalletFile;
+  pageAddWallet: IHeatWalletFile | any;
   pageAddWalletInvalid: boolean = false;
 
   pageSigninPincode: string;
@@ -353,27 +353,29 @@ class LoginComponent {
     } catch (e) {}
     this.useExternalCaptcha = !env.isBrowser
     this.generateNewSecretPhrase();
-    this.initLocalKeys();
 
-    if (this.localKeys.length != 0) {
-      this.pageSigninAccount = this.localKeys[0].account;
-      this.page='signin';
-    }
-    else {
-      this.page='create';
-    }
+    this.initLocalKeys().then(localKeys => {
+      if (localKeys.length == 0) {
+        this.page = 'create';
+      } else {
+        this.pageSigninAccount = localKeys[0].account;
+        this.page = 'signin';
+      }
+    })
 
     // @ts-ignore
     new ClipboardJS('#copy-secret');
   }
 
   initLocalKeys() {
-    this.localKeys = this.localKeyStore.list().map((account:string) => {
-      return {
-        name: this.localKeyStore.getName(account),
-        account: account
-      }
-    });
+    return this.localKeyStore.list().then(walletEntries => {
+      return this.localKeys = walletEntries.map(entry => {
+        return {
+          name: entry.name,
+          account: entry.account
+        }
+      })
+    })
   }
 
   apiServerChanged() {
@@ -419,53 +421,64 @@ class LoginComponent {
   }
 
   pageAddFileInputChange(files: FileList) {
+    this.pageAddWallet = null
     if (files && files[0]) {
-      let reader = new FileReader();
+      let file = files[0]
+      let reader = new FileReader()
       reader.onload = () => {
         this.$scope.$evalAsync(() => {
-          this.pageAddWalletInvalid = true;
-          let fileContents = reader.result;
+          this.pageAddWalletInvalid = true
+          let fileContents = reader.result
           if (typeof fileContents === "string") {
-            let data = this.walletFile.parseJSON(fileContents);
+            let data = this.walletFile.parseJSON(fileContents)
             if (data && data["heatwallet-raw-data"]) {
               let resultMessage = this.walletFile.importRawData(data)
               this.$mdToast.show(this.$mdToast.simple().textContent(resultMessage + ".   The app will now restart...").hideDelay(7000))
               setTimeout(() => window.location.reload(), 3000)
-            } else {
+            } else if (data['entries'] && data['version']) {
               this.pageAddWallet = this.walletFile.createFromText(data)
+            } else if (data['formatName'] == 'dexie') {
+              this.pageAddWalletInvalid = false
+              this.pageAddWallet = {fileContents, file, dexie: true}
             }
           }
           if (this.pageAddWallet) {
-            this.pageAddWalletInvalid = false;
+            this.pageAddWalletInvalid = false
           }
         })
       };
-      reader.readAsText(files[0]);
+      reader.readAsText(file);
     }
   }
 
   pageAddWalletImportContinue() {
-    let addedKeys = this.localKeyStore.import(this.pageAddWallet);
-    this.initLocalKeys();
-    let message = `Imported ${addedKeys.length} keys into this device`;
-    this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-    this.$scope.$evalAsync(()=>{
-      this.page = '';
-    });
+    if (this.pageAddWallet.dexie) {
+      this.importDatabaseFile(this.pageAddWallet.file, this.pageAddWallet.fileContents).then(() => this.pageAddWalletInvalid = false, () => this.page = '')
+    } else {
+      this.localKeyStore.import(this.pageAddWallet).then(addedKeys => {
+        this.initLocalKeys().then(localKeys => {
+          let message = `Imported ${addedKeys.length} keys into this device`
+          this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000))
+          this.$scope.$evalAsync(() => {
+            this.page = ''
+          })
+        })
+      }).catch(reason => console.error(reason))
+    }
   }
 
   pageSinginLogin() {
-    this.$scope.$evalAsync(()=>{
-      this.pageSigninWrongPincode = false;
-      var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
-      if (key) {
-        this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
-          this.$location.path(`explorer-account/${this.user.account}/transactions`);
-        });
-      }
-      else {
-        this.pageSigninWrongPincode = true;
-      }
+    this.$scope.$evalAsync(() => {
+      this.pageSigninWrongPincode = false
+      this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode).then(key => {
+        if (key) {
+          this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
+            this.$location.path(`explorer-account/${this.user.account}/transactions`)
+          })
+        } else {
+          this.pageSigninWrongPincode = true
+        }
+      }).catch(e => console.log(e))
     })
   }
 
@@ -638,4 +651,32 @@ class LoginComponent {
     }, false);
     return deferred.promise;
   }
+
+  private importDatabaseFile(file, fileContent) {
+    let doWork = () => {
+      const blob = new Blob([fileContent], { type: file?.type })
+      return db.importDatabase(blob).then(() => {
+        setTimeout(() => window.location.reload(), 4000)
+        this.$mdToast.show(this.$mdToast.simple().textContent('Data is imported. The app will now restart...').hideDelay(7000))
+      }).catch(reason => {
+        let s = `Import error ${reason}`
+        this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+      })
+    }
+
+    return db.checkDatabaseEmpty().then(isEmpty => {
+      if (isEmpty) {
+        doWork()
+      } else {
+        return dialogs.confirm('Import wallet database',
+            'Detected not empty database in this app. It will be cleared and filled from the file').then(() => {
+          db.deleteDatabase().then(() => doWork()).catch(reason => {
+            let s = `Error ${reason}`
+            this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+          })
+        })
+      }
+    })
+  }
+
 }

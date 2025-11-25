@@ -70,7 +70,13 @@ namespace wlt {
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()
       this.walletEntry = walletEntry
-      this.visibleLabel = wlt.getEntryVisibleLabel(this.walletEntry.account, address)
+      wlt.getEntryVisibleLabel(this.walletEntry.account, symbol, address).then(value => this.visibleLabel = value)
+
+      if (this.isCurrencyBalance && this.symbol) {
+        getSavedCurrencyBalance(this.address, this.symbol, this._balance).then(r => {
+          this._balance = r?.confirmed || this._balance
+        })
+      }
     }
 
     toString(): string {
@@ -78,14 +84,7 @@ namespace wlt {
     }
 
     get balance(): string {
-      let result
-      if (this.isCurrencyBalance && this.symbol) {
-        let r = getSavedCurrencyBalance(this.address, this.symbol, this._balance)
-        result = r?.confirmed
-      } else {
-        result = this._balance
-      }
-      return CURRENCIES_MAP.get(this.name).formatBalance(result)
+      return this._balance ? CURRENCIES_MAP.get(this.name).formatBalance(this._balance) : null
     }
 
     set balance(value: string) {
@@ -168,27 +167,16 @@ namespace wlt {
       isLimitReached(getCurrencyBalances(this.walletEntry, this.name))
     }
 
-    private getCurrencies(account: string): string[] {
-      let currencies = getStore().get(account)
-      return currencies || []
-    }
-
-    private registerCurrency(account: string, currency: string) {
-      let currencies = this.getCurrencies(account)
-      if (currencies.indexOf(currency) > -1) return
-      currencies.push(currency)
-      getStore().put(account, currencies.filter(wlt.distinctValues))
-    }
-
     removeIsDeleted(entry) {
       let currencySymbol = entry.symbol
       let account = entry.walletEntry.account
-      let walletType = getCryptoAddresses(entry.walletEntry, currencySymbol)
-      walletType.addresses.forEach(walletAddress => {
-        if (walletAddress.address === entry.address)
-          delete walletAddress['isDeleted']
+      getCryptoAddresses(entry.walletEntry, currencySymbol).then(walletType => {
+        walletType.addresses.forEach(walletAddress => {
+          if (walletAddress.address === entry.address)
+            delete walletAddress['isDeleted']
+        })
+        return saveCryptoAddresses(entry.walletEntry, currencySymbol, walletType)
       })
-      saveCryptoAddresses(entry.walletEntry, currencySymbol, walletType)
     }
 
     createAddressByName() {
@@ -283,7 +271,6 @@ namespace wlt {
 
       if (nextAddress) {
         nextAddress.isDeleted = false
-        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress)
         let newCurrencyBalance = new CurrencyBalance(this.walletEntry, currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
         //rememberAddressCreated(this.walletEntry.account, nextAddress.address)
@@ -300,23 +287,13 @@ namespace wlt {
         currencies.splice(index, 0, newCurrencyBalance)
         //currencies.push(newCurrencyBalance)
 
-        this.registerCurrency(this.walletEntry.account, currencySymbol)
+        wlt.saveWalletEntryCurrencies(this.walletEntry.account, [currencySymbol])
 
         component.flatten()
 
-        /*
-        // requestBalance(currencyName)
-        if (currencyName == "Ethereum") {
-          let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
-          ethCurrencyAddressLoading.visible = entry.visible
-          ethCurrencyAddressLoading.wallet = this.wallet
-          currencies.push(ethCurrencyAddressLoading)
-          component.loadEthereumAddresses(this.walletEntry)
-        }
-        setTimeout(() => this.flatten(), 1000)
-         */
-
-        shouldBeSaved = component.exportWallet(true)
+        rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress).then(value => {
+          component.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
+        })
 
         return newCurrencyBalance
       }
@@ -347,16 +324,18 @@ namespace wlt {
     public expanded = false
     private filter: wlt.WalletEntryFilter;
 
-    constructor(public account: string,
-                public name: string,
-                public component: WalletComponentAbstract //user may assign any text for wallet account
+    constructor(public component: wlt.WalletComponentAbstract,
+                public account: string,
+                public name: string, //user may assign any text for wallet account
+                selectedCurrencies: string[]
     ) {
       super()
       this.visible = true
       this.identifier = name ? `${account} | ${name}` : account
-      this.visibleLabel = getEntryVisibleLabel(this.account)
-      this.bip44Compatible = getEntryBip44Compatible(this.account)
-      this.selectedCurrencies = (wlt.getStore().get(this.account) || []).sort()
+      //this.visibleLabel = getEntryVisibleLabel(this.account)
+      wlt.getEntryVisibleLabel(this.account, '').then(value => this.visibleLabel = value)
+      getEntryBip44Compatible(this.account).then(bip44 => this.bip44Compatible = bip44)
+      this.selectedCurrencies = (selectedCurrencies || []).sort()
 
       this.filter = new WalletEntryFilter(this)
     }
@@ -395,7 +374,7 @@ namespace wlt {
       this.currencies.push(addressLoading);
 
       let currencyAddressCreate: CurrencyAddressCreate =
-          <CurrencyAddressCreate><unknown> this.currencies.find(c => c['isCurrencyAddressCreate'] && c.name == currencyName)
+          <CurrencyAddressCreate> this.currencies.find(c => c['isCurrencyAddressCreate'] && c.name == currencyName)
       if (!currencyAddressCreate) {
         currencyAddressCreate = new wlt.CurrencyAddressCreate(currencyName, wallet, this)
         this.currencies.push(currencyAddressCreate)
@@ -439,7 +418,11 @@ namespace wlt {
       walletComponent.flatten()
 
       if (user.account === this.account) {
-        walletComponent.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+        try {
+          walletComponent.shareCurrencyAddressesWithP2pContacts('BTC', wallet.addresses[0].address)
+        } catch (e) {
+          console.error(e)
+        }
       }
 
       /* Only if this node is expanded will we load the addresses */

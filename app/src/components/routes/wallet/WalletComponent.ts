@@ -35,8 +35,8 @@
       padding: 2px;
       margin-left: 2px;
       font-size: smaller;
-      color: darkcyan;
-      border: solid 1px darkcyan;
+      color: deepskyblue;
+      border: solid 1px steelblue;
       border-radius: 6px;
     }
   `,
@@ -290,7 +290,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   public static instance
   selectAll = true
-  allLocked = true
   displayUnlocked = false
 
   //walletEntries: Array<wlt.WalletEntry> = []
@@ -299,7 +298,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     {name: 'FIMK', disabled: false}, {name: 'NXT', disabled: true}, {name: 'ARDR', disabled: true},
     {name: 'IOTA',disabled: false}, {name: 'LTC', disabled: false}, {name: 'BCH', disabled: false}];
   selectedChain = '';
-  store: Store;
 
   private ltcBlockExplorerService: LtcBlockExplorerService;
   private bchBlockExplorerService: BchBlockExplorerService;
@@ -349,7 +347,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.nxtCryptoService = nxtCryptoService;
     this.bitcoreService = bitcoreService;
     WalletComponent.instance = this;
-    this.store = wlt.getStore()
 
     this.displayUnlocked = WalletComponent.displayUnlocked
     $scope.$on('$destroy', () => WalletComponent.displayUnlocked = this.displayUnlocked)
@@ -367,7 +364,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     })
 
     this.initLocalKeyStore()
-    wlt.initCreatedAddresses()
+    //wlt.initCreatedAddresses()
   }
 
   enterWalletEntryLabel(walletEntry: wlt.WalletEntry) {
@@ -376,23 +373,22 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       {label: `Invisible label until login`, value: walletEntry.label}
     ]
     dialogs.simplePrompt(null, 'Enter Label', `Enter label for account ${walletEntry.identifier} or enter empty value to delete the label`, p).then(
-      labels => {
-        //save visible label
-        walletEntry.visibleLabel = labels[0]?.trim()
-        wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account)
-        //save invisible label
-        walletEntry.label = labels[1]?.trim()
-        let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
-        if (password) {
-          try {
-            let key = this.localKeyStore.load(walletEntry.account, password)
-            if (key) {
-              key.label = walletEntry.label || null
-              this.localKeyStore.put(key)
-            }
-          } catch (e) { console.error(e) }
+        labels => {
+          //save visible label
+          walletEntry.visibleLabel = labels[0]?.trim()
+          wlt.updateEntryVisibleLabel(walletEntry.visibleLabel, walletEntry.account, '')
+          //save invisible label
+          walletEntry.label = labels[1]?.trim()
+          let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
+          if (password) {
+            this.localKeyStore.load(walletEntry.account, password).then(key => {
+              if (key) {
+                key.label = walletEntry.label || null
+                this.localKeyStore.put(key)
+              }
+            }).catch((e) => console.error(e))
+          }
         }
-      }
     )
   }
 
@@ -404,7 +400,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       labels => {
         //save visible label
         currencyBalance.visibleLabel = labels[0]?.trim()
-        wlt.updateEntryVisibleLabel(currencyBalance.visibleLabel, currencyBalance.walletEntry.account, currencyBalance.address)
+        wlt.updateEntryVisibleLabel(currencyBalance.visibleLabel, currencyBalance.address, currencyBalance.symbol, currencyBalance.walletEntry.account)
       }
     )
   }
@@ -419,12 +415,14 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         this.showMessage('Wrong password')
         return
       }
-      const key: ILocalKey = this.localKeyStore.load(entry.account, pin)
-      dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`, 'Please enter new Password (or Pin code) for entry', '').then(newPincode => {
-        key.pincode = newPincode
-        this.localKeyStore.put(key)
-        entry.pin = key.pincode
-        this.showMessage(`Password is changed for ${entry.account}`)
+      this.localKeyStore.load(entry.account, pin).then(key => {
+        dialogs.prompt($event, `Enter new Password (or Pin) for ${entry.account}`,
+            'Please enter new Password (or Pin code) for entry', '').then(newPincode => {
+          key.pincode = newPincode
+          this.localKeyStore.put(key)
+          entry.pin = key.pincode
+          this.showMessage(`Password is changed for ${entry.account}`)
+        })
       })
     })
   }
@@ -487,20 +485,21 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       walletEntry.currencies = walletEntry.currencies
           .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress == currency.address));
       let currencySymbol = entry.symbol;
-      let walletType = wlt.getCryptoAddresses(walletEntry, currencySymbol)
-      let addressToDelete
-      if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
-        addressToDelete = walletType.addresses[0];
-      } else {
-        let address = walletType.addresses.find(address => address.address == removingAddress)
-        if (address) addressToDelete = address
-      }
-      if (addressToDelete) {
-        addressToDelete.isDeleted = true
-        wlt.saveCryptoAddresses(walletEntry, currencySymbol, walletType)
-      }
-
-      this.flatten()
+      wlt.getCryptoAddresses(walletEntry, currencySymbol).then(walletType => {
+        let addressToDelete
+        if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
+          addressToDelete = walletType.addresses[0];
+        } else {
+          let address = walletType.addresses.find(address => address.address == removingAddress)
+          if (address) addressToDelete = address
+        }
+        if (addressToDelete) {
+          addressToDelete.isDeleted = true
+          wlt.saveCryptoAddresses(walletEntry, currencySymbol, walletType).then(() => this.flatten())
+        } else {
+          this.flatten()
+        }
+      })
     });
   }
 
@@ -509,19 +508,20 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .then(() => {
           let resetAddressesPromise: Promise<WalletAddresses>
           if (currencyName === 'Ethereum') {
-            let wa = wlt.loadCryptoAddresses(walletEntry, 'ETH')
-            resetAddressesPromise = this.lightwalletService.unlock(wa, walletEntry.secretPhrase, "", true)
+            resetAddressesPromise = this.lightwalletService.unlock(null, walletEntry.secretPhrase, true)
           } else if (currencyName === 'Bitcoin') {
-            let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
-            resetAddressesPromise = this.bitcoreService.unlock(wa, walletEntry.secretPhrase, true)
+            resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'BTC')
+                .then(wa => this.bitcoreService.unlock(wa, walletEntry.secretPhrase, true))
+          } else if (currencyName === 'BitcoinCash') {
+            resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'BCH')
+                .then(wa => this.bchCryptoService.unlock(wa, walletEntry.secretPhrase))
+          } else if (currencyName === 'Litecoin') {
+            resetAddressesPromise = wlt.loadCryptoAddresses(walletEntry, 'LTC')
+                .then(wa => this.ltcCryptoService.unlock(wa, walletEntry.secretPhrase))
           } else if (currencyName === 'FIMK') {
           } else if (currencyName === 'NXT') {
           } else if (currencyName === 'ARDOR') {
           } else if (currencyName === 'IOTA') {
-          } else if (currencyName === 'Litecoin') {
-            resetAddressesPromise = this.ltcCryptoService.unlock(walletEntry.secretPhrase)
-          } else if (currencyName === 'BitcoinCash') {
-            resetAddressesPromise = this.bchCryptoService.unlock(walletEntry.secretPhrase)
           } else if (currencyName === 'HEAT') {
           }
           if (resetAddressesPromise) {
@@ -532,20 +532,16 @@ class WalletComponent extends wlt.WalletComponentAbstract {
                 if (forceWasCreated) a.created = true
                 a.isDeleted = false
               })
-              wlt.saveCryptoAddresses(walletEntry, wlt.CURRENCIES_MAP.get(currencyName).symbol, cryptoAddresses)
-              walletEntry.currencies = []
-              this.initWalletEntry(walletEntry)
-              walletEntry.toggle()
+              wlt.saveCryptoAddresses(walletEntry, wlt.CURRENCIES_MAP.get(currencyName).symbol, cryptoAddresses).then(() => {
+                walletEntry.currencies = []
+                this.initWalletEntry(walletEntry)
+                walletEntry.toggle()
+              })
             }, reason => {
               console.warn(`Currency ${currencyName} is not reset: ` + reason)
             })
           }
         });
-  }
-
-  getSelectedCurrencies(walletEntry) {
-    let selectedCurrencies = this.store.get(walletEntry.account) || []
-    return selectedCurrencies
   }
 
   createAddress(walletEntry, currencyName) {
@@ -580,7 +576,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       createBCHAccount($event, this)
     } else if (selected === 'HEAT') {
       createHEATAccount($event, this)
-      wlt.shouldBeSaved = this.exportWallet(true)
+      this.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
     }
     this.$scope['vm'].selectedChain = null
   }
@@ -619,9 +615,11 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   shareCurrencyAddressesWithP2pContacts(currency: string, address: string) {
     let p2pContactsUtils = <ContactService>heat.$inject.get('contactService')
     let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
-    p2pMessaging.p2pContactStore.forEach((key, contact) => {
-      console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
-      p2pContactsUtils.shareCryptoAddress(contact, currency, address)
+    db.listContacts(this.user.account).then((contacts: any[]) => {
+      for (const contact of contacts) {
+        console.log(`sharing key ${address} of currency ${currency} with p2p contact: ${contact.account}`)
+        p2pContactsUtils.shareCryptoAddress(contact, currency, address)
+      }
     })
   }
 
@@ -641,9 +639,10 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           name: '',
           publicKey
         };
-        this.localKeyStore.put(key);
-        this.$scope.$evalAsync(() => {
-          this.initLocalKeyStore()
+        this.localKeyStore.put(key).then(value => {
+          this.$scope.$evalAsync(() => {
+            this.initLocalKeyStore()
+          })
         })
       }
     )
@@ -651,54 +650,95 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   pageAddFileInputChange(files) {
     if (files && files[0]) {
-      let reader = new FileReader();
-      reader.onload = () => {
+      let file = files[0]
+      let reader = new FileReader()
+      reader.onload = (e) => {
         this.$scope.$evalAsync(() => {
-          let fileContents = reader.result;
-          let data = this.walletFile.parseJSON(<string>fileContents);
-          let resultMessage = "Nothing imported"
-          if (data && data["heatwallet-raw-data"]) {
-            resultMessage = this.walletFile.importRawData(data)
-            resultMessage += ".  The app will now restart..."
+          let fileContents = reader.result
+          let data = this.walletFile.parseJSON(<string>fileContents)
+          let p = Promise.resolve("Nothing imported")
+          if (!data) return
+          if (data["heatwallet-raw-data"]) {
+            //resultMessage = this.walletFile.importRawData(data)
+            //resultMessage += ".  The app will now restart..."
+            p = p.then(s => this.walletFile.importRawData(data) + ".  The app will now restart...")
             setTimeout(() => window.location.reload(), 4000)
-          } else {
-            let wallet = this.walletFile.createFromText(data);
+          } else if (data['entries'] && data['version']) {
+            let wallet = this.walletFile.createFromText(data)
             if (wallet) {
-              let addedKeys = this.localKeyStore.import(wallet);
-              this.$scope.$evalAsync(() => {
-                this.initLocalKeyStore()
-                wlt.initCreatedAddresses()
+              p = p.then(s => {
+                return this.localKeyStore.import(wallet).then(addedKeys => {
+                  this.$scope.$evalAsync(() => {
+                    this.initLocalKeyStore()
+                    //wlt.initCreatedAddresses()
+                  })
+                  let isBig = addedKeys.length > 8
+                  let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
+                      .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
+                      .join(", ")
+                  if (isBig) report = report + "\n..."
+                  return `Imported ${addedKeys.length} keys into this device: \n ${report}`
+                }).catch(reason => {
+                  console.error(reason)
+                  return `Error on processing file content: ${reason}`
+                })
               })
-              let isBig = addedKeys.length > 8
-              let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
-                  .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
-                  .join(", ")
-              if (isBig) report = report + "\n..."
-              resultMessage = `Imported ${addedKeys.length} keys into this device: \n ${report}`
             }
+          } else if (data['formatName'] == 'dexie')  {
+            this.importDatabaseFile(file, fileContents)
+          } else {
+            return 'Invalid wallet file'
           }
-          this.$mdToast.show(this.$mdToast.simple().textContent(resultMessage).hideDelay(7000))
+          p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
         })
-      };
-      reader.readAsText(files[0]);
+      }
+      reader.readAsText(file)
     }
+  }
+
+  private importDatabaseFile(file, fileContent) {
+    let doWork = () => {
+      const blob = new Blob([fileContent], { type: file.type })
+      db.importDatabase(blob).then(() => {
+        setTimeout(() => window.location.reload(), 4000)
+        this.$mdToast.show(this.$mdToast.simple().textContent('Data is imported. The app will now restart...').hideDelay(7000))
+      }).catch(reason => {
+        let s = `Import error ${reason}`
+        this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+      })
+    }
+
+    db.checkDatabaseEmpty().then(isEmpty => {
+      if (isEmpty) {
+        doWork()
+      } else {
+        dialogs.confirm('Import wallet database',
+            'Detected not empty database in this app. It will be cleared and filled from the file').then(() => {
+              db.deleteDatabase().then(() => doWork()).catch(reason => {
+                let s = `Error ${reason}`
+                this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+              })
+        })
+      }
+    })
   }
 
   remove($event, entry: wlt.WalletEntry) {
     dialogs.prompt($event, 'Remove Wallet Entry',
-      `This completely removes the wallet entry from your device.
+      `This completely removes the wallet entry '${entry.name}' from your device.
        Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
         pin => {
           if (pin == entry.pin) {
-            this.localKeyStore.remove(entry.account)
-            this.initLocalKeyStore()
-            if (entry.account === this.user.account) {
-              this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
-                if (count > 0) {
-                  this.shareCurrencyAddressesWithP2pContacts('BTC', '')
-                }
-              })
-            }
+            this.localKeyStore.remove(entry.account).then(() => {
+              this.initLocalKeyStore()
+              if (entry.account === this.user.account) {
+                this.heat.api.getKeystoreEntryCountByAccount(entry.account).then(count => {
+                  if (count > 0) {
+                    this.shareCurrencyAddressesWithP2pContacts('BTC', '')
+                  }
+                })
+              }
+            })
           } else {
             this.$mdToast.show(this.$mdToast.simple().textContent('Incorrect Password (or Pin Code). Wallet Entry not removed.').hideDelay(5000));
           }
@@ -709,57 +749,60 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   unlock($event, selectedWalletEntry?: wlt.WalletEntry) {
     dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin Code) to unlock', '').then(
       pin => {
+        let promises: Promise<any>[] = []
         let count = 0
         this.walletEntries.forEach(walletEntry => {
           if (!walletEntry.secretPhrase) {
-            var key = this.localKeyStore.load(walletEntry.account, pin);
-            if (key) {
+            promises.push(this.localKeyStore.load(walletEntry.account, pin).then(key => {
+              if (!key) return
               count += 1
               this.localKeyStore.rememberPassword(walletEntry.account, pin)
               walletEntry.pin = pin
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-              wlt.saveEntryBip44Compatible(walletEntry.account, walletEntry.bip44Compatible)
+              if (walletEntry.bip44Compatible) {
+                wlt.saveEntryBip44Compatible(walletEntry.account, walletEntry.bip44Compatible)
+              }
               walletEntry.label = key.label
               walletEntry.unlocked = true
               wlt.walletEntriesCache.set(walletEntry.account, walletEntry)
               this.initWalletEntry(walletEntry)
-            }
+            }).catch((e) => console.error(`Error loading wallet entry for account ${walletEntry.account}: ${e}`)))
           }
         })
-        let message = `Unlocked ${count ? count : 'NO'} entries`
-        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        selectedWalletEntry?.toggle(true)
+        Promise.all(promises).then(() => {
+          let message = `Unlocked ${count ? count : 'NO'} entries`
+          this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
+          selectedWalletEntry?.toggle(true)
 
-        /* Only if no user is signed in currently, will we auto select one signin */
-        if (!this.user.unlocked) {
-          /* Try and unlock the selected entry */
-          if (selectedWalletEntry?.unlocked) {
-            for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
-              let balance = <wlt.CurrencyBalance>selectedWalletEntry.currencies[i]
-              if (balance.isCurrencyBalance) {
-                balance.unlock(true)
-                return
-              }
-            }
-          }
-
-          /* Try and find another wallet.CurrencyBalance */
-          for (let i = 0; i < this.entries.length; i++) {
-            let entry = <wlt.WalletEntry>this.entries[i];
-            if (entry.unlocked) {
-              for (let k = 0; k < entry.currencies.length; k++) {
-                let balance = <wlt.CurrencyBalance>entry.currencies[k];
+          /* Only if no user is signed in currently, will we auto select one signin */
+          if (!this.user.unlocked) {
+            /* Try and unlock the selected entry */
+            if (selectedWalletEntry?.unlocked) {
+              for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
+                let balance = <wlt.CurrencyBalance>selectedWalletEntry.currencies[i]
                 if (balance.isCurrencyBalance) {
-                  balance.unlock(true);
+                  balance.unlock(true)
                   return
                 }
               }
             }
+
+            /* Try and find another wallet.CurrencyBalance */
+            for (let i = 0; i < this.entries.length; i++) {
+              let entry = <wlt.WalletEntry>this.entries[i];
+              if (entry.unlocked) {
+                for (let k = 0; k < entry.currencies.length; k++) {
+                  let balance = <wlt.CurrencyBalance>entry.currencies[k];
+                  if (balance.isCurrencyBalance) {
+                    balance.unlock(true);
+                    return
+                  }
+                }
+              }
+            }
           }
-
-        }
-
+        })
       }
     )
   }
@@ -795,17 +838,29 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     /* Bitcoin and Ethereum integration start here */
     if (walletEntry.selectedCurrencies.indexOf('BTC') > -1) {
-      let wa = wlt.loadCryptoAddresses(walletEntry, 'BTC')
-      this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          walletEntry.initBTC(this, wallet, this.user)
-        }
+      wlt.loadCryptoAddresses(walletEntry, 'BTC').then(wa => {
+        this.bitcoreService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
+          if (wallet) walletEntry.initBTC(this, wallet, this.user)
+        })
       }).catch(reason => {console.log(reason)})
     }
+    if (walletEntry.selectedCurrencies.indexOf('BCH') > -1)
+      wlt.loadCryptoAddresses(walletEntry, 'BCH').then(wa => {
+        this.bchCryptoService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
+          if (wallet) walletEntry.initBCH(this, wallet)
+        }).catch(reason => {console.log(reason)})
+      })
+    if (walletEntry.selectedCurrencies.indexOf('LTC') > -1)
+      wlt.loadCryptoAddresses(walletEntry, 'LTC').then(wa => {
+        this.ltcCryptoService.unlock(wa, walletEntry.secretPhrase).then(wallet => {
+          if (wallet) walletEntry.initLTC(this, wallet)
+        }).catch(reason => {console.log(reason)})
+      })
     if (walletEntry.selectedCurrencies.indexOf('ETH') > -1) {
-      let walletAddresses = wlt.loadCryptoAddresses(walletEntry, 'ETH')
-      this.lightwalletService.unlock(walletAddresses, walletEntry.secretPhrase, "").then(walletAddresses => {
-        walletEntry.initEth(this, walletAddresses)
+      wlt.loadCryptoAddresses(walletEntry, 'ETH').then(wa => {
+        this.lightwalletService.unlock(wa, walletEntry.secretPhrase).then(walletAddresses => {
+          if (walletAddresses) walletEntry.initEth(this, walletAddresses)
+        })
       }).catch(reason => {console.log(reason)})
     }
     if (walletEntry.selectedCurrencies.indexOf('IOTA') > -1) // removing nullity check since iota wallet then it tries to load iota for every mnemonic and throws error along with "plain text seed" on console
@@ -823,18 +878,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     if (walletEntry.selectedCurrencies.indexOf('ARDR') > -1)
       this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
         walletEntry.initARDOR(this, wallet)
-      }).catch(reason => {console.log(reason)})
-    if (walletEntry.selectedCurrencies.indexOf('LTC') > -1)
-      this.ltcCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          walletEntry.initLTC(this, wallet)
-        }
-      }).catch(reason => {console.log(reason)})
-    if (walletEntry.selectedCurrencies.indexOf('BCH') > -1)
-      this.bchCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-        if (wallet !== undefined) {
-          walletEntry.initBCH(this, wallet)
-        }
       }).catch(reason => {console.log(reason)})
   }
 
@@ -899,22 +942,29 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           pincode: data.password,
           name: '',
           publicKey
-        };
-        this.localKeyStore.put(key);
-        let message = `Seed was successfully imported under HEAT account ${account}`;
-        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase))
-          .then(() => heat.fullApplicationScopeReload())
+        }
+        return this.localKeyStore.put(key).then(value => {
+          let message = `Seed was successfully imported under HEAT account ${account}`
+          this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
+          this.user.unlock(data.secretPhrase, key, this.lightwalletService.validSeed(data.secretPhrase))
+              .then(() => heat.fullApplicationScopeReload())
+        })
       }
     )
   }
 
   // @click
   exportWallet(onlyData?: boolean) {
+    if (onlyData) return null
+    let suffix = heat.isTestnet ? 'testnet' : 'mainnet'
+    db.exportDatabase().then(blob => wlt.saveFile(blob, `heat.${suffix}.wallet`))
+
+    /*
     let accountCurrencies: Map<string, []> = new Map<string, []>()
+    let store = wlt.getStore()
     this.entries.forEach(entry => {
       if (entry instanceof wlt.WalletEntry) {
-        let currencies: [] = this.store.get(entry.account)
+        let currencies: [] = store.get(entry.account)
         if (currencies) accountCurrencies.set(entry.account, currencies)
       }
     })
@@ -929,7 +979,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         .filter(v => v[1]?.length > 0)
 
     // @ts-ignore
-    let exported = this.localKeyStore.export(accountCurrencies, accountAddresses)
+    let exported = this.localKeyStore.exportOld(accountCurrencies, accountAddresses)
     let paymentMessages = wlt.exportPaymentMessages()
     exported = Object.assign(exported, {paymentMessages: paymentMessages})
 
@@ -938,7 +988,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     if (onlyData) return blob
 
-    wlt.saveFile(blob, "heat.wallet")
+    wlt.saveFile(blob, "heat.wallet")*/
   }
 
 }
