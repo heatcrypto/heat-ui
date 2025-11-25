@@ -9,7 +9,7 @@ namespace wltStandalone {
         let blob = new Blob([dataStr], {type: "octet/stream"})
         let objectURL = window.webkitURL.createObjectURL(blob)
         anchorElement.setAttribute('href', objectURL)
-        anchorElement.setAttribute('download', objectURL.split('/')[2] + '-export.json')
+        anchorElement.setAttribute('download', (objectURL.split('/')[2] || 'heat-localstorage') + '-export.json')
         anchorElement.click()
         return `size ${blob.size}`
 
