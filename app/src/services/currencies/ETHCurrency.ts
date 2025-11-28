@@ -279,11 +279,18 @@ class ETHCurrency implements ICurrency {
       }
 
       web3.getGasPrice().then((gasprice) => {
-        let data = $scope['vm'].data
-        data.gasPrice = gasprice / Web3Service.GWEI_SCALE
-        data.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
-        data.fee = web3.web3.fromWei(gasprice * data.gasLimit, 'ether')
+        let d = this.data
+        d.gasPrice = gasprice / Web3Service.GWEI_SCALE
+        d.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
+        d.fee = web3.web3.fromWei(gasprice * d.gasLimit, 'ether')
       })
+
+      this.maxAmountClick = () => {
+        if (self.recentBalance.confirmed && this.data.fee) {
+          this.data.amount = String(parseFloat(self.recentBalance.confirmed) - parseFloat(this.data.fee))
+        }
+      }
+
     }
 
     let $q = heat.$inject.get('$q')
@@ -314,6 +321,7 @@ class ETHCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Amount in ETH</label>
                   <input ng-model="vm.data.amount" required name="amount">
+                  <button ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
                 </md-input-container>
 
                 <md-input-container flex >
