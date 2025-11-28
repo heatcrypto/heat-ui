@@ -2,8 +2,11 @@
 @Inject('$q', 'user', 'settings', '$window', 'http', 'storage')
 class Web3Service {
 
+  public static GWEI_SCALE = 1000000000
+
   public web3: any;
   public blockbookEndpoint: string;
+  public mobileHeatwalletEndpoint: string;
   private safeBuffer;
   private ethereumTx;
 
@@ -21,7 +24,10 @@ class Web3Service {
     this.web3 = new Web3(new Web3.providers.HttpProvider(this.settingsService.get(SettingsService.WEB3PROVIDER)));
 
     this.settingsService.initialized.then(
-      () => this.blockbookEndpoint = SettingsService.getCryptoServerEndpoint('ETH')
+      () => {
+          this.blockbookEndpoint = SettingsService.getCryptoServerEndpoint('ETH')
+          this.mobileHeatwalletEndpoint = SettingsService.getCryptoServerEndpoint('ETH', 0, 'mobile-heatwallet')
+      }
     );
   }
 
@@ -56,17 +62,19 @@ class Web3Service {
   }
 
   getGasPrice = () => {
+    let oneGWei = 1 * Web3Service.GWEI_SCALE
     return new Promise<number>((resolve) => {
-      this.http.get(this.blockbookEndpoint + "/estimatefee/5").then(
+      this.http.get(this.mobileHeatwalletEndpoint + "/fees/gas-price-extended/1").then(
         response => {
-          if (!response) resolve(20000000000)
+          if (!response) resolve(oneGWei)
           let r = angular.isString(response) ? JSON.parse(response) : response
-          resolve(this.web3.toWei(r.result, 'ether'))
+          if (!r.proposeGasPriceGWei) resolve(oneGWei)
+          resolve(oneGWei * r.proposeGasPriceGWei)
         },
         reason => {
-          resolve(20000000000)
+          resolve(oneGWei)
         }
-      );
+      )
     })
   }
 
