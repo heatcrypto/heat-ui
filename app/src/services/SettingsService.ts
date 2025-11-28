@@ -130,17 +130,17 @@ class SettingsService {
     node[property] = value;
   }
 
-  static getCryptoServer(currency: string, index = 0): CryptoNodeDescriptor {
+  static getCryptoServer(currency: string, index = 0, name?: string): CryptoNodeDescriptor {
     let nodes = SettingsService.CRYPTO_NODES
         .find((descriptor) => descriptor.currencyName === currency)
-        .nodes.filter(node => node.status === 'ACTIVE');
+        .nodes.filter(node => node.status === 'ACTIVE' && (!name ? true : node.name === name) )
     return nodes.sort((n1, n2) => n1.priority < n2.priority ? -1 : 1)[index]
   }
 
-  static getCryptoServerEndpoint(currency: string, index = 0): string {
+  static getCryptoServerEndpoint(currency: string, index = 0, name?: string): string {
     if (!SettingsService.CRYPTO_NODES) return "";
 
-    let node = this.getCryptoServer(currency, index);
+    let node = this.getCryptoServer(currency, index, name);
     if (!node) return "";
     return node.port ? `${node.host}:${node.port}` : `${node.host}`;
   }
@@ -442,4 +442,5 @@ interface CryptoNodeDescriptor {
   priority: number;
   status?: string;
   timeout?: number;
+  name?: string;
 }

@@ -201,6 +201,13 @@
           "status": "ACTIVE",
           "timeout": 5000,
           "blockbook": "https://eth1.heatwallet.com/api/v2"
+        },
+        {
+          "host": "https://mobile.heatwallet.com",
+          "priority": 10,
+          "status": "ACTIVE",
+          "timeout": 5000,
+          "name": "mobile-heatwallet"
         }
       ]
     }
