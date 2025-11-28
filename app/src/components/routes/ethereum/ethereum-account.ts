@@ -205,12 +205,12 @@ class EthereumAccountComponent {
 
   refresh() {
     wlt.getSavedCurrencyBalance(this.account, "ETH").then(balances => {
-      this.balance = balances.confirmed || "*"
+      this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
       this.balanceUnconfirmed = balances.unconfirmed
       this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
         this.$scope.$evalAsync(() => {
           wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance).then(balances => {
-            this.balance = balances.confirmed || "*"
+            this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
             this.balanceUnconfirmed = balances.unconfirmed
             //this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
             if (info.tokens) {
