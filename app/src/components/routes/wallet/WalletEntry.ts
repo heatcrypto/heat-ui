@@ -65,6 +65,7 @@ namespace wlt {
     public pubKey: string
     public tokens: Array<TokenBalance> = []
     public stateMessage: string
+    public expanded = false
     private _balance: string
 
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
@@ -138,6 +139,13 @@ namespace wlt {
 
     public hasDigit() {
       return CurrencyBalance.hasDigit.test(this._balance)
+    }
+
+    public toggle(forcedExpanded: boolean) {
+      this.expanded = angular.isUndefined(forcedExpanded) ? !this.expanded : forcedExpanded
+      for (const token of this.tokens) {
+        token.visible = this.expanded
+      }
     }
 
   }

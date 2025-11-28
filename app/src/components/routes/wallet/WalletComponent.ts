@@ -182,6 +182,9 @@
 
               <!-- Currency Balance -->
               <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
+                <md-button class="address-expand md-icon-button left" ng-if="entry.tokens.length>0" ng-click="entry.toggle()" style="width: 30px; margin: -2px 10px 0 -40px;">
+                  <md-icon md-font-library="material-icons">{{entry.expanded?'expand_less':'expand_more'}}</md-icon>
+                </md-button>
                 <div class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <span class="visibleLabel flex" style="margin-top: 8px;">{{entry.visibleLabel}}</span>
@@ -825,7 +828,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         assetInfos.forEach(assetInfo => {
           let tokenBalance = new wlt.TokenBalance(walletEntry, assetInfo.name, assetInfo.symbol, assetInfo.id)
           tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, assetInfo.decimals)
-          tokenBalance.visible = walletEntry.expanded
+          tokenBalance.visible = heatCurrencyBalance.expanded
           heatCurrencyBalance.tokens.push(tokenBalance)
         })
         this.flatten()

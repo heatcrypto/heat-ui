@@ -149,7 +149,7 @@ namespace wlt {
           address.tokensBalances.forEach(balance => {
             let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = utils.commaFormat(balance.balance)
-            tokenBalance.visible = walletEntry.expanded
+            tokenBalance.visible = nxtCurrencyBalance.expanded
             nxtCurrencyBalance.tokens.push(tokenBalance)
           })
         }
@@ -171,7 +171,7 @@ namespace wlt {
           address.tokensBalances.forEach(balance => {
             let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = utils.commaFormat(balance.balance)
-            tokenBalance.visible = walletEntry.expanded
+            tokenBalance.visible = ardrCurrencyBalance.expanded
             ardrCurrencyBalance.tokens.push(tokenBalance)
           })
         }
@@ -193,7 +193,7 @@ namespace wlt {
           address.tokensBalances.forEach(balance => {
             let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = utils.commaFormat(balance.balance)
-            tokenBalance.visible = walletEntry.expanded
+            tokenBalance.visible = fimkCurrencyBalance.expanded
             fimkCurrencyBalance.tokens.push(tokenBalance)
           })
         }
@@ -218,7 +218,7 @@ namespace wlt {
           address.tokensBalances.forEach(balance => {
             let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = balance.balance
-            tokenBalance.visible = walletEntry.expanded
+            tokenBalance.visible = ethCurrencyBalance.expanded
             ethCurrencyBalance.tokens.push(tokenBalance)
           })
         }
