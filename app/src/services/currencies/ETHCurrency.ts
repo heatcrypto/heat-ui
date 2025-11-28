@@ -21,8 +21,6 @@
  * SOFTWARE.
  * */
 
-const GWEI_SCALE = 1000000000
-
 class ETHCurrency implements ICurrency {
 
   private ethBlockExplorerService: EthBlockExplorerService
@@ -101,8 +99,9 @@ class ETHCurrency implements ICurrency {
       vm.enterNonceManually = false
 
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
-      vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
-      vm.broadcastProviderIndex = 1
+      //vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
+      // vm.broadcastProviderIndex = 1
+      vm.broadcastProvider = ethBlockExplorerService.ethBlockExplorerHeatNodeService
       vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
 
       this.data = {
@@ -145,7 +144,7 @@ class ETHCurrency implements ICurrency {
               if (typeof nonce === "string") return parseInt(nonce)
             })
 
-        return web3.createRawTx2(from, this.data.recipient, amountInWei, this.data.gasPrice * GWEI_SCALE, this.data.gasLimit, getAddressNonce)
+        return web3.createRawTx2(from, this.data.recipient, amountInWei, this.data.gasPrice * Web3Service.GWEI_SCALE, this.data.gasLimit, getAddressNonce)
             // .then((rawTx) => {
             //   let clipboardService: ClipboardService = heat.$inject.get('clipboard')
             //   clipboardService.showTxnBytes("" + rawTx)
@@ -159,7 +158,7 @@ class ETHCurrency implements ICurrency {
         try {
           let parsedTx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTxHex})
           parsedTx.valueEth = web3.web3.fromWei(parsedTx.value, 'ether')
-          parsedTx.gasPriceGwei = parsedTx.gasPrice / GWEI_SCALE  + ' GWei'
+          parsedTx.gasPriceGwei = parsedTx.gasPrice / Web3Service.GWEI_SCALE  + ' GWei'
           parsedTx.feeEth = web3.web3.fromWei(parsedTx.gasPrice * parsedTx.gasLimit, 'ether') + ' ETH'
           return parsedTx
         } catch (e) {
@@ -208,8 +207,8 @@ class ETHCurrency implements ICurrency {
 
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
-        let provider = vm.broadcastProvider[vm.broadcastProviderIndex]
-        provider.broadcast(vm.data.rawTx).then(
+        // let provider = vm.broadcastProvider[vm.broadcastProviderIndex]
+        vm.broadcastProvider.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
               result.message = vm.data.message
@@ -270,7 +269,7 @@ class ETHCurrency implements ICurrency {
 
       this.gasChanged = () => {
         $scope.$evalAsync(() => {
-          this.data.fee = web3.web3.fromWei((this.data.gasPrice * GWEI_SCALE) * this.data.gasLimit, 'ether')
+          this.data.fee = web3.web3.fromWei((this.data.gasPrice * Web3Service.GWEI_SCALE) * this.data.gasLimit, 'ether')
         })
       }
 
@@ -281,7 +280,7 @@ class ETHCurrency implements ICurrency {
 
       web3.getGasPrice().then((gasprice) => {
         let data = $scope['vm'].data
-        data.gasPrice = gasprice / GWEI_SCALE
+        data.gasPrice = gasprice / Web3Service.GWEI_SCALE
         data.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
         data.fee = web3.web3.fromWei(gasprice * data.gasLimit, 'ether')
       })
@@ -350,13 +349,13 @@ class ETHCurrency implements ICurrency {
                 <json-details data="vm.parsedTx" detailed-object="vm.parsedTx" fields="vm.parsedTxFields" compact="true"></json-details>
               </div>
               
-              <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+              <!--<md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <p>Broadcast provider: <code>&nbsp;&nbsp;{{vm.broadcastProvider[vm.broadcastProviderIndex].getEndPoint()}}</code></p>
                   <md-radio-group ng-model="vm.broadcastProviderIndex" layout="row" ng-change="vm.broadcastProviderChanged()">
                     <md-radio-button value = 0>{{vm.broadcastProvider[0].getProviderName()}}</md-radio-button>
                     <md-radio-button value = 1>{{vm.broadcastProvider[1].getProviderName()}}</md-radio-button>
                   </md-radio-group>
-              </md-input-container>
+              </md-input-container>-->
                 
             </md-dialog-content>
             
