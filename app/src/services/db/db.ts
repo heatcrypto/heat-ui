@@ -15,7 +15,7 @@ namespace db {
             cryptoAddresses: '[account+currencySym]',
             walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
             transactionMemo: 'id', // id (PK), content: any
-            contact: '[account+pubKey]', //account's contact public key
+            contact: '[account+publicKey]', //account's contact public key
             message: 'msgId, [roomKey+timestamp]', //u2u (p2p) message
         })
 
@@ -119,7 +119,21 @@ namespace db {
 
     export function removeWalletEntry(account: string): Promise<any> {
         //todo remove derived records (addresses, walletItem ...) also
-        return db0.walletEntry.delete(account).catch(error => console.error("Error on deleting record:", error))
+        let promises = []
+        promises.push(
+            db0.cryptoAddresses
+                .where('account').equals(account)
+                .delete()
+        )
+        promises.push(
+            db0.contact
+                .where('account').equals(account)
+                .delete()
+        )
+        promises.push(
+            db0.walletEntry.delete(account)
+        )
+        return Promise.all(promises).catch(error => console.error(`Deletion failed: ${error}`))
     }
 
     export function listWalletEntries(): Promise<any[]> {
@@ -223,27 +237,27 @@ namespace db {
 
     // -------- P2P Messaging Contacts ----------------------------------------------------------------
 
-    export function putContact(account: string, pubKey: string, value: any): Promise<any> {
-        return db0.contact.put(Object.assign(value, {account, pubKey})).catch(error => {
+    export function putContact(account: string, publicKey: string, value: any): Promise<any> {
+        return db0.contact.put(Object.assign(value, {account, publicKey: publicKey})).catch(error => {
             console.error(error)
         })
     }
 
-    export function saveContact(account: string, pubKey: string, props: any): Promise<any> {
-        let id = {account, pubKey}
+    export function saveContact(account: string, publicKey: string, props: any): Promise<any> {
+        let id = {account, publicKey}
         return db0.contact.get(id).then(c => {
             if (c) {
                 return db0.contact.update(id, props)
             } else {
-                return putContact(account, pubKey, props)
+                return putContact(account, publicKey, props)
             }
         }).catch(error => {
             console.error("Error saving record:", error)
         })
     }
 
-    export function getContact(account: string, pubKey: string): Promise<any> {
-        return db0.contact.get({account, pubKey}).catch(error => {
+    export function getContact(account: string, publicKey: string): Promise<any> {
+        return db0.contact.get({account, publicKey: publicKey}).catch(error => {
             console.error(error)
         })
     }
@@ -269,8 +283,8 @@ namespace db {
         }
     }
 
-    export function removeContact(account: string, pubKey: string): Promise<any> {
-        return db0.contact.delete(account, pubKey).catch(error => console.error("Deletion failed:", error))
+    export function removeContact(account: string, publicKey: string): Promise<any> {
+        return db0.contact.delete(account, publicKey).catch(error => console.error("Deletion failed:", error))
     }
 
     // -------- P2P Messaging ----------------------------------------------------------------
@@ -342,4 +356,5 @@ namespace db {
     export function deleteDatabase() {
         return db0.delete().then(() => superInit())
     }
+
 }
