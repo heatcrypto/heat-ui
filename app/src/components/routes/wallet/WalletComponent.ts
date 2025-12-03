@@ -561,25 +561,32 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   createAccount($event) {
     let selected = this.$scope['vm'].selectedChain
-    if (selected === 'ETH') {
-      createEthAccount($event, this)
-    } else if (selected === 'BTC') {
-      createBtcAccount($event, this)
-    } else if (selected === 'FIMK') {
-      createFIMKAccount($event, this)
-    } else if (selected === 'NXT') {
-      createNXTAccount($event, this)
-    } else if (selected === 'ARDR') {
-      createARDRAccount($event, this)
-    } else if (selected === 'IOTA') {
-      createIotaAccount($event, this)
-    } else if (selected === 'LTC') {
-      createLtcAccount($event, this)
-    } else if (selected === 'BCH') {
-      createBCHAccount($event, this)
-    } else if (selected === 'HEAT') {
+    if (selected === 'HEAT') {
       createHEATAccount($event, this)
       this.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
+    } else {
+      let walletEntries = this.walletEntries
+      if (walletEntries.length == 0) {
+        this.$mdToast.show(this.$mdToast.simple().textContent('There is no suitable entries. First create HEAT account').hideDelay(5000))
+        return
+      }
+      if (selected === 'ETH') {
+        createEthAccount($event, this)
+      } else if (selected === 'BTC') {
+        createBtcAccount($event, this)
+      } else if (selected === 'FIMK') {
+        createFIMKAccount($event, this)
+      } else if (selected === 'NXT') {
+        createNXTAccount($event, this)
+      } else if (selected === 'ARDR') {
+        createARDRAccount($event, this)
+      } else if (selected === 'IOTA') {
+        createIotaAccount($event, this)
+      } else if (selected === 'LTC') {
+        createLtcAccount($event, this)
+      } else if (selected === 'BCH') {
+        createBCHAccount($event, this)
+      }
     }
     this.$scope['vm'].selectedChain = null
   }

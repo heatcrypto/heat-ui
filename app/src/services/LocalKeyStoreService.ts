@@ -382,12 +382,12 @@ class LocalKeyStoreService {
   }
 
   private convertToIndexedDB(storage: StorageService, $rootScope) {
-    let k = 'heatwallet-db-converted-4.10.0'
+    let k = 'heatwallet-db-converted-4.9.3'
     let storageConvertedIndicator = parseInt(localStorage.getItem(k))
     if (storageConvertedIndicator > 3) return
 
     db.walletEntryCount().then(num => {
-      if (num > 0) return //new db already has data
+      if (num > 0) return //IndexedDB db already has data
       const regExp = heat.isTestnet ? /key\.\d+\.testnet$/ : /key\.\d+$/
       let accounts = this.store.keys()
           .filter((keyName) => regExp.test(keyName))
