@@ -59,7 +59,7 @@ namespace wlt {
   // @ts-ignore
   export const CURRENCY_SYMBOLS = wlt.SYM_CURRENCIES_MAP.keys().toArray()
 
-  export const DISPLAYED_MAX_EMPTY_ADDRESSES = 4
+  export const DISPLAYED_MAX_EMPTY_ADDRESSES = 20
 
   export let createdAddresses: { [key: string]: Map<string, string> } = {}
 
