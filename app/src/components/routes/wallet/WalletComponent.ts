@@ -659,78 +659,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   pageAddFileInputChange(files) {
-    if (files && files[0]) {
-      let file = files[0]
-      let reader = new FileReader()
-      reader.onload = (e) => {
-        this.$scope.$evalAsync(() => {
-          let fileContents = reader.result
-          let data = this.walletFile.parseJSON(<string>fileContents)
-          let p = Promise.resolve("Nothing imported")
-          if (!data) return
-          if (data["heatwallet-raw-data"]) {
-            //resultMessage = this.walletFile.importRawData(data)
-            //resultMessage += ".  The app will now restart..."
-            p = p.then(s => this.walletFile.importRawData(data) + ".  The app will now restart...")
-            setTimeout(() => window.location.reload(), 4000)
-          } else if (data['entries'] && data['version']) {
-            let wallet = this.walletFile.createFromText(data)
-            if (wallet) {
-              p = p.then(s => {
-                return this.localKeyStore.import(wallet).then(addedKeys => {
-                  this.$scope.$evalAsync(() => {
-                    this.initLocalKeyStore()
-                    //wlt.initCreatedAddresses()
-                  })
-                  let isBig = addedKeys.length > 8
-                  let report = (isBig ? addedKeys.filter((value, index) => index < 7) : addedKeys)
-                      .map(v => v.account + (v.name ? "[" + v.name + "]" : ""))
-                      .join(", ")
-                  if (isBig) report = report + "\n..."
-                  return `Imported ${addedKeys.length} keys into this device: \n ${report}`
-                }).catch(reason => {
-                  console.error(reason)
-                  return `Error on processing file content: ${reason}`
-                })
-              })
-            }
-          } else if (data['formatName'] == 'dexie')  {
-            this.importDatabaseFile(file, fileContents)
-          } else {
-            return 'Invalid wallet file'
-          }
-          p.then(s => this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(7000)))
-        })
-      }
-      reader.readAsText(file)
-    }
-  }
-
-  private importDatabaseFile(file, fileContent) {
-    let doWork = () => {
-      const blob = new Blob([fileContent], { type: file.type })
-      db.importDatabase(blob).then(() => {
-        setTimeout(() => window.location.reload(), 4000)
-        this.$mdToast.show(this.$mdToast.simple().textContent('Data is imported. The app will now restart...').hideDelay(7000))
-      }).catch(reason => {
-        let s = `Import error ${reason}`
-        this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
-      })
-    }
-
-    db.checkDatabaseEmpty().then(isEmpty => {
-      if (isEmpty) {
-        doWork()
-      } else {
-        dialogs.confirm('Import wallet database',
-            'Detected not empty database in this app. It will be cleared and filled from the file').then(() => {
-              db.deleteDatabase().then(() => doWork()).catch(reason => {
-                let s = `Error ${reason}`
-                this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
-              })
-        })
-      }
-    })
+    importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
   }
 
   remove($event, entry: wlt.WalletEntry) {
@@ -965,9 +894,11 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   // @click
   exportWallet(onlyData?: boolean) {
-    if (onlyData) return null
     let suffix = heat.isTestnet ? 'testnet' : 'mainnet'
-    db.exportDatabase().then(blob => wlt.saveFile(blob, `heat.${suffix}.wallet`))
+    return db.exportDatabase().then(blob => {
+      if (onlyData) return blob
+      wlt.saveFile(blob, `heat.${suffix}.wallet`)
+    })
 
     /*
     let accountCurrencies: Map<string, []> = new Map<string, []>()

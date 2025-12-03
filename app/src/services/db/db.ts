@@ -51,6 +51,10 @@ namespace db {
         })
     }
 
+    export function removeValue(key: string): Promise<any> {
+        return db0.values.where('key').equals(key).delete().catch(error => console.error(error))
+    }
+
     export function getValuesStartWith(keyPrefix: string): Promise<any> {
         return db0.values.where('key').startsWith(keyPrefix).toArray().catch(error => {
             console.error(error)

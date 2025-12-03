@@ -218,10 +218,17 @@
                 <md-tooltip md-direction="bottom">Add single key through secret phrase</md-tooltip>
                 Secret Phrase
               </md-button>
-              <md-button class="md-primary md-raised" ng-click="vm.page='addWallet'" aria-label="Open wallet file">
-                <md-tooltip md-direction="bottom">Load wallet file</md-tooltip>
-                Wallet File
+              
+              <!-- Open File input is hidden -->
+              <md-button class="md-primary md-raised" aria-label="Open wallet file">
+                <md-tooltip md-direction="bottom">Import wallet from file</md-tooltip>
+                <label for="walet-input-file">
+                  Wallet File
+                </label>
               </md-button>
+              
+              <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files); angular.element(this).val(null)" class="ng-hide" id="walet-input-file">
+
             </div>
           </div>
 
@@ -421,50 +428,7 @@ class LoginComponent {
   }
 
   pageAddFileInputChange(files: FileList) {
-    this.pageAddWallet = null
-    if (files && files[0]) {
-      let file = files[0]
-      let reader = new FileReader()
-      reader.onload = () => {
-        this.$scope.$evalAsync(() => {
-          this.pageAddWalletInvalid = true
-          let fileContents = reader.result
-          if (typeof fileContents === "string") {
-            let data = this.walletFile.parseJSON(fileContents)
-            if (data && data["heatwallet-raw-data"]) {
-              let resultMessage = this.walletFile.importRawData(data)
-              this.$mdToast.show(this.$mdToast.simple().textContent(resultMessage + ".   The app will now restart...").hideDelay(7000))
-              setTimeout(() => window.location.reload(), 3000)
-            } else if (data['entries'] && data['version']) {
-              this.pageAddWallet = this.walletFile.createFromText(data)
-            } else if (data['formatName'] == 'dexie') {
-              this.pageAddWalletInvalid = false
-              this.pageAddWallet = {fileContents, file, dexie: true}
-            }
-          }
-          if (this.pageAddWallet) {
-            this.pageAddWalletInvalid = false
-          }
-        })
-      };
-      reader.readAsText(file);
-    }
-  }
-
-  pageAddWalletImportContinue() {
-    if (this.pageAddWallet.dexie) {
-      this.importDatabaseFile(this.pageAddWallet.file, this.pageAddWallet.fileContents).then(() => this.pageAddWalletInvalid = false, () => this.page = '')
-    } else {
-      this.localKeyStore.import(this.pageAddWallet).then(addedKeys => {
-        this.initLocalKeys().then(localKeys => {
-          let message = `Imported ${addedKeys.length} keys into this device`
-          this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000))
-          this.$scope.$evalAsync(() => {
-            this.page = ''
-          })
-        })
-      }).catch(reason => console.error(reason))
-    }
+    importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
   }
 
   pageSinginLogin() {
