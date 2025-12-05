@@ -175,6 +175,23 @@
                           </md-menu-content>
                       </md-menu>
                     </md-menu-item>
+
+                    <md-menu-item ng-if="entry.bip44Compatible">
+                      <md-menu>
+                          <md-button ng-click="$mdMenu.open()" style="text-transform: none;">
+                            <md-icon md-font-library="material-icons" style="margin-right: 16px;">restore</md-icon>
+                            Explore addresses
+                          </md-button>
+                          <md-menu-content>
+                            <md-menu-item>
+                              <md-button ng-click="vm.exploreAddresses(entry, 'Bitcoin')">BTC</md-button>
+                            </md-menu-item>
+                            <md-menu-item>
+                              <md-button ng-click="vm.exploreAddresses(entry, 'Ethereum')">ETH</md-button>
+                            </md-menu-item>
+                          </md-menu-content>
+                      </md-menu>
+                    </md-menu-item>
                     
                   </md-menu-content>
                 </md-menu>
@@ -426,6 +443,45 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           entry.pin = key.pincode
           this.showMessage(`Password is changed for ${entry.account}`)
         })
+      })
+    })
+  }
+
+  exploreAddresses(walletEntry: wlt.WalletEntry, currencyName) {
+    let currency = wlt.CURRENCIES[currencyName]
+    let addressesPromise
+    if (currencyName == 'Bitcoin') addressesPromise = wlt.findBitcoinBalances(walletEntry)
+    if (currencyName == 'Ethereum') addressesPromise = wlt.findEthereumBalances(walletEntry, this.lightwalletService)
+    addressesPromise.then(promises => {
+      let report = []
+      for (const p of promises) {
+        p.then(item => {
+          report.push(item)
+          if (item.balance == 0 && item.txs == 0) {
+            setTimeout(() => {
+              this.$scope.$evalAsync(() => {
+                let j = report.indexOf(item)
+                if (j > -1) report.splice(j, 1)
+              })
+            }, Math.random() * 1000)
+          }
+        }).catch(reason => console.error(reason))
+      }
+      Promise.all(promises).then(() => report.sort((a, b) => a.index - b.index))
+
+      let panel = <PanelService> heat.$inject.get('panel')
+      panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase" style="height: 360px; overflow: scroll">
+          <h3>{{vm.currencyName}} not empty addresses for account {{vm.account}}</h3>
+          <code ng-repeat="item in vm.report" class="peer item scale-up">
+          #{{item.index}} <span style="color: #d9d20c">{{item.address}}</span> {{item.balance}} {{vm.currencySym}} &nbsp; transactions: {{item.txs}}
+          </code>
+      </div>
+    `, {
+        report: report,
+        account: walletEntry.account,
+        currencyName: currency.name,
+        currencySym: currency.symbol
       })
     })
   }

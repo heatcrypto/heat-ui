@@ -347,4 +347,43 @@ namespace wlt {
     shouldBeSaved = null
   }
 
+
+  export function findBitcoinBalances(walletEntry: wlt.WalletEntry) {
+    let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+    let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+    let promises: angular.IPromise<{index: number, path: string, address: string, balance: number, txs: number}>[] = []
+
+    let requestAddressInfo = (index, address) => btcBlockExplorerService.getAddressInfo(address.address, false, true).then(info => {
+      console.log(`Bitcoin #${index} ${info.address} ${info.balanceSat}`)
+      return {index: index, path: address.path, address: info.address, balance: info.balanceSat / 100000000, txs: info.txs}
+    })
+
+    for (let i = 0; i < wlt.DISPLAYED_MAX_EMPTY_ADDRESSES; i++) {
+      let legacy = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, i)
+      let segwit = bitcoreService.generateSegwitBitcoinAddress(walletEntry.secretPhrase, i)
+      promises.push(
+          requestAddressInfo(i, legacy),
+          requestAddressInfo(i, segwit)
+      )
+    }
+    return Promise.resolve(promises)
+  }
+
+  export function findEthereumBalances(walletEntry: wlt.WalletEntry, lightwalletService: LightwalletService) {
+    return lightwalletService.createEtherAddresses(walletEntry.secretPhrase, '').then((wa: WalletAddresses) => {
+      let addresses = wa.addresses
+      let promises: PromiseLike<{ index: number, path: string, address: string, balance: number, txs: number }>[] = []
+      let ethService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
+      return ethService.refresh().then(() => {
+        for (let i = 0; i < addresses.length; i++) {
+          const a = addresses[i]
+          promises.push(ethService.getAddressInfo(a.address, false).then(info => {
+            return {index: i, path: '', address: info.address, balance: info.ETH.balance, txs: info.countTxs}
+          }))
+        }
+        return promises
+      })
+    })
+  }
+
 }

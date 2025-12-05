@@ -3,8 +3,8 @@ class BTCCurrency implements ICurrency {
   /**
    * request parameters "type of btc address" from the user for btc address creation
    */
-  public static requestBtcAddressType = (walletEntry: wlt.WalletEntry, currencyName) => {
-    let existing = wlt.getCurrencyBalances(walletEntry, currencyName)
+  public static requestBtcAddressType = (walletEntry: wlt.WalletEntry) => {
+    let existing = wlt.getCurrencyBalances(walletEntry, 'Bitcoin')
     let nextIndex = existing.length == 0
         ? 0
         : existing[existing.length - 1].index + 1
@@ -28,7 +28,6 @@ class BTCCurrency implements ICurrency {
       )
     })
   }
-
 
   private btcBlockExplorerService: BtcBlockExplorerService
   private bitcoreService: BitcoreService

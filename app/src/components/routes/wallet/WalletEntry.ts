@@ -229,7 +229,7 @@ namespace wlt {
     }
 
     createBtcAddress(entry: WalletEntry) {
-      return BTCCurrency.requestBtcAddressType(entry, 'Bitcoin')
+      return BTCCurrency.requestBtcAddressType(entry)
           .then(wa => this.createAddress(entry, 'Bitcoin', 'BTC', wa))
     }
 

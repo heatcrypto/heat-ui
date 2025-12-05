@@ -48,9 +48,10 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     return deferred.promise
   }
 
-  public getAddressInfo = (address: string): angular.IPromise<any> => {
-    let url = `${BtcBlockExplorerBlockbookService.endPoint()}/address/${address}?details=txids`
-    let deferred = this.$q.defer<any>();
+  public getAddressInfo = (address: string, onlyBalance?): angular.IPromise<any> => {
+    let details = onlyBalance ? 'details=basic' : 'details=txids'
+    let url = `${BtcBlockExplorerBlockbookService.endPoint()}/address/${address}?${details}`
+    let deferred = this.$q.defer<any>()
     this.http.get(url, true).then(response => {
       let parsed = utils.parseResponse(response)
       if (parsed.heatUtilParsingError) deferred.reject(parsed.heatUtilParsingError)

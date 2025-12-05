@@ -206,12 +206,12 @@ class BitcoreService {
       let seedHex = this.bip39.mnemonicToSeedHex(secret)
       let HDPrivateKey = this.bitcore.HDPrivateKey
       let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? 'mainnet' : wlt.CURRENCIES.Bitcoin.network)
-      let derived = hdPrivateKey.derive(BitcoreService.BIP44_PATH() + index)
-      let address = derived.privateKey.toAddress()
-      let privateKey = derived.privateKey.toWIF()
+      let path = BitcoreService.BIP44_PATH() + index
+      let derived = hdPrivateKey.derive(path)
       return {
-        address: address.toString(),
-        privateKey: privateKey.toString()
+        path: path,
+        address: derived.privateKey.toAddress().toString(),
+        privateKey: derived.privateKey.toWIF().toString()
       }
     } else {
       let privateKey = this.bitcore.PrivateKey(secret)
@@ -226,8 +226,9 @@ class BitcoreService {
   generateSegwitBitcoinAddress(secret: string, index: Number = 0) {
     let privateKey: string
     let privateKeyWif: string
+    let paths
     if (this.bip39.validateMnemonic(secret)) {
-      const paths = [{path: BitcoreService.BIP44_PATH() + index, includeWif: true}]
+      paths = [{path: BitcoreService.BIP44_PATH() + index, includeWif: true}]
       const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic: secret})
       const keyPair = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
       privateKey = keyPair.privateKey
@@ -239,10 +240,12 @@ class BitcoreService {
     }
     const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: privateKey, network: wlt.CURRENCIES.Bitcoin.network })
     let a = heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
-    return {
+    let result: any = {
       address: a,
       privateKey: privateKeyWif
     }
+    if (paths?.length > 0) result.path = paths[0].path
+    return result
   }
 
   resolveAddressType(address: string, network = 'bitcoin') {

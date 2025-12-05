@@ -99,12 +99,12 @@ class BtcBlockExplorerService {
     return this.cachedAddressInfo.get(address)
   }
 
-  public getAddressInfo = (address: string, useCache = false): angular.IPromise<any> => {
+  public getAddressInfo = (address: string, useCache = false, onlyBalance?): angular.IPromise<any> => {
     if (useCache) {
       return this.getCachedAddressInfo(address)
     }
     let deferred = this.$q.defer<any>();
-    this.btcProvider.getAddressInfo(address).then(info => {
+    this.btcProvider.getAddressInfo(address, onlyBalance).then(info => {
       let data = Update3rdPartyAPIResponsesUtil.updateBTCGetAddressInfo(info, this.btcProvider)
       deferred.resolve(data)
     }, (reason) => {

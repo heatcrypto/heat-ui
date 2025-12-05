@@ -4,7 +4,7 @@ interface IBitcoinAPIList {
 
   getTransactions(address: string, from: number, to: number): angular.IPromise<any>
 
-  getAddressInfo(address: string): angular.IPromise<any>
+  getAddressInfo(address: string, onlyBalance?): angular.IPromise<any>
 
   getEstimatedFee(feeBlocks: number): angular.IPromise<any>
 
