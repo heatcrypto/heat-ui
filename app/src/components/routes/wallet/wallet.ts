@@ -353,10 +353,18 @@ namespace wlt {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     let promises: angular.IPromise<{index: number, path: string, address: string, privateKey: string, balance: number, txs: number}>[] = []
 
-    let requestAddressInfo = (index, address) => btcBlockExplorerService.getAddressInfo(address.address, false, true).then(info => {
-      console.log(`Bitcoin #${index} ${info.address} ${info.balanceSat}`)
-      return {index: index, path: address.path, address: info.address, privateKey: address.privateKey, balance: info.balanceSat / 100000000, txs: info.txs}
-    })
+    let requestAddressInfo = (index, address, delayMs) => utils.delay(delayMs).then(() =>
+        btcBlockExplorerService.getAddressInfo(address.address, false, true).then(info => {
+          console.log(`Bitcoin #${index} ${info.address} ${info.balanceSat}`)
+          return {
+            index: index,
+            path: address.path,
+            address: info.address,
+            privateKey: address.privateKey,
+            balance: info.balanceSat / 100000000,
+            txs: info.txs
+          }
+        }))
 
     let nativeSegwitAddresses = bitcoreService.generateSegwitBitcoinAddresses(
         walletEntry.secretPhrase,  true, 0, wlt.DISPLAYED_MAX_EMPTY_ADDRESSES - 1)
@@ -365,17 +373,15 @@ namespace wlt {
     for (let i = 0; i < wlt.DISPLAYED_MAX_EMPTY_ADDRESSES; i++) {
       let legacy = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, i)
       promises.push(
-          requestAddressInfo(i, legacy),
-          requestAddressInfo(i, nativeSegwitAddresses[i]),
-          requestAddressInfo(i, segwitAddresses[i])
+          requestAddressInfo(i, legacy, i * 210),
+          requestAddressInfo(i, nativeSegwitAddresses[i], i * 210 + 30),
+          requestAddressInfo(i, segwitAddresses[i], i * 210 + 60)
       )
     }
     return Promise.resolve(promises)
   }
 
   export function findEthereumAddresses(walletEntry: wlt.WalletEntry, lightwalletService: LightwalletService) {
-    let delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
     return lightwalletService.createEtherAddresses(walletEntry.secretPhrase, '').then((wa: WalletAddresses) => {
       let addresses = wa.addresses
       let promises: PromiseLike<{ index: number, path: string, address: string, privateKey: string, balance: number, txs: number }>[] = []
@@ -384,7 +390,7 @@ namespace wlt {
         for (let i = 0; i < addresses.length; i++) {
           const a = addresses[i]
           promises.push(
-              delay(i * 210).then(() => ethService.getAddressInfo(a.address, false).then(info => {
+              utils.delay(i * 210).then(() => ethService.getAddressInfo(a.address, false).then(info => {
                 console.log('ETH', i, info.address, info.ETH.balance)
                 return {
                   index: i,

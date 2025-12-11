@@ -176,6 +176,10 @@ module utils {
     return deferred.promise;
   }
 
+  export function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
   const timeoutError = new Error("promise time is up")
 
   export function timeoutPromise(promise, time) {

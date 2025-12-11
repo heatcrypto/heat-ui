@@ -43,8 +43,15 @@
       0% { transform: scale(0.1); }
       100% { transform: scale(1)}
     }
+    @keyframes scaleDown {
+      0% { transform: scale(1); }
+      100% { transform: scale(0)}
+    }
     .scale-up {
       animation: scaleUp 4s;
+    }
+    .scale-down {
+      animation: scaleDown 2s;
     }
     .explore-address-item {
         background-color: lightslategrey;
@@ -476,11 +483,14 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           item.empty = !(item.balance > 0 || item.txs > 0)
           if (item.empty) {
             setTimeout(() => {
-              this.$scope.$evalAsync(() => {
+              item.visible = false
+              // this.$scope.$evalAsync(() => {
+              // })
+              setTimeout(() => {
                 let j = report.indexOf(item)
                 if (j > -1) report.splice(j, 1)
-              })
-            }, Math.random() * 1000)
+              }, Math.random() * 500)
+            }, 1000 + Math.random() * 1000)
           }
         }).catch(reason => console.error(reason))
       }
@@ -490,7 +500,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase" style="height: 400px; width: 124%; overflow: scroll">
           <h3>{{vm.currencyName}} not empty addresses for account {{vm.account}}</h3>
-          <code ng-repeat="item in vm.report" class="explore-address-item item scale-up" ng-class="{'not-empty-address': !item.empty}">
+          <code ng-repeat="item in vm.report" class="explore-address-item item scale-up" 
+                    ng-class="{'not-empty-address': !item.empty, 'scale-down': item.visible == false}">
               #{{item.index}} <span style="color: #d9d20c">{{item.address}}</span> {{item.balance}} {{vm.currencySym}} &nbsp; 
               <span style="white-space: nowrap;">transactions: {{item.txs}}</span>
             <button ng-if="!item.added" ng-click="vm.addAddress(item)" title="Add address to wallet entry">
