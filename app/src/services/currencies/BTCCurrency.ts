@@ -9,11 +9,14 @@ class BTCCurrency implements ICurrency {
         ? 0
         : existing[existing.length - 1].index + 1
     let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-    let segwitAddress = bitcoreService.generateSegwitBitcoinAddress(walletEntry.secretPhrase, nextIndex)
+    let nativeSegwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, true, nextIndex)
+    let segwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, false, nextIndex)
     let legacyAddress = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, nextIndex)
     return new Promise<WalletAddress>((resolve, reject) => {
       return selectItem(`Select desired address #${nextIndex || ""}`,
-          [["Segwit: " + segwitAddress.address, segwitAddress], ["Legacy: " + legacyAddress.address, legacyAddress]],
+          [["Native Segwit: " + nativeSegwitAddress[0].address, nativeSegwitAddress[0]],
+            ["Segwit: " + segwitAddress[0].address, segwitAddress[0]],
+            ["Legacy: " + legacyAddress.address, legacyAddress]],
           item => {
             let wa: WalletAddress = {
               address: item.address,

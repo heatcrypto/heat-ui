@@ -201,7 +201,7 @@ class BitcoreService {
     })
   }
 
-  generateBitcoinAddress(secret: string, index: Number = 0) {
+  generateBitcoinAddress(secret: string, index = 0, toIndex?: number) {
     if (this.bip39.validateMnemonic(secret)) {
       let seedHex = this.bip39.mnemonicToSeedHex(secret)
       let HDPrivateKey = this.bitcore.HDPrivateKey
@@ -223,29 +223,36 @@ class BitcoreService {
     }
   }
 
-  generateSegwitBitcoinAddress(secret: string, index: Number = 0) {
-    let privateKey: string
-    let privateKeyWif: string
-    let paths
+  generateSegwitBitcoinAddresses(secret: string, nativeSegwit: boolean, index= 0, toIndex?: number) {
+    let pks: {privateKey: any, privateKeyWif: any}[]
+
     if (this.bip39.validateMnemonic(secret)) {
-      paths = [{path: BitcoreService.BIP44_PATH() + index, includeWif: true}]
+      let paths = []
+      toIndex = toIndex >= index ? toIndex : index
+      for (let i = index; i <= toIndex; i++) {
+        paths.push({
+          path: (nativeSegwit ? BitcoreService.BIP84_PATH() : BitcoreService.BIP49_PATH()) + i,
+          includeWif: true
+        })
+      }
       const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic: secret})
-      const keyPair = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})[0]
-      privateKey = keyPair.privateKey
-      privateKeyWif = keyPair.wif
+      const keyPairs: [] = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})
+      pks = keyPairs.map((v: any) => {return {privateKey: v.privateKey, privateKeyWif: v.wif}})
     } else {
       let pk = this.bitcore.PrivateKey.fromWIF(secret)
-      privateKey = pk.toString()
-      privateKeyWif = pk.toWIF()
+      pks = [{privateKey: pk.toString(), privateKeyWif: pk.toWIF()}]
     }
-    const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: privateKey, network: wlt.CURRENCIES.Bitcoin.network })
-    let a = heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
-    let result: any = {
-      address: a,
-      privateKey: privateKeyWif
-    }
-    if (paths?.length > 0) result.path = paths[0].path
-    return result
+    let addresses = pks.map(v => {
+      const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: v.privateKey, network: wlt.CURRENCIES.Bitcoin.network })
+      let a = nativeSegwit
+          ? heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
+          : heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
+      return {
+        address: a,
+        privateKey: v.privateKeyWif
+      }
+    })
+    return addresses
   }
 
   resolveAddressType(address: string, network = 'bitcoin') {

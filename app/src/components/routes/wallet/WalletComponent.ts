@@ -39,6 +39,22 @@
       border: solid 1px steelblue;
       border-radius: 6px;
     }
+    @keyframes scaleUp {
+      0% { transform: scale(0.1); }
+      100% { transform: scale(1)}
+    }
+    .scale-up {
+      animation: scaleUp 4s;
+    }
+    .explore-address-item {
+        background-color: lightslategrey;
+        border-radius: 9px;
+        padding: 6px;
+        margin: 4px;
+    }
+    .not-empty-address {
+      background-color: #58935a !important;
+    }
   `,
   template: `
    <!--  layout-align="start center" -->
@@ -179,10 +195,10 @@
                     <md-menu-item ng-if="entry.bip44Compatible">
                       <md-menu>
                           <md-button ng-click="$mdMenu.open()" style="text-transform: none;">
-                            <md-icon md-font-library="material-icons" style="margin-right: 16px;">restore</md-icon>
+                            <md-icon md-font-library="material-icons" style="margin-right: 16px;">filter_vintage</md-icon>
                             Explore addresses
                           </md-button>
-                          <md-menu-content>
+                          <md-menu-content layout="row">
                             <md-menu-item>
                               <md-button ng-click="vm.exploreAddresses(entry, 'Bitcoin')">BTC</md-button>
                             </md-menu-item>
@@ -450,14 +466,15 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   exploreAddresses(walletEntry: wlt.WalletEntry, currencyName) {
     let currency = wlt.CURRENCIES[currencyName]
     let addressesPromise
-    if (currencyName == 'Bitcoin') addressesPromise = wlt.findBitcoinBalances(walletEntry)
-    if (currencyName == 'Ethereum') addressesPromise = wlt.findEthereumBalances(walletEntry, this.lightwalletService)
+    if (currencyName == 'Bitcoin') addressesPromise = wlt.findBitcoinAddresses(walletEntry)
+    if (currencyName == 'Ethereum') addressesPromise = wlt.findEthereumAddresses(walletEntry, this.lightwalletService)
     addressesPromise.then(promises => {
       let report = []
       for (const p of promises) {
         p.then(item => {
           report.push(item)
-          if (item.balance == 0 && item.txs == 0) {
+          item.empty = !(item.balance > 0 || item.txs > 0)
+          if (item.empty) {
             setTimeout(() => {
               this.$scope.$evalAsync(() => {
                 let j = report.indexOf(item)
@@ -471,18 +488,31 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
       let panel = <PanelService> heat.$inject.get('panel')
       panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase" style="height: 360px; overflow: scroll">
+      <div layout="column" flex class="toolbar-copy-passphrase" style="height: 400px; width: 124%; overflow: scroll">
           <h3>{{vm.currencyName}} not empty addresses for account {{vm.account}}</h3>
-          <code ng-repeat="item in vm.report" class="peer item scale-up">
-          #{{item.index}} <span style="color: #d9d20c">{{item.address}}</span> {{item.balance}} {{vm.currencySym}} &nbsp; transactions: {{item.txs}}
+          <code ng-repeat="item in vm.report" class="explore-address-item item scale-up" ng-class="{'not-empty-address': !item.empty}">
+              #{{item.index}} <span style="color: #d9d20c">{{item.address}}</span> {{item.balance}} {{vm.currencySym}} &nbsp; 
+              <span style="white-space: nowrap;">transactions: {{item.txs}}</span>
+            <button ng-if="!item.added" ng-click="vm.addAddress(item)" title="Add address to wallet entry">
+              Add
+            </button>
+            <span style="color: darkgreen" ng-if="item.added">Added</span>
           </code>
       </div>
     `, {
         report: report,
         account: walletEntry.account,
         currencyName: currency.name,
-        currencySym: currency.symbol
+        currencySym: currency.symbol,
+        addAddress: item => {
+          let addressCreateEntry = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+          addressCreateEntry.createAddress(walletEntry, currency.name, currency.symbol,
+              {address: item.address, privateKey: item.privateKey, index: item.index, balance: item.balance, inUse: true}
+          )
+          item.added = true
+        }
       })
+
     })
   }
 
