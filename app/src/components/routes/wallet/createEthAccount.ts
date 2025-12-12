@@ -21,6 +21,37 @@
  * SOFTWARE.
  * */
 
+function addEthAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComponent, $mdDialog, candidateAddress?: WalletAddress) {
+  let ethSymbol = wlt.CURRENCIES.Ethereum.symbol
+  if (walletEntry) {
+    if (!walletEntry.expanded) walletEntry.toggle()
+    let node = walletEntry.findAddressCreate(ethSymbol)
+    let p: Promise<any>
+    if (node) {
+      p = Promise.resolve()
+    } else {
+      walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+      walletEntry.selectedCurrencies.push(ethSymbol)
+      p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+          () => walletComponent.initWalletEntry(walletEntry)
+      )
+    }
+    p.then(v => {
+      // load in next event loop to load currency addresses first
+      setTimeout(() => {
+        let node = walletEntry.findAddressCreate(ethSymbol)
+        let currencyBalance = node?.createEthAddress(walletEntry, candidateAddress)
+        $mdDialog.hide(null).then(() => {
+          if (!currencyBalance) {
+            dialogs.alert(null, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
+          }
+        })
+      }, 600)
+    })
+  }
+}
+
+
 function createEthAccount($event, walletComponent: WalletComponent) {
   let walletEntries = walletComponent.walletEntries
   if (walletEntries.length == 0) return
@@ -44,30 +75,7 @@ function createEthAccount($event, walletComponent: WalletComponent) {
     this.okButtonClick = function ($event) {
       let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       if (walletEntry) {
-        if (!walletEntry.expanded) walletEntry.toggle()
-        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
-        let p: Promise<any>
-        if (node) {
-          p = Promise.resolve()
-        } else {
-          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
-          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Ethereum.symbol)
-          p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
-              () => walletComponent.initWalletEntry(walletEntry)
-          )
-        }
-        p.then(v => {
-          // load in next event loop to load currency addresses first
-          setTimeout(() => {
-            let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Ethereum.symbol)
-            let currencyBalance = node?.createEthAddress(walletEntry)
-            $mdDialog.hide(null).then(() => {
-              if (!currencyBalance) {
-                dialogs.alert($event, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
-              }
-            })
-          }, 600)
-        })
+        addEthAddress(walletEntry, walletComponent, $mdDialog)
       }
     }
 

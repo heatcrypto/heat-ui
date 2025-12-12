@@ -21,6 +21,42 @@
  * SOFTWARE.
  * */
 
+function addBtcAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComponent, $mdDialog, candidateAddress?: WalletAddress) {
+  let success = false
+  if (walletEntry) {
+    if (!walletEntry.expanded) walletEntry.toggle()
+    let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+    let p: Promise<any>
+    if (node) {
+      p = Promise.resolve()
+    } else {
+      walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+      walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
+      p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+          () => walletComponent.initWalletEntry(walletEntry)
+      )
+    }
+    // load in next event loop to load currency addresses first
+    p.then(v => {
+      setTimeout(() => {
+        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+        node.createBtcAddress(walletEntry, candidateAddress)
+            .then(currencyBalance => {
+              walletEntry.toggle(true)
+              $mdDialog.hide(null).then(() => {
+                if (!currencyBalance) {
+                  dialogs.alert(null, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
+                }
+              })
+            })
+            .catch(reason => {
+              dialogs.alert(null, 'Unable to Create Address', reason)
+            })
+      }, 400)
+    })
+  }
+}
+
 function createBtcAccount($event, walletComponent: WalletComponent) {
   let walletEntries = walletComponent.walletEntries
   if (walletEntries.length == 0) return
@@ -43,38 +79,8 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
 
     this.okButtonClick = function ($event) {
       let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
-      let success = false
       if (walletEntry) {
-        if (!walletEntry.expanded) walletEntry.toggle()
-        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-        let p: Promise<any>
-        if (node) {
-          p = Promise.resolve()
-        } else {
-          walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
-          walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
-          p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
-              () => walletComponent.initWalletEntry(walletEntry)
-          )
-        }
-        // load in next event loop to load currency addresses first
-        p.then(v => {
-          setTimeout(() => {
-            let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-            node.createBtcAddress(walletEntry)
-                .then(value => {
-                  walletEntry.toggle(true)
-                  $mdDialog.hide(null)
-                })
-                .catch(reason => {
-                  $mdDialog.hide(null).then(() => {
-                    if (!success) {
-                      dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-                    }
-                  })
-                })
-          }, 400)
-        })
+        addBtcAddress(walletEntry, walletComponent, $mdDialog)
       }
     }
 

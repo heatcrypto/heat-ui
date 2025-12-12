@@ -224,11 +224,14 @@ namespace wlt {
       still after an architectural change where we dont display the CREATE node anymore.
       We'll be leaving it in place where all you need to do is set this.hidden=false to
       have it displayed again. */
-    createEthAddress(entry: WalletEntry) {
-      return this.createAddress(entry, 'Ethereum', 'ETH')
+    createEthAddress(entry: WalletEntry, candidateAddress?: WalletAddress) {
+      return this.createAddress(entry, 'Ethereum', 'ETH', candidateAddress)
     }
 
-    createBtcAddress(entry: WalletEntry) {
+    createBtcAddress(entry: WalletEntry, candidateAddress?: WalletAddress) {
+      if (candidateAddress) {
+        return Promise.resolve(this.createAddress(entry, 'Bitcoin', 'BTC', candidateAddress))
+      }
       return BTCCurrency.requestBtcAddressType(entry)
           .then(wa => this.createAddress(entry, 'Bitcoin', 'BTC', wa))
     }

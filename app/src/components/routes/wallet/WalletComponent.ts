@@ -48,10 +48,10 @@
       100% { transform: scale(0)}
     }
     .scale-up {
-      animation: scaleUp 4s;
+      animation: scaleUp 2s;
     }
     .scale-down {
-      animation: scaleDown 2s;
+      animation: scaleDown 1s;
     }
     .explore-address-item {
         background-color: lightslategrey;
@@ -482,15 +482,16 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           report.push(item)
           item.empty = !(item.balance > 0 || item.txs > 0)
           if (item.empty) {
+            // timeout with css for animation
             setTimeout(() => {
-              item.visible = false
-              // this.$scope.$evalAsync(() => {
-              // })
+              this.$scope.$evalAsync(() => {
+                item.visible = false
+              })
               setTimeout(() => {
                 let j = report.indexOf(item)
                 if (j > -1) report.splice(j, 1)
-              }, Math.random() * 500)
-            }, 1000 + Math.random() * 1000)
+              }, Math.random() * 1500)
+            }, 1000 + Math.random() * 2000)
           }
         }).catch(reason => console.error(reason))
       }
@@ -516,10 +517,34 @@ class WalletComponent extends wlt.WalletComponentAbstract {
         currencyName: currency.name,
         currencySym: currency.symbol,
         addAddress: item => {
-          let addressCreateEntry = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+          if (currency.symbol == wlt.CURRENCIES.Ethereum.symbol) {
+            addEthAddress(
+                walletEntry, this, this.$mdDialog,
+                {
+                  address: item.address,
+                  privateKey: item.privateKey,
+                  index: item.index,
+                  balance: item.balance,
+                  inUse: true
+                }
+            )
+          }
+          if (currency.symbol == wlt.CURRENCIES.Bitcoin.symbol) {
+            addBtcAddress(
+                walletEntry, this, this.$mdDialog,
+                {
+                  address: item.address,
+                  privateKey: item.privateKey,
+                  index: item.index,
+                  balance: item.balance,
+                  inUse: true
+                }
+            )
+          }
+          /*let addressCreateEntry = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
           addressCreateEntry.createAddress(walletEntry, currency.name, currency.symbol,
               {address: item.address, privateKey: item.privateKey, index: item.index, balance: item.balance, inUse: true}
-          )
+          )*/
           item.added = true
         }
       })
