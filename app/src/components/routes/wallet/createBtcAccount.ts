@@ -21,40 +21,34 @@
  * SOFTWARE.
  * */
 
-function addBtcAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComponent, $mdDialog, candidateAddress?: WalletAddress) {
-  let success = false
-  if (walletEntry) {
-    if (!walletEntry.expanded) walletEntry.toggle()
-    let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-    let p: Promise<any>
-    if (node) {
-      p = Promise.resolve()
-    } else {
-      walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
-      walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
-      p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
-          () => walletComponent.initWalletEntry(walletEntry)
-      )
-    }
-    // load in next event loop to load currency addresses first
-    p.then(v => {
-      setTimeout(() => {
-        let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-        node.createBtcAddress(walletEntry, candidateAddress)
-            .then(currencyBalance => {
-              walletEntry.toggle(true)
-              $mdDialog.hide(null).then(() => {
-                if (!currencyBalance) {
-                  dialogs.alert(null, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-                }
-              })
-            })
-            .catch(reason => {
-              dialogs.alert(null, 'Unable to Create Address', reason)
-            })
-      }, 400)
-    })
+function addBtcAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComponent, $mdDialog, candidateAddress?: WalletAddress): Promise<wlt.CurrencyBalance> {
+  if (!walletEntry.expanded) walletEntry.toggle()
+  let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+  let p: Promise<any>
+  if (node) {
+    p = Promise.resolve()
+  } else {
+    walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+    walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
+    p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+        () => walletComponent.initWalletEntry(walletEntry)
+    )
   }
+  // load in next event loop to load currency addresses first
+  p.then(v => {
+    return utils.delay(600).then(() => {
+      let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+      return node?.createBtcAddress(walletEntry, candidateAddress)
+          .then(currencyBalance => {
+            walletEntry.toggle(true)
+            return currencyBalance
+          })
+          .catch(reason => {
+            dialogs.alert(null, 'Unable to Create Address', reason)
+          })
+    })
+  })
+  return p
 }
 
 function createBtcAccount($event, walletComponent: WalletComponent) {
@@ -80,32 +74,37 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
     this.okButtonClick = function ($event) {
       let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
       if (walletEntry) {
-        addBtcAddress(walletEntry, walletComponent, $mdDialog)
+        addBtcAddress(walletEntry, walletComponent, $mdDialog).then(currencyBalance => {
+          $mdDialog.hide(null).then(() => {
+            if (!currencyBalance) {
+              dialogs.alert(null, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
+            }
+          })
+        })
+      }
+
+      this.selectedWalletEntryChanged = function () {
+        this.data.password = ''
+        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
+        let we: wlt.WalletEntry = this.data.selectedWalletEntry
+        if (we && we.unlocked && we.bip44Compatible) {
+          if (!we.expanded) we.toggle()
+        }
+      }
+
+      this.passwordChanged = function () {
+        walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
       }
     }
 
-    this.selectedWalletEntryChanged = function () {
-      this.data.password = ''
-      this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
-      let we: wlt.WalletEntry = this.data.selectedWalletEntry
-      if (we && we.unlocked && we.bip44Compatible) {
-        if (!we.expanded) we.toggle()
-      }
-    }
-
-    this.passwordChanged = function () {
-      walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
-    }
-  }
-
-  let deferred = walletComponent.$q.defer<{ password: string, secretPhrase: string }>()
-  walletComponent.$mdDialog.show({
-    controller: DialogController2,
-    parent: angular.element(document.body),
-    targetEvent: $event,
-    clickOutsideToClose: false,
-    controllerAs: 'vm',
-    template: `
+    let deferred = walletComponent.$q.defer<{ password: string, secretPhrase: string }>()
+    walletComponent.$mdDialog.show({
+      controller: DialogController2,
+      parent: angular.element(document.body),
+      targetEvent: $event,
+      clickOutsideToClose: false,
+      controllerAs: 'vm',
+      template: `
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
@@ -168,6 +167,7 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
           </form>
         </md-dialog>
       `
-  }).then(deferred.resolve, deferred.reject);
-  return deferred.promise
+    }).then(deferred.resolve, deferred.reject);
+    return deferred.promise
+  }
 }

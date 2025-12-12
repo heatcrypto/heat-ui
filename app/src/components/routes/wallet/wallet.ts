@@ -355,7 +355,6 @@ namespace wlt {
 
     let requestAddressInfo = (index, address, delayMs) => utils.delay(delayMs).then(() =>
         btcBlockExplorerService.getAddressInfo(address.address, false, true).then(info => {
-          console.log(`Bitcoin #${index} ${info.address} ${info.balanceSat}`)
           return {
             index: index,
             path: address.path,
@@ -391,7 +390,6 @@ namespace wlt {
           const a = addresses[i]
           promises.push(
               utils.delay(i * 210).then(() => ethService.getAddressInfo(a.address, false).then(info => {
-                console.log('ETH', i, info.address, info.ETH.balance)
                 return {
                   index: i,
                   path: '',

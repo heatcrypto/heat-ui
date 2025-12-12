@@ -39,29 +39,6 @@
       border: solid 1px steelblue;
       border-radius: 6px;
     }
-    @keyframes scaleUp {
-      0% { transform: scale(0.1); }
-      100% { transform: scale(1)}
-    }
-    @keyframes scaleDown {
-      0% { transform: scale(1); }
-      100% { transform: scale(0)}
-    }
-    .scale-up {
-      animation: scaleUp 2s;
-    }
-    .scale-down {
-      animation: scaleDown 1s;
-    }
-    .explore-address-item {
-        background-color: lightslategrey;
-        border-radius: 9px;
-        padding: 6px;
-        margin: 4px;
-    }
-    .not-empty-address {
-      background-color: #58935a !important;
-    }
   `,
   template: `
    <!--  layout-align="start center" -->
@@ -471,85 +448,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   exploreAddresses(walletEntry: wlt.WalletEntry, currencyName) {
-    let currency = wlt.CURRENCIES[currencyName]
-    let addressesPromise
-    if (currencyName == 'Bitcoin') addressesPromise = wlt.findBitcoinAddresses(walletEntry)
-    if (currencyName == 'Ethereum') addressesPromise = wlt.findEthereumAddresses(walletEntry, this.lightwalletService)
-    addressesPromise.then(promises => {
-      let report = []
-      for (const p of promises) {
-        p.then(item => {
-          report.push(item)
-          item.empty = !(item.balance > 0 || item.txs > 0)
-          if (item.empty) {
-            // timeout with css for animation
-            setTimeout(() => {
-              this.$scope.$evalAsync(() => {
-                item.visible = false
-              })
-              setTimeout(() => {
-                let j = report.indexOf(item)
-                if (j > -1) report.splice(j, 1)
-              }, Math.random() * 1500)
-            }, 1000 + Math.random() * 2000)
-          }
-        }).catch(reason => console.error(reason))
-      }
-      Promise.all(promises).then(() => report.sort((a, b) => a.index - b.index))
-
-      let panel = <PanelService> heat.$inject.get('panel')
-      panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase" style="height: 400px; width: 124%; overflow: scroll">
-          <h3>{{vm.currencyName}} not empty addresses for account {{vm.account}}</h3>
-          <code ng-repeat="item in vm.report" class="explore-address-item item scale-up" 
-                    ng-class="{'not-empty-address': !item.empty, 'scale-down': item.visible == false}">
-              #{{item.index}} <span style="color: #d9d20c">{{item.address}}</span> {{item.balance}} {{vm.currencySym}} &nbsp; 
-              <span style="white-space: nowrap;">transactions: {{item.txs}}</span>
-            <button ng-if="!item.added" ng-click="vm.addAddress(item)" title="Add address to wallet entry">
-              Add
-            </button>
-            <span style="color: darkgreen" ng-if="item.added">Added</span>
-          </code>
-      </div>
-    `, {
-        report: report,
-        account: walletEntry.account,
-        currencyName: currency.name,
-        currencySym: currency.symbol,
-        addAddress: item => {
-          if (currency.symbol == wlt.CURRENCIES.Ethereum.symbol) {
-            addEthAddress(
-                walletEntry, this, this.$mdDialog,
-                {
-                  address: item.address,
-                  privateKey: item.privateKey,
-                  index: item.index,
-                  balance: item.balance,
-                  inUse: true
-                }
-            )
-          }
-          if (currency.symbol == wlt.CURRENCIES.Bitcoin.symbol) {
-            addBtcAddress(
-                walletEntry, this, this.$mdDialog,
-                {
-                  address: item.address,
-                  privateKey: item.privateKey,
-                  index: item.index,
-                  balance: item.balance,
-                  inUse: true
-                }
-            )
-          }
-          /*let addressCreateEntry = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-          addressCreateEntry.createAddress(walletEntry, currency.name, currency.symbol,
-              {address: item.address, privateKey: item.privateKey, index: item.index, balance: item.balance, inUse: true}
-          )*/
-          item.added = true
-        }
-      })
-
-    })
+    wlt.exploreAddresses(walletEntry, currencyName, this)
   }
 
   signBitcoinMessage($event, entry: wlt.CurrencyBalance) {
