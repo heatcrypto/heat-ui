@@ -58,7 +58,7 @@ function createFIMKAccount($event, walletComponent: WalletComponent) {
           // @ts-ignore
           let node: CurrencyAddressCreate = walletEntry.currencies.find(c => {
             // @ts-ignore
-            return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.Ethereum.name
+            return c.isCurrencyAddressCreate && c.name == wlt.CURRENCIES.FIMK.name
           })
           if (node) {
             success = node.createFIMKAddress(walletEntry)

@@ -35,7 +35,7 @@ function addEthAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComp
         () => walletComponent.initWalletEntry(walletEntry)
     )
   }
-  p.then(v => {
+  p = p.then(v => {
     // load in next event loop to load currency addresses first
     return utils.delay(600).then(() => {
       let node = walletEntry.findAddressCreate(ethSymbol)

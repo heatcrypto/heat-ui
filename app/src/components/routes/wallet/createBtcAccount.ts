@@ -22,89 +22,91 @@
  * */
 
 function addBtcAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComponent, $mdDialog, candidateAddress?: WalletAddress): Promise<wlt.CurrencyBalance> {
-  if (!walletEntry.expanded) walletEntry.toggle()
-  let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-  let p: Promise<any>
-  if (node) {
-    p = Promise.resolve()
-  } else {
-    walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
-    walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
-    p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
-        () => walletComponent.initWalletEntry(walletEntry)
-    )
-  }
-  // load in next event loop to load currency addresses first
-  p.then(v => {
-    return utils.delay(600).then(() => {
-      let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
-      return node?.createBtcAddress(walletEntry, candidateAddress)
-          .then(currencyBalance => {
-            walletEntry.toggle(true)
-            return currencyBalance
-          })
-          .catch(reason => {
-            dialogs.alert(null, 'Unable to Create Address', reason)
-          })
+    if (!walletEntry.expanded) walletEntry.toggle()
+    let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+    let p: Promise<any>
+    if (node) {
+        p = Promise.resolve()
+    } else {
+        walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+        walletEntry.selectedCurrencies.push(wlt.CURRENCIES.Bitcoin.symbol)
+        p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+            () => walletComponent.initWalletEntry(walletEntry)
+        )
+    }
+    // load in next event loop to load currency addresses first
+    p = p.then(v => {
+        return utils.delay(600).then(() => {
+            let node = walletEntry.findAddressCreate(wlt.CURRENCIES.Bitcoin.symbol)
+            return node?.createBtcAddress(walletEntry, candidateAddress)
+                .then(currencyBalance => {
+                    walletEntry.toggle(true)
+                    return currencyBalance
+                })
+                .catch(reason => {
+                    dialogs.alert(null, 'Unable to Create Address', reason)
+                })
+        })
     })
-  })
-  return p
+    return p
 }
 
 function createBtcAccount($event, walletComponent: WalletComponent) {
-  let walletEntries = walletComponent.walletEntries
-  if (walletEntries.length == 0) return
+    let walletEntries = walletComponent.walletEntries
+    if (walletEntries.length == 0) return
 
-  function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-    this.data = {
-      selectedWalletEntry: walletEntries[0],
-      selected: walletEntries[0].account,
-      walletEntries: walletEntries,
-      password: ''
-    }
-
-    this.copySeed = function () {
-      walletComponent.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
-    }
-
-    this.cancelButtonClick = function () {
-      $mdDialog.cancel()
-    }
-
-    this.okButtonClick = function ($event) {
-      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
-      if (walletEntry) {
-        addBtcAddress(walletEntry, walletComponent, $mdDialog).then(currencyBalance => {
-          $mdDialog.hide(null).then(() => {
-            if (!currencyBalance) {
-              dialogs.alert(null, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
-            }
-          })
-        })
-      }
-
-      this.selectedWalletEntryChanged = function () {
-        this.data.password = ''
-        this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
-        let we: wlt.WalletEntry = this.data.selectedWalletEntry
-        if (we && we.unlocked && we.bip44Compatible) {
-          if (!we.expanded) we.toggle()
+    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+        this.data = {
+            selectedWalletEntry: walletEntries[0],
+            selected: walletEntries[0].account,
+            walletEntries: walletEntries,
+            password: ''
         }
-      }
 
-      this.passwordChanged = function () {
-        walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
-      }
+        this.copySeed = function () {
+            walletComponent.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
+        }
+
+        this.cancelButtonClick = function () {
+            $mdDialog.cancel()
+        }
+
+        this.okButtonClick = function ($event) {
+            let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
+            if (walletEntry) {
+                addBtcAddress(walletEntry, walletComponent, $mdDialog).then(currencyBalance => {
+                    $mdDialog.hide(null).then(() => {
+                        if (!currencyBalance) {
+                            dialogs.alert(null, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
+                        }
+                    })
+                })
+            }
+        }
+
+        this.selectedWalletEntryChanged = function () {
+            this.data.password = ''
+            this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
+            let we: wlt.WalletEntry = this.data.selectedWalletEntry
+            if (we && we.unlocked && we.bip44Compatible) {
+                if (!we.expanded) we.toggle()
+            }
+        }
+
+        this.passwordChanged = function () {
+            walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
+        }
+
     }
 
     let deferred = walletComponent.$q.defer<{ password: string, secretPhrase: string }>()
     walletComponent.$mdDialog.show({
-      controller: DialogController2,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
+        controller: DialogController2,
+        parent: angular.element(document.body),
+        targetEvent: $event,
+        clickOutsideToClose: false,
+        controllerAs: 'vm',
+        template: `
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
@@ -169,5 +171,5 @@ function createBtcAccount($event, walletComponent: WalletComponent) {
       `
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
-  }
 }
+
