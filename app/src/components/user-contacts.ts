@@ -223,7 +223,7 @@ class UserContactsComponent {
       this.$scope.$evalAsync(() => {
         let pr = this.getPeerAndRoom(contact)
         if (pr.peer) pr.peer.closeConnection()
-        if (pr.room) pr.room.getMessageHistory().clear()
+        if (pr.room) pr.room.getMessageHistory().clear(pr.room.key)
         db.removeContact(this.user.account, contact.publicName)
             .then(() => this.refreshContacts())
             .then(() => this.updateActivePublicKey(true))

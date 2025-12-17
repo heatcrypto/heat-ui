@@ -421,23 +421,27 @@ class LocalKeyStoreService {
           return `Error on processing file content: ${reason}`
         })
 
-        this.convertContacts()
+        this.convertContacts().then(() => importExport.copyOldP2PMessagesToIndexedDB())
       })
     })
   }
 
   private convertContacts() {
+    let promises = []
     Object.keys(localStorage).forEach(key => {
       if (key.indexOf('p2pContacts') > 0) {
         try {
           const value = JSON.parse(localStorage.getItem(key))
           let parts = key.split('.')
-          db.putContact(parts[0], value.publicKey, value)
+          promises.push(
+              db.putContact(parts[0], value.publicKey, value)
+          )
         } catch (e) {
           console.error('error import p2p contact', e)
         }
       }
     })
+    return Promise.all(promises)
   }
 
 }

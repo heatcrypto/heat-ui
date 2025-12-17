@@ -29,6 +29,7 @@ module p2p {
     type: MessageType
     timestamp: number
     receiptTimestamp?: number
+    toPeer: string
     fromPeer: string
     content?: string
     status: MessageStatus,
@@ -77,9 +78,7 @@ module p2p {
     private enabled: boolean;
     private pages: number[][];
 
-    constructor(private room: Room,
-                private user: UserService) {
-
+    constructor(private user: UserService) {
       this.enabled = true;
     }
 
@@ -146,8 +145,8 @@ module p2p {
       return db.removeMessage(msgId)
     }
 
-    clear() {
-      return db.removeMessages(this.room.key)
+    clear(roomKey: string) {
+      return db.removeMessages(roomKey)
     }
 
     /**

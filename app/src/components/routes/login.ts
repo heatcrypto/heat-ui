@@ -428,7 +428,7 @@ class LoginComponent {
   }
 
   pageAddFileInputChange(files: FileList) {
-    importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
+    importExport.importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
   }
 
   pageSinginLogin() {

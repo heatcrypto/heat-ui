@@ -680,7 +680,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   pageAddFileInputChange(files) {
-    importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
+    importExport.importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
   }
 
   remove($event, entry: wlt.WalletEntry) {

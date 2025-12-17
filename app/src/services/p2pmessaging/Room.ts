@@ -145,6 +145,7 @@ module p2p {
           type: message.type,
           timestamp: message.timestamp,
           receiptTimestamp: Date.now(),
+          toPeer: outgoing ? message.fromPeerId : this.user.publicKey,
           fromPeer: outgoing ? this.user.publicKey : message.fromPeerId,
           content: message.text,
           transport: outgoing ? sendResult?.transport : message.transport,
@@ -241,7 +242,7 @@ module p2p {
 
     getMessageHistory() {
       if (!this.messageHistory) {
-        this.messageHistory = new MessageHistory(this, this.user)
+        this.messageHistory = new MessageHistory(this.user)
       }
       return this.messageHistory
     }

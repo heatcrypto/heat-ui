@@ -98,6 +98,8 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     user.on(UserService.EVENT_UNLOCKED, () => {
       closeConnector()
 
+      importExport.convertOldP2PMessagesToIndexedDB(user.account, user.publicKey)
+
       let protocols = [
         this.baseProtocol = new p2p.BaseProtocol(),
         this.u2uProtocol = new p2p.U2UProtocol(),
@@ -362,7 +364,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return room
   }
 
-  private generateOneToOneRoomKey(contactPublicKey: string) {
+  public generateOneToOneRoomKey(contactPublicKey: string) {
     let peerPubKeyBytes = converters.hexStringToByteArray(contactPublicKey)
     let userPrivateKeyBytes = converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
     let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, peerPubKeyBytes)

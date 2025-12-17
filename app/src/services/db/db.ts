@@ -299,6 +299,12 @@ namespace db {
         })
     }
 
+    export function updateMessage(msgId: string, props: any): Promise<any> {
+        return db0.message.update(msgId, props).catch(error => {
+            console.error("Error updating record:", error)
+        })
+    }
+
     export function getMessage(msgId: string): Promise<any> {
         return db0.message.get(msgId).catch(error => {
             console.error("Deletion failed:", error)
@@ -324,12 +330,6 @@ namespace db {
             .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
             .count()
             .catch(error => {console.error("Error getting records:", error)})
-    }
-
-    export function updateMessage(msgId: string, props: any): Promise<any> {
-        return db0.message.update(msgId, props).catch(error => {
-            console.error("Error updating record:", error)
-        })
     }
 
     export function removeMessage(msgId: string): Promise<any> {
