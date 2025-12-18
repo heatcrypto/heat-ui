@@ -277,14 +277,14 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       (roomMessages: RoomMessagesAccumulator, heat) => {
         if (roomMessages.length == 1) {
           let msg = roomMessages[0].msg
-          let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+          let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
           let text: string = msg.text.substring(0, 50);
           if (msg.text.length > 50) {
             let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
             text = text.substring(0, lastSpaceIndex) + " ...";
           }
           this.$mdToast.show(
-              this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
+              this.$mdToast.simple().textContent(`New message from ${senderAccount}: "${text}"`).hideDelay(6000)
           );
         } else if (roomMessages.length > 1) {
           this.$mdToast.show(

@@ -117,9 +117,11 @@ namespace importExport {
 
   export function convertOldP2PMessagesToIndexedDB(account: string, publicKey: string) {
     db.getValuesStartWith(OLD_P2PMESSAGES_PREFIX + account).then((records: any[]) => {
+      let keysToRemove = []
       let storageNamespaces = new Set<string>()
       for (const r of records) {
-        if (r.key.indexOf('.p2p-messages.') == -1) continue
+        keysToRemove.push(r.key)
+        if (r.key.indexOf('.p2p-messages.') == -1) continue  //skip records like 'extra-p2p-messages'
         let ss: string[] = r.key.split('.')
         /*for example:
         original key was "9732640599563561883.p2p-messages.5056413637982060108-9732640599563561883.0.1.1650452154592"
@@ -130,11 +132,13 @@ namespace importExport {
         let key2 = r.key.replace(OLD_P2PMESSAGES_PREFIX, '')
         localStorage.setItem(key2, r.value) // OldMessageHistory works with LocalStorage so the record should be there
       }
+      let heatService = <HeatService>heat.$inject.get('heat')
       let storageService = <StorageService>heat.$inject.get('storage')
       let userService = <UserService>heat.$inject.get('user')
       let p2pMessaging = <P2PMessaging>heat.$inject.get('P2PMessaging')
 
-      db.listContacts(account).then((contacts: any[]) => {
+      return db.listContacts(account).then((contacts: any[]) => {
+        let promises1: PromiseLike<any>[] = []
         storageNamespaces.forEach(namespace => {
           let messageHistory = new p2p.MessageHistory(userService)
           let oldMessageHistory = new OldMessageHistory(namespace, storageService, userService)
@@ -147,74 +151,53 @@ namespace importExport {
           let twoAccounts = namespace.substring(namespace.lastIndexOf('.') + 1).split('-')
           let contactAccount = twoAccounts[0] == account ? twoAccounts[1] : twoAccounts[0]
           let contact = contacts.find(c => contactAccount == heat.crypto.getAccountIdFromPublicKey(c.publicKey))
-          if (contact) {
-            for (const oldItem of oldItems) {
-              /*
- {
-    "msgId": "0216b17a-3e49-4693-a953-d37ad3d3d17d",
-    "type": "chat",
-    "timestamp": 1647264039694,
-    "receiptTimestamp": 1647264039697,
-    "fromPeer": "bc12f97559347717fac9a02d5d26f7e7b8f99dff03d69a4670d505ca76add86f",
-    "content": "4",
-    "transport": "p2p",
-    "senderAccount": "3472715061964690056",
-    "outgoing": true,
-    "dateFormatted": "2022-03-14 16:20:39",
-    "fileIndicator": 0,
-    "stage": 1,
-    "extraInfo": null
-}
-              */
-              let oldStatus = oldItem.extraInfo?.status
-              let status: p2p.MessageStatus = {
-                stage: oldStatus?.stage || oldItem['stage'] || 0,
-                remark: oldStatus?.remark || '',
-                fileIndicator: oldStatus?.fileIndicator || oldItem['fileIndicator'] || 0
-              }
-              let item: p2p.MessageHistoryItem = {
-                msgId: oldItem.msgId,
-                content: oldItem.content,
-                fromPeer: oldItem.fromPeer,
-                toPeer: account == heat.crypto.getAccountIdFromPublicKey(oldItem.fromPeer) ? contact.publicKey : publicKey,
-                receiptTimestamp: oldItem.receiptTimestamp,
-                roomKey: p2pMessaging.generateOneToOneRoomKey(contact.publicKey),
-                status: status,
-                timestamp: oldItem.timestamp,
-                transport: oldItem.transport,
-                type: oldItem.type
-              }
-              messageHistory.add(item)
-            }
-          }
+          let contactPublicKeyPromise = contact?.publicKey
+              ? Promise.resolve(contact.publicKey)
+              : heatService.api.getPublicKey(contactAccount)
+          promises1.push(
+              contactPublicKeyPromise.then(contactPublicKey => {
+                let roomKey = p2pMessaging.generateOneToOneRoomKey(contactPublicKey)
+                let promises2: PromiseLike<any>[] = []
+                let successNum = 0, errorNum = 0
+                for (const oldItem of oldItems) {
+                  let oldStatus = oldItem.extraInfo?.status
+                  let status: p2p.MessageStatus = {
+                    stage: oldStatus?.stage || oldItem['stage'] || 0,
+                    remark: oldStatus?.remark || '',
+                    fileIndicator: oldStatus?.fileIndicator || oldItem['fileIndicator'] || 0
+                  }
+                  let item: p2p.MessageHistoryItem = {
+                    msgId: oldItem.msgId,
+                    content: oldItem.content,
+                    fromPeer: oldItem.fromPeer,
+                    toPeer: account == heat.crypto.getAccountIdFromPublicKey(oldItem.fromPeer) ? contactPublicKey : publicKey,
+                    receiptTimestamp: oldItem.receiptTimestamp,
+                    roomKey: roomKey,
+                    status: status,
+                    timestamp: oldItem.timestamp,
+                    transport: oldItem.transport,
+                    type: oldItem.type
+                  }
+                  promises2.push(messageHistory.add(item).then(id => {
+                    if (id) successNum++
+                    else errorNum++
+                  }))
+                }
+                return Promise.all(promises2).then(() => console.log(`added ${successNum}, rejected ${errorNum}`))
+              })
+          )
         })
-      })
-
+        return Promise.all(promises1)
+      }).then(() => keysToRemove)
+    }).then((keysToRemove: string[]) => {
+      //remove records from IndexedDB to prevent duplicate imports in the future
+      let p = Promise.resolve()
+      for (const key of keysToRemove) {
+        p = p.then(() => db.removeValue(key))
+      }
+      return p.then(() => console.log(`account ${account}, cleared ${keysToRemove.length} records`))
     }).catch(error => console.error(error))
   }
-
-  export function importP2PMessages() {
-    // "9732640599563561883.p2p-messages.5056413637982060108-9732640599563561883.0.1.1650452154592"
-    let storageService = <StorageService>heat.$inject.get('storage')
-    let userService = <UserService>heat.$inject.get('user')
-    let storageNamespaces = new Set<string>()
-    for (let i = 0; i < localStorage.length; i++) {
-      let k = localStorage.key(i)
-      let index = k.indexOf('.p2p-messages.')
-      if (index > 0) {
-        let ss = k.split('.')
-        storageNamespaces.add(ss[0] + '.' + ss[1] + '.' + ss[2])
-      }
-    }
-    storageNamespaces.forEach(namespace => {
-      let mh = new OldMessageHistory(namespace, storageService, userService)
-      let items = mh.getItemsAll()
-      if (items.length > 0) {
-        console.log(namespace, items.length)
-      }
-    })
-  }
-
 
   type TransportType = "chain" | "p2p" | "server"
   type MessageType = "chat" | "contactUpdate" | "newContact" | "file" | ""

@@ -384,7 +384,7 @@ class LocalKeyStoreService {
   private convertToIndexedDB(storage: StorageService, $rootScope) {
     let k = 'heatwallet-db-converted-4.9.3'
     let storageConvertedIndicator = parseInt(localStorage.getItem(k))
-    if (storageConvertedIndicator > 3) return
+    if (storageConvertedIndicator > 5) return
 
     db.walletEntryCount().then(num => {
       if (num > 0) return //IndexedDB db already has data

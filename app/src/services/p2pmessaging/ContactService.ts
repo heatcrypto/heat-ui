@@ -28,7 +28,7 @@ class ContactService extends EventEmitter {
    */
   getContacts(selectedContactPublicKey?) {
     return db.listContacts(this.user.account).then((contacts: []) => {
-      let localContacts: IHeatMessageContact[] = []
+      let localContacts: any[] = []
       contacts.forEach(p2pContact => localContacts.push(p2pContact))
       return localContacts
     }).then(localContacts => {
@@ -127,7 +127,7 @@ class ContactService extends EventEmitter {
   updateContactCurrencyAddress(contactAccount: string, currency: string, address: string, contactPublicKey: string, publicName: string, calledTimeStamp?: number) {
     if (!contactPublicKey) return
 
-    return db.getContact(this.user.account, contactPublicKey).then((contact: IHeatMessageContact) => {
+    return db.getContact(this.user.account, contactPublicKey).then(contact => {
       contact = contact || {
         account: contactAccount,
         privateName: '',
@@ -202,40 +202,40 @@ class ContactService extends EventEmitter {
 
   shareCryptoAddress(contact: IHeatMessageContact, currency: string, value: string) {
     let validatedCurrency = currency.toLocaleLowerCase();
-    this.heat.api.getKeystoreAccountEntry(this.user.account, `${contact.account}-${validatedCurrency}`).then(response => {
+    let key = `${contact.account}-${validatedCurrency}`
+    let f = () => {
+      let encrypted = heat.crypto.encryptMessage(value, contact.publicKey, this.user.secretPhrase)
+      this.heat.api.saveKeystoreEntry(key, `${encrypted.data}-${encrypted.nonce}`, this.user.secretPhrase)
+    }
+    this.heat.api.getKeystoreAccountEntry(this.user.account, key).then(response => {
       let parsed = utils.parseResponse(response);
       if (parsed.errorDescription === 'Unknown key') {
-        let encrypted = heat.crypto.encryptMessage(value, contact.publicKey, this.user.secretPhrase)
-        this.heat.api.saveKeystoreEntry(`${contact.account}-${validatedCurrency}`, `${encrypted.data}-${encrypted.nonce}`, this.user.secretPhrase)
+        f()
       } else {
         let split = parsed.value.split("-");
         let decrypted = heat.crypto.decryptMessage(split[0], split[1], contact.publicKey, this.user.secretPhrase)
-        if(decrypted == value) {
-          return
-        } else {
-          let encrypted = heat.crypto.encryptMessage(value, contact.publicKey, this.user.secretPhrase)
-          this.heat.api.saveKeystoreEntry(`${contact.account}-${validatedCurrency}`, `${encrypted.data}-${encrypted.nonce}`, this.user.secretPhrase)
-        }
+        if (decrypted == value) return
+        f()
       }
     }).catch(e => {
       let parsed = utils.parseResponse(e);
       if (parsed.description === 'Unknown key') {
-        let encrypted = heat.crypto.encryptMessage(value, contact.publicKey, this.user.secretPhrase)
-        this.heat.api.saveKeystoreEntry(`${contact.account}-${validatedCurrency}`, `${encrypted.data}-${encrypted.nonce}`, this.user.secretPhrase)
+        f()
       }
     })
   }
 
-  fetchCryptoAddress(contact: IHeatMessageContact, currency: string) {
+  fetchCryptoAddress(contact, currency: string) {
     let validatedCurrency = currency.toLocaleLowerCase();
-    this.heat.api.getKeystoreAccountEntry(contact.account, `${this.user.account}-${validatedCurrency}`).then(response => {
+    let contactAccount = heat.crypto.getAccountIdFromPublicKey(contact.publicKey)
+    this.heat.api.getKeystoreAccountEntry(contactAccount, `${this.user.account}-${validatedCurrency}`).then(response => {
       let parsed = utils.parseResponse(response);
       let split = parsed.value.split("-");
       let decrypted = heat.crypto.decryptMessage(split[0], split[1], contact.publicKey, this.user.secretPhrase)
       console.log('decrypted value: ' + decrypted)
-      this.updateContactCurrencyAddress(contact.account, currency, decrypted, contact.publicKey, contact.publicName)
+      this.updateContactCurrencyAddress(contactAccount, currency, decrypted, contact.publicKey, contact.publicName)
     }).catch(e => {
-      console.log(`Error getting keystore value of contact ${contact.account}-${validatedCurrency}`, e)
+      console.log(`Error getting keystore value of contact ${contactAccount}-${validatedCurrency}`, e)
     })
   }
 

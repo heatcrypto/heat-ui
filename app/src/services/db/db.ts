@@ -15,7 +15,7 @@ namespace db {
             cryptoAddresses: '[account+currencySym]',
             walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
             transactionMemo: 'id', // id (PK), content: any
-            contact: '[account+publicKey]', //account's contact public key
+            contact: '[ownerAccount+publicKey]', //ownerAccount owner of contact, public key of contact
             message: 'msgId, [roomKey+timestamp]', //u2u (p2p) message
         })
 
@@ -241,45 +241,49 @@ namespace db {
 
     // -------- P2P Messaging Contacts ----------------------------------------------------------------
 
-    export function putContact(account: string, publicKey: string, value: any): Promise<any> {
-        return db0.contact.put(Object.assign(value, {account, publicKey: publicKey})).catch(error => {
+    export function putContact(ownerAccount: string, publicKey: string, value: any): Promise<any> {
+        let c = Object.assign(value, {ownerAccount: ownerAccount, publicKey: publicKey})
+        if (!c.account) c.account = heat.crypto.getAccountIdFromPublicKey(c.publicKey)
+        return db0.contact.put(c).catch(error => {
             console.error(error)
         })
     }
 
-    export function saveContact(account: string, publicKey: string, props: any): Promise<any> {
-        let id = {account, publicKey}
+    export function saveContact(ownerAccount: string, publicKey: string, props: any): Promise<any> {
+        let id = {ownerAccount: ownerAccount, publicKey}
         return db0.contact.get(id).then(c => {
             if (c) {
                 return db0.contact.update(id, props)
             } else {
-                return putContact(account, publicKey, props)
+                return putContact(ownerAccount, publicKey, props)
             }
         }).catch(error => {
             console.error("Error saving record:", error)
         })
     }
 
-    export function getContact(account: string, publicKey: string): Promise<any> {
-        return db0.contact.get({account, publicKey: publicKey}).catch(error => {
+    export function getContact(ownerAccount: string, publicKey: string): Promise<any> {
+        return db0.contact.get({ownerAccount: ownerAccount, publicKey: publicKey}).catch(error => {
             console.error(error)
         })
     }
 
     /**
      * list account's contacts
-     * @param account holder of contacts
+     * @param ownerAccount holder of contacts
      */
-    export function listContacts(account: string): Promise<any> {
-        return db0.contact.where({account}).toArray().catch(error => {
+    export function listContacts(ownerAccount: string): Promise<any> {
+        return db0.contact.where({ownerAccount: ownerAccount}).toArray().catch(error => {
             console.error(error)
         })
     }
 
-    export function searchContacts(accountQuery?: string, publicNameQuery?: string): Promise<any> {
-        if (accountQuery) {
-            return db0.contact.where('account').startsWith(accountQuery).toArray()
+    export function searchContacts(contactAccountQuery?: string, publicNameQuery?: string): Promise<any> {
+        if (contactAccountQuery) {
+            return db0.contact.filter(c => c.account.includes(contactAccountQuery)).toArray()
                 .catch(error => {console.error(error)})
+            // return db0.contact.where('ownerAccount').startsWith(contactAccountQuery).toArray()
+            //     .catch(error => {console.error(error)})
         }
         if (publicNameQuery) {
             return db0.contact.filter(c => c.publicName.includes(publicNameQuery)).toArray()
@@ -287,8 +291,8 @@ namespace db {
         }
     }
 
-    export function removeContact(account: string, publicKey: string): Promise<any> {
-        return db0.contact.delete(account, publicKey).catch(error => console.error("Deletion failed:", error))
+    export function removeContact(ownerAccount: string, publicKey: string): Promise<any> {
+        return db0.contact.delete(ownerAccount, publicKey).catch(error => console.error("Deletion failed:", error))
     }
 
     // -------- P2P Messaging ----------------------------------------------------------------

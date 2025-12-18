@@ -379,7 +379,7 @@ class UserContactsComponent {
   fetchCryptoAddresses(currency: string) {
     db.listContacts(this.user.account).then((contacts: any[]) => {
       for (const contact of contacts) {
-        console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
+        //console.log(`fetching ${currency} of p2p contact: ${contact.account}`)
         this.contactService.fetchCryptoAddress(contact, currency)
       }
     })
