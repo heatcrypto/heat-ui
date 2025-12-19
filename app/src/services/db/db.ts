@@ -151,7 +151,7 @@ namespace db {
     }
 
     export function updateBalance(itemKey: string, currencySym: string, balance): Promise<any> {
-        return db0.walletItem.update({itemKey, currencySym}, {balance}).catch(error => {
+        return db0.walletItem.update([itemKey, currencySym], {balance}).catch(error => {
             console.error(error)
         })
     }
@@ -160,7 +160,7 @@ namespace db {
         let id = {itemKey, currencySym}
         return db0.walletItem.get(id).then(item => {
             if (item) {
-                return db0.walletItem.update(id, props)
+                return db0.walletItem.update([itemKey, currencySym], props)
             } else {
                 return db0.walletItem.put(Object.assign(id, props))
             }
@@ -170,8 +170,7 @@ namespace db {
     }
 
     export function updateWalletItem(itemKey: string, currencySym: string, props: any): Promise<any> {
-        let id = {itemKey, currencySym}
-        return db0.walletItem.update(id, props).catch(error => {
+        return db0.walletItem.update([itemKey, currencySym], props).catch(error => {
             console.error("Error saving record:", error)
         })
     }
@@ -185,7 +184,7 @@ namespace db {
     export function saveItemLabel(itemKey: string, currencySym: string, parent, label: string): Promise<any> {
         return db0.walletItem.get({itemKey, currencySym}).then(item => {
             if (item) {
-                return db0.walletItem.update({itemKey: itemKey, currencySym}, {label: label, parent: parent})
+                return db0.walletItem.update([itemKey, currencySym], {label: label, parent: parent})
             } else {
                 return db0.walletItem.put({itemKey: itemKey, currencySym, label: label, parent: parent})
             }
@@ -253,7 +252,7 @@ namespace db {
         let id = {ownerAccount: ownerAccount, publicKey}
         return db0.contact.get(id).then(c => {
             if (c) {
-                return db0.contact.update(id, props)
+                return db0.contact.update([ownerAccount, publicKey], props)
             } else {
                 return putContact(ownerAccount, publicKey, props)
             }
@@ -304,7 +303,7 @@ namespace db {
     }
 
     export function updateMessage(ownerAccount, msgId: string, props: any): Promise<any> {
-        return db0.message.update({ownerAccount, msgId}, props).catch(error => {
+        return db0.message.update([ownerAccount, msgId], props).catch(error => {
             console.error("Error updating record:", error)
         })
     }
@@ -337,7 +336,7 @@ namespace db {
     }
 
     export function removeMessage(ownerAccount, msgId: string): Promise<any> {
-        return db0.message.delete({ownerAccount, msgId}).catch(error => console.error("Deletion failed:", error))
+        return db0.message.delete([ownerAccount, msgId]).catch(error => console.error("Deletion failed:", error))
     }
 
     export function removeMessages(ownerAccount, roomKey: string): Promise<any> {
