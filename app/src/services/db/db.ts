@@ -16,7 +16,7 @@ namespace db {
             walletItem: '[itemKey+currencySym], parent', //itemKey is id of subEntry, for example hash of currency address (subEntry currency balance)
             transactionMemo: 'id', // id (PK), content: any
             contact: '[ownerAccount+publicKey]', //ownerAccount owner of contact, public key of contact
-            message: 'msgId, [roomKey+timestamp]', //u2u (p2p) message
+            message: '[ownerAccount+msgId], [ownerAccount+roomKey], [ownerAccount+roomKey+timestamp]', //p2p (u2u) message. ownerAccount is the sender of outgoing message or recipient of incoming message
         })
 
         dexie.open().catch(error => console.error("Failed to open database:", error))
@@ -297,52 +297,52 @@ namespace db {
 
     // -------- P2P Messaging ----------------------------------------------------------------
 
-    export function addMessage(message: any): Promise<any> {
-        return db0.message.add(message).catch(error => {
+    export function addMessage(ownerAccount, message: any): Promise<any> {
+        return db0.message.add(Object.assign(message, {ownerAccount})).catch(error => {
             console.error(error)
         })
     }
 
-    export function updateMessage(msgId: string, props: any): Promise<any> {
-        return db0.message.update(msgId, props).catch(error => {
+    export function updateMessage(ownerAccount, msgId: string, props: any): Promise<any> {
+        return db0.message.update({ownerAccount, msgId}, props).catch(error => {
             console.error("Error updating record:", error)
         })
     }
 
-    export function getMessage(msgId: string): Promise<any> {
-        return db0.message.get(msgId).catch(error => {
+    export function getMessage(ownerAccount, msgId: string): Promise<any> {
+        return db0.message.get({ownerAccount, msgId}).catch(error => {
             console.error("Deletion failed:", error)
         })
     }
 
-    export function getMessages(roomKey: string): Promise<any> {
+    export function getMessages(ownerAccount, roomKey: string): Promise<any> {
         return db0.message
-            .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
+            .where('[ownerAccount+roomKey+timestamp]').between([ownerAccount, roomKey, -Number.MAX_VALUE],[ownerAccount, roomKey, Number.MAX_VALUE])
             .toArray()
             .catch(error => {console.error("Error getting records:", error)})
     }
 
-    export function getMessagesScrollable(roomKey: string, offset: number, limit: number): Promise<any> {
+    export function getMessagesScrollable(ownerAccount, roomKey: string, offset: number, limit: number): Promise<any> {
         return db0.message
-            .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
+            .where('[ownerAccount+roomKey+timestamp]').between([ownerAccount, roomKey, -Number.MAX_VALUE],[ownerAccount, roomKey, Number.MAX_VALUE])
             .offset(offset).limit(limit).toArray()
             .catch(error => {console.error("Error getting records:", error)})
     }
 
-    export function getMessagesCount(roomKey: string): Promise<any> {
+    export function getMessagesCount(ownerAccount, roomKey: string): Promise<any> {
         return db0.message
-            .where('[roomKey+timestamp]').between([roomKey, -Number.MAX_VALUE],[roomKey, Number.MAX_VALUE])
+            .where('[ownerAccount+roomKey+timestamp]').between([ownerAccount, roomKey, -Number.MAX_VALUE],[ownerAccount, roomKey, Number.MAX_VALUE])
             .count()
             .catch(error => {console.error("Error getting records:", error)})
     }
 
-    export function removeMessage(msgId: string): Promise<any> {
-        return db0.message.delete(msgId).catch(error => console.error("Deletion failed:", error))
+    export function removeMessage(ownerAccount, msgId: string): Promise<any> {
+        return db0.message.delete({ownerAccount, msgId}).catch(error => console.error("Deletion failed:", error))
     }
 
-    export function removeMessages(roomKey: string): Promise<any> {
+    export function removeMessages(ownerAccount, roomKey: string): Promise<any> {
         return db0.message
-            .where('roomKey').equals(roomKey)
+            .where('[ownerAccount+roomKey]').equals([ownerAccount, roomKey])
             .delete()
             .catch(error => console.error(`Bulk deletion failed: ${error}`))
     }

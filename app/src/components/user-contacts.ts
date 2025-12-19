@@ -272,9 +272,9 @@ class UserContactsComponent {
   private purgeMessagesInternal(contact: IHeatMessageContact) {
     let pr = this.getPeerAndRoom(contact)
     if (pr.room) {
-      return db.getMessages(pr.room.key).then(m => {
+      return db.getMessages(this.user.account, pr.room.key).then(m => {
         this.p2pMessaging.checkToRemoveServerMessage(m.type, m["outgoing"], m.transport, m.msgId, m.status)
-      }).then(() => db.removeMessages(pr.room.key))
+      }).then(() => db.removeMessages(this.user.account, pr.room.key))
     }
     return Promise.resolve()
   }

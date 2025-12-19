@@ -114,21 +114,21 @@ module p2p {
     }
 
     public isExistingId(msgId: string) {
-      return db.getMessage(msgId).then(v => !!v)
+      return db.getMessage(this.user.account, msgId).then(v => !!v)
     }
 
     public getMessagesScrollable(roomKey: string, offset: number, limit: number): Promise<any> {
-      return db.getMessagesScrollable(roomKey, offset, limit).then((messages: any[]) => messages.map(v => this.decrypt(v)))
+      return db.getMessagesScrollable(this.user.account, roomKey, offset, limit).then((messages: any[]) => messages.map(v => this.decrypt(v)))
     }
 
     public add(item: MessageHistoryItem) {
-      return db.addMessage(this.encrypt(item))
+      return db.addMessage(this.user.account, this.encrypt(item))
     }
 
     public updateMessageStatus(msgId: string, data: any) {
-      return db.updateMessage(msgId, data).then(updated => {
+      return db.updateMessage(this.user.account, msgId, data).then(updated => {
         if (updated > 0) {
-          db.getMessage(msgId).then(m => {
+          db.getMessage(this.user.account, msgId).then(m => {
             if (m?.status) {
               let $rootScope = heat.$inject.get('$rootScope')
               $rootScope.$emit('OFFCHAIN_MESSAGE_EXTRA_INFO', msgId, m.status)
@@ -142,11 +142,11 @@ module p2p {
      * Removes message in the history. Returns number of deleted messages.
      */
     public remove(msgId: string): Promise<any> {
-      return db.removeMessage(msgId)
+      return db.removeMessage(this.user.account, msgId)
     }
 
     clear(roomKey: string) {
-      return db.removeMessages(roomKey)
+      return db.removeMessages(this.user.account, roomKey)
     }
 
     /**

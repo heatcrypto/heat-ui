@@ -365,9 +365,9 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   }
 
   public generateOneToOneRoomKey(contactPublicKey: string) {
-    let peerPubKeyBytes = converters.hexStringToByteArray(contactPublicKey)
+    let contactPublicKeyBytes = converters.hexStringToByteArray(contactPublicKey)
     let userPrivateKeyBytes = converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
-    let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, peerPubKeyBytes)
+    let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, contactPublicKeyBytes)
     return db.bytesToCompactHash(sharedSecret)
   }
 

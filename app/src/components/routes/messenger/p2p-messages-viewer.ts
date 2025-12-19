@@ -177,13 +177,12 @@ class P2PMessagesViewerComponent {
   }
 
   $onInit() {
-    if (this.publickey == this.user.publicKey) {
-      throw Error("Same public key as logged in user")
-    }
-
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT)
 
-    if (this.publickey == '0') return
+    if (this.publickey == '0' || this.publickey == this.user.publicKey) {
+      this.publickey = '0'
+      return
+    }
 
     let r = this.room = this.p2pMessaging.getOneToOneRoom(this.publickey, true)
 
@@ -192,7 +191,7 @@ class P2PMessagesViewerComponent {
     this.datasource = new P2PMessagesDataSource(r.key, r.getMessageHistory(), item => this.processItem(item));
 
     // scroll to the end of list
-    db.getMessagesCount(this.room.key).then(c => {
+    db.getMessagesCount(this.user.account, this.room.key).then(c => {
       if (c && this.$scope.adapter) this.$scope.adapter.reload(c)
     })
 
