@@ -263,7 +263,7 @@ namespace db {
     }
 
     export function getContact(ownerAccount: string, publicKey: string): Promise<any> {
-        return db0.contact.get({ownerAccount: ownerAccount, publicKey: publicKey}).catch(error => {
+        return db0.contact.get({ownerAccount, publicKey}).catch(error => {
             console.error(error)
         })
     }
@@ -292,7 +292,7 @@ namespace db {
     }
 
     export function removeContact(ownerAccount: string, publicKey: string): Promise<any> {
-        return db0.contact.delete(ownerAccount, publicKey).catch(error => console.error("Deletion failed:", error))
+        return db0.contact.delete([ownerAccount, publicKey]).catch(error => console.error("Deletion failed:", error))
     }
 
     // -------- P2P Messaging ----------------------------------------------------------------
