@@ -105,7 +105,10 @@ class ContactService extends EventEmitter {
     if (properties) Object.assign(props, properties)
 
     let p
-    let f = () => db.saveContact(this.user.account, contactPublicKey, props).then(() => this.emit(ContactService.SAVE_CONTACT, contactPublicKey))
+    let f = () => db.saveContact(this.user.account, contactPublicKey, props).then(v => {
+      if (v) this.emit(ContactService.SAVE_CONTACT, contactPublicKey)
+      return v
+    })
 
     if (publicName) {
       p = f()

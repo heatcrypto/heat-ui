@@ -249,8 +249,7 @@ namespace db {
     }
 
     export function saveContact(ownerAccount: string, publicKey: string, props: any): Promise<any> {
-        let id = {ownerAccount: ownerAccount, publicKey}
-        return db0.contact.get(id).then(c => {
+        return db0.contact.get({ownerAccount, publicKey}).then(c => {
             if (c) {
                 return db0.contact.update([ownerAccount, publicKey], props)
             } else {
