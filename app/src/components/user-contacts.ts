@@ -176,7 +176,6 @@ class UserContactsComponent {
       $scope.$on('$destroy', () => user.removeListener(UserService.EVENT_UNLOCKED, listener))
     }
 
-    $scope.$on('$locationChangeSuccess', () => { this.updateActivePublicKey() })
     this.updateActivePublicKey()
 
     //let myRoom = this.p2pMessaging.register();
@@ -357,17 +356,10 @@ class UserContactsComponent {
 
   refreshMessageHistory() {
     let contact = this.getActiveContact()
-    if (contact == this.contacts[0]) {
-      if (this.contacts.length > 1) {
-        this.$location.path("/messenger/" + this.contacts[1].publicKey);
-      }
-      this.updateActivePublicKey(false)
-    } else {
-      this.updateActivePublicKey(true)
-    }
+    this.$location.path("/messenger/0")
     setTimeout(() => {
       this.$location.path(`/messenger/${contact.publicKey}`)
-    }, 100)
+    }, 200)
   }
 
   getPeerAndRoom(contact: IHeatMessageContact) {
