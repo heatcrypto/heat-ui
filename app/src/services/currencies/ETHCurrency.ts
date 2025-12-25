@@ -66,21 +66,42 @@ class ETHCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-    let heatService = <HeatService>heat.$inject.get('heat')
-    this.sendEther($event)
-        .then(data => {
-              if (data && data.txId) {
-                let address = this.user.currency.address
-                let timestamp = new Date().getTime()
-                this.pendingService.add(address, data.txId, timestamp)
-                return wlt.getHeatUnavailableReason(heatService, this.user.account)
-                    .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
-                    //.then(isPaymentMemo => todo refresh memo in the transaction list)
-                    .catch(reason => {
-                      if (reason) console.error(reason)
-                    })
-              }
-            })
+    let selectTransfer = (selectionCallback: (transferType) => any) => {
+      let panel: PanelService = heat.$inject.get('panel')
+      return panel.show(`
+      <div flex style="border-radius: 4px; font-size: larger">
+        <md-input-container flex layout="column">
+          <button ng-click="vm.select('ETH')" style="padding: 12px;">ETH transfer</button>
+          <button ng-click="vm.select('ERC20')" style="padding: 12px;">ERC20 tokens transfer</button>
+        </md-input-container>
+      </div>
+    `, {
+            panel: panel,
+            select: (selectedValue) => {
+              selectionCallback(selectedValue)
+              panel.close()
+            }
+          }
+      )
+    }
+
+    selectTransfer(transferType => {
+      let heatService = <HeatService>heat.$inject.get('heat')
+      this.sendEther($event, transferType).then(data => {
+        if (data && data.txId) {
+          let address = this.user.currency.address
+          let timestamp = new Date().getTime()
+          this.pendingService.add(address, data.txId, timestamp)
+          return wlt.getHeatUnavailableReason(heatService, this.user.account)
+          .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+          //.then(isPaymentMemo => todo refresh memo in the transaction list)
+          .catch(reason => {
+            if (reason) console.error(reason)
+          })
+        }
+      })
+    })
+
   }
 
   /* Invoke SEND token dialog */
@@ -88,7 +109,7 @@ class ETHCurrency implements ICurrency {
 
   }
 
-  sendEther($event) {
+  sendEther($event, transferType) {
     const self = this
     let web3 = <Web3Service> heat.$inject.get('web3')
 
@@ -97,18 +118,23 @@ class ETHCurrency implements ICurrency {
       this.paymentMessageMethod = null
       vm.stage = "create"
       vm.enterNonceManually = false
+      vm.transferType = transferType
 
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
       //vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
       // vm.broadcastProviderIndex = 1
       vm.broadcastProvider = ethBlockExplorerService.ethBlockExplorerHeatNodeService
       vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
+      if (transferType == 'ERC20') {
+        vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['erc20To'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['erc20Value'], ['feeEth', 'fee'], ['data']]
+      }
 
-      this.data = {
+      vm.data = {
         amount: '',
         gasPrice: '',
         gasLimit: '',
         recipient: '',
+        contractAddress: '',
         recipientInfo: '',
         fee: '0.000420',
         message: '',
@@ -118,7 +144,8 @@ class ETHCurrency implements ICurrency {
       vm.generateTxnBytes = function (forceEnterNonce = false) {
         let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
-        let amountInWei = web3.web3.toWei(this.data.amount.replace(',',''), 'ether')
+        let amount = this.data.amount.replace(',','')
+        let amountInWei = web3.web3.toWei(amount, 'ether')
         let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
 
         let enterAddressNonce = (nonce?) => dialogs.simplePrompt(null,
@@ -144,14 +171,31 @@ class ETHCurrency implements ICurrency {
               if (typeof nonce === "string") return parseInt(nonce)
             })
 
-        return web3.createRawTx2(from, this.data.recipient, amountInWei, this.data.gasPrice * Web3Service.GWEI_SCALE, this.data.gasLimit, getAddressNonce)
-            // .then((rawTx) => {
-            //   let clipboardService: ClipboardService = heat.$inject.get('clipboard')
-            //   clipboardService.showTxnBytes("" + rawTx)
-            // })
-            .catch(reason => {
-              dialogs.alert($event, 'ETH transaction creation error', reason)
-            })
+        if (transferType == 'ETH') {
+          return web3.createRawTx2(
+              from,
+              this.data.recipient,
+              amountInWei,
+              this.data.gasPrice * Web3Service.GWEI_SCALE,
+              this.data.gasLimit,
+              getAddressNonce
+          ).catch(reason => {
+            dialogs.alert($event, 'ETH transaction creation error', reason)
+          })
+        } else if (transferType == 'ERC20') {
+          return web3.createTransferERC20RawTx(
+              from,
+              this.data.recipient,
+              this.data.contractAddress,
+              amount,
+              this.data.gasPrice * Web3Service.GWEI_SCALE,
+              this.data.gasLimit,
+              getAddressNonce
+          ).catch(reason => {
+            dialogs.alert($event, 'ETH transaction creation error', reason)
+          })
+        }
+
       }
 
       let decodeRawTxHex = function (rawTxHex: string) {
@@ -258,7 +302,7 @@ class ETHCurrency implements ICurrency {
       let decodeTxnDebounced = utils.debounce(() => {
         vm.parsedTx = decodeRawTxHex(vm.data.rawTx)
       }, 500, false)
-      
+
       this.txnBytesChanged = function (event) {
         if (vm.stage != 'insertedBytes') return
         $scope.$evalAsync(() => {
@@ -307,21 +351,30 @@ class ETHCurrency implements ICurrency {
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Send Ether</h2></div>
+              <div class="md-toolbar-tools">
+                <h2 ng-if="vm.transferType == 'ETH'">Send Ether</h2>
+                <h2 ng-if="vm.transferType == 'ERC20'">Send ERC20 tokens</h2>
+              </div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column" ng-if="vm.stage=='create'">
 
-                <md-input-container flex >
+                <md-input-container flex>
                   <label>Recipient</label>
                   <input ng-model="vm.data.recipient" ng-change="vm.recipientChanged()" required name="recipient">
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
                 </md-input-container>
 
+                <md-input-container flex ng-if="vm.transferType == 'ERC20'">
+                  <label>Contract address</label>
+                  <input ng-model="vm.data.contractAddress" required name="contractAddress">
+                </md-input-container>
+
                 <md-input-container flex >
-                  <label>Amount in ETH</label>
+                  <label ng-if="vm.transferType == 'ETH'">Amount in ETH</label>
+                  <label ng-if="vm.transferType == 'ERC20'">Amount of tokens</label>
                   <input ng-model="vm.data.amount" required name="amount">
-                  <button ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
+                  <button ng-if="vm.transferType == 'ETH'" ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
                 </md-input-container>
 
                 <md-input-container flex >

@@ -114,5 +114,40 @@ class Web3Service {
     })
   }
 
+  createTransferERC20RawTx = (account, to, contractAddress, value, gasPriceParam?, gasLimitParam?,
+                  getAddressNonce?: (address: string) => PromiseLike<number>) => {
+    return new Promise((resolve, reject) => {
+      this.getGasPrice().then((gasPrice) => {
+        let getNonce = getAddressNonce || this.getAddressNonce
+        return getNonce(account.address).then(
+          nonce => {
+            if (!nonce && nonce != 0) {
+                resolve(null)
+                return
+            }
+            let defaultGasLimit = this.settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
+
+            const param = {
+              privateKey: account.privateKey.indexOf('0x') == 0 ? account.privateKey : '0x' + account.privateKey,
+              to: to, // "0x2652a649aBa066D8C1e37B0A0C45dFD5E1c91527",
+              contractAddress: contractAddress, //"0xd26114cd6EE289AccF82350c8d8487fedB8A0C07",
+              value: value, // "10000",
+              nonce: nonce, // 10,
+              gasPrice: String(gasPriceParam || gasPrice), // "20000000000",
+              gasLimit: String(gasLimitParam || defaultGasLimit), // "21000",
+              chainId: 1
+            }
+            heat.heatAppLib.ETHEREUM_TRANSFER_ERC20(param).then(bytes => {
+              resolve(bytes)
+            }).catch(e => {
+              reject(e?.message || e || "ETH transaction creation error")
+            })
+          },
+          reason => reject(reason)
+        )
+      })
+    })
+  }
+
 
 }

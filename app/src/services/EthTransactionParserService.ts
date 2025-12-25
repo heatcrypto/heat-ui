@@ -57,8 +57,7 @@ class EthTransactionParserService {
   parse(transactions: EthplorerAddressTransaction[]): Array<EthplorerAddressTransactionExtended> {
     let result: Array<EthplorerAddressTransactionExtended> = []
     transactions.forEach(transaction => {
-      if (!transaction)
-        return
+      if (!transaction) return
 
       let extended: EthplorerAddressTransactionExtended = <any>transaction
       result.push(extended)
@@ -75,10 +74,12 @@ class EthTransactionParserService {
         }
 
         /* Now try and interpret the ABI data */
-        try {
-          extended.abi.decodedData = this.abiDecoder.decodeMethod(transaction.input)
-        } catch (e) {
-          console.log(e)
+        if (transaction.input) {
+          try {
+            extended.abi.decodedData = this.abiDecoder.decodeMethod(transaction.input)
+          } catch (e) {
+            console.log(e)
+          }
         }
       }
     })

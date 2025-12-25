@@ -28,6 +28,9 @@
     .value a {
       text-decoration: none !important;
     }
+    .symbol {
+      color: white;
+    }
   `],
   template: `
     <div layout="column" flex layout-fill>
@@ -63,7 +66,8 @@
             <div class="scrollable">
               <div class="value" ng-repeat="item in vm.erc20Tokens">
                 <span class="balance">{{item.balance}}</span>
-                <span class="symbol"><b>{{item.symbol}}</b></span>
+                <span class="symbol">{{item.symbol}}</span>
+                &nbsp;&nbsp;
                 <span class="balance">Token: {{item.name}}</span>
               </div>
             </div>
@@ -225,7 +229,7 @@ class EthereumAccountComponent {
                   name: token.tokenInfo.name,
                   id: ''
                 }
-              })
+              }).sort((a, b) => a.symbol.localeCompare(b.symbol))
             }
           })
         })
