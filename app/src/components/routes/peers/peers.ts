@@ -103,7 +103,7 @@
       100% { transform: scale(1)}
     }
     .scale-up {
-      animation: scaleUp 4s;
+      animation: scaleUp 3s;
     }
   `],
     template: `

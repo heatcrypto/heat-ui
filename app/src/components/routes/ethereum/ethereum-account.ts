@@ -111,11 +111,11 @@
 @Inject('$scope', 'web3', 'assetInfo', '$q', 'user', 'ethBlockExplorerService',
   'ethereumPendingTransactions', 'settings', '$interval', '$mdToast', 'http')
 class EthereumAccountComponent {
-  account: string; // @input
+  account: string // @input
 
-  balance: string;
-  balanceUnconfirmed: string;
-  erc20Tokens: Array<{ balance: string, symbol: string, name: string, id: string }> = [];
+  balance: string
+  balanceUnconfirmed: string
+  erc20Tokens: ERC20TokensType = []
   personalize: boolean
 
   pendingTransactions: Array<{ date: string, txHash: string, timestamp: number, address: string, message?: {method: number, text: string} }> = []
@@ -227,9 +227,14 @@ class EthereumAccountComponent {
                   balance: balance,
                   symbol: token.tokenInfo.symbol,
                   name: token.tokenInfo.name,
-                  id: ''
+                  id: '',
+                  rawBalance: token.rawBalance,
+                  contractAddress: token.tokenInfo.address,
+                  decimals: token.tokenInfo.decimals
                 }
               }).sort((a, b) => a.symbol.localeCompare(b.symbol))
+
+              this.user.currency['erc20Tokens'] = this.erc20Tokens
             }
           })
         })

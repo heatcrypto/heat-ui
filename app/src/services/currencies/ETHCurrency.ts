@@ -21,6 +21,18 @@
  * SOFTWARE.
  * */
 
+type TokenDescriptor = {
+  balance: string,
+  symbol: string,
+  name: string,
+  id: string,
+  rawBalance: string,
+  contractAddress: string,
+  decimals: number
+}
+
+type ERC20TokensType = Array<TokenDescriptor>
+
 class ETHCurrency implements ICurrency {
 
   private ethBlockExplorerService: EthBlockExplorerService
@@ -30,6 +42,8 @@ class ETHCurrency implements ICurrency {
   private user: UserService
   private recentBalance: {confirmed: string, unconfirmed?: string} = {confirmed: ""}
   private format: (string) => string
+
+  public erc20Tokens: ERC20TokensType
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
@@ -66,17 +80,22 @@ class ETHCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-    let selectTransfer = (selectionCallback: (transferType) => any) => {
+    let selectTransfer = (selectionCallback: (transferTypeItem: TokenDescriptor|string) => any) => {
+      if (!this.erc20Tokens?.length) selectionCallback('ETH')
       let panel: PanelService = heat.$inject.get('panel')
       return panel.show(`
-      <div flex style="border-radius: 4px; font-size: larger">
+      <div flex style="border-radius: 4px; font-size: larger; background: #324a63;">
+        <div style="text-align: center;padding-top: 14px;">Select what to send</div>
         <md-input-container flex layout="column">
-          <button ng-click="vm.select('ETH')" style="padding: 12px;">ETH transfer</button>
-          <button ng-click="vm.select('ERC20')" style="padding: 12px;">ERC20 tokens transfer</button>
+          <md-button ng-click="vm.select('ETH')" md-autofocus style="padding: 8px;text-align: left">ETH</md-button>
+          <md-button ng-repeat="t in vm.erc20Tokens" ng-click="vm.select(t)" class="scale-up" style="padding: 8px;text-align: left;text-transform: none;">
+            <span style="color: grey">ERC20 token</span> {{t.symbol}}
+          </md-button>
         </md-input-container>
       </div>
     `, {
             panel: panel,
+            erc20Tokens: this.erc20Tokens,
             select: (selectedValue) => {
               selectionCallback(selectedValue)
               panel.close()
@@ -85,9 +104,9 @@ class ETHCurrency implements ICurrency {
       )
     }
 
-    selectTransfer(transferType => {
+    selectTransfer(transferTypeItem => {
       let heatService = <HeatService>heat.$inject.get('heat')
-      this.sendEther($event, transferType).then(data => {
+      this.sendEther($event, transferTypeItem).then(data => {
         if (data && data.txId) {
           let address = this.user.currency.address
           let timestamp = new Date().getTime()
@@ -109,7 +128,7 @@ class ETHCurrency implements ICurrency {
 
   }
 
-  sendEther($event, transferType) {
+  sendEther($event, transferDescriptor: TokenDescriptor|string) {
     const self = this
     let web3 = <Web3Service> heat.$inject.get('web3')
 
@@ -118,23 +137,24 @@ class ETHCurrency implements ICurrency {
       this.paymentMessageMethod = null
       vm.stage = "create"
       vm.enterNonceManually = false
-      vm.transferType = transferType
+      vm.transferDescriptor = transferDescriptor
+      vm.transferName = utils.limitedString(vm.transferDescriptor.name || vm.transferDescriptor, 20)
 
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
       //vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
       // vm.broadcastProviderIndex = 1
       vm.broadcastProvider = ethBlockExplorerService.ethBlockExplorerHeatNodeService
-      vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
-      if (transferType == 'ERC20') {
-        vm.parsedTxFields = [['nonce'], ['hash'], ['from'], ['to'], ['erc20To'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['erc20Value'], ['feeEth', 'fee'], ['data']]
-      }
+      vm.parsedTxFields = transferDescriptor == 'ETH'
+          ? [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
+          : [['nonce'], ['hash'], ['from'], ['to'], ['erc20To'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['erc20Value'], ['feeEth', 'fee'], ['data']]
 
       vm.data = {
         amount: '',
         gasPrice: '',
         gasLimit: '',
         recipient: '',
-        contractAddress: '',
+        contractAddress: transferDescriptor == 'ETH' ? '' : transferDescriptor['contractAddress'],
+        tokenDecimals: transferDescriptor['decimals'],
         recipientInfo: '',
         fee: '0.000420',
         message: '',
@@ -171,7 +191,7 @@ class ETHCurrency implements ICurrency {
               if (typeof nonce === "string") return parseInt(nonce)
             })
 
-        if (transferType == 'ETH') {
+        if (transferDescriptor == 'ETH') {
           return web3.createRawTx2(
               from,
               this.data.recipient,
@@ -182,12 +202,14 @@ class ETHCurrency implements ICurrency {
           ).catch(reason => {
             dialogs.alert($event, 'ETH transaction creation error', reason)
           })
-        } else if (transferType == 'ERC20') {
+        } else {
+          //convert amount of tokens to the value according token decimals
+          let value = (new Big(amount)).times((new Big(10)).pow(parseInt(vm.data.tokenDecimals)))
           return web3.createTransferERC20RawTx(
               from,
               this.data.recipient,
               this.data.contractAddress,
-              amount,
+              value.toFixed(0),
               this.data.gasPrice * Web3Service.GWEI_SCALE,
               this.data.gasLimit,
               getAddressNonce
@@ -352,8 +374,8 @@ class ETHCurrency implements ICurrency {
           <form name="dialogForm">
             <md-toolbar>
               <div class="md-toolbar-tools">
-                <h2 ng-if="vm.transferType == 'ETH'">Send Ether</h2>
-                <h2 ng-if="vm.transferType == 'ERC20'">Send ERC20 tokens</h2>
+                <h2 ng-if="vm.transferDescriptor == 'ETH'">Send Ether</h2>
+                <h2 ng-if="vm.transferDescriptor != 'ETH'">Send ERC20 tokens "{{vm.transferName}}"</h2>
               </div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
@@ -365,16 +387,16 @@ class ETHCurrency implements ICurrency {
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
                 </md-input-container>
 
-                <md-input-container flex ng-if="vm.transferType == 'ERC20'">
+                <md-input-container flex ng-if="vm.transferDescriptor != 'ETH'">
                   <label>Contract address</label>
                   <input ng-model="vm.data.contractAddress" required name="contractAddress">
                 </md-input-container>
 
                 <md-input-container flex >
-                  <label ng-if="vm.transferType == 'ETH'">Amount in ETH</label>
-                  <label ng-if="vm.transferType == 'ERC20'">Amount of tokens</label>
+                  <label ng-if="vm.transferDescriptor == 'ETH'">Amount in ETH</label>
+                  <label ng-if="vm.transferDescriptor != 'ETH'">Amount of tokens</label>
                   <input ng-model="vm.data.amount" required name="amount">
-                  <button ng-if="vm.transferType == 'ETH'" ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
+                  <button ng-if="vm.transferDescriptor == 'ETH'" ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
                 </md-input-container>
 
                 <md-input-container flex >

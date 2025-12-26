@@ -516,4 +516,9 @@ module utils {
     return hits / total;
   }
 
+  export function limitedString(str: string, maxLen: number, overSuffix = '...') {
+    if (str.length < maxLen + overSuffix.length) return str
+    return str.substring(0, maxLen) + overSuffix
+  }
+
 }
