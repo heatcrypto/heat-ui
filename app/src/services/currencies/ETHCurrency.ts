@@ -81,7 +81,7 @@ class ETHCurrency implements ICurrency {
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
     let selectTransfer = (selectionCallback: (transferTypeItem: TokenDescriptor|string) => any) => {
-      if (!this.erc20Tokens?.length) {
+      if (true || !this.erc20Tokens?.length) {  // "true || " is added to disable ERC20 token transfer until complete feature and tested
         selectionCallback('ETH')
         return
       }
