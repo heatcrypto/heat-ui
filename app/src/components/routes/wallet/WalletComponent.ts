@@ -245,7 +245,7 @@
                         Enter label
                       </md-button>
                     </md-menu-item>
-                    <md-menu-item ng-hide="entry.symbol==='HEAT'" ng-if="entry.index!=undefined">
+                    <md-menu-item ng-hide="entry.symbol==='HEAT'" ng-if="entry.walletEntry.bip44Compatible">
                       <md-button aria-label="explorer" ng-click="vm.createAddress(entry.walletEntry, entry.name)">
                         <md-icon md-font-library="material-icons">add</md-icon>
                         Create {{entry.symbol}} address

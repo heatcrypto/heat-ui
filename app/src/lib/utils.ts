@@ -263,6 +263,7 @@ module utils {
   }
 
   export function formatERC20TokenAmount(amount: string, decimals: number, fixed?: boolean) {
+    if (typeof decimals === 'string') decimals = parseInt(decimals)
     if (decimals == 0) return amount
     let s = amount.padStart(amount.length > decimals ? decimals : decimals + 1, "0")
     let decimalPos = s.length - decimals

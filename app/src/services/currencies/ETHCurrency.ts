@@ -81,7 +81,10 @@ class ETHCurrency implements ICurrency {
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
     let selectTransfer = (selectionCallback: (transferTypeItem: TokenDescriptor|string) => any) => {
-      if (!this.erc20Tokens?.length) selectionCallback('ETH')
+      if (!this.erc20Tokens?.length) {
+        selectionCallback('ETH')
+        return
+      }
       let panel: PanelService = heat.$inject.get('panel')
       return panel.show(`
       <div flex style="border-radius: 4px; font-size: larger; background: #324a63;">

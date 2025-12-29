@@ -601,7 +601,8 @@ class BTCCurrency implements ICurrency {
                 </md-input-container>
 
                 <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
-                  <label>Transaction bytes</label>
+                  <label ng-if="vm.stage=='broadcast'">Transaction bytes</label>
+                  <label ng-if="vm.stage=='insertedBytes'">Inserted transaction bytes</label>
                   <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
                         placeholder="paste transaction bytes in hex"
                         rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>

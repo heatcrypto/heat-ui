@@ -335,16 +335,17 @@ namespace wlt {
   export function saveFile(blob: Blob, fileName?: string) {
     if (fileName) {
       saveAs(blob, fileName)
+      shouldBeSaved = null
     } else {
       return db.getValue('fileVersion').then(r => {
         let version = parseInt(r?.value) || 0
         version++
         if (version > 99) version = 1
         saveAs(blob, `heat.backup.v${version}.wallet`)
+        shouldBeSaved = null
         return db.putValue('fileVersion', version)
       })
     }
-    shouldBeSaved = null
   }
 
 
