@@ -342,7 +342,7 @@ namespace wlt {
     ) {
       super()
       this.visible = true
-      this.identifier = name ? `${account} | ${name}` : account
+      this.identifier = name ? `${account} | ${name == account ? '[private]' : name}` : account
       //this.visibleLabel = getEntryVisibleLabel(this.account)
       wlt.getEntryVisibleLabel(this.account, '').then(value => this.visibleLabel = value)
       getEntryBip44Compatible(this.account).then(bip44 => this.bip44Compatible = bip44)

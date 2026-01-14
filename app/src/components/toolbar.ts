@@ -229,7 +229,8 @@
           <md-menu-content width="4">
             <md-menu-item ng-repeat="item in vm.localHeatMasterAccounts">
               <md-button ng-click="vm.selectWalletAccount($event, item)">
-                <span>{{item.identifier}}</span>
+                <code>{{item.account}}</code>
+                <span ng-if="item.name" style="color: black">&nbsp;&nbsp;{{item.name == item.account ? '[private]' : item.name}}</span>
               </md-button>
             </md-menu-item>
           </md-menu>
@@ -421,7 +422,7 @@ class ToolbarComponent {
     $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener));
   }
 
-  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string }> = []
+  localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string, name: string }> = []
 
   copyAddress() {
     this.clipboard.copyWithUI(document.getElementById('toolbar-user-address'), 'Copied address to clipboard');
@@ -465,15 +466,10 @@ class ToolbarComponent {
       walletEntries.map(entry => {
         this.localHeatMasterAccounts.push({
           account: entry.account,
-          locked: true,
-          identifier: entry.name || entry.account
+          locked: !!this.localKeyStore.getPasswordForAccount(entry.account),
+          identifier: entry.name || entry.account,
+          name: entry.name
         })
-      });
-      this.localHeatMasterAccounts.forEach(acc => {
-        let password = this.localKeyStore.getPasswordForAccount(acc.account)
-        if (password) {
-          acc.locked = false
-        }
       })
     })
   }

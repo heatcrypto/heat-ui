@@ -27,6 +27,10 @@
 @Component({
   selector: 'wallet',
   style: `
+    .entry-name {
+      margin-left: 4px;
+      color: darkgrey;
+    }
     .bip44-label {
       font-size: smaller;
       color: deepskyblue;
@@ -107,14 +111,16 @@
                 </md-button>
 
                 <div flex ng-if="entry.secretPhrase" class="identifier">
-                  <a ng-click="entry.toggle()">{{entry.identifier}}</a>
+                  <a ng-click="entry.toggle()">{{entry.account}}</a>
+                  <span ng-if="entry.name" class="entry-name">{{entry.name == entry.account ? '[private]' : entry.name}}</span>
                   <span ng-if="entry.bip44Compatible" class="bip44-label">BIP44</span>
                   <span ng-repeat="sym in entry.selectedCurrencies" class="selected-currency">{{sym}}</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
                   <span class="label">{{entry.label}}</span>
                 </div>
                 <div flex ng-if="!entry.secretPhrase" class="identifier">
-                  <span>{{entry.identifier}}</span>
+                  <span>{{entry.account}}</span>
+                  <span ng-if="entry.name" class="entry-name">{{entry.name == entry.account ? '[private]' : entry.name}}</span>
                   <span ng-if="entry.bip44Compatible" class="bip44-label">BIP44</span>
                   <span ng-repeat="sym in entry.selectedCurrencies" class="selected-currency">{{sym}}</span>
                   <span class="visibleLabel">{{entry.visibleLabel}}</span>
