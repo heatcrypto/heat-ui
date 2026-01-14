@@ -37,8 +37,9 @@ interface ILocalKeyEntry {
 }
 
 @Service('localKeyStore')
-@Inject('storage','walletFile','$rootScope')
+@Inject('storage', 'walletFile', '$rootScope')
 class LocalKeyStoreService {
+
   private store: Store;
 
   /* Remembered passwords to the localKeyStore */
@@ -51,6 +52,49 @@ class LocalKeyStoreService {
     setTimeout(() => {
       this.convertToIndexedDB(storage, $rootScope)
     }, 100)
+
+    this.checkAccountNames().then(result => {
+      if (result) console.log(`Fixed ${result.successN} account names. ${result.errorsN ? 'Errors ' + result.errorsN : ''}`)
+    })
+  }
+
+  /**
+   * There were cases when wrong account names (public names) are saved in local storage (probably in result of export/import between app versions).
+   * This function fix account names. In next app versions this function will be obsolete and can be removed.
+   */
+  private checkAccountNames(): Promise<any> {
+    return db.getValue('check-account-names').then(status => {
+      if (status?.value > 10) return
+      let successN = 0
+      let errors = []
+      let heatService: HeatService = heat.$inject.get('heat')
+      return this.list().then(entries => {
+        let promises = []
+        for (const entry of entries) {
+          if (!entry.name) continue
+          promises.push(
+              heatService.api.getAccountByNumericId(entry.account).then((account) => {
+                return entry.name == account.publicName
+                    ? Promise.resolve()
+                    : db.updateWalletEntryProps(entry.account, {name: account.publicName}).then(
+                        () => {
+                          successN++
+                          console.log(`public name is fixed in local storage for account ${entry.account}: ${entry.name} => ${account.publicName}`)
+                          entry.name = account.publicName
+                        }, reason => errors.push({account: entry.account, reason})
+                    )
+              }, reason => {
+                if (reason?.description?.indexOf('Unknown account') == -1) errors.push({account: entry.account, reason})
+              })
+          )
+        }
+        return Promise.all(promises).then(results =>
+          db.putValue('check-account-names', errors.length == 0 ? 12 : (status?.value | 0) + 1)
+        ).then(results => {
+          return {successN: successN, errorsN: errors.length}
+        }).catch(reason => console.error(reason))
+      })
+    })
   }
 
   /* Remembers a password for an account in the key store */
