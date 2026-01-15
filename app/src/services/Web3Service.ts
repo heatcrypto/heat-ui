@@ -62,26 +62,23 @@ class Web3Service {
   }
 
   getGasPrice = () => {
-    let oneGWei = 1 * Web3Service.GWEI_SCALE
-    return new Promise<number>((resolve) => {
-      this.http.get(this.mobileHeatwalletEndpoint + "/fees/gas-price-extended/1").then(
+    let oneGWei = 1
+    return this.http.get(this.mobileHeatwalletEndpoint + "/fees/gas-price-extended/1").then(
         response => {
-          if (!response) resolve(oneGWei)
+          if (!response) return oneGWei
           let r = angular.isString(response) ? JSON.parse(response) : response
-          if (!r.proposeGasPriceGWei) resolve(oneGWei)
-          resolve(oneGWei * r.proposeGasPriceGWei)
+          return r.proposeGasPriceGWei || oneGWei
         },
         reason => {
-          resolve(oneGWei)
+          return oneGWei
         }
-      )
-    })
+    )
   }
 
   createRawTx2 = (account, to, value, gasPriceParam?, gasLimitParam?,
                   getAddressNonce?: (address: string) => PromiseLike<number>) => {
     return new Promise((resolve, reject) => {
-      this.getGasPrice().then((gasPrice) => {
+      this.getGasPrice().then((gasPriceGWei) => {
         let getNonce = getAddressNonce || this.getAddressNonce
         return getNonce(account.address).then(
           nonce => {
@@ -93,7 +90,7 @@ class Web3Service {
             let txParams = {
               nonce: '0x' + Number(nonce).toString(16),
               gasLimit: this.web3.toHex(gasLimitParam || defaultGasLimit),
-              gasPrice: this.web3.toHex(String(gasPriceParam || gasPrice)),
+              gasPrice: this.web3.toHex(String(gasPriceParam || gasPriceGWei * Web3Service.GWEI_SCALE)),
               to: to,
               value: '0x' + Number(value).toString(16)
             }
@@ -117,7 +114,7 @@ class Web3Service {
   createTransferERC20RawTx = (account, to, contractAddress, value, gasPriceParam?, gasLimitParam?,
                   getAddressNonce?: (address: string) => PromiseLike<number>) => {
     return new Promise((resolve, reject) => {
-      this.getGasPrice().then((gasPrice) => {
+      this.getGasPrice().then((gasPriceGWei) => {
         let getNonce = getAddressNonce || this.getAddressNonce
         return getNonce(account.address).then(
           nonce => {
@@ -133,7 +130,7 @@ class Web3Service {
               contractAddress: contractAddress, //"0xd26114cd6EE289AccF82350c8d8487fedB8A0C07",
               value: value, // "10000",
               nonce: nonce, // 10,
-              gasPrice: String(gasPriceParam || gasPrice), // "20000000000",
+              gasPrice: String(gasPriceParam || gasPriceGWei * Web3Service.GWEI_SCALE), // "20000000000",
               gasLimit: String(gasLimitParam || defaultGasLimit), // "21000",
               chainId: 1
             }

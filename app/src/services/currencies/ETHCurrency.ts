@@ -227,7 +227,9 @@ class ETHCurrency implements ICurrency {
         try {
           let parsedTx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTxHex})
           parsedTx.valueEth = web3.web3.fromWei(parsedTx.value, 'ether')
-          parsedTx.gasPriceGwei = parsedTx.gasPrice / Web3Service.GWEI_SCALE  + ' GWei'
+          let gasPrice = parsedTx.gasPrice / Web3Service.GWEI_SCALE
+          if (gasPrice > 12) parsedTx.gasPriceMessage = 'gas price is too high'
+          parsedTx.gasPriceGwei = gasPrice  + ' GWei'
           parsedTx.feeEth = web3.web3.fromWei(parsedTx.gasPrice * parsedTx.gasLimit, 'ether') + ' ETH'
           return parsedTx
         } catch (e) {
@@ -236,6 +238,12 @@ class ETHCurrency implements ICurrency {
       }
 
       this.createTxnButtonClick = function ($event) {
+        let gasPrice = parseFloat(this.data.gasPrice)
+        vm.gasPriceMessage = gasPrice > 11
+            ? 'gas price is too high'
+            : gasPrice <= 0 ? 'gas price is too low' : ''
+        if (vm.gasPriceMessage) return
+
         vm.data.rawTx = null
         vm.parsedTx = null
         vm.generateTxnBytes(vm.enterNonceManually).then(rawTx => {
@@ -337,6 +345,7 @@ class ETHCurrency implements ICurrency {
       }
 
       this.gasChanged = () => {
+        vm.gasPriceMessage = ''
         $scope.$evalAsync(() => {
           this.data.fee = web3.web3.fromWei((this.data.gasPrice * Web3Service.GWEI_SCALE) * this.data.gasLimit, 'ether')
         })
@@ -347,11 +356,12 @@ class ETHCurrency implements ICurrency {
         clipboardService.showQRCode(rawTx, 320, 320)
       }
 
-      web3.getGasPrice().then((gasprice) => {
+      web3.getGasPrice().then((gasPriceGWei) => {
         let d = this.data
-        d.gasPrice = gasprice / Web3Service.GWEI_SCALE
+        d.gasPrice = gasPriceGWei
         d.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
-        d.fee = web3.web3.fromWei(gasprice * d.gasLimit, 'ether')
+        let gasPriceWei = gasPriceGWei * Web3Service.GWEI_SCALE
+        d.fee = web3.web3.fromWei(gasPriceWei * d.gasLimit, 'ether')
       })
 
       this.maxAmountClick = () => {
@@ -405,6 +415,7 @@ class ETHCurrency implements ICurrency {
                 <md-input-container flex >
                   <label>Gas price (in GWei)</label>
                   <input ng-model="vm.data.gasPrice" ng-change="vm.gasChanged()" required name="gasPrice">
+                  <span ng-if="vm.gasPriceMessage" style="color: indianred; font-size: small">{{vm.gasPriceMessage}}</span>
                 </md-input-container>
 
                 <md-input-container flex >
@@ -432,6 +443,7 @@ class ETHCurrency implements ICurrency {
               
               <div flex ng-if="(vm.stage=='broadcast' || vm.stage=='insertedBytes') && vm.parsedTx">
                 <label>Parsed transaction bytes report</label>
+                <div ng-if="vm.parsedTx.gasPriceMessage" style="color: indianred; font-size: small">{{vm.parsedTx.gasPriceMessage}}</div>
                 <json-details data="vm.parsedTx" detailed-object="vm.parsedTx" fields="vm.parsedTxFields" compact="true"></json-details>
               </div>
               
