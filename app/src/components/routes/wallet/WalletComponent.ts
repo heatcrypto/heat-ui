@@ -211,6 +211,9 @@
                 <div class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></div>&nbsp;
                 <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
                 <span class="visibleLabel flex" style="margin-top: 8px;">{{entry.visibleLabel}}</span>
+                <span ng-if="entry.creationTimestampFormatted" class="flex" style="margin-top: 8px;color: grey">
+                    {{entry.creationTimestampFormatted}}
+                </span>
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span class="state-message" ng-if="entry.stateMessage">{{entry.stateMessage}}</span>
                   <span>{{entry.balance}}</span>

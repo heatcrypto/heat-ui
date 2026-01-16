@@ -57,7 +57,6 @@ namespace wlt {
   }
 
   export class CurrencyBalance extends SubEntryAbstract {
-
     static hasNoZeroDigit = /[1-9]/  // test is string (balance) has any not zero digit (is balance no zero)
     static hasDigit = /[0-9]/  // test is string (balance) has any not zero digit (is balance no zero)
     public isCurrencyBalance = true
@@ -67,6 +66,8 @@ namespace wlt {
     public stateMessage: string
     public expanded = false
     private _balance: string
+    private _creationTimestamp: number
+    public creationTimestampFormatted: string
 
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()
@@ -74,8 +75,10 @@ namespace wlt {
       wlt.getEntryVisibleLabel(this.walletEntry.account, symbol, address).then(value => this.visibleLabel = value)
 
       if (this.isCurrencyBalance && this.symbol) {
-        getSavedCurrencyBalance(this.address, this.symbol, this._balance).then(r => {
-          this._balance = r?.confirmed || this._balance
+        db.getWalletItem(db.compactHash(address), this.symbol).then(item => {
+          let r = extractBalance(item, this._balance)
+          this._balance = r?.confirmed
+          this.creationTimestamp = item.creationTimestamp
         })
       }
     }
@@ -90,6 +93,15 @@ namespace wlt {
 
     set balance(value: string) {
       this._balance = value;
+    }
+
+    get creationTimestamp(): number {
+      return this._creationTimestamp
+    }
+
+    set creationTimestamp(value: number) {
+      this._creationTimestamp = value
+      this.creationTimestampFormatted = value ? new Date(value).toLocaleDateString() : ''
     }
 
     public unlock(noPathChange?: boolean) {
@@ -304,6 +316,8 @@ namespace wlt {
 
         rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress).then(value => {
           component.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
+          newCurrencyBalance.creationTimestamp = Date.now()
+          return saveCurrencyBalanceCreationTimestamp(nextAddress.address, currencySymbol, newCurrencyBalance.creationTimestamp)
         })
 
         return newCurrencyBalance

@@ -107,9 +107,9 @@ namespace wlt {
     return store
   }
 
-  export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
+  export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string, creationTimestamp?: number) {
     let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
-    return db.saveWalletItem(db.compactHash(address), currencySymbol, {balance: balanceRecord})
+    return db.saveWalletItem(db.compactHash(address), currencySymbol, {balance: balanceRecord, creationTimestamp})
 
     /*let hash = heat.crypto.hash(address).substring(0, 16)
     let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
@@ -118,17 +118,27 @@ namespace wlt {
     */
   }
 
+  export function saveCurrencyBalanceCreationTimestamp(address: string, currencySymbol: string, creationTimestamp: number) {
+    let itemKey = db.compactHash(address)
+    return db.getWalletItem(itemKey, currencySymbol).then(item => {
+      if (item?.creationTimestamp) return  //was created in past, keep origin timestamp
+      return db.updateWalletItem(itemKey, currencySymbol, {creationTimestamp})
+    })
+  }
+
   /**
    * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
    */
   export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): Promise<{confirmed: string, unconfirmed?: string}> {
-    return db.getWalletItem(db.compactHash(address), currencySymbol).then(item => {
-      let r = item?.balance
-      if (!r) return {confirmed: balance}
-      return r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()
-          ? {confirmed: r.b}
-          : {confirmed: r.b, unconfirmed: r.ub}
-    })
+    return db.getWalletItem(db.compactHash(address), currencySymbol).then(item => extractBalance(item, balance))
+  }
+
+  export function extractBalance(item, balance?: string) {
+    let r = item?.balance
+    if (!r) return {confirmed: balance}
+    return r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()
+        ? {confirmed: r.b}
+        : {confirmed: r.b, unconfirmed: r.ub}
   }
 
   /*export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
