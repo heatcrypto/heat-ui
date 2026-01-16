@@ -78,7 +78,7 @@ namespace wlt {
         db.getWalletItem(db.compactHash(address), this.symbol).then(item => {
           let r = extractBalance(item, this._balance)
           this._balance = r?.confirmed
-          this.creationTimestamp = item.creationTimestamp
+          this.creationTimestamp = item?.creationTimestamp
         })
       }
     }
@@ -316,8 +316,10 @@ namespace wlt {
 
         rememberCryptoAddressCreated(this.walletEntry, currencySymbol, nextAddress).then(value => {
           component.exportWallet(true).then(blob => wlt.shouldBeSaved = blob)
-          newCurrencyBalance.creationTimestamp = Date.now()
-          return saveCurrencyBalanceCreationTimestamp(nextAddress.address, currencySymbol, newCurrencyBalance.creationTimestamp)
+          let t = Date.now()
+          return saveCurrencyBalanceCreationTimestamp(nextAddress.address, currencySymbol, t).then(v => {
+            if (v) newCurrencyBalance.creationTimestamp = t
+          })
         })
 
         return newCurrencyBalance

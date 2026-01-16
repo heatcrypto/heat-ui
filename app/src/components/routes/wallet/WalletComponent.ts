@@ -43,6 +43,10 @@
       border: solid 1px steelblue;
       border-radius: 6px;
     }
+    .currency-creation-date {
+      color: grey;
+      font-size: smaller
+    }
   `,
   template: `
    <!--  layout-align="start center" -->
@@ -209,11 +213,13 @@
                   <md-icon md-font-library="material-icons">{{entry.expanded?'expand_less':'expand_more'}}</md-icon>
                 </md-button>
                 <div class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></div>&nbsp;
-                <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
+                <div class="identifier flex">
+                    <a ng-click="entry.unlock()">{{entry.address}}</a>
+                    <span ng-if="entry.creationTimestampFormatted" class="flex currency-creation-date">
+                        {{entry.creationTimestampFormatted}}
+                    </span>
+                </div>&nbsp;
                 <span class="visibleLabel flex" style="margin-top: 8px;">{{entry.visibleLabel}}</span>
-                <span ng-if="entry.creationTimestampFormatted" class="flex" style="margin-top: 8px;color: grey">
-                    {{entry.creationTimestampFormatted}}
-                </span>
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span class="state-message" ng-if="entry.stateMessage">{{entry.stateMessage}}</span>
                   <span>{{entry.balance}}</span>
