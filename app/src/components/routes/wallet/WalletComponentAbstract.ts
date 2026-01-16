@@ -404,7 +404,11 @@ namespace wlt {
           }
         })
         return Promise.all(promises).then(() => {
-          return {searchResultExplained: searchResultExplained, queryTokens: this.walletFilter.queryTokens}
+          return {
+            searchResultExplained: searchResultExplained,
+            queryTokens: this.walletFilter.queryTokens,
+            filteredCount: [searchResultExplained.length, this.entries.length]
+          }
         })
       } else {
         this.walletFilter = null

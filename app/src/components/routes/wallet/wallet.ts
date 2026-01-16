@@ -29,6 +29,7 @@ namespace wlt {
       finds: Map<string, string[]>;
     }[];
     queryTokens: string[];
+    filteredCount: number[]; // 0: filtered count, 1: all count
   }
 
   const defaultFormatBalance = balance => { return balance  }

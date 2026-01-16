@@ -5,7 +5,7 @@
     .active {
       font-size: 20px;
       font-weight: bold;
-      color: deepskyblue;
+      color: cadetblue;
     }
   `],
   template: `
@@ -13,14 +13,19 @@
       <md-input-container flex style="height: 34px; margin-top: 8px; margin-bottom: 2px;">
         <label>Search for wallet entry by currency, address, account</label>
         <input name="search-text" ng-model="vm.query" ng-keypress="vm.onKeyPress($event)"/>
+        <span ng-if="vm.filteredCount" style="color: chocolate">filtered out {{vm.filteredCount[0]}} of {{vm.filteredCount[1]}}</span>
       </md-input-container>
-      <div class="md-button" style="align-content: center; border: solid 1px deepskyblue; border-radius: 24px; color: grey !important; font-size: 12px; height: 30px;"
+      <div class="md-button" style="align-content: center; border: solid 1px grey; border-radius: 24px; color: grey !important; font-size: 9px; height: 30px;"
+            ng-click="vm.clear()">
+        <code>clear</code>
+      </div>
+      <div class="md-button" style="align-content: center; border: solid 1px cadetblue; border-radius: 24px; color: grey !important; font-size: 12px; height: 30px;"
             ng-click="vm.switchOperator()">
         <code ng-class="{active: vm.logicalOperator == 'or'}">or</code> / <code ng-class="{active: vm.logicalOperator == 'and'}">and</code>
       </div>
       <div ng-if="vm.queryTokens" class="value"  style="margin: 7px; max-width: 200px;">
         <span ng-repeat="s in vm.queryTokens track by $index">
-          <code ng-if="$index > 0" style="color: deepskyblue"> {{vm.logicalOperator}}</code>
+          <code ng-if="$index > 0" style="color: cadetblue"> {{vm.logicalOperator}}</code>
           <span>{{s}}</span>
         </span>
       </div>
@@ -38,6 +43,7 @@ class WalletSearchComponent {
   reasoning: any[]
   logicalOperator: 'and' | 'or' = "and"
   expression: string
+  filteredCount: number[]
 
   constructor(private $scope: angular.IScope, private $location: angular.ILocationService, private panel: PanelService) {}
 
@@ -56,6 +62,11 @@ class WalletSearchComponent {
 
   switchOperator() {
     this.logicalOperator = this.logicalOperator == "or" ? "and" : "or"
+    this.applyFilter()
+  }
+
+  clear() {
+    this.query = ''
     this.applyFilter()
   }
 
@@ -78,6 +89,8 @@ class WalletSearchComponent {
               .join('\n')
           return `${v.account}:\n${entryStr}`
         })
+
+        this.filteredCount = filterResult?.filteredCount
       })
     })
   }
