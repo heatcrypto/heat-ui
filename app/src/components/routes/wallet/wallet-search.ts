@@ -15,7 +15,7 @@
         <input name="search-text" ng-model="vm.query" ng-keypress="vm.onKeyPress($event)"/>
         <span ng-if="vm.filteredCount" style="color: chocolate">filtered out {{vm.filteredCount[0]}} of {{vm.filteredCount[1]}}</span>
       </md-input-container>
-      <div class="md-button" style="align-content: center; border: solid 1px grey; border-radius: 24px; color: grey !important; font-size: 9px; height: 30px;"
+      <div class="md-button" style="align-content: center; width: auto;min-width: 20px; border: solid 1px #80808073; border-radius: 8px; color: #969696 !important; height: 30px;"
             ng-click="vm.clear()">
         <code>clear</code>
       </div>

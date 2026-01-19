@@ -68,6 +68,7 @@ namespace wlt {
     private _balance: string
     private _creationTimestamp: number
     public creationTimestampFormatted: string
+    public creationTimestampFormattedExt: string
 
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()
@@ -102,6 +103,7 @@ namespace wlt {
     set creationTimestamp(value: number) {
       this._creationTimestamp = value
       this.creationTimestampFormatted = value ? new Date(value).toLocaleDateString() : ''
+      this.creationTimestampFormattedExt = value ? new Date(value).toString() : ''
     }
 
     public unlock(noPathChange?: boolean) {

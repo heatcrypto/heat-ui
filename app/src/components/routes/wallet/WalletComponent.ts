@@ -217,6 +217,7 @@
                     <a ng-click="entry.unlock()">{{entry.address}}</a>
                     <span ng-if="entry.creationTimestampFormatted" class="flex currency-creation-date">
                         {{entry.creationTimestampFormatted}}
+                        <md-tooltip md-delay="400">{{entry.creationTimestampFormattedExt}}</md-tooltip>
                     </span>
                 </div>&nbsp;
                 <span class="visibleLabel flex" style="margin-top: 8px;">{{entry.visibleLabel}}</span>
