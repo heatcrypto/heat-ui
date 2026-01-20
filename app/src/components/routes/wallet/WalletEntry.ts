@@ -69,6 +69,7 @@ namespace wlt {
     private _creationTimestamp: number
     public creationTimestampFormatted: string
     public creationTimestampFormattedExt: string
+    public refresh: () => {}
 
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()

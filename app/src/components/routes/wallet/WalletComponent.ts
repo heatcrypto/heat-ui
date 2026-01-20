@@ -319,7 +319,7 @@
 @Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer',
   '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService',
   'ardorCryptoService', 'ltcCryptoService', 'ltcBlockExplorerService', 'bchCryptoService', 'bchBlockExplorerService',
-  'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope')
+  'nxtBlockExplorerService', 'ardorBlockExplorerService', 'mofoSocketService', 'iotaCoreService', 'storage', '$rootScope','$interval')
 class WalletComponent extends wlt.WalletComponentAbstract {
 
   static displayUnlocked = false
@@ -366,7 +366,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               private mofoSocketService: MofoSocketService,
               iotaCoreService: IotaCoreService,
               private storage: StorageService,
-              private $rootScope: angular.IScope) {
+              private $rootScope: angular.IScope,
+              private $interval: angular.IIntervalService) {
 
     super();
     this.localKeyStore = localKeyStore;
@@ -385,7 +386,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     WalletComponent.instance = this;
 
     this.displayUnlocked = WalletComponent.displayUnlocked
-    $scope.$on('$destroy', () => WalletComponent.displayUnlocked = this.displayUnlocked)
 
     nxtBlockExplorerService.getBlockchainStatus().then(() => {
       let nxtChain = { name: 'NXT', disabled: false }
@@ -399,8 +399,24 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       this.chains[index] = ardorChain
     })
 
+    let promise = this.$interval(this.refreshBalances.bind(this), 14000)
+
+    this.$scope.$on('$destroy', () => {
+      WalletComponent.displayUnlocked = this.displayUnlocked
+      this.$interval.cancel(promise)
+    })
+
     this.initLocalKeyStore()
     //wlt.initCreatedAddresses()
+  }
+
+  // refresh visible balance entries
+  refreshBalances() {
+    for (const entry of this.entries) {
+      if (!(entry instanceof wlt.CurrencyBalance)) continue
+      let cb: wlt.CurrencyBalance = entry
+      if (cb.refresh && cb.displayed()) cb.refresh()
+    }
   }
 
   enterWalletEntryLabel(walletEntry: wlt.WalletEntry) {

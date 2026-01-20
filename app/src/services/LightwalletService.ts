@@ -64,6 +64,7 @@ class LightwalletService {
   //public wallet: WalletAddresses
   static readonly BIP44 = "m/44'/60'/0'/0";
   private lightwallet;
+  private ethBlockExplorerService: EthBlockExplorerService
 
   constructor(private web3Service: Web3Service,
     private userService: UserService,
@@ -72,6 +73,7 @@ class LightwalletService {
     private $window: angular.IWindowService,
     storage: StorageService) {
     this.lightwallet = $window.heatlibs.lightwallet;
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
   }
 
   generateRandomSeed() {
@@ -115,14 +117,39 @@ class LightwalletService {
     })
   }
 
+  loadAddressInfo(walletAddress: WalletAddress) {
+    return this.ethBlockExplorerService.getAddressInfo(walletAddress.address, true).then(info => {
+      walletAddress.balance = info.ETH.balance + ""
+      walletAddress.tokensBalances = []
+      walletAddress.inUse = (info.txs || info.countTxs) > 0
+      if (info.tokens) {
+        info.tokens.forEach(token => {
+          let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
+          let decimals = tokenInfo ? +(tokenInfo.decimals || 0) : 8
+          let amount = token.balance ? new Big(token.balance + "").toFixed() : "0"
+          walletAddress.tokensBalances.push({
+            symbol: tokenInfo ? tokenInfo.symbol : '',
+            name: tokenInfo ? tokenInfo.name : '',
+            decimals: decimals,
+            balance: utils.formatERC20TokenAmount(amount, decimals),
+            address: token.tokenInfo.address
+          })
+        })
+      }
+      return walletAddress
+    }, (reason) => {
+      console.error(reason)
+    })
+  }
+
   refreshBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
-    let ethBlockExplorerService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     walletAddresses.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
     let actualWalletAddresses = walletAddresses.addresses.filter(a => !a.isDeleted)
     let emptyAddressCounter = 0
+    let self = this
 
-    function processNext() {
+    let processNext = () => {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
@@ -135,29 +162,9 @@ class LightwalletService {
         ethCurrencyAddressLoading.address = walletAddress.address
 
         /* look up its data on ethBlockExplorerService */
-        ethBlockExplorerService.refresh().then(() => {
-          ethBlockExplorerService.getAddressInfo(walletAddress.address, true).then(info => {
-            walletAddress.balance = info.ETH.balance + ""
-            walletAddress.tokensBalances = []
-
-            if (info.tokens) {
-              info.tokens.forEach(token => {
-                let tokenInfo = ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
-                let decimals = tokenInfo ? +(tokenInfo.decimals || 0) : 8
-                let amount = token.balance ? new Big(token.balance + "").toFixed() : "0"
-                walletAddress.tokensBalances.push({
-                  symbol: tokenInfo ? tokenInfo.symbol : '',
-                  name: tokenInfo ? tokenInfo.name : '',
-                  decimals: decimals,
-                  balance: utils.formatERC20TokenAmount(amount, decimals),
-                  address: token.tokenInfo.address
-                })
-              })
-            }
-
+        self.ethBlockExplorerService.refresh().then(() => {
+          self.loadAddressInfo(walletAddress).then((walletAddress: WalletAddress) => {
             emptyAddressCounter++
-
-            walletAddress.inUse = (info.txs || info.countTxs) > 0
             if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
 
             // if there are 2 zero addresses in a row, then we do not load the addresses further
@@ -181,8 +188,7 @@ class LightwalletService {
             setTimeout(function () {
               recurseToNext(resolve)
             }, 100)
-          }
-          else {
+          } else {
             resolve()
           }
         }

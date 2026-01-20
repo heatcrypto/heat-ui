@@ -210,23 +210,28 @@ namespace wlt {
     public loadEthereumAddresses(walletEntry: wlt.WalletEntry) {
 
       let createBalance = (address: WalletAddress) => {
-        let ethCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Ethereum', 'ETH', address.address, address.privateKey, address.index)
-        if (address.balance) {
-          ethCurrencyBalance.balance = Big(address.balance).toFixed()
-        }
-        if (address.tokensBalances) {
-          address.tokensBalances.forEach(balance => {
-            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
-            tokenBalance.balance = balance.balance
-            tokenBalance.visible = ethCurrencyBalance.expanded
-            ethCurrencyBalance.tokens.push(tokenBalance)
+        let cb = new wlt.CurrencyBalance(walletEntry, 'Ethereum', 'ETH', address.address, address.privateKey, address.index)
+        cb.refresh = () => {
+          let walletAddress: WalletAddress = {address: cb.address, balance: "", inUse: false, index: 0, privateKey: ""}
+          return this.lightwalletService.loadAddressInfo(walletAddress).then(walletAddress => {
+            if (!walletAddress) return
+            if (walletAddress.balance) {
+              cb.balance = Big(walletAddress.balance).toFixed()
+            }
+            for (const balance of walletAddress.tokensBalances || []) {
+              let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
+              tokenBalance.balance = balance.balance
+              tokenBalance.visible = cb.expanded
+              cb.tokens.push(tokenBalance)
+            }
           })
         }
-        return ethCurrencyBalance
+        cb.refresh()
+        return cb
       }
 
       this.loadAddresses(
-          walletEntry, wlt.CURRENCIES.Ethereum, this.lightwalletService.refreshBalances, createBalance
+          walletEntry, wlt.CURRENCIES.Ethereum, this.lightwalletService.refreshBalances.bind(this.lightwalletService), createBalance
       )
 
     }
