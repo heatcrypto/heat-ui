@@ -209,23 +209,29 @@ namespace wlt {
     /* Only when we expand a wallet entry do we lookup its balances */
     public loadEthereumAddresses(walletEntry: wlt.WalletEntry) {
 
-      let createBalance = (address: WalletAddress) => {
-        let cb = new wlt.CurrencyBalance(walletEntry, 'Ethereum', 'ETH', address.address, address.privateKey, address.index)
+      let createBalance = (walletAddress: WalletAddress) => {
+        let fillBalances = (currencyBalance: wlt.CurrencyBalance, wa: WalletAddress) => {
+          if (wa.balance) currencyBalance.balance = Big(wa.balance).toFixed()
+          if (!wa.tokensBalances) return
+          currencyBalance.tokens.length = 0
+          for (const balance of wa.tokensBalances || []) {
+            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = currencyBalance.balance
+            tokenBalance.visible = currencyBalance.expanded
+            currencyBalance.tokens.push(tokenBalance)
+          }
+        }
+
+        let cb = new wlt.CurrencyBalance(walletEntry, 'Ethereum', 'ETH', walletAddress.address, walletAddress.privateKey, walletAddress.index)
+        fillBalances(cb, walletAddress)
+
         cb.refresh = () => {
-          let walletAddress: WalletAddress = {address: cb.address, balance: "", inUse: false, index: 0, privateKey: ""}
           return this.lightwalletService.loadAddressInfo(walletAddress).then(walletAddress => {
             if (!walletAddress) return
-            if (walletAddress.balance) {
-              cb.balance = Big(walletAddress.balance).toFixed()
-            }
-            for (const balance of walletAddress.tokensBalances || []) {
-              let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = balance.balance
-              tokenBalance.visible = cb.expanded
-              cb.tokens.push(tokenBalance)
-            }
+            fillBalances(cb, walletAddress)
           })
         }
+
         cb.refresh()
         return cb
       }
@@ -236,26 +242,21 @@ namespace wlt {
 
     }
 
-    public loadIotaAddresses(walletEntry: wlt.WalletEntry) {
-
-      let createBalance = (address: WalletAddress) => {
-        let iotaCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Iota', 'i', address.address, address.privateKey)
-        iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
-        return iotaCurrencyBalance
-      }
-
-      this.loadAddresses(
-          walletEntry, wlt.CURRENCIES.IOTA, this.iotaCoreService.refreshBalances, createBalance
-      )
-
-    }
-
     public loadBitcoinAddresses(walletEntry: wlt.WalletEntry) {
 
-      let createBalance = (address: WalletAddress) => {
-        let btcCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Bitcoin', 'BTC', address.address, address.privateKey, address.index)
-        btcCurrencyBalance.balance = address.balance ? new Big(address.balance).times(new Big(100000000)).toString() : ""
-        return btcCurrencyBalance
+      let createBalance = (walletAddress: WalletAddress) => {
+        let cb = new wlt.CurrencyBalance(walletEntry, 'Bitcoin', 'BTC', walletAddress.address, walletAddress.privateKey, walletAddress.index)
+        cb.balance = walletAddress.balance ? new Big(walletAddress.balance).times(new Big(100000000)).toString() : ""
+        let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+        cb.refresh = () => {
+          return btcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
+                cb.balance = String(balance)
+              },
+              reason => console.error(reason)
+          )
+        }
+        cb.refresh()
+        return cb
       }
 
       this.loadAddresses(
@@ -288,6 +289,20 @@ namespace wlt {
 
       this.loadAddresses(
           walletEntry, wlt.CURRENCIES.Litecoin, this.ltcCryptoService.refreshBalances, createBalance
+      )
+
+    }
+
+    public loadIotaAddresses(walletEntry: wlt.WalletEntry) {
+
+      let createBalance = (address: WalletAddress) => {
+        let iotaCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Iota', 'i', address.address, address.privateKey)
+        iotaCurrencyBalance.balance = Number(address.balance + "").toFixed(0)
+        return iotaCurrencyBalance
+      }
+
+      this.loadAddresses(
+          walletEntry, wlt.CURRENCIES.IOTA, this.iotaCoreService.refreshBalances, createBalance
       )
 
     }
