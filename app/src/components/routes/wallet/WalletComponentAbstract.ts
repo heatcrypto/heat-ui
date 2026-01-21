@@ -232,7 +232,6 @@ namespace wlt {
           })
         }
 
-        cb.refresh()
         return cb
       }
 
@@ -248,6 +247,7 @@ namespace wlt {
         let cb = new wlt.CurrencyBalance(walletEntry, 'Bitcoin', 'BTC', walletAddress.address, walletAddress.privateKey, walletAddress.index)
         cb.balance = walletAddress.balance ? new Big(walletAddress.balance).times(new Big(100000000)).toString() : ""
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+
         cb.refresh = () => {
           return btcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
                 cb.balance = String(balance)
@@ -255,7 +255,7 @@ namespace wlt {
               reason => console.error(reason)
           )
         }
-        cb.refresh()
+
         return cb
       }
 
@@ -267,10 +267,19 @@ namespace wlt {
 
     public loadBitcoinCashAddresses(walletEntry: wlt.WalletEntry) {
 
-      let createBalance = (address: WalletAddress) => {
-        let bchCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'BitcoinCash', 'BCH', address.address, address.privateKey, address.index)
-        bchCurrencyBalance.balance = address.balance + ""
-        return bchCurrencyBalance
+      let createBalance = (walletAddress: WalletAddress) => {
+        let cb = new wlt.CurrencyBalance(walletEntry, 'BitcoinCash', 'BCH', walletAddress.address, walletAddress.privateKey, walletAddress.index)
+        cb.balance = walletAddress.balance ? new Big(walletAddress.balance).times(new Big(100000000)).toString() : ""
+        let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
+
+        cb.refresh = () => {
+          return bchBlockExplorerService.getBalance(walletAddress.address).then(balance =>
+                  cb.balance = String(balance),
+                  reason => console.error(reason)
+          )
+        }
+
+        return cb
       }
 
       this.loadAddresses(
@@ -281,10 +290,20 @@ namespace wlt {
 
     public loadLtcAddresses(walletEntry: wlt.WalletEntry) {
 
-      let createBalance = (address: WalletAddress) => {
-        let ltcCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'Litecoin', 'LTC', address.address, address.privateKey, address.index)
-        ltcCurrencyBalance.balance = address.balance + ""
-        return ltcCurrencyBalance
+      let createBalance = (walletAddress: WalletAddress) => {
+        let cb = new wlt.CurrencyBalance(walletEntry, 'Litecoin', 'LTC', walletAddress.address, walletAddress.privateKey, walletAddress.index)
+        cb.balance = walletAddress.balance ? new Big(walletAddress.balance).times(new Big(100000000)).toString() : ""
+        let ltcBlockExplorerService: LtcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
+
+        cb.refresh = () => {
+          return ltcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
+                cb.balance = String(balance)
+              },
+              reason => console.error(reason)
+          )
+        }
+
+        return cb
       }
 
       this.loadAddresses(

@@ -15,12 +15,7 @@ class BCHCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
-    return this.bchBlockExplorerService.getBalance(this.address).then(
-      balance => {
-        let balanceUnconfirmed = parseFloat(balance) / 100000000;
-        return utils.commaFormat(new Big(balanceUnconfirmed+"").toFixed(8))
-      }
-    )
+    return this.bchBlockExplorerService.getBalance(this.address).then(wlt.CURRENCIES.BitcoinCash.formatBalance)
   }
 
   /* Register a balance changed observer, unregister by calling the returned

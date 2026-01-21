@@ -51,6 +51,14 @@ namespace wlt {
     return balance
   }
 
+  CURRENCIES.BitcoinCash.formatBalance = balance => {
+    return balance ? new Big(parseFloat(balance) / 100000000).toString() : balance
+  }
+
+  CURRENCIES.Litecoin.formatBalance = balance => {
+    return balance ? new Big(parseFloat(balance) / 100000000).toString() : balance
+  }
+
   export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
 
   export const CURRENCIES_MAP: Map<String, {name: string, symbol: string, multiAddress: boolean, formatBalance: (string) => string}> = new Map(Object.entries(CURRENCIES))

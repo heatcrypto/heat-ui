@@ -131,7 +131,7 @@ class BitcoinCashAccountComponent {
     this.balanceUnconfirmed = "";
     this.bchBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(parseFloat(info) / 100000000).toFixed(8);
+        this.balanceUnconfirmed = new Big(parseFloat(info) / 100000000).toString()
         this.busy = false;
       })
     })

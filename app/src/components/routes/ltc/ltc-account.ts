@@ -131,8 +131,8 @@ class LtcAccountComponent {
     this.balanceUnconfirmed = "";
     this.ltcBlockExplorerService.getBalance(this.account).then(info => {
       this.$scope.$evalAsync(() => {
-        this.balanceUnconfirmed = new Big(parseFloat(info) / 100000000).toFixed(8);
-        this.busy = false;
+        this.balanceUnconfirmed = new Big(parseFloat(info) / 100000000).toString()
+        this.busy = false
       })
     })
   }
