@@ -86,6 +86,8 @@ namespace wlt {
 
   const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 3000 * 60 // 3 minutes
 
+  export let aggregatedBalances = {} // currency balance aggregated per account {1122334455555555: {ETH: 12.33, BTC: 100500}}
+
   export const DB_VALUE_SALT = 'F<SH'  //do not change it, otherwise DB data becomes non-consistent
 
   window.addEventListener("beforeunload", function (e) {

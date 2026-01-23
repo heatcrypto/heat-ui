@@ -73,22 +73,33 @@ class UserBalanceComponent {
     this.$scope.$evalAsync(() => {
       this.loading = true;
     });
-    this.user.currency.getBalance().then(balance => {
-      this.$scope.$evalAsync(() => {
-        var formatted = balance.split(".");
-        this.formattedBalance = formatted[0];
-        this.formattedFraction = "." + (formatted[1]||"00");
-        this.showError = false;
-        this.loading = false;
-      });
-    }, (error: ServerEngineError) => {
-      this.$scope.$evalAsync(() => {
-        this.formattedBalance = "0";
-        this.formattedFraction = ".00000000";
-        this.showError = true;
-        this.errorDescription = error ? error.description : "-";
-        this.loading = false;
-      });
-    })
+
+    let f = (balance: string) => {
+      var formatted = balance.split(".");
+      this.formattedBalance = formatted[0];
+      this.formattedFraction = "." + (formatted[1]||"00");
+      this.showError = false;
+      this.loading = false;
+    }
+
+    let aggregatedBalance = wlt.aggregatedBalances[this.user.account]
+    aggregatedBalance = aggregatedBalance ? aggregatedBalance[this.user.currency.symbol] : null
+    if (aggregatedBalance) {
+      f('' + aggregatedBalance)
+    } else {
+      this.user.currency.getBalance().then(balance => {
+        this.$scope.$evalAsync(() => {
+          f(balance)
+        });
+      }, (error: ServerEngineError) => {
+        this.$scope.$evalAsync(() => {
+          this.formattedBalance = "0";
+          this.formattedFraction = ".00000000";
+          this.showError = true;
+          this.errorDescription = error ? error.description : "-";
+          this.loading = false;
+        });
+      })
+    }
   }
 }

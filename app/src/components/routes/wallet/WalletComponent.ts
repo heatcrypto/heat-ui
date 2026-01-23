@@ -412,10 +412,15 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
   // refresh visible balance entries
   refreshBalances() {
+    let ab = wlt.aggregatedBalances = {}
     for (const entry of this.entries) {
       if (!(entry instanceof wlt.CurrencyBalance)) continue
       let cb: wlt.CurrencyBalance = entry
       if (cb.refresh && cb.displayed()) cb.refresh()
+
+      if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
+      let bs = ab[cb.walletEntry.account]
+      bs[cb.symbol] = (bs[cb.symbol] || 0) + (parseFloat(cb.balance || '0') || 0)
     }
   }
 
