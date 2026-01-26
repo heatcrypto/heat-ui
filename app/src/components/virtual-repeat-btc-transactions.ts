@@ -47,11 +47,13 @@
             </div>
             <!-- FROM -->
             <div class="truncate-col message-col left">
-             <span>{{item.from}}</span>
+<!--             <span>{{item.from}}</span>-->
+             <a href="#/bitcoin-account/{{item.from}}">{{vm.account == item.from ? 'Myself' : item.from}}</a>
             </div>
             <!-- TO -->
             <div class="truncate-col message-col left">
-              <span>{{item.to}}</span>
+<!--              <span>{{item.to}}</span>-->
+              <a href="#/bitcoin-account/{{item.to}}">{{vm.account == item.to ? 'Myself' : item.to}}</a>
             </div>
             <!-- AMOUNT -->
             <div class="truncate-col amount-col right">
@@ -110,7 +112,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         transaction.amount = transaction.vout[0].value;
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
-        transaction['outgoing'] = this.user.currency.address.toUpperCase() == transaction.from.toUpperCase();
+        transaction['outgoing'] = this.account.toUpperCase() == transaction.from.toUpperCase();
         let totalInputs = 0;
         let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {

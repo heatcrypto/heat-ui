@@ -152,6 +152,7 @@ class ETHCurrency implements ICurrency {
           : [['nonce'], ['hash'], ['from'], ['to'], ['erc20To'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['erc20Value'], ['feeEth', 'fee'], ['data']]
 
       vm.data = {
+        sender: self.user.currency.address,
         amount: '',
         gasPrice: '',
         gasLimit: '',
@@ -165,11 +166,10 @@ class ETHCurrency implements ICurrency {
       }
 
       vm.generateTxnBytes = function (forceEnterNonce = false) {
-        let user = <UserService> heat.$inject.get('user')
         let web3 = <Web3Service> heat.$inject.get('web3')
         let amount = this.data.amount.replace(',','')
         let amountInWei = web3.web3.toWei(amount, 'ether')
-        let from = {privateKey: user.currency.secretPhrase, address: user.currency.address}
+        let from = {privateKey: self.user.currency.secretPhrase, address: self.user.currency.address}
 
         let enterAddressNonce = (nonce?) => dialogs.simplePrompt(null,
             'Enter ETH address nonce',
@@ -389,6 +389,9 @@ class ETHCurrency implements ICurrency {
               <div class="md-toolbar-tools">
                 <h2 ng-if="vm.transferDescriptor == 'ETH'">Send Ether</h2>
                 <h2 ng-if="vm.transferDescriptor != 'ETH'">Send ERC20 tokens "{{vm.transferName}}"</h2>
+                <span style="margin-left: 20px;color: grey;font-size: small;">from 
+                    <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
+                </span>
               </div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>

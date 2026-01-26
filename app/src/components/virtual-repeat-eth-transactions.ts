@@ -113,7 +113,8 @@
 
             <!-- TOFROM -->
             <div class="truncate-col tofrom-col left" ng-if="vm.personalize">
-              <a class="pointer" ng-click="vm.addressDetails($event, item.renderedToFrom)">{{item.renderedToFrom}}</a>
+<!--              <a class="pointer" ng-click="vm.addressDetails($event, item.renderedToFrom)">{{item.renderedToFrom}}</a>-->
+              <a href="#/ethereum-account/{{item.renderedToFrom}}">{{item.renderedToFrom}}</a>
 <!--              <span ng-bind-html="item.renderedToFrom"></span>-->
             </div>
 
@@ -585,9 +586,10 @@ class EthTransactionRenderer {
 
   account(account: string): string {
     if (!account) return
-    let url = this.ethBlockExplorerService.getAddressInfoUrl(account)
+    //let url = this.ethBlockExplorerService.getAddressInfoUrl(account)
     let s = account.toUpperCase() == this.provider.account.toUpperCase() ? "Myself" : account
-    return `<a target="_blank" rel="noopener noreferrer" href="${url}">${s}</a>`
+    //return `<a target="_blank" rel="noopener noreferrer" href="${url}">${s}</a>`
+    return `<a href="#/ethereum-account/${account}">${s}</a>`
   }
 
   token(address: string) {
