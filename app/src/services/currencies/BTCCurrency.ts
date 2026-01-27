@@ -365,7 +365,7 @@ class BTCCurrency implements ICurrency {
         vm.errorMessage = ""
         let errorCallback = reason => {
           vm.errorMessage = "error on generation transaction bytes: " + reason
-          console.log(vm.errorMessage)
+          console.error("error on generation transaction bytes", reason)
         }
         vm.data.txBytes = []
         vm.data.rawTx = ''
@@ -388,7 +388,7 @@ class BTCCurrency implements ICurrency {
 
       this.maxAmountClick = function() {
         if (!vm.data.txnFeeSatoshi) {
-          if (vm.data.txBytes) {
+          if (vm.data.txBytes?.length > 0) {
             calculateTxnFee()
           } else {
             calculateRawTx()?.then(() => calculateTxnFee())
@@ -439,8 +439,8 @@ class BTCCurrency implements ICurrency {
       let btcFeeService: BtcFeeService = heat.$inject.get('btcFeeService')
 
       let calculateTxnFee = function () {
-        if (vm.data.txBytes) {
-          vm.data.txnFeeSatoshi = vm.data.satByteFee * vm.data.txBytes.length
+        if (vm.data.txBytes?.length > 0) {
+          vm.data.txnFeeSatoshi = Math.trunc(vm.data.satByteFee * vm.data.txBytes.length)
           vm.data.txnFee = vm.data.txnFeeSatoshi / 100000000
         }
       }

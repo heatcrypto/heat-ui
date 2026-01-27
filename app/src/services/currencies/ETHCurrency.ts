@@ -171,6 +171,13 @@ class ETHCurrency implements ICurrency {
         let amountInWei = web3.web3.toWei(amount, 'ether')
         let from = {privateKey: self.user.currency.secretPhrase, address: self.user.currency.address}
 
+        let gasPriceWei = Math.trunc(this.data.gasPrice * Web3Service.GWEI_SCALE)
+        if (gasPriceWei < 1) {
+          vm.errorMessage = 'Gas price is too low'
+          setTimeout(() => vm.errorMessage = null, 7000)
+          return Promise.resolve()
+        }
+
         let enterAddressNonce = (nonce?) => dialogs.simplePrompt(null,
             'Enter ETH address nonce',
             `${parseInt(nonce) >= 0 ? '' : 'The nonce is not defined. '}Nonce is the outgoing transaction count from that address`,
@@ -199,7 +206,7 @@ class ETHCurrency implements ICurrency {
               from,
               this.data.recipient,
               amountInWei,
-              this.data.gasPrice * Web3Service.GWEI_SCALE,
+              gasPriceWei,
               this.data.gasLimit,
               getAddressNonce
           ).catch(reason => {
@@ -213,7 +220,7 @@ class ETHCurrency implements ICurrency {
               this.data.recipient,
               this.data.contractAddress,
               value.toFixed(0),
-              this.data.gasPrice * Web3Service.GWEI_SCALE,
+              gasPriceWei,
               this.data.gasLimit,
               getAddressNonce
           ).catch(reason => {
@@ -347,6 +354,11 @@ class ETHCurrency implements ICurrency {
       this.gasChanged = () => {
         vm.gasPriceMessage = ''
         $scope.$evalAsync(() => {
+          let gasPriceWei = this.data.gasPrice * Web3Service.GWEI_SCALE
+          if (gasPriceWei < 1) {
+            vm.errorMessage = 'Gas price is too low'
+            setTimeout(() => vm.errorMessage = null, 7000)
+          }
           this.data.fee = web3.web3.fromWei((this.data.gasPrice * Web3Service.GWEI_SCALE) * this.data.gasLimit, 'ether')
         })
       }
@@ -366,7 +378,13 @@ class ETHCurrency implements ICurrency {
 
       this.maxAmountClick = () => {
         if (self.recentBalance.confirmed && this.data.fee) {
-          this.data.amount = String(parseFloat(self.recentBalance.confirmed) - parseFloat(this.data.fee))
+          let v = parseFloat(self.recentBalance.confirmed) - parseFloat(this.data.fee)
+          if (v < 0) {
+            vm.errorMessage = "Balance is too small or fee is too big"
+            setTimeout(() => vm.errorMessage = null, 7000)
+          } else {
+            this.data.amount = String(v)
+          }
         }
       }
 
@@ -432,6 +450,10 @@ class ETHCurrency implements ICurrency {
                     Enter nonce manually
                   </md-checkbox>
                 </p>
+              </div>
+              
+              <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
+                {{vm.errorMessage}}
               </div>
               
               <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
