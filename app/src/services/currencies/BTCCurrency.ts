@@ -143,6 +143,8 @@ class BTCCurrency implements ICurrency {
       vm.stage = "create"
 
       vm.data = {
+        sender: self.user.currency.address,
+        balance: self.recentBalance?.confirmed,
         amount: '',
         recipient: '',
         recipientInfo: '',
@@ -156,6 +158,11 @@ class BTCCurrency implements ICurrency {
       }
 
       let createTxObject = function(isForFeeEstimation: boolean = false) {
+        if (!(parseFloat(self.recentBalance?.confirmed) > 0)) {
+          vm.errorMessage = 'outgoing balance is too low'
+          setTimeout(() => vm.errorMessage = null, 5000)
+          return null
+        }
         let user = <UserService> heat.$inject.get('user')
         let feeInSatoshi
         let amountInSatoshi
@@ -545,7 +552,12 @@ class BTCCurrency implements ICurrency {
         <md-dialog>
           <ng-form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Send BTC</h2></div>
+              <div class="md-toolbar-tools">
+                <h2>Send BTC</h2>
+                <span style="margin-left: 20px;color: grey;font-size: small;">from 
+                <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
+                </span>
+              </div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:800px" layout="column" layout-padding>
               <div flex layout="column">
