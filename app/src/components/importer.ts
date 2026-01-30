@@ -195,7 +195,9 @@ namespace importExport {
       for (const key of keysToRemove) {
         p = p.then(() => db.removeValue(key))
       }
-      return p.then(() => console.log(`account ${account}, cleared ${keysToRemove.length} records`))
+      return p.then(() => {
+        if (keysToRemove.length > 0) console.log(`account ${account}, cleared ${keysToRemove.length} records`)
+      })
     }).catch(error => console.error(error))
   }
 
