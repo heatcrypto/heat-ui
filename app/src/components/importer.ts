@@ -81,7 +81,10 @@ namespace importExport {
                 'Detected not empty database in this app. It will be cleared and filled from the file').then(() => {
               db.deleteDatabase().then(() => db.importDatabase(blob)).then(() => {
                 doAfterImport()
-              }).catch(reason => displayError(reason))
+              }).catch(reason => {
+                console.error(reason)
+                displayError(reason)
+              })
             })
           } else {
             displayError(reason)

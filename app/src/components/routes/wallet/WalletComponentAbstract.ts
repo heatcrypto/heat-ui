@@ -212,13 +212,15 @@ namespace wlt {
       let createBalance = (walletAddress: WalletAddress) => {
         let fillBalances = (currencyBalance: wlt.CurrencyBalance, wa: WalletAddress) => {
           if (wa.balance) currencyBalance.balance = Big(wa.balance).toFixed()
-          if (!wa.tokensBalances) return
-          currencyBalance.tokens.length = 0
+          if (!(wa.tokensBalances?.length > 0)) return
+          //do not recreate new token objects but update existed because of usage tokens in the wallet entry list that exposed in the UI
+          let i = 0
           for (const balance of wa.tokensBalances || []) {
-            let tokenBalance = new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
-            tokenBalance.balance = currencyBalance.balance
+            let tokenBalance = currencyBalance.tokens[i] || new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
+            tokenBalance.balance = balance.balance
             tokenBalance.visible = currencyBalance.expanded
-            currencyBalance.tokens.push(tokenBalance)
+            if (!currencyBalance.tokens[i]) currencyBalance.tokens.push(tokenBalance)
+            i++
           }
         }
 

@@ -381,7 +381,7 @@ namespace wlt {
         currency.visible = this.expanded
         if (currency.tokens) {
           currency.tokens.forEach(token => {
-            token.visible = this.expanded
+            token.visible = this.expanded && currency.expanded
           })
         }
       })
