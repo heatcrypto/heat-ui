@@ -27,6 +27,8 @@ interface ILocalKey {
   secretPhrase: string;
   name: string;
   label?: string;
+  publicKey?: string;
+  creationTimestamp?: number;
 }
 
 interface ILocalKeyEntry {
@@ -111,8 +113,27 @@ class LocalKeyStoreService {
     this.rememberPassword(key.account, key.pincode)
     /*this.store.put(this.key(key.account), this.encode(key))
     this.store.put(this.nameKey(key.account), key.name)*/
-
+    key.creationTimestamp = key.creationTimestamp || Date.now()
     return db.saveWalletEntry(key.account, {name: key.name, contents: this.encode(key)})
+  }
+
+  load(account: string, passphrase: string): Promise<ILocalKey> {
+    return db.getWalletEntry(account).then(v => {
+      let result = this.decode(v.contents, passphrase, account)
+      if (result) this.rememberPassword(account, passphrase)
+      return result
+    })
+
+    /*let contents = this.store.get(this.key(account))
+    try {
+      let result = this.decode(contents, passphrase, account);
+      if (result) {
+        this.rememberPassword(account, passphrase);
+        return result;
+      }
+    } catch (e) {
+      console.log(e);
+    }*/
   }
 
   /* lists all numeric account ids we have keys for */
@@ -134,25 +155,6 @@ class LocalKeyStoreService {
 
     /*this.store.remove(this.key(account))
     this.store.remove(this.nameKey(account))*/
-  }
-
-  load(account: string, passphrase: string): Promise<ILocalKey> {
-    return db.getWalletEntry(account).then(v => {
-      let result = this.decode(v.contents, passphrase, account)
-      if (result) this.rememberPassword(account, passphrase)
-      return result
-    })
-
-    /*let contents = this.store.get(this.key(account))
-    try {
-      let result = this.decode(contents, passphrase, account);
-      if (result) {
-        this.rememberPassword(account, passphrase);
-        return result;
-      }
-    } catch (e) {
-      console.log(e);
-    }*/
   }
 
   public exportOld(accountCurrencies: Map<string, []>,
@@ -338,15 +340,11 @@ class LocalKeyStoreService {
 
 
   private encode(key: ILocalKey): string {
-    const payload = JSON.stringify({
-      account: key.account,
-      secretPhrase: key.secretPhrase,
-      pincode: key.pincode,
-      name: key.name,
-      label: key.label
-    });
-    const message = heat.crypto.passphraseEncrypt(payload, key.pincode);
-    return message.encode();
+    let c = Object.assign({}, key)
+    delete c.pincode
+    const payload = JSON.stringify(c)
+    const message = heat.crypto.passphraseEncrypt(payload, key.pincode)
+    return message.encode()
   }
 
   private decode(encoded: string, passphrase: string, account?: string): ILocalKey {
@@ -360,7 +358,9 @@ class LocalKeyStoreService {
         secretPhrase: json['secretPhrase'],
         pincode: json['pincode'],
         name: json['name'],
-        label: json['label']
+        label: json['label'],
+        publicKey: json['publicKey'],
+        creationTimestamp: json['creationTimestamp']
       }
     } else {
       //console.log(`decrypting is not success for account ${account}`);

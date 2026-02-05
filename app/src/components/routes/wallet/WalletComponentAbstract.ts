@@ -79,6 +79,7 @@ namespace wlt {
               if (key && !walletEntry["cached"]) {
                 walletEntry.secretPhrase = key.secretPhrase
                 walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+                walletEntry.creationTimestamp = key.creationTimestamp
                 walletEntry.unlocked = true
                 walletEntry.pin = password
                 walletEntry.label = key.label

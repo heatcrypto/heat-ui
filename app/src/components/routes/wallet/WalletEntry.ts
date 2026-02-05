@@ -80,7 +80,8 @@ namespace wlt {
         db.getWalletItem(db.compactHash(address), this.symbol).then(item => {
           let r = extractBalance(item, this._balance)
           this._balance = r?.confirmed
-          this.creationTimestamp = item?.creationTimestamp
+          // this.creationTimestamp may be filled in sync call (for HEAT) and should not be overwritten
+          this.creationTimestamp = this.creationTimestamp || item?.creationTimestamp
         })
       }
     }
@@ -348,6 +349,7 @@ namespace wlt {
     public secretPhrase: string
     public selectedCurrencies: string[]
     public bip44Compatible: boolean
+    public creationTimestamp: number
     public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
     public pin: string
     public unlocked = false

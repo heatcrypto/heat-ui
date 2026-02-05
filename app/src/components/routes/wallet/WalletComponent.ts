@@ -306,7 +306,7 @@
               <div ng-if="entry.isTokenBalance" layout="row" class="token-balance" flex>
                 <div class="name">{{entry.name}}</div>&nbsp;
                 <div class="identifier" flex>{{entry.address}}</div>&nbsp;
-                <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
+                <div class="balance">{{entry.balance}}&nbsp;&nbsp;<span class="symbol">{{entry.symbol}}</span></div>
               </div>
 
             </md-list-item>
@@ -757,6 +757,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               walletEntry.pin = pin
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
+              walletEntry.creationTimestamp = key.creationTimestamp
               if (walletEntry.bip44Compatible) {
                 wlt.saveEntryBip44Compatible(walletEntry.account, walletEntry.bip44Compatible)
               }
@@ -808,6 +809,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.allLocked = false
     let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
     let heatCurrencyBalance = new wlt.CurrencyBalance(walletEntry, 'HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
+    heatCurrencyBalance.creationTimestamp = walletEntry.creationTimestamp
     heatCurrencyBalance.visible = walletEntry.expanded
     heatCurrencyBalance.pubKey = heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase)
     walletEntry.currencies.push(heatCurrencyBalance)
@@ -933,7 +935,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       data => {
         let account = heat.crypto.getAccountId(data.secretPhrase)
         let publicKey = heat.crypto.secretPhraseToPublicKey(data.secretPhrase)
-        let key = {
+        let key: ILocalKey = {
           account: account,
           secretPhrase: data.secretPhrase,
           pincode: data.password,
