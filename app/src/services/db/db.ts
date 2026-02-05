@@ -131,7 +131,7 @@ namespace db {
         )
         promises.push(
             db0.contact
-                .where('account').equals(account)
+                .where('ownerAccount').equals(account)
                 .delete()
         )
         promises.push(
