@@ -47,6 +47,13 @@
       color: grey;
       font-size: smaller
     }
+    .wallet-entries md-list-item {
+      transition: background-color 0.4s ease;
+    }
+    
+    .wallet-entries md-list-item:hover {
+      background-color: #7d7ca973;
+    }  
   `,
   template: `
    <!--  layout-align="start center" -->
@@ -399,7 +406,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       this.chains[index] = ardorChain
     })
 
-    let promise = this.$interval(this.refreshBalances.bind(this), 14000)
+    let promise = this.$interval(wlt.refreshBalances, 14000)
 
     this.$scope.$on('$destroy', () => {
       WalletComponent.displayUnlocked = this.displayUnlocked
@@ -408,20 +415,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     this.initLocalKeyStore()
     //wlt.initCreatedAddresses()
-  }
 
-  // refresh visible balance entries
-  refreshBalances() {
-    let ab = wlt.aggregatedBalances = {}
-    for (const entry of this.entries) {
-      if (!(entry instanceof wlt.CurrencyBalance)) continue
-      let cb: wlt.CurrencyBalance = entry
-      if (cb.refresh && cb.displayed()) cb.refresh()
-
-      if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
-      let bs = ab[cb.walletEntry.account]
-      bs[cb.symbol] = (bs[cb.symbol] || 0) + (parseFloat(cb.balance || '0') || 0)
-    }
+    setTimeout(wlt.refreshBalances, 1000)
   }
 
   enterWalletEntryLabel(walletEntry: wlt.WalletEntry) {
@@ -677,6 +672,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           }
         })
       })
+      wlt.walletEntryListCache = this.entries
     })
   }
 

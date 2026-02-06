@@ -71,35 +71,34 @@ class UserBalanceComponent {
   // REFACTOR..
   refresh() {
     this.$scope.$evalAsync(() => {
-      this.loading = true;
-    });
+      this.loading = true
+    })
 
     let f = (balance: string) => {
-      var formatted = balance.split(".");
-      this.formattedBalance = formatted[0];
-      this.formattedFraction = "." + (formatted[1]||"00");
-      this.showError = false;
-      this.loading = false;
+      let formatted = balance.split(".")
+      this.formattedBalance = formatted[0]
+      this.formattedFraction = "." + (formatted[1]||"00")
+      this.showError = false
+      this.loading = false
     }
 
     let aggregatedBalance = wlt.aggregatedBalances[this.user.account]
     aggregatedBalance = aggregatedBalance ? aggregatedBalance[this.user.currency.symbol] : null
-    if (aggregatedBalance) {
-      f('' + aggregatedBalance)
-    } else {
-      this.user.currency.getBalance().then(balance => {
-        this.$scope.$evalAsync(() => {
-          f(balance)
-        });
-      }, (error: ServerEngineError) => {
-        this.$scope.$evalAsync(() => {
-          this.formattedBalance = "0";
-          this.formattedFraction = ".00000000";
-          this.showError = true;
-          this.errorDescription = error ? error.description : "-";
-          this.loading = false;
-        });
-      })
-    }
+    if (aggregatedBalance)  f('' + aggregatedBalance)
+    //update balance for currency
+    this.user.currency.getBalance().then(balance => {
+      this.$scope.$evalAsync(() => {
+        if (!aggregatedBalance)  f(balance)
+      });
+    }, (error: ServerEngineError) => {
+      this.$scope.$evalAsync(() => {
+        this.formattedBalance = "0"
+        this.formattedFraction = ".00000000"
+        this.showError = true
+        this.errorDescription = error ? error.description : "-"
+        this.loading = false
+      });
+    })
+
   }
 }

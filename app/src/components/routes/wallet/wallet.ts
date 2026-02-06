@@ -90,6 +90,10 @@ namespace wlt {
 
   export const DB_VALUE_SALT = 'F<SH'  //do not change it, otherwise DB data becomes non-consistent
 
+  export let walletEntriesCache: Map<string, WalletEntry> = new Map<string, wlt.WalletEntry>()
+
+  export let walletEntryListCache: Array<wlt.WalletEntry | wlt.CurrencyBalance | wlt.TokenBalance>
+
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
       try {
@@ -100,6 +104,20 @@ namespace wlt {
       e.returnValue = "\o/"
     }
   })
+
+  // refresh visible balance for wallet page entries and fill aggregated balances (currency balances per account)
+  export function refreshBalances() {
+    let ab = aggregatedBalances = {}
+    for (const entry of walletEntryListCache) {
+      if (!(entry instanceof wlt.CurrencyBalance)) continue
+      let cb: wlt.CurrencyBalance = entry
+      if (cb.refresh && cb.displayed()) cb.refresh()
+
+      if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
+      let bs = ab[cb.walletEntry.account]
+      bs[cb.symbol] = (bs[cb.symbol] || 0) + (parseFloat(cb.balance || '0') || 0)
+    }
+  }
 
   export function distinctValues(value, index, self) {
     return self.indexOf(value) === index

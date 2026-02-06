@@ -24,8 +24,6 @@
 
 namespace wlt {
 
-  export let walletEntriesCache: Map<string, WalletEntry> = new Map<string, wlt.WalletEntry>()
-
   export abstract class WalletComponentAbstract {
 
     public lightwalletService: LightwalletService;

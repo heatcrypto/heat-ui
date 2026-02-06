@@ -136,7 +136,6 @@ class EthereumAccountComponent {
 
   $onInit() {
     this.personalize = this.account == this.user.currency.address
-    this.refresh();
 
     // TODO register some refresh interval
     // this.refresh();
@@ -152,6 +151,8 @@ class EthereumAccountComponent {
       this.pendingService.removeListener(listener)
       this.$interval.cancel(promise)
     })
+
+    this.refresh()
   }
 
   /* Continueous timer that polls for one pending txn every 20 seconds,
@@ -204,6 +205,8 @@ class EthereumAccountComponent {
         this.pendingTransactions.sort((a, b) => b.timestamp - a.timestamp)
         setTimeout(() => this.loadPaymentMessages(), 1500)
       }
+      let promise = this.$interval(wlt.refreshBalances, 4000, 8)
+      setTimeout(() => this.$interval.cancel(promise), 33000)
     })
   }
 
@@ -248,13 +251,15 @@ class EthereumAccountComponent {
     this.loadPaymentMessages()
 
     // remove obsolete pending transactions
-    for (const ptx of this.pendingTransactions) {
-      let minutesOld = (Date.now() - ptx.timestamp) / (1000*60)
-      if (minutesOld > 60) {
-        this.pendingService.remove(ptx.address, ptx.txHash, ptx.timestamp)
-        console.log('Pending ETH transaction is removed from pending list due overtimed', JSON.stringify(ptx))
+    setTimeout(() => {
+      for (const ptx of this.pendingTransactions) {
+        let minutesOld = (Date.now() - ptx.timestamp) / (1000*60)
+        if (minutesOld > 60) {
+          this.pendingService.remove(ptx.address, ptx.txHash, ptx.timestamp)
+          console.log('Pending ETH transaction is removed from pending list due overtimed', JSON.stringify(ptx))
+        }
       }
-    }
+    }, 1500)
   }
 
   private loadPaymentMessages() {
