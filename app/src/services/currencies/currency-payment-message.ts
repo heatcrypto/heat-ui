@@ -1,6 +1,6 @@
 namespace wlt {
 
-    export type SendingResult = { txId: string, paymentMessageMethod: number, heatUnavailableReason: string, message?: string }
+    export type SendingResult = { txId: string, paymentMessageMethod: number, heatUnavailableReason: string, message?: string, amount?: string, fee?: string }
     let messageStore: Store
     let heatService: HeatService
     let userService: UserService

@@ -55,7 +55,17 @@ class ETHCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): PromiseLike<string> {
-    return wlt.getSavedCurrencyBalance(this.address, this.symbol)
+    let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.address)
+    this.recentBalance.unconfirmed = cb.balance
+    return this.ethBlockExplorerService.getBalance(this.address).then(
+        balance => {
+          // todo save actual balance (if it is changed)
+          this.recentBalance.confirmed = String(balance)
+          return this.format(this.recentBalance.confirmed)
+        }
+    )
+
+    /*return wlt.getSavedCurrencyBalance(this.address, this.symbol)
         .then(r => this.recentBalance = r)
         .then(r => {
           return this.ethBlockExplorerService.getBalance(this.address).then(
@@ -65,7 +75,7 @@ class ETHCurrency implements ICurrency {
                 return this.format(this.recentBalance.confirmed)
               }
           )
-        }).finally(() => this.format(this.recentBalance.confirmed))
+        }).finally(() => this.format(this.recentBalance.confirmed))*/
   }
 
   /* Register a balance changed observer, unregister by calling the returned
@@ -112,8 +122,9 @@ class ETHCurrency implements ICurrency {
       this.sendEther($event, transferTypeItem).then(data => {
         if (data && data.txId) {
           let address = this.user.currency.address
-          let timestamp = new Date().getTime()
-          this.pendingService.add(address, data.txId, timestamp)
+          let timestamp = Date.now()
+          let totalAmount= Number(data.amount) + Number(data.fee)
+          this.pendingService.add(address, data.txId, timestamp, totalAmount)
           return wlt.getHeatUnavailableReason(heatService, this.user.account)
           .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
           //.then(isPaymentMemo => todo refresh memo in the transaction list)
@@ -279,14 +290,6 @@ class ETHCurrency implements ICurrency {
         $mdDialog.cancel()
       }
 
-      let updateUnconfirmedBalance = function (value, fees) {
-        let txTotal = new Big(web3.web3.fromWei(new Big(value).plus(new Big(fees)), 'ether'))
-        //let txTotal = new Big(value).plus(new Big(fees))
-        let confirmedBalance = self.recentBalance?.confirmed
-        let unconfirmedBalance = confirmedBalance ? new Big(confirmedBalance).minus(txTotal).toString() : undefined
-        return wlt.saveCurrencyBalance(self.address, self.symbol, confirmedBalance, unconfirmedBalance)
-      }
-
       this.disableOKBtn = false
 
       this.okButtonClick = function ($event) {
@@ -296,13 +299,12 @@ class ETHCurrency implements ICurrency {
           result => {
             if (result.txId) {
               result.message = vm.data.message
-              let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod})
               let web3 = <Web3Service> heat.$inject.get('web3')
-              let amountInWei = web3.web3.toWei(vm.data.amount.replace(',',''), 'ether')
-              updateUnconfirmedBalance(amountInWei, web3.web3.toWei(vm.data.fee, 'ether')).finally(() => {
-                $mdDialog.hide(sendingResult).then(() => {
-                  dialogs.alert(event, 'Success', `TxHash: ${result.txId}`)
-                })
+              let amount = vm.data.amount.replace(',','')
+              let amountInWei = web3.web3.toWei(amount, 'ether')
+              let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod, amount, fee: vm.data.fee})
+              $mdDialog.hide(sendingResult).then(() => {
+                dialogs.alert(event, 'Success', `TxHash: ${result.txId}`)
               })
             } else {
               dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`, {multiple: true})

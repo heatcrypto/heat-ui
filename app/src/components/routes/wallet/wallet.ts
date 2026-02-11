@@ -84,7 +84,7 @@ namespace wlt {
 
   const storageMap = new Map<string, Store>()
 
-  const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 3000 * 60 // 3 minutes
+  const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 30000 * 60 // 30 minutes
 
   export let aggregatedBalances = {} // currency balance aggregated per account {1122334455555555: {ETH: 12.33, BTC: 100500}}
 
@@ -92,7 +92,7 @@ namespace wlt {
 
   export let walletEntriesCache: Map<string, WalletEntry> = new Map<string, wlt.WalletEntry>()
 
-  export let walletEntryListCache: Array<wlt.WalletEntry | wlt.CurrencyBalance | wlt.TokenBalance>
+  export let currencyBalanceCache: Map<string, wlt.CurrencyBalance> = new Map<string, wlt.CurrencyBalance>()
 
   window.addEventListener("beforeunload", function (e) {
     if (shouldBeSaved) {
@@ -108,9 +108,8 @@ namespace wlt {
   // refresh visible balance for wallet page entries and fill aggregated balances (currency balances per account)
   export function refreshBalances() {
     let ab = aggregatedBalances = {}
-    for (const entry of walletEntryListCache) {
-      if (!(entry instanceof wlt.CurrencyBalance)) continue
-      let cb: wlt.CurrencyBalance = entry
+    let cbs = Array.from(currencyBalanceCache.values())
+    for (const cb of cbs) {
       if (cb.refresh && cb.displayed()) cb.refresh()
 
       if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
@@ -147,6 +146,13 @@ namespace wlt {
     */
   }
 
+  /**
+   * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
+   */
+  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): Promise<{confirmed: string, unconfirmed?: string}> {
+    return db.getWalletItem(db.compactHash(address), currencySymbol).then(item => extractBalance(item, balance))
+  }
+
   export function saveCurrencyBalanceCreationTimestamp(address: string, currencySymbol: string, creationTimestamp: number) {
     let itemKey = db.compactHash(address)
     return db.getWalletItem(itemKey, currencySymbol).then(item => {
@@ -155,19 +161,12 @@ namespace wlt {
     })
   }
 
-  /**
-   * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
-   */
-  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): Promise<{confirmed: string, unconfirmed?: string}> {
-    return db.getWalletItem(db.compactHash(address), currencySymbol).then(item => extractBalance(item, balance))
-  }
-
   export function extractBalance(item, balance?: string) {
     let r = item?.balance
     if (!r) return {confirmed: balance}
-    return r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()
-        ? {confirmed: r.b}
-        : {confirmed: r.b, unconfirmed: r.ub}
+    return r.ub != r.b && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME > Date.now()
+        ? {confirmed: r.b, unconfirmed: r.ub}
+        : {confirmed: r.b}
   }
 
   /*export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {

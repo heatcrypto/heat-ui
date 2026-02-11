@@ -84,6 +84,8 @@ namespace wlt {
           this.creationTimestamp = this.creationTimestamp || item?.creationTimestamp
         })
       }
+
+      wlt.currencyBalanceCache.set(walletEntry.account + '-' + address, this)
     }
 
     toString(): string {

@@ -44,6 +44,7 @@ class Web3Service {
         }
     })
 
+  //todo sending should be accounted in pending transaction service
   sendEther(account: any, _to: string, _value: any): Promise<{ txHash: string }> {
     return new Promise((resolve, reject) => {
       this.createRawTx2(account, _to, _value).then(

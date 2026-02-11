@@ -48,12 +48,12 @@
             <div class="title">
               Balance:
             </div>
-            <div class="value" ng-if="vm.balanceUnconfirmed">
+            <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} ETH
               <span style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
               <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
-            <div class="value" ng-if="!vm.balanceUnconfirmed">
+            <div class="value" ng-if="!vm.balanceUnconfirmed || vm.balanceUnconfirmed == vm.balance">
               {{vm.balance}} ETH
             </div>
           </div>
@@ -211,15 +211,17 @@ class EthereumAccountComponent {
   }
 
   refresh() {
+    let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.account)
+    this.balanceUnconfirmed = cb.balance
+
     wlt.getSavedCurrencyBalance(this.account, "ETH").then(balances => {
       this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
-      this.balanceUnconfirmed = balances.unconfirmed
+      //this.balanceUnconfirmed = balances.unconfirmed
       this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
         this.$scope.$evalAsync(() => {
           wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance).then(balances => {
             this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
-            this.balanceUnconfirmed = balances.unconfirmed
-            //this.balanceUnconfirmed = new Big(info.ETH.balance).toFixed(18);
+            //this.balanceUnconfirmed = balances.unconfirmed
             if (info.tokens) {
               this.erc20Tokens = info.tokens.map(token => {
                 let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
@@ -249,17 +251,6 @@ class EthereumAccountComponent {
     web3.getAddressNonce(this.account)
 
     this.loadPaymentMessages()
-
-    // remove obsolete pending transactions
-    setTimeout(() => {
-      for (const ptx of this.pendingTransactions) {
-        let minutesOld = (Date.now() - ptx.timestamp) / (1000*60)
-        if (minutesOld > 60) {
-          this.pendingService.remove(ptx.address, ptx.txHash, ptx.timestamp)
-          console.log('Pending ETH transaction is removed from pending list due overtimed', JSON.stringify(ptx))
-        }
-      }
-    }, 1500)
   }
 
   private loadPaymentMessages() {

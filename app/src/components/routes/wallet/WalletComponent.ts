@@ -672,7 +672,6 @@ class WalletComponent extends wlt.WalletComponentAbstract {
           }
         })
       })
-      wlt.walletEntryListCache = this.entries
     })
   }
 

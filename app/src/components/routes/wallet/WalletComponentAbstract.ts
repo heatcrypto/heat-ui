@@ -208,9 +208,12 @@ namespace wlt {
     /* Only when we expand a wallet entry do we lookup its balances */
     public loadEthereumAddresses(walletEntry: wlt.WalletEntry) {
 
+      let pendingService: EthereumPendingTransactionsService = heat.$inject.get('ethereumPendingTransactions')
+
       let createBalance = (walletAddress: WalletAddress) => {
         let fillBalances = (currencyBalance: wlt.CurrencyBalance, wa: WalletAddress) => {
-          if (wa.balance) currencyBalance.balance = Big(wa.balance).toFixed()
+          let pendingAmount = pendingService.getPendingAmount(currencyBalance.address)
+          if (wa.balance) currencyBalance.balance = String(parseFloat(wa.balance) - parseFloat(pendingAmount))
           if (!(wa.tokensBalances?.length > 0)) return
           //do not recreate new token objects but update existed because of usage tokens in the wallet entry list that exposed in the UI
           let i = 0
