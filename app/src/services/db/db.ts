@@ -284,7 +284,7 @@ namespace db {
             //     .catch(error => {console.error(error)})
         }
         if (publicNameQuery) {
-            return db0.contact.filter(c => c.publicName.includes(publicNameQuery)).toArray()
+            return db0.contact.filter(c => c.publicName?.includes(publicNameQuery)).toArray()
                 .catch(error => {console.error(error)})
         }
     }
