@@ -31,23 +31,22 @@
     .symbol {
       color: white;
     }
+    .external-address {
+      color: hotpink !important;
+    }
   `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="explorer-detail">
         <div layout="column">
           <div class="col-item">
-            <div class="title">
-              Address:
-            </div>
+            <div class="title">Address: <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span></div>
             <div class="value">
-              <a ng-click="vm.addressDetails($event, vm.account)">{{vm.account}}</a>
+              <a ng-click="vm.addressDetails($event, vm.account)" ng-class="{'external-address': !vm.ownAddress}">{{vm.account}}</a>
             </div>
           </div>
           <div class="col-item">
-            <div class="title">
-              Balance:
-            </div>
+            <div class="title">Balance:</div>
             <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} ETH
               <span ng-if="!angular.isUndefined(vm.balance)" style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
@@ -117,6 +116,7 @@ class EthereumAccountComponent {
   balanceUnconfirmed: string
   erc20Tokens: ERC20TokensType = []
   personalize: boolean
+  ownAddress = false
 
   pendingTransactions: Array<{ date: string, txHash: string, timestamp: number, address: string, message?: {method: number, text: string} }> = []
   prevIndex = 0
@@ -137,9 +137,6 @@ class EthereumAccountComponent {
   $onInit() {
     this.personalize = this.account == this.user.currency.address
 
-    // TODO register some refresh interval
-    // this.refresh();
-
     let listener = this.updatePendingTransactions.bind(this)
     this.pendingService.addListener(listener)
     this.updatePendingTransactions()
@@ -152,7 +149,9 @@ class EthereumAccountComponent {
       this.$interval.cancel(promise)
     })
 
-    this.refresh()
+    db.getWalletItem(db.compactHash(this.account), 'ETH').then(item => {
+      this.ownAddress = !!item
+    })
   }
 
   /* Continueous timer that polls for one pending txn every 20 seconds,

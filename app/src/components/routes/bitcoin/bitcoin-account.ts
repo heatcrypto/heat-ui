@@ -33,16 +33,19 @@ type PendingType = {
 @Component({
   selector: 'bitcoinAccount',
   inputs: ['account'],
+  styles: [`
+    .external-address {
+      color: hotpink !important;
+    }
+  `],
   template: `
     <div layout="column" flex layout-fill>
       <div layout="row" class="explorer-detail">
         <div layout="column">
           <div class="col-item">
-            <div class="title">
-              Address:
-            </div>
+            <div class="title">Address: <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span></div>
             <div class="value">
-              <a href="#/bitcoin-account/{{vm.account}}">{{vm.account}}</a>
+              <a href="#/bitcoin-account/{{vm.account}}" ng-class="{'external-address': !vm.ownAddress}">{{vm.account}}</a>
             </div>
           </div>
           <div class="col-item">
@@ -105,6 +108,7 @@ class BitcoinAccountComponent {
   pendingTransactions: PendingType[] = []
   prevIndex = 0
   busy = true
+  ownAddress = false
 
   constructor(private $scope: angular.IScope,
               private btcBlockExplorerService: BtcBlockExplorerService,
@@ -129,6 +133,10 @@ class BitcoinAccountComponent {
     this.$scope.$on('$destroy', () => {
       this.bitcoinPendingTransactions.removeListener(listener)
       this.$interval.cancel(promise)
+    })
+
+    db.getWalletItem(db.compactHash(this.account), 'BTC').then(item => {
+      this.ownAddress = !!item
     })
   }
 

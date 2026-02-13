@@ -134,9 +134,12 @@ namespace wlt {
     return store
   }
 
+  //todo move balance to separated record outside of WalletItem
   export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
     let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
-    return db.saveWalletItem(db.compactHash(address), currencySymbol, {balance: balanceRecord})
+    //'update record' is used to avoid creation new wallet item on saving balance.
+    // Wallet item should be created for managed addresses only (on wallet page)
+    return db.updateWalletItem(db.compactHash(address), currencySymbol, {balance: balanceRecord})
 
     /*let hash = heat.crypto.hash(address).substring(0, 16)
     let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
