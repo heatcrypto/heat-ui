@@ -49,11 +49,13 @@ type PendingType = {
             <div class="title">
               Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
-            <div class="value" ng-if="vm.balanceUnconfirmed">
+            <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} BTC
-              <span style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
+              <span ng-if="!angular.isUndefined(vm.balance)" style="font-size: small; opacity: 0.7">
+                    <br>{{vm.balance}} (confirmed)
+              </span>
             </div>
-            <div class="value" ng-if="!vm.balanceUnconfirmed">
+            <div class="value" ng-if="!vm.balanceUnconfirmed || vm.balanceUnconfirmed == vm.balance">
               {{vm.balance}} BTC
               <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
@@ -140,7 +142,7 @@ class BitcoinAccountComponent {
       let pendingTxn = this.pendingTransactions[this.prevIndex]
       this.btcBlockExplorerService.getTxInfo(pendingTxn.txId).then(
         data => {
-          if (data.blockheight !== -1) {
+          if (data.blockheight > -1) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${pendingTxn.txId} found`).hideDelay(2000));
             this.bitcoinPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time)
           }
@@ -170,26 +172,40 @@ class BitcoinAccountComponent {
         this.pendingTransactions.sort((a, b) => b.time - a.time)
         this.loadPaymentMessages()
       }
+
+      let promise = this.$interval(() => wlt.refreshBalances(true), 4000, 100)
+      setTimeout(() => this.$interval.cancel(promise), 633000)
     })
   }
 
   refresh() {
     this.busy = true
-    this.balanceUnconfirmed = ""
-    let balanceUnconfirmedHolder: number
-    this.btcBlockExplorerService.getBalance(this.account).then(unconfirmedBalance => {
-      this.$scope.$evalAsync(() => {
-        balanceUnconfirmedHolder = unconfirmedBalance
-        this.busy = false
-      })
-    }).finally(() => {
-      wlt.getSavedCurrencyBalance(this.account, "BTC", balanceUnconfirmedHolder ? String(balanceUnconfirmedHolder) : null).then(b => {
+    let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.account)
+
+    let getSaved = () => {
+      wlt.getSavedCurrencyBalance(this.account, "BTC").then(b => {
         this.$scope.$evalAsync(() => {
-          this.balance = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
-          this.balanceUnconfirmed = b.unconfirmed ? new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8) : null
+          if (!angular.isUndefined(b.confirmed)) this.balance = new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed()
+          if (!angular.isUndefined(b.unconfirmed)) this.balanceUnconfirmed = new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed()
         })
       })
-    })
+    }
+
+    if (cb) {
+      cb.refresh().then(balanceAmount => {
+        this.balanceUnconfirmed = balanceAmount
+        getSaved()
+        this.busy = false
+      })
+    } else {
+      this.btcBlockExplorerService.getBalance(this.account).then(b => {
+        this.$scope.$evalAsync(() => {
+          this.balance = new Big(b).div(wlt.SATOSHI_PER_BTC).toFixed()
+          this.busy = false
+        })
+      }).finally(getSaved)
+    }
+
     this.loadPaymentMessages()
   }
 

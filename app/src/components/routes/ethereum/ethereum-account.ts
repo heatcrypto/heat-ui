@@ -50,7 +50,7 @@
             </div>
             <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} ETH
-              <span style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
+              <span ng-if="!angular.isUndefined(vm.balance)" style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
               <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
             </div>
             <div class="value" ng-if="!vm.balanceUnconfirmed || vm.balanceUnconfirmed == vm.balance">
@@ -205,46 +205,51 @@ class EthereumAccountComponent {
         this.pendingTransactions.sort((a, b) => b.timestamp - a.timestamp)
         setTimeout(() => this.loadPaymentMessages(), 1500)
       }
-      let promise = this.$interval(wlt.refreshBalances, 4000, 8)
-      setTimeout(() => this.$interval.cancel(promise), 33000)
+      let promise = this.$interval(() => wlt.refreshBalances(true), 4000, 33)
+      setTimeout(() => this.$interval.cancel(promise), 133000)
     })
   }
 
   refresh() {
     let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.account)
-    this.balanceUnconfirmed = cb.balance
 
-    wlt.getSavedCurrencyBalance(this.account, "ETH").then(balances => {
-      this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
-      //this.balanceUnconfirmed = balances.unconfirmed
-      this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
-        this.$scope.$evalAsync(() => {
-          wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance).then(balances => {
-            this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
-            //this.balanceUnconfirmed = balances.unconfirmed
-            if (info.tokens) {
-              this.erc20Tokens = info.tokens.map(token => {
-                let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
-                let balance = token.balance
-                    ? utils.formatERC20TokenAmount(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18)
-                    : ""
-                return {
-                  balance: balance,
-                  symbol: token.tokenInfo.symbol,
-                  name: token.tokenInfo.name,
-                  id: '',
-                  rawBalance: token.rawBalance,
-                  contractAddress: token.tokenInfo.address,
-                  decimals: token.tokenInfo.decimals
-                }
-              }).sort((a, b) => a.symbol.localeCompare(b.symbol))
+    if (cb) {
+      cb.refresh().then(balanceAmount => {
+        this.balanceUnconfirmed = balanceAmount
+      })
+    } else {
+      wlt.getSavedCurrencyBalance(this.account, "ETH").then(balances => {
+        this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
+        //this.balanceUnconfirmed = balances.unconfirmed
+        this.ethBlockExplorerService.getAddressInfo(this.account).then(info => {
+          this.$scope.$evalAsync(() => {
+            wlt.getSavedCurrencyBalance(this.account, "ETH", info.ETH.balance).then(balances => {
+              this.balance = isNaN(parseFloat(balances.confirmed)) ? '*' : balances.confirmed
+              //this.balanceUnconfirmed = balances.unconfirmed
+              if (info.tokens) {
+                this.erc20Tokens = info.tokens.map(token => {
+                  let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
+                  let balance = token.balance
+                      ? utils.formatERC20TokenAmount(new Big(token.balance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18)
+                      : ""
+                  return {
+                    balance: balance,
+                    symbol: token.tokenInfo.symbol,
+                    name: token.tokenInfo.name,
+                    id: '',
+                    rawBalance: token.rawBalance,
+                    contractAddress: token.tokenInfo.address,
+                    decimals: token.tokenInfo.decimals
+                  }
+                }).sort((a, b) => a.symbol.localeCompare(b.symbol))
 
-              this.user.currency['erc20Tokens'] = this.erc20Tokens
-            }
+                this.user.currency['erc20Tokens'] = this.erc20Tokens
+              }
+            })
           })
         })
       })
-    })
+    }
 
     // to cache nonce
     let web3 = <Web3Service> heat.$inject.get('web3')

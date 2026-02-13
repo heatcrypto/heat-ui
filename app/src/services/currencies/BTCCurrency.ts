@@ -55,13 +55,16 @@ class BTCCurrency implements ICurrency {
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
     return wlt.getSavedCurrencyBalance(this.address, this.symbol)
-        .then(r => this.recentBalance = r)
-        .then(r => {
+        .then(b => {
+          this.recentBalance.confirmed = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed() : null
+          this.recentBalance.unconfirmed = b.unconfirmed ? new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed() : null
+        })
+        .then(() => {
           return this.btcBlockExplorerService.getBalance(this.address).then(
-              balance => {
+              balanceSat => {
                 // todo save actual balance (if it is changed)
-                this.recentBalance.confirmed = String(balance)
-                return this.format(this.recentBalance.confirmed)
+                this.recentBalance.confirmed = String(new Big(balanceSat).div(wlt.SATOSHI_PER_BTC))
+                return this.recentBalance.confirmed
               }
           )
         }).finally(() => this.format(this.recentBalance.confirmed))
@@ -85,7 +88,8 @@ class BTCCurrency implements ICurrency {
               if (data && data.txId) {
                 let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
                 let timestamp = new Date().getTime()
-                this.pendingTransactions.add(this.address, data.txId, timestamp)
+                let totalAmount= Number(data.amount) + Number(data.fee)
+                this.pendingTransactions.add(this.address, data.txId, timestamp, totalAmount)
                 this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
                 return wlt.getHeatUnavailableReason(heatService, this.user.account)
                     .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
@@ -193,13 +197,6 @@ class BTCCurrency implements ICurrency {
           txnFeeSatoshi: vm.data.txnFeeSatoshi
         }
         return txObject
-      }
-
-      let updateUnconfirmedBalance = function (value, fees) {
-        if (!self.recentBalance) return
-        let txTotal = new Big(value).plus(new Big(fees))
-        let unconfirmedBalance = new Big(self.recentBalance.confirmed).minus(txTotal)
-        return wlt.saveCurrencyBalance(self.address, self.symbol, self.recentBalance.confirmed, unconfirmedBalance.toString())
       }
 
       let decodeTxn = function (txWrapper: { inputsSum: number; rawTx: string }, isCreatedTransaction = true) {
@@ -318,13 +315,13 @@ class BTCCurrency implements ICurrency {
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
         self.bitcoreService.sendBitcoins(vm.data.rawTx).then(
+        //for test: Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
           data => {
-            let sendingResult = Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod})
-            updateUnconfirmedBalance(vm.data.amount, vm.data.txnFeeSatoshi).finally(() => {
-              $mdDialog.hide(sendingResult).then(() => {
-                data.message = vm.data.message;
-                dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
-              })
+            let sendingResult =
+                Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.fee})
+            $mdDialog.hide(sendingResult).then(() => {
+              data.message = vm.data.message;
+              dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
             })
           },
           err => {

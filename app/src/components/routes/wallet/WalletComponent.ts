@@ -230,7 +230,7 @@
                 <span class="visibleLabel flex" style="margin-top: 8px;">{{entry.visibleLabel}}</span>
                 <div class="balance" ng-class="{'empty':entry.isZeroBalance()}">
                   <span class="state-message" ng-if="entry.stateMessage">{{entry.stateMessage}}</span>
-                  <span>{{entry.balance}}</span>
+                  <span>{{entry.formattedBalance}}</span>
                   <span ng-if="entry.hasDigit()">&nbsp;&nbsp;&nbsp;{{entry.symbol}}</span>
                 </div>
                 <md-menu md-position-mode="target-right target" md-offset="34px 34px">

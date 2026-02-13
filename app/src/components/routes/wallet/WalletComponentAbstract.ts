@@ -233,6 +233,7 @@ namespace wlt {
           return this.lightwalletService.loadAddressInfo(walletAddress).then(walletAddress => {
             if (!walletAddress) return
             fillBalances(cb, walletAddress)
+            return cb.balance
           })
         }
 
@@ -247,16 +248,28 @@ namespace wlt {
 
     public loadBitcoinAddresses(walletEntry: wlt.WalletEntry) {
 
+      let pendingService: BitcoinPendingTransactionsService = heat.$inject.get('bitcoinPendingTransactions')
+
       let createBalance = (walletAddress: WalletAddress) => {
         let cb = new wlt.CurrencyBalance(walletEntry, 'Bitcoin', 'BTC', walletAddress.address, walletAddress.privateKey, walletAddress.index)
-        cb.balance = walletAddress.balance ? new Big(walletAddress.balance).times(new Big(100000000)).toString() : ""
+        cb.balance = walletAddress.balance
+        let pendingAmount = pendingService.getPendingAmount(cb.address)
+        if (cb.balance) cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
+
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
 
         cb.refresh = () => {
           return btcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
-                cb.balance = String(balance)
+                cb.stateMessage = null
+                cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
+                let pendingAmount = pendingService.getPendingAmount(cb.address)
+                if (cb.balance) cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
+                return cb.balance
               },
-              reason => console.error(reason)
+              reason => {
+                console.error(reason)
+                return ''
+              }
           )
         }
 
@@ -277,9 +290,12 @@ namespace wlt {
         let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
 
         cb.refresh = () => {
-          return bchBlockExplorerService.getBalance(walletAddress.address).then(balance =>
-                  cb.balance = String(balance),
-                  reason => console.error(reason)
+          return bchBlockExplorerService.getBalance(walletAddress.address).then(
+              balance => cb.balance = String(balance),
+              reason => {
+                console.error(reason)
+                return ''
+              }
           )
         }
 
@@ -300,10 +316,12 @@ namespace wlt {
         let ltcBlockExplorerService: LtcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
 
         cb.refresh = () => {
-          return ltcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
-                cb.balance = String(balance)
-              },
-              reason => console.error(reason)
+          return ltcBlockExplorerService.getBalance(walletAddress.address).then(
+              balance => cb.balance = String(balance),
+              reason => {
+                console.error(reason)
+                return ''
+              }
           )
         }
 

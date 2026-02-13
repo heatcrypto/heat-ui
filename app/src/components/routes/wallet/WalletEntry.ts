@@ -69,7 +69,7 @@ namespace wlt {
     private _creationTimestamp: number
     public creationTimestampFormatted: string
     public creationTimestampFormattedExt: string
-    public refresh: () => {}
+    public refresh: () => PromiseLike<string>
 
     constructor(walletEntry: WalletEntry, public name: string, public symbol: string, public address: string, public secretPhrase: string, public index?: number) {
       super()
@@ -78,8 +78,6 @@ namespace wlt {
 
       if (this.isCurrencyBalance && this.symbol) {
         db.getWalletItem(db.compactHash(address), this.symbol).then(item => {
-          let r = extractBalance(item, this._balance)
-          this._balance = r?.confirmed
           // this.creationTimestamp may be filled in sync call (for HEAT) and should not be overwritten
           this.creationTimestamp = this.creationTimestamp || item?.creationTimestamp
         })
@@ -92,8 +90,12 @@ namespace wlt {
       return `${this.index ? '#' + this.index : ''} ${this.name}`
     }
 
-    get balance(): string {
+    get formattedBalance(): string {
       return this._balance ? CURRENCIES_MAP.get(this.name).formatBalance(this._balance) : null
+    }
+
+    get balance(): string {
+      return this._balance
     }
 
     set balance(value: string) {

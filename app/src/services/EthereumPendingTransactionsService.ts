@@ -29,7 +29,6 @@ class EthereumPendingTransactionsService {
   private listeners: Array<(removed?: boolean) => void> = []
 
   constructor(public $q: angular.IQService) {
-
     let oldKeys = this.loadData()
 
     let removeObsoleteItems = () => {
@@ -72,8 +71,8 @@ class EthereumPendingTransactionsService {
     return totalAmount.toString()
   }
 
-  add(address: string, txHash: string, timestamp: number, amount) {
-    window.localStorage.setItem(`ethPendingTxn:${address}:${txHash}:${timestamp}`, amount)
+  add(address: string, txHash: string, timestamp: number, totalAmount) {
+    window.localStorage.setItem(`ethPendingTxn:${address}:${txHash}:${timestamp}`, totalAmount)
     this.loadData()
     this.notifyListeners(false)
   }

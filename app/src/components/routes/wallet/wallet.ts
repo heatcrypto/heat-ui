@@ -32,7 +32,7 @@ namespace wlt {
     filteredCount: number[]; // 0: filtered count, 1: all count
   }
 
-  const defaultFormatBalance = balance => { return balance  }
+  const defaultFormatBalance = balance => balance
 
   export const CURRENCIES = {
     HEAT: {name: 'HEAT', symbol: 'HEAT', multiAddress: true, formatBalance: defaultFormatBalance},
@@ -46,17 +46,16 @@ namespace wlt {
     BitcoinCash: {name: 'BitcoinCash', symbol: 'BCH', multiAddress: true, formatBalance: defaultFormatBalance}
   }
 
-  CURRENCIES.Bitcoin.formatBalance = balance => {
-    if (balance) return new Big(balance).div(wlt.SATOSHI_PER_BTC).toString()
-    return balance
-  }
+  // CURRENCIES.Bitcoin.formatBalance = balance => {
+  //   return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
+  // }
 
   CURRENCIES.BitcoinCash.formatBalance = balance => {
-    return balance ? new Big(parseFloat(balance) / 100000000).toString() : balance
+    return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
   }
 
   CURRENCIES.Litecoin.formatBalance = balance => {
-    return balance ? new Big(parseFloat(balance) / 100000000).toString() : balance
+    return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
   }
 
   export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
@@ -106,11 +105,11 @@ namespace wlt {
   })
 
   // refresh visible balance for wallet page entries and fill aggregated balances (currency balances per account)
-  export function refreshBalances() {
+  export function refreshBalances(onlyAggregated = false) {
     let ab = aggregatedBalances = {}
     let cbs = Array.from(currencyBalanceCache.values())
     for (const cb of cbs) {
-      if (cb.refresh && cb.displayed()) cb.refresh()
+      if (!onlyAggregated && cb.refresh && cb.displayed()) cb.refresh()
 
       if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
       let bs = ab[cb.walletEntry.account]

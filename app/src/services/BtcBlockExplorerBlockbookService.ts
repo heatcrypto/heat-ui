@@ -55,8 +55,8 @@ class BtcBlockExplorerBlockbookService implements IBitcoinAPIList {
     this.http.get(url, true).then(response => {
       let parsed = utils.parseResponse(response)
       if (parsed.heatUtilParsingError) deferred.reject(parsed.heatUtilParsingError)
-      let unconfirmedBalance = parseInt(parsed.balance) + parseInt(parsed.unconfirmedBalance)
-      wlt.saveCurrencyBalance(address, "BTC", parsed.balance, unconfirmedBalance.toString()).then(() => deferred.resolve(parsed))
+      // let unconfirmedBalance = parseInt(parsed.unconfirmedBalance)
+      wlt.saveCurrencyBalance(address, "BTC", parsed.balance).then(() => deferred.resolve(parsed))
     }, (reason) => {
       deferred.reject(reason);
     })
