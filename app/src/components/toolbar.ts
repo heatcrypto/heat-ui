@@ -82,7 +82,10 @@
             <div class="user">
               <div class="small-logo" ng-if="!vm.isBetanet" ng-click="vm.checkLogin()" ></div>
               <h2 ng-if="vm.user.unlocked">
-                <div class="account-name">{{vm.user.accountName}}</div>
+                <div class="account-name">
+                    {{vm.user.account}}
+                    <md-tooltip md-delay="400">{{vm.user.accountName}}</md-tooltip>
+                </div>
                 <div>
                   <user-balance ng-if="vm.user.unlocked"></user-balance>
                 </div>
