@@ -164,6 +164,10 @@ class LightwalletService {
         /* look up its data on ethBlockExplorerService */
         self.ethBlockExplorerService.refresh().then(() => {
           self.loadAddressInfo(walletAddress).then((walletAddress: WalletAddress) => {
+            if (!walletAddress) {
+              resolve(false)
+              return
+            }
             emptyAddressCounter++
             if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
 
