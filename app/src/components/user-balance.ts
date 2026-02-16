@@ -20,14 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Component({
   selector: 'userBalance',
   template: `
     <div layout="column">
       <span>
         <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
-        <span class="balance">{{vm.formattedBalance}}</span>
-        <span class="fraction">{{vm.formattedFraction}}</span>&nbsp;
+        <span class="balance">{{vm.formattedBalance}}</span><span class="fraction">{{vm.formattedFraction}}</span>
         <span class="currencyName">{{vm.user.currency.symbol}}</span>
         <md-icon ng-if="vm.showError" md-font-library="material-icons">error</md-icon>
       </span>
@@ -74,7 +74,7 @@ class UserBalanceComponent {
       this.loading = true
     })
 
-    let f = (balance: string) => {
+    let formatBalance = (balance: string) => {
       let formatted = balance.split(".")
       this.formattedBalance = formatted[0]
       this.formattedFraction = "." + (formatted[1]||"00")
@@ -82,13 +82,20 @@ class UserBalanceComponent {
       this.loading = false
     }
 
-    let aggregatedBalance = wlt.aggregatedBalances[this.user.account]
-    aggregatedBalance = aggregatedBalance ? aggregatedBalance[this.user.currency.symbol] : null
-    if (aggregatedBalance)  f('' + aggregatedBalance)
+    let ab = wlt.aggregatedBalances[this.user.account]
+    ab = ab ? ab[this.user.currency.symbol] : undefined
+    if (!angular.isUndefined(ab)) {
+      let b = this.user.currency.symbol == 'HEAT' ? utils.formatHeat('' + ab) : '' + ab
+      formatBalance(b)
+    }
     //update balance for currency
     this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
-        if (!aggregatedBalance)  f(balance)
+        if (this.user.currency.symbol == 'HEAT') {
+          formatBalance(utils.formatHeat(balance))
+        } else {
+          if (angular.isUndefined(ab)) formatBalance(balance)
+        }
       });
     }, (error: ServerEngineError) => {
       this.$scope.$evalAsync(() => {

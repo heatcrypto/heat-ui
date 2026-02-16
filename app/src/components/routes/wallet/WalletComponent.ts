@@ -812,7 +812,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
 
     this.heat.api.getAccountByNumericId(heatAccount).then((account) => {
       this.$scope.$evalAsync(() => {
-        heatCurrencyBalance.balance = utils.formatQNT(account.unconfirmedBalance, 8)
+        heatCurrencyBalance.balance = utils.convertToQNTNew(account.unconfirmedBalance)
       })
       this.getAccountAssets(heatAccount).then((assetInfos) => {
         heatCurrencyBalance.tokens = []

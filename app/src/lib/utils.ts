@@ -23,6 +23,8 @@
 declare var BigInteger;
 module utils {
 
+  const ONE_100_MILLIONS = new Big(100000000)
+
   /**
    * Remove commas notation from a float number
    */
@@ -227,8 +229,12 @@ module utils {
   }
 
   export function formatQNT(quantity: string, decimals?: number, returnNullZero?: boolean): string {
-    let asfloat = utils.convertToQNTf(quantity);
-    let cf = utils.commaFormat(asfloat);
+    let amount = utils.convertToQNTf(quantity)
+    return formatHeat(amount, decimals, returnNullZero)
+  }
+
+  export function formatHeat(amount: string, decimals?: number, returnNullZero?: boolean): string {
+    let cf = utils.commaFormat(amount);
     let parts = cf.split('.');
     let result;
     if (!parts[1]) {
@@ -328,10 +334,12 @@ module utils {
     return quantity + afterComma;
   }
 
-  const DIVIDER_100_MILIONS = new Big(100000000)
+  export function convertToQNTNew(quantity: string): string {
+    return new Big(quantity).div(ONE_100_MILLIONS).toFixed()
+  }
 
   export function calculateTotalOrderPriceQNT(quantityQNT: string, priceQNT: string): string {
-    return new Big(quantityQNT).times(new Big(priceQNT).div(DIVIDER_100_MILIONS)).round().toString();
+    return new Big(quantityQNT).times(new Big(priceQNT).div(ONE_100_MILLIONS)).round().toString();
   }
 
   export class ConvertToQNTError implements Error  {
