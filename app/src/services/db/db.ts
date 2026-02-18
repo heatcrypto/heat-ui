@@ -165,7 +165,14 @@ namespace db {
                 return db0.walletItem.put(Object.assign(id, props))
             }
         }).catch(error => {
-            console.error("Error saving record:", error)
+            console.error("Error saving record: ", error)
+        })
+    }
+
+    export function putWalletItem(itemKey: string, currencySym: string, parent: string, props?: any): Promise<any> {
+        let id = {itemKey, currencySym}
+        return db0.walletItem.put(Object.assign(id, {parent}, props)).catch(error => {
+            console.error("Error saving record: ", error)
         })
     }
 

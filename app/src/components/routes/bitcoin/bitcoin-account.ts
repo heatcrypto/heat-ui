@@ -43,7 +43,7 @@ type PendingType = {
       <div layout="row" class="explorer-detail">
         <div layout="column">
           <div class="col-item">
-            <div class="title">Address: <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span></div>
+            <div class="title">Address:</div>
             <div class="value">
               <a href="#/bitcoin-account/{{vm.account}}" ng-class="{'external-address': !vm.ownAddress}">{{vm.account}}</a>
             </div>
@@ -54,13 +54,15 @@ type PendingType = {
             </div>
             <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} BTC
-              <span ng-if="!angular.isUndefined(vm.balance)" style="font-size: small; opacity: 0.7">
-                    <br>{{vm.balance}} (confirmed)
+              <span ng-if="vm.balance" style="font-size: small; opacity: 0.7">
+                <br>{{vm.balance}} (confirmed)
               </span>
+              <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span>
             </div>
             <div class="value" ng-if="!vm.balanceUnconfirmed || vm.balanceUnconfirmed == vm.balance">
               {{vm.balance}} BTC
               <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
+              <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span>
             </div>
 
           </div>
@@ -86,7 +88,7 @@ type PendingType = {
                 <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txId}}">{{item.txId}}</a>
               </div>
               <div class="truncate-col left" ng-if="item.message">
-                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
               </div>
@@ -199,7 +201,7 @@ class BitcoinAccountComponent {
       })
     }
 
-    if (cb) {
+    if (cb?.refresh) {
       cb.refresh().then(balanceAmount => {
         this.balanceUnconfirmed = balanceAmount
         getSaved()

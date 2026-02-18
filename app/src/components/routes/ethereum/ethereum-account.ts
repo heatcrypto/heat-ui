@@ -40,7 +40,7 @@
       <div layout="row" class="explorer-detail">
         <div layout="column">
           <div class="col-item">
-            <div class="title">Address: <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span></div>
+            <div class="title">Address:</div>
             <div class="value">
               <a ng-click="vm.addressDetails($event, vm.account)" ng-class="{'external-address': !vm.ownAddress}">{{vm.account}}</a>
             </div>
@@ -49,11 +49,13 @@
             <div class="title">Balance:</div>
             <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} ETH
-              <span ng-if="!angular.isUndefined(vm.balance)" style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
+              <span ng-if="vm.balance" style="font-size: small; opacity: 0.7"><br>{{vm.balance}} (confirmed)</span>
               <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp; (cached)</span>
+              <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span>
             </div>
             <div class="value" ng-if="!vm.balanceUnconfirmed || vm.balanceUnconfirmed == vm.balance">
               {{vm.balance}} ETH
+              <span ng-if="!vm.ownAddress" class="external-address" style="float: right">[EXTERNAL]</span>
             </div>
           </div>
         </div>
@@ -93,7 +95,7 @@
                 <a target="_blank" rel="noopener noreferrer" href="https://eth1.heatwallet.com/api/v2/tx/{{item.txHash}}">{{item.txHash}}</a>
               </div>
               <div class="truncate-col left" ng-if="item.message">
-                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
               </div>
@@ -211,10 +213,29 @@ class EthereumAccountComponent {
 
   refresh() {
     let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.account)
-
-    if (cb) {
+    if (cb?.refresh) {
       cb.refresh().then(balanceAmount => {
         this.balanceUnconfirmed = balanceAmount
+
+        if (cb.tokens?.length > 0) {
+          this.erc20Tokens = cb.tokens.map(token => {
+            let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.address]
+            let balance = token.balance
+              ? utils.formatERC20TokenAmount(new Big(token.rawBalance + "").toFixed(), tokenInfo ? tokenInfo.decimals : 18)
+              : ""
+            return {
+              balance: balance,
+              symbol: token.symbol,
+              name: token.name,
+              id: '',
+              rawBalance: token.rawBalance,
+              contractAddress: token.address,
+              decimals: token.decimals
+            }
+          }).sort((a, b) => a.symbol.localeCompare(b.symbol))
+
+          this.user.currency['erc20Tokens'] = this.erc20Tokens
+        }
       })
     } else {
       wlt.getSavedCurrencyBalance(this.account, "ETH").then(balances => {
