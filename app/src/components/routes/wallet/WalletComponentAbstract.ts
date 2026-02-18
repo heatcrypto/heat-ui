@@ -220,6 +220,8 @@ namespace wlt {
           for (const balance of wa.tokensBalances || []) {
             let tokenBalance = currencyBalance.tokens[i] || new wlt.TokenBalance(walletEntry, balance.name, balance.symbol, balance.address)
             tokenBalance.balance = balance.balance
+            tokenBalance.rawBalance = balance.rawBalance
+            tokenBalance.decimals = balance.decimals
             tokenBalance.visible = currencyBalance.expanded
             if (!currencyBalance.tokens[i]) currencyBalance.tokens.push(tokenBalance)
             i++

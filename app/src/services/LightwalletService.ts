@@ -51,6 +51,7 @@ declare type WalletAddress = {
     decimals: number;
     balance: string;
     address: string;
+    rawBalance?: string;
   }>
 }
 declare type WalletAddresses = {
@@ -132,6 +133,7 @@ class LightwalletService {
             name: tokenInfo ? tokenInfo.name : '',
             decimals: decimals,
             balance: utils.formatERC20TokenAmount(amount, decimals),
+            rawBalance: token.rawBalance,
             address: token.tokenInfo.address
           })
         })
