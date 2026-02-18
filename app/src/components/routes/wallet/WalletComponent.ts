@@ -50,10 +50,10 @@
     .wallet-entries md-list-item {
       transition: background-color 0.4s ease;
     }
-    
+
     .wallet-entries md-list-item:hover {
       background-color: #7d7ca973;
-    }  
+    }
   `,
   template: `
    <!--  layout-align="start center" -->
@@ -67,7 +67,7 @@
             Import File
           </label>
         </md-button>
-        
+
         <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files); angular.element(this).val(null)" class="ng-hide" id="walet-input-file">
 
         <!-- Adds a wallet seed (heat secret phrase or bip44 eth/btc seed) -->
@@ -85,11 +85,11 @@
         <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
           <md-option style="height: 30px;"ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
         </md-select>
-        
+
         <md-checkbox ng-model="vm.displayUnlocked" style="margin: 8px 26px 0 auto;">
           Display unlocked only
         </md-checkbox>
-        
+
         <md-button ng-click="vm.unlock($event)" class="md-primary md-raised" aria-label="Unlock account">
           Unlock
         </md-button>
@@ -167,7 +167,7 @@
                         Remove account
                       </md-button>
                     </md-menu-item>
-                    
+
                     <md-menu-divider></md-menu-divider>
 
                     <md-menu-item>
@@ -209,7 +209,7 @@
                           </md-menu-content>
                       </md-menu>
                     </md-menu-item>
-                    
+
                   </md-menu-content>
                 </md-menu>
               </div>
@@ -406,7 +406,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       this.chains[index] = ardorChain
     })
 
-    let promise = this.$interval(wlt.refreshBalances, 14000)
+    let promise = this.$interval(() => wlt.refreshBalances(), 14000)
 
     this.$scope.$on('$destroy', () => {
       WalletComponent.displayUnlocked = this.displayUnlocked
@@ -416,7 +416,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     this.initLocalKeyStore()
     //wlt.initCreatedAddresses()
 
-    setTimeout(wlt.refreshBalances, 1000)
+    setTimeout(() => wlt.refreshBalances(), 1000)
   }
 
   enterWalletEntryLabel(walletEntry: wlt.WalletEntry) {
@@ -515,8 +515,8 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               signature: sign(result[0])
             },
             style: `.sbm-value {
-              font-family: monospace; 
-              font-size: larger; 
+              font-family: monospace;
+              font-size: larger;
               color: darkgrey;
             }
             `,

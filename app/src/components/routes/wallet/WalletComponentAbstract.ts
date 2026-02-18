@@ -211,8 +211,12 @@ namespace wlt {
       let pendingService: EthereumPendingTransactionsService = heat.$inject.get('ethereumPendingTransactions')
 
       let createBalance = (walletAddress: WalletAddress) => {
-        let fillBalances = (currencyBalance: wlt.CurrencyBalance, wa: WalletAddress) => {
+        let fillBalances = (currencyBalance: wlt.CurrencyBalance, wa: WalletAddress, balance: string) => {
           let pendingAmount = pendingService.getPendingAmount(currencyBalance.address)
+          if (!wa) {
+            currencyBalance.balance = String(parseFloat(balance) - parseFloat(pendingAmount))
+            return
+          }
           if (wa.balance) currencyBalance.balance = String(parseFloat(wa.balance) - parseFloat(pendingAmount))
           if (!(wa.tokensBalances?.length > 0)) return
           //do not recreate new token objects but update existed because of usage tokens in the wallet entry list that exposed in the UI
@@ -229,15 +233,24 @@ namespace wlt {
         }
 
         let cb = new wlt.CurrencyBalance(walletEntry, 'Ethereum', 'ETH', walletAddress.address, walletAddress.privateKey, walletAddress.index)
-        fillBalances(cb, walletAddress)
 
         cb.refresh = () => {
           return this.lightwalletService.loadAddressInfo(walletAddress).then(walletAddress => {
             if (!walletAddress) return
-            fillBalances(cb, walletAddress)
+            cb.stateMessage = null
+            fillBalances(cb, walletAddress, null)
             return cb.balance
+          }, reason => {
+            return wlt.getSavedCurrencyBalance(walletAddress.address, "ETH").then(r => {
+              let b = r.confirmed
+              fillBalances(cb, null, b)
+              return cb.balance
+            })
           })
         }
+
+        if (walletAddress.balance) fillBalances(cb, walletAddress, null)
+        else cb.refresh()
 
         return cb
       }
@@ -264,13 +277,22 @@ namespace wlt {
           return btcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
                 cb.stateMessage = null
                 cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
-                let pendingAmount = pendingService.getPendingAmount(cb.address)
-                if (cb.balance) cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
+                if (cb.balance) {
+                  let pendingAmount = pendingService.getPendingAmount(cb.address)
+                  cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
+                }
                 return cb.balance
               },
               reason => {
-                console.error(reason)
-                return ''
+                return wlt.getSavedCurrencyBalance(walletAddress.address, "BTC").then(r => {
+                  let balance = r.confirmed
+                  cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
+                  if (cb.balance) {
+                    let pendingAmount = pendingService.getPendingAmount(cb.address)
+                    cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
+                  }
+                  return cb.balance
+                })
               }
           )
         }

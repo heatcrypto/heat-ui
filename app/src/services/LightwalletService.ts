@@ -139,8 +139,6 @@ class LightwalletService {
         })
       }
       return walletAddress
-    }, (reason) => {
-      console.error(reason)
     })
   }
 
