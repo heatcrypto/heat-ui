@@ -38,8 +38,9 @@ class HEATCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.heat.api.getAccountBalanceVirtual(this.address, "0", "0", 1).then(
       balance => {
-        var formatted = utils.formatQNT(balance.virtualBalance, 8)
-        return formatted
+        return utils.convertToQNTNew(balance.virtualBalance)
+        // var formatted = utils.formatQNT(balance.virtualBalance, 8)
+        // return formatted
       }
     )
   }

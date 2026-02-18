@@ -84,7 +84,7 @@ class UserBalanceComponent {
 
     let ab = wlt.aggregatedBalances[this.user.account]
     ab = ab ? ab[this.user.currency.symbol] : undefined
-    if (!angular.isUndefined(ab)) {
+    if (utils.isNumber(ab)) {
       let b = this.user.currency.symbol == 'HEAT' ? utils.formatHeat('' + ab) : '' + ab
       formatBalance(b)
     }
