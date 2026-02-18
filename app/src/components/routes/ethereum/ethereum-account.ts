@@ -146,13 +146,19 @@ class EthereumAccountComponent {
     let promise = this.$interval(this.timerHandler.bind(this), 20000)
     this.timerHandler()
 
-    this.$scope.$on('$destroy', () => {
-      this.pendingService.removeListener(listener)
-      this.$interval.cancel(promise)
-    })
-
     db.getWalletItem(db.compactHash(this.account), 'ETH').then(item => {
       this.ownAddress = !!item
+    })
+
+    let ethCurrency = <ETHCurrency>this.user.currency
+    let sentListener = () => {
+    }
+    ethCurrency.on(wlt.EVENT_ETH_SENT, sentListener)
+
+    this.$scope.$on('$destroy', () => {
+      this.pendingService.removeListener(listener)
+      ethCurrency.removeListener(wlt.EVENT_ETH_SENT, sentListener)
+      this.$interval.cancel(promise)
     })
   }
 
@@ -206,8 +212,11 @@ class EthereumAccountComponent {
         this.pendingTransactions.sort((a, b) => b.timestamp - a.timestamp)
         setTimeout(() => this.loadPaymentMessages(), 1500)
       }
-      let promise = this.$interval(() => wlt.refreshBalances(true), 4000, 33)
+      let promise = this.$interval(() => wlt.refreshBalances(true), 2000, 33)
       setTimeout(() => this.$interval.cancel(promise), 133000)
+
+      wlt.refreshBalances(true)
+      this.refresh()
     })
   }
 

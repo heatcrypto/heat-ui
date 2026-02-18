@@ -125,7 +125,7 @@
 
             <!-- MEMO -->
             <div ng-if="item.message" class="truncate-col left" flex>
-                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
                 {{item.message.text}}
                 <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
             </div>
@@ -228,7 +228,9 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
   }
 
   updateOnNewTransaction(pendingTxRemoved) {
-    if (!pendingTxRemoved) {
+    if (pendingTxRemoved) {
+      setTimeout(this.determineLength.bind(this), 500)
+    } else {
       let interval = setInterval(this.determineLength.bind(this), 7 * 1000)
       setTimeout(() => clearInterval(interval), 50 * 1000)
     }

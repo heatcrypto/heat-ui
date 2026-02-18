@@ -23,6 +23,8 @@
 
 namespace wlt {
 
+  export const EVENT_ETH_SENT = 'EVENT_ETH_SENT'
+
   export type SearchResultExplainedType = {
     searchResultExplained: {
       account: string;

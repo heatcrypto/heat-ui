@@ -33,7 +33,7 @@ type TokenDescriptor = {
 
 type ERC20TokensType = Array<TokenDescriptor>
 
-class ETHCurrency implements ICurrency {
+class ETHCurrency extends EventEmitter implements ICurrency {
 
   private ethBlockExplorerService: EthBlockExplorerService
   public symbol = wlt.CURRENCIES.Ethereum.symbol
@@ -46,6 +46,7 @@ class ETHCurrency implements ICurrency {
   public erc20Tokens: ERC20TokensType
 
   constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
+    super()
     this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
@@ -125,12 +126,13 @@ class ETHCurrency implements ICurrency {
           let timestamp = Date.now()
           let totalAmount= Number(data.amount) + Number(data.fee)
           this.pendingService.add(address, data.txId, timestamp, totalAmount)
+          this.emit(wlt.EVENT_ETH_SENT)
           return wlt.getHeatUnavailableReason(heatService, this.user.account)
-          .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
-          //.then(isPaymentMemo => todo refresh memo in the transaction list)
-          .catch(reason => {
-            if (reason) console.error(reason)
-          })
+            .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+            //.then(isPaymentMemo => todo refresh memo in the transaction list)
+            .catch(reason => {
+              if (reason) console.error(reason)
+            })
         }
       })
     })
@@ -295,6 +297,7 @@ class ETHCurrency implements ICurrency {
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
         // let provider = vm.broadcastProvider[vm.broadcastProviderIndex]
+        // Promise.resolve({txId: '0x' + heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
         vm.broadcastProvider.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
@@ -409,7 +412,7 @@ class ETHCurrency implements ICurrency {
               <div class="md-toolbar-tools">
                 <h2 ng-if="vm.transferDescriptor == 'ETH'">Send Ether</h2>
                 <h2 ng-if="vm.transferDescriptor != 'ETH'">Send ERC20 tokens "{{vm.transferName}}"</h2>
-                <span style="margin-left: 20px;color: grey;font-size: small;">from 
+                <span style="margin-left: 20px;color: grey;font-size: small;">from
                     <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
                 </span>
               </div>
@@ -453,11 +456,11 @@ class ETHCurrency implements ICurrency {
                   </md-checkbox>
                 </p>
               </div>
-              
+
               <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
                 {{vm.errorMessage}}
               </div>
-              
+
               <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <label>Transaction bytes</label>
                   <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
@@ -467,13 +470,13 @@ class ETHCurrency implements ICurrency {
                     <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
                   </a>
               </md-input-container>
-              
+
               <div flex ng-if="(vm.stage=='broadcast' || vm.stage=='insertedBytes') && vm.parsedTx">
                 <label>Parsed transaction bytes report</label>
                 <div ng-if="vm.parsedTx.gasPriceMessage" style="color: indianred; font-size: small">{{vm.parsedTx.gasPriceMessage}}</div>
                 <json-details data="vm.parsedTx" detailed-object="vm.parsedTx" fields="vm.parsedTxFields" compact="true"></json-details>
               </div>
-              
+
               <!--<md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
                   <p>Broadcast provider: <code>&nbsp;&nbsp;{{vm.broadcastProvider[vm.broadcastProviderIndex].getEndPoint()}}</code></p>
                   <md-radio-group ng-model="vm.broadcastProviderIndex" layout="row" ng-change="vm.broadcastProviderChanged()">
@@ -481,9 +484,9 @@ class ETHCurrency implements ICurrency {
                     <md-radio-button value = 1>{{vm.broadcastProvider[1].getProviderName()}}</md-radio-button>
                   </md-radio-group>
               </md-input-container>-->
-                
+
             </md-dialog-content>
-            
+
             <md-dialog-actions layout="row">
 <!--
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
@@ -496,16 +499,16 @@ class ETHCurrency implements ICurrency {
                 <span ng-hide="vm.broadcastProvider">Default</span>
               </md-switch>
 -->
-        
+
               <span flex></span>
-        
+
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
               <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
                   class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
-              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes')" 
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes')"
                   ng-disabled="!vm.parsedTx" ng-click="vm.okButtonClick()"
                   class="md-primary" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
