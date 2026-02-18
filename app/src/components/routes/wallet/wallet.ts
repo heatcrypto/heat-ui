@@ -50,9 +50,9 @@ namespace wlt {
   //   return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
   // }
 
-  CURRENCIES.BitcoinCash.formatBalance = balance => {
-    return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
-  }
+  // CURRENCIES.BitcoinCash.formatBalance = balance => {
+  //   return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
+  // }
 
   CURRENCIES.Litecoin.formatBalance = balance => {
     return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance

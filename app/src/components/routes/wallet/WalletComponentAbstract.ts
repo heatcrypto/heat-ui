@@ -288,16 +288,17 @@ namespace wlt {
 
       let createBalance = (walletAddress: WalletAddress) => {
         let cb = new wlt.CurrencyBalance(walletEntry, 'BitcoinCash', 'BCH', walletAddress.address, walletAddress.privateKey, walletAddress.index)
-        cb.balance = walletAddress.balance ? new Big(walletAddress.balance).times(new Big(100000000)).toString() : ""
+        cb.balance = walletAddress.balance
         let bchBlockExplorerService: BchBlockExplorerService = heat.$inject.get('bchBlockExplorerService')
 
         cb.refresh = () => {
-          return bchBlockExplorerService.getBalance(walletAddress.address).then(
-              balance => cb.balance = String(balance),
-              reason => {
-                console.error(reason)
-                return ''
-              }
+          return bchBlockExplorerService.getBalance(walletAddress.address).then(balance => {
+              return cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
+          },
+          reason => {
+            console.error(reason)
+            return ''
+          }
           )
         }
 

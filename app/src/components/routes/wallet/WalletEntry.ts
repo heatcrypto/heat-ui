@@ -50,6 +50,8 @@ namespace wlt {
   export class TokenBalance extends SubEntryAbstract {
     public isTokenBalance = true
     public balance: string
+    public rawBalance: string
+    public decimals: number
 
     constructor(public walletEntry: WalletEntry, public name: string, public symbol: string, public address: string) {
       super()
@@ -76,10 +78,18 @@ namespace wlt {
       this.walletEntry = walletEntry
       wlt.getEntryVisibleLabel(this.walletEntry.account, symbol, address).then(value => this.visibleLabel = value)
 
-      if (this.isCurrencyBalance && this.symbol) {
-        db.getWalletItem(db.compactHash(address), this.symbol).then(item => {
-          // this.creationTimestamp may be filled in sync call (for HEAT) and should not be overwritten
-          this.creationTimestamp = this.creationTimestamp || item?.creationTimestamp
+      if (this.symbol) {
+        let itemKey = db.compactHash(address)
+        db.getWalletItem(itemKey, this.symbol).then(item => {
+          if (item) {
+            // this.creationTimestamp may be filled in sync call after this constructor (for HEAT) and should not be overwritten
+            this.creationTimestamp = this.creationTimestamp || item.creationTimestamp
+            if (!item.parent) {
+              db.updateWalletItem(itemKey, this.symbol, {parent: walletEntry.account})
+            }
+          } else {
+            db.putWalletItem(itemKey, this.symbol, walletEntry.account)
+          }
         })
       }
 
@@ -302,6 +312,7 @@ namespace wlt {
 
       if (nextAddress) {
         nextAddress.isDeleted = false
+        // todo single point for creation CurrencyBalance because here there is no CurrencyBalance.refresh is defined
         let newCurrencyBalance = new CurrencyBalance(this.walletEntry, currencyName, currencySymbol, nextAddress.address, nextAddress.privateKey, nextAddress.index)
         newCurrencyBalance.walletEntry = component.walletEntries.find(c => c.account == this.walletEntry.account)
         //rememberAddressCreated(this.walletEntry.account, nextAddress.address)
