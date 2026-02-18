@@ -190,17 +190,17 @@ namespace importExport {
               })
           )
         })
-        return Promise.all(promises1)
-      }).then(() => keysToRemove)
-    }).then((keysToRemove: string[]) => {
-      //remove records from IndexedDB to prevent duplicate imports in the future
-      let p = Promise.resolve()
-      for (const key of keysToRemove) {
-        p = p.then(() => db.removeValue(key))
-      }
-      return p.then(() => {
-        if (keysToRemove.length > 0) console.log(`account ${account}, cleared ${keysToRemove.length} records`)
-      })
+        return Promise.allSettled(promises1)
+      }).then(() => keysToRemove)})
+      .then((keysToRemove: string[]) => {
+        //remove records from IndexedDB to prevent duplicate imports in the future
+        let p = Promise.resolve()
+        for (const key of keysToRemove) {
+          p = p.then(() => db.removeValue(key))
+        }
+        return p.then(() => {
+          if (keysToRemove.length > 0) console.log(`account ${account}, cleared ${keysToRemove.length} records`)
+        })
     }).catch(error => console.error(error))
   }
 
