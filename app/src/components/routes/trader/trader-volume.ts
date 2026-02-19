@@ -22,7 +22,7 @@
  * */
 @Component({
   selector: 'traderVolume',
-  inputs: ['currencyInfo','assetInfo'],
+  inputs: ['market','currencyInfo','assetInfo'],
   template: `
     <div layout="row" flex layout-fill layout-align="end">
       <div class="label">24h change</div>
@@ -42,6 +42,7 @@
 class TraderVolumeComponent {
 
   // inputs
+  market: IHeatMarket; // @input
   currencyInfo: AssetInfo; // @input
   assetInfo: AssetInfo; // @input
 

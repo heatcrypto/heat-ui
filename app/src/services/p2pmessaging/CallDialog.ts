@@ -28,33 +28,34 @@ module p2p {
    */
   export class CallDialog extends GenericDialog {
 
-    private channelListener: IEventListenerFunction;
-
     constructor($event,
-                private heat: HeatService,
+                private heatService: HeatService,
                 private user: UserService,
                 private recipient: string,
                 private recipientPublicKey: string,
+                private messageText: string,
                 private p2pmessaging: P2PMessaging) {
       super($event);
-      this.dialogTitle = 'Send offchain connect request';
-      this.dialogDescription = 'Connect other user to establish the peer-to-peer channel';
-      this.okBtnTitle = 'Connect';
-      this.okBtn['processing'] = false;
+      this.dialogTitle = 'Send offchain message to the new contact';
+      this.dialogDescription = 'Send offchain message to the new contact';
+      this.okBtnTitle = 'Send';
       this.customFeeTitle = 'NO FEE';
       this.okBtn['disabled'] = !recipient;
     }
 
     /* @override */
     getFields($scope: angular.IScope) {
-      var builder = new DialogFieldBuilder($scope);
+      let builder = new DialogFieldBuilder($scope);
       return [
         builder
           .account('recipient', this.recipient)
           .label('Counterparty HEAT account id')
           .required()
           .onchange(newValue => this.onChangeRecipient($scope, newValue)),
-        // builder.text('note', '').readonly(true),
+        builder.text('messageText', this.messageText)
+          .rows(2)
+          .required(false)
+          .label('Message'),
         builder.hidden('recipientPublicKey', this.recipientPublicKey)
       ]
     }
@@ -64,60 +65,76 @@ module p2p {
     }
 
     okBtn() {
-      this.okBtn['processing'] = true;
-      this.heat.api.getPublicKey(this.fields['recipient'].value).then(
+      this.heatService.api.getPublicKey(this.fields['recipient'].value).then(
         (publicKey) => {
-          let room = this.p2pmessaging.getOneToOneRoom(publicKey);
-          if (this.p2pmessaging.isPeerConnected(publicKey)) {
-            this.okBtn['mdDialog'].hide(room);
-            return;
-          }
-
-          setTimeout(() => {
-            this.okBtn['scope'].$evalAsync(() => {
-              this.okBtn['processing'] = false;
-            });
-          }, 7000);
-
-          room = this.p2pmessaging.call(publicKey);
-
-          /*
-          listen WebRTC channel to close this dialog on connected event
-          */
-          //remove previous listener
-          if (this.channelListener) {
-            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-          }
-          this.channelListener = (roomParam: p2p.Room, peerId: string) => {
-            if (roomParam.name == room.name) {
-              this.okBtn['mdDialog'].hide(room);
-              this.okBtn['processing'] = false;
-              this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-            }
-          };
-          this.p2pmessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-          //todo it is not good way to remove the listener. It is better to do it in the  dialog.show.finally(...)
-          setTimeout(() => {
-            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
-          }, 60 * 1000);
-
-          let peerAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
-          this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
-            let expectedAccount = accounts.find(value => value.publicKey == publicKey);
-            if (expectedAccount) {
-              this.p2pmessaging.saveContact(peerAccount, publicKey, expectedAccount.publicName, -Date.now());
-            }
-          });
+          return this.doCall(publicKey)
         }, reason => {
-          this.okBtn['processing'] = false;
+          if (reason.description) {
+            let $mdToast = <angular.material.IToastService>heat.$inject.get('$mdToast')
+            $mdToast.show($mdToast.simple().textContent(
+              "Error: \n" + reason.description
+            ).hideDelay(5000))
+          } else {
+            console.error(reason)
+          }
         }
-      );
+      )
     }
 
     private onChangeRecipient($scope: angular.IScope, newRecipient) {
       $scope.$evalAsync(() => {
         this.okBtn['disabled'] = this.user.account == newRecipient;
       });
+    }
+
+    private close(room) {
+      this.okBtn['mdDialog'].hide(room);
+    }
+
+    doCall = (publicKey) => {
+      let room = this.p2pmessaging.getOneToOneRoom(publicKey);
+      if (this.p2pmessaging.isPeerConnected(publicKey)) {
+        this.okBtn['mdDialog'].hide(room);
+        return;
+      }
+
+      let recipientAccount = heat.crypto.getAccountIdFromPublicKey(publicKey);
+      let contactService = <ContactService>heat.$inject.get('contactService');
+      let $mdToast = <angular.material.IToastService>heat.$inject.get('$mdToast')
+      return contactService.saveContact(publicKey, null, -Date.now()).then(saveContactResult => {
+        if (saveContactResult) {
+          room = this.p2pmessaging.requestNewContact(publicKey, this.fields['messageText'].value);
+          this.close(room)
+        } else {
+          $mdToast.show($mdToast.simple().textContent(
+              "Cannot save contact. Message is not sent"
+          ).hideDelay(4000));
+        }
+
+        /*
+        listen WebRTC channel to close this dialog on connected event
+        */
+        //remove previous listener
+        /*if (this.channelListener) {
+          this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+        }
+        this.channelListener = (roomParam: p2p.Room, peerId: string) => {
+          if (roomParam.name == room.name) {
+            this.okBtn['mdDialog'].hide(room);
+            this.okBtnReplacingText = null;
+            this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+          }
+        };
+        this.p2pmessaging.on(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+        //todo it is not good way to remove the listener. It is better to do it in the  dialog.show.finally(...)
+        setTimeout(() => {
+          this.p2pmessaging.removeListener(P2PMessaging.EVENT_ON_OPEN_DATA_CHANNEL, this.channelListener);
+        }, 60 * 1000);*/
+      }, reason => {
+        $mdToast.show($mdToast.simple().textContent(
+            "Error on saving contact. Message is not sent. " + reason
+        ).hideDelay(4000));
+      })
     }
 
   }

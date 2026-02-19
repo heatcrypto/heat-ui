@@ -52,11 +52,20 @@ abstract class VirtualRepeatComponent {
   protected decorator: (item:any,context:any)=>void;
   protected preprocessor: (firstIndex:number, lastIndex:number, items: Array<any>)=>void;
   protected PAGE_SIZE = 20; // number of items per page
-  protected loadedPages = {};
+  protected loadedPages = {
+    dirty: true,
+    inProgress: false
+  };
   protected numItems = -1;
   public topIndex = 0;
   public selected = null;
   public loading: boolean = true;
+
+  private fetchPageDebounced;
+
+  // if variable cache is defined in the descendant the cache is enabled for descendant
+  protected cache: {get: (key) => Promise<any>, put: (key, value) => Promise<any>}
+  public cachedItems = false
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService) {}
@@ -68,36 +77,48 @@ abstract class VirtualRepeatComponent {
     this.provider = provider;
     this.decorator = decorator;
     this.preprocessor = preprocessor;
+    this.fetchPageDebounced = utils.debounce(this.fetchPage, 600);
     return this.determineLength();
   }
 
   /* md-virtual-repeat */
   public getItemAtIndex(index: number) {
-    var pageNumber = Math.floor(index / this.PAGE_SIZE);
-    var page = this.loadedPages[pageNumber];
+    if (index >= this.getLength()) return
+    let pageNumber = Math.floor(index / this.PAGE_SIZE);
+    let item
+    let page = this.loadedPages[pageNumber];
     if (page) {
-        var item = page[index % this.PAGE_SIZE];
+        item = page[index % this.PAGE_SIZE];
         if (!this.selected) {
           this.selected = item;
         }
-        return item;
     }
-    else if (page !== null) {
-        this.fetchPage(pageNumber);
+    if (!page || this.loadedPages.dirty) {
+      if (!this.loadedPages.inProgress) {
+        setTimeout(() => this.fetchPageDebounced(pageNumber, this.loadedPages.dirty), 200)
+        this.loadedPages.inProgress = true
+        this.loadedPages.dirty = false
+      }
     }
+    return item
   }
 
   /* md-virtual-repeat */
   public getLength(): number {
-    return this.numItems;
+    return this.numItems
   }
 
   protected determineLength(retain?: boolean): angular.IPromise<number> {
-    let deferred = this.$q.defer<number>();
+    if (!(this.numItems >=0)) this.cache?.get("numItems").then(numItems => this.numItems = numItems ? numItems : this.numItems)
+    let deferred = this.$q.defer<number>()
     if (this.provider) {
-      this.loadedPages = {};
+      this.loadedPages.dirty = true
+      this.loadedPages.inProgress = false
       this.provider.getPaginatedLength().then((length) => {
-        this.numItems = length;
+        if (length >= 0 && this.numItems != length) {
+          this.numItems = length
+          this.cache?.put("numItems", length)
+        }
         if (length == 0) {
           this.$scope.$evalAsync(() => { this.loading = false })
         }
@@ -109,24 +130,47 @@ abstract class VirtualRepeatComponent {
     return deferred.promise;
   }
 
-  protected fetchPage(pageNumber:number) {
-    this.loadedPages[pageNumber] = null;
-    var firstIndex = pageNumber * this.PAGE_SIZE;
-    var lastIndex = firstIndex + this.PAGE_SIZE;
+  protected fetchPage(pageNumber:number, reset?: boolean) {
+    this.loadedPages.inProgress = true
+    let firstIndex = pageNumber * this.PAGE_SIZE
+    let lastIndex = firstIndex + this.PAGE_SIZE
+
+    let processItems = (items: any[]) => {
+      this.$scope.$evalAsync(() => { this.loading = false })
+      if (this.preprocessor && angular.isArray(items)) {
+        this.preprocessor(firstIndex, lastIndex, items)
+      }
+      if (this.decorator && angular.isArray(items)) {
+        items.forEach(item => this.decorator(item, this.loadedPages))
+      }
+      if (reset) {
+        this.loadedPages = {dirty: false, inProgress: false}
+      }
+      this.loadedPages[pageNumber] = items
+      if (!this.cachedItems) {
+        this.loadedPages.inProgress = false
+      }
+    }
+
+    let loadCached = () => {
+      this.cache?.get(pageNumber).then((items: any[]) => {
+        if (!items) return
+        this.cachedItems = true
+        processItems(items)
+      })
+    }
+
     this.provider.getPaginatedResults(firstIndex, lastIndex).then((items) => {
-      this.$scope.$evalAsync(() => { this.loading = false });
-      if (this.preprocessor) {
-        if (angular.isArray(items)) {
-          this.preprocessor(firstIndex,lastIndex,items);
-        }
-      }
-      if (this.decorator) {
-        if (angular.isArray(items)) {
-          items.forEach((item) => { this.decorator(item, this.loadedPages) });
-        }
-      }
-      this.loadedPages[pageNumber] = items;
-    });
+      this.cachedItems = false
+      processItems(items)
+      this.cache?.put(pageNumber, items)
+    }, reason => {
+      console.warn("fetching transactions page error " + (reason ? JSON.stringify(reason) : ""))
+      loadCached()
+    })
+
+    //try to show cached items until not loaded
+    loadCached()
   }
 
   public select(item) {

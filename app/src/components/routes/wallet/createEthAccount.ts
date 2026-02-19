@@ -1,0 +1,168 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2016-2021 HEAT DEX.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * */
+
+function addEthAddress(walletEntry: wlt.WalletEntry, walletComponent: WalletComponent, $mdDialog, candidateAddress?: WalletAddress): Promise<wlt.CurrencyBalance> {
+  let ethSymbol = wlt.CURRENCIES.Ethereum.symbol
+  if (!walletEntry.expanded) walletEntry.toggle()
+  let node = walletEntry.findAddressCreate(ethSymbol)
+  let p: Promise<any>
+  if (node) {
+    p = Promise.resolve()
+  } else {
+    walletEntry.selectedCurrencies = walletEntry.selectedCurrencies || []
+    walletEntry.selectedCurrencies.push(ethSymbol)
+    p = wlt.saveWalletEntryCurrencies(walletEntry.account, walletEntry.selectedCurrencies).then(
+        () => walletComponent.initWalletEntry(walletEntry)
+    )
+  }
+  p = p.then(v => {
+    // load in next event loop to load currency addresses first
+    return utils.delay(600).then(() => {
+      let node = walletEntry.findAddressCreate(ethSymbol)
+      return node?.createEthAddress(walletEntry, candidateAddress)
+    })
+  })
+  return p
+}
+
+
+function createEthAccount($event, walletComponent: WalletComponent) {
+  let walletEntries = walletComponent.walletEntries
+  if (walletEntries.length == 0) return
+
+  function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
+    this.data = {
+      selectedWalletEntry: walletEntries[0],
+      selected: walletEntries[0].account,
+      walletEntries: walletEntries,
+      password: ''
+    }
+
+    this.copySeed = function () {
+      walletComponent.clipboard.copyText(document.getElementById('wallet-secret-textarea')['value'], 'Copied seed to clipboard');
+    }
+
+    this.cancelButtonClick = function () {
+      $mdDialog.cancel()
+    }
+
+    this.okButtonClick = function ($event) {
+      let walletEntry: wlt.WalletEntry = this.data.selectedWalletEntry
+      if (walletEntry) {
+        addEthAddress(walletEntry, walletComponent, $mdDialog).then(currencyBalance => {
+          $mdDialog.hide(null).then(() => {
+            if (!currencyBalance) {
+              dialogs.alert(null, 'Unable to Create ETH address', 'Make sure you use the previous address first before you can create a new address')
+            }
+          })
+        })
+      }
+    }
+
+    this.selectedWalletEntryChanged = function () {
+      this.data.password = ''
+      this.data.selectedWalletEntry = walletEntries.find(w => this.data.selected == w.account)
+      let we: wlt.WalletEntry = this.data.selectedWalletEntry
+      if (we && we.unlocked && we.bip44Compatible) {
+        if (!we.expanded) we.toggle()
+      }
+    }
+
+    this.passwordChanged = function () {
+      walletComponent.updateWalletEntryOnPasswordChanged(this.data.selected, this.data.password)
+    }
+  }
+
+  let deferred = walletComponent.$q.defer<{ password: string, secretPhrase: string }>()
+  walletComponent.$mdDialog.show({
+    controller: DialogController2,
+    parent: angular.element(document.body),
+    targetEvent: $event,
+    clickOutsideToClose: false,
+    controllerAs: 'vm',
+    template: `
+        <md-dialog>
+          <form name="dialogForm">
+            <md-toolbar>
+              <div class="md-toolbar-tools"><h2>Create Ethereum Address</h2></div>
+            </md-toolbar>
+            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+              <div flex layout="column">
+                <p>To create a new Ethereum address, please choose the master HEAT account you want to attach the new Ethereum address to:</p>
+
+                <!-- Select Master Account -->
+
+                <md-input-container flex>
+                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
+                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
+                  </md-select>
+                </md-input-container>
+
+                <!-- Put In Password -->
+
+                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
+                  <p>
+                    Please first unlock this account by entering your password below
+                  </p>
+                  <md-input-container flex >
+                    <label>Password</label>
+                    <input type="password" ng-model="vm.data.password" ng-change="vm.passwordChanged()">
+                  </md-input-container>
+                </div>
+
+                <!-- Invalid Non BIP44 Seed-->
+
+                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
+                  Eth wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
+                </p>
+
+                <!-- Valid BIP44 Seed -->
+                <div flex layout="column"
+                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
+
+                  <p>This is your Ethereum address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
+                      Please store it in a safe place or you may lose access to your Ethereum.
+                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
+
+                  <md-input-container flex>
+                    <textarea id="wallet-secret-textarea" rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
+                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
+                    <span style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
+                  </md-input-container>
+
+                </div>
+              </div>
+
+            </md-dialog-content>
+            <md-dialog-actions layout="row">
+              <span flex></span>
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
+              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
+                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
+            </md-dialog-actions>
+          </form>
+        </md-dialog>
+      `
+  }).then(deferred.resolve, deferred.reject);
+  return deferred.promise
+}

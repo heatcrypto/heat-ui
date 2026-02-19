@@ -22,6 +22,7 @@
  * */
 
 /* Wraps all API returned server errors */
+
 class ServerEngineError {
   public description: string;
   public code: number;
@@ -43,7 +44,7 @@ class InternalServerTimeoutError extends ServerEngineError {
 }
 
 @Service('heat')
-@Inject('$q','$http','settings','user','$timeout','env')
+@Inject('$q','$http','settings','user','$timeout','$interval','env', '$rootScope')
 class HeatService {
 
   public api = new HeatAPI(this, this.user, this.$q);
@@ -51,10 +52,29 @@ class HeatService {
 
   constructor(public $q: angular.IQService,
               private $http: angular.IHttpService,
-              private settings: SettingsService,
+              public settings: SettingsService,
               private user: UserService,
               private $timeout: angular.ITimeoutService,
-              private env: EnvService) {
+              private $interval: angular.IIntervalService,
+              private env: EnvService,
+              private $rootScope: angular.IScope) {
+
+    let initBaseTime = () => this.api.baseTimestamp().then(basetimestamp => {
+      utils.setBaseTimestamp(parseInt(basetimestamp))
+    })
+    this.settings.initialized.then(v => initBaseTime())
+        .catch(reason => console.error(reason))
+    $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
+      initBaseTime().catch(reason => console.error(reason))
+    })
+
+    let refreshInterval = $interval(() => {
+      if (utils.isBaseDate()) {
+        $interval.cancel(refreshInterval);
+      } else {
+        initBaseTime().catch(reason => console.error(reason))
+      }
+    }, 3 * 1000, 0, false);
   }
 
   public createSubscriber(url: string)  {
@@ -63,6 +83,15 @@ class HeatService {
 
   public resetSubscriber()  {
     this.subscriber.reset(this.settings.get(SettingsService.HEAT_WEBSOCKET));
+  }
+
+  public switchToServer(
+      connectionWay?: {way: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean},
+      serverDescriptor?: ServerDescriptor) {
+    if (connectionWay) this.settings.setConnectionWay(connectionWay)
+    if (serverDescriptor) this.settings.setCurrentServer(serverDescriptor)
+    this.resetSubscriber()
+    this.$rootScope.$emit('HEAT_SERVER_LOCATION', "nothing")
   }
 
   getAuthData(): Object {
@@ -81,43 +110,76 @@ class HeatService {
     }
   }
 
-  get(route: string, returns?: string): angular.IPromise<any> {
-    return this.getRaw(this.settings.get(SettingsService.HEAT_HOST),
-      this.settings.get(SettingsService.HEAT_PORT), route, returns);
+  get(route: string, returns?: string, ignoreErrorResponse = false, isFile?: boolean,
+      hostPort?: { host: string, port: number }): angular.IPromise<any> {
+    return this.getRaw(
+      hostPort ? hostPort.host : this.settings.get(SettingsService.HEAT_HOST),
+      hostPort ? hostPort.port : this.settings.get(SettingsService.HEAT_PORT),
+      route,
+      returns,
+      ignoreErrorResponse,
+      isFile
+    )
   }
 
-  getRaw(host: string, port: number, route: string, returns?: string): angular.IPromise<any> {
+  getRaw(host: string, port: number, route: string, returns?: string, ignoreErrorResponse?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
-    if (this.env.type == EnvType.BROWSER) {
+    if (this.env.isBrowser || this.env.isElectron) {
+      let portStr = port ? `:${port}` : ""
+      let config
+      if (isFile) {
+        config = {
+          headers: {'Content-Type': undefined},
+          transformResponse: [
+            function (data) {
+              return data;
+            }
+          ],
+          responseType: "arraybuffer"  //arraybuffer/blob/json/text/document
+        }
+      } else {
+        config = {
+          headers: {'Content-Type': 'application/json'}
+        }
+      }
       this.browserHttpGet(
-        [host,':',port,'/',route].join(''),
-        {headers: {'Content-Type': 'application/json'} },
-        (response)=>{
+        [host, portStr, '/', route].join(''),
+        config,
+        (response) => {
           this.logResponse(route, null, response);
           var data = angular.isString(returns) ? response.data[returns] : response.data;
           deferred.resolve(data);
-        },(response)=>{
-          this.logErrorResponse(route, null, response);
-          deferred.reject(new ServerEngineError(response.data));
+        }, (response) => {
+          if (ignoreErrorResponse) {
+            deferred.resolve()
+          } else {
+            this.logErrorResponse(route, null, response)
+            deferred.reject(new ServerEngineError(isFile ? response : response.data))
+          }
         }
       );
-    }
-    else if (this.env.type == EnvType.NODEJS) {
+    } else if (this.env.isNodeEnv) {
       var isHttps = host.indexOf('https://') == 0;
       this.nodeHttpGet(
         isHttps,
-        host.replace(/^(\w+:\/\/)/,''),
+        host.replace(/^(\w+:\/\/)/, ''),
         port,
         '/' + route,
-        (response)=>{
+        (response) => {
           this.logResponse(route, null, response);
           var data = angular.isString(returns) ? response[returns] : response;
           deferred.resolve(data);
-        },(response)=>{
-          this.logErrorResponse(route, null, response);
-          deferred.reject(new ServerEngineError(response));
-        }
+        }, (response) => {
+          if (ignoreErrorResponse) {
+            deferred.resolve()
+          } else {
+            this.logErrorResponse(route, null, response)
+            let data = Object.assign(response, { host: host, port: port, route: route, response: response })
+            deferred.reject(new ServerEngineError(data))
+          }
+        },
+        isFile
       )
     }
     return deferred.promise;
@@ -126,56 +188,88 @@ class HeatService {
   private browserHttpGet(url: string, config: any, onSuccess: Function, onFailure: Function) {
     this.$http.get(url, config).then(
       (response: any) => {
-        if (angular.isDefined(response.data.errorDescription))
+        if (angular.isDefined(response.data.errorDescription)) {
           onFailure(response);
-        else
+        } else {
           onSuccess(response);
+        }
       },
       (response) => { onFailure(response) }
     )
   }
 
-  private nodeHttpGet(isHttps: boolean, hostname: string, port: number, path: string, onSuccess: Function, onFailure: Function) {
-    var options = {
+  private nodeHttpGet(isHttps: boolean, hostname: string, port: number, path: string, onSuccess: Function, onFailure: Function, isFile?: boolean) {
+    let options = {
       hostname: hostname, port: port, path: path, method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': isFile ? 'multipart/form-data' : 'application/json'
       }
-    };
-    var http = require(isHttps ? 'https':'http');
-    var req = http.request(options, (res) => {
-      res.setEncoding('utf8');
-      var body = [];
-      res.on('data', (chunk) => { body.push(chunk) });
-      res.on('end', () => {
-        var response = JSON.parse(body.join(''));
-        if (angular.isDefined(response.errorDescription))
-          onFailure(response)
-        else
-          onSuccess(response)
-      });
-    });
-    req.on('error', (e) => { onFailure(e) });
-    req.end();
+    }
+    //require("tls").DEFAULT_ECDH_CURVE = "auto"
+    let http = require(isHttps ? 'https':'http')
+    let req = http.request(options, (res) => {
+      if (isFile) {
+        if (res.statusCode == 200) {
+          let chunkArray = []
+          res.on('data', (chunk) => chunkArray.push(chunk))
+          res.on('end', () => {
+            onSuccess(Buffer.concat(chunkArray))
+          })
+        } else {
+          onFailure(res.statusMessage || res)
+        }
+      } else {
+        res.setEncoding('utf8')
+        let body = []
+        res.on('data', (chunk) => {body.push(chunk)})
+        res.on('end', () => {
+          let response
+          let content = body.join('')
+          try {
+            response = JSON.parse(content)
+            if (angular.isDefined(response.errorDescription)) {
+              onFailure(response)
+            } else {
+              onSuccess(response)
+            }
+          } catch (e) {
+            console.error("response in not JSON parseable: \n" + content)
+            onFailure(content)
+          }
+        })
+      }
+    })
+    req.on('error', (e) => { onFailure(e) })
+    req.end()
   }
 
-  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
-    let host = localHostOnly ? this.settings.get(SettingsService.HEAT_HOST_LOCAL) : this.settings.get(SettingsService.HEAT_HOST);
-    let port = localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) : this.settings.get(SettingsService.HEAT_PORT);
-    return this.postRaw(host, port, route, request, withAuth, returns, localHostOnly);
+  post(route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean, isFile?: boolean,
+       hostPort?: {host: string, port: number}): angular.IPromise<any> {
+    let host
+    let port
+    if (hostPort) {
+      host = hostPort.host
+      port = hostPort.port
+    } else {
+      host = localHostOnly ? this.settings.get(SettingsService.HEAT_HOST_LOCAL) : this.settings.get(SettingsService.HEAT_HOST);
+      port = localHostOnly ? this.settings.get(SettingsService.HEAT_PORT_LOCAL) : this.settings.get(SettingsService.HEAT_PORT);
+    }
+    return this.postRaw(host, port, route, request, withAuth, returns, localHostOnly, isFile);
   }
 
-  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string, localHostOnly?: boolean): angular.IPromise<any> {
+  postRaw(host: string, port: number, route: string, request: any, withAuth?: boolean, returns?: string,
+          localHostOnly?: boolean, isFile?: boolean): angular.IPromise<any> {
     route = "api/v1" + route;
     var deferred = this.$q.defer();
-    var req = request||{};
+    var req = request || {};
     if (withAuth) {
       req = angular.extend(req, this.getAuthData());
     }
-    if (this.env.type == EnvType.BROWSER) {
-      let address = [host,':',port,'/',route].join('');
+    if (this.env.isBrowser || this.env.isElectron) {
+      let portStr = port ? `:${port}` : ""
+      let address = [host, portStr, '/', route].join('');
       if (localHostOnly) {
-        if (address.indexOf('http://localhost')!=0) {
+        if (address.indexOf('http://localhost') != 0) {
           deferred.reject(new ServerEngineError({
             errorDescription: `Operation allowed to localhost only! ${address} is not allowed`,
             errorCode: 10
@@ -183,20 +277,22 @@ class HeatService {
         }
       }
       this.browserHttpPost(address, req,
-        (response)=>{
+        (response) => {
           this.logResponse(route, request, response);
-          var data = angular.isString(returns) ? response.data[returns] : response.data;
+          let data = angular.isString(response)
+            ? response
+            : (angular.isString(returns) ? response.data[returns] : response.data)
           deferred.resolve(data);
-        },(response)=>{
+        }, (response) => {
           this.logErrorResponse(route, request, response);
           deferred.reject(new ServerEngineError(response.data));
-        }
+        },
+        isFile
       );
-    }
-    else if (this.env.type == EnvType.NODEJS) {
-      let address = host.replace(/^(\w+:\/\/)/,'');
+    } else if (this.env.isNodeEnv) {
+      let address = host.replace(/^(\w+:\/\/)/, '');
       if (localHostOnly) {
-        if (address.indexOf('localhost')!=0) {
+        if (address.indexOf('localhost') != 0) {
           deferred.reject(new ServerEngineError({
             errorDescription: `Operation allowed to localhost only ${address} is not allowed`,
             errorCode: 10
@@ -205,68 +301,119 @@ class HeatService {
       }
       var isHttps = host.indexOf('https://') == 0;
       this.nodeHttpPost(isHttps, address, port, '/' + route, req,
-        (response)=>{
+        (response) => {
           this.logResponse(route, request, response);
-          var data = angular.isString(returns) ? response.data[returns] : response.data;
+          let data = angular.isString(response)
+            ? response
+            : (angular.isString(returns) ? response.data[returns] : response.data)
           deferred.resolve(data);
-        },(response)=>{
+        }, (response) => {
           this.logErrorResponse(route, request, response);
           deferred.reject(new ServerEngineError(response.data));
-        }
+        },
+        isFile
       )
     }
     return deferred.promise;
   }
 
-  private browserHttpPost(url: string, request: any, onSuccess: Function, onFailure: Function) {
-    this.$http({
+  private browserHttpPost(url: string, request: any, onSuccess: Function, onFailure: Function, isFile?: boolean) {
+    //require("tls").DEFAULT_ECDH_CURVE = "auto"
+    let config
+    if (isFile) {
+      let formData = new FormData()
+      formData.append("fileName", request.fileName)
+      formData.append("file", new Blob([request.arrayBuffer]))
+      config = {
+        method: 'POST',
+        url: url,
+        headers: {'Content-Type': undefined},
+        data: formData
+      }
+    } else {
+      config = {
         method: 'POST',
         url: url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        transformRequest: function(obj) {
-          var str = [];
-          for(var p in obj)
+        data: request,
+        transformRequest: function (obj) {
+          let str = [];
+          for (let p in obj) {
             str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+          }
           return str.join("&");
-        },
-        data: request
-    }).then(
+        }
+      }
+    }
+
+    this.$http(config).then(
       (response:any) => {
-        if (angular.isDefined(response.data.errorDescription))
+        if (angular.isDefined(response.data.errorDescription)) {
           onFailure(response);
-        else
+        } else {
           onSuccess(response);
+        }
       },
       (response) => { onFailure(response) }
     );
   }
 
-  private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
-    var querystring = require('querystring');
-    var body = querystring.stringify(request);
-    var options = {
-      hostname: hostname, port: port, path: path, method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        "Content-Length": body.length
+  private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function, isFile?: boolean) {
+    let http = require(isHttps ? 'https':'http')
+    if (isFile) {
+      let FormData = require("form-data")
+      const form = new FormData()
+      form.append('fileName', request.fileName)
+      form.append('file', Buffer.from(request.arrayBuffer))
+      const req = http.request(
+        {
+          hostname: hostname, port: port, path: path, method: 'POST',
+          headers: form.getHeaders(),
+        },
+        response => {
+          if (response?.statusCode == 200) {
+            onSuccess(response.statusMessage)
+          } else {
+            onFailure(response)
+          }
+        }
+      )
+      req.on('error', (e) => { onFailure(e) })
+      form.pipe(req)
+    } else {
+      let querystring = require('querystring')
+      let body = querystring.stringify(request)
+      let options = {
+        hostname: hostname, port: port, path: path, method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "Content-Length": body.length
+          }
       }
-    };
-    var http = require(isHttps ? 'https':'http');
-    var req = http.request(options, (res) => {
-      res.setEncoding('utf8');
-      var body = [];
-      res.on('data', (chunk) => { body.push(chunk) });
-      res.on('end', () => {
-        var response = { data: JSON.parse(body.join('')) };
-        if (angular.isDefined(response.data.errorDescription))
-          onFailure(response)
-        else
-          onSuccess(response)
+      let req = http.request(options, res => {
+        res.setEncoding('utf8');
+        let respBody = []
+        res.on('data', (chunk) => { respBody.push(chunk) })
+        res.on('end', () => {
+          let responseBody
+          try {
+            responseBody = JSON.parse(respBody.join(''))
+          } catch (e) {
+            console.error(e)
+            onFailure(res)
+          }
+          let response = { data: responseBody }
+          if (angular.isDefined(response.data.errorDescription)) {
+            onFailure(response)
+          } else {
+            onSuccess(response)
+          }
+        });
       });
-    });
-    req.on('error', (e) => { onFailure(e) });
-    req.write(body);
-    req.end();
+      req.on('error', (e) => { onFailure(e) });
+      req.write(body);
+      req.end();
+    }
   }
 
   private logResponse(route: string, request: any, response: any) {
@@ -299,7 +446,7 @@ class HeatService {
         var byteArray = converters.hexStringToByteArray(message.messageBytes);
         var nonce = converters.byteArrayToHexString(byteArray.slice(0, 32));
         var data = converters.byteArrayToHexString(byteArray.slice(32));
-        if (message.recipient == this.user.account) {
+        if (message.recipient == this.user.account || (message.recipient == '0' && message.sender == this.user.account)) {
           return heat.crypto.decryptMessage(data, nonce, message.senderPublicKey, this.user.secretPhrase);
         }
         else if (message.sender == this.user.account) {

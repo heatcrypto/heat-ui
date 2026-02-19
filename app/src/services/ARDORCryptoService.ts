@@ -1,61 +1,81 @@
 @Service('ardorCryptoService')
-@Inject('$window', 'user')
+@Inject('$window', 'user', 'storage', '$rootScope')
 class ARDORCryptoService {
 
   private nxtCrypto;
+  private store: Store;
 
   constructor(private $window: angular.IWindowService,
-    private user: UserService) {
+    private user: UserService,
+    storage: StorageService,
+    private $rootScope: angular.IRootScopeService) {
     this.nxtCrypto = $window.heatlibs.nxtCrypto;
+      this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the seed to this wallet */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let walletType = { addresses: [] }
-      let publicKey = this.nxtCrypto.getPublicKey(seedOrPrivateKey)
-      let address = this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR')
-      let accountId = this.nxtCrypto.getAccountId(publicKey)
-      walletType.addresses[0] = { address: address, privateKey: seedOrPrivateKey, accountId: accountId }
-      resolve(walletType);
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let encryptedWallet = this.store.get(`ARDR-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`ARDR-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
+      } else {
+        let walletType = { addresses: [] }
+        let publicKey = this.nxtCrypto.getPublicKey(seedOrPrivateKey)
+        let address = this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'ARDOR')
+        let accountId = this.nxtCrypto.getAccountId(publicKey)
+        walletType.addresses[0] = { address: address, privateKey: seedOrPrivateKey, accountId: accountId }
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+        this.store.put(`ARDR-${heatAddress}`, encryptedWallet);
+        resolve(walletType);
+      }
     });
   }
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshBalances(wallet: WalletAddresses) {
     let userAccount = wallet.addresses[0].accountId;
     return new Promise((resolve, reject) => {
       let ardorBlockExplorerService: ArdorBlockExplorerService = heat.$inject.get('ardorBlockExplorerService')
-      ardorBlockExplorerService.getTransactions(userAccount, 0, 10).then(transactions => {
-        if (transactions.length != 0) {
-          ardorBlockExplorerService.getBalance(userAccount).then(balance => {
-            wallet.addresses[0].balance = new Big(utils.convertToQNTf(balance)).toFixed(8);
-            wallet.addresses[0].inUse = true;
-            ardorBlockExplorerService.getAccountAssets(userAccount).then(accountAssets => {
-              wallet.addresses[0].tokensBalances = []
-              let promises = []
-              accountAssets.forEach(asset => {
-                let promise = ardorBlockExplorerService.getAssetInfo(asset.asset).then(assetInfo => {
-                  wallet.addresses[0].tokensBalances.push({
-                    symbol: assetInfo?assetInfo.name:'',
-                    name: assetInfo?assetInfo.name:'',
-                    decimals: assetInfo.decimals,
-                    balance: utils.formatQNT(asset.unconfirmedQuantityQNT,assetInfo.decimals),
-                    address: asset.asset
+      ardorBlockExplorerService.getBlockchainStatus().then(()=> {
+        ardorBlockExplorerService.getTransactions(userAccount, 0, 10).then(transactions => {
+          if (transactions.length != 0) {
+            ardorBlockExplorerService.getBalance(userAccount).then(balance => {
+              wallet.addresses[0].balance = new Big(utils.convertToQNTf(balance)).toFixed(8);
+              wallet.addresses[0].inUse = true;
+              ardorBlockExplorerService.getAccountAssets(userAccount).then(accountAssets => {
+                wallet.addresses[0].tokensBalances = []
+                let promises = []
+                accountAssets.forEach(asset => {
+                  let promise = ardorBlockExplorerService.getAssetInfo(asset.asset).then(assetInfo => {
+                    wallet.addresses[0].tokensBalances.push({
+                      symbol: assetInfo?assetInfo.name:'',
+                      name: assetInfo?assetInfo.name:'',
+                      decimals: assetInfo.decimals,
+                      balance: utils.formatQNT(asset.unconfirmedQuantityQNT,assetInfo.decimals),
+                      address: asset.asset
+                    })
                   })
-                })
-                promises.push(promise)
-              });
+                  promises.push(promise)
+                });
 
-              Promise.all(promises).then(() => resolve(true))
+                Promise.all(promises).then(() => resolve(true))
 
-              if (accountAssets.length === 0)
-                resolve(true)
+                if (accountAssets.length === 0)
+                  resolve(true)
+              })
             })
-          })
-        } else {
-          resolve(false)
-        }
-      })
+          } else {
+            resolve(false)
+          }
+        })
+      }).catch(reject)
     })
   }
 }

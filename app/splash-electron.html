@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+
+<!--the page is displayed while the electron app is loading-->
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+
+  <style>
+
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #001f3c;
+      border-radius: 18px;
+      opacity: 0.9;
+      z-index: 9999;
+      text-align: center;
+      color: #fff;
+      font-family: "Quattrocento Sans", sans-serif;
+    }
+
+    .loading-text {
+      position: absolute;
+      top: 50px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: auto;
+      text-align: center;
+      width: 100%;
+      height: 100px;
+      line-height: 70px;
+    }
+
+    .loading-text span {
+      display: inline-block;
+      margin: 0 5px;
+    }
+
+    .loading-text span.loading-text-words:nth-child(1) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 0s infinite linear alternate;
+      animation: blur-text 1.5s 0s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(2) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 0.2s infinite linear alternate;
+      animation: blur-text 1.5s 0.2s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(3) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 0.4s infinite linear alternate;
+      animation: blur-text 1.5s 0.4s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(4) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 0.6s infinite linear alternate;
+      animation: blur-text 1.5s 0.6s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(5) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 0.8s infinite linear alternate;
+      animation: blur-text 1.5s 0.8s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(6) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 1s infinite linear alternate;
+      animation: blur-text 1.5s 1s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(7) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 1.2s infinite linear alternate;
+      animation: blur-text 1.5s 1.2s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(8) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 1.4s infinite linear alternate;
+      animation: blur-text 1.5s 1.2s infinite linear alternate;
+    }
+
+    .loading-text span.loading-text-words:nth-child(9) {
+      filter: blur(0px);
+      -webkit-animation: blur-text 1.5s 1.6s infinite linear alternate;
+      animation: blur-text 1.5s 1.2s infinite linear alternate;
+    }
+
+    @-webkit-keyframes blur-text {
+      0% {
+        filter: blur(0px);
+      }
+      100% {
+        filter: blur(4px);
+      }
+    }
+
+    @keyframes blur-text {
+      0% {
+        filter: blur(0px);
+      }
+      100% {
+        filter: blur(4px);
+      }
+    }
+
+  </style>
+
+</head>
+<body>
+
+<div class="loading">
+    <div>
+        <p>
+            <img src="electron/icon.png" style="width: 48px" class="img-responsive"/>
+        </p>
+        <h2>Heatwallet</h2>
+    </div>
+    <div style="margin-top: -12px; font-size: small"><span>version 4.9.4</span></div>
+    <div class="loading-text">
+        <span class="loading-text-words">L</span>
+        <span class="loading-text-words">O</span>
+        <span class="loading-text-words">A</span>
+        <span class="loading-text-words">D</span>
+        <span class="loading-text-words">I</span>
+        <span class="loading-text-words">N</span>
+        <span class="loading-text-words">G</span>
+        <br/>
+        <span>please wait...</span>
+    </div>
+</div>
+
+</body>
+</html>

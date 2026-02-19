@@ -42,16 +42,20 @@
     </div>
   `
 })
-@Inject('$scope','$q','searchAccountsProviderFactory')
+@Inject('$scope', '$q', 'searchAccountsProviderFactory')
 class ExplorerResultsAccountsComponent extends VirtualRepeatComponent {
   query: string; // @input
+
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
               private searchAccountsProviderFactory: SearchAccountsProviderFactory) {
     super($scope, $q);
+  }
+
+  $onInit() {
     this.initializeVirtualRepeat(
       this.searchAccountsProviderFactory.createProvider(this.query),
-      (account: any|IHeatAccount) => {
+      (account: any | IHeatAccount) => {
         account.balanceFormatted = utils.formatQNT(account.unconfirmedBalance, 8);
         if (account.publicName == account.id) {
           account.publicName = '[private]';
@@ -60,5 +64,6 @@ class ExplorerResultsAccountsComponent extends VirtualRepeatComponent {
     );
   }
 
-  onSelect(selectedAccount) {}
+  onSelect(selectedAccount) {
+  }
 }

@@ -21,8 +21,10 @@
  * SOFTWARE.
  * */
 interface IHeatWalletFile {
-  version: number;
-  entries: Array<IHeatWalletFileEntry>;
+  version: number
+  entries: Array<IHeatWalletFileEntry>
+  accountAddresses: {} //{[account: string]: Array<string>};
+  paymentMessages?: {id: string, content: any}[]
 }
 
 interface IHeatWalletFileEntry {
@@ -35,46 +37,56 @@ interface IHeatWalletFileEntry {
   /* Optional name, also contained in encrypted contents */
   name?: string;
 
+  bip44Compatible?: boolean;
+
   /* Optional if this is a testnet key */
   isTestnet?: boolean;
+
+  visibleLabel?: string;
+
+  visibleLabels?: string[][];
+
+  currencies?: [];
+
+  cryptoAddresses?: {};
 }
 
 @Service('walletFile')
 class WalletFileService {
 
-  createFromText(contents: string): IHeatWalletFile {
-    return this.decode(contents);
+  createFromText(data): IHeatWalletFile {
+    return this.decode(data);
   }
 
   encode(walletFile: IHeatWalletFile): string {
     return JSON.stringify(walletFile, null, 2);
   }
 
-  decode(contents: string): IHeatWalletFile {
-    let data = this.parseJSON(contents);
-    if (!data)
-      return null;
+  decode(data): IHeatWalletFile {
+    if (!data) return null;
 
     let version = data.version;
-    if (!angular.isNumber(version))
-      return null;
+    if (!angular.isNumber(version)) return null;
 
-    if (version != 1)
-      return null;
+    let supportedDecodingVersion = [1, 2]
+    if (!supportedDecodingVersion.includes(version)) return null;
 
     let entries = data.entries;
-    if (!angular.isArray(entries))
-      return null;
+    if (!angular.isArray(entries)) return null;
 
     let walletFile: IHeatWalletFile = {
       version: version,
-      entries: []
+      entries: [],
+      accountAddresses: data.accountAddresses,
+      paymentMessages: data.paymentMessages
     };
+
     entries.forEach(entry => {
       if (angular.isString(entry.contents)) {
         walletFile.entries.push(entry);
       }
     });
+
     return walletFile;
   }
 
@@ -87,5 +99,16 @@ class WalletFileService {
       console.log('Could not parse wallet file', e);
     }
   }
+
+  importRawData(data: any) {
+    try {
+      let keys = Object.keys(data)
+      keys.forEach(k => localStorage.setItem(k, data[k]))
+      return `Imported ${keys.length} items`
+    } catch (e) {
+      return " Error " + e.toString()
+    }
+  }
+
 }
 

@@ -27,14 +27,14 @@
       <div class="trader-component-title">Trollbox&nbsp;
         <elipses-loading ng-show="vm.loading"></elipses-loading>
 <!--
-        <a href="https://t.me/joinchat/Bs91sA3agGFXqLaZwWMogg" target="_blank">Join Telegram!
+        <a href="https://t.me/joinchat/Bs91sA3agGFXqLaZwWMogg" target="_blank" rel="noopener noreferrer">Join Telegram!
           <md-tooltip md-direction="bottom">
             This trollbox is connected to our Telegram #trollbox channel, post either here or on #trollbox and chat in realtime.
           </md-tooltip>
         </a>
 -->
 <!--
-        <a href="https://heat-slack.herokuapp.com" target="_blank">Join Slack!
+        <a href="https://heat-slack.herokuapp.com" target="_blank" rel="noopener noreferrer">Join Slack!
           <md-tooltip md-direction="bottom">
             This trollbox is connected to our Slack #trollbox channel, post either here or on #trollbox and chat in realtime.
           </md-tooltip>

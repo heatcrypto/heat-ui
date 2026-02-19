@@ -63,7 +63,7 @@
     </div>
   `
 })
-@Inject('$scope', 'mofoSocketService', 'fimkPendingTransactions', '$interval', '$mdToast', 'settings', 'user')
+@Inject('$scope', 'mofoSocketService', 'fimkPendingTransactions', '$interval', '$mdToast', 'settings', 'user', '$router')
 class FimkAccountComponent {
   account: string; // @input
   balanceUnconfirmed: any;
@@ -71,70 +71,68 @@ class FimkAccountComponent {
   prevIndex = 0
   busy = true
   sockets: any;
-  selectSocketEndPoint = 'Mofowallet'
+  selectSocketEndPoint = 'fimk1'
 
   constructor(private $scope: angular.IScope,
-    private mofoSocketService: MofoSocketService,
-    private fimkPendingTransactions: FimkPendingTransactionsService,
-    private $interval: angular.IIntervalService,
-    private $mdToast: angular.material.IToastService,
-    private settings: SettingsService,
-    private user: UserService) {
+              private mofoSocketService: MofoSocketService,
+              private fimkPendingTransactions: FimkPendingTransactionsService,
+              private $interval: angular.IIntervalService,
+              private $mdToast: angular.material.IToastService,
+              private settings: SettingsService,
+              private user: UserService,
+              private router) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    fimkPendingTransactions.addListener(listener)
+    this.fimkPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 30000)
+    let promise = this.$interval(this.timerHandler.bind(this), 30000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      fimkPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.fimkPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
 
-    this.sockets = [
-      {
-        name: 'Mofowallet',
-        socketUrl: 'wss://cloud.mofowallet.org:7986/ws/'
-      },
-      {
-        name: 'Localhost',
-        socketUrl: 'ws://localhost:7986/ws/'
-      }
-    ]
+    this.sockets = SettingsService.CRYPTO_NODES.find(v => v.currencyName=='FIM').nodes.filter(v => v.status == 'ACTIVE') || []
 
-    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.mofoSocketService.getSocketUrl() == w.socketUrl).name
-
-
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.mofoSocketService.getSocketUrl() == w.host).name
   }
 
   changeSocketAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.mofoSocketService.mofoSocket(ret.socketUrl)
+    this.mofoSocketService.mofoSocket(ret.host)
+        .then(v => {
+          //refresh page
+          let url = this.router.lastNavigationAttempt
+          this.router.navigate("/")
+          setTimeout(() => this.router.navigate(url), 300)
+        }, reason => console.error("reason: " + reason))
   }
 
   timerHandler() {
     this.refresh()
     if (this.pendingTransactions.length) {
-      this.mofoSocketService.getRecentTx(this.user.account).then(recentTransactions => {
-        for(let i = 0; i < this.pendingTransactions.length; i++) {
+      this.mofoSocketService.getRecentTx(this.user.currency.address).then(recentTransactions => {
+        for (let i = 0; i < this.pendingTransactions.length; i++) {
           let isPending = false;
-          for(let j = 0; j < recentTransactions.length; j++) {
-            if(recentTransactions[j].transaction == this.pendingTransactions[i].txId) {
+          for (let j = 0; j < recentTransactions.length; j++) {
+            if (recentTransactions[j].transaction == this.pendingTransactions[i].txId) {
               isPending = true;
               break;
             }
           }
-          if(!isPending) {
+          if (!isPending) {
             this.$mdToast.show(this.$mdToast.simple().textContent(`Transaction with id ${this.pendingTransactions[i].txId} found`).hideDelay(2000));
             this.fimkPendingTransactions.remove(this.pendingTransactions[i].address, this.pendingTransactions[i].txId, this.pendingTransactions[i].time)
           }
         }
       }, err => {
-        console.log('Error in getting recent FIMK Transactions '+ err)
+        console.log('Error in getting recent FIMK Transactions ' + err)
       })
     }
   }
@@ -142,7 +140,7 @@ class FimkAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.fimkPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);

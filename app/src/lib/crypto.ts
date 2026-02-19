@@ -133,6 +133,12 @@ module heat.crypto {
     return converters.byteArrayToHexString(curve25519.keygen(digest).p);
   }
 
+  export function hash(text: string): string {
+    let textBytes = converters.hexStringToByteArray(converters.stringToHexString(text))
+    let digest = simpleHash(textBytes)
+    return converters.byteArrayToHexString(digest)
+  }
+
   /**
    * ..
    * @param secretPhrase Ascii String
@@ -154,16 +160,22 @@ module heat.crypto {
   }
 
   /**
-   * @param secretPhrase Hex String
+   * @param publicKey public key Hex String
    * @returns String
    */
   export function getAccountIdFromPublicKey(publicKey: string) {
-    _hash.init();
-    _hash.update(converters.hexStringToByteArray(publicKey));
+    return byteArrayToBigInteger(hexToHash8Bytes(publicKey)).toString()
+  }
 
-    var account   = _hash.getBytes();
-    var slice     = (converters.hexStringToByteArray(converters.byteArrayToHexString(account))).slice(0, 8);
-    return byteArrayToBigInteger(slice).toString();
+  export function hexToHash8Bytes(hex: string) {
+    return bytesToHash8Bytes(converters.hexStringToByteArray(hex))
+  }
+
+  export function bytesToHash8Bytes(bytes: number[]) {
+    _hash.init()
+    _hash.update(bytes)
+    let hashBytes = _hash.getBytes()
+    return (converters.hexStringToByteArray(converters.byteArrayToHexString(hashBytes))).slice(0, 8)
   }
 
 
@@ -304,12 +316,31 @@ module heat.crypto {
     };
   }
 
+  export function encryptBinary(buffer: ArrayBuffer, options: IEncryptOptions, uncompressed?: boolean): IEncryptedMessage {
+    let crypto: any = window.crypto || window['msCrypto']
+    if (!crypto) throw new Error("Browser not supported")
+
+    if (!options.sharedKey) options.sharedKey = getSharedKey(options.privateKey, options.publicKey)
+
+    options.nonce = new Uint8Array(32)
+    crypto.getRandomValues(options.nonce)
+
+    let compressedData = uncompressed ? new Uint8Array(buffer) : pako.gzip(new Uint8Array(buffer))
+    let data = aesEncrypt(compressedData, options)
+    return {
+      isText: false,
+      data: converters.byteArrayToHexString(data),
+      nonce: converters.byteArrayToHexString(options.nonce)
+    };
+  }
+
+
   /**
    * @param key1 ByteArray
    * @param key2 ByteArray
    * @returns ByteArray
    */
-  function getSharedKey(key1, key2) {
+  export function getSharedKey(key1: Array<number>, key2: Array<number>) {
     return converters.shortArrayToByteArray(
               curve25519_(converters.byteArrayToShortArray(key1),
                           converters.byteArrayToShortArray(key2), null));
@@ -380,38 +411,45 @@ module heat.crypto {
   }
 
   export function decryptMessage(data: string, nonce: string, publicKey: string, secretPhrase: string, uncompressed?: boolean): string {
-    var privateKey = converters.hexStringToByteArray(this.getPrivateKey(secretPhrase));
-    var publicKeyBytes = converters.hexStringToByteArray(publicKey);
-    var sharedKey = getSharedKey(privateKey, publicKeyBytes);
-    var dataBytes = converters.hexStringToByteArray(data);
-    var nonceBytes = converters.hexStringToByteArray(nonce);
+    return decrypt(decryptData, data, nonce, publicKey, secretPhrase, uncompressed)
+  }
+
+  export function decryptBinary(data: string, nonce: string, publicKey: string, secretPhrase: string, uncompressed?: boolean): ArrayBuffer {
+    return decrypt(decryptBinaryData, data, nonce, publicKey, secretPhrase, uncompressed)
+  }
+
+  function decrypt(decryptFunction: Function, data: string, nonce: string, publicKey: string, secretPhrase: string, uncompressed?: boolean) {
+    let privateKey = converters.hexStringToByteArray(getPrivateKey(secretPhrase));
+    let publicKeyBytes = converters.hexStringToByteArray(publicKey);
+    let sharedKey = getSharedKey(privateKey, publicKeyBytes);
+    let dataBytes = converters.hexStringToByteArray(data);
+    let options = {
+      privateKey: privateKey,
+      publicKey:  publicKeyBytes,
+      nonce:      converters.hexStringToByteArray(nonce),
+      sharedKey:  sharedKey
+    }
     try {
-      return decryptData(dataBytes, {
-        privateKey: privateKey,
-        publicKey:  publicKeyBytes,
-        nonce:      nonceBytes,
-        sharedKey:  sharedKey
-      }, uncompressed);
+      return decryptFunction(dataBytes, options, uncompressed);
     } catch (e) {
       if (e instanceof RangeError || e == 'incorrect header check') {
         console.error('Managed Exception: ' + e);
-
-        return decryptData(dataBytes, {
-          privateKey: privateKey,
-          publicKey:  publicKeyBytes,
-          nonce:      nonceBytes,
-          sharedKey:  sharedKey
-        }, !uncompressed);
+        return decryptFunction(dataBytes, options, !uncompressed);
       }
       throw e;
     }
   }
 
   function decryptData(data, options, uncompressed?: boolean) {
-    var compressedPlaintext = aesDecrypt(data, options);
-    var binData = new Uint8Array(compressedPlaintext);
-    var data = uncompressed ? binData : pako.inflate(binData);
-    return converters.byteArrayToString(data);
+    let decrypted = aesDecrypt(data, options);
+    let binData = new Uint8Array(decrypted);
+    return converters.byteArrayToString(uncompressed ? binData : pako.inflate(binData));
+  }
+
+  function decryptBinaryData(data, options, uncompressed?: boolean): ArrayBuffer {
+    let decrypted = aesDecrypt(data, options);
+    let binData = new Uint8Array(decrypted);
+    return uncompressed ? binData : pako.inflate(binData)
   }
 
   function aesDecrypt(ivCiphertext, options) {

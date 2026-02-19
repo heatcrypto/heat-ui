@@ -1,0 +1,215 @@
+{
+  "heatNodes": {
+    "mainnet": {
+      "failoverEnabled": true,
+      "heightDeltaThreshold": 4,
+      "balancesMismatchesThreshold": 0.9,
+      "balancesEqualityThreshold": 0.8,
+      "connectedPeersThreshold": 0.5,
+      "knownServers": [
+        {
+          "host": "https://heatwallet.com",
+          "port": 7734,
+          "websocket": "wss://heatwallet.com:7755/ws/",
+          "priority": 1
+        },
+        {
+          "host": "https://heat1.heatwallet.com",
+          "websocket": "wss://heat1.heatwallet.com/ws/",
+          "priority": 2
+        },
+        {
+          "host": "http://localhost",
+          "port": 7733,
+          "websocket": "ws://localhost:7755/ws/",
+          "priority": 3
+        }
+      ],
+      "signalingUrl": "wss://heatwallet.com:7755/ws/",
+      "messaging": {
+        "host": "https://heatwallet.com",
+        "port": 7734,
+        "websocket": "wss://heatwallet.com:7755/ws/"
+      }
+    },
+    "testnet": {
+      "failoverEnabled": false,
+      "heightDeltaThreshold": 2,
+      "balancesMismatchesThreshold": 0.9,
+      "balancesEqualityThreshold": 0.8,
+      "connectedPeersThreshold": 0.8,
+      "knownServers": [
+        {
+          "host": "https://alpha.heatledger.com",
+          "port": 7734,
+          "websocket": "wss://alpha.heatledger.com:7755/ws/",
+          "priority": 1
+        },
+        {
+          "host": "https://heattest1.heatwallet.com",
+          "websocket": "wss://heattest1.heatwallet.com/ws/",
+          "priority": 2
+        },
+        {
+          "host": "http://localhost",
+          "port": 7733,
+          "websocket": "ws://localhost:7755/ws/",
+          "priority": 3
+        },
+        {
+          "host": "http://173.212.203.227",
+          "port": 7833,
+          "websocket": "ws://173.212.203.227:7855/ws/",
+          "priority": 4
+        }
+      ],
+      "signalingUrl": "wss://alpha.heatledger.com:7755/ws/",
+      "messaging": {
+        "host": "https://alpha.heatledger.com",
+        "port": 7734,
+        "websocket": "wss://alpha.heatledger.com:7755/ws/"
+      }
+    },
+    "betanet": {}
+  },
+  "cryptoNodes": [
+    {
+      "currencyName": "BTC",
+      "nodes": [
+        {
+          "host": "https://bitnode.heatwallet.com/insight-api",
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "https://api.blockcypher.com/v1/btc/main",
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "NXT",
+      "nodes": [
+        {
+          "host": "https://nxt1.heatwallet.com",
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "http://localhost",
+          "port": 7876,
+          "priority": 2,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "ARDR",
+      "nodes": [
+        {
+          "host": "https://ardr1.heatwallet.com",
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "http://localhost",
+          "port": 27876,
+          "priority": 2,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "FIM",
+      "nodes": [
+        {
+          "name": "fimk1",
+          "host": "wss://fimk1.heatwallet.com/ws/",
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "name": "Mofowallet",
+          "host": "wss://cloud.mofowallet.org:7986/ws/",
+          "priority": 2,
+          "status": "NOT ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "name": "localhost",
+          "host": "ws://localhost:7986/ws/",
+          "priority": 3,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "LTC",
+      "nodes": [
+        {
+          "host": "https://ltc1.heatwallet.com/api/v2",
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "BCH",
+      "nodes": [
+        {
+          "host": "https://bch1.heatwallet.com/api/v2",
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "IOTA",
+      "nodes": [
+        {
+          "host": "https://nodes.thetangle.org",
+          "port": 443,
+          "priority": 0,
+          "status": "ACTIVE",
+          "timeout": 5000
+        }
+      ]
+    },
+    {
+      "currencyName": "ETH",
+      "nodes": [
+        {
+          "host": "https://api.ethplorer.io",
+          "priority": 10,
+          "status": "ACTIVE",
+          "timeout": 5000
+        },
+        {
+          "host": "https://eth1.heatwallet.com/api/v2",
+          "priority": 1,
+          "status": "ACTIVE",
+          "timeout": 5000,
+          "blockbook": "https://eth1.heatwallet.com/api/v2"
+        },
+        {
+          "host": "https://mobile.heatwallet.com",
+          "priority": 10,
+          "status": "ACTIVE",
+          "timeout": 5000,
+          "name": "mobile-heatwallet"
+        }
+      ]
+    }
+  ]
+}

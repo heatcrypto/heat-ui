@@ -28,7 +28,7 @@ class HEATCurrency implements ICurrency {
   public symbol = 'HEAT'
   public homePath
 
-  constructor(public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.heat = heat.$inject.get('heat')
     this.sendmoney = heat.$inject.get('sendmoney')
     this.homePath = `/explorer-account/${this.address}/transactions`
@@ -38,8 +38,9 @@ class HEATCurrency implements ICurrency {
   getBalance(): angular.IPromise<string> {
     return this.heat.api.getAccountBalanceVirtual(this.address, "0", "0", 1).then(
       balance => {
-        var formatted = utils.formatQNT(balance.virtualBalance, 8)
-        return formatted
+        return utils.convertToQNTNew(balance.virtualBalance)
+        // var formatted = utils.formatQNT(balance.virtualBalance, 8)
+        // return formatted
       }
     )
   }

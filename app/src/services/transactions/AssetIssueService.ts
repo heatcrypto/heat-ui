@@ -2,7 +2,7 @@
 ///<reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,47 +23,61 @@
  * SOFTWARE.
  * */
 @Service('assetIssue')
-@Inject('$q','user','assetInfo','heat')
+@Inject('$q','user','assetInfo','heat', '$interval')
 class AssetIssueService extends AbstractTransaction {
 
   constructor(private $q: angular.IQService,
               private user: UserService,
               private assetInfo: AssetInfoService,
-              private heat: HeatService) {
+              private heat: HeatService,
+              private $interval: angular.IIntervalService) {
     super();
   }
 
   dialog(currency: string, readonly?: boolean, $event?): IGenericDialog {
-    return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, this.heat, readonly);
+    return new AssetIssueDialog($event, this, this.$q, this.user, this.assetInfo, this.heat, readonly, this.$interval);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 0) return false;
 
-    var descriptionUrlLen = bytes.byteArray[bytes.pos]
-    bytes.pos += 1;
+    var descriptionUrlLen = attachment.byteArray[attachment.pos]
+    attachment.pos += 1;
 
-    transaction.descriptionUrl = converters.byteArrayToString(bytes.byteArray, bytes.pos, descriptionUrlLen);
-    bytes.pos += descriptionUrlLen;
+    transaction.descriptionUrl = converters.byteArrayToString(attachment.byteArray, attachment.pos, descriptionUrlLen);
+    attachment.pos += descriptionUrlLen;
 
-    transaction.descriptionHash = converters.byteArrayToHexString(bytes.byteArray.slice(bytes.pos, bytes.pos + 32));
-    bytes.pos += 32;
+    transaction.descriptionHash = converters.byteArrayToHexString(attachment.byteArray.slice(attachment.pos, attachment.pos + 32));
+    attachment.pos += 32;
 
-    transaction.quantity = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.quantity = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
-    transaction.decimals = bytes.byteArray[bytes.pos];
-    bytes.pos += 1;
+    transaction.decimals = attachment.byteArray[attachment.pos];
+    attachment.pos += 1;
 
-    transaction.dillutable = bytes.byteArray[bytes.pos] == 1;
-    bytes.pos += 1;
+    transaction.dilutable = attachment.byteArray[attachment.pos] == 1;
+    attachment.pos += 1;
 
-    return transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
-           transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
-           transaction.quantity === data.AssetIssuance.quantityQNT &&
-           transaction.decimals === data.AssetIssuance.decimals &&
-           transaction.dillutable === data.AssetIssuance.dillutable;
+    let result = transaction.descriptionUrl === data.AssetIssuance.descriptionUrl &&
+      transaction.descriptionHash === data.AssetIssuance.descriptionHash &&
+      transaction.quantity === data.AssetIssuance.quantityQNT &&
+      transaction.decimals === data.AssetIssuance.decimals &&
+      transaction.dilutable === data.AssetIssuance.dilutable;
+
+    if (attachment.attachmentVersion >= 3) {
+      transaction.expiration = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+      attachment.pos += 4;
+      result = result && transaction.expiration === data.AssetIssuance.expiration;
+    }
+
+    if (attachment.attachmentVersion >= 2) {
+      transaction.assetType = attachment.byteArray[attachment.pos];
+      attachment.pos += 1;
+      result = result && transaction.assetType === data.AssetIssuance.type;
+    }
+    return result
   }
 }
 
@@ -75,7 +89,8 @@ class AssetIssueDialog extends GenericDialog {
               private user: UserService,
               private assetInfo: AssetInfoService,
               private heat: HeatService,
-              private readonly: boolean) {
+              private readonly: boolean,
+              private $interval: angular.IIntervalService) {
     super($event);
     this.dialogTitle = 'Issue asset';
     this.dialogDescription = 'Description on how to issue an asset';
@@ -87,6 +102,10 @@ class AssetIssueDialog extends GenericDialog {
   getFields($scope: angular.IScope) {
     var builder = new DialogFieldBuilder($scope);
     return [
+      builder.switcher('assetType', false)
+        .label('Asset type')
+        .valueLabels("PRIVATE", "STANDARD")
+        .valueNotes("PRIVATE ASSETS CAN ONLY BE TRADED OR TRANSFERRED BY ACCOUNTS YOU APPROVE", ""),
       builder.text('symbol').
               label('Asset symbol (3-4 chars)').
               validate("Symbol must have 3 to 4 chars", (symbol:string) => {
@@ -98,7 +117,9 @@ class AssetIssueDialog extends GenericDialog {
                 this.heat.api.getAssetProtocol1(symbol).then((asset) => {
                   deferred.reject();
                 }, (response) => {
-                  if (response && response.code == 3 && response.description == "Unknown asset")
+                  let v = response && response.data && response.data.response ? response.data.response : response
+                  let error = v.description || v.errorDescription
+                  if (error == "Unknown asset")
                     deferred.resolve();
                   else
                     deferred.reject();
@@ -125,12 +146,13 @@ class AssetIssueDialog extends GenericDialog {
                   return false;
                 return num >= 0 && num <= 8;
               }),
-      builder.text('dillutable', 'false').
-              label('Dillutable').
-              required().
-              validate("Either type true or false", (dillutable) => {
-                return dillutable == 'true' || dillutable == 'false';
-              }),
+      builder.switcher('dilutable', false)
+        .label('Dilutable')
+        .valueNotes("FOR DILUTABLE ASSETS MORE UNITS CAN BE ADDED LATER", ""),
+      builder.text('expiration', 0)
+        .label('Expiration timestamp (after timestamp the trading of asset will be disabled)'),
+      builder.staticText("expirationDate", ''),
+      builder.staticText("systemtimestamp", ''),
       builder.text('descriptionUrl', 'http://').
               label('Description URL (http:// or https://) (can be changed later)').
               validate("Either leave blank or has to start with http:// or https://", (value) => {
@@ -153,18 +175,34 @@ class AssetIssueDialog extends GenericDialog {
     ]
   }
 
+  fieldsReady($scope: angular.IScope) {
+    let interval = this.$interval(() => {
+      $scope.$evalAsync(() => {
+        let expirationValue = parseInt(this.fields['expiration'].value || '0')
+        this.fields['expirationDate'].value = expirationValue > 0
+          ? 'Entered expiration value date: ' + utils.timestampToDate(expirationValue).toLocaleString()
+          : ''
+        this.fields['systemtimestamp'].value = "Current timestamp: " + Math.round(utils.epochTime())
+      });
+    }, 1000, 0, false);
+    $scope.$on('$destroy', () => { this.$interval.cancel(interval) });
+  }
+
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
+    let decimals = parseInt(this.fields['decimals'].value);
     var builder = new TransactionBuilder(this.transaction);
     builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.assetIssue)
-           .attachment('AssetIssuance', <IHeatCreateAssetIssuance> {
-              decimals: parseInt(this.fields['decimals'].value),
-              dillutable: this.fields['dillutable'].value == 'true',
-              quantityQNT: utils.convertToQNT(this.fields['quantity'].value),
-              descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
-              descriptionUrl: this.fields['descriptionUrl'].value || 'http://'
-            });
+      .feeNQT(HeatAPI.fee.assetIssue)
+      .attachment('AssetIssuance', <IHeatCreateAssetIssuance>{
+        decimals: decimals,
+        dilutable: this.fields['dilutable'].value == 'true',
+        expiration: parseInt(this.fields['expiration'].value || '0'),
+        quantityQNT: utils.convertToQNT(this.fields['quantity'].value, decimals),
+        descriptionHash: this.fields['descriptionHash'].value || "0".repeat(64),
+        descriptionUrl: this.fields['descriptionUrl'].value || 'http://',
+        type: this.fields['assetType'].value ? 1 : 0 //standard:0  private:1
+      });
 
     // generate a protocol 1 asset properties description
     var properties =  this.assetInfo.stringifyProperties(<AssetPropertiesProtocol1>{

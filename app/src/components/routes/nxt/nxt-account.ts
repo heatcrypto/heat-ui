@@ -16,7 +16,8 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
+              Balance:
+              <md-progress-circular style="display: initial; position: fixed;" md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
               {{vm.balanceUnconfirmed}} NXT
@@ -29,7 +30,7 @@
               NXT Server:
             </div>
             <div class="value">
-              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeSocketAddress()">
+              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeHostAddress()">
                 <md-option ng-repeat="socket in vm.sockets" value="{{socket.name}}">{{socket.name}}</md-option>
               </md-select>
             </div>
@@ -79,38 +80,41 @@ class NxtAccountComponent {
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
               private user: UserService) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    nxtPendingTransactions.addListener(listener)
+    this.nxtPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 30000)
+    let promise = this.$interval(this.timerHandler.bind(this), 7000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      nxtPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.nxtPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
 
     this.sockets = [
       {
         name: 'HEAT_NXT_node',
-        socketUrl: 'https://bitnode.heatwallet.com:7876/'
+        hostUrl: 'https://nxt1.heatwallet.com'
       },
       {
         name: 'Localhost',
-        socketUrl: 'http://localhost:7876/'
+        hostUrl: 'http://localhost:7876'
       }
     ]
-
-    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.nxtBlockExplorerService.getSocketUrl() == w.socketUrl).name
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.nxtBlockExplorerService.getHostUrl() == w.hostUrl).name
   }
 
-  changeSocketAddress() {
+  changeHostAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.nxtBlockExplorerService.setUrl(ret.socketUrl)
+    this.nxtBlockExplorerService.setUrl(ret.hostUrl)
+    let host = ret.hostUrl.split(':7876')[0]
+    SettingsService.changeCryptoNodeProperty('NXT', host, 'priority', 0)
   }
 
 
@@ -139,7 +143,7 @@ class NxtAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.nxtPendingTransactions.pending[addr]
       if (txns) {
         var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);

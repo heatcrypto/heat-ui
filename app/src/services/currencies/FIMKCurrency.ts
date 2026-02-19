@@ -9,7 +9,8 @@ class FIMKCurrency implements ICurrency {
   private $rootScope;
   private $q;
 
-  constructor(public secretPhrase: string,
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
               public address: string) {
     this.mofoSocketService = heat.$inject.get('mofoSocketService')
     this.user = heat.$inject.get('user')
@@ -48,7 +49,7 @@ class FIMKCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendFim($event).then(
       data => {
-        let address = this.user.account
+        let address = this.user.currency.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp)
       },
@@ -67,12 +68,11 @@ class FIMKCurrency implements ICurrency {
 
   sendFim($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
-        let fimkCryptoService = <FIMKCryptoService> heat.$inject.get('fimkCryptoService')
         let mofoSocketService = <MofoSocketService> heat.$inject.get('mofoSocketService')
         let to = $scope['vm'].data.recipient
         let recipientPublicKey;
@@ -85,7 +85,7 @@ class FIMKCurrency implements ICurrency {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
-          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
           txObject = {
             recipient: to,
             amountNQT: utils.convertToNQT(String($scope['vm'].data.amountNQT)),
@@ -123,10 +123,10 @@ class FIMKCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
+      this.disableOKBtn = false
 
       let defaultFee = '0.1'
-      $scope['vm'].data = {
+      this.data = {
         amountNQT: '',
         recipient: '',
         recipientInfo: '',
@@ -155,7 +155,7 @@ class FIMKCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         $scope['vm'].data.recipientPublicKey = ''
         lookup()
@@ -207,7 +207,7 @@ class FIMKCurrency implements ICurrency {
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amountNQT || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

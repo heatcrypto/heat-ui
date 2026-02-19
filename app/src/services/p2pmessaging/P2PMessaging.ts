@@ -23,117 +23,293 @@
 
 type OnlineStatus = "online" | "offline";
 type EnterRoomState = "not" | "entering" | "entered";
+type RemoveMessageDoneAccumulator = {roomName: string, targetMessageId: string, fileId: string, error: string}[];
+type RoomMessagesAccumulator = {msg: any, room: p2p.Room}[];
 
+/**
+ * This class is bridge between heat-ui components and p2p connector low level components (which intended to be independent of heat-ui).
+ * So this service is intended to provide p2p connector to the heat-ui functions.
+ */
 @Service('P2PMessaging')
-@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast')
+@Inject('settings', 'user', 'storage', '$interval', 'heat', '$mdToast', 'contactService', 'env')
 class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
 
   public static EVENT_NEW_MESSAGE = 'EVENT_NEW_MESSAGE';
-  public static EVENT_HAS_UNREAD_CHANGED = 'EVENT_HAS_UNREAD_CHANGED';
+  public static EVENT_UNREAD_STATUS_CHANGED = 'EVENT_UNREAD_STATUS_CHANGED';
   public static EVENT_ON_OPEN_DATA_CHANNEL = 'EVENT_ON_OPEN_DATA_CHANNEL';
   public static EVENT_ON_CLOSE_DATA_CHANNEL = 'EVENT_ON_CLOSE_DATA_CHANNEL';
+  public static EVENT_UPDATE_SEEN_TIME = 'EVENT_UPDATE_SEEN_TIME';
 
-  public p2pContactStore: Store;
-  public seenP2PMessageTimestampStore: Store;
-  public offchainMode: boolean = false;
   public hasUnreadMessage: boolean = false;
 
-  private connector: p2p.P2PConnector;
+  public connector: p2p.P2PConnector;
+
+  private _state: string //empty string means is ok
+
+  private baseProtocol: p2p.BaseProtocol;
+  u2uProtocol: p2p.U2UProtocol;
+  private signalingProtocol: p2p.SignalingProtocol;
+
+  /**
+   * Contact's unread status 'unreadStatus': 0 - contact has no unread messages, 1 - active contact (selected contact), message timestamp - has p2p unread messages
+   * Updating unread rooms statuses:
+   *   find not active contact(s) where pub key == "1" and update it to "0" so it is allowed to be updated (to 2/3/4) on new message;
+   *   update active contact (public key) to "1" and saved to db. On new message the contact marked "1" is not updated to "unread";
+   *   on new message the contact marked not "1" is updated to "message timestamp";
+   *   contact marked >"1" are unread.
+   *
+   * @param reset
+   */
+  unreadStatusAccessor = {
+    getUnreadStatus: (key) => db.getValue(`unread-status.${this.user.account}.${db.compactHash(key)}`).then(r => r?.value),
+    putUnreadStatus: (key, status) => db.putValue(`unread-status.${this.user.account}.${db.compactHash(key)}`, status),
+  }
+
+  updateUnreadStatus = () => {
+    db.getValuesStartWith(`unread-status.${this.user.account}`).then((records: any[]) => {
+      let n = 0
+      for (const r of records) {
+        if (r.value > 1) n++
+      }
+      this.emit(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, n)
+    })
+  }
 
   constructor(private settings: SettingsService,
               private user: UserService,
               private storage: StorageService,
               private $interval: angular.IIntervalService,
               private heat: HeatService,
-              private $mdToast: angular.material.IToastService) {
+              private $mdToast: angular.material.IToastService,
+              private contactService: ContactService,
+              private env: EnvService) {
     super();
 
-    let listener = () => {
-      this.connector = new p2p.P2PConnector(this, settings, $interval);
-      this.connector.setup(
-        this.user.publicKey,
+    this._state = 'not ready'
+
+    let closeConnector = () => {
+      if (this.connector) {
+        this.connector.close(true)
+        this.connector = null
+        this._state = 'connection is closed'
+      }
+    };
+
+    user.on(UserService.EVENT_UNLOCKED, () => {
+      closeConnector()
+
+      importExport.convertOldP2PMessagesToIndexedDB(user.account, user.publicKey)
+
+      let protocols = [
+        this.baseProtocol = new p2p.BaseProtocol(),
+        this.u2uProtocol = new p2p.U2UProtocol(),
+        this.signalingProtocol = new p2p.SignalingProtocol()
+      ]
+
+      this.connector = new p2p.P2PConnector(
+        $interval, this, settings, this.user.publicKey,
         (roomName, peerId: string) => this.createRoomOnIncomingCall(roomName, peerId),
-        peerId => this.confirmIncomingCall(peerId),
-        reason => this.onSignalingError(reason),
+        peerId => this.processIncomingCall(peerId),
+        (reason, protocol) => this.onError(reason, protocol),
         dataHex => this.sign(dataHex),
         (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
-        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey)
-      );
-    };
-    user.on(UserService.EVENT_UNLOCKED, listener);
+        (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
+        protocols
+      )
 
-    this.p2pContactStore = storage.namespace('p2pContacts');
-    this.seenP2PMessageTimestampStore = storage.namespace('contacts.seenP2PMessageTimestamp');
+      this.connector.setOnlineStatus("online")
+      this.enterRoom(this.user.publicKey)
+
+      this._state = ''
+    });
+
+    user.on(UserService.EVENT_LOCKED, closeConnector);
+
+    setInterval(this.updateUnreadStatus, 6000)
   }
 
-  private encrypt(message: string, peerPublicKey: string) {
-    return heat.crypto.encryptMessage(message, peerPublicKey, this.user.secretPhrase, false);
+  get state(): string {
+    return this._state || this.connector?.state
+  }
+
+  private encrypt(message: string | ArrayBuffer, recipientPublicKey: string) {
+    if (message instanceof ArrayBuffer) {
+      let options: heat.crypto.IEncryptOptions = {
+        publicKey: converters.hexStringToByteArray(recipientPublicKey),
+        privateKey: converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
+      }
+      return heat.crypto.encryptBinary(message, options)
+    }
+    return heat.crypto.encryptMessage(message, recipientPublicKey, this.user.secretPhrase, false)
   }
 
   private decrypt(message: heat.crypto.IEncryptedMessage, peerPublicKey: string) {
-    return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false);
+    if (message.isText) {
+      return heat.crypto.decryptMessage(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false)
+    }
+    return heat.crypto.decryptBinary(message.data, message.nonce, peerPublicKey, this.user.secretPhrase, false)
   }
 
-  onMessage(msg: {}, room: p2p.Room) {
-    this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room);
-    this.updateSeenTime(null);
-    this.displayNewMessagePopup(msg, room);
-  }
-
-  private displayNewMessagePopup(msg: any, room: p2p.Room) {
-    if (msg.type == "chat" && msg.text) {
-      let account = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
-      let text: string = msg.text.substring(0, 50);
-      if (msg.text.length > 50) {
-        let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
-        text = text.substring(0, lastSpaceIndex) + " ...";
+  onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
+    this.displayNewMessagePopup(msg, room)
+    this.contactService.getContacts().then(contacts => {
+      let c = contacts.find(v => v.publicKey == msg.fromPeerId)
+      if (!c) {
+        let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+        if (senderAccount) {
+          this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
+        }
       }
+    }).then(() => {
+      if (msg.type == "contactUpdate") {
+        let parsedMessage = JSON.parse(msg.text)
+        let contactAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+        let publicKey = msg.fromPeerId
+        this.heat.api.searchPublicNames(contactAccount, 0, 100).then((accounts) => {
+          let expectedAccount = accounts.find(value => value.publicKey == publicKey)
+          if (expectedAccount) {
+            let contactUtils = <ContactService>heat.$inject.get('contactService')
+            contactUtils.updateContactCurrencyAddress(
+                contactAccount, parsedMessage.name, parsedMessage.address,
+                publicKey, expectedAccount.publicName, -Date.now()
+            )
+          }
+        })
+      }
+    }).then(() => this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room))
+    .catch(reason => console.error(reason))
+  }
+
+  sendFile(messageId: string, file: File, recipientPublicKey: string) {
+    if (this.env.isBrowser) {
+      return file.arrayBuffer().then(arrayBuffer => {
+        let encrypted = this.encrypt(arrayBuffer, recipientPublicKey)
+        let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
+        return this.heat.api.uploadFile(messageId, encryptedBuffer)
+      }).catch(reason => {
+        this.$mdToast.show(this.$mdToast.simple().textContent(
+          `Error on file uploading: ${reason?.description || reason?.data?.errorDescription}`
+        ).hideDelay(6000))
+      })
+    } else {
+      let p: Promise<ArrayBuffer> = new Promise<ArrayBuffer>((resolve, reject) => {
+        let fs = require("fs")
+        // @ts-ignore
+        fs.readFile(file.path, function (err, data) {
+          if (err) reject(err)
+          else resolve(data.buffer)
+        })
+      })
+      // @ts-ignore
+      return p.then(arrayBuffer => {
+        let encrypted = this.encrypt(arrayBuffer, recipientPublicKey)
+        let encryptedBuffer = converters.stringToArrayBuffer(JSON.stringify(encrypted))
+        return this.heat.api.uploadFile(messageId, encryptedBuffer)
+      }).catch(reason => {
+        this.$mdToast.show(this.$mdToast.simple().textContent(
+          `Error on file uploading: ${reason?.description || reason?.data?.errorDescription}`
+        ).hideDelay(6000))
+      })
+    }
+  }
+
+  onFile(fileContent: string | ArrayBuffer, room: p2p.Room,
+         fileTransferMessageId: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
+         fileSavedCallback?: Function): any {
+    let encryptedMessage: heat.crypto.IEncryptedMessage = typeof fileContent === "string"
+      ? JSON.parse(fileContent)
+      : JSON.parse(converters.arrayBufferToString(fileContent))
+    let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
+
+    dialogs.confirm(
+      "Save file",
+      "Note the file will be deleted on the server after you confirm this.<br>Do you want to save the file on your device?"
+    ).then(() => {
+      saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
+      setTimeout(() => {
+        this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
+        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 2, 'status.stage': 2})
+        if (fileSavedCallback) fileSavedCallback()
+      }, 250)
+    })
+  }
+
+  onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void {
+    messages.filter(v => !v.error)
+    this.$mdToast.show(
+      this.$mdToast.simple().textContent(`${messages.length} messages have been deleted on the server`).hideDelay(9000)
+    )
+  }
+
+  onServerMessageExistsCallbacks: Map<string, Function> = new Map<string, Function>()
+
+  onServerMessageExists(targetMessageId: string, message: boolean, file: boolean): void {
+    let callback = this.onServerMessageExistsCallbacks.get(targetMessageId)
+    if (callback) callback(message, file)
+  }
+
+  onError(reason: string, protocol?: p2p.Protocol) {
+    if (protocol == p2p.Protocol.U2U) {
       this.$mdToast.show(
-        this.$mdToast.simple().textContent(`New message from ${account}: "${text}"`).hideDelay(6000)
+        this.$mdToast.simple().textContent(`Error: ${reason}`).hideDelay(9000)
       );
+    } else {
+      console.error(`Messaging error: ${reason}\n Protocol: ${protocol}`);
     }
   }
 
   /**
-   * Register me so can be called.
+   * Accumulated messages for debounced popup UI that display aggregated info
    */
-  // register(): Room {
-  //   let name = this.user.publicKey;
-  //   let room = this.connector.rooms.get(name);
-  //   if (!room) {
-  //     room = new Room(this.user.publicKey, this.connector, this.storage, this.user);
-  //     // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-  //     // room.onMessage = msg => this.onMessage(msg);
-  //     // room.onFailure = e => this.onError(e);
-  //     // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-  //     // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-  //     // room.rejected = (byPeerId, reason) => {
-  //     //   this.messages.push("Peer '" + byPeerId + "' rejected me. Reason: " + reason);
-  //     //   this.$scope.$apply();
-  //     // };
-  //     room.enter();
-  //     this.connector.rooms.set(name, room);
-  //   }
-  //   return room;
-  // }
+  private roomMessagesAccumulator: RoomMessagesAccumulator = []
+
+  /**
+   * Display aggregated message for received messages between debounced invokes
+   */
+  private displayNewMessagePopup(msg: any, room: p2p.Room) {
+    if ((msg.type == "chat" || msg.type == "file") && msg.text) {
+      this.roomMessagesAccumulator.push({msg: msg, room: room})
+      this.displayNewMessagePopupDebounced(this.roomMessagesAccumulator, heat)
+    }
+  }
+
+  private displayNewMessagePopupDebounced: (roomMessages: RoomMessagesAccumulator, heat) => void = utils.debounce(
+      (roomMessages: RoomMessagesAccumulator, heat) => {
+        if (roomMessages.length == 1) {
+          let msg = roomMessages[0].msg
+          let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId);
+          let text: string = msg.text.substring(0, 50);
+          if (msg.text.length > 50) {
+            let lastSpaceIndex = Math.max(text.lastIndexOf(" "), 30);
+            text = text.substring(0, lastSpaceIndex) + " ...";
+          }
+          this.$mdToast.show(
+              this.$mdToast.simple().textContent(`New message from ${senderAccount}: "${text}"`).hideDelay(6000)
+          );
+        } else if (roomMessages.length > 1) {
+          this.$mdToast.show(
+              this.$mdToast.simple().textContent(`${roomMessages.length} new messages`).hideDelay(6000)
+          );
+        }
+        roomMessages.length = 0
+      },
+      1000, false
+  );
 
   set onlineStatus(status: OnlineStatus) {
-    this.connector.setOnlineStatus(status);
+    this.connector?.setOnlineStatus(status);
   }
 
   get onlineStatus(): OnlineStatus {
-    return this.connector.onlineStatus;
+    return this.connector?.onlineStatus;
   }
 
-  /**
-   * Returns room with single peer.
-   */
   getOneToOneRoom(peerId: string, required?: boolean): p2p.Room {
-    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-    let room = this.connector.rooms.get(roomName);
+    let roomKey = this.generateOneToOneRoomKey(peerId);
+    let room = this.connector?.rooms.get(roomKey);
     if (!room && required) {
-      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
-      this.connector.rooms.set(roomName, room);
+      room = this.setupRoom(new p2p.Room(this.generateOneToOneRoomKey(peerId), this, this.connector, this.user, [peerId]));
+      this.connector.rooms.set(roomKey, room);
     }
     if (room && room.getAllPeers().size <= 1) {
       //todo check is opened channel
@@ -141,18 +317,22 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     }
   }
 
+  sendKeys = (room: p2p.Room, text: string) => {
+    room.sendMessage(new p2p.U2UMessage("contactUpdate", Date.now(), text));
+  }
+
   /**
-   * Creates new room and registers it on the signaling server.
+   * Create new room and register it on the signaling server.
    */
   enterRoom(peerId: string): p2p.Room {
     if (this.onlineStatus == "offline") {
       return null;
     }
-    let roomName = this.generateOneToOneRoomName(this.user.publicKey, peerId);
-    let room = this.connector.rooms.get(roomName);
+    let roomKey = this.generateOneToOneRoomKey(peerId);
+    let room = this.connector?.rooms.get(roomKey);
     if (!room) {
-      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
-      this.connector.rooms.set(roomName, room);
+      room = this.setupRoom(new p2p.Room(this.generateOneToOneRoomKey(peerId), this, this.connector, this.user, [peerId]));
+      this.connector?.rooms.set(roomKey, room);
     }
     if (room.state.entered == "not") {
       room.enter();
@@ -160,14 +340,12 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return room;
   }
 
-  call(peerId: string): p2p.Room {
-    let room = this.enterRoom(peerId);
-    this.connector.call(peerId, this.user.publicKey, room);
+  requestNewContact(recipient: string, text: string): p2p.Room {
+    let room = this.enterRoom(recipient)
+    //room.sendMessage(new p2p.U2UMessage("newContact", Date.now()))
+    this.u2uProtocol.requestNewContact(recipient, this.user.publicKey, room, text)
+    //this.connector.call(peerId, this.user.publicKey, room);
     return room;
-  }
-
-  onSignalingError(reason: string) {
-    console.log("Signaling error: " + reason);
   }
 
   sign(dataHex: string): p2p.ProvingData {
@@ -183,92 +361,70 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     room.onCloseDataChannel = peerId => {
       this.emit(P2PMessaging.EVENT_ON_CLOSE_DATA_CHANNEL, room, peerId);
     };
-    return room;
+    return room
   }
 
-  private generateOneToOneRoomName(peerOnePublicKey: string, peerTwoPublicKey: string) {
-    let arr = [heat.crypto.getAccountIdFromPublicKey(peerOnePublicKey), heat.crypto.getAccountIdFromPublicKey(peerTwoPublicKey)];
-    arr.sort();
-    return arr[0] + "-" + arr[1];
+  public generateOneToOneRoomKey(contactPublicKey: string) {
+    let contactPublicKeyBytes = converters.hexStringToByteArray(contactPublicKey)
+    let userPrivateKeyBytes = converters.hexStringToByteArray(heat.crypto.getPrivateKey(this.user.secretPhrase))
+    let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, contactPublicKeyBytes)
+    return db.bytesToCompactHash(sharedSecret)
   }
 
   private createRoomOnIncomingCall(roomName: string, peerId: string) {
-    let room = this.connector.rooms.get(roomName);
+    let room = this.connector?.rooms.get(roomName);
     if (!room) {
-      room = this.setupRoom(new p2p.Room(roomName, this.connector, this.storage, this.user, [peerId]));
-      // room.confirmIncomingCall = peerId => this.confirmIncomingCall(peerId);
-      // room.onFailure = e => this.onError(e);
-      // room.onMessage = msg => this.onMessage(msg);
-      // room.onOpenDataChannel = peerId => this.onOpenDataChannel(peerId);
-      // room.onCloseDataChannel = peerId => this.onCloseDataChannel(peerId);
-      this.connector.rooms.set(roomName, room);
+      room = this.setupRoom(new p2p.Room(this.generateOneToOneRoomKey(peerId), this, this.connector, this.user, [peerId]));
+      this.connector?.rooms.set(roomName, room);
     }
     return room;
   }
 
-  private confirmIncomingCall(peerId: string): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
+  private processIncomingCall(callerPublicKey: string): Promise<any> {
+    return new Promise<void>((resolve, reject) => {
       // if peer is connected already confirm silently
-      if (this.isPeerConnected(peerId)) {
+      if (this.isPeerConnected(callerPublicKey)) {
         resolve();
         return;
       }
 
-      let updateContactCallTime = (account: string, publicKey: string, publicName: string) => {
+      let callerAccount = heat.crypto.getAccountIdFromPublicKey(callerPublicKey);
+
+      let updateContactCallTime = (account: string, publicKey: string, publicName?: string) => {
         //save negative time to force to select contact in contact list
-        this.saveContact(peerAccount, peerId, publicName, -Date.now());
+        this.contactService.saveContact(callerPublicKey, publicName, -Date.now());
       };
 
-      let peerAccount = heat.crypto.getAccountIdFromPublicKey(peerId);
-      this.heat.api.searchPublicNames(peerAccount, 0, 100).then(accounts => {
-        let expectedAccount = accounts.find(value => value.publicKey == peerId);
-        if (expectedAccount) {
-          let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
-            let interval = this.$interval(() => {
-              if (this.isPeerConnected(peerId)) {
-                mdDialog.cancel("Already connected");
-                this.$interval.cancel(interval);
-                updateContactCallTime(peerAccount, peerId, expectedAccount.publicName);
-              }
-            }, 500, 7, false);
-          };
-          dialogs.confirm(
-            "Incoming connect request",
-            `Account &nbsp;&nbsp;<b>${expectedAccount.publicName}</b>&nbsp;&nbsp; wants to connect with you. Accepting connection will share your current IP address. Accept or decline? Click OK to accept, Cancel to decline.`,
-            closeDialogOnConnected
-          ).then(() => {
-            updateContactCallTime(peerAccount, peerId, expectedAccount.publicName);
-            resolve();
-          });
-        } else {
-          reject("Account not found");
-        }
+      this.heat.api.searchPublicNames(callerAccount, 0, 100).then(accounts => {
+        let expectedAccount = accounts.find(value => value.publicKey == callerPublicKey)
+        let caller = expectedAccount ? expectedAccount.publicName : callerAccount
+        let closeDialogOnConnected = (mdDialog: angular.material.IDialogService) => {
+          let interval = this.$interval(() => {
+            if (this.isPeerConnected(callerPublicKey)) {
+              mdDialog.cancel("Already connected");
+              this.$interval.cancel(interval);
+              updateContactCallTime(callerAccount, callerPublicKey,  caller);
+            }
+          }, 500, 7, false);
+        };
+        let notes = expectedAccount ? null : `Note the caller has no registered in the blockchain`
+        dialogs.confirm(
+          "Incoming connect request",
+          `Account &nbsp;&nbsp;<b>${caller}</b>&nbsp;&nbsp; wants to connect with you.
+           Accepting connection will share your current IP address.
+           <p><strong>Accept or decline?</strong> Click OK to accept, Cancel to decline.</p>
+           ${notes || ""}`,
+          closeDialogOnConnected
+        ).then(() => {
+          updateContactCallTime(callerAccount, callerPublicKey, expectedAccount ? expectedAccount.publicName : null);
+          resolve();
+        });
       });
     });
   }
 
-  dialog($event?, recipient?: string, recipientPublicKey?: string, userMessage?: string): p2p.CallDialog {
-    return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, this);
-  }
-
-  saveContact(account: string, publicKey: string, publicName: string, calledTimestamp?: number) {
-    if (!publicKey) return;
-    let contact: IHeatMessageContact = this.p2pContactStore.get(account);
-    if (contact && calledTimestamp && calledTimestamp != contact.activityTimestamp) {
-      contact.activityTimestamp = calledTimestamp;
-      this.p2pContactStore.put(account, contact);
-    }
-    if (!contact) {
-      contact = {
-        account: account,
-        privateName: '',
-        publicKey: publicKey,
-        publicName: publicName,
-        timestamp: 0,
-        activityTimestamp: calledTimestamp
-      };
-      this.p2pContactStore.put(account, contact);
-    }
+  dialog($event?, recipient?: string, recipientPublicKey?: string, messageText?: string): p2p.CallDialog {
+    return new p2p.CallDialog($event, this.heat, this.user, recipient, recipientPublicKey, messageText, this);
   }
 
   isPeerConnected(peerId: string): boolean {
@@ -280,29 +436,41 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
     return false;
   }
 
-  roomHasUnreadMessage(room: p2p.Room): boolean {
-    return room.lastIncomingMessageTimestamp > this.seenP2PMessageTimestampStore.getNumber(room.name, 0);
+  checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean,
+                             transport: p2p.TransportType, targetMessageId: string, status: p2p.MessageStatus) {
+    if (outgoing && (transport == "server" || messageType == "file")) {
+      if (messageType == "file" || !status || status?.stage != 1) {
+        this.u2uProtocol.sendRemoveMessage(targetMessageId)
+      }
+    }
   }
 
-  /**
-   * The seen time is needed to display mark for contact when it receives the new unread messages.
-   */
-  updateSeenTime(roomName: string, timestamp?: number) {
-    if (roomName) {
-      this.seenP2PMessageTimestampStore.put(roomName, timestamp ? timestamp : Date.now() - 500);
-    }
-
-    //update read status on all rooms
-    let unreadRooms = [];
-    this.connector.rooms.forEach(room => {
-      if (this.roomHasUnreadMessage(room)) {
-        unreadRooms.push(room);
+  requestIsMessageExists(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
+                         targetMessageId: string, status: p2p.MessageStatus,
+                         callback: (message: boolean, file: boolean) => void) {
+    if (outgoing && (transport == "server" || messageType == "file")) {
+      if (messageType == "file" || !status || status?.stage != 1) {
+        this.onServerMessageExistsCallbacks.set(targetMessageId, callback)
+        setTimeout(() => this.onServerMessageExistsCallbacks.delete(targetMessageId), 12000)
+        this.u2uProtocol.requestIsMessageExists(targetMessageId) //the callback will be invoked by response to this request
+        return
       }
-    });
-    let nowHasUnreadMessage = unreadRooms.length > 0;
-    if (nowHasUnreadMessage != this.hasUnreadMessage) {
-      this.hasUnreadMessage = nowHasUnreadMessage;
-      this.emit(P2PMessaging.EVENT_HAS_UNREAD_CHANGED, unreadRooms);
+    }
+    callback(null, null)
+  }
+
+  contactStatus(contactPubKey) {
+    if (!contactPubKey) return
+    let room = this.getOneToOneRoom(contactPubKey)
+    if (!room) return
+    let peer = room.getPeer(contactPubKey)
+    if (peer?.isConnected()) {
+      return "channelOpened"
+    } else {
+      //if (room.state.entered == "entered") { //it is more corerctly, but need the callback like room.onEntered()
+      if (room?.state.entered != "not") {
+        return "roomRegistered"
+      }
     }
   }
 

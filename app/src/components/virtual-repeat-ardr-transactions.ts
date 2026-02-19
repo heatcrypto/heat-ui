@@ -23,7 +23,7 @@
           <div class="truncate-col info-col left">TO</div>
 
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left">Amount</div>
+          <div class="truncate-col amount-col">Amount</div>
 
           <!-- MESSAGE -->
           <div class="truncate-col message-col left">Message</div>
@@ -54,7 +54,7 @@
             </div>
 
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left">
+            <div class="truncate-col amount-col">
               <span>{{item.amount}}</span>
             </div>
 
@@ -91,8 +91,11 @@ class VirtualRepeatArdrTransactionsComponent extends VirtualRepeatComponent {
               private ardorBlockExplorerService: ArdorBlockExplorerService) {
 
     super($scope, $q);
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    let secretPhrase = this.user.secretPhrase;
+    let secretPhrase = this.user.currency.secretPhrase;
     this.initializeVirtualRepeat(
       this.ardorTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
@@ -138,10 +141,10 @@ class VirtualRepeatArdrTransactionsComponent extends VirtualRepeatComponent {
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    ardorPendingTransactions.addListener(listener)
+    this.ardorPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      ardorPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.ardorPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
     })
   }

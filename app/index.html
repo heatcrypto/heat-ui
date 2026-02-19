@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
     <meta http-equiv="Last-Modified" content="%BUILD_OVERRIDE_LAST_MODIFIED%">
-    <title>HEAT %BUILD_OVERRIDE_VERSION%</title>
+    <title>Heatwallet %BUILD_OVERRIDE_VERSION%</title>
     <style>
       html, body { height: 100%; }
       md-input-container .md-errors-spacer { min-height: 0; }
@@ -32,7 +32,7 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans:400,500,700">
     <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto'>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<!--    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">-->
     <!-- build:css material.css -->
     <link rel="stylesheet" href="../node_modules/angular-material/angular-material.css">
     <link rel="stylesheet" href="../node_modules/ng-popover/dist/angular-popover.css">
@@ -47,71 +47,6 @@
         <div ng-viewport flex layout-fill layout="column"></div>
       </div>
     </div>
-
-    <!-- Google Addwords Conversion tracker runs in its separated domain for security reasons-->
-    <!-- <iframe src="https://heatwallet.com/secure-addwords-iframe.html"
-      style="width:0; height:0; border:0; border:none" id="secure-addwords-iframe"
-      sandbox="allow-scripts"></iframe>
-    <script>
-      /**
-       * We call the global gtag method which in turn calls the google gtag function
-       * which was loaded in the shielded off iframe, the only way to talk to the iframe
-       * is through sending message events for which the iframe is listening.
-       *
-       * @param message { type: [signup|bid], transaction_id: string }
-       * */
-      function gtag_SECURE(message) {
-        let win = document.getElementById('secure-addwords-iframe').contentWindow
-        win.postMessage(message, '*')
-      }
-      function gtag_report_conversion_bid_SECURE(url, transaction_id) {
-        gtag_SECURE({type:'bid', transaction_id: Date.now()+''})
-      }
-      function gtag_report_conversion_signup_SECURE(url) {
-        gtag_SECURE({type:'signup'})
-      }
-    </script> -->
-
-    <!-- Or alternatively we can use the version where the tracker code runs in the SECURE context -->
-    <!-- <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-        console.log('gtag', arguments)
-      }
-      gtag('js', new Date());
-      gtag('config', 'AW-876749157');
-    </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-876749157"></script>
-    <script>
-      function gtag_report_conversion_bid(url, transaction_id) {
-        var callback = function () {
-          if (typeof (url) != 'undefined') {
-            window.location = url;
-          }
-        };
-        gtag('event', 'conversion', {
-          'send_to': 'AW-876749157/hwIsCOPB1IABEOXCiKID',
-          'transaction_id': transaction_id,
-          'event_callback': callback
-        });
-        return false;
-      }
-    </script>
-    <script>
-      function gtag_report_conversion_signup(url) {
-        var callback = function () {
-          if (typeof (url) != 'undefined') {
-            window.location = url;
-          }
-        };
-        gtag('event', 'conversion', {
-          'send_to': 'AW-876749157/_PMbCNml1IABEOXCiKID',
-          'event_callback': callback
-        });
-        return false;
-      }
-    </script> -->
 
   </body>
 
@@ -140,7 +75,7 @@
   <script src="../node_modules/angular-ui-scroll/dist/ui-scroll-grid.min.js" defer></script>
   <script src="../node_modules/pako/dist/pako.min.js" defer></script>
   <script src="../node_modules/dateformat/lib/dateformat.js" defer></script>
-  <script src="../node_modules/filesaver.js/FileSaver.js" defer></script>
+  <script src="../node_modules/file-saver/dist/FileSaver.js" defer></script>
   <script src="../node_modules/long/dist/long.js" defer></script>
   <script src="../node_modules/bytebuffer/dist/bytebuffer.js" defer></script>
   <script src="../node_modules/big.js/big.min.js" defer></script>
@@ -152,6 +87,9 @@
   <script src="../app/node_helpers/make-dcodeIO-bytebuffer-global.js" defer></script>
   <script src="../app/node_helpers/make-nodejs-visible.js" defer></script>
   <script src="../app/src/lib/qrcode.js" defer></script>
+  <script src="../node_modules/dexie/dist/dexie.min.js"></script>
+  <script src="../node_modules/dexie-export-import/dist/dexie-export-import.js" defer></script>
+
   <!-- endbuild -->
 
   <!-- <script src="../node_modules/heat-libs/dist/heat-libs.umd.js" defer></script> -->

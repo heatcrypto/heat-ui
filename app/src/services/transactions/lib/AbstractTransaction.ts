@@ -133,7 +133,7 @@ class AppendixPublicNameAssignment extends Appendix {
 
 abstract class AbstractTransaction {
 
-  abstract verify(transaction: any, bytes: IByteArrayWithPosition, data?: any): boolean;
+  abstract verify(transaction: any, attachment: IByteArrayWithPosition, data?: any): boolean;
 
   confirm(name: string, expected: any, actual: any) {
     if (expected != actual) {
@@ -188,61 +188,63 @@ abstract class AbstractTransaction {
     transaction.ecBlockHeight = converters.byteArrayToSignedInt32(byteArray, 132); // 4
     transaction.ecBlockId = String(converters.byteArrayToBigInteger(byteArray, 136)); // 8
 
-    var pos: number = 144;
-    pos++; // skip the attachmentVersion byte
-
-    var bytes: IByteArrayWithPosition = {
+    let attachment: IByteArrayWithPosition = {
       byteArray: byteArray,
-      pos: pos
+      pos: 145, // next after the attachmentVersion
+      attachmentVersion: byteArray[144] //attachmentVersion byte
     };
-    if (!this.verify(transaction, bytes, data)) {
+    if (!this.verify(transaction, attachment, data)) {
       return;
     }
 
     var position = 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixMessage(bytes);
-      this.confirm("Message.message", data.message, appendix.message);
-      this.confirm("Message.messageIsText", data.messageIsText, appendix.isText);
+      let appendix = new AppendixMessage(attachment);
+      // if message is formed on server transaction creation the client app has no the original message,
+      // in this case the field "message" has special value boolean false that is the indicator that validation no needed (impossible)
+      if (data.message !== false) {
+        this.confirm("Message.message", data.message, appendix.message);
+        this.confirm("Message.messageIsText", data.messageIsText, appendix.isText);
+      }
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixEncryptedMessage(bytes);
+      let appendix = new AppendixEncryptedMessage(attachment);
       this.confirm("EncryptedMessage.encryptedMessageData",data.encryptedMessageData, appendix.encryptedMessageData);
       this.confirm("EncryptedMessage.encryptedMessageNonce",data.encryptedMessageNonce, appendix.encryptedMessageNonce);
       this.confirm("EncryptedMessage.messageToEncryptIsText",data.messageToEncryptIsText, appendix.isText);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixPublicKeyAnnouncement(bytes);
+      let appendix = new AppendixPublicKeyAnnouncement(attachment);
       this.confirm("PublicKeyAnnouncement.recipientPublicKey",data.recipientPublicKey, appendix.publicKey);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixEncryptToSelfMessage(bytes);
+      let appendix = new AppendixEncryptToSelfMessage(attachment);
       this.confirm("EncryptToSelfMessage.encryptedMessageData",data.encryptToSelfMessageData, appendix.encryptedMessageData);
       this.confirm("EncryptToSelfMessage.encryptedMessageNonce",data.encryptToSelfMessageNonce, appendix.encryptedMessageNonce);
       this.confirm("EncryptToSelfMessage.messageToEncryptIsText",data.messageToEncryptToSelfIsText, appendix.isText);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixPrivateNameAnnouncement(bytes);
+      let appendix = new AppendixPrivateNameAnnouncement(attachment);
       this.confirm("PrivateNameAnnouncement.privateNameAnnouncement",data.privateNameAnnouncement, appendix.privateNameAnnouncement);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixPrivateNameAssignment(bytes);
+      let appendix = new AppendixPrivateNameAssignment(attachment);
       this.confirm("PrivateNameAssignment.privateNameAssignment",data.privateNameAssignment, appendix.privateNameAssignment);
       this.confirm("PrivateNameAssignment.privateNameAssignmentSignature",data.privateNameAssignmentSignature, appendix.signature);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixPublicNameAnnouncement(bytes);
+      let appendix = new AppendixPublicNameAnnouncement(attachment);
       this.confirm("PublicNameAnnouncement.privateNameAssignment",data.publicNameAnnouncement, appendix.publicNameAnnouncement);
     }
     position <<= 1;
     if ((transaction.flags & position) != 0) {
-      let appendix = new AppendixPublicNameAssignment(bytes);
+      let appendix = new AppendixPublicNameAssignment(attachment);
       this.confirm("PublicNameAssignment.publicNameAssignment",data.publicNameAssignment, appendix.publicNameAssignment);
       this.confirm("PublicNameAssignment.publicNameAssignmentSignature",data.publicNameAssignmentSignature, appendix.signature);
     }
@@ -252,4 +254,9 @@ abstract class AbstractTransaction {
     Array.prototype.splice.apply(tmp1, [64,64].concat(tmp2));
     return converters.byteArrayToHexString(tmp1);
   }
+
+  protected static checkType(transaction: any, type: number, subtype: number) {
+    return transaction.type === type && transaction.subtype === subtype;
+  }
+
 }

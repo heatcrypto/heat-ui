@@ -2,7 +2,7 @@
 ///<reference path='lib/GenericDialog.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -31,32 +31,40 @@ class PlaceBidOrderService extends AbstractTransaction {
     super();
   }
 
-  dialog(currencyInfo: AssetInfo, assetInfo: AssetInfo, price?: string, quantity?: string, expiration?: number,
-            readonly?: boolean, $event?): IGenericDialog {
+  dialog(market: IHeatMarket, currencyInfo: AssetInfo, assetInfo: AssetInfo, price?: string, quantity?: string, expiration?: number,
+         readonly?: boolean, $event?): IGenericDialog {
     return new PlaceBidOrderDialog($event, this, this.$q, this.user,
-                    currencyInfo, assetInfo, price, quantity, expiration, readonly);
+      market, currencyInfo, assetInfo, price, quantity, expiration, readonly);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 4) return false;
 
-    transaction.currency = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.asset = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.quantity = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.price = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.expiration = converters.byteArrayToSignedInt32(bytes.byteArray, bytes.pos);
-    bytes.pos += 4;
+    transaction.currency = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.asset = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.quantity = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.price = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.expiration = converters.byteArrayToSignedInt32(attachment.byteArray, attachment.pos);
+    attachment.pos += 4;
 
-    return transaction.currency === data.BidOrderPlacement.currencyId &&
-           transaction.asset === data.BidOrderPlacement.assetId &&
-           transaction.quantity === data.BidOrderPlacement.quantity &&
-           transaction.price === data.BidOrderPlacement.price &&
-           transaction.expiration === data.BidOrderPlacement.expiration;
+    let result = transaction.currency === data.BidOrderPlacement.currencyId &&
+      transaction.asset === data.BidOrderPlacement.assetId &&
+      transaction.quantity === data.BidOrderPlacement.quantity &&
+      transaction.price === data.BidOrderPlacement.price &&
+      transaction.expiration === data.BidOrderPlacement.expiration;
+
+    if (attachment.attachmentVersion > 1) {
+      transaction.isSenderFeePayer = attachment.byteArray[attachment.pos] == 1;
+      attachment.pos += 1;
+      result = result && transaction.isSenderFeePayer === data.BidOrderPlacement.isSenderFeePayer;
+    }
+
+    return result
   }
 }
 
@@ -66,6 +74,7 @@ class PlaceBidOrderDialog extends GenericDialog {
               private transaction: AbstractTransaction,
               private $q: angular.IQService,
               private user: UserService,
+              private market: IHeatMarket,
               private currencyInfo: AssetInfo,
               private assetInfo: AssetInfo,
               private price: string,
@@ -102,7 +111,10 @@ class PlaceBidOrderDialog extends GenericDialog {
       builder.text('expiration', this.expiration).
               label('Expiration').
               required().
-              readonly(this.readonly)
+              readonly(this.readonly),
+      builder.switcher("isSenderFeePayer", true)
+        .label('Force sender pays network fee')
+        .visible(this.market?.isIssuerFeePayer && (this.assetInfo.type == 1 || this.currencyInfo.type == 1))
     ]
   }
 
@@ -114,9 +126,10 @@ class PlaceBidOrderDialog extends GenericDialog {
            .attachment('BidOrderPlacement', <IHeatCreateBidOrderPlacement>{
               currencyId: this.fields['currency'].value,
               assetId: this.fields['asset'].value,
-              price: utils.convertToQNT(this.fields['price'].value),
-              quantity: utils.convertToQNT(this.fields['quantity'].value),
-              expiration: this.fields['expiration'].value
+              price: utils.convertToQNT(this.fields['price'].value, this.currencyInfo.decimals),
+              quantity: utils.convertToQNT(this.fields['quantity'].value, this.assetInfo.decimals),
+              expiration: this.fields['expiration'].value,
+              isSenderFeePayer: !!this.fields['isSenderFeePayer'].value
             });
     return builder;
   }

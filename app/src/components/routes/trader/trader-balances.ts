@@ -35,7 +35,7 @@
       </md-list-item>
       <md-virtual-repeat-container  flex layout-fill layout="column" virtual-repeat-flex-helper  class="content">
         <md-list-item md-virtual-repeat="item in vm.balances">
-          <div class="truncate-col symbol-col" ng-class="{certified:item.certified}">{{item.symbol}}</div>
+          <div class="truncate-col symbol-col" ng-class="{certified:item.certified, expired: item.expired}">{{item.symbol}}</div>
           <div class="truncate-col balance-col right-align" ng-class="{certified:item.certified}" flex>{{item.balance}}</div>
         </md-list-item>
       </md-virtual-repeat-container>
@@ -81,6 +81,7 @@ class TraderBalancesComponent {
                 balance.symbol = info.symbol;
                 balance.name = info.name;
                 balance.certified = info.certified;
+                balance.expired = info.expired;
               });
             })
           );

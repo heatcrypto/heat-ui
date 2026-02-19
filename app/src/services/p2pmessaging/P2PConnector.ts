@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2019 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -37,6 +37,7 @@ if you use a TURN server, you need to check if you get an onicecandidate() event
 STUN and TURN servers list
 https://gist.github.com/yetithefoot/7592580
 https://gist.github.com/sagivo/3a4b2f2c7ac6e1b5267c2f1f59ac6c6b
+https://github.com/pradt2/always-online-stun
 
 https://security.stackexchange.com/questions/54579/webrtc-p2p-ssl-where-are-the-keys-generated
 All the communications are encrypted using Datagram Transport layer Security (DTLS), which is a derivative of SSL.
@@ -51,8 +52,36 @@ http://webrtc-security.github.io/
 
 module p2p {
 
+  export type TransportType = "chain" | "p2p" | "server"
+  export type MessageType = "chat" | "contactUpdate" | "newContact" | "file" | ""
+
   export interface P2PMessenger {
-    onMessage: (msg: {}, room: Room) => any;
+    /**
+     * Invoked on incoming message.
+     */
+    onMessage: (msg: U2UMessage, room: Room) => any
+
+    onFile: (fileContent: string | ArrayBuffer, room: p2p.Room,
+             fileTransferMessageId: string,
+             fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
+             fileSavedCallback?: Function) => any
+
+    /**
+     * Returns room with single peer.
+     */
+    getOneToOneRoom: (peerId: string, required?: boolean) => p2p.Room
+
+    sendFile(messageId: string, file: File, recipientPublicKey: string): Promise<any>
+
+    /**
+     * If needed send request to remove the message on the server
+     */
+    checkToRemoveServerMessage(messageType: p2p.MessageType, outgoing: boolean, transport: p2p.TransportType,
+                               targetMessageId: string, messageStatus: p2p.MessageStatus)
+
+    onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void
+
+    onServerMessageExists(targetMessageId: string, message: boolean, file: boolean)
   }
 
   /**
@@ -61,100 +90,121 @@ module p2p {
    */
   export class P2PConnector {
 
+    protocolsMap = {}
+
     rooms: Map<string, Room> = new Map<string, Room>(); // roomName -> room
 
     private static MSG_TYPE_CHECK_CHANNEL = "CHECK_CHANNEL";
     private static MSG_TYPE_REQUEST_PROOF_IDENTITY = "GET_PROOF_IDENTITY";
-    private static MSG_TYPE_RESPONSE_PROOF_IDENTITY = "PROOF_IDENTITY";
+    static MSG_TYPE_RESPONSE_PROOF_IDENTITY = "PROOF_IDENTITY";
 
     private webSocketPromise: Promise<WebSocket>;
     private signalingMessageAwaitings: Function[] = [];
     private notAcceptedResponse = "notAcceptedResponse_@)(%$#&#&";
 
-    private createRoom: (name: string, peerId) => Room;
-    private confirmIncomingCall: (caller: string) => Promise<void>;
-    private sign: (dataHex: string) => ProvingData;
-    private encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage;
-    private decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string;
-    private signalingError: (reason: string) => void;
-
-    private pendingIdentity: string;
-    private identity: string;
-    private pendingRooms: Function[] = [];
-    private pendingOnlineStatus: Function;
+    identity: string;
+    pendingRooms: Function[] = [];
+    pendingSendOnlineStatus: Function;
     private _onlineStatus: OnlineStatus = "offline";
     private signalingReady: boolean = null;
 
+    state: string = 'not ready'
+
     private config: RTCConfiguration = {
       iceServers: [
-        {urls: "stun:stun.l.google.com:19302"},
-        {urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302", "stun:stun4.l.google.com:19302"]},
-        {urls: "stun:23.21.150.121"},
-        {urls: "stun:stun01.sipphone.com"},
-        {urls: "stun:stun.iptel.org"},
-        {urls: "stun:stun.ekiga.net"},
-        {urls: "stun:stun.fwdnet.net"},
-        {urls: "stun:stun.xten.com"}
+        {
+          urls: ["stun:stun.optdyn.com:3478",
+            "stun:stun.vavadating.com:3478",
+            "stun:stun.meowsbox.com:3478",
+            "stun:stun.voip.aebc.com:3478",
+            "stun:stun.galeriemagnet.at:3478",
+            "stun:stun.lovense.com:3478",
+            "stun:stun.verbo.be:3478",
+            "stun:stun.sipnet.ru:3478",
+            "stun:stun.eol.co.nz:3478"
+          ]
+        },
+        {
+          urls: ["stun:stun.l.google.com:19302",
+            "stun:stun1.l.google.com:19302",
+            "stun:stun2.l.google.com:19302",
+            "stun:stun3.l.google.com:19302",
+            "stun:stun4.l.google.com:19302",
+            "stun:stun.ekiga.net",
+            "stun:stun.ideasip.com",
+            "stun:stun.rixtelecom.se",
+            "stun:stun.schlund.de",
+            "stun:stun.stunprotocol.org:3478",
+            "stun:stun.voiparound.com",
+            "stun:stun.voipbuster.com",
+            "stun:stun.voipstunt.com",
+            "stun:stun.voxgratia.org"]
+        }
       ],
       /*iceTransportPolicy: "relay"*/
     };
 
     private pingSignalingInterval;
 
-    constructor(private messenger: p2p.P2PMessenger, private settings: SettingsService, private $interval: angular.IIntervalService) {
-    }
-
     /**
-     * @param identity
+     * @param $interval
+     * @param messenger
+     * @param settings
+     * @param accountPublicKey
      * @param createRoom function to create the room on incoming call
-     * @param confirmIncomingCall function to accept the caller
-     * @param signalingError
+     * @param processIncomingCall function to accept the caller
+     * @param processError
      * @param sign Signing delegated to client class because this service class should not to have deal with secret info
      * @param encrypt Encrypt p2p messages
      * @param decrypt Decrypt p2p messages
+     * @param protocols list of supported protocols
      */
-    setup(identity: string,
-          createRoom: (name: string, peerId) => Room,
-          confirmIncomingCall: (caller: string) => Promise<void>,
-          signalingError: (reason: string) => void,
-          sign: (dataHex: string) => ProvingData,
-          encrypt: (message: string, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
-          decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string) {
-      this.pendingIdentity = identity;
-      this.createRoom = createRoom;
-      this.confirmIncomingCall = confirmIncomingCall;
-      this.sign = sign;
-      this.signalingError = signalingError;
-      this.encrypt = encrypt;
-      this.decrypt = decrypt;
+    constructor(
+      private $interval: angular.IIntervalService,
+      public messenger: p2p.P2PMessenger,
+      private settings: SettingsService,
+      public accountPublicKey: string,
+      public createRoom: (name: string, peerId) => p2p.Room,
+      public processIncomingCall: (caller: string) => Promise<void>,
+      public processError: (reason: string, protocol?: Protocol) => void,
+      public sign: (dataHex: string) => p2p.ProvingData,
+      public encrypt: (message: string | ArrayBuffer, peerPublicKey: string) => heat.crypto.IEncryptedMessage,
+      public decrypt: (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => string | ArrayBuffer,
+      protocols: BaseProtocol[]
+    ) {
+      protocols.forEach(p => {
+        p.connector = this
+        this.protocolsMap[p.name] = p
+      })
     }
 
     /**
      * Sets online status on the server side for the peer associated with this connector (websocket connection for signaling).
      */
-    setOnlineStatus(status: OnlineStatus) {
+    setOnlineStatus(newStatus: OnlineStatus) {
       let sendOnlineStatus = () => {
-        this.sendSignalingMessage([{type: "SET_ONLINE_STATUS", status: status}]);
-        if (status == "online") {
-          this.rooms.forEach(room => {
-            if (room.state.entered == "entered") {
-              //enforce registration on the server because new room members could be entered while was offline
-              room.enter(true);
-            }
-          })
-        }
-      };
+        return this.sendWebsocketMessage(Protocol.signaling, [{type: "SET_ONLINE_STATUS", status: newStatus}]).then(value => {
+          if (this._onlineStatus == "online") {
+            this.rooms.forEach(room => {
+              if (room.state.entered == "entered") {
+                //enforce registration on the server because new room members could be entered while was offline
+                room.enter(true)
+              }
+            })
+          }
+        })
+      }
       if (this.identity) {
-        sendOnlineStatus();
+        sendOnlineStatus()
       } else {
-        this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
-        this.pendingOnlineStatus = sendOnlineStatus;
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}])
+        this.pendingSendOnlineStatus = sendOnlineStatus
       }
-      this._onlineStatus = status;
-      if (status == "offline") {
-        this.identity = null;
-        //todo clear rooms?
+      if (newStatus == "offline") {
+        this.identity = null
+        this.close()
       }
+      this._onlineStatus = newStatus
     }
 
     get onlineStatus(): OnlineStatus {
@@ -163,7 +213,7 @@ module p2p {
 
     getPeerOnlineStatus(peerId: string): Promise<string> {
       return this.request(
-        () => this.sendSignalingMessage([{type: "GET_ONLINE_STATUS", peerId: peerId}]),
+        () => this.sendWebsocketMessage(Protocol.signaling, [{type: "GET_ONLINE_STATUS", peerId: peerId}]),
         (msg) => {
           if (msg.type === "ONLINE_STATUS" && msg.peerId == peerId)
             return msg.status;
@@ -172,12 +222,12 @@ module p2p {
     }
 
     call(toPeerId: string, caller: string, room: Room) {
-      this.sendSignalingMessage([{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.name}]);
+      this.sendWebsocketMessage(Protocol.signaling, [{type: "CALL", toPeerId: toPeerId, caller: caller, room: room.key}]);
     }
 
     getTmp(roomName: string): Promise<Array<string>> {
       return this.request(
-        () => this.sendSignalingMessage([{type: "WHO_ONLINE"}]),
+        () => this.sendWebsocketMessage(Protocol.signaling, [{type: "WHO_ONLINE"}]),
         (msg) => {
           if (msg.type === "WHO_ONLINE")
             return msg.remotePeerIds;
@@ -186,7 +236,7 @@ module p2p {
     }
 
     enter(room: Room, enforce?: boolean) {
-      let existingRoom = this.rooms.get(room.name);
+      let existingRoom = this.rooms.get(room.key);
       if (existingRoom && existingRoom.state.entered == "entered") {
         if (enforce) {
           existingRoom.state.entered = "not";
@@ -207,17 +257,17 @@ module p2p {
           }, 4000);
 
           //request entering to the room
-          this.sendSignalingMessage([{type: "ROOM", room: room.name}]);
+          this.sendWebsocketMessage(Protocol.signaling, [{type: "ROOM", room: room.key}]);
         }
       };
 
-      this.rooms.set(room.name, room);
+      this.rooms.set(room.key, room);
 
       if (this.identity) {
         requestEnterRoom();
       } else {
         this.pendingRooms.push(requestEnterRoom);
-        this.sendSignalingMessage([{type: "WANT_PROVE_IDENTITY"}]);
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "WANT_PROVE_IDENTITY"}]);
         return;
       }
     }
@@ -228,11 +278,11 @@ module p2p {
     getWebSocket() {
       if (!this.webSocketPromise || this.signalingReady === false) {
         this.webSocketPromise = new Promise((resolve, reject) => {
-            let url = this.settings.get(SettingsService.HEAT_WEBRTC_WEBSOCKET);
+            let url = this.settings.get(SettingsService.HEAT_MESSAGING).websocket;
             let socket = new WebSocket(url);
             // console.log("new socket, readyState=" + socket.readyState);
             socket.onopen = () => {
-              socket.onmessage = (msg) => this.onSignalingMessage(msg);
+              socket.onmessage = (msg) => this.onWebsocketMessage(msg);
               socket.onclose = () => this.onSignalingClosed();
               this.signalingReady = true;
               if (this.pingSignalingInterval) {
@@ -244,8 +294,10 @@ module p2p {
               resolve(socket);
             };
             socket.onerror = (error) => {
-              console.log(error);
+              this.state = 'websocket error'
+              console.error(error);
               reject(error);
+              this.webSocketPromise = null;
             };
           }
         );
@@ -255,141 +307,61 @@ module p2p {
 
     private pingSignalingServer(socket: WebSocket) {
       if (this.signalingReady) {
-        this.sendSignalingMessage([{type: "PING"}]);
+        this.sendWebsocketMessage(Protocol.signaling, [{type: "PING"}]);
       }
     }
 
-    sendSignalingMessage(data: any[]): Promise<any> {
+    sendWebsocketMessage(protocol: Protocol = Protocol.signaling, data: any[]): Promise<any> {
       return this.getWebSocket()
         .then(websocket => {
-          data.splice(0, 0, "webrtc");
-          websocket.send(JSON.stringify(data));
-          //console.log(">> \n" + JSON.stringify(data));
-        }, reason => console.log(reason))
-        .catch(reason => {
-          console.log("error on get websocket \n" + reason);
+          let sendingData = [protocol].concat(data)  // sending data format: [protocolName, message1, message2, ...]
+          websocket.send(JSON.stringify(sendingData))
+          this.state = ''
+          //console.log(">> \n" + JSON.stringify(sendingData));
+        }, reason => {
+          this.state = 'no websocket connection to server'
+          console.error("error on get websocket \n" + reason)
         })
     }
 
-    onSignalingMessage(messageEvent: MessageEvent) {
+    onWebsocketMessage(messageEvent: MessageEvent) {
       if (this._onlineStatus == "offline") {
         return;
       }
-      let data = JSON.parse(messageEvent.data);
-      //console.log("<< \n"+ JSON.stringify(data));
+
+      let originalData = JSON.parse(messageEvent.data);
+
+      //console.log("<< \n"+ JSON.stringify(originalData));
+
+      let protocolName: Protocol
+      let data
+      if (Array.isArray(originalData)) {
+        protocolName = originalData[0]
+        data = originalData[1]
+      } else {
+        protocolName = Protocol.noname
+        data = originalData
+      }
+
       let msg;
       if (data.encrypted) {
-        msg = JSON.parse(this.decrypt(data.encrypted, data.fromPeer));
-        msg.fromPeer = data.fromPeer;
-        msg.toPeer = data.toPeer;
-        msg.room = data.room;
+        let decrypted = this.decrypt(data.encrypted, data.fromPeer)
+        msg = JSON.parse(<string>decrypted)
+        msg.fromPeer = data.fromPeer
+        msg.toPeer = data.toPeer
+        msg.room = data.room
       } else {
-        msg = data;
+        msg = data
       }
 
       let roomName: string = msg.room;
 
-      if (msg.type === 'PONG') {
-        //console.log("signaling pong");
-      } else if (msg.type === 'PROVE_IDENTITY') {
-        let signedData = this.sign(msg.data);
-        signedData["type"] = P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY;
-        this.sendSignalingMessage([signedData]);
-      } else if (msg.type === 'APPROVED_IDENTITY') {
-        this.identity = this.pendingIdentity;
-        this.pendingRooms.forEach(f => f());
-        this.pendingRooms = [];
-        if (this.pendingOnlineStatus)
-          this.pendingOnlineStatus();
-        this.pendingOnlineStatus = null;
-      } else if (msg.type === 'CALL') {
-        let caller: string = msg.caller;
-        this.confirmIncomingCall(caller).then(value => {
-          let room = this.createRoom(roomName, caller);
-          this.enter(room, true);
-        });
-      } else if (msg.type === 'ERROR') {
-        this.signalingError(msg.reason);
-      } else if (msg.type === 'WELCOME') {  //welcome to existing room
-        let room = this.rooms.get(roomName);
-        room.state.entered = "entered";
-        msg.remotePeerIds.forEach((peerId: string) => {
-          let peer = room.createPeer(peerId, peerId);
-          if (peer && !peer.isConnected()) {
-            let pc = this.askPeerConnection(roomName, peerId);
-            this.doOffer(roomName, peerId, pc);
-          }
-        });
-      } else if (msg.type === 'offer') {
-        let peerId: string = msg.fromPeer;
-        let peer = this.rooms.get(roomName).createPeer(peerId, peerId);
-        if (peer && !peer.isConnected()) {
-          let room = this.rooms.get(roomName);
-          let pc = this.askPeerConnection(roomName, peerId);
-          if (pc) {
-            pc.setRemoteDescription(new RTCSessionDescription(msg))
-              .then(() => {
-                this.doAnswer(roomName, peerId, pc);
-              })
-              .catch(e => {
-                if (room.onFailure) {
-                  room.onFailure(peerId, e);
-                } else {
-                  console.log(e.name + "  " + e.message);
-                }
-              });
-          }
-        }
-      } else if (msg.type === 'answer') {
-        let room = this.rooms.get(roomName);
-        let peer = room.getPeer(msg.fromPeer);
-        if (peer && !peer.isConnected()) {
-          let pc = peer.peerConnection;
-          if (pc) {
-            pc.setRemoteDescription(new RTCSessionDescription(msg))
-              .catch(e => {
-                if (room.onFailure) {
-                  room.onFailure(msg.fromPeer, e);
-                } else {
-                  console.log(e.name + "  " + e.message);
-                }
-              });
-          }
-        }
-      } else if (msg.type === 'candidate') {
-        let room = this.rooms.get(roomName);
-        let peer = room.getPeer(msg.fromPeer);
-        let pc = peer.peerConnection;
-        let candidate = new RTCIceCandidate({
-          sdpMLineIndex: msg.label,
-          candidate: msg.candidate
-        });
-        pc.addIceCandidate(candidate)
-          .catch(e => {
-            console.log("Failure during addIceCandidate(): " + e.name + "  " + e.message);
-            if (room.onFailure) {
-              room.onFailure(msg.fromPeer, e);
-            }
-          });
-
-        //hack
-        if (!peer['noNeedReconnect']) {
-          setTimeout(() => {
-            if (!peer.isConnected() && peer['connectionRole'] == "answer") {
-              peer['noNeedReconnect'] = true;
-              let pc = this.askPeerConnection(roomName, msg.fromPeer);
-              this.doOffer(roomName, msg.fromPeer, pc);
-            }
-          }, 2500);
-        }
-        // } else if (msg.type === 'GETROOM') {
-        //   this.room = msg.value;
-        //   this.onRoomReceived(this.room);
-        //   //printState("Room received");
-      } else if (msg.type === 'WRONGROOM') {
-        //window.location.href = "/";
-        console.log("Wrong room");
+      //empty protocol name means messages without specified protocol
+      let protocol: BaseProtocol = this.protocolsMap[protocolName]
+      if (protocol) {
+        protocol.handle(msg.type, roomName, msg)
       } else {
+        //throw new Error(`No protocol for protocol name "${protocolName || 'no specified'}"`)
         this.signalingMessageAwaitings.forEach(f => f(msg));
       }
     }
@@ -420,10 +392,10 @@ module p2p {
               candidate: event.candidate.candidate
             };
             let encrypted = this.encrypt(JSON.stringify(data), peerId);
-            this.sendSignalingMessage([
+            this.sendWebsocketMessage(Protocol.signaling, [
               {room: roomName, toPeerId: peerId},
               {room: roomName, fromPeer: this.identity, encrypted: encrypted}
-              ]);
+            ]);
           }
         };
         pc.ondatachannel = (event) => {
@@ -446,14 +418,15 @@ module p2p {
           }
         };
         pc.onicecandidateerror = event => {
-          console.log(`${event.errorCode}  ${event.hostCandidate}  ${event.url}  ${event.errorText}`);
+          // @ts-ignore
+          console.error(`${event.errorCode}  ${event.hostCandidate}  ${event.url}  ${event.errorText}`);
         };
 
         peer.peerConnection = pc;
 
         return pc;
       } catch (e) {
-        console.log(e);
+        console.error(e);
         pc = null;
         return;
       }
@@ -472,7 +445,7 @@ module p2p {
         let checkChannelMessage = {type: P2PConnector.MSG_TYPE_CHECK_CHANNEL, room: roomName, value: ("" + Math.random())};
         //send checking message to signaling server,
         // then when other peer will send this value also the server will be sure that both ends established channel
-        this.sendSignalingMessage([checkChannelMessage]);
+        this.sendWebsocketMessage(Protocol.signaling, [checkChannelMessage]);
         //send checking message to peer
         this.send(roomName, JSON.stringify(checkChannelMessage), dataChannel);
         //console.log("Checking message sent " + checkChannelMessage.value);
@@ -522,7 +495,7 @@ module p2p {
       try {
         dataChannel = peerConnection.createDataChannel(room + ":" + peerId, null);  //caller do
       } catch (e) {
-        console.log('error creating data channel ' + e);
+        console.error('error creating data channel ' + e);
         return;
       }
       this.initDataChannel(room, peerId, dataChannel);
@@ -549,7 +522,7 @@ module p2p {
       peerConnection.createOffer((offer) => {
           peerConnection.setLocalDescription(offer, () => {
             let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
-            this.sendSignalingMessage([
+            this.sendWebsocketMessage(Protocol.signaling, [
               {room: roomName, toPeerId: peerId, fromPeer: this.identity, encrypted: encrypted}
             ]);
           }, (e) => this.onFailure(roomName, peerId, e));
@@ -571,7 +544,7 @@ module p2p {
       peerConnection.createAnswer((answer) => {
         peerConnection.setLocalDescription(answer, () => {
           let encrypted = this.encrypt(JSON.stringify(peerConnection.localDescription), peerId);
-          this.sendSignalingMessage([
+          this.sendWebsocketMessage(Protocol.signaling, [
             {room: roomName, toPeerId: peerId, fromPeer: this.identity, encrypted: encrypted}
           ]);
         }, (e) => this.onFailure(roomName, peerId, e));
@@ -583,31 +556,61 @@ module p2p {
     // }
 
     /**
-     * Sends message to all online members of room.
+     * Sends message to all members of room.
      */
-    sendMessage(roomName: string, message: P2PMessage) {
-      return this.send(roomName, JSON.stringify(message));
+    sendMessage(roomName: string, message: U2UMessage) {
+      let result = this.send(roomName, message)
+      message.transport = result.transport
+      return result
     }
 
-    private send(roomName: string, data: string, channel?: RTCDataChannel) {
-      let room = this.rooms.get(roomName);
-      let peers = Array.from(room.getAllPeers().values());
-      let count = 0;
+    private send(roomName: string, msg: string | U2UMessage, channel?: RTCDataChannel) {
+      let room = this.rooms.get(roomName)
+      let peers = Array.from(room.getAllPeers().values())
+      let result = {count: 0, transport: null}
       for (let peer of peers) {
-        if (channel) {
-          if (peer.dataChannel == channel) {
-            let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey);
-            return this.sendInternal(channel, JSON.stringify(encrypted));
+        if ((channel && peer.dataChannel == channel) || (!channel && peer.dataChannel && peer.dataChannel.readyState == "open")) {
+          //send direct to the peer using WebRTC
+          let encryptingData
+          if (typeof msg === "string") {
+            encryptingData = msg
+          } else {
+            if (msg.type == "file") {
+              //overwrite field data
+              let fileContent: ArrayBuffer = msg.data
+              msg.data = this.encrypt(msg.data, peer.publicKey)
+            }
+            encryptingData = JSON.stringify(msg)
           }
+          let encrypted = this.encrypt(encryptingData, peer.publicKey)
+          result.transport = 'p2p'
+          result.count = this.sendRTCChannelMessage(peer.dataChannel, JSON.stringify(encrypted))
         } else {
-          let encrypted: heat.crypto.IEncryptedMessage = this.encrypt(data, peer.publicKey);
-          count = count + this.sendInternal(peer.dataChannel, JSON.stringify(encrypted));
+          //Send via the server using Websocket
+          //Add additional transport info (recipient, msgId,...) used by server for message dispatching (storage and forwarding)
+          let sendingData
+          if (typeof msg === "string") {
+            sendingData = this.encrypt(msg, peer.publicKey)
+          } else {
+            let encrypted = this.encrypt(JSON.stringify(msg), peer.publicKey)
+            sendingData = {
+              id: msg.id,
+              type: msg.type,
+              room: room.key,
+              sender: this.identity,
+              recipient: peer.publicKey,
+              payload: JSON.stringify(encrypted),
+            }
+          }
+          result.transport = 'server'
+          this.sendWebsocketMessage(Protocol.U2U, [sendingData])
+          //throw new Error('Direct channel is not provided and server messaging is not provided')
         }
       }
-      return count;
+      return result
     }
 
-    private sendInternal(channel: RTCDataChannel, data: string): number {
+    private sendRTCChannelMessage(channel: RTCDataChannel, data: string): number {
       let notSentReason;
       if (channel.readyState == "open") {
         try {
@@ -629,20 +632,19 @@ module p2p {
     onMessage(roomName: string, peerId: string, dataChannel: RTCDataChannel, event: MessageEvent) {
       try {
         let encrypted: heat.crypto.IEncryptedMessage = JSON.parse(event.data);
-        let msg = JSON.parse(this.decrypt(encrypted, peerId));
+        let msg = JSON.parse(<string>this.decrypt(encrypted, peerId));
+        msg.transport = "p2p";
         //todo consider if needing to remove all special symbols from msg.text
 
         // console.log(`<<< channel ${dataChannel.label} \n ${event.data}`);
 
         let room: Room = this.rooms.get(roomName);
         if (room) {
-          msg.fromPeerId = peerId;
-          msg.roomName = roomName;
-          room.onMessageInternal(msg);
-          this.messenger.onMessage(msg, room);
+          let problem = this.processRoomMessage(msg, room, peerId)
+          if (problem) throw new Error(problem)
         }
         if (msg.type === P2PConnector.MSG_TYPE_CHECK_CHANNEL) {
-          this.sendSignalingMessage([{room: roomName}, msg]);
+          this.sendWebsocketMessage(Protocol.signaling, [{room: roomName}, msg]);
         } else if (msg.type === P2PConnector.MSG_TYPE_REQUEST_PROOF_IDENTITY) {
           let signedData = this.sign(msg.data);
           let response = {type: P2PConnector.MSG_TYPE_RESPONSE_PROOF_IDENTITY,
@@ -686,8 +688,21 @@ module p2p {
           }
         }
       } catch (e) {
-        console.log(e);
+        console.error(e);
       }
+    }
+
+    processRoomMessage(msg: U2UMessage, room: Room, sender: string) {
+      msg.fromPeerId = sender;
+      msg.roomKey = room.key;
+
+      let validateResult = this.validateMessage(msg)
+      if (validateResult) {
+        return `Message validation error: ${validateResult}`
+      }
+
+      room.onMessageInternal(msg);
+      this.messenger.onMessage(msg, room);
     }
 
     /**
@@ -703,17 +718,19 @@ module p2p {
     /**
      * Clear all data. Close websocket of signaling channel.
      */
-    close() {
+    close(closeWebsocket?: boolean) {
       this.identity = null;
-      this.pendingIdentity = null;
       this.pendingRooms = [];
-      this.pendingOnlineStatus = null;
+      this.pendingSendOnlineStatus = null;
       this.rooms.forEach(room => this.closeRoom(room));
-      if (this.signalingReady) {
+      if ((closeWebsocket === undefined || closeWebsocket) && this.signalingReady) {
         this.getWebSocket().then(socket => socket.close());
       }
     }
 
+    private validateMessage(msg: p2p.U2UMessage) {
+      if (msg.timestamp <= 0) return "wrong timestamp"
+    }
 
     private request(request: () => void, handleResponse: (msg) => any): Promise<any> {
       let p = new Promise<any>((resolve, reject) => {
@@ -731,7 +748,6 @@ module p2p {
       });
       return promiseTimeout(3000, p);
     }
-
   }
 
   function promiseTimeout(ms, promise) {

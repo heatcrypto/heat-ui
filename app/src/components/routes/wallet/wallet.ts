@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2018 Heat Ledger Ltd.
+ * Copyright (c) 2016-2021 HEAT DEX.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -21,1630 +21,432 @@
  * SOFTWARE.
  * */
 
-class TokenBalance {
-  public isTokenBalance = true
-  public balance: string
-  public visible = false
-  constructor(public name: string, public symbol: string, public address: string) { }
-}
+namespace wlt {
 
-class CurrencyBalance {
-  public isCurrencyBalance = true
-  public balance: string
-  public inUse = false
-  public tokens: Array<TokenBalance> = []
-  public visible = false
-  constructor(public name: string, public symbol: string, public address: string, public secretPhrase: string) { }
+  export const EVENT_ETH_SENT = 'EVENT_ETH_SENT'
 
-  public unlock(noPathChange?: boolean) {
-    let user = <UserService>heat.$inject.get('user')
-    let $location = <angular.ILocationService>heat.$inject.get('$location')
-    let lightwalletService = <LightwalletService>heat.$inject.get('lightwalletService')
-    let bip44Compatible = lightwalletService.validSeed(this.secretPhrase)
+  export type SearchResultExplainedType = {
+    searchResultExplained: {
+      account: string;
+      finds: Map<string, string[]>;
+    }[];
+    queryTokens: string[];
+    filteredCount: number[]; // 0: filtered count, 1: all count
+  }
 
-    /* Create the ICurrency based on the currency type */
-    let currency: ICurrency = null
-    if (this.name == 'Ethereum') {
-      currency = new ETHCurrency(this.secretPhrase, this.address)
-    }
-    else if (this.name == 'Bitcoin') {
-      currency = new BTCCurrency(this.secretPhrase, this.address)
-    }
-    else if (this.name == 'FIMK') {
-      currency = new FIMKCurrency(this.secretPhrase, this.address)
-    }
-    else if (this.name == 'NXT') {
-      currency = new NXTCurrency(this.secretPhrase, this.address)
-    }
-    else if (this.name == 'ARDOR') {
-      currency = new ARDRCurrency(this.secretPhrase, this.address)
-    }
-    else {
-      currency = new HEATCurrency(this.secretPhrase, this.address)
-    }
+  const defaultFormatBalance = balance => balance
 
-    user.unlock(this.secretPhrase, null, bip44Compatible, currency).then(
-      () => {
-        if (!noPathChange) {
-          $location.path(currency.homePath)
-          heat.fullApplicationScopeReload()
-        }
+  export const CURRENCIES = {
+    HEAT: {name: 'HEAT', symbol: 'HEAT', multiAddress: true, formatBalance: defaultFormatBalance},
+    Ethereum: {name: 'Ethereum', symbol: 'ETH', multiAddress: true, formatBalance: defaultFormatBalance},
+    Bitcoin: {name: 'Bitcoin', symbol: 'BTC', multiAddress: true, formatBalance: defaultFormatBalance, network: 'bitcoin'},
+    FIMK: {name: 'FIMK', symbol: 'FIM', multiAddress: false, formatBalance: defaultFormatBalance},
+    NXT: {name: 'NXT', symbol: 'NXT', multiAddress: false, formatBalance: defaultFormatBalance},
+    ARDOR: {name: 'ARDOR', symbol: 'ARDR', multiAddress: false, formatBalance: defaultFormatBalance},
+    IOTA: {name: 'IOTA', symbol: 'IOTA', multiAddress: false, formatBalance: defaultFormatBalance},
+    Litecoin: {name: 'Litecoin', symbol: 'LTC', multiAddress: true, formatBalance: defaultFormatBalance},
+    BitcoinCash: {name: 'BitcoinCash', symbol: 'BCH', multiAddress: true, formatBalance: defaultFormatBalance}
+  }
+
+  // CURRENCIES.Bitcoin.formatBalance = balance => {
+  //   return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
+  // }
+
+  // CURRENCIES.BitcoinCash.formatBalance = balance => {
+  //   return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
+  // }
+
+  CURRENCIES.Litecoin.formatBalance = balance => {
+    return balance ? new Big(balance).div(wlt.SATOSHI_PER_BTC).toString() : balance
+  }
+
+  export const CURRENCIES_LIST = Object.keys(CURRENCIES).map(k => CURRENCIES[k])
+
+  export const CURRENCIES_MAP: Map<String, {name: string, symbol: string, multiAddress: boolean, formatBalance: (string) => string}> = new Map(Object.entries(CURRENCIES))
+
+  export const SYM_CURRENCIES_MAP = new Map<string, any>(CURRENCIES_LIST.map(v => [v.symbol, v]))
+
+  // @ts-ignore
+  export const CURRENCY_SYMBOLS = wlt.SYM_CURRENCIES_MAP.keys().toArray()
+
+  export const DISPLAYED_MAX_EMPTY_ADDRESSES = 20
+
+  export let createdAddresses: { [key: string]: Map<string, string> } = {}
+
+  export let shouldBeSaved: Blob
+
+  export const HASH_PREFIX = "XYZ"
+
+  export const SATOSHI_PER_BTC = new Big(100000000)
+
+  export const CACHE_KEY = {
+    addressInfo: (currencySym, address) => `cache-ai-${currencySym}-${db.compactHash(address)}`
+  }
+
+  const storageMap = new Map<string, Store>()
+
+  const UNCONFIRMED_CURRENCY_BALANCE_LIFETIME = 30000 * 60 // 30 minutes
+
+  export let aggregatedBalances = {} // currency balance aggregated per account {1122334455555555: {ETH: 12.33, BTC: 100500}}
+
+  export const DB_VALUE_SALT = 'F<SH'  //do not change it, otherwise DB data becomes non-consistent
+
+  export let walletEntriesCache: Map<string, WalletEntry> = new Map<string, wlt.WalletEntry>()
+
+  export let currencyBalanceCache: Map<string, wlt.CurrencyBalance> = new Map<string, wlt.CurrencyBalance>()
+
+  window.addEventListener("beforeunload", function (e) {
+    if (shouldBeSaved) {
+      try {
+        saveFile(shouldBeSaved)
+      } catch (e) {
+        console.error(e)
       }
-    )
-  }
-}
-
-class CurrencyAddressLoading {
-  public isCurrencyAddressLoading = true
-  public visible = false
-  public wallet: WalletType
-  constructor(public name: string) { }
-}
-
-class CurrencyAddressCreate {
-  public isCurrencyAddressCreate = true
-  public visible = false
-  public hidden = true
-  public parent: WalletEntry
-  public flatten: () => void
-  constructor(public name: string, public wallet: WalletType) { }
-
-  /* Handler for creating a new address, this method is declared here (on the node so to say)
-    still after an architectural change where we dont display the CREATE node anymore.
-    We'll be leaving it in place where all you need to do is set this.hidden=false to
-    have it displayed again. */
-  createAddress(component: WalletComponent) {
-
-    // collect all CurrencyBalance of 'our' same currency type
-    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-    // if there is no address in use yet we use the first one
-    if (currencyBalances.length == 0) {
-      let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
-      component.rememberAdressCreated(this.parent.account, nextAddress.address)
-      newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
-      this.flatten()
-      return true
+      e.returnValue = "\o/"
     }
+  })
 
-    // determine the first 'nxt' address based of the last currencyBalance displayed
-    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
+  // refresh visible balance for wallet page entries and fill aggregated balances (currency balances per account)
+  export function refreshBalances(onlyAggregated = false) {
+    let ab = aggregatedBalances = {}
+    let cbs = Array.from(currencyBalanceCache.values())
+    for (const cb of cbs) {
+      if (!onlyAggregated && cb.refresh && cb.displayed()) cb.refresh()
 
-    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
-      return false
+      if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
+      let bs = ab[cb.walletEntry.account]
+      bs[cb.symbol] = (bs[cb.symbol] || 0) + parseFloat(cb.balance)
     }
-
-    // look up the following address
-    for (let i = 0; i < this.wallet.addresses.length; i++) {
-
-      // we've found the address
-      if (this.wallet.addresses[i].address == lastAddress) {
-
-        // next address is the one - but if no more addresses we exit since not possible
-        if (i == this.wallet.addresses.length - 1)
-          return
-
-        let nextAddress = this.wallet.addresses[i + 1]
-        let newCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', nextAddress.address, nextAddress.privateKey)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        this.flatten()
-        return true
-      }
-    }
-
-    return false
   }
 
-  createBtcAddress(component: WalletComponent) {
-
-    // collect all CurrencyBalance of 'our' same currency type
-    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-    // if there is no address in use yet we use the first one
-    if (currencyBalances.length == 0) {
-      let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
-      component.rememberAdressCreated(this.parent.account, nextAddress.address)
-      newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
-      this.flatten()
-      return true
-    }
-
-    // determine the first 'nxt' address based of the last currencyBalance displayed
-    let lastAddress = currencyBalances[currencyBalances.length - 1]['address']
-
-    // when the last address is not yet used it should be used FIRST before we allow the creation of a new address
-    if (!currencyBalances[currencyBalances.length - 1]['inUse']) {
-      return false
-    }
-
-    // look up the following address
-    for (let i = 0; i < this.wallet.addresses.length; i++) {
-
-      // we've found the address
-      if (this.wallet.addresses[i].address == lastAddress) {
-
-        // next address is the one - but if no more addresses we exit since not possible
-        if (i == this.wallet.addresses.length - 1)
-          return
-
-        let nextAddress = this.wallet.addresses[i + 1]
-        let newCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', nextAddress.address, nextAddress.privateKey)
-        component.rememberAdressCreated(this.parent.account, nextAddress.address)
-        newCurrencyBalance.visible = this.parent.expanded
-        let index = this.parent.currencies.indexOf(currencyBalances[currencyBalances.length - 1]) + 1
-        this.parent.currencies.splice(index, 0, newCurrencyBalance)
-        this.flatten()
-        return true
-      }
-    }
-
-    return false
+  export function distinctValues(value, index, self) {
+    return self.indexOf(value) === index
   }
 
-  createFIMKAddress(component: WalletComponent) {
-
-    // collect all CurrencyBalance of 'our' same currency type
-    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-
-    // if there is no address in use yet we use the first one
-    if (currencyBalances.length == 0) {
-      let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', nextAddress.address, nextAddress.privateKey)
-      component.rememberAdressCreated(this.parent.account, nextAddress.address)
-      newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
-      this.flatten()
-      return true
-    }
-
-    return false
+  /**
+   * @deprecated due migrated on IndexedDB
+   */
+  export function getStore(namespace = "wallet") {
+    let store = storageMap.get(namespace)
+    if (store) return store
+    let storage = <StorageService>heat.$inject.get('storage')
+    let $rootScope = heat.$inject.get('$rootScope')
+    store = storage.namespace(namespace, $rootScope, true)
+    storageMap.set(namespace, store)
+    return store
   }
 
-  createNXTAddress(component: WalletComponent) {
-    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-    if (currencyBalances.length == 0) {
-      let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('NXT', 'NXT', nextAddress.address, nextAddress.privateKey)
-      component.rememberAdressCreated(this.parent.account, nextAddress.address)
-      newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
-      this.flatten()
-      return true
-    }
-    return false
+  //todo move balance to separated record outside of WalletItem
+  export function saveCurrencyBalance(address: string, currencySymbol: string, balance: string, unconfirmedBalance?: string) {
+    let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
+    //'update record' is used to avoid creation new wallet item on saving balance.
+    // Wallet item should be created for managed addresses only (on wallet page)
+    return db.updateWalletItem(db.compactHash(address), currencySymbol, {balance: balanceRecord})
+
+    /*let hash = heat.crypto.hash(address).substring(0, 16)
+    let balanceRecord = {b: balance, ub: unconfirmedBalance, t: Date.now()}
+    getStore().put(`balance-${currencySymbol}-${hash}`, balanceRecord)
+    //return storage.updateBalance(storage.compactHash(address), currencySymbol, balanceRecord)
+    */
   }
 
-  createARDRAddress(component: WalletComponent) {
-    let currencyBalances = this.parent.currencies.filter(c => c['isCurrencyBalance'] && c.name == this.name)
-    if (currencyBalances.length == 0) {
-      let nextAddress = this.wallet.addresses[0]
-      let newCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', nextAddress.address, nextAddress.privateKey)
-      component.rememberAdressCreated(this.parent.account, nextAddress.address)
-      newCurrencyBalance.visible = this.parent.expanded
-      this.parent.currencies.push(newCurrencyBalance)
-      this.flatten()
-      return true
-    }
-    return false
-  }
-}
-
-class WalletEntry {
-  public isWalletEntry = true
-  public selected = true
-  public identifier: string
-  public secretPhrase: string
-  public bip44Compatible: boolean
-  public currencies: Array<CurrencyBalance | CurrencyAddressCreate | CurrencyAddressLoading> = []
-  public pin: string
-  public unlocked = false
-  public visible = true
-  public expanded = false
-  public btcWalletAddressIndex = 0
-  constructor(public account: string, public name: string, public component: WalletComponent) {
-    this.identifier = name ? `${name} | ${account}` : account
+  /**
+   * Returns 2 Big values: 1) confirmed balance, 2) (optional) unconfirmed balance
+   */
+  export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): Promise<{confirmed: string, unconfirmed?: string}> {
+    return db.getWalletItem(db.compactHash(address), currencySymbol).then(item => extractBalance(item, balance))
   }
 
-  public toggle(forceVisible?: boolean) {
-    this.expanded = forceVisible || !this.expanded
-    this.currencies.forEach(curr => {
-      let currency = <any>curr
-      currency.visible = this.expanded
-      if (currency.tokens) {
-        currency.tokens.forEach(token => {
-          token.visible = this.expanded
-        })
-      }
+  export function saveCurrencyBalanceCreationTimestamp(address: string, currencySymbol: string, creationTimestamp: number) {
+    let itemKey = db.compactHash(address)
+    return db.getWalletItem(itemKey, currencySymbol).then(item => {
+      if (item?.creationTimestamp) return  //was created in past, keep origin timestamp
+      return db.saveWalletItem(itemKey, currencySymbol, {creationTimestamp})
     })
-    if (this.expanded) {
-      this.component.loadEthereumAddresses(this);
-      this.component.loadBitcoinAddresses(this);
-      this.component.loadFIMKAddresses(this);
-      this.component.loadNXTAddresses(this);
-      this.component.loadARDORAddresses(this);
-    }
   }
 
-  showSecretPhrase() {
-    let panel: PanelService = heat.$inject.get('panel')
-    panel.show(`
-      <div layout="column" flex class="toolbar-copy-passphrase">
-        <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
-        </md-input-container>
-      </div>
-    `, {
-        secretPhrase: this.secretPhrase
+  export function extractBalance(item, balance?: string) {
+    let r = item?.balance
+    if (!r) return {confirmed: balance}
+    return r.ub != r.b && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME > Date.now()
+        ? {confirmed: r.b, unconfirmed: r.ub}
+        : {confirmed: r.b}
+  }
+
+  /*export function getSavedCurrencyBalance(address: string, currencySymbol: string, balance?: string): {confirmed: string, unconfirmed?: string} {
+    let hash = heat.crypto.hash(address).substring(0, 16)
+    let key = `balance-${currencySymbol}-${hash}`
+    let r = getStore().get(key)
+    if (r) {
+      if (r.ub && r.t + UNCONFIRMED_CURRENCY_BALANCE_LIFETIME < Date.now()) {
+        return {confirmed: r.b}
+      }
+      return {confirmed: r.b, unconfirmed: r.ub}
+    }
+    return {confirmed: balance}
+  }*/
+
+  /*
+    export function getVersion(): number {
+      return parseInt(getStore().get("version", "0"))
+    }
+  */
+
+  /**
+   * @deprecated
+   */
+  export function getEntryVisibleLabelListOld(account): string[][] {
+    const store = getStore()
+    return store.keys().filter(v => v.indexOf(`label.${account}`) > -1).map(k => [k, store.get(k)])
+  }
+
+  /**
+   * @deprecated
+   */
+  export function getEntryVisibleLabelOld(account, address?: string) {
+    if (address) {
+      let subEntryKey = converters.byteArrayToHexString(heat.crypto.hexToHash8Bytes(address))
+      return getStore().get(`label.${account}.${subEntryKey || ''}`)
+    }
+    return getStore().get(`label.${account}`)
+  }
+
+  export function getEntryVisibleLabel(account, currencySym, address?: string) {
+    return db.getItemLabel(db.compactHash(address || account), currencySym)
+  }
+
+  export function updateEntryVisibleLabel(visibleLabel, itemUniqueName: string, currencySym: string = '', parent: string = '') {
+    let itemKey = db.compactHash(itemUniqueName)
+    let parentHashed = parent ? db.compactHash(parent + DB_VALUE_SALT) : ''
+    return db.saveItemLabel(itemKey, currencySym, parentHashed, visibleLabel || '')
+
+    /*const storeKey = itemUniqueName
+        ? `label.${account}.${itemKey || ''}`
+        : `label.${account}`
+    if (visibleLabel) {
+      getStore().put(storeKey, visibleLabel)
+    } else {
+      getStore().remove(storeKey)
+    }*/
+  }
+
+  export function getEntryBip44Compatible(account) {
+    return db.getWalletEntry(account).then(entry => {
+      return entry?.bip44
+    })
+    //return !!getStore().get("bip44." + account)
+  }
+
+  export function saveEntryBip44Compatible(account, bip44Compatible) {
+    if (bip44Compatible) {
+      return getEntryBip44Compatible(account).then(bip44 => {
+        if (!bip44) return db.saveWalletEntry(account, {bip44: true})
       })
+      //getStore().put("bip44." + account, 1)
+    }
   }
 
-}
-
-@RouteConfig('/wallet')
-@Component({
-  selector: 'wallet',
-  template: `
-   <!--  layout-align="start center" -->
-    <div layout="column"  flex layout-padding>
-      <div layout="row">
-
-        <!-- Open File input is hidden -->
-        <md-button class="md-primary md-raised">
-          <md-tooltip md-direction="bottom">Open wallet file, adds all contents</md-tooltip>
-          <label for="walet-input-file">
-            Import File
-          </label>
-        </md-button>
-        <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files)" class="ng-hide" id="walet-input-file">
-
-        <!-- Adds a wallet seed (heat secret phrase or bip44 eth/btc seed) -->
-        <md-button class="md-primary md-raised" ng-click="vm.importSeed()" aria-label="Import Seed">
-          <md-tooltip md-direction="bottom">Import Seed</md-tooltip>
-          Import Seed/Private Key
-        </md-button>
-
-        <!-- Export Wallet to File -->
-        <md-button class="md-warn md-raised" ng-click="vm.exportWallet()" aria-label="Export Wallet" ng-if="!vm.allLocked">
-          <md-tooltip md-direction="bottom">Export Wallet File</md-tooltip>
-          Export Wallet File
-        </md-button>
-
-        <md-select class="wallet-dropdown md-warn md-raised" placeholder="Create Address" ng-change="vm.createAccount($event)" ng-model="vm.selectedChain">
-          <md-option ng-repeat="entry in vm.chains" value="{{entry.name}}" ng-disabled="{{entry.disabled}}">{{entry.name}}</md-option>
-        </md-select>
-      </div>
-
-      <div layout="column" layout-fill  flex>
-        <div layout-fill layout="column" class="wallet-entries" flex>
-
-          <!-- Build a wallet structure that contains ::
-                - wallet entries
-                - per entry currency balances
-                - per currency token balances  -->
-
-          <md-list layout-fill layout="column" flex>
-            <md-list-item ng-repeat="entry in vm.entries" ng-if="entry.visible && !entry.hidden">
-
-              <!-- Wallet entry -->
-              <div ng-if="entry.isWalletEntry" layout="row" class="wallet-entry" flex>
-                <!--
-                <md-checkbox ng-model="entry.selected">
-                  <md-tooltip md-direction="bottom">
-                    Check this to include in wallet export
-                  </md-tooltip>
-                </md-checkbox>
-                -->
-                <md-button class="md-icon-button left" ng-click="entry.toggle()">
-                  <md-icon md-font-library="material-icons">{{entry.expanded?'expand_less':'expand_more'}}</md-icon>
-                </md-button>
-
-                <div flex ng-if="entry.secretPhrase" class="identifier"><a ng-click="entry.toggle()">{{entry.identifier}}</a></div>
-                <div flex ng-if="!entry.secretPhrase" class="identifier">{{entry.identifier}}</div>
-                <md-button ng-if="!entry.unlocked" ng-click="vm.unlock($event, entry)">Sign in</md-button>
-
-                <md-menu md-position-mode="target-right target" md-offset="34px 34px" ng-if="entry.unlocked">
-                  <md-button aria-label="user menu" class="md-icon-button right" ng-click="$mdOpenMenu($event)" md-menu-origin >
-                    <md-icon md-font-library="material-icons">more_horiz</md-icon>
-                  </md-button>
-                  <md-menu-content width="4">
-                    <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="entry.showSecretPhrase()">
-                        <md-icon md-font-library="material-icons">file_copy</md-icon>
-                        Show private key
-                      </md-button>
-                    </md-menu-item>
-                    <md-menu-item>
-                      <md-button aria-label="explorer" ng-click="vm.remove($event, entry)">
-                        <md-icon md-font-library="material-icons">delete_forever</md-icon>
-                        Remove
-                      </md-button>
-                    </md-menu-item>
-                  </md-menu-content>
-                </md-menu>
-              </div>
-
-              <!-- Currency Balance -->
-              <div ng-if="entry.isCurrencyBalance" layout="row" class="currency-balance" flex>
-                <div class="name">{{entry.name}}</div>&nbsp;
-                <div class="identifier" flex><a ng-click="entry.unlock()">{{entry.address}}</a></div>&nbsp;
-                <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
-              </div>
-
-              <!-- Currency Address Loading -->
-              <div ng-if="entry.isCurrencyAddressLoading" layout="row" class="currency-balance" flex>
-                <div class="name">{{entry.name}}</div>&nbsp;
-                <div class="identifier" flex>Loading ..</div>
-              </div>
-
-              <!-- Currency Address Create -->
-              <div ng-if="entry.isCurrencyAddressCreate" layout="row" class="currency-balance" flex>
-                <div class="name">{{entry.name}}</div>&nbsp;
-                <div class="identifier" flex></div>
-                <md-button ng-click="entry.createAddress()">Create New</md-button>
-              </div>
-
-              <!-- Token Balance -->
-              <div ng-if="entry.isTokenBalance" layout="row" class="token-balance" flex>
-                <div class="name">{{entry.name}}</div>&nbsp;
-                <div class="identifier" flex>{{entry.address}}</div>&nbsp;
-                <div class="balance">{{entry.balance}}&nbsp;{{entry.symbol}}</div>
-              </div>
-
-            </md-list-item>
-          </md-list>
-        </div>
-      </div>
-    </div>
-  `
-})
-@Inject('$scope', '$q', 'localKeyStore', 'walletFile', '$window', 'lightwalletService', 'heat', 'assetInfo', 'ethplorer', '$mdToast', '$mdDialog', 'clipboard', 'user', 'bitcoreService', 'fimkCryptoService', 'nxtCryptoService', 'ardorCryptoService', 'nxtBlockExplorerService', 'ardorBlockExplorerService')
-class WalletComponent {
-
-  selectAll = true;
-  allLocked = true
-
-  entries: Array<WalletEntry | CurrencyBalance | TokenBalance> = []
-  walletEntries: Array<WalletEntry> = []
-  createdAddresses: { [key: string]: Array<string> } = {}
-  chains = [{ name: 'ETH', disabled: false }, { name: 'BTC', disabled: false }, { name: 'FIMK', disabled: false }, { name: 'NXT', disabled: true }, { name: 'ARDR', disabled: true }];
-  selectedChain = '';
-
-  constructor(private $scope: angular.IScope,
-    private $q: angular.IQService,
-    private localKeyStore: LocalKeyStoreService,
-    private walletFile: WalletFileService,
-    private $window: angular.IWindowService,
-    private lightwalletService: LightwalletService,
-    private heat: HeatService,
-    private assetInfo: AssetInfoService,
-    private ethplorer: EthplorerService,
-    private $mdToast: angular.material.IToastService,
-    private $mdDialog: angular.material.IDialogService,
-    private clipboard: ClipboardService,
-    private user: UserService,
-    private bitcoreService: BitcoreService,
-    private fimkCryptoService: FIMKCryptoService,
-    private nxtCryptoService: NXTCryptoService,
-    private ardorCryptoService: ARDORCryptoService,
-    private nxtBlockExplorerService: NxtBlockExplorerService,
-    private ardorBlockExplorerService: ArdorBlockExplorerService) {
-
-    nxtBlockExplorerService.getBlockchainStatus().then(() => {
-      let nxtChain = { name: 'NXT', disabled: false }
-      let index = this.chains.findIndex((entry) => entry.name === nxtChain.name);
-      this.chains[index] = nxtChain
+  export function saveWalletEntryCurrencies(account, currencySymbols: string[]) {
+    if (!currencySymbols) return Promise.resolve()
+    return db.getWalletEntry(account).then(we => {
+      let mergedCurrencies: string[] = (we?.selectedCurrencies || [])
+      mergedCurrencies.push(...currencySymbols)
+      return db.saveWalletEntry(account, {selectedCurrencies: mergedCurrencies.filter(distinctValues)})
     })
-
-    ardorBlockExplorerService.getBlockchainStatus().then(() => {
-      let ardorChain = { name: 'ARDR', disabled: false }
-      let index = this.chains.findIndex((entry) => entry.name === ardorChain.name);
-      this.chains[index] = ardorChain
-    })
-
-
-    this.initLocalKeyStore()
-    this.initCreatedAddresses()
   }
 
-  createAccount($event) {
-    if (this.$scope['vm'].selectedChain === 'ETH') {
-      this.createEthAccount($event)
-    } else if (this.$scope['vm'].selectedChain === 'BTC') {
-      this.createBtcAccount($event)
-    }
-    else if (this.$scope['vm'].selectedChain === 'FIMK') {
-      this.createFIMKAccount($event)
-    }
-    else if (this.$scope['vm'].selectedChain === 'NXT') {
-      this.createNXTAccount($event)
-    }
-    else if (this.$scope['vm'].selectedChain === 'ARDR') {
-      this.createARDRAccount($event)
-    }
-  }
-
-  initLocalKeyStore() {
-    this.entries = []
-    this.walletEntries = []
-    this.localKeyStore.list().map((account: string) => {
-      let name = this.localKeyStore.keyName(account)
-      let walletEntry = new WalletEntry(account, name, this)
-      this.walletEntries.push(walletEntry)
-    });
-    this.walletEntries.forEach(walletEntry => {
-      let password = this.localKeyStore.getPasswordForAccount(walletEntry.account)
-      if (password) {
-        try {
-          var key = this.localKeyStore.load(walletEntry.account, password);
-          if (key) {
-            walletEntry.secretPhrase = key.secretPhrase
-            walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-            walletEntry.unlocked = true
-            walletEntry.pin = password
-            this.initWalletEntry(walletEntry)
-          }
-        } catch (e) { console.log(e) }
-      }
-    })
-    this.flatten()
-  }
-
-  initCreatedAddresses() {
+  /*
+  export function initCreatedAddresses() {
+    let removingKeys = []
+    let addingItems = []
+    let addingValues = []
+    createdAddresses = {}
     for (let i = 0; i < window.localStorage.length; i++) {
-      let key = window.localStorage.key(i)
-      let data = key.match(/eth-address-created:(.+):(.+)/)
-      if (data) {
-        let acc = data[1], addr = data[2]
-        this.createdAddresses[acc] = this.createdAddresses[acc] || []
-        this.createdAddresses[acc].push(addr)
+      let origKey = window.localStorage.key(i)
+      // old format "eth-address-created:..." is used for backward compatibility
+      if (origKey.startsWith("addresscreated-") || origKey.startsWith("eth-address-created")) {
+        let key = tryClearKey(origKey, removingKeys, addingValues)
+        let s = key.substring(key.indexOf("-") + 1)
+        let acc = s.substring(0, s.indexOf("-"))
+        let addr = s.substring(s.indexOf("-") + 1)
+        let addresses = createdAddresses[acc] || new Map<string, string>()
+        let value = window.localStorage.getItem(key)
+        let balance = value?.startsWith("balance") ? value.substring(7) : ""
+        let addrHash = addr.startsWith(HASH_PREFIX) ? addr : null
+        if (!addrHash) {
+          addrHash = HASH_PREFIX + heat.crypto.hash(addr)
+          addingItems.push([acc, addrHash, balance]) // now saved in actual format, so old one can be removed
+          removingKeys.push(origKey)
+        }
+        addresses.set(addrHash, balance)
+        createdAddresses[acc] = addresses
       }
+    }
+    for (const key of removingKeys) {
+      let v = window.localStorage.getItem(key)
+      window.localStorage.setItem("[obsolete]" + key, v)
+      window.localStorage.removeItem(key)
+    }
+    for (const item of addingItems) {
+      rememberAddressCreated(item[0], item[1], item[2])
+    }
+    for (const item of addingValues) {
+      window.localStorage.setItem(item[0], item[1])
+    }
+  }
+   */
+
+  /* in old versions the key format was changed several times, must be brought to the actual format
+  */
+  function tryClearKey(key: string, removingKeys, addingValues) {
+    if (key.indexOf(HASH_PREFIX) > -1) return key
+    let s = key.replace("eth-address-created", "addresscreated")
+    s = s.replace("address-created:", "")
+    s = s.replace(":", "-")
+    s = s.replace("bitcoincash-", "bitcoincash:")
+    let i = s.indexOf(",")
+    if (i > -1) s = s.substring(0, i)
+    if (key != s) {
+      let value = window.localStorage.getItem(key)
+      addingValues.push([s, value])
+      removingKeys.push(key)
+    }
+    return s
+  }
+
+  export function rememberCryptoAddressCreated(walletEntry: WalletEntry, currencySymbol: string, createdAddress: WalletAddress): Promise<WalletAddress> {
+    return getCryptoAddresses(walletEntry, currencySymbol).then(cryptoAddresses => {
+      let addresses = cryptoAddresses?.addresses
+      if (!addresses) return null
+      let address = addresses.find(a => a.address == createdAddress.address)
+      if (!address && !walletEntry.bip44Compatible) {
+        addresses.push(createdAddress)
+        address = createdAddress
+      }
+      if (!address) return
+      if (address.index != undefined && !walletEntry.bip44Compatible) delete address.index
+      address.isDeleted = false
+      address.created = true
+      return saveCryptoAddresses(walletEntry, currencySymbol, cryptoAddresses).then(() => address)
+    })
+  }
+
+  export function rememberAddressCreated(account: string, addressHash: string, balance?: string) {
+    createdAddresses[account] = createdAddresses[account] || new Map<string, string>()
+    createdAddresses[account].set(addressHash, balance || "")
+    window.localStorage.setItem(`addresscreated-${account}-${addressHash}`, balance ? "balance" + balance : "1")
+  }
+
+  export function getCurrencyBalances(walletEntry: WalletEntry, currencyName: string): Array<CurrencyBalance> {
+    // @ts-ignore
+    return walletEntry.currencies.filter(c => c['isCurrencyBalance'] && c.name == currencyName)
+  }
+
+  export function isLimitReached(currencyBalances: Array<CurrencyBalance>) {
+    let emptyBalanceCounter = 0
+    currencyBalances.forEach(
+        (value) => {
+          if (value.isZeroBalance()) emptyBalanceCounter++
+        }
+    )
+    //let b = emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
+    //this.hidden = b
+    return emptyBalanceCounter >= DISPLAYED_MAX_EMPTY_ADDRESSES
+  }
+
+  export function getCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
+    return Promise.resolve(walletEntry.getCryptoAddresses(currencySymbol)) || loadCryptoAddresses(walletEntry, currencySymbol)
+  }
+
+  export function loadCryptoAddresses(walletEntry: WalletEntry, currencySymbol: string) {
+    return db.getCryptoAddresses(walletEntry.account, currencySymbol).then(record => {
+      let enc = record?.addresses
+      if (enc) {
+        let decrypted = heat.crypto.decryptMessage(enc.data, enc.nonce, walletEntry.account, walletEntry.secretPhrase)
+        let result: WalletAddresses = JSON.parse(decrypted)
+        return result
+      }
+    })
+  }
+
+  export function saveCryptoAddresses(walletEntry: wlt.WalletEntry, currencySymbol: string, addresses: WalletAddresses) {
+    let encrypted = heat.crypto.encryptMessage(JSON.stringify(addresses), walletEntry.account, walletEntry.secretPhrase)
+    return db.putCryptoAddresses(walletEntry.account, currencySymbol, encrypted)
+  }
+
+  export function saveFile(blob: Blob, fileName?: string) {
+    if (fileName) {
+      saveAs(blob, fileName)
+      shouldBeSaved = null
+    } else {
+      return db.getValue('fileVersion').then(r => {
+        let version = parseInt(r?.value) || 0
+        version++
+        if (version > 99) version = 1
+        saveAs(blob, `heat.backup.v${version}.wallet`)
+        shouldBeSaved = null
+        return db.putValue('fileVersion', version)
+      })
     }
   }
 
-  rememberAdressCreated(account: string, ethAddress: string) {
-    this.createdAddresses[account] = this.createdAddresses[account] || []
-    this.createdAddresses[account].push(ethAddress)
-    window.localStorage.setItem(`eth-address-created:${account}:${ethAddress}`, "1")
-  }
 
-  /* Iterates down all children of walletEntries and flattens them into the entries list */
-  flatten() {
-    this.$scope.$evalAsync(() => {
-      this.entries = []
-      this.walletEntries.forEach(walletEntry => {
-        this.entries.push(walletEntry)
-        walletEntry.currencies.forEach(curr => {
-          let currencyBalance = <CurrencyBalance>curr
-          this.entries.push(currencyBalance)
-          if (currencyBalance.tokens) {
-            currencyBalance.tokens.forEach(tokenBalance => {
-              this.entries.push(tokenBalance)
-            })
+  export function findBitcoinAddresses(walletEntry: wlt.WalletEntry) {
+    let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+    let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+    let promises: angular.IPromise<{index: number, path: string, address: string, privateKey: string, balance: number, txs: number}>[] = []
+
+    let requestAddressInfo = (index, address, delayMs) => utils.delay(delayMs).then(() =>
+        btcBlockExplorerService.getAddressInfo(address.address, false, true).then(info => {
+          return {
+            index: index,
+            path: address.path,
+            address: info.address,
+            privateKey: address.privateKey,
+            balance: info.balanceSat / 100000000,
+            txs: info.txs
           }
-        })
-      })
-    })
-  }
+        }))
 
-  pageAddAddSecretPhrase($event) {
-    this.promptSecretPlusPassword($event).then(
-      data => {
-        let account = heat.crypto.getAccountId(data.secretPhrase)
-        let key = {
-          account: account,
-          secretPhrase: data.secretPhrase,
-          pincode: data.password,
-          name: ''
-        };
-        this.localKeyStore.add(key);
-        this.$scope.$evalAsync(() => {
-          this.initLocalKeyStore()
-        })
-      }
-    )
-  }
-
-  pageAddFileInputChange(files) {
-    if (files && files[0]) {
-      let reader = new FileReader();
-      reader.onload = () => {
-        this.$scope.$evalAsync(() => {
-          let fileContents = reader.result;
-          let wallet = this.walletFile.createFromText(<string>fileContents);
-          if (wallet) {
-            let addedKeys = this.localKeyStore.import(wallet);
-            this.$scope.$evalAsync(() => {
-              this.initLocalKeyStore();
-            })
-            let message = `Imported ${addedKeys.length} keys into this device`;
-            this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-          }
-        })
-      };
-      reader.readAsText(files[0]);
+    let nativeSegwitAddresses = bitcoreService.generateSegwitBitcoinAddresses(
+        walletEntry.secretPhrase,  true, 0, wlt.DISPLAYED_MAX_EMPTY_ADDRESSES - 1)
+    let segwitAddresses = bitcoreService.generateSegwitBitcoinAddresses(
+        walletEntry.secretPhrase, false, 0, wlt.DISPLAYED_MAX_EMPTY_ADDRESSES - 1)
+    for (let i = 0; i < wlt.DISPLAYED_MAX_EMPTY_ADDRESSES; i++) {
+      let legacy = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, i)
+      promises.push(
+          requestAddressInfo(i, legacy, i * 210),
+          requestAddressInfo(i, nativeSegwitAddresses[i], i * 210 + 30),
+          requestAddressInfo(i, segwitAddresses[i], i * 210 + 60)
+      )
     }
+    return Promise.resolve(promises)
   }
 
-  remove($event, entry: WalletEntry) {
-    dialogs.prompt($event, 'Remove Wallet Entry',
-      `This completely removes the wallet entry from your device.
-       Please enter your Password (or Pin Code) to confirm you wish to remove this entry`, '').then(
-      pin => {
-        if (pin == entry.pin) {
-          this.localKeyStore.remove(entry.account)
-          this.initLocalKeyStore()
-        }
-      }
-      );
-  }
-
-  unlock($event, selectedWalletEntry: WalletEntry) {
-    dialogs.prompt($event, 'Enter Password (or Pin)', 'Please enter your Password (or Pin Code) to unlock', '').then(
-      pin => {
-        let count = 0
-        this.walletEntries.forEach(walletEntry => {
-          if (!walletEntry.secretPhrase) {
-            var key = this.localKeyStore.load(walletEntry.account, pin);
-            if (key) {
-              count += 1
-              this.localKeyStore.rememberPassword(walletEntry.account, pin)
-              walletEntry.pin = pin
-              walletEntry.secretPhrase = key.secretPhrase
-              walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
-              walletEntry.unlocked = true
-              this.initWalletEntry(walletEntry)
-            }
-          }
-        })
-        let message = `Unlocked ${count ? count : 'NO'} entries`
-        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        selectedWalletEntry.toggle(true)
-
-        /* Only if no user is signed in currently, will we auto select one signin */
-        if (!this.user.unlocked) {
-          /* Try and unlock the selected entry */
-          if (selectedWalletEntry.unlocked) {
-            for (let i = 0; i < selectedWalletEntry.currencies.length; i++) {
-              let balance = <CurrencyBalance>selectedWalletEntry.currencies[i]
-              if (balance.isCurrencyBalance) {
-                balance.unlock(true)
-                return
-              }
-            }
-          }
-
-          /* Try and find another CurrencyBalance */
-          for (let i = 0; i < this.entries.length; i++) {
-            let balance = <CurrencyBalance>selectedWalletEntry.currencies[i]
-            if (balance.isCurrencyBalance) {
-              balance.unlock(true)
-              return
-            }
-          }
-        }
-      }
-    )
-  }
-
-  initWalletEntry(walletEntry: WalletEntry) {
-    this.allLocked = false
-    let heatAccount = heat.crypto.getAccountIdFromPublicKey(heat.crypto.secretPhraseToPublicKey(walletEntry.secretPhrase))
-    let heatCurrencyBalance = new CurrencyBalance('HEAT', 'HEAT', heatAccount, walletEntry.secretPhrase)
-    heatCurrencyBalance.visible = walletEntry.expanded
-    walletEntry.currencies.push(heatCurrencyBalance)
-    this.flatten()
-
-    this.heat.api.getAccountByNumericId(heatAccount).then((account) => {
-      this.$scope.$evalAsync(() => {
-        let balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
-        heatCurrencyBalance.balance = balanceUnconfirmed
-      })
-      this.getAccountAssets(heatAccount).then((assetInfos) => {
-        heatCurrencyBalance.tokens = []
-        assetInfos.forEach(assetInfo => {
-          let tokenBalance = new TokenBalance(assetInfo.name, assetInfo.symbol, assetInfo.id)
-          tokenBalance.balance = utils.formatQNT(assetInfo.userBalance, 8)
-          tokenBalance.visible = walletEntry.expanded
-          heatCurrencyBalance.tokens.push(tokenBalance)
-        })
-        this.flatten()
-      })
-    }, () => {
-      this.$scope.$evalAsync(() => {
-        heatCurrencyBalance.balance = "Address is unused"
-        heatCurrencyBalance.symbol = ''
-      })
-    });
-
-    /* Bitcoin and Ethereum integration start here */
-
-    this.bitcoreService.unlock(walletEntry.secretPhrase).then(wallet => {
-      if (wallet !== undefined) {
-        let btcCurrencyAddressLoading = new CurrencyAddressLoading('Bitcoin')
-        btcCurrencyAddressLoading.visible = walletEntry.expanded;
-        btcCurrencyAddressLoading.wallet = wallet;
-        walletEntry.currencies.push(btcCurrencyAddressLoading);
-
-        let btcCurrencyAddressCreate = new CurrencyAddressCreate('Bitcoin', wallet)
-        btcCurrencyAddressCreate.visible = walletEntry.expanded
-        btcCurrencyAddressCreate.parent = walletEntry
-        btcCurrencyAddressCreate.flatten = this.flatten.bind(this)
-        walletEntry.currencies.push(btcCurrencyAddressCreate)
-
-        this.flatten()
-
-        /* Only if this node is expanded will we load the addresses */
-        if (walletEntry.expanded) {
-          this.loadBitcoinAddresses(walletEntry)
-        }
-      }
-    })
-
-    this.lightwalletService.unlock(walletEntry.secretPhrase, "").then(wallet => {
-
-      let ethCurrencyAddressLoading = new CurrencyAddressLoading('Ethereum')
-      ethCurrencyAddressLoading.visible = walletEntry.expanded
-      ethCurrencyAddressLoading.wallet = wallet
-      walletEntry.currencies.push(ethCurrencyAddressLoading)
-
-      let ethCurrencyAddressCreate = new CurrencyAddressCreate('Ethereum', wallet)
-      ethCurrencyAddressCreate.visible = walletEntry.expanded
-      ethCurrencyAddressCreate.parent = walletEntry
-      ethCurrencyAddressCreate.flatten = this.flatten.bind(this)
-
-      walletEntry.currencies.push(ethCurrencyAddressCreate)
-
-      this.flatten()
-
-      /* Only if this node is expanded will we load the addresses */
-      if (walletEntry.expanded) {
-        this.loadEthereumAddresses(walletEntry)
-      }
-    })
-
-    this.fimkCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      this.fimkCryptoService.getSocket().then(() => {
-        let fimkCurrencyAddressLoading = new CurrencyAddressLoading('FIMK')
-        fimkCurrencyAddressLoading.visible = walletEntry.expanded
-        fimkCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(fimkCurrencyAddressLoading)
-      })
-
-      let fimkCurrencyAddressCreate = new CurrencyAddressCreate('FIMK', wallet)
-      fimkCurrencyAddressCreate.visible = walletEntry.expanded
-      fimkCurrencyAddressCreate.parent = walletEntry
-      fimkCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(fimkCurrencyAddressCreate)
-      /* Only if this node is expanded will we load the addresses */
-      if (walletEntry.expanded) {
-        this.loadFIMKAddresses(walletEntry)
-      }
-    })
-
-    this.nxtCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let nxtCurrencyAddressCreate = new CurrencyAddressCreate('NXT', wallet)
-      nxtCurrencyAddressCreate.visible = walletEntry.expanded
-      nxtCurrencyAddressCreate.parent = walletEntry
-      nxtCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(nxtCurrencyAddressCreate)
-
-      this.nxtBlockExplorerService.getBlockchainStatus().then(() => {
-        let nxtCurrencyAddressLoading = new CurrencyAddressLoading('NXT')
-        nxtCurrencyAddressLoading.visible = walletEntry.expanded
-        nxtCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(nxtCurrencyAddressLoading)
-        if (walletEntry.expanded) {
-          this.loadNXTAddresses(walletEntry)
-        }
-      })
-    })
-
-    this.ardorCryptoService.unlock(walletEntry.secretPhrase).then(wallet => {
-      let ardorCurrencyAddressCreate = new CurrencyAddressCreate('ARDOR', wallet)
-      ardorCurrencyAddressCreate.visible = walletEntry.expanded
-      ardorCurrencyAddressCreate.parent = walletEntry
-      ardorCurrencyAddressCreate.flatten = this.flatten.bind(this)
-      walletEntry.currencies.push(ardorCurrencyAddressCreate)
-
-      this.ardorBlockExplorerService.getBlockchainStatus().then(() => {
-        let ardorCurrencyAddressLoading = new CurrencyAddressLoading('ARDOR')
-        ardorCurrencyAddressLoading.visible = walletEntry.expanded
-        ardorCurrencyAddressLoading.wallet = wallet
-        walletEntry.currencies.push(ardorCurrencyAddressLoading)
-        if (walletEntry.expanded) {
-          this.loadARDORAddresses(walletEntry)
-        }
-      })
-    })
-  }
-
-  public loadNXTAddresses(walletEntry: WalletEntry) {
-
-    /* Find the Loading node, if thats not available we can exit */
-    let nxtCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'NXT')
-    if (!nxtCurrencyAddressLoading)
-      return
-
-    this.nxtCryptoService.refreshAdressBalances(nxtCurrencyAddressLoading.wallet).then(() => {
-
-      /* Make sure we exit if no loading node exists */
-      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-        return
-
-      let index = walletEntry.currencies.indexOf(nxtCurrencyAddressLoading)
-      nxtCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-        if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('NXT', 'NXT', address.address, address.privateKey)
-          nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-          nxtCurrencyBalance.visible = walletEntry.expanded
-          nxtCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
-          index++;
-
-          if (address.tokensBalances) {
-            address.tokensBalances.forEach(balance => {
-              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = utils.commaFormat(balance.balance)
-              tokenBalance.visible = walletEntry.expanded
-              nxtCurrencyBalance.tokens.push(tokenBalance)
-            })
-          }
-        }
-      })
-
-      // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != nxtCurrencyAddressLoading)
-      this.flatten()
-    })
-  }
-
-  public loadARDORAddresses(walletEntry: WalletEntry) {
-
-    /* Find the Loading node, if thats not available we can exit */
-    let ardorCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'ARDOR')
-    if (!ardorCurrencyAddressLoading)
-      return
-
-    this.ardorCryptoService.refreshAdressBalances(ardorCurrencyAddressLoading.wallet).then(() => {
-      /* Make sure we exit if no loading node exists */
-      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-        return
-
-      let index = walletEntry.currencies.indexOf(ardorCurrencyAddressLoading)
-      ardorCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-        if (address.inUse || wasCreated) {
-          let nxtCurrencyBalance = new CurrencyBalance('ARDOR', 'ARDR', address.address, address.privateKey)
-          nxtCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-          nxtCurrencyBalance.visible = walletEntry.expanded
-          nxtCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, nxtCurrencyBalance)
-          index++;
-
-          if (address.tokensBalances) {
-            address.tokensBalances.forEach(balance => {
-              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = utils.commaFormat(balance.balance)
-              tokenBalance.visible = walletEntry.expanded
-              nxtCurrencyBalance.tokens.push(tokenBalance)
-            })
-          }
-        }
-      })
-
-      // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != ardorCurrencyAddressLoading)
-      this.flatten()
-    })
-  }
-
-  /* Only when we expand a wallet entry do we lookup its balances */
-  public loadFIMKAddresses(walletEntry: WalletEntry) {
-
-    /* Find the Loading node, if thats not available we can exit */
-    let fimkCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'FIMK')
-    if (!fimkCurrencyAddressLoading)
-      return
-
-    this.fimkCryptoService.refreshAdressBalances(fimkCurrencyAddressLoading.wallet).then(() => {
-
-      /* Make sure we exit if no loading node exists */
-      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-        return
-
-      let index = walletEntry.currencies.indexOf(fimkCurrencyAddressLoading)
-      fimkCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-        if (address.inUse || wasCreated) {
-          let fimkCurrencyBalance = new CurrencyBalance('FIMK', 'FIM', address.address, address.privateKey)
-          fimkCurrencyBalance.balance = address.balance ? address.balance + "" : "0"
-          fimkCurrencyBalance.visible = walletEntry.expanded
-          fimkCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, fimkCurrencyBalance)
-          index++;
-
-          if (address.tokensBalances) {
-            address.tokensBalances.forEach(balance => {
-              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = utils.commaFormat(balance.balance)
-              tokenBalance.visible = walletEntry.expanded
-              fimkCurrencyBalance.tokens.push(tokenBalance)
-            })
-          }
-        }
-      })
-
-      // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != fimkCurrencyAddressLoading)
-      this.flatten()
-    })
-  }
-
-  /* Only when we expand a wallet entry do we lookup its balances */
-  public loadEthereumAddresses(walletEntry: WalletEntry) {
-
-    /* Find the Loading node, if thats not available we can exit */
-    let ethCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Ethereum')
-    if (!ethCurrencyAddressLoading)
-      return
-
-    this.lightwalletService.refreshAdressBalances(ethCurrencyAddressLoading.wallet).then(() => {
-
-      /* Make sure we exit if no loading node exists */
-      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-        return
-
-      let index = walletEntry.currencies.indexOf(ethCurrencyAddressLoading)
-      ethCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-        if (address.inUse || wasCreated) {
-          let ethCurrencyBalance = new CurrencyBalance('Ethereum', 'ETH', address.address, address.privateKey)
-          ethCurrencyBalance.balance = Number(address.balance + "").toFixed(18)
-          ethCurrencyBalance.visible = walletEntry.expanded
-          ethCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, ethCurrencyBalance)
-          index++;
-
-          if (address.tokensBalances) {
-            address.tokensBalances.forEach(balance => {
-              let tokenBalance = new TokenBalance(balance.name, balance.symbol, balance.address)
-              tokenBalance.balance = utils.commaFormat(balance.balance)
-              tokenBalance.visible = walletEntry.expanded
-              ethCurrencyBalance.tokens.push(tokenBalance)
-            })
-          }
-        }
-      })
-
-      // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != ethCurrencyAddressLoading)
-      this.flatten()
-    })
-  }
-
-
-  /* Only when we expand a wallet entry do we lookup its balances */
-  public loadBitcoinAddresses(walletEntry: WalletEntry) {
-
-    /* Find the Loading node, if thats not available we can exit */
-    let btcCurrencyAddressLoading = <CurrencyAddressLoading>walletEntry.currencies.find(c => (<CurrencyAddressLoading>c).isCurrencyAddressLoading && c.name == 'Bitcoin')
-    if (!btcCurrencyAddressLoading)
-      return
-
-    this.bitcoreService.refreshAdressBalances(btcCurrencyAddressLoading.wallet).then(() => {
-
-      /* Make sure we exit if no loading node exists */
-      if (!walletEntry.currencies.find(c => c['isCurrencyAddressLoading']))
-        return
-
-      let index = walletEntry.currencies.indexOf(btcCurrencyAddressLoading)
-      btcCurrencyAddressLoading.wallet.addresses.forEach(address => {
-        let wasCreated = (this.createdAddresses[walletEntry.account] || []).indexOf(address.address) != -1
-        if (address.inUse || wasCreated) {
-          let btcCurrencyBalance = new CurrencyBalance('Bitcoin', 'BTC', address.address, address.privateKey)
-          btcCurrencyBalance.balance = address.balance + ""
-          btcCurrencyBalance.visible = walletEntry.expanded
-          btcCurrencyBalance.inUse = wasCreated ? false : true
-          walletEntry.currencies.splice(index, 0, btcCurrencyBalance)
-          index++;
-        }
-      })
-
-      // we can remove the loading entry
-      walletEntry.currencies = walletEntry.currencies.filter(c => c != btcCurrencyAddressLoading)
-      this.flatten()
-    })
-  }
-
-  private getAccountAssets(account: string): angular.IPromise<Array<AssetInfo>> {
-    let deferred = this.$q.defer<Array<AssetInfo>>();
-    this.heat.api.getAccountBalances(account, "0", 1, 0, 100).then(balances => {
-      let assetInfos: Array<AssetInfo> = [];
-      let promises = [];
-      balances.forEach(balance => {
-        if (balance.id != '0') {
+  export function findEthereumAddresses(walletEntry: wlt.WalletEntry, lightwalletService: LightwalletService) {
+    return lightwalletService.createEtherAddresses(walletEntry.secretPhrase, '').then((wa: WalletAddresses) => {
+      let addresses = wa.addresses
+      let promises: PromiseLike<{ index: number, path: string, address: string, privateKey: string, balance: number, txs: number }>[] = []
+      let ethService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
+      return ethService.refresh().then(() => {
+        for (let i = 0; i < addresses.length; i++) {
+          const a = addresses[i]
           promises.push(
-            this.assetInfo.getInfo(balance.id).then(info => {
-              assetInfos.push(angular.extend(info, {
-                userBalance: balance.virtualBalance
+              utils.delay(i * 210).then(() => ethService.getAddressInfo(a.address, false).then(info => {
+                return {
+                  index: i,
+                  path: '',
+                  address: info.address,
+                  privateKey: a.privateKey,
+                  balance: info.ETH.balance,
+                  txs: info.countTxs
+                }
               }))
-            })
-          );
+          )
         }
-      });
-      if (promises.length > 0) {
-        this.$q.all(promises).then(() => {
-          assetInfos.sort((a, b) => {
-            var textA = a.symbol.toUpperCase();
-            var textB = b.symbol.toUpperCase();
-            return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
-          });
-          deferred.resolve(assetInfos);
-        }, deferred.reject);
-      }
-      else {
-        deferred.resolve([]);
-      }
-    }, deferred.reject);
-    return <angular.IPromise<Array<AssetInfo>>>deferred.promise;
+        return promises
+      })
+    })
   }
 
-  // @click
-  importSeed($event) {
-    this.promptSecretPlusPassword($event).then(
-      data => {
-        let account = heat.crypto.getAccountId(data.secretPhrase)
-        let key = {
-          account: account,
-          secretPhrase: data.secretPhrase,
-          pincode: data.password,
-          name: ''
-        };
-        this.localKeyStore.add(key);
-        let message = `Seed was successfully imported to your wallet`;
-        this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-        heat.fullApplicationScopeReload()
-      }
-    )
-  }
-
-  // @click
-  exportWallet() {
-    let exported = this.localKeyStore.export();
-    let encoded = this.walletFile.encode(exported);
-    var blob = new Blob([encoded], { type: "text/plain;charset=utf-8" });
-    saveAs(blob, 'heat.wallet');
-  }
-
-  promptSecretPlusPassword($event): angular.IPromise<{ password: string, secretPhrase: string }> {
-    let self = this
-    function DialogController($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
-        $mdDialog.cancel()
-      }
-      $scope['vm'].okButtonClick = function () {
-        $mdDialog.hide({
-          password: $scope['vm'].data.password1,
-          secretPhrase: $scope['vm'].data.secretPhrase,
-        })
-      }
-      $scope['vm'].secretChanged = function () {
-        $scope['vm'].data.bip44Compatible = self.lightwalletService.validSeed($scope['vm'].data.secretPhrase)
-      }
-      $scope['vm'].data = {
-        password1: '',
-        password2: '',
-        secretPhrase: '',
-        bip44Compatible: false
-      }
-    }
-
-    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
-    this.$mdDialog.show({
-      controller: DialogController,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
-        <md-dialog>
-          <form name="dialogForm">
-            <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Import Seed/Private Key</h2></div>
-            </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-                <p>Enter your Secret Seed and provide a Password (or Pin)</p>
-                <md-input-container flex>
-                  <label>HEAT Secret Phrase / Seed / Private Key</label>
-                  <textarea rows="2" flex ng-model="vm.data.secretPhrase" name="secretPhrase" required ng-trim="false" ng-change="vm.secretChanged() "></textarea>
-                </md-input-container>
-                <md-input-container flex>
-                  <label>Password</label>
-                  <input type="password" ng-model="vm.data.password1" required name="password1">
-                </md-input-container>
-                <md-input-container flex>
-                  <label>Password (confirm)</label>
-                  <input type="password" ng-model="vm.data.password2" required name="password2">
-                </md-input-container>
-                <span>BIP44 compatible = <b>{{vm.data.bip44Compatible?'TRUE':'FALSE'}}</b></span>
-              </div>
-            </md-dialog-content>
-            <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="dialogForm.$invalid || vm.data.password1 != vm.data.password2" class="md-primary"
-                  ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
-            </md-dialog-actions>
-          </form>
-        </md-dialog>
-      `
-    }).then(deferred.resolve, deferred.reject);
-    return deferred.promise
-  }
-
-  createEthAccount($event) {
-    let walletEntries = this.walletEntries
-    let self = this
-    if (walletEntries.length == 0)
-      return
-
-    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
-      }
-
-      $scope['vm'].cancelButtonClick = function () {
-        $mdDialog.cancel()
-      }
-
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Ethereum')
-          success = node.createAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-          }
-        })
-      }
-
-      $scope['vm'].data = {
-        selectedWalletEntry: walletEntries[0],
-        selected: walletEntries[0].account,
-        walletEntries: walletEntries,
-        password: ''
-      }
-
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
-      }
-
-      $scope['vm'].passwordChanged = function () {
-        let password = $scope['vm'].data.password
-        let account = $scope['vm'].data.selected
-        let walletEntry = walletEntries.find(w => w.account == account)
-        try {
-          var key = self.localKeyStore.load(account, password);
-          if (key) {
-            self.localKeyStore.rememberPassword(walletEntry.account, password)
-            walletEntry.pin = password
-            walletEntry.secretPhrase = key.secretPhrase
-            walletEntry.bip44Compatible = self.lightwalletService.validSeed(key.secretPhrase)
-            walletEntry.unlocked = true
-            self.initWalletEntry(walletEntry)
-            walletEntry.toggle(true)
-          }
-        } catch (e) { }
-      }
-    }
-
-    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
-    this.$mdDialog.show({
-      controller: DialogController2,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
-        <md-dialog>
-          <form name="dialogForm">
-            <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Create Ethereum Address</h2></div>
-            </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-                <p>To create a new Ethereum address, please choose the master HEAT account you want to attach the new Ethereum address to:</p>
-
-                <!-- Select Master Account -->
-
-                <md-input-container flex>
-                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
-                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
-                  </md-select>
-                </md-input-container>
-
-                <!-- Put In Password -->
-
-                <div flex layout="column" ng-if="vm.data.selectedWalletEntry && !vm.data.selectedWalletEntry.unlocked">
-                  <p>
-                    Please first unlock this account by entering your password below
-                  </p>
-                  <md-input-container flex >
-                    <label>Password</label>
-                    <input ng-model="vm.data.password" ng-change="vm.passwordChanged()">
-                  </md-input-container>
-                </div>
-
-                <!-- Invalid Non BIP44 Seed-->
-
-                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
-                  Eth wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
-                </p>
-
-                <!-- Valid BIP44 Seed -->
-                <div flex layout="column"
-                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
-
-                  <p>This is your Ethereum address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
-                      Please store it in a safe place or you may lose access to your Ethereum.
-                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
-
-                  <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
-                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
-                  </md-input-container>
-
-                </div>
-              </div>
-
-            </md-dialog-content>
-            <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
-                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
-            </md-dialog-actions>
-          </form>
-        </md-dialog>
-      `
-    }).then(deferred.resolve, deferred.reject);
-    return deferred.promise
-  }
-
-  createBtcAccount($event) {
-    let walletEntries = this.walletEntries
-    let self = this
-    if (walletEntries.length == 0)
-      return
-
-    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
-      }
-
-      $scope['vm'].cancelButtonClick = function () {
-        $mdDialog.cancel()
-      }
-
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'Bitcoin')
-          success = node.createBtcAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'Make sure you use the previous address first before you can create a new address')
-          }
-        })
-      }
-
-      $scope['vm'].data = {
-        selectedWalletEntry: walletEntries[0],
-        selected: walletEntries[0].account,
-        walletEntries: walletEntries,
-        password: ''
-      }
-
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
-      }
-    }
-
-    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
-    this.$mdDialog.show({
-      controller: DialogController2,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
-        <md-dialog>
-          <form name="dialogForm">
-            <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Create Bitcoin Address</h2></div>
-            </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-                <p>To create a new Bitcoin address, please choose the master HEAT account you want to attach the new Bitcoin address to:</p>
-
-                <!-- Select Master Account -->
-
-                <md-input-container flex>
-                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
-                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
-                  </md-select>
-                </md-input-container>
-
-                <!-- Invalid Non BIP44 Seed-->
-
-                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
-                  Btc wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
-                </p>
-
-                <!-- Valid BIP44 Seed -->
-                <div flex layout="column"
-                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
-
-                  <p>This is your Bitcoin address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
-                      Please store it in a safe place or you may lose access to your Bitcoin.
-                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
-
-                  <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
-                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
-                  </md-input-container>
-
-                </div>
-              </div>
-
-            </md-dialog-content>
-            <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
-                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
-            </md-dialog-actions>
-          </form>
-        </md-dialog>
-      `
-    }).then(deferred.resolve, deferred.reject);
-    return deferred.promise
-  }
-
-  createFIMKAccount($event) {
-    let walletEntries = this.walletEntries
-    let self = this
-    if (walletEntries.length == 0)
-      return
-
-    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
-      }
-
-      $scope['vm'].cancelButtonClick = function () {
-        $mdDialog.cancel()
-      }
-
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'FIMK')
-          success = node.createFIMKAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'FIMK address already created for this account')
-          }
-        })
-      }
-
-      $scope['vm'].data = {
-        selectedWalletEntry: walletEntries[0],
-        selected: walletEntries[0].account,
-        walletEntries: walletEntries,
-        password: ''
-      }
-
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
-      }
-    }
-
-    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
-    this.$mdDialog.show({
-      controller: DialogController2,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
-        <md-dialog>
-          <form name="dialogForm">
-            <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Create FIMK Address</h2></div>
-            </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-                <p>To create a new FIMK address, please choose the master HEAT account you want to attach the new FIMK address to:</p>
-
-                <!-- Select Master Account -->
-
-                <md-input-container flex>
-                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
-                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
-                  </md-select>
-                </md-input-container>
-
-                <!-- Invalid Non BIP44 Seed-->
-
-                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
-                  FIMK wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
-                </p>
-
-                <!-- Valid BIP44 Seed -->
-                <div flex layout="column"
-                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
-
-                  <p>This is your FIMK address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
-                      Please store it in a safe place or you may lose access to your FIMK.
-                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
-
-                  <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
-                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
-                  </md-input-container>
-
-                </div>
-              </div>
-
-            </md-dialog-content>
-            <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
-                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
-            </md-dialog-actions>
-          </form>
-        </md-dialog>
-      `
-    }).then(deferred.resolve, deferred.reject);
-    return deferred.promise
-  }
-
-  createNXTAccount($event) {
-    let walletEntries = this.walletEntries
-    let self = this
-    if (walletEntries.length == 0)
-      return
-
-    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
-      }
-
-      $scope['vm'].cancelButtonClick = function () {
-        $mdDialog.cancel()
-      }
-
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'NXT')
-          success = node.createNXTAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'NXT address already created for this account')
-          }
-        })
-      }
-
-      $scope['vm'].data = {
-        selectedWalletEntry: walletEntries[0],
-        selected: walletEntries[0].account,
-        walletEntries: walletEntries,
-        password: ''
-      }
-
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
-      }
-    }
-
-    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
-    this.$mdDialog.show({
-      controller: DialogController2,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
-        <md-dialog>
-          <form name="dialogForm">
-            <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Create NXT Address</h2></div>
-            </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-                <p>To create a new NXT address, please choose the master HEAT account you want to attach the new NXT address to:</p>
-
-                <!-- Select Master Account -->
-
-                <md-input-container flex>
-                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
-                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
-                  </md-select>
-                </md-input-container>
-
-                <!-- Invalid Non BIP44 Seed-->
-
-                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
-                  NXT wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
-                </p>
-
-                <!-- Valid BIP44 Seed -->
-                <div flex layout="column"
-                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
-
-                  <p>This is your NXT address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
-                      Please store it in a safe place or you may lose access to your NXT.
-                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
-
-                  <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
-                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
-                  </md-input-container>
-
-                </div>
-              </div>
-
-            </md-dialog-content>
-            <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
-                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
-            </md-dialog-actions>
-          </form>
-        </md-dialog>
-      `
-    }).then(deferred.resolve, deferred.reject);
-    return deferred.promise
-  }
-
-  createARDRAccount($event) {
-    let walletEntries = this.walletEntries
-    let self = this
-    if (walletEntries.length == 0)
-      return
-
-    function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].copySeed = function () {
-        self.clipboard.copyWithUI(document.getElementById('wallet-secret-textarea'), 'Copied seed to clipboard');
-      }
-
-      $scope['vm'].cancelButtonClick = function () {
-        $mdDialog.cancel()
-      }
-
-      $scope['vm'].okButtonClick = function ($event) {
-        let walletEntry = $scope['vm'].data.selectedWalletEntry
-        let success = false
-        if (walletEntry) {
-          let node = walletEntry.currencies.find(c => c.isCurrencyAddressCreate && c.name == 'ARDOR')
-          success = node.createARDRAddress(self)
-          walletEntry.toggle(true)
-        }
-        $mdDialog.hide(null).then(() => {
-          if (!success) {
-            dialogs.alert($event, 'Unable to Create Address', 'ARDR address already created for this account')
-          }
-        })
-      }
-
-      $scope['vm'].data = {
-        selectedWalletEntry: walletEntries[0],
-        selected: walletEntries[0].account,
-        walletEntries: walletEntries,
-        password: ''
-      }
-
-      $scope['vm'].selectedWalletEntryChanged = function () {
-        $scope['vm'].data.password = ''
-        $scope['vm'].data.selectedWalletEntry = walletEntries.find(w => $scope['vm'].data.selected == w.account)
-      }
-    }
-
-    let deferred = this.$q.defer<{ password: string, secretPhrase: string }>()
-    this.$mdDialog.show({
-      controller: DialogController2,
-      parent: angular.element(document.body),
-      targetEvent: $event,
-      clickOutsideToClose: false,
-      controllerAs: 'vm',
-      template: `
-        <md-dialog>
-          <form name="dialogForm">
-            <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Create ARDR Address</h2></div>
-            </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
-                <p>To create a new ARDR address, please choose the master HEAT account you want to attach the new ARDR address to:</p>
-
-                <!-- Select Master Account -->
-
-                <md-input-container flex>
-                  <md-select ng-model="vm.data.selected" ng-change="vm.selectedWalletEntryChanged()">
-                    <md-option ng-repeat="entry in vm.data.walletEntries" value="{{entry.account}}">{{entry.identifier}}</md-option>
-                  </md-select>
-                </md-input-container>
-
-                <!-- Invalid Non BIP44 Seed-->
-
-                <p ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && !vm.data.selectedWalletEntry.bip44Compatible">
-                  ARDR wallet cannot be added to that old HEAT account. Please choose another or create a new HEAT account with BIP44 compatible seed.
-                </p>
-
-                <!-- Valid BIP44 Seed -->
-                <div flex layout="column"
-                  ng-if="vm.data.selectedWalletEntry && vm.data.selectedWalletEntry.unlocked && vm.data.selectedWalletEntry.bip44Compatible">
-
-                  <p>This is your ARDR address seed, It’s the same as for your HEAT account {{vm.data.selectedWalletEntry.account}}.
-                      Please store it in a safe place or you may lose access to your ARDR.
-                      <a ng-click="vm.copySeed()">Copy Seed</a></p>
-
-                  <md-input-container flex>
-                    <textarea rows="3" flex ng-model="vm.data.selectedWalletEntry.secretPhrase" readonly ng-trim="false"
-                        style="font-family:monospace; font-size:16px; font-weight: bold; color: white; border: 1px solid white"></textarea>
-                    <span id="wallet-secret-textarea" style="display:none">{{vm.data.selectedWalletEntry.secretPhrase}}</span>
-                  </md-input-container>
-
-                </div>
-              </div>
-
-            </md-dialog-content>
-            <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick($event)" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.selectedWalletEntry || !vm.data.selectedWalletEntry.unlocked || !vm.data.selectedWalletEntry.bip44Compatible"
-                  class="md-primary" ng-click="vm.okButtonClick($event)" aria-label="OK">OK</md-button>
-            </md-dialog-actions>
-          </form>
-        </md-dialog>
-      `
-    }).then(deferred.resolve, deferred.reject);
-    return deferred.promise
-  }
 }
-

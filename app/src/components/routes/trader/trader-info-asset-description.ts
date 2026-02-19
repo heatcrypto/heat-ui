@@ -31,8 +31,9 @@
             <div class="title">
               Asset name:
             </div>
-            <div class="value">
+            <div class="value" ng-class="{expired: vm.currencyInfo.expired}">
               <a ng-click="vm.showDescription($event, vm.currencyInfo)">{{vm.currencyInfo.name}}</a>
+              <span class="value" ng-if="vm.currencyInfo.type == 1">(PRIVATE)</span>
             </div>
           </div>
           <div class="col-item issued-by">
@@ -44,15 +45,13 @@
             </div>
           </div>
           <div class="col-item launched">
-            <div class="title">
-              Certified:
+              <div class="title">Certified:</div>
+              <div class="value">
+                <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
+                <span ng-if="vm.currencyInfo.certified == true">Yes</span>
+                <span ng-if="vm.currencyInfo.certified == false">No</span>
+              </div>
             </div>
-            <div class="value">
-              <md-icon ng-class="{iscertified:vm.currencyInfo.certified}" md-font-library="material-icons">{{vm.currencyInfo.certified?'check':'not_interested'}}</md-icon>
-              <span ng-if="vm.currencyInfo.certified == true">Yes</span>
-              <span ng-if="vm.currencyInfo.certified == false">No</span>
-            </div>
-          </div>
           <div class="col-item id">
             <div class="title">
               Launched:
@@ -73,8 +72,9 @@
             <div class="title">
               Asset name:
             </div>
-            <div class="value">
+            <div class="value" ng-class="{expired: vm.assetInfo.expired}">
               <a ng-click="vm.showDescription($event, vm.assetInfo)">{{vm.assetInfo.name}}</a>
+              <span class="value" ng-if="vm.assetInfo.type == 1">(PRIVATE)</span>
             </div>
           </div>
           <div class="col-item issued-by">

@@ -178,6 +178,9 @@ class TraderChartComponent {
   }
 
   public update(OHLCChartItemData: any) {
+    //if chart data is not initialized because of server response
+    if (!this.chart.data) return
+
     this.lastTrade = OHLCChartItemData
     this.chart.data.push(OHLCChartItemData)
     d3.select(".close-line")
@@ -220,6 +223,7 @@ class TraderChartComponent {
   }
 
   public refresh() {
+    if (!this.currencyInfo || !this.assetInfo) return
     this.getOHLCChartData().then((heatChart: IHeatChart) => {
       let margin = { top: 20, right: 80, bottom: 60, left: 50 },
         width = this.fullWidth - margin.left - margin.right,

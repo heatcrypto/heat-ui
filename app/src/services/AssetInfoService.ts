@@ -21,6 +21,7 @@
  * SOFTWARE.
  * */
 interface AssetInfo {
+  type?: number; // 0: STANDARD, 1: PRIVATE
   id: string;
   description: string;
   descriptionUrl: string;
@@ -32,6 +33,11 @@ interface AssetInfo {
   issuer: string;
   issuerPublicName: string;
   userBalance?: string;
+  tradeFee?: string;
+  orderFee?: string;
+  feeRecipient?: string;
+  expiration?: number;
+  expired?: boolean
 }
 
 interface AssetPropertiesProtocol1 {
@@ -60,6 +66,12 @@ class AssetInfoService {
               private $q: angular.IQService,
               private assetCertification: AssetCertificationService,
               private http: HttpService) {
+    this.resetCache();
+    setInterval(this.resetCache, 5 * 60 * 1000);
+  }
+
+  resetCache() {
+    this.cache = {};
     this.cache["0"] = {
       id: "0",
       description: "HEAT Cryptocurrency",
@@ -70,7 +82,8 @@ class AssetInfoService {
       certified: true,
       timestamp: 100149557,
       issuer: "8150091319858025343",
-      issuerPublicName: "HEAT blockchain Genesis account"
+      issuerPublicName: "HEAT blockchain Genesis account",
+      expired: false
     };
   }
 
@@ -91,22 +104,28 @@ class AssetInfoService {
     }
     else {
       this.heat.api.getAssetProperties(asset, "0", 1).then((data) => {
-        var properties = this.parseProperties(data.properties, {
+        let properties = this.parseProperties(data.properties, {
           symbol: asset.substring(0, 4),
           name: asset,
           certified: false
         });
-        var info: AssetInfo = {
+        let info: AssetInfo = {
+          type: data.type,
           id: asset,
           description: null,
           descriptionUrl: data.descriptionUrl,
           decimals: data.decimals,
-          symbol: this.getDisplaySymbol(asset, properties.symbol||''),
+          symbol: this.getDisplaySymbol(asset, properties.symbol || ''),
           name: properties.name,
           certified: false,
           timestamp: data.timestamp,
           issuer: data.account,
-          issuerPublicName: data.accountPublicName
+          issuerPublicName: data.accountPublicName,
+          tradeFee: data.tradeFee,
+          orderFee: data.orderFee,
+          feeRecipient: data.feeRecipient,
+          expiration: data.expiration,
+          expired: utils.isAssetExpired(data.expiration)
         };
         this.cache[asset] = info;
         this.assetCertification.getInfo(asset).then((certificationData)=> {

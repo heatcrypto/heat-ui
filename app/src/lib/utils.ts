@@ -23,6 +23,8 @@
 declare var BigInteger;
 module utils {
 
+  const ONE_100_MILLIONS = new Big(100000000)
+
   /**
    * Remove commas notation from a float number
    */
@@ -62,7 +64,9 @@ module utils {
   }
 
   export function isHex(value: string) {
-    return angular.isString(value) && (/^[0-9a-fA-F]+$/.test(value))
+    if (!angular.isString(value)) return false
+    let s = value.startsWith("0x") ? value.substr(2) : value
+    return (/^[0-9a-fA-F]+$/.test(s))
   }
 
   export function isTimeWithinThreasholdLimit(inputTime) {
@@ -94,7 +98,7 @@ module utils {
       try {
         parsed = JSON.parse(response)
       } catch(e) {
-        parsed = {heatUtilParsingError: response}
+        parsed = {heatUtilParsingError: response || e.toString()}
       }
     } else {
       parsed = response;
@@ -106,11 +110,25 @@ module utils {
     return new Date(Date.UTC(2018, 0, 1, 0, 0, 0, 0) + timestamp * 1000);
   }
 
+  export function nemTimestampToDate(timestamp: number) {
+    return new Date(Date.UTC(2015, 2, 29, 0, 5, 36, 25) + timestamp * 1000);
+  }
+
+  let BASE_DATE;
+
+  export function isBaseDate() {
+    return !!BASE_DATE
+  }
+
+  export function setBaseTimestamp(timestamp: number) {
+    BASE_DATE = timestamp
+  }
+
   /**
    * Converts heat transaction timestamp to the real Date.
    */
   export function timestampToDate(timestamp: number) {
-    return new Date(Date.UTC(2013, 10, 24, 12, 0, 0, 0) + timestamp * 1000);
+    return new Date(BASE_DATE + timestamp * 1000);
   }
 
   /**
@@ -118,7 +136,11 @@ module utils {
    */
   export function epochTime(timestamp?: number) {
     let t = timestamp ? timestamp : Date.now();
-    return (t - 1385294400000 + 500) / 1000;
+    return (t - BASE_DATE + 500) / 1000;
+  }
+
+  export function isAssetExpired(assetExpiration) {
+    return assetExpiration ? assetExpiration <= epochTime() : false
   }
 
   export function roundTo(value: string, decimals: number): string {
@@ -154,6 +176,20 @@ module utils {
         }
       });
     return deferred.promise;
+  }
+
+  export function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  const timeoutError = new Error("promise time is up")
+
+  export function timeoutPromise(promise, time) {
+    let timer
+    return Promise.race([
+      promise,
+      new Promise((resolve, reject) => timer = setTimeout(reject, time, timeoutError))
+    ]).finally(() => clearTimeout(timer))
   }
 
   export function convertToNQT (amountNXT) {
@@ -193,27 +229,75 @@ module utils {
   }
 
   export function formatQNT(quantity: string, decimals?: number, returnNullZero?: boolean): string {
-    var asfloat = utils.convertToQNTf(quantity, decimals);
-    var cf = utils.commaFormat(asfloat);
-    var parts = cf.split('.');
-    var ret;
-    if (!parts[1])
-      ret = parts[0] + "." + "0".repeat(decimals);
-    else if (parts[1].length > decimals) {
-      var i=parts[1].length-1;
+    let amount = utils.convertToQNTf(quantity)
+    return formatHeat(amount, decimals, returnNullZero)
+  }
+
+  export function formatHeat(amount: string, decimals?: number, returnNullZero?: boolean): string {
+    let cf = utils.commaFormat(amount);
+    let parts = cf.split('.');
+    let result;
+    if (!parts[1]) {
+      result = parts[0] + (decimals > 0 ? "." + "0".repeat(decimals) : "");
+    } else if (parts[1].length > decimals) {
+      let i = parts[1].length - 1;
       while (parts[1].length > decimals) {
-        if (parts[1][i]=="0") {
-          parts[1] = parts[i].slice(0,-1);
+        if (parts[1][i] == "0") {
+          parts[1] = parts[i].slice(0, -1);
           i--;
           continue;
         }
         break;
       }
-      ret = parts[0] + "." + parts[1];
+      result = parts[0] + "." + parts[1];
+    } else {
+      result = parts[0] + "." + parts[1] + "0".repeat(decimals - parts[1].length);
     }
-    else
-      ret = parts[0] + "." + parts[1] + "0".repeat(decimals-parts[1].length);
-    return returnNullZero && !ret.match(/[^0\.]/) ? null : ret;
+    return returnNullZero && !result.match(/[^0\.]/) ? null : result;
+  }
+
+  export function formatBytes(bytes: number, decimals = 2) {
+    if (!+bytes) return '0 Bytes'
+
+    const k = 1024
+    const dm = decimals < 0 ? 0 : decimals
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+  }
+
+  export function formatERC20TokenAmount(amount: string, decimals: number, fixed?: boolean) {
+    if (typeof decimals === 'string') decimals = parseInt(decimals)
+    if (decimals == 0) return amount
+    let s = amount.padStart(amount.length > decimals ? decimals : decimals + 1, "0")
+    let decimalPos = s.length - decimals
+    let decimalPart = s.substr(decimalPos, s.length)
+    if (!fixed) {
+      //truncate tail zeros
+      let tailZeroCount = 0
+      for (let i = decimalPart.length - 1; i >= 0; i--) {
+        if (decimalPart[i] == "0") {
+          tailZeroCount++
+        } else {
+          break
+        }
+      }
+      decimalPart = decimalPart.substr(0, decimalPart.length - tailZeroCount)
+    }
+    let integerPart = utils.commaFormat(s.substr(0, decimalPos) || "0")
+    return integerPart + (decimalPart ? numberSeparator.decimal + decimalPart : "")
+  }
+
+  const numberSeparator = {decimal: getSeparator("decimal", "EN-en"), group: getSeparator("group", "EN-en")}
+
+  function getSeparator(separatorType?: "decimal" | "group", locale?) {
+    const numberWithGroupAndDecimalSeparator = 1000.1
+    return Intl.NumberFormat(locale)
+      .formatToParts(numberWithGroupAndDecimalSeparator)
+      .find(part => part.type === separatorType)
+      .value
   }
 
   export function trimDecimals(formatted: string, decimals: number): string {
@@ -227,11 +311,9 @@ module utils {
     return parts[0]+"."+parts[1];
   }
 
-  export function convertToQNTf(quantity: string, decimals?: number): string {
-    decimals = decimals || 8
-    if (typeof quantity == 'undefined') {
-      return '0';
-    }
+  export function convertToQNTf(quantity: string, decimals: number = 8): string {
+    if (typeof quantity == 'undefined') return '0'
+    if (typeof quantity == 'number') quantity = "" + quantity
     if (quantity.length < decimals) {
       for (var i = quantity.length; i < decimals; i++) {
         quantity = "0" + quantity;
@@ -252,14 +334,20 @@ module utils {
     return quantity + afterComma;
   }
 
+  export function convertToQNTNew(quantity: string): string {
+    return new Big(quantity).div(ONE_100_MILLIONS).toFixed()
+  }
+
   export function calculateTotalOrderPriceQNT(quantityQNT: string, priceQNT: string): string {
-    return new Big(quantityQNT).times(new Big(priceQNT).div(new Big(100000000))).round().toString();
+    return new Big(quantityQNT).times(new Big(priceQNT).div(ONE_100_MILLIONS)).round().toString();
   }
 
   export class ConvertToQNTError implements Error  {
     public name = "ConvertToQNTError";
     constructor(public message: string, public code: number) {}
   }
+
+  const ALL_ASSETS_DECIMALS = 8
 
   /**
    * Converts a float to a QNT based on the number of decimals to use.
@@ -268,38 +356,36 @@ module utils {
    *
    * @throws utils.ConvertToQNTError
    */
-  export function convertToQNT(quantity: string /*, decimals: number = 8 */): string {
-    var decimals = 8; // qnts all have 8 decimals.
-    var parts = quantity.split(".");
-    var qnt   = parts[0];
+  export function convertToQNT(quantity: string, decimals: number = 8): string {
+    let parts = quantity.split(".");
+    let qnt = parts[0];
     if (parts.length == 1) {
-      if (decimals) {
-        for (var i = 0; i < decimals; i++) {
-          qnt += "0";
-        }
+      for (let i = 0; i < ALL_ASSETS_DECIMALS; i++) {
+        qnt += "0";
       }
-    }
-    else if (parts.length == 2) {
-      var fraction = parts[1];
-      if (fraction.length > decimals) {
-        throw new ConvertToQNTError("Fraction can only have " + decimals + " decimals max.",1);
-      }
-      else if (fraction.length < decimals) {
-        for (var i = fraction.length; i < decimals; i++) {
+    } else if (parts.length == 2) {
+      let fraction = parts[1];
+      if (fraction.length > ALL_ASSETS_DECIMALS) {
+        throw new ConvertToQNTError("Fraction can only have " + ALL_ASSETS_DECIMALS + " decimals max.", 1);
+      } else if (fraction.length < ALL_ASSETS_DECIMALS) {
+        for (let i = fraction.length; i < ALL_ASSETS_DECIMALS; i++) {
           fraction += "0";
         }
       }
       qnt += fraction;
-    }
-    else {
-      throw new ConvertToQNTError("Incorrect input",2);
+    } else {
+      throw new ConvertToQNTError("Incorrect input", 2);
     }
     //in case there's a comma or something else in there.. at this point there should only be numbers
     if (!/^\d+$/.test(qnt)) {
-      throw new ConvertToQNTError("Invalid input. Only numbers and a dot are accepted.",3);
+      throw new ConvertToQNTError("Invalid input. Only numbers and a dot are accepted.", 3);
     }
     //remove leading zeroes
-    return qnt.replace(/^0+/, "");
+    let result = qnt.replace(/^0+/, "");
+    let lastZeros = ALL_ASSETS_DECIMALS - decimals;
+    return result.length > lastZeros
+      ? result.substr(0, result.length - lastZeros) + '0'.repeat(lastZeros)
+      : result
   }
 
   /**
@@ -348,4 +434,100 @@ module utils {
   export function emptyToNull(input: string): string {
     return (angular.isString(input) && input.trim().length == 0) ? null : input;
   }
+
+  /**
+   * Random UUID
+   */
+  export function uuidv4() {
+    // @ts-ignore
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+  }
+
+  /**
+   * Helper functions for developer useful in app console.
+   * For example switch to specified server:
+   * utils.helper.useRemoteServer({host: "http://95.226.14.252", port: 7733, websocket: "ws://95.226.14.252:7755/ws/", priority: 0})
+   */
+  export let helper = {
+    useLocalServer: () => {
+      (<HeatService>heat.$inject.get('heat')).switchToServer({way: "local", failoverEnabled: false, sameMessagingHost: true})
+    },
+    useRemoteServer: (serverDescriptor?: ServerDescriptor) => {
+      (<HeatService>heat.$inject.get('heat')).switchToServer(
+          {way: "remote", failoverEnabled: true, sameMessagingHost: false},
+          serverDescriptor
+      )
+    },
+    getCurrentServer: () => {
+      return SettingsService.instance.getCurrentServer()
+    },
+    getFailoverDescriptor: () => {
+      return SettingsService.FAILOVER_DESCRIPTOR
+    },
+    removeMultipleWalletEntries: (pin) => {
+      let wc = WalletComponent.instance
+      let n = 0
+      wc.entries.forEach((entry: wlt.WalletEntry) => {
+        if (entry instanceof wlt.WalletEntry && entry.pin == pin) {
+          wc.localKeyStore.remove(entry.account).then(() => {
+            n++
+            console.log(`${n}. removed ${entry.account}`)
+          })
+        }
+      })
+    },
+    fullExport: () => {
+      return wltStandalone.exportLocalstorage()
+    },
+    tmp: () => {
+      Object.keys(localStorage).forEach(key => {
+        if (key.indexOf('p2pContacts') > 0) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key))
+            let parts = key.split('.')
+            db.putContact(parts[0], value.publicKey, value)
+          } catch (e) {
+            console.error('error import p2p contact', e)
+          }
+        }
+      })
+    }
+  }
+
+  export function stringSimilarity(str1: string, str2: string, gramSize: number = 2) {
+    function getNGrams(s: string, len: number) {
+      s = ' '.repeat(len - 1) + s.toLowerCase() + ' '.repeat(len - 1);
+      let v = new Array(s.length - len + 1);
+      for (let i = 0; i < v.length; i++) {
+        v[i] = s.slice(i, i + len);
+      }
+      return v;
+    }
+
+    if (!str1?.length || !str2?.length) { return 0.0; }
+
+    let s1 = str1.length < str2.length ? str1 : str2;
+    let s2 = str1.length < str2.length ? str2 : str1;
+
+    let pairs1 = getNGrams(s1, gramSize);
+    let pairs2 = getNGrams(s2, gramSize);
+    let set = new Set<string>(pairs1);
+
+    let total = pairs2.length;
+    let hits = 0;
+    for (let item of pairs2) {
+      if (set.delete(item)) {
+        hits++;
+      }
+    }
+    return hits / total;
+  }
+
+  export function limitedString(str: string, maxLen: number, overSuffix = '...') {
+    if (str.length < maxLen + overSuffix.length) return str
+    return str.substring(0, maxLen) + overSuffix
+  }
+
 }

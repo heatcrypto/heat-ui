@@ -30,6 +30,7 @@ class DialogFieldBuilder {
   text(name: string, _default?: any): DialogFieldText { return new DialogFieldText(this.$scope, name, _default) }
   hidden(name: string, _default?: any): DialogFieldHidden { return new DialogFieldHidden(this.$scope, name, _default) }
   staticText(name: string, _default: any): DialogFieldStatic { return new DialogFieldStatic(this.$scope, name, _default) }
+  switcher(name: string, _default: any): DialogFieldSwitcher { return new DialogFieldSwitcher(this.$scope, name, _default) }
 }
 
 interface IGenericFieldParserFunction {
@@ -75,6 +76,11 @@ abstract class AbstractDialogField {
               public name: string,
               public value: any) {
     this._previousValue = value;
+  }
+
+  setValue(value) {
+    this.value = value
+    return this
   }
 
   /* Model change listener */

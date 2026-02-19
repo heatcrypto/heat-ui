@@ -35,28 +35,19 @@
     .edit-message-textarea.offchain {
       border-color: green;
     }
+    .edit-message-textarea.room-registered {
+      border-color: skyblue;
+    }
     .edit-message-textarea::placeholder {
       color: rgb(117, 117, 117);
     }
     .send-button-container {
       padding-left: 10px;
     }
-    edit-message .offchain-button {
-      width: 110px;
-      height: 30px;
-    }
-    edit-message .offchain-button.disable span {
-      color: grey;
-    }
-    edit-message .offchain-button.active {
-      background-color: green;
-    }
-    edit-message .send-button {
-      margin-top: 6px;
-    }
   `],
   template: `
-    <div layout="row" flex>
+<!--    <div layout="row" flex ondrop="dropHandler($event);" ondragover="dragOverHandler($event);">-->
+    <div layout="row" flex ng-on-drop="vm.onDrop($event)" ng-on-dragover="vm.onDragover($event)">
       <div layout="column" flex="noshrink">
         <form hide-gt-xs name="editMessageForm" ng-submit="vm.sendMessage($event)" flex layout="row">
           <textarea flex rows="4" ng-model="vm.messageText"></textarea>
@@ -64,15 +55,16 @@
             <md-icon md-font-library="material-icons">send</md-icon>
           </md-button>
         </form>
-        <textarea hide-xs ng-model="vm.messageText" flex rows="4" class="edit-message-textarea"
-          ng-class="{'offchain': vm.p2pMessaging.offchainMode}"
-          ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line"></textarea>
+        <textarea hide-xs ng-model="vm.messageText" flex rows="3" class="edit-message-textarea"
+          ng-class="{'room-registered': vm.p2pMessaging.contactStatus(vm.publickey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online', 
+            'offchain': vm.p2pMessaging.contactStatus(vm.publickey)=='channelOpened'}"
+          ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line. &#10;Drag and drop file (max 2MB) here to encrypt and send instantly"></textarea>
       </div>
       <div layout="column" class="send-button-container">
-        <md-button class="offchain-button" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
+        <!--<md-button class="offchain-button" ng-click="vm.toggleOffchain()" ng-class="{'active': vm.p2pMessaging.offchainMode, 'disable': !vm.p2pMessaging.offchainMode}">
           <md-tooltip md-direction="top">Peer-to-peer messages off blockchain</md-tooltip>
           {{vm.p2pMessaging.offchainMode ? 'offchain  ✔' : 'offchain'}}
-        </md-button>
+        </md-button>-->
         <md-button class="md-primary send-button" flex ng-click="vm.send($event)">
           Send
         </md-button>
@@ -100,7 +92,7 @@ class EditMessageComponent {
   }
 
   onKeyPress($event: KeyboardEvent) {
-    if ($event.keyCode == 13 && !$event.shiftKey) {
+    if ($event.key == "Enter" && !$event.shiftKey) {
       this.send($event);
     }
   }
@@ -108,38 +100,47 @@ class EditMessageComponent {
   send($event) {
     if (this.messageText && this.messageText.trim().length != 0) {
       if($event.preventDefault) $event.preventDefault();
-      if (this.p2pMessaging.offchainMode) {
+      if (this.p2pMessaging.onlineStatus == "online") {
         this.sendP2PMessage($event);
       } else {
-        this.sendMessage($event);
+        this.sendHeatMessage($event);
       }
     }
   }
 
-  sendP2PMessage($event) {
+  sendP2PMessage($event, files?: File[]) {
     let notSentReason: string;
-    let room = this.p2pMessaging.getOneToOneRoom(this.publickey);
+    let room = this.p2pMessaging.getOneToOneRoom(this.publickey)
     if (room) {
-      let peer = room.getPeer(this.publickey);
-      if (peer && peer.isConnected()) {
-        let count = room.sendMessage({timestamp: Date.now(), type: "chat", text: this.messageText});
-        this.$scope.$evalAsync(() => {
-          this.messageText = '';
-        });
+      let peer = room.getPeer(this.publickey) || room.createPeer(this.publickey, this.publickey);
+      if (peer) {
+        try {
+          if (files) {
+            room.sendFiles(files, this.publickey)
+          } else {
+            let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
+            this.$scope.$evalAsync(() => this.messageText = '')
+          }
+        } catch (e) {
+          notSentReason = e;
+        }
       } else {
-        notSentReason = "Peer is not connected";
+        notSentReason = "Peer not found"
       }
     } else {
-      notSentReason = "Chat 'room' for contact is not created";
+      notSentReason = "Chat 'room' for contact is not created"
     }
     if (notSentReason) {
       this.$mdToast.show(
         this.$mdToast.simple().textContent(`Not sent. ${notSentReason}`).hideDelay(3000)
-      );
+      )
     }
   }
 
-  sendMessage($event) {
+  /**
+   * Send Heat message transaction.
+   */
+  sendHeatMessage($event) {
     var account = heat.crypto.getAccountIdFromPublicKey(this.publickey);
     this.sendmessage.
          dialog($event, account, this.publickey, this.messageText).
@@ -159,8 +160,39 @@ class EditMessageComponent {
     });
   }
 
-  toggleOffchain($event) {
-    this.p2pMessaging.offchainMode = !this.p2pMessaging.offchainMode;
+  onDrop($event) {
+    if (!($event.dataTransfer.files && $event.dataTransfer.files.length > 0)) return
+
+    $event.preventDefault()
+    if (this.p2pMessaging.onlineStatus != "online") {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent("Send file(s) is not accepted because of disabled offchain messaging").hideDelay(3000)
+      )
+      return;
+    }
+    let files: File[] = $event.dataTransfer.files
+    let errorMessage
+    if (files.length > 10) {
+      errorMessage = "Too many files, limit is 10"
+    } else {
+      for (const file of files) {
+        if (file.size > 2 * 1024 * 1024) {
+          errorMessage = `File size of "${file.name}" is too big, limit is 2 MB`
+          break
+        }
+      }
+    }
+    if (errorMessage) {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent(`File(s) is not accepted. ${errorMessage}`).hideDelay(3000)
+      )
+      return
+    }
+    this.sendP2PMessage($event, files)
+  }
+
+  onDragover($event) {
+    $event.preventDefault()
   }
 
 }

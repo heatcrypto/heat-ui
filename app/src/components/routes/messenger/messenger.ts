@@ -33,9 +33,6 @@
       margin-top: 6px;
       margin-right: 6px;
     }
-    messenger edit-message {
-      min-height: 80px;
-    }
     messenger .outer-container {
       padding-top: 0px;
       padding-bottom: 0px;
@@ -54,13 +51,18 @@
     }
     messenger .edit-message {
       padding-right: 0px;
-      padding-top: 8px;
     }
     .control-panel button {
       flex: auto;
     }
     .p2p-messages {
       height: 100%;
+    }
+    #offchainButton.disable span {
+      color: grey;
+    }
+    #offchainButton.active {
+      background-color: green;
     }
     #onlineStatusButton.disable span {
       color: grey;
@@ -82,38 +84,35 @@
         <div layout="column">
           <user-contacts flex layout="column" ></user-contacts>
           <div layout="row" class="control-panel">
-            <md-button id="newContactButton" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
+            <md-button class="online" id="onlineStatusButton" ng-click="vm.toggleOnline()"
+            ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
+              <md-tooltip md-direction="top">{{vm.p2pMessaging.onlineStatus == 'online' ? 'NOW STEALTH - CLICK FOR ONCHAIN' : 'NOW ONCHAIN - CLICK FOR STEALTH'}}</md-tooltip>
+              {{vm.p2pMessaging.onlineStatus == 'online' ? 'offchain  ✔' : 'onchain'}}
+            </md-button>
+            <md-button id="callButton" class="md-primary" aria-label="Send" ng-click="vm.showCallDialog($event)">
+              <md-tooltip md-direction="top">
+                Send HEAT message to user to establish the contact
+              </md-tooltip>
+              New Contact
+            </md-button>
+            <!--<md-button id="newContactButton" class="md-primary" aria-label="Add contact" ng-click="vm.showSendmessageDialog($event)">
               <md-tooltip md-direction="top">
                 Send message to new contact
               </md-tooltip>
               <md-icon md-font-library="material-icons">add_circle_outline</md-icon>
               New CONTACT
-            </md-button>
-            <md-button id="CallButton" class="md-primary" aria-label="Call"
-            ng-if="vm.p2pMessaging.onlineStatus == 'online'" ng-click="vm.showCallDialog($event)">
-              <md-tooltip md-direction="top">
-                Connect user to establish the peer-to-peer channel
-              </md-tooltip>
-              CONNECT
-            </md-button>
-          </div>
-          <div layout="row" class="control-panel">
-            <md-button class="online" id="onlineStatusButton" ng-click="vm.toggleOnline()"
-            ng-class="{'active': vm.p2pMessaging.onlineStatus == 'online', 'disable': vm.p2pMessaging.onlineStatus !== 'online'}">
-              <md-tooltip md-direction="top">Set online peer-to-peer messaging status</md-tooltip>
-              {{vm.p2pMessaging.onlineStatus == 'online' ? 'online  ✔' : 'online'}}
-            </md-button>
+            </md-button>-->
           </div>
         </div>
         <div layout="column" layout-fill>
           <div class="row" class="progress-indicator" flex ng-show="vm.loading">
             <md-progress-linear class="md-primary" md-mode="indeterminate"></md-progress-linear>
           </div>
-          <md-content flex ng-if="!vm.p2pMessaging.offchainMode" id="message-batch-container">
+          <md-content flex ng-if="vm.p2pMessaging.onlineStatus == 'offline'" id="message-batch-container">
             <message-batch-viewer flex layout="column" container-id="message-batch-container"
                     publickey="::vm.publickey"></message-batch-viewer>
           </md-content>
-          <md-content flex ng-if="vm.p2pMessaging.offchainMode && vm.publickey != 0" id="p2p-messages-container">
+          <md-content flex ng-if="vm.p2pMessaging.onlineStatus == 'online' && vm.publickey != 0" id="p2p-messages-container">
             <p2p-messages-viewer flex layout="column" class="p2p-messages" container-id="p2p-messages-container"
                     publickey="::vm.publickey"></p2p-messages-viewer>
           </md-content>
@@ -143,8 +142,14 @@ class MessengerComponent {
   }
 
   showCallDialog($event) {
-    let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
-    this.p2pMessaging.dialog($event, recipient, this.publickey).show().finally(() => {});
+    if (this.p2pMessaging.onlineStatus == 'online') {
+      let recipient = heat.crypto.getAccountIdFromPublicKey(this.publickey);
+      this.p2pMessaging.dialog($event, recipient, this.publickey, `Hello, I am ${this.user.accountName}`)
+        .show()
+        .finally(() => {});
+    } else {
+      this.sendmessage.dialog($event).show();
+    }
   }
 
   toggleOnline($event) {

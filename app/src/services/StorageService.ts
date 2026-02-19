@@ -1,7 +1,7 @@
 /// <reference path='../lib/EventEmitter.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2016-2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -45,24 +45,25 @@ class StorageService {
     var store = new Store(namespace, this);
     if ($scope) {
       $scope.$on('$destroy',() => {
+        if (store.userServiceListener) {
+          this.user.removeListener(UserService.EVENT_UNLOCKED, store.userServiceListener)
+        }
         this.removeStore(store)
       });
     }
     this.addStore(store);
     if (!angular.isDefined(globalScope) || !globalScope) {
-      this.user = this.user || <UserService> heat.$inject.get('user'); // causes circular dependency if done through DI.
+      this.user = this.user || <UserService>heat.$inject.get('user'); // causes circular dependency if done through DI.
       if (this.user.unlocked) {
-        store.enable(this.user.account);
+        store.enable(this.user.account)
       }
-      else {
-        var closure = () => {
-          this.user.removeListener(UserService.EVENT_UNLOCKED, closure);
-          store.enable(this.user.account);
+      if (!store.userServiceListener) {
+        store.userServiceListener = () => {
+          store.enable(this.user.account)
         }
-        this.user.on(UserService.EVENT_UNLOCKED, closure);
+        this.user.on(UserService.EVENT_UNLOCKED, store.userServiceListener);
       }
-    }
-    else {
+    } else {
       store.enable();
     }
     return store;
@@ -97,8 +98,9 @@ class Store extends EventEmitter {
   public static EVENT_PUT = 'put';
   public static EVENT_REMOVE = 'remove';
 
+  userServiceListener: IEventListenerFunction;
   private prefix: string;
-  private enabled: boolean = false;
+  private _enabled: boolean = false;
 
   constructor(public namespace: string, private storage: StorageService) {
     super();
@@ -106,20 +108,24 @@ class Store extends EventEmitter {
       throw new Error('Illegal argument, namespace must be a non-empty string');
   }
 
+  get enabled(): boolean {
+    return this._enabled;
+  }
+
   public enable(userScope?: string) {
     this.prefix = this.namespace + ".";
     if (angular.isDefined(userScope)) {
       this.prefix = userScope + "." + this.prefix;
     }
-    this.enabled = true;
+    this._enabled = true;
   }
 
   public disable() {
-    this.enabled = false;
+    this._enabled = false;
   }
 
   private ensureIsEnabled() {
-    if (!this.enabled) {
+    if (!this._enabled) {
       throw new Error('Store not enabled. Are you accessing a user scoped Store without a user being signed in?');
     }
   }
@@ -187,7 +193,7 @@ class Store extends EventEmitter {
   private read(path: string, defaultValue?: any): any {
     this.ensureIsEnabled();
     var text: string = localStorage.getItem(this.prefix + path);
-    if (angular.isString(text)) {
+    if (angular.isString(text) && text != 'undefined') {
       try {
         return JSON.parse(text);
       } catch (e) {

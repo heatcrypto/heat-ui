@@ -1,6 +1,6 @@
 # Get started with HEAT Wallet 2.7.0
 
-August/september 2018 | Provided to you by the developers of Heat Ledger Ltd - creators of the HEAT cryptocurrency.
+August/september 2018 | Provided to you by the developers of HEAT - creators of the HEAT cryptocurrency.
 
 We are proud to present you with version 2.7.0 of our Desktop HEAT Wallet.
 
@@ -48,15 +48,15 @@ Linux users download the zip file and extract to a location of your choice. Run 
 
 HEAT Wallet (full version - includes HEAT p2p server)
 
-  - Windows [Heatwallet_Setup_2.7.0.exe](https://github.com/Heat-Ledger-Ltd/heatwallet/releases/download/v2.7.0/Heatwallet_Setup_2.7.0.exe)
-  - OSX [Heatwallet_MacOS_2.7.0.zip](https://github.com/Heat-Ledger-Ltd/heatwallet/releases/download/v2.7.0/Heatwallet_MacOS_2.7.0.zip)
-  - Linux [Heatwallet_Linux_2.7.0.zip](https://github.com/Heat-Ledger-Ltd/heatwallet/releases/download/v2.7.0/Heatwallet_Linux_2.7.0.zip)
+  - Windows [Heatwallet_Setup_2.7.0.exe](https://github.com/heatcrypto/heatwallet/releases/download/v2.7.0/Heatwallet_Setup_2.7.0.exe)
+  - OSX [Heatwallet_MacOS_2.7.0.zip](https://github.com/heatcrypto/heatwallet/releases/download/v2.7.0/Heatwallet_MacOS_2.7.0.zip)
+  - Linux [Heatwallet_Linux_2.7.0.zip](https://github.com/heatcrypto/heatwallet/releases/download/v2.7.0/Heatwallet_Linux_2.7.0.zip)
 
 HEAT Client (light version)
 
-  - Windows [Heatclient_Setup_2.7.0.exe](https://github.com/Heat-Ledger-Ltd/heat-ui/releases/download/v2.7.0/Heatclient_Setup_2.7.0.exe)
-  - OSX [Heatclient_MacOS_2.7.0.zip](https://github.com/Heat-Ledger-Ltd/heat-ui/releases/download/v2.7.0/Heatclient_MacOS_2.7.0.zip)
-  - Linux [Heatclient_Linux_2.7.0.zip](https://github.com/Heat-Ledger-Ltd/heat-ui/releases/download/v2.7.0/Heatclient_Linux_2.7.0.zip)
+  - Windows [Heatclient_Setup_2.7.0.exe](https://github.com/heatcrypto/heat-ui/releases/download/v2.7.0/Heatclient_Setup_2.7.0.exe)
+  - OSX [Heatclient_MacOS_2.7.0.zip](https://github.com/heatcrypto/heat-ui/releases/download/v2.7.0/Heatclient_MacOS_2.7.0.zip)
+  - Linux [Heatclient_Linux_2.7.0.zip](https://github.com/heatcrypto/heat-ui/releases/download/v2.7.0/Heatclient_Linux_2.7.0.zip)
 
 ### Application Settings
 
@@ -111,7 +111,7 @@ Within seconds after creating your account you will see that your address exists
 It is very important that you safely backup your private keys. To backup your keys consider these options.
 
   1. Write down your key(s) (HEAT keys are human readable 12 word phrases, perfect for writing down)
-  2. Store key in paper wallet and print to file ([look here for the HEAT paper wallet project](https://github.com/Heat-Ledger-Ltd/heat-paperwallet)) look for "Use existing key" option.
+  2. Store key in paper wallet and print to file ([look here for the HEAT paper wallet project](https://github.com/heatcrypto/heat-paperwallet)) look for "Use existing key" option.
   3. Download your wallet file containing all your keys in HEAT wallet file format (`heat.wallet`)
 
 To view your currently used private key or download the wallet file we visit the main menu.

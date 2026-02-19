@@ -34,7 +34,10 @@
               Account:
             </div>
             <div class="value">
-              <a href="#/explorer-account/{{vm.account}}/{{vm.type}}">{{vm.accountName||vm.account}}</a>
+              <a ng-click="vm.showPublicKey()">{{vm.accountName||vm.account}}</a>
+            </div>
+            <div ng-if="vm.supervisoryAccount" style="font-size: x-small; margin-bottom: 6px;">
+              under control <a href="#/explorer-account/{{vm.supervisoryAccount}}/transactions">{{vm.supervisoryAccount}}</a>
             </div>
           </div>
           <div class="col-item">
@@ -53,16 +56,16 @@
               {{vm.balanceUnconfirmed}} HEAT
             </div>
           </div>
-        </div>
-        <div layout="column">
           <div class="col-item">
             <div class="title">
-              Effective bal:
+              Effective balance:
             </div>
             <div class="value">
               {{vm.effectiveBalance}} HEAT
             </div>
           </div>
+        </div>
+        <div layout="column">
           <div class="col-item">
             <div class="title">
               Lease: [{{vm.leaseTitle}}]
@@ -85,6 +88,22 @@
               </span>
             </div>
           </div>
+          <div class="col-item">
+            <div class="title">
+              Amount leased in:
+            </div>
+            <div class="value">
+              {{vm.lessorsBalance}} HEAT
+            </div>
+          </div>
+          <div class="col-item" ng-if="vm.currentLessee!='0'">
+            <div class="title">
+              Amount leased out:
+            </div>
+            <div class="value">
+              {{vm.guaranteedBalance}} HEAT
+            </div>
+          </div>
         </div>
         <div layout="column" flex>
           <div class="col-item">
@@ -100,7 +119,7 @@
               Assets:
             </div>
             <div class="scrollable">
-              <div class="value" ng-repeat="item in vm.assetInfos">
+              <div class="value" ng-class="{expired: item.expired}" ng-repeat="item in vm.assetInfos">
                 <span class="balance">{{item.balance}}</span>
                 <span class="symbol"><b>{{item.symbol}}</b></span>
                 <span class="name">
@@ -116,7 +135,7 @@
       </div>
 
       <div layout="row" layout-align="start center" class="type-row">
-        <md-button ng-class="{'active':vm.type=='accounts'}"
+        <md-button ng-class="{'active':vm.type=='transactions'}"
           ng-disabled="vm.type=='transactions'"
           ng-href="#/explorer-account/{{vm.account}}/transactions">Transactions</md-button>
         <md-button ng-class="{'active':vm.type=='blocks'}"
@@ -128,6 +147,9 @@
         <md-button ng-class="{'active':vm.type=='trades'}"
           ng-disabled="vm.type=='trades'"
           ng-href="#/explorer-account/{{vm.account}}/trades">Trades</md-button>
+        <md-button ng-class="{'active':vm.type=='payments'}"
+          ng-disabled="vm.type=='payments'"
+          ng-href="#/explorer-account/{{vm.account}}/payments">Payments</md-button>
         <span flex></span>
         <md-button ng-click="vm.csv($event)">Download CSV</md-button>
       </div>
@@ -139,6 +161,9 @@
       </div>
       <div ng-if="vm.type=='trades'" flex layout="column">
         <virtual-repeat-trades hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-trades>
+      </div>
+      <div ng-if="vm.type=='payments'" flex layout="column">
+        <virtual-repeat-payments hide-label="true" layout="column" flex layout-fill account="vm.account"></virtual-repeat-payments>
       </div>
       <div ng-if="vm.type=='lessors'" flex layout="column" layout-fill>
         <md-list flex layout-fill layout="column" class="lessors">
@@ -181,7 +206,7 @@
     </div>
   `
 })
-@Inject('$scope','heat','assetInfo','$q')
+@Inject('$scope','heat','assetInfo','$q', 'panel')
 class ExploreAccountComponent {
   account: string; // @input
   type: string; // @input
@@ -196,8 +221,8 @@ class ExploreAccountComponent {
   effectiveBalance: string;
   balanceUnconfirmed: string;
   balanceConfirmed: string;
+  guaranteedBalance: string;
   assetInfos: Array<AssetInfo> = [];
-
 
   currentLessee: string;
   currentLesseeName: string;
@@ -211,15 +236,22 @@ class ExploreAccountComponent {
   leaseTitle: string;
   nextLeaseTitle: string;
   lessors: Array<IHeatLessors>;
+  lessorsBalance: string;
+
+  supervisoryAccount: string;
 
   constructor(private $scope: angular.IScope,
               private heat: HeatService,
               private assetInfo: AssetInfoService,
-              private $q: angular.IQService) {
+              private $q: angular.IQService,
+              private panel: PanelService) {
+  }
+
+  $onInit() {
     this.refresh();
-    heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
+    this.heat.subscriber.balanceChanged({ account: this.account, currency: "0" }, () => {
       this.refresh();
-    }, $scope);
+    }, this.$scope);
   }
 
   csv($event) {
@@ -250,6 +282,7 @@ class ExploreAccountComponent {
         this.balanceConfirmed = utils.formatQNT(account.balance, 8);
         this.effectiveBalance = utils.formatQNT(account.effectiveBalance, 8);
         this.balanceUnconfirmed = utils.formatQNT(account.unconfirmedBalance, 8);
+        this.guaranteedBalance = utils.formatQNT(account.guaranteedBalance, 8);
         this.currentLessee = account.currentLessee;
         this.currentLesseeName = account.currentLesseeName || account.currentLessee;
         this.currentLeasingHeightFrom = account.currentLeasingHeightFrom;
@@ -259,6 +292,8 @@ class ExploreAccountComponent {
         this.nextLeasingHeightFrom = account.nextLeasingHeightFrom;
         this.nextLeasingHeightTo = account.nextLeasingHeightTo;
         this.lessors = <Array<IHeatLessors>>account.lessors;
+        this.lessorsBalance = utils.formatQNT(account.lessorsBalance, 8);
+        this.supervisoryAccount = account.supervisoryAccount;
         if (angular.isArray(this.lessors)) {
           this.lessors.forEach((lessor:any) => {
             lessor.balance = utils.formatQNT(lessor.effectiveBalance, 8) + " HEAT";
@@ -290,21 +325,42 @@ class ExploreAccountComponent {
         this.assetInfos = assetInfos
           .filter(info => parseFloat(info.userBalance) !== 0)
           .map(info => {
-            info['balance'] = utils.formatQNT(info.userBalance, 8);
+            info['balance'] = utils.formatQNT(info.userBalance, info.decimals);
             return info;
           });
       })
+    }).catch(reason => {
+      console.error(reason)
     })
 
     this.heat.api.rewardsAccount(this.account).then(info=>{
       this.$scope.$evalAsync(()=>{
         this.totalRewards = utils.commaFormat(utils.formatQNT(info.totalRewards, 8))
       })
-    });
+    }).catch(reason => {
+      if (reason.code == 3) {
+        //unknown miner is ok
+      } else {
+        console.error(reason)
+      }
+    })
   }
 
   showDescription($event, info: AssetInfo) {
     dialogs.assetInfo($event, info);
+  }
+
+  showPublicKey($event) {
+    this.panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>                                                                                                                                                           
+          <div>Public key:</div>
+          <div>{{vm.publicKey}}</div>
+        </md-input-container>
+      </div>
+    `, {
+      publicKey: this.publicKey
+    })
   }
 
   private getAccountAssets(): angular.IPromise<Array<AssetInfo>> {
@@ -312,14 +368,15 @@ class ExploreAccountComponent {
     this.heat.api.getAccountBalances(this.account, "0", 1, 0, 100).then(balances => {
       let assetInfos: Array<AssetInfo> = [];
       let promises = [];
-      balances.forEach(balance=>{
+      balances.forEach(balance => {
         if (balance.id != '0') {
           promises.push(
-            this.assetInfo.getInfo(balance.id).then(info=>{
-              assetInfos.push(angular.extend(info, {
-                userBalance: balance.virtualBalance
-              }))
-            })
+              this.assetInfo.getInfo(balance.id).then(info => {
+                let accountAssetInfo = angular.extend({}, info, {
+                  userBalance: balance.virtualBalance
+                })
+                assetInfos.push(accountAssetInfo)
+              })
           );
         }
       });

@@ -23,6 +23,7 @@
 @Service('panel')
 @Inject('$mdPanel')
 class PanelService {
+  private panel: any;
   constructor(private $mdPanel: angular.material.IPanelService) {}
   show(template: string, locals: any) {
     let position = this.$mdPanel.newPanelPosition().absolute().center();
@@ -36,12 +37,16 @@ class PanelService {
       panelClass: 'demo-dialog-example',
       position: position,
       trapFocus: false,
-      zIndex: 30,
+      zIndex: 88,
       clickOutsideToClose: true,
       escapeToClose: true,
       focusOnOpen: true,
       locals: locals
     };
-    this.$mdPanel.open(config);
+    return this.$mdPanel.open(config)
+      .then(panel => this.panel = panel)
+  }
+  close() {
+    if (this.panel) this.panel.close()
   }
 }

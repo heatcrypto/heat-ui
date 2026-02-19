@@ -189,8 +189,36 @@ module converters {
       var index = checkBytesToIntInput(bytes, parseInt(length, 10), parseInt(opt_startIndex, 10));
       bytes = bytes.slice(opt_startIndex, opt_startIndex + length);
     }
-    // @ts-ignore
-    return decodeURIComponent(escape(String.fromCharCode.apply(null, bytes)));
+
+    return byteArrayToStringInternal(bytes)
+  }
+
+  /**
+   * Provides decoding large data using decodeURIComponent()
+   */
+	function byteArrayToStringInternal(bytes: Array<number>) {
+    let result = ""
+    let chunkSize = 20000;
+    if (bytes.length > chunkSize) {
+      let pos = 0
+      while (pos < bytes.length) {
+        let shift = 0
+        while (shift < 3) {
+          try {
+            let escaped = escape(String.fromCharCode.apply(null, bytes.slice(pos, pos + chunkSize + shift)))
+            result = result + decodeURIComponent(escaped)
+            pos = pos + chunkSize + shift
+            break
+          } catch (e) {
+            console.debug("trying decode escaped string " + e)
+          }
+          shift++
+        }
+      }
+    } else {
+      result = decodeURIComponent(escape(String.fromCharCode.apply(null, bytes)))
+    }
+    return result
   }
 
   export function byteArrayToShortArray(byteArray: Array<number>): Array<number> {
@@ -278,4 +306,30 @@ module converters {
     }
     return bytes;
   }
+
+  /* fast functions to converting string to ArrayBuffer and vice-versa
+  https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String*/
+
+  export function arrayBufferToString(buf: ArrayBuffer): string {
+    return new TextDecoder().decode(buf)
+    //return String.fromCharCode.apply(null, new Uint16Array(buf))
+  }
+
+  export function stringToArrayBuffer(str: string): ArrayBuffer {
+    return new TextEncoder().encode(str)
+    /*let buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+    let bufView = new Uint16Array(buf)
+    for (let i = 0, strLen = str.length; i < strLen; i++) {
+      bufView[i] = str.charCodeAt(i)
+    }
+    return buf*/
+  }
+
+  export function concatenate(buffer1: ArrayBuffer, buffer2: ArrayBuffer): ArrayBufferLike {
+    let temp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+    temp.set(new Uint8Array(buffer1), 0);
+    temp.set(new Uint8Array(buffer2), buffer1.byteLength);
+    return temp.buffer;
+  }
+
 }

@@ -9,7 +9,8 @@ class NXTCurrency implements ICurrency {
   private $rootScope;
   private $q;
 
-  constructor(public secretPhrase: string,
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
               public address: string) {
     this.user = heat.$inject.get('user')
     this.homePath = `/nxt-account/${this.address}`
@@ -25,7 +26,7 @@ class NXTCurrency implements ICurrency {
     this.nxtBlockExplorerService.getAccount(this.address).then(data => {
       deferred.resolve(new Big(utils.convertToQNTf(data.balanceNQT)).toFixed(8))
     }, err => {
-      deferred.reject();
+      deferred.reject(err);
     })
     return deferred.promise;
   }
@@ -45,7 +46,7 @@ class NXTCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendNxt($event).then(
       data => {
-        let address = this.user.account
+        let address = this.user.currency.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp)
       },
@@ -64,10 +65,12 @@ class NXTCurrency implements ICurrency {
 
   sendNxt($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+
+      this.okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let nxtBlockExplorerService = <NxtBlockExplorerService> heat.$inject.get('nxtBlockExplorerService')
 
@@ -84,7 +87,7 @@ class NXTCurrency implements ICurrency {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
-          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
           txObject = `nxt?requestType=sendMoney&publicKey=${user.publicKey}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true`;
         }
         else {
@@ -104,10 +107,11 @@ class NXTCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
+
+      this.disableOKBtn = false
 
       let defaultFee = '1.0'
-      $scope['vm'].data = {
+      this.data = {
         amountNQT: '',
         recipient: '',
         recipientInfo: '',
@@ -137,7 +141,8 @@ class NXTCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
@@ -188,7 +193,7 @@ class NXTCurrency implements ICurrency {
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amountNQT || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

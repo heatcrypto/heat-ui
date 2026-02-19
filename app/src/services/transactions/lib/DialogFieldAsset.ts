@@ -1,7 +1,7 @@
 ///<reference path='AbstractDialogField.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,11 +22,19 @@
  * SOFTWARE.
  * */
 interface DialogFieldAssetAssetInfo {
+  issuer: string;
   symbol: string;
   name: string;
+  type: number;
   id: string;
   decimals: number;
   certified: boolean;
+  orderFee: string;
+  tradeFee: string;
+  feeRecipient: string;
+  expiration: number;
+  timestamp: number;
+  expired: boolean;
 }
 
 class DialogFieldAsset extends AbstractDialogField {
@@ -43,6 +51,12 @@ class DialogFieldAsset extends AbstractDialogField {
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
     this.selector('field-asset');
+  }
+
+  reset() {
+    this.assetInfo.resetCache();
+    this.availableAssetsPromise = null;
+    return this;
   }
 
   initAvailableAssets() {
@@ -63,11 +77,19 @@ class DialogFieldAsset extends AbstractDialogField {
           promises.push(
             this.assetInfo.getInfo(asset.asset).then((info2)=> {
               let info = {
+                issuer: info2.issuer,
                 name: asset.name,
                 symbol: asset.symbol,
                 id: asset.asset,
                 decimals: asset.decimals,
-                certified: false
+                certified: false,
+                type: info2.type,
+                orderFee: info2.orderFee,
+                tradeFee: info2.tradeFee,
+                feeRecipient: info2.feeRecipient,
+                expiration: info2.expiration,
+                timestamp: info2.timestamp,
+                expired: info2.expired
               };
               info.symbol = info2.symbol;
               info.name = info2.name;
@@ -86,11 +108,19 @@ class DialogFieldAsset extends AbstractDialogField {
           promises.push(
             this.assetInfo.getInfo(balance.id).then((info2)=> {
               let info = {
+                issuer: info2.issuer,
                 name: '*',
                 symbol: '*',
                 id: balance.id,
                 decimals: balance.decimals,
-                certified: false
+                certified: false,
+                type: info2.type,
+                orderFee: info2.orderFee,
+                tradeFee: info2.tradeFee,
+                feeRecipient: info2.feeRecipient,
+                expiration: info2.expiration,
+                timestamp: info2.timestamp,
+                expired: info2.expired
               };
               info.symbol = info2.symbol;
               info.name = info2.name;
@@ -128,12 +158,7 @@ class DialogFieldAsset extends AbstractDialogField {
   }
 
   getAssetInfo(asset: string) : DialogFieldAssetAssetInfo {
-    for (var i=0; i<this.availableAssets.length; i++) {
-      if (this.availableAssets[i].id == asset) {
-        return this.availableAssets[i];
-      }
-    }
-    return null;
+    return this.availableAssets.find(info => info.id == asset) || null
   }
 
   searchAllAssets(searchAllAssets: boolean) {
@@ -166,7 +191,7 @@ class DialogFieldAsset extends AbstractDialogField {
         md-selected-item="vm.selectedItem"
         ng-disabled="vm.f._disabled">
         <md-item-template>
-          <div layout="row" flex>
+          <div ng-class="{expired: !!item.expired}" layout="row" flex>
             <span>{{item.symbol}}</span>
             <span flex></span>
             <span>{{item.id}}</span>
@@ -190,7 +215,14 @@ class DialogFieldAssetComponent {
   searchText: string;
 
   constructor() {
+  }
+
+  $onInit() {
     this.searchText = this.f.value;
+    this.f.setValue = (value) => {
+      this.f.value = value
+      this.searchText = this.f.value
+    }
   }
 
   selectedItemChange() {

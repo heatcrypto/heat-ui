@@ -28,6 +28,7 @@ class DialogFieldAccount extends AbstractDialogField {
   private user = <UserService> heat.$inject.get('user');
   private $q = <angular.IQService> heat.$inject.get('$q');
   private numbersOnly = /^[0-9]+$/;
+  searchText: string;
 
   constructor($scope, name: string, _default?: any) {
     super($scope, name, _default || '');
@@ -36,7 +37,8 @@ class DialogFieldAccount extends AbstractDialogField {
 
   search(query: string) {
     let deferred = this.$q.defer();
-    this.heat.api.searchPublicNames(query, 0, 100).then(accounts => {
+    this.heat.api.searchAccounts(query, 0, 100).then(accounts => {
+      accounts = accounts ? accounts : []
       accounts.forEach(account => {
         if (this.numbersOnly.test(account.publicName)) {
           account.publicName = '';
@@ -44,15 +46,32 @@ class DialogFieldAccount extends AbstractDialogField {
       });
       if (accounts.length > 0) {
         deferred.resolve(accounts);
-      }
-      else if (this.numbersOnly.test(query)) {
-        this.heat.api.getAccountByNumericId(query).then(account=>{
+      } else if (this.numbersOnly.test(query)) {
+        this.heat.api.getAccountByNumericId(query, true).then(account => {
+          deferred.resolve(account ? [account] : []);
+        }, deferred.reject);
+      } else {
+        //find by public or private name
+        this.heat.api.findAccountByName(query, true).then(account => {
+          if (!account) {
+            deferred.resolve([])
+            return
+          }
+          if (account.publicName == account.id) {
+            //account has the private name. If user has entered the private name we should display it
+            account["calculatedName"] = query
+          }
           deferred.resolve([account]);
         }, deferred.reject);
       }
     }, deferred.reject);
     return deferred.promise;
   }
+
+  setSearchText(value) {
+    this.searchText = value;
+  }
+
 }
 
 @Component({
@@ -71,22 +90,24 @@ class DialogFieldAccount extends AbstractDialogField {
         md-input-name="userField"
         md-floating-label="{{vm.label}}"
         md-min-length="1"
-        md-items="item in vm.f.search(vm.searchText)"
-        md-item-text="item.publicName||item.id"
-        md-search-text="vm.searchText"
+        md-delay="1000"
+        md-items="item in vm.f.search(vm.f.searchText)"
+        md-item-text="item.calculatedName || item.publicName || item.id"
+        md-search-text="vm.f.searchText"
         md-selected-item-change="vm.selectedItemChange()"
         md-search-text-change="vm.searchTextChange()"
         md-selected-item="vm.selectedItem"
+        md-autoselect
         ng-disabled="vm.f._disabled">
         <md-item-template>
           <div layout="row" flex class="monospace-font">
-            <span>{{item.publicName||''}}</span>
+            <span>{{item.calculatedName || item.publicName || ''}}</span>
             <span flex></span>
             <span>{{item.id}}</span>
           </span>
         </md-item-template>
         <md-not-found>
-          No matches found.
+          No matches found
         </md-not-found>
         <div ng-messages="userForm.userField.$error" ng-if="userForm.userField.$dirty">
           <div ng-messages-include="error-messages"></div>
@@ -100,10 +121,12 @@ class DialogFieldAccount extends AbstractDialogField {
 class DialogFieldAccountComponent {
   f: any;
   selectedItem: any;
-  searchText: string;
 
   constructor() {
-    this.searchText = this.f.value;
+  }
+
+  $onInit() {
+    this.f.searchText = this.f.value;
   }
 
   selectedItemChange() {
@@ -111,6 +134,7 @@ class DialogFieldAccountComponent {
   }
 
   searchTextChange() {
-    this.f.value = this.searchText;
+    this.f.value = this.f.searchText;
   }
+
 }

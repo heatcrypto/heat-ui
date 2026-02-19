@@ -21,28 +21,62 @@
  * SOFTWARE.
  * */
 
-class ETHCurrency implements ICurrency {
+type TokenDescriptor = {
+  balance: string,
+  symbol: string,
+  name: string,
+  id: string,
+  rawBalance: string,
+  contractAddress: string,
+  decimals: number
+}
 
-  private ethplorer: EthplorerService
-  public symbol = 'ETH'
+type ERC20TokensType = Array<TokenDescriptor>
+
+class ETHCurrency extends EventEmitter implements ICurrency {
+
+  private ethBlockExplorerService: EthBlockExplorerService
+  public symbol = wlt.CURRENCIES.Ethereum.symbol
   public homePath
-  private pendingTransactions: EthereumPendingTransactionsService
+  private pendingService: EthereumPendingTransactionsService
   private user: UserService
+  private recentBalance: {confirmed: string, unconfirmed?: string} = {confirmed: ""}
+  private format: (string) => string
 
-  constructor(public secretPhrase: string, public address: string) {
-    this.ethplorer = heat.$inject.get('ethplorer')
+  public erc20Tokens: ERC20TokensType
+
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
+    super()
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     this.user = heat.$inject.get('user')
     this.homePath = `/ethereum-account/${this.address}`
-    this.pendingTransactions = heat.$inject.get('ethereumPendingTransactions')
+    this.pendingService = heat.$inject.get('ethereumPendingTransactions')
+    this.format = wlt.CURRENCIES_MAP.get(wlt.CURRENCIES.Ethereum.name).formatBalance
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
-  getBalance(): angular.IPromise<string> {
-    return this.ethplorer.getBalance(this.address).then(
-      balance => {
-        return utils.commaFormat(new Big(balance+"").toFixed(18))
-      }
+  getBalance(): PromiseLike<string> {
+    let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.address)
+    this.recentBalance.unconfirmed = cb.balance
+    return this.ethBlockExplorerService.getBalance(this.address).then(
+        balance => {
+          // todo save actual balance (if it is changed)
+          this.recentBalance.confirmed = String(balance)
+          return this.format(this.recentBalance.confirmed)
+        }
     )
+
+    /*return wlt.getSavedCurrencyBalance(this.address, this.symbol)
+        .then(r => this.recentBalance = r)
+        .then(r => {
+          return this.ethBlockExplorerService.getBalance(this.address).then(
+              balance => {
+                // todo save actual balance (if it is changed)
+                this.recentBalance.confirmed = String(balance)
+                return this.format(this.recentBalance.confirmed)
+              }
+          )
+        }).finally(() => this.format(this.recentBalance.confirmed))*/
   }
 
   /* Register a balance changed observer, unregister by calling the returned
@@ -57,18 +91,52 @@ class ETHCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-    this.sendEther($event).then(
-      data => {
-        let address = this.user.account
-        let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txHash, timestamp)
-      },
-      err => {
-        if (err) {
-          dialogs.alert($event, 'Send Ether Error', 'There was an error sending this transaction: '+JSON.stringify(err))
-        }
+    let selectTransfer = (selectionCallback: (transferTypeItem: TokenDescriptor|string) => any) => {
+      if (true || !this.erc20Tokens?.length) {  // "true || " is added to disable ERC20 token transfer until complete feature and tested
+        selectionCallback('ETH')
+        return
       }
-    )
+      let panel: PanelService = heat.$inject.get('panel')
+      return panel.show(`
+      <div flex style="border-radius: 4px; font-size: larger; background: #324a63;">
+        <div style="text-align: center;padding-top: 14px;">Select what to send</div>
+        <md-input-container flex layout="column">
+          <md-button ng-click="vm.select('ETH')" md-autofocus style="padding: 8px;text-align: left">ETH</md-button>
+          <md-button ng-repeat="t in vm.erc20Tokens" ng-click="vm.select(t)" class="scale-up" style="padding: 8px;text-align: left;text-transform: none;">
+            <span style="color: grey">ERC20 token</span> {{t.symbol}}
+          </md-button>
+        </md-input-container>
+      </div>
+    `, {
+            panel: panel,
+            erc20Tokens: this.erc20Tokens,
+            select: (selectedValue) => {
+              selectionCallback(selectedValue)
+              panel.close()
+            }
+          }
+      )
+    }
+
+    selectTransfer(transferTypeItem => {
+      let heatService = <HeatService>heat.$inject.get('heat')
+      this.sendEther($event, transferTypeItem).then(data => {
+        if (data && data.txId) {
+          let address = this.user.currency.address
+          let timestamp = Date.now()
+          let totalAmount= Number(data.amount) + Number(data.fee)
+          this.pendingService.add(address, data.txId, timestamp, totalAmount)
+          this.emit(wlt.EVENT_ETH_SENT)
+          return wlt.getHeatUnavailableReason(heatService, this.user.account)
+            .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+            //.then(isPaymentMemo => todo refresh memo in the transaction list)
+            .catch(reason => {
+              if (reason) console.error(reason)
+            })
+        }
+      })
+    })
+
   }
 
   /* Invoke SEND token dialog */
@@ -76,66 +144,261 @@ class ETHCurrency implements ICurrency {
 
   }
 
-  sendEther($event) {
+  sendEther($event, transferDescriptor: TokenDescriptor|string) {
+    const self = this
+    let web3 = <Web3Service> heat.$inject.get('web3')
+
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      const vm = this
+      this.paymentMessageMethod = null
+      vm.stage = "create"
+      vm.enterNonceManually = false
+      vm.transferDescriptor = transferDescriptor
+      vm.transferName = utils.limitedString(vm.transferDescriptor.name || vm.transferDescriptor, 20)
+
+      const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
+      //vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
+      // vm.broadcastProviderIndex = 1
+      vm.broadcastProvider = ethBlockExplorerService.ethBlockExplorerHeatNodeService
+      vm.parsedTxFields = transferDescriptor == 'ETH'
+          ? [['nonce'], ['hash'], ['from'], ['to'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['feeEth', 'fee']]
+          : [['nonce'], ['hash'], ['from'], ['to'], ['erc20To'], ['gasPriceGwei', 'gas price'], ['valueEth', 'amount'], ['erc20Value'], ['feeEth', 'fee'], ['data']]
+
+      vm.data = {
+        sender: self.user.currency.address,
+        amount: '',
+        gasPrice: '',
+        gasLimit: '',
+        recipient: '',
+        contractAddress: transferDescriptor == 'ETH' ? '' : transferDescriptor['contractAddress'],
+        tokenDecimals: transferDescriptor['decimals'],
+        recipientInfo: '',
+        fee: '0.000420',
+        message: '',
+        rawTx: ''
+      }
+
+      vm.generateTxnBytes = function (forceEnterNonce = false) {
+        let web3 = <Web3Service> heat.$inject.get('web3')
+        let amount = this.data.amount.replace(',','')
+        let amountInWei = web3.web3.toWei(amount, 'ether')
+        let from = {privateKey: self.user.currency.secretPhrase, address: self.user.currency.address}
+
+        let gasPriceWei = Math.trunc(this.data.gasPrice * Web3Service.GWEI_SCALE)
+        if (gasPriceWei < 1) {
+          vm.errorMessage = 'Gas price is too low'
+          setTimeout(() => vm.errorMessage = null, 7000)
+          return Promise.resolve()
+        }
+
+        let enterAddressNonce = (nonce?) => dialogs.simplePrompt(null,
+            'Enter ETH address nonce',
+            `${parseInt(nonce) >= 0 ? '' : 'The nonce is not defined. '}Nonce is the outgoing transaction count from that address`,
+            [{label: "Nonce", value: nonce}])
+            .then(value => value[0],
+                reason => {
+                  console.log('Dialog Get Address Nonce is escaped. ' + reason)
+                }
+            )
+
+        let getAddressNonce = (address: string) => web3.getAddressNonce(address)
+            .catch(reason => {
+              console.info(reason)
+              forceEnterNonce = true
+              let info = wlt.getStore('currency-cache-eth').get(address + '-' + 'info')
+              return info?.nonce
+              //return db.getValue(wlt.CACHE_KEY.addressInfo('ETH', address)).then(info => info?.nonce)
+            }).then(nonce => {
+              return forceEnterNonce ? enterAddressNonce(nonce) : nonce
+            }).then(nonce => {
+              if (typeof nonce === "string") return parseInt(nonce)
+            })
+
+        if (transferDescriptor == 'ETH') {
+          return web3.createRawTx2(
+              from,
+              this.data.recipient,
+              amountInWei,
+              gasPriceWei,
+              this.data.gasLimit,
+              getAddressNonce
+          ).catch(reason => {
+            dialogs.alert($event, 'ETH transaction creation error', reason)
+          })
+        } else {
+          //convert amount of tokens to the value according token decimals
+          let value = (new Big(amount)).times((new Big(10)).pow(parseInt(vm.data.tokenDecimals)))
+          return web3.createTransferERC20RawTx(
+              from,
+              this.data.recipient,
+              this.data.contractAddress,
+              value.toFixed(0),
+              gasPriceWei,
+              this.data.gasLimit,
+              getAddressNonce
+          ).catch(reason => {
+            dialogs.alert($event, 'ETH transaction creation error', reason)
+          })
+        }
+
+      }
+
+      let decodeRawTxHex = function (rawTxHex: string) {
+        try {
+          let parsedTx = heat.heatAppLib.ETHEREUM_PARSE_TRANSACTION({hex: rawTxHex})
+          parsedTx.valueEth = web3.web3.fromWei(parsedTx.value, 'ether')
+          let gasPrice = parsedTx.gasPrice / Web3Service.GWEI_SCALE
+          if (gasPrice > 12) parsedTx.gasPriceMessage = 'gas price is too high'
+          parsedTx.gasPriceGwei = gasPrice  + ' GWei'
+          parsedTx.feeEth = web3.web3.fromWei(parsedTx.gasPrice * parsedTx.gasLimit, 'ether') + ' ETH'
+          return parsedTx
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      this.createTxnButtonClick = function ($event) {
+        let gasPrice = parseFloat(this.data.gasPrice)
+        vm.gasPriceMessage = gasPrice > 11
+            ? 'gas price is too high'
+            : gasPrice <= 0 ? 'gas price is too low' : ''
+        if (vm.gasPriceMessage) return
+
+        vm.data.rawTx = null
+        vm.parsedTx = null
+        vm.generateTxnBytes(vm.enterNonceManually).then(rawTx => {
+          $scope.$evalAsync(() => {
+            vm.stage = "broadcast"
+            vm.data.rawTx = rawTx
+            vm.parsedTx = decodeRawTxHex(rawTx)
+          })
+          if (!rawTx) setTimeout(() => $scope.$evalAsync(() => {this.stage = "create"}), 500)
+        }).catch(reason => console.error(reason))
+      }
+
+      this.backButtonClick = function ($event) {
+        vm.data.rawTx = ""
+        vm.stage = "create"
+      }
+
+      this.useTxBytesButtonClick = function ($event) {
+        vm.data.rawTx = ""
+        vm.data.fee = ""
+        vm.parsedTx = null
+        vm.stage = "insertedBytes"
+      }
+
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
-        let user = <UserService> heat.$inject.get('user')
-        let web3 = <Web3Service> heat.$inject.get('web3')
-        let amountInWei = web3.web3.toWei($scope['vm'].data.amount.replace(',',''), 'ether')
-        let from = user.currency.address
-        let to = $scope['vm'].data.recipient
-        $scope['vm'].disableOKBtn = true
-        web3.sendEther(from, to, amountInWei).then(
-          data => {
-            $mdDialog.hide(data).then(() => {
-              dialogs.alert(event, 'Success', `TxHash: ${data.txHash}`);
-            })
+
+      this.disableOKBtn = false
+
+      this.okButtonClick = function ($event) {
+        vm.disableOKBtn = true
+        // let provider = vm.broadcastProvider[vm.broadcastProviderIndex]
+        // Promise.resolve({txId: '0x' + heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
+        vm.broadcastProvider.broadcast(vm.data.rawTx).then(
+          result => {
+            if (result.txId) {
+              result.message = vm.data.message
+              let web3 = <Web3Service> heat.$inject.get('web3')
+              let amount = vm.data.amount.replace(',','')
+              let amountInWei = web3.web3.toWei(amount, 'ether')
+              let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod, amount, fee: vm.data.fee})
+              $mdDialog.hide(sendingResult).then(() => {
+                dialogs.alert(event, 'Success', `TxHash: ${result.txId}`)
+              })
+            } else {
+              dialogs.alert(event, 'Not success result', `Result: ${JSON.stringify(result)}`, {multiple: true})
+            }
           },
           err => {
-            $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err.message);
-            })
+            dialogs.alert(event, 'Error', err ? (err.message || err.error ||  err) : "Error, see details in the console output", {multiple: true})
           }
-        )
-      }
-      $scope['vm'].disableOKBtn = false
-      $scope['vm'].data = {
-        amount: '',
-        recipient: '',
-        recipientInfo: '',
-        fee: '0.000420'
+        ).finally(() => vm.disableOKBtn = false)
       }
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
-        let ethplorer = <EthplorerService> heat.$inject.get('ethplorer')
-        ethplorer.getAddressInfo($scope['vm'].data.recipient).then(
+        let ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
+        ethBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = Number.parseFloat(info.ETH.balance).toFixed(18)
+              let balance = Number.parseFloat(info).toFixed(18)
               $scope['vm'].data.recipientInfo = `Balance: ${balance} ETH`
             })
           },
           error => {
             $scope.$evalAsync(() => {
-              $scope['vm'].data.recipientInfo = error.message||'Invalid'
+              $scope['vm'].data.recipientInfo = error ? (error.message || error) : 'Invalid'
             })
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
-        $scope['vm'].data.recipientInfo = ''
+
+      let settingsService: any = heat.$inject.get('settings')
+
+      this.recipientChanged = () => {
+        this.data.recipientInfo = ''
         lookup()
       }
+
+      let decodeTxnDebounced = utils.debounce(() => {
+        vm.parsedTx = decodeRawTxHex(vm.data.rawTx)
+      }, 500, false)
+
+      this.txnBytesChanged = function (event) {
+        if (vm.stage != 'insertedBytes') return
+        $scope.$evalAsync(() => {
+          vm.report = ""
+          decodeTxnDebounced()
+        })
+      }
+
+      this.gasChanged = () => {
+        vm.gasPriceMessage = ''
+        $scope.$evalAsync(() => {
+          let gasPriceWei = this.data.gasPrice * Web3Service.GWEI_SCALE
+          if (gasPriceWei < 1) {
+            vm.errorMessage = 'Gas price is too low'
+            setTimeout(() => vm.errorMessage = null, 7000)
+          }
+          this.data.fee = web3.web3.fromWei((this.data.gasPrice * Web3Service.GWEI_SCALE) * this.data.gasLimit, 'ether')
+        })
+      }
+
+      this.showQRCode = (rawTx: string) => {
+        let clipboardService: ClipboardService = heat.$inject.get('clipboard')
+        clipboardService.showQRCode(rawTx, 320, 320)
+      }
+
+      web3.getGasPrice().then((gasPriceGWei) => {
+        let d = this.data
+        d.gasPrice = gasPriceGWei
+        d.gasLimit = settingsService.get(SettingsService.ETH_TX_GAS_REQUIRED)
+        let gasPriceWei = gasPriceGWei * Web3Service.GWEI_SCALE
+        d.fee = web3.web3.fromWei(gasPriceWei * d.gasLimit, 'ether')
+      })
+
+      this.maxAmountClick = () => {
+        if (self.recentBalance.confirmed && this.data.fee) {
+          let v = parseFloat(self.recentBalance.confirmed) - parseFloat(this.data.fee)
+          if (v < 0) {
+            vm.errorMessage = "Balance is too small or fee is too big"
+            setTimeout(() => vm.errorMessage = null, 7000)
+          } else {
+            this.data.amount = String(v)
+          }
+        }
+      }
+
     }
 
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txHash:string }>()
+    let deferred = $q.defer<wlt.SendingResult>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -146,30 +409,108 @@ class ETHCurrency implements ICurrency {
         <md-dialog>
           <form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Send Ether</h2></div>
+              <div class="md-toolbar-tools">
+                <h2 ng-if="vm.transferDescriptor == 'ETH'">Send Ether</h2>
+                <h2 ng-if="vm.transferDescriptor != 'ETH'">Send ERC20 tokens "{{vm.transferName}}"</h2>
+                <span style="margin-left: 20px;color: grey;font-size: small;">from
+                    <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
+                </span>
+              </div>
             </md-toolbar>
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
-              <div flex layout="column">
+              <div flex layout="column" ng-if="vm.stage=='create'">
 
-                <md-input-container flex >
+                <md-input-container flex>
                   <label>Recipient</label>
                   <input ng-model="vm.data.recipient" ng-change="vm.recipientChanged()" required name="recipient">
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
                 </md-input-container>
 
-                <md-input-container flex >
-                  <label>Amount in ETH</label>
-                  <input ng-model="vm.data.amount" required name="amount">
+                <md-input-container flex ng-if="vm.transferDescriptor != 'ETH'">
+                  <label>Contract address</label>
+                  <input ng-model="vm.data.contractAddress" required name="contractAddress">
                 </md-input-container>
 
-                <p>Fee: {{vm.data.fee}} ETH</p>
+                <md-input-container flex >
+                  <label ng-if="vm.transferDescriptor == 'ETH'">Amount in ETH</label>
+                  <label ng-if="vm.transferDescriptor != 'ETH'">Amount of tokens</label>
+                  <input ng-model="vm.data.amount" required name="amount">
+                  <button ng-if="vm.transferDescriptor == 'ETH'" ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Gas price (in GWei)</label>
+                  <input ng-model="vm.data.gasPrice" ng-change="vm.gasChanged()" required name="gasPrice">
+                  <span ng-if="vm.gasPriceMessage" style="color: indianred; font-size: small">{{vm.gasPriceMessage}}</span>
+                </md-input-container>
+
+                <md-input-container flex >
+                  <label>Gas limit</label>
+                  <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
+                </md-input-container>
+
+                <p>
+                  Fee: {{vm.data.fee}} ETH
+                  <md-checkbox ng-model="vm.enterNonceManually" style="float:right">
+                    Enter nonce manually
+                  </md-checkbox>
+                </p>
               </div>
+
+              <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
+                {{vm.errorMessage}}
+              </div>
+
+              <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                  <label>Transaction bytes</label>
+                  <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
+                        rows="3" wrap="soft" style="overflow-y: scroll;height: 210px;line-height: normal;"></textarea>
+                  <a ng-click="vm.showQRCode(vm.data.rawTx)" class="qrcode-link">
+                    <md-tooltip>Show QR code</md-tooltip>
+                    <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
+                  </a>
+              </md-input-container>
+
+              <div flex ng-if="(vm.stage=='broadcast' || vm.stage=='insertedBytes') && vm.parsedTx">
+                <label>Parsed transaction bytes report</label>
+                <div ng-if="vm.parsedTx.gasPriceMessage" style="color: indianred; font-size: small">{{vm.parsedTx.gasPriceMessage}}</div>
+                <json-details data="vm.parsedTx" detailed-object="vm.parsedTx" fields="vm.parsedTxFields" compact="true"></json-details>
+              </div>
+
+              <!--<md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                  <p>Broadcast provider: <code>&nbsp;&nbsp;{{vm.broadcastProvider[vm.broadcastProviderIndex].getEndPoint()}}</code></p>
+                  <md-radio-group ng-model="vm.broadcastProviderIndex" layout="row" ng-change="vm.broadcastProviderChanged()">
+                    <md-radio-button value = 0>{{vm.broadcastProvider[0].getProviderName()}}</md-radio-button>
+                    <md-radio-button value = 1>{{vm.broadcastProvider[1].getProviderName()}}</md-radio-button>
+                  </md-radio-group>
+              </md-input-container>-->
+
             </md-dialog-content>
+
             <md-dialog-actions layout="row">
-              <span flex></span>
-              <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
+<!--
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+                  class="md-primary" ng-click="vm.displaySignedBytesClick()" aria-label="Signed bytes">Signed transaction bytes</md-button>
+-->
+<!--
+              <md-switch ng-if="vm.stage=='broadcast'" ng-model="vm.broadcastProvider" ng-change="vm.broadcastProviderChanged()">
+                <label>Broadcast provider</label>
+                <span ng-show="vm.broadcastProvider">Alternative</span>
+                <span ng-hide="vm.broadcastProvider">Default</span>
+              </md-switch>
+-->
+
+              <span flex></span>
+
+              <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
+              <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
+              <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+                  class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
+              <md-button ng-if="vm.stage=='create'"
+                  class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes')"
+                  ng-disabled="!vm.parsedTx" ng-click="vm.okButtonClick()"
+                  class="md-primary" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

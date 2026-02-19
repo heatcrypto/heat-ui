@@ -21,10 +21,10 @@
  * SOFTWARE.
  * */
 module dialogs {
-  export function shutdown($event) {
+  export function showProgressMessage($event, message) {
     dialogs.dialog({
       id: 'shutdown',
-      title: 'Shutting down',
+      title: message,
       targetEvent: $event,
       okButton: false,
       template: `

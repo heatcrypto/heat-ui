@@ -22,8 +22,14 @@
  * */
 module heat {
 
+  handleURLQueryParams()
+
   export var isTestnet = window.localStorage.getItem('testnet')=='true';
   export var isBetanet = window.localStorage.getItem('betanet')=='true';
+  export var serverDescriptionKey = "heat.usingServer." + (isTestnet ? "testnet" : (isBetanet ? "betanet" : "mainnet"))
+
+  // @ts-ignore
+  export var heatAppLib = __methods__
 
   export var $inject: angular.auto.IInjectorService;
 
@@ -31,6 +37,18 @@ module heat {
      intact all initialized services, call this method after switching to the
      desired location path. */
   export function fullApplicationScopeReload() {}
+
+  function handleURLQueryParams() {
+    let url = window.location.href
+    let pos = url.indexOf("?")
+    if (pos == -1) return
+    let urlQuery = url.substring(pos + 1)
+    if (urlQuery.indexOf("network=testnet") > -1) {
+      window.localStorage.setItem('testnet','true')
+    } else if (urlQuery.indexOf("network=mainnet") > -1) {
+      window.localStorage.setItem('testnet','false')
+    }
+  }
 
   export class Loader {
 
@@ -42,21 +60,27 @@ module heat {
     private static directive_fn = [];
 
     constructor() {
-      Loader.controller('AppController', ['$router','user','$location','$scope','$rootScope',
-      function ($router, user: UserService, $location: angular.ILocationService, $scope: angular.IScope, $rootScope: angular.IScope) {
+      Loader.controller('AppController', ['$router', 'user', '$location', '$scope', '$rootScope',
+        function ($router, user: UserService, $location: angular.ILocationService, $scope: angular.IScope, $rootScope: angular.IScope) {
 
         heat.$inject = angular.element(document).injector();
 
-        $router.config({ path: '/', redirectTo: '/login' });
+        //$router.config({ path: '/', redirectTo: '/login' });
+
+        let unlockedRouteCheckers = [
+          /\/p2pmessagingprobe.*/,
+          /\/trader.*/,
+          /\/explorer.*/,
+          /\/explore-account.*/,
+          /\/peers.*/,
+          /\/wallet.*/
+        ]
 
         function isUnlocked() {
           if (!user.unlocked) {
-            if (!/\/p2pmessagingprobe.*/.test($location.path()) &&
-                !/\/trader.*/.test($location.path()) &&
-                !/\/explorer.*/.test($location.path()) &&
-                !/\/explore-account.*/.test($location.path())) {
+            if (!unlockedRouteCheckers.find(regexp => regexp.test($location.path()))) {
               if (!/\/login\/\w+/.test($location.path())) {
-                $location.path('login');
+                $location.path('login')
               }
             }
           }
@@ -101,6 +125,22 @@ module heat {
             }, 250)
           })
         }
+
+        // if api was switched to another server in short time after app is started the app should be reloaded using updated api
+        // otherwise user sees empty data on page
+        let startMoment = Date.now()
+        $rootScope.$on('HEAT_SERVER_LOCATION', (event, usingServer: ServerDescriptor) => {
+          if (usingServer) {
+            if (Date.now() - startMoment < 5000) {
+              setTimeout(() => {
+                if (!utils.isBaseDate()) {
+                  sessionStorage.setItem(heat.serverDescriptionKey, JSON.stringify(usingServer))
+                  window.location.reload()
+                }
+              }, 300)
+            }
+          }
+        });
 
       }]);
 

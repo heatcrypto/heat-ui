@@ -48,7 +48,7 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
 
 @Component({
   selector: 'traderQuickBuySell',
-  inputs: ['currencyInfo', 'assetInfo', 'selectedOrder', 'oneClickOrders'],
+  inputs: ['currencyInfo', 'assetInfo', 'selectedOrder', 'oneClickOrders', 'market'],
   template: `
     <div>
       <div class="trader-component-title">Buy/Sell&nbsp;<elipses-loading ng-show="vm.loading"></elipses-loading></div>
@@ -88,6 +88,15 @@ heat.Loader.directive("maxDecimals", ['$mdToast', ($mdToast) => {
             HEAT
           </div>
         </div>
+
+        <!--<div style="margin-top: -13px; color: grey;">
+            {{vm.market}}
+        </div>-->
+
+        <div ng-if="vm.market && vm.market.isIssuerFeePayer" style="margin-top: -13px; color: grey;">
+            Default fee payer is issuer of the private asset
+        </div>
+
         <div class="row">
           <div class="label" ng-class="{'expires-invalid': !vm.expiryValid}">
             Expires in
@@ -168,6 +177,7 @@ class TraderQuickBuySellComponent {
   assetInfo: AssetInfo; // @input
   selectedOrder: IHeatOrder; // @input
   oneClickOrders: boolean; // @input
+  market: IHeatMarket; // @input
 
   quantity: string = '0';
   price: string = '0';
@@ -234,18 +244,17 @@ class TraderQuickBuySellComponent {
         this.total = this.selectedOrder['sum'];
 
         if (this.selectedOrder.type == 'bid' && angular.isString(this.assetInfo.userBalance)) {
-          let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+          let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity), this.assetInfo.decimals));
           let balanceQNT = new Big(this.assetInfo.userBalance);
           if (balanceQNT.lt(quantityQNT)) {
-            this.quantity = utils.formatQNT(this.assetInfo.userBalance, 8);
+            this.quantity = utils.formatQNT(this.assetInfo.userBalance, this.assetInfo.decimals);
             this.recalculate();
           }
-        }
-        else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
-          let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+        } else if (this.selectedOrder.type == 'ask' && angular.isString(this.currencyInfo.userBalance)) {
+          let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total), this.currencyInfo.decimals));
           let balanceQNT = new Big(this.currencyInfo.userBalance);
           if (balanceQNT.lt(totalQNT)) {
-            this.total = utils.formatQNT(this.currencyInfo.userBalance, 8);
+            this.total = utils.formatQNT(this.currencyInfo.userBalance, this.currencyInfo.decimals);
             this.recalculateTotal();
           }
         }
@@ -282,14 +291,14 @@ class TraderQuickBuySellComponent {
 
   quickAsk($event) {
     if (angular.isString(this.assetInfo.userBalance)) {
-      let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity)));
+      let quantityQNT = new Big(utils.convertToQNT(utils.unformat(this.quantity), this.assetInfo.decimals));
       let balanceQNT = new Big(this.assetInfo.userBalance);
       if (balanceQNT.lt(quantityQNT)) {
         this.notifyUser(`Insufficient ${this.assetInfo.symbol} balance`);
         return;
       }
     }
-    var dialog = this.placeAskOrder.dialog(this.currencyInfo, this.assetInfo, utils.unformat(this.price),
+    var dialog = this.placeAskOrder.dialog(this.market, this.currencyInfo, this.assetInfo, utils.unformat(this.price),
       utils.unformat(this.quantity), parseInt(this.expiry + ''), true, $event);
     if (this.oneClickOrders)
       dialog.send()
@@ -299,14 +308,14 @@ class TraderQuickBuySellComponent {
 
   quickBid($event) {
     if (angular.isString(this.currencyInfo.userBalance)) {
-      let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total)));
+      let totalQNT = new Big(utils.convertToQNT(utils.unformat(this.total), this.currencyInfo.decimals));
       let balanceQNT = new Big(this.currencyInfo.userBalance);
       if (balanceQNT.lt(totalQNT)) {
         this.notifyUser(`Insufficient ${this.currencyInfo.symbol} balance`);
         return;
       }
     }
-    var dialog = this.placeBidOrder.dialog(this.currencyInfo, this.assetInfo, utils.unformat(this.price),
+    var dialog = this.placeBidOrder.dialog(this.market, this.currencyInfo, this.assetInfo, utils.unformat(this.price),
       utils.unformat(this.quantity), parseInt(this.expiry + ''), true, $event);
     if (this.oneClickOrders)
       dialog.send()
@@ -322,8 +331,8 @@ class TraderQuickBuySellComponent {
         return "";
       }
       else {
-        var quantityQNT = utils.convertToQNT(quantity);
-        var priceQNT = utils.convertToQNT(price);
+        var quantityQNT = utils.convertToQNT(quantity, this.assetInfo.decimals);
+        var priceQNT = utils.convertToQNT(price, this.currencyInfo.decimals);
         var totalQNT = utils.calculateTotalOrderPriceQNT(quantityQNT, priceQNT);
         return utils.formatQNT(totalQNT, this.currencyInfo.decimals, true);
       }

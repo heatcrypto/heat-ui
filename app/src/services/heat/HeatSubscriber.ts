@@ -67,6 +67,7 @@ interface IHeatSubscriberUnconfirmedTransactionFilter {
 class HeatSubscriber {
 
   private RETRY_SYNC_DELAY = 2.5 * 1000; // 2.5 seconds in milliseconds
+  private errRetryDelayCoef = 1
 
   // websocket subscription topics - these match the topics in the java com.heatledger.websocket package
   private BLOCK_PUSHED = "1";
@@ -77,6 +78,7 @@ class HeatSubscriber {
   private MESSAGE = "6";
   private UNCONFIRMED_TRANSACTION = "7";
   private MICROSERVICE = "8";
+  private PEER = "9";
 
   private connectedSocketPromise: angular.IPromise<WebSocket> = null;
   private subscribeTopics: Array<HeatSubscriberTopic> = [];
@@ -120,6 +122,10 @@ class HeatSubscriber {
 
   public microservice(filter: IStringHashMap<string>, callback: (any)=>void, $scope?: angular.IScope): () => void {
     return this.subscribe(new HeatSubscriberTopic(this.MICROSERVICE, filter), callback, $scope);
+  }
+
+  public peer(filter: IStringHashMap<string>, callback: (IHeatPeerList) => void, $scope?: angular.IScope): () => void {
+    return this.subscribe(new HeatSubscriberTopic(this.PEER, filter), callback, $scope);
   }
 
   public reset(url: string) {
@@ -168,9 +174,13 @@ class HeatSubscriber {
   private syncTopicSubscriptions() {
     this.getConnectedSocket().then(
       (websocket)=>{
+        this.errRetryDelayCoef = 1
         if (this.needReset) {
           websocket.close(3001, "Heat subscribes reseted");
           this.needReset = false;
+          this.$timeout(this.RETRY_SYNC_DELAY).then(() => {
+            this.syncTopicSubscriptions();
+          });
           return;
         }
         this.unsubscribeTopics.forEach(topic => {
@@ -191,12 +201,13 @@ class HeatSubscriber {
           });
         }
       },
-      ()=>{
-        // on failure call syncTopicSubscriptions again after 5 seconds.
-        this.$timeout(this.RETRY_SYNC_DELAY).then(() => {
-          this.syncTopicSubscriptions();
-        });
-      }
+        () => {
+          this.errRetryDelayCoef = Math.min(10, ++this.errRetryDelayCoef)
+          // on failure call syncTopicSubscriptions again after 5 seconds.
+          this.$timeout(this.errRetryDelayCoef * this.RETRY_SYNC_DELAY).then(() => {
+            this.syncTopicSubscriptions()
+          });
+        }
     )
   }
 
@@ -205,7 +216,7 @@ class HeatSubscriber {
       return this.connectedSocketPromise;
     }
     let deferred  = this.$q.defer<WebSocket>();
-    var websocket = new WebSocket(this.url);
+    let websocket = new WebSocket(this.url);
     this.hookupWebsocketEventListeners(websocket, deferred);
     return this.connectedSocketPromise = deferred.promise;
   }
@@ -219,7 +230,6 @@ class HeatSubscriber {
       websocket.onerror = null;
       websocket.onmessage = null;
       this.subscribeTopics.forEach(topic => { topic.setSubscribed(false) })
-      this.syncTopicSubscriptions();
     };
     var onerror = onclose;
     var onopen = (event) => {

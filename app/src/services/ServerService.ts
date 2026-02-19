@@ -1,7 +1,7 @@
 /// <reference path='../lib/EventEmitter.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2021 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,70 +23,78 @@
  * */
 
 @Service('server')
-@Inject('$rootScope','$q','$interval','$timeout','settings', '$mdToast')
+@Inject('$rootScope','$q','$interval','$timeout','settings', 'user', '$mdToast')
 class ServerService extends EventEmitter {
-  private stopServerSignalFile = 'resources/heatledger/stopserver.signal';
-  private serverStoppedSignalFile = 'resources/heatledger/serverstopped.signal';
-
   private MAX_CONSOLE_LINE_LENGTH = 20000;
   public isRunning: boolean = false;
   public isReady: boolean = false;
   public pid: string;
   private command: string;
+  private args: string[];
   private cwd: string;
   private childProcess: any;
-  public buffer: Array<string> = [" "]; // needs one empty line or last line is not shown in console
+  public buffer: Array<string> = [" "," "," "]; // needs one empty line or last line is not shown in console
+
+  private readonly stopServerSignalFile
+  private readonly serverStoppedSignalFile
 
   constructor(private $rootScope: angular.IRootScopeService,
               private $q: angular.IQService,
               private $interval: angular.IIntervalService,
               private $timeout: angular.ITimeoutService,
               private settings: SettingsService,
+              private user: UserService,
               private $mdToast: angular.material.IToastService) {
     super();
-    var onbeforeunload = () => {
-      window.onbeforeunload = null;
+    let onbeforeunload = () => {
       if (this.isRunning) {
-        this.applicationShutdown().then(() => {
-          window.close();
-        });
-        $timeout(() => {
-          this.stopServer();
-        }, 2000);
-        $timeout(() => {
-          window.close();
-        }, 8000);
-        return "dont close";
+        this.$mdToast.show(this.$mdToast.simple().textContent(
+          "Embedded server is running, first stop it then retry the operation")
+          .hideDelay(8000))
+        return "dont close"
       }
-    };
-    window.onbeforeunload = onbeforeunload;
+    }
+    window.onbeforeunload = onbeforeunload
+
+    user.on(UserService.EVENT_LOCKED, () => {
+      if (this.isRunning) {
+        this.stopServer()
+      }
+      this.applicationShutdown()
+    });
+    let path = require('path')
+
+    this.stopServerSignalFile = path.join(__dirname, '..', 'heatledger', 'stopserver.signal')
+    this.serverStoppedSignalFile = path.join(__dirname, '..', 'heatledger', 'serverstopped.signal')
+    this.cwd = path.join(__dirname, '..', 'heatledger')
   }
 
   initOsDepends() {
     var os = this.getOS();
     var path = require('path');
     if (os == 'WIN')  {
-      this.cwd = path.join(__dirname,'..','heatledger');
       this.command = path.join('bin','heatledger.bat');
     }
     if (os == 'MAC') {
-      this.cwd = path.join(__dirname,'..','heatledger');
       this.command = path.join('bin','heatledger');
     }
     if (os == 'LINUX') {
-      this.cwd = path.join(__dirname,'..','heatledger');
       this.command = path.join('bin','heatledger');
     }
 
     //file 'embeddedinwallet.signal' is signal to the server that it is running in desktop wallet
-    let embeddedInWalletSignalFilePath = 'resources/heatledger/embeddedinwallet.signal';
+    let embeddedInWalletSignalFilePath = path.join(__dirname, '..', 'heatledger', 'embeddedinwallet.signal')
     const fs = require('fs');
     if (!fs.existsSync(embeddedInWalletSignalFilePath)) {
-      fs.writeFile(embeddedInWalletSignalFilePath, '', { flag: 'w' }, function(err) {
-        if (err)
-          console.error(err);
+      fs.writeFile(embeddedInWalletSignalFilePath, '', {flag: 'w'}, function (err) {
+        if (err) console.error(err);
       });
     }
+  }
+
+  isHeatledgerServerDirExists() {
+    const fs = require('fs');
+    return fs.existsSync(this.cwd)
   }
 
   getAppDir(dirName) {
@@ -100,33 +108,35 @@ class ServerService extends EventEmitter {
     if (this.isRunning) {
       throw new Error('Server starting or already up, check server.isRunning before calling this method');
     }
+
     this.initOsDepends();
+
     var spawn = require('child-process-promise').spawn;
     this.isRunning = true;
-    this.log("[SERVER] command >> "+this.command);
-    this.log("[SERVER] cwd     >> "+this.cwd);
 
-    // Point the blockchain dir to be in the appData dir
-    // Set ENV vars to:
-    //   - HEAT_WALLET_BLOCKCHAINDIR
-    //   - HEAT_WALLET_BLOCKCHAINDIR_TEST
     this.getUserDataDirFromMainProcess().then(
       userDataDir => {
         var env = process.env
 
-        // When things go wrong undefined is returned
         if (userDataDir) {
-          var path = require('path');
-          env['HEAT_WALLET_BLOCKCHAINDIR'] = path.join(userDataDir, 'blockchain')
-          env['HEAT_WALLET_BLOCKCHAINDIR_TEST'] = path.join(userDataDir, 'blockchain-test')
+          //pass env variable to the server process that it can set path to blockchain and to replicator
+          let path = require('path');
+          env['HEAT_WALLET_DIR'] = path.join(userDataDir, '.')
         }
 
-        var promise = spawn(this.command,[],{
-          cwd:this.cwd,
+        let namespace = heat.isTestnet ? "(heatwallet\\,testnet)" : "(heatwallet)"
+        this.args = ["-properties", "namespace=" + namespace]
+
+        this.log("[SERVER] command >> " + this.command);
+        this.log("[SERVER] arguments >> " + this.args);
+        this.log("[SERVER] cwd     >> " + this.cwd);
+
+        var promise = spawn(this.command, this.args, {
+          cwd: this.cwd,
           env: env
         });
         this.childProcess = promise.childProcess;
-        this.log("[SERVER] pid     >> "+this.childProcess.pid);
+        this.log("[SERVER] pid     >> " + this.childProcess.pid);
         this.childProcess.stdout.on('data', (data) => {
           this.log(data.toString());
         });
@@ -136,26 +146,25 @@ class ServerService extends EventEmitter {
 
         promise.then(() => {
           this.log("[SPAWN] DONE!");
-          this.$rootScope.$evalAsync(()=>{
+          this.$rootScope.$evalAsync(() => {
             this.isRunning = false;
             this.isReady = false;
             if (this.needsRecoveryRestart()) {
-              this.$timeout(()=> {
+              this.$timeout(() => {
                 this.startServer();
-              },2000,true);
+              }, 2000, true);
             }
           })
-        })
-        .catch((err) => {
-          var message = angular.isObject(err) ? (err.message||''):'';
+        }).catch((err) => {
+          var message = angular.isObject(err) ? (err.message || '') : '';
           this.log(`[SPAWN EXIT] ${message}`, err);
-          this.$rootScope.$evalAsync(()=>{
+          this.$rootScope.$evalAsync(() => {
             this.isRunning = false;
             this.isReady = false;
             if (this.needsRecoveryRestart()) {
-              this.$timeout(()=> {
+              this.$timeout(() => {
                 this.startServer();
-              },2000,true);
+              }, 2000, true);
             }
           });
         });
@@ -192,7 +201,7 @@ class ServerService extends EventEmitter {
     for (var i=0; i<lines.length; i++) {
       if (lines[i].match(/\S/)) {
         lines[i] = new String(lines[i]);
-        this.buffer.splice(this.buffer.length-1, 0, lines[i]); // must add at index 1 before last to keep last line for proper console display
+        this.buffer.splice(this.buffer.length-3, 0, lines[i]); // must add at index 1 before last to keep last line for proper console display
         if (this.buffer.length > this.MAX_CONSOLE_LINE_LENGTH) {
           this.buffer.splice(0, this.buffer.length - this.MAX_CONSOLE_LINE_LENGTH);
         }
@@ -265,12 +274,12 @@ class ServerService extends EventEmitter {
 
   applicationShutdown() {
     var deferred = this.$q.defer();
-    dialogs.shutdown(null);
+    dialogs.showProgressMessage(null, 'Shutting down');
     this.$interval(() => {
       if (!this.isRunning) {
         deferred.resolve();
       }
-    }, 2000);
+    }, 1000);
     return deferred.promise;
   }
 
@@ -283,4 +292,24 @@ class ServerService extends EventEmitter {
     }
     return false;
   }
+
+  getServerProperties(filePath) {
+    // @ts-ignore
+    const fs = require('fs')
+    return new Promise((resolve, reject) => {
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          console.log(`Cannot load '${filePath}': ${err}`);
+          reject(err)
+        }
+        resolve(data)
+      })
+    })
+  }
+
+  getHeatConfigFilePath() {
+    let path = require('path')
+    return path.join(__dirname, '..', 'heatledger', 'conf', 'heat-default.properties')
+  }
+
 }

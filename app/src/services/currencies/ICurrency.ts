@@ -24,7 +24,7 @@
 interface ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
-  getBalance(): angular.IPromise<string>;
+  getBalance(): PromiseLike<string>;
 
   /* Register a balance changed observer, unregister by calling the returned
      unregister method */
@@ -33,8 +33,13 @@ interface ICurrency {
   /* Manually invoke the balance changed observers */
   notifyBalanceChanged();
 
+  masterSecretPhrase: string;
+
   /* Returns the native address */
   address: string;
+
+  /* Returns the private key (WIF for BTC) or secret phrase */
+  secretPhrase: string;
 
   /* Returns the currency symbol */
   symbol: string;

@@ -1,7 +1,7 @@
 .config
 deploy.sh
+deploy-mac.sh
 test_deploy.sh
-release.sh
 release.mac.sh
 tools
 node_modules
@@ -9,6 +9,7 @@ dist
 npm-debug.log
 releases
 blockchain
+/tmp
 /.idea/
 /out/
 /.out/

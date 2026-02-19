@@ -1,28 +1,73 @@
 class BTCCurrency implements ICurrency {
 
+  /**
+   * request parameters "type of btc address" from the user for btc address creation
+   */
+  public static requestBtcAddressType = (walletEntry: wlt.WalletEntry) => {
+    let existing = wlt.getCurrencyBalances(walletEntry, 'Bitcoin')
+    let nextIndex = existing.length == 0
+        ? 0
+        : existing[existing.length - 1].index + 1
+    let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
+    let nativeSegwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, true, nextIndex)
+    let segwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, false, nextIndex)
+    let legacyAddress = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, nextIndex)
+    return new Promise<WalletAddress>((resolve, reject) => {
+      return selectItem(`Select desired address #${nextIndex || ""}`,
+          [["Native Segwit: " + nativeSegwitAddress[0].address, nativeSegwitAddress[0]],
+            ["Segwit: " + segwitAddress[0].address, segwitAddress[0]],
+            ["Legacy: " + legacyAddress.address, legacyAddress]],
+          item => {
+            let wa: WalletAddress = {
+              address: item.address,
+              privateKey: item.privateKey,
+              index: walletEntry.bip44Compatible ? nextIndex : undefined, // do not show index for btc address created from private key (non mnemonic)
+              balance: "0",
+              inUse: false
+            }
+            resolve(wa)
+            return true
+          }
+      )
+    })
+  }
+
   private btcBlockExplorerService: BtcBlockExplorerService
-  public symbol = 'BTC'
+  private bitcoreService: BitcoreService
+  public symbol = wlt.CURRENCIES.Bitcoin.symbol
   public homePath
   private pendingTransactions: BitcoinPendingTransactionsService
+  private bitcoinMessagesService: BitcoinMessagesService
   private user: UserService
-  private bitcoinMessagesService: BitcoinMessagesService;
+  private recentBalance: {confirmed: string, unconfirmed?: string} = {confirmed: ""}
+  private format: (string) => string
 
-  constructor(public secretPhrase: string, public address: string) {
+  constructor(public masterSecretPhrase: string, public secretPhrase: string, public address: string) {
     this.btcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-    this.user = heat.$inject.get('user')
+    this.bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
     this.homePath = `/bitcoin-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('bitcoinPendingTransactions')
     this.bitcoinMessagesService = heat.$inject.get('bitcoinMessagesService')
+    this.user = heat.$inject.get('user')
+    this.format = wlt.CURRENCIES_MAP.get(wlt.CURRENCIES.Bitcoin.name).formatBalance
   }
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
-    return this.btcBlockExplorerService.getBalance(this.address).then(
-      balance => {
-        let balanceUnconfirmed = balance / 100000000;
-        return utils.commaFormat(new Big(balanceUnconfirmed+"").toFixed(8))
-      }
-    )
+    return wlt.getSavedCurrencyBalance(this.address, this.symbol)
+        .then(b => {
+          this.recentBalance.confirmed = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed() : null
+          this.recentBalance.unconfirmed = b.unconfirmed ? new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed() : null
+        })
+        .then(() => {
+          return this.btcBlockExplorerService.getBalance(this.address).then(
+              balanceSat => {
+                // todo save actual balance (if it is changed)
+                this.recentBalance.confirmed = String(new Big(balanceSat).div(wlt.SATOSHI_PER_BTC))
+                return this.recentBalance.confirmed
+              }
+          )
+        }).finally(() => this.format(this.recentBalance.confirmed))
   }
 
   /* Register a balance changed observer, unregister by calling the returned
@@ -37,22 +82,27 @@ class BTCCurrency implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog = ($event) => {
-    this.sendBtc($event).then(
-      data => {
-        let address = this.user.account
-        let privateKey = this.user.secretPhrase
-        let publicKey = this.user.publicKey
-        let encryptedMessage = heat.crypto.encryptMessage(data.message, publicKey, privateKey)
-        let timestamp = new Date().getTime()
-        this.pendingTransactions.add(address, data.txId, timestamp)
-        this.bitcoinMessagesService.add(address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
-      },
-      err => {
-        if (err) {
-          dialogs.alert($event, 'Send BTC Error', 'There was an error sending this transaction: '+JSON.stringify(err))
-        }
-      }
-    )
+    let heatService = <HeatService>heat.$inject.get('heat')
+    this.sendBtc($event)
+        .then(data => {
+              if (data && data.txId) {
+                let encryptedMessage = heat.crypto.encryptMessage(data.message, this.user.publicKey, this.user.secretPhrase)
+                let timestamp = new Date().getTime()
+                let totalAmount= Number(data.amount) + Number(data.fee)
+                this.pendingTransactions.add(this.address, data.txId, timestamp, totalAmount)
+                this.bitcoinMessagesService.add(this.address, data.txId, `${encryptedMessage.data}:${encryptedMessage.nonce}`)
+                return wlt.getHeatUnavailableReason(heatService, this.user.account)
+                    .then(heatUnavailableReason => wlt.paymentMemoDialog(data.txId, heatUnavailableReason))
+                    .catch(reason => {
+                      if (reason) console.error(reason)
+                    })
+              }
+            },
+            err => {
+              if (err) {
+                dialogs.alert($event, 'Send BTC Error', 'There was an error sending this transaction: ' + JSON.stringify(err))
+              }
+            })
   }
 
   /* Invoke SEND token dialog */
@@ -61,111 +111,434 @@ class BTCCurrency implements ICurrency {
   }
 
   sendBtc($event) {
+
+    class FeeList {
+      satByteFee = {}
+      btcKByteFee = {}
+
+      update(satByteFeesPerBlocks: {}) {
+        this.fill(satByteFeesPerBlocks, 1)
+        this.fill(satByteFeesPerBlocks, 3)
+        this.fill(satByteFeesPerBlocks, 6)
+        this.fill(satByteFeesPerBlocks, 12)
+      }
+
+      private fill(satByteFeesPerBlocks: {}, blocks: number) {
+        let field = blocks.toFixed(0)
+        if (satByteFeesPerBlocks[field]) {
+          this.satByteFee[field] = satByteFeesPerBlocks[field]
+          this.btcKByteFee[field]  = this.satByteFee[field] / 100000000 * 1024
+        }
+      }
+
+    }
+
+    let feeList = new FeeList()
+
+    const self = this
+
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+
+      let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
+
+      const vm = this
+
+      vm.disableOKBtn = false
+      vm.stage = "create"
+
+      vm.data = {
+        sender: self.user.currency.address,
+        balance: self.recentBalance?.confirmed,
+        amount: '',
+        recipient: '',
+        recipientInfo: '',
+        fee: '0.00004540',
+        message: '',
+        satByteFee: 0
+      }
+
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
 
-      let createTx = function(isForFeeEstimation: boolean = false) {
+      let createTxObject = function(isForFeeEstimation: boolean = false) {
+        if (!(parseFloat(self.recentBalance?.confirmed) > 0)) {
+          vm.errorMessage = 'outgoing balance is too low'
+          setTimeout(() => vm.errorMessage = null, 5000)
+          return null
+        }
         let user = <UserService> heat.$inject.get('user')
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-
-        let amountInSatoshi = $scope['vm'].data.amount * 100000000;
         let feeInSatoshi
-        if(!isForFeeEstimation)
-          feeInSatoshi = $scope['vm'].data.fee * 100000000;
-        else
-          feeInSatoshi = 0
-        let addressPrivateKeyPair = {address: user.currency.address, privateKey: user.secretPhrase}
-        let to = $scope['vm'].data.recipient
+        let amountInSatoshi
+        let to
+
+        let privateKeyWIF = self.bitcoreService.privateKeyToWIF(user.currency.secretPhrase)
+        let addressPrivateKeyPair = {address: user.currency.address, privateKey: privateKeyWIF}
+        if (isForFeeEstimation) {
+          feeInSatoshi = vm.data.fee ? (vm.data.fee * 100000000).toFixed(0) : 0
+          amountInSatoshi = vm.data.amount ? (vm.data.amount * 100000000).toFixed(0) : "0.0001";
+          to = vm.data.recipient ? vm.data.recipient : addressPrivateKeyPair.address
+        } else {
+          if (!vm.data.fee || !vm.data.amount || !vm.data.recipient) {
+            return null
+          }
+          feeInSatoshi = (vm.data.fee * 100000000).toFixed(0);
+          amountInSatoshi = (vm.data.amount * 100000000).toFixed(0);
+          to = vm.data.recipient
+        }
 
         let txObject = {
           from: addressPrivateKeyPair.address,
           to: to,
-          amount: amountInSatoshi,
+          amount: parseInt(amountInSatoshi),
           fee: Math.ceil(feeInSatoshi),
           changeAddress: addressPrivateKeyPair.address,
-          privateKey: addressPrivateKeyPair.privateKey
+          privateKey: addressPrivateKeyPair.privateKey,
+          txnFeeSatoshi: vm.data.txnFeeSatoshi
         }
         return txObject
       }
 
-      $scope['vm'].okButtonClick = function ($event) {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-        $scope['vm'].disableOKBtn = true
-        bitcoreService.sendBitcoins(createTx()).then(
+      let decodeTxn = function (txWrapper: { inputsSum: number; rawTx: string }, isCreatedTransaction = true) {
+        if (!txWrapper.rawTx || !txWrapper.rawTx.trim()) return
+
+        type DecodedTransaction = {
+          transaction: any,
+          decoded: {
+            outs: {address: string, value: number}[]
+          }
+        }
+
+        try {
+          let decodedTxn: DecodedTransaction = heat.heatAppLib.BITCOIN_DECODE_TRANSACTION(txWrapper.rawTx)
+          let outsTotal = 0
+          let removeTrailZeros = /([^.])0+$/
+          let reportLines = [`transaction bytes size: ${converters.hexStringToByteArray(txWrapper.rawTx).length}` + "\n"]
+          if (isCreatedTransaction) reportLines.push(`Outgoing address: ${self.address}` + "\n")
+
+          decodedTxn.decoded.outs.forEach(out => {
+            let prefix = out.address == self.address ? "(change)" : "(recipient)"
+            outsTotal += out.value
+            let amount = out.value || out.value == 0
+                ? (out.value / 100000000).toFixed(8).replace(removeTrailZeros, "$1")
+                : ""
+            reportLines.push(`${prefix}\naddress: ${out.address}`)
+            if (amount) {
+              reportLines.push(`value: ${out.value} (${amount} BTC)`)
+            }
+            reportLines.push("")
+          })
+
+          if (isCreatedTransaction && txWrapper.inputsSum) {
+            let feeAmount = (txWrapper.inputsSum - outsTotal) / 100000000
+            let reportFee = feeAmount.toFixed(8).replace(removeTrailZeros, "$1")
+            reportLines.push(`fee: ${reportFee} BTC`)
+
+            let checkFeeIndicator = vm.data?.txnFee / feeAmount
+            if (checkFeeIndicator != 1) {
+              vm.errorMessage = "Pay attention to transaction fee"
+            }
+          }
+          return reportLines.join("\n").trim()
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      this.createButtonClick = function ($event) {
+        if (!vm.data.txnFeeSatoshi) {
+          vm.errorMessage = "transaction fee is not calculated"
+          return
+        }
+        vm.report = ""
+        calculateRawTx(false)?.then(txWrapper => {
+          if (txWrapper && txWrapper.rawTx == vm.data.rawTx) {
+            $scope.$evalAsync(() => {
+              vm.report = decodeTxn(txWrapper)
+              vm.stage = "broadcast"
+            })
+          }
+        }).catch(reason => console.error(reason))
+      }
+
+      this.backButtonClick = function ($event) {
+        vm.report = ""
+        vm.data.rawTx = ""
+        vm.stage = "create"
+      }
+
+      this.useTxBytesButtonClick = function ($event) {
+        vm.report = ""
+        vm.data.rawTx = ""
+        vm.data.txnFee = ""
+        vm.stage = "insertedBytes"
+      }
+
+      this.fetchUtxoButtonClick = function ($event) {
+        btcBlockExplorerService.getUtxos(self.address).then(utxo => {
+          vm.data.utxoData = JSON.stringify(utxo)
+        })
+      }
+
+      this.useUtxoButtonClick = function ($event) {
+        //vm.stage = "utxo"
+        let fields = [{label: 'UTXO data', value: vm.data.utxoData, rows: 8}]
+        let t = 0
+        let fetchUtxo = () => {
+          if (Date.now() - t > 1500) {
+            t = Date.now()
+            btcBlockExplorerService.getUtxos(self.address).then(utxo => {
+              fields[0].value = JSON.stringify(utxo)
+            })
+          }
+        }
+        let copyUtxo = () => {
+          let clipboard: ClipboardService = <ClipboardService> heat.$inject.get('clipboard')
+          clipboard.copyText(fields[0].value)
+        }
+        dialogs.simplePrompt($event,
+            'Use UTXO',
+            undefined,
+            fields,
+            [{label: 'Fetch UTXO', execute: fetchUtxo}, {label: 'Copy', execute: copyUtxo}],
+            ).then(
+            result => {
+              vm.data.utxoData = result[0]
+            })
+      }
+
+      this.showQRCode = function (rawTx: string) {
+        let clipboardService: ClipboardService = heat.$inject.get('clipboard')
+        clipboardService.showQRCode(rawTx, 400, 400)
+      }
+
+      this.okButtonClick = function ($event) {
+        vm.disableOKBtn = true
+        self.bitcoreService.sendBitcoins(vm.data.rawTx).then(
+        //for test: Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
           data => {
-            $mdDialog.hide(data).then(() => {
-              data.message = $scope['vm'].data.message;
+            let sendingResult =
+                Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.fee})
+            $mdDialog.hide(sendingResult).then(() => {
+              data.message = vm.data.message;
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
             })
           },
           err => {
             $mdDialog.hide(null).then(() => {
-              dialogs.alert(event, 'Error', err.message);
+              let errMessage
+              if (angular.isString(err)) {
+                errMessage = err
+              }
+              else if (angular.isObject(err) && err != null) {
+                errMessage = err.message || err.error || JSON.stringify(err)
+              }
+              else {
+                errMessage = 'Unknown reason'
+              }
+              errMessage = err && err.name ? (err.name + ": " + errMessage) : errMessage
+              dialogs.alert(event, 'Send BTC Error', 'There was an error sending this transaction: ' +errMessage);
             })
           }
         )
-      }
-      $scope['vm'].disableOKBtn = false
-      $scope['vm'].data = {
-        amount: '',
-        recipient: '',
-        recipientInfo: '',
-        fee: '0.00004540',
-        message: ''
       }
 
       /* Lookup recipient info and display this in the dialog */
       let lookup = utils.debounce(function () {
-        let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getBalance($scope['vm'].data.recipient).then(
+        btcBlockExplorerService.getBalance(vm.data.recipient).then(
           info => {
             $scope.$evalAsync(() => {
-              let balance = (info / 100000000).toFixed(8)
-              $scope['vm'].data.recipientInfo = `Balance: ${balance} BTC`
+              let balance
+              if (info) {
+                balance = (info / 100000000).toFixed(8)
+                vm.data.recipientInfo = `Destination balance ${balance} BTC`
+              }
+              vm.data.recipientInfo = balance ? `Destination balance ${balance} BTC` : ''
             })
           },
           error => {
             $scope.$evalAsync(() => {
-              $scope['vm'].data.recipientInfo = error.message||'Invalid'
+              vm.data.recipientInfo = (error||{}).message||'Invalid'
             })
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-        $scope['vm'].data.recipientInfo = ''
+
+      let calculateRawTx = function (isForFeeEstimation= true) {
+        if (vm.stage == 'insertedBytes') return
+        vm.errorMessage = ""
+        let errorCallback = reason => {
+          vm.errorMessage = "error on generation transaction bytes: " + reason
+          console.error("error on generation transaction bytes", reason)
+        }
+        vm.data.txBytes = []
+        vm.data.rawTx = ''
+        let tx;
+        try {
+          tx = createTxObject(isForFeeEstimation)
+        } catch (e) {
+          errorCallback(e)
+        }
+        if (tx) {
+          return self.bitcoreService.createOneToOneTransaction(createTxObject(isForFeeEstimation), isForFeeEstimation, vm.data.utxoData).then(txWrapper => {
+            vm.data.rawTx = txWrapper.rawTx
+            vm.data.txBytes = converters.hexStringToByteArray(txWrapper.rawTx)
+            return txWrapper
+          }).catch(errorCallback)
+        }
+      }
+
+      let calculateRawTxDebounced = utils.debounce(calculateRawTx, 1000, false)
+
+      this.maxAmountClick = function() {
+        if (!vm.data.txnFeeSatoshi) {
+          if (vm.data.txBytes?.length > 0) {
+            calculateTxnFee()
+          } else {
+            calculateRawTx()?.then(() => calculateTxnFee())
+          }
+          if (!vm.data.txnFeeSatoshi) {
+            vm.data.amount = 0
+            return
+          }
+        }
+        let txObject = createTxObject(true)
+        btcBlockExplorerService.getBalance(txObject.from, false).then(value => {
+          let satoshiAmount = value - vm.data.txnFeeSatoshi
+          vm.data.amount = new Big(satoshiAmount).div(wlt.SATOSHI_PER_BTC).toFixed(8)
+          calculateRawTxDebounced()
+        })
+      }
+
+      this.recipientChanged = function () {
+        vm.data.recipientInfo = ''
         lookup()
-        $scope['vm'].data.txBytes = []
-        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+        calculateRawTxDebounced()
+      }
+
+      this.selectedItemChange = function(item: IHeatMessageContact) {
+        vm.value = vm.selectedItem ? vm.selectedItem.id : '';
+        vm.data.recipient = item.cryptoAddresses ? item.cryptoAddresses.find( i => i.name === 'BTC').address : ''
+
+        if (vm.data.recipient && vm.data.recipient !== '') {
+          vm.recipientChanged()
+        }
+      }
+
+      this.search = function(){
+        let p = <ContactService> heat.$inject.get('contactService');
+        return p.lookupContact(vm.searchText.trim())
+      }
+
+      this.searchTextChange = function() {
+        vm.value = vm.searchText;
+        vm.data.recipient = vm.searchText;
+        vm.recipientChanged()
+      }
+
+      this.amountChanged = function () {
+        calculateRawTxDebounced()
+      }
+
+      let btcFeeService: BtcFeeService = heat.$inject.get('btcFeeService')
+
+      let calculateTxnFee = function () {
+        if (vm.data.txBytes?.length > 0) {
+          vm.data.txnFeeSatoshi = Math.trunc(vm.data.satByteFee * vm.data.txBytes.length)
+          vm.data.txnFee = vm.data.txnFeeSatoshi / 100000000
+        }
+      }
+
+      let loadInternetFee = function () {
+        return btcFeeService.getSatByteFee().then(satByteFeesPerBlocks => {
+          $scope.$evalAsync(() => {
+            vm.feeList = feeList
+            feeList.update(satByteFeesPerBlocks)
+            if (!vm.data.satByteFee) {
+              vm.data.satByteFee = feeList.satByteFee['1']
+              vm.data.fee = vm.data.satByteFee / 100000000 * 1024
+              calculateRawTx()?.then(() => calculateTxnFee())
+            }
+          })
         })
       }
 
-      $scope['vm'].amountChanged = function () {
-        let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-        $scope['vm'].data.txBytes = []
-        bitcoreService.signTransaction(createTx(true), true).then(rawTx => {
-          $scope['vm'].data.txBytes = converters.hexStringToByteArray(rawTx)
-          $scope['vm'].data.fee = $scope['vm'].data.txBytes.length * $scope['vm'].data.estimatedFee / 100000000
+      this.feeChanged = function (event) {
+        calculateRawTx()?.then(() => {
+          $scope.$evalAsync(() => {
+            if (vm.data.fee) {
+              vm.data.satByteFee = vm.data.fee * 100000000 / 1024
+              calculateTxnFee()
+            } else {
+              vm.data.satByteFee = ''
+            }
+          })
         })
       }
 
-      function getEstimatedFee() {
-        let btcBlockExplorerService = <BtcBlockExplorerService> heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.getEstimatedFee().then(data => {
-          $scope['vm'].data.estimatedFee = data;
+      this.feeByteChanged = function () {
+        calculateRawTx()?.then(() => {
+          $scope.$evalAsync(() => {
+            if (vm.data.satByteFee) {
+              vm.data.fee = vm.data.satByteFee / 100000000 * 1024
+              calculateTxnFee()
+            } else {
+              vm.data.fee = ''
+            }
+          })
         })
       }
-      getEstimatedFee();
+
+      this.clearFeeByteDerived = function () {
+          $scope.$evalAsync(() => {
+            vm.data.fee = ''
+            vm.data.txnFee = ''
+            vm.data.txnFee = ''
+            vm.data.rawTx = ''
+          })
+      }
+
+      this.fillFeeField = function (blocks) {
+        vm.data.satByteFee = feeList.satByteFee['' + blocks]
+        vm.feeByteChanged()
+      }
+
+      let decodeTxnDebounced = utils.debounce(() => {
+        $scope.$evalAsync(() => {
+          vm.report = decodeTxn({rawTx: vm.data.rawTx, inputsSum: null}, false)
+        })
+      }, 1000, false)
+
+      this.txnBytesChanged = function (event) {
+        if (vm.stage != 'insertedBytes') return
+        vm.report = ""
+        decodeTxnDebounced()
+      }
+
+      //to initialize fee
+      loadInternetFee()
+
+      let $interval: angular.IIntervalService = heat.$inject.get('$interval')
+
+      let seconds = 0
+      let interval = $interval(() => {
+            seconds++
+            if (vm.seconds % 60 == 0) {
+              loadInternetFee().then(value => seconds = 0)
+            }
+            vm.seconds = seconds
+          },
+          1000, 0, false
+      )
+
+      $scope.$on('$destroy', () => $interval.cancel(interval))
+
     }
 
     let $q = heat.$inject.get('$q')
     let $mdDialog = <angular.material.IDialogService> heat.$inject.get('$mdDialog')
 
-    let deferred = $q.defer<{ txId:string, message: string }>()
+    let deferred = $q.defer<wlt.SendingResult>()
     $mdDialog.show({
       controller: DialogController2,
       parent: angular.element(document.body),
@@ -174,48 +547,149 @@ class BTCCurrency implements ICurrency {
       controllerAs: 'vm',
       template: `
         <md-dialog>
-          <form name="dialogForm">
+          <ng-form name="dialogForm">
             <md-toolbar>
-              <div class="md-toolbar-tools"><h2>Send BTC</h2></div>
+              <div class="md-toolbar-tools">
+                <h2>Send BTC</h2>
+                <span style="margin-left: 20px;color: grey;font-size: small;">from 
+                <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
+                </span>
+              </div>
             </md-toolbar>
-            <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+            <md-dialog-content style="min-width:500px;max-width:800px" layout="column" layout-padding>
               <div flex layout="column">
+                <md-autocomplete ng-if="vm.stage=='create'"
+                  ng-required="true"
+                  ng-readonly="false"
+                  md-input-name="recipientBtcAddress"
+                  md-floating-label="Recipient"
+                  md-min-length="1"
+                  md-items="item in vm.search(vm.searchText)"
+                  md-item-text="item.publicName||item.id"
+                  md-search-text="vm.searchText"
+                  md-selected-item-change="vm.selectedItemChange(item)"
+                  md-search-text-change="vm.searchTextChange()"
+                  md-selected-item="vm.selectedItem">
+                    <md-item-template>
+                      <div layout="row" flex class="monospace-font">
+                        <span>{{item.publicName||''}}</span>
+                        <span flex></span>
+                        <span>{{item.id}}</span>
+                      </div>
+                    </md-item-template>
+                </md-autocomplete>
 
-                <md-input-container flex >
-                  <label>Recipient</label>
-                  <input ng-model="vm.data.recipient" ng-change="vm.recipientChanged()" required name="recipient">
+                <div ng-if="vm.stage=='create'" style="margin-top: -20px; margin-bottom: 20px">
                   <span ng-if="vm.data.recipientInfo">{{vm.data.recipientInfo}}</span>
-                </md-input-container>
+                </div>
 
-                <md-input-container flex >
+                <md-input-container ng-if="vm.stage=='create'" flex >
                   <label>Amount in BTC</label>
                   <input ng-model="vm.data.amount" ng-change="vm.amountChanged()" required name="amount">
+                  <button ng-click="vm.maxAmountClick()" aria-label="Max amount">Max amount</button>
                 </md-input-container>
 
-                <md-input-container flex >
-                  <label>Message</label>
-                  <input ng-model="vm.data.message" name="message">
+                <md-input-container ng-if="vm.stage=='create'">
+                  <div style="margin-bottom: 12px">
+                    Network fee in Sat/Byte &nbsp;&nbsp; (updated {{vm.seconds}}s ago) <br>
+                    <a ng-click="vm.fillFeeField(1)">1 block: <b>{{vm.feeList.satByteFee['1']}}</b></a>
+                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(3)">3 blocks: <b>{{vm.feeList.satByteFee['3']}}</b></a>
+                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(6)">6 blocks: <b>{{vm.feeList.satByteFee['6']}}</b></a>
+                    &nbsp;&nbsp;<a ng-click="vm.fillFeeField(12)">12 blocks: <b>{{vm.feeList.satByteFee['12']}}</b></a>
+                  </div>
                 </md-input-container>
 
-                <md-input-container flex>
-                  <label>Fee in BTC</label>
-                  <input ng-model="vm.data.fee" required name="fee">
+                <md-input-container ng-if="vm.stage=='create'" flex>
+                  <label>Fee in Sat/Byte</label>
+                  <input ng-model="vm.data.satByteFee" ng-change="vm.feeByteChanged($event)" required name="feeByte">
                 </md-input-container>
+
+                <md-input-container ng-if="vm.stage=='create'" flex>
+                  <label>Fee in BTC/kByte</label>
+                  <input ng-model="vm.data.fee" ng-change="vm.feeChanged($event)" required name="fee">
+                </md-input-container>
+
+                <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                  <label ng-if="vm.stage=='broadcast'">Transaction bytes</label>
+                  <label ng-if="vm.stage=='insertedBytes'">Inserted transaction bytes</label>
+                  <textarea ng-model="vm.data.rawTx" ng-readonly="vm.stage!='insertedBytes'" ng-change="vm.txnBytesChanged($event)"
+                        placeholder="paste transaction bytes in hex"
+                        rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>
+                  <a ng-click="vm.showQRCode(vm.data.rawTx)" class="qrcode-link">
+                    <md-tooltip>Show QR code</md-tooltip>
+                    <md-icon md-font-library="material-icons" style="margin: 8px 0 16px 0;color: currentColor;">qr_code</md-icon>
+                  </a>
+                </md-input-container>
+
+                <md-input-container flex ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'">
+                  <label>Parsed transaction bytes report</label>
+                  <textarea ng-model="vm.report" readonly rows="8"  wrap="soft"
+                        style="overflow-y: scroll;height: 170px;line-height: normal;"></textarea>
+                </md-input-container>
+
               </div>
+
+              <!--<div flex layout="column">
+                <md-input-container flex ng-if="vm.stage=='utxo' || vm.stage=='create'">
+                  <label>UTXO data</label>
+                  <textarea ng-model="vm.data.utxoData"
+                        placeholder="paste UTXO data in JSON"
+                        rows="3"  wrap="soft" style="overflow-y: scroll;height: 130px;line-height: normal;"></textarea>
+                  <md-button class="md-primary" ng-click="vm.fetchUtxoButtonClick()" aria-label="Fetch UTXO">Fetch UTXO</md-button>
+                </md-input-container>
+              </div>-->
+
+              <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
+                {{vm.errorMessage}}
+              </div>
+
+              <div ng-if="vm.data.txnFee" class="fee" style="max-width:250px !important">
+                Transaction fee <b>&nbsp;{{vm.data.txnFee || '?'}}&nbsp;</b> BTC
+              </div>
+
             </md-dialog-content>
+
             <md-dialog-actions layout="row">
-              <md-button ng-click="0" ng-disabled="true" class="fee" style="max-width:140px !important">Fee/Byte {{vm.data.estimatedFee}} Sat</md-button>
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
-              <md-button ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+              <md-button class="md-warn" ng-if="vm.stage!='create'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
+              <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+                  class="md-primary" ng-click="vm.createButtonClick()" aria-label="Next">Next</md-button>
+              <md-button ng-if="vm.stage=='create'"
+                  class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>
+              <md-button ng-if="vm.stage=='create'"
+                  class="md-primary" ng-click="vm.useUtxoButtonClick()" aria-label="Use UTXO">Use UTXO</md-button>
+              <md-button ng-if="vm.stage=='broadcast' || (vm.stage=='insertedBytes' && vm.report)"
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
-          </form>
+          </ng-form>
         </md-dialog>
       `
     }).then(deferred.resolve, deferred.reject);
     return deferred.promise
   }
 
+}
 
+let selectItem = (title: string, items: any[], selectionCallback: (item) => any) => {
+  let panel: PanelService = heat.$inject.get('panel')
+  return panel.show(`
+      <div flex style="padding: 10px; background-color: #4d5168; border-radius: 4px; font-size: larger">
+        <h4>{{vm.title}}</h4>
+        <md-input-container flex layout="column">
+          <button ng-repeat="item in vm.items" style="padding: 16px; margin: 4px" ng-click="vm.select(item[1])" >
+            {{item[0]}}
+          </button>
+        </md-input-container>
+      </div>
+    `, {
+        panel: panel,
+        title: title,
+        items: items,
+        select: (item) => {
+          selectionCallback(item)
+          panel.close()
+        }
+      }
+  )
 }

@@ -36,7 +36,7 @@ declare var Big: any;
       </div>
       -->
       <span flex></span>
-      <trader-volume class="trader-component" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
+      <trader-volume class="trader-component" market="vm.market" currency-info="vm.currencyInfo" asset-info="vm.assetInfo" layout="column"></trader-volume>
     </div>
     <div layout="row" flex layout-fill>
       <md-sidenav class="md-sidenav-left" md-component-id="trader-markets-sidenav"
@@ -50,7 +50,7 @@ declare var Big: any;
       <div layout="column" flex layout-fill class="main-display">
         <div>
           <div ng-if="vm.showMarketNotCertified">
-            <div class="top-warning">CAUTION: This market comprises unverified asset from 3rd party outside the scope of Heat Ledger Ltd redemption gateway.</div>
+            <div class="top-warning">CAUTION: This market comprises of unverified assets.</div>
           </div>
           <div class="trader-row top">
               <trader-info class="trader-component" toggle-markets="vm.toggleMarkets" markets-sidenav-open="vm.marketsSidenavOpen" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-info>
@@ -58,7 +58,9 @@ declare var Big: any;
           </div>
           <div class="trader-row middle">
             <trader-orders-buy class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-orders-buy>
-            <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"></trader-quick-buy-sell>
+            <trader-quick-buy-sell class="trader-component" one-click-orders="vm.oneClickOrders"
+                selected-order="vm.selectedOrder" currency-info="vm.currencyInfo"
+                asset-info="vm.assetInfo" market="vm.market"></trader-quick-buy-sell>
             <trader-orders-sell class="trader-component" selected-order="vm.selectedOrder" currency-info="vm.currencyInfo" asset-info="vm.assetInfo"l></trader-orders-sell>
           </div>
           <div class="trader-row bottom">
@@ -70,12 +72,13 @@ declare var Big: any;
     </div>
   `
 })
-@Inject('$scope','user','$timeout','assetInfo','$mdSidenav')
+@Inject('$scope','user', 'heat', '$timeout','assetInfo','$mdSidenav')
 class TraderComponent {
 
   currency: string; // @input
   asset: string; // @input
 
+  market: IHeatMarket;
   currencyInfo: AssetInfo;
   assetInfo: AssetInfo;
 
@@ -95,6 +98,7 @@ class TraderComponent {
 
   constructor(private $scope: angular.IScope,
               public user: UserService,
+              private heatService: HeatService,
               private $timeout: angular.ITimeoutService,
               private assetInfoService: AssetInfoService,
               private $mdSidenav: angular.material.ISidenavService) {
@@ -105,38 +109,47 @@ class TraderComponent {
       if (sidenav.isOpen()) {
         this.marketsSidenavLockedOpen = false;
         sidenav.close();
-      }
-      else {
+      } else {
         this.marketsSidenavLockedOpen = true;
         sidenav.open();
       }
     };
+  }
 
+  $onInit() {
     // lookup currency and asset info and pass as parameters to child components
-    assetInfoService.getInfo(this.currency).then((info) => {
-      $scope.$evalAsync(() => {
+    this.assetInfoService.getInfo(this.currency).then((info) => {
+      this.$scope.$evalAsync(() => {
         this.currencyInfo = info;
       });
     });
-    assetInfoService.getInfo(this.asset).then((info) => {
-      $scope.$evalAsync(() => {
+    this.assetInfoService.getInfo(this.asset).then((info) => {
+      this.$scope.$evalAsync(() => {
         this.assetInfo = info;
       });
     });
 
-    this.user.account = user.account || "";
+    this.heatService.api.getMarket(this.currency, this.asset, "0", 1).then((market) => {
+      this.$scope.$evalAsync(() => {
+        this.market = market
+      });
+    });
+
+    this.user.account = this.user.account || "";
     this.isTestnet = heat.isTestnet;
 
     let ready = () => {
       if (this.currencyInfo && this.assetInfo) {
-        this.showMarketNotCertified = !this.currencyInfo.certified||!this.assetInfo.certified;
-        unregister.forEach((fn)=>{fn()});
+        this.showMarketNotCertified = !this.currencyInfo.certified || !this.assetInfo.certified;
+        unregister.forEach((fn) => {
+          fn()
+        });
       }
     }
-    let unregister = [$scope.$watch('vm.currencyInfo', ready),$scope.$watch('vm.assetInfo', ready)];
-    setTimeout(()=>{
+    let unregister = [this.$scope.$watch('vm.currencyInfo', ready), this.$scope.$watch('vm.assetInfo', ready)];
+    setTimeout(() => {
       if (!angular.isDefined(this.showMarketNotCertified)) {
-        $scope.$evalAsync(()=>{
+        this.$scope.$evalAsync(() => {
           this.showMarketNotCertified = true;
         })
       }

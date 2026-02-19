@@ -1,36 +1,61 @@
 @Service('mofoSocketService')
-@Inject('$q', '$timeout', '$interval', '$rootScope')
+@Inject('$q', '$timeout', '$interval', '$rootScope', 'settings')
 class MofoSocketService {
   private socket: any;
   private url: string;
   private alive_cb: any;
+  private hostIndex = 0;
 
   constructor(
     private $q: angular.IQService,
     private $timeout: angular.ITimeoutService,
     private $interval: angular.IIntervalService,
-    private $rootScope: angular.IScope) {
+    private $rootScope: angular.IScope,
+    private settingsService: SettingsService) {
+
+    this.settingsService.initialized.then(
+      () => this.url = SettingsService.getCryptoServerEndpoint('FIM', this.hostIndex)
+    );
+
   }
 
-  mofoSocket = (url = 'wss://cloud.mofowallet.org:7986/ws/') => {
-    if(this.url == url && this.socket !== undefined) {
-      return
+  mofoSocket = (url = this.url) => {
+    if (this.url == url && this.socket !== undefined && this.socket.readyState === 1) {
+      return new Promise((resolve, reject) => {
+        resolve(this.socket)
+      })
     }
-    this.createSocket(url)
-    return this.socket;
+    let switchUrl = reason => {
+      console.error(reason)
+      this.hostIndex++
+      this.url = SettingsService.getCryptoServerEndpoint('FIM', this.hostIndex)
+      if (!this.url) {
+        this.hostIndex = 0
+        this.url = SettingsService.getCryptoServerEndpoint('FIM', this.hostIndex)
+      }
+      return this.createSocket(this.url)
+    }
+    return this.createSocket(url)
+        .then(socket => socket, switchUrl)
+        .then(socket => socket, switchUrl)
   }
 
   getSocketUrl = () => {
     return this.url
   }
 
-  createSocket = (url) => {
-    this.url = url;
-    this.socket = new WebSocket(url);
-    this.socket.onclose = (evt) => { this.onclose(evt) };
-    this.socket.onopen = (evt) => { this.onopen(evt) };
-    this.socket.onerror = (evt) => { this.onmessage(evt) };
-    this.socket.onmessage = (evt) => { this.onmessage(evt) };
+  private createSocket = (url) => {
+    return new Promise((resolve, reject) => {
+      this.url = url;
+      this.socket = new WebSocket(url);
+      this.socket.onclose = (evt) => { this.onclose(evt); reject() };
+      this.socket.onopen = (evt) => { this.onopen(evt); resolve(this.socket) };
+      this.socket.onerror = (evt) => {
+        this.onmessage(evt);
+        reject(evt)
+      };
+      this.socket.onmessage = (evt) => { this.onmessage(evt) };
+    })
   }
 
 
@@ -43,7 +68,7 @@ class MofoSocketService {
 
   onopen = (event) => {
     console.log('WEBSOCKET - onopen ' + new Date(), { socket: this.socket, event: event })
-    if(this.alive_cb)
+    if (this.alive_cb)
       this.$interval.cancel(this.alive_cb)
 
     this.alive_cb = this.$interval(this._createKeepAliveIntervalHandler(), 10000);
@@ -91,10 +116,10 @@ class MofoSocketService {
     let deferred = this.$q.defer<any>();
     this._send(['call', 'getTransactions', 'getActivity', { account }])
     this.$rootScope.$on('getTransactions', (event, opts) => {
-      if(opts.transactions)
+      if (opts.transactions)
         deferred.resolve(opts.transactions)
       else
-      deferred.reject()
+        deferred.reject()
     });
     return deferred.promise;
   }
@@ -115,7 +140,7 @@ class MofoSocketService {
     this.$rootScope.$on('getFIMKAccount', (event, opts) => {
       if (opts.unconfirmedBalanceNQT) {
         deferred.resolve(opts)
-      } else if(opts.errorDescription == "Unknown account") {
+      } else if (opts.errorDescription == "Unknown account") {
         deferred.resolve("0.00000000")
       } else {
         deferred.reject(opts.errorDescription)
@@ -128,7 +153,7 @@ class MofoSocketService {
     let deferred = this.$q.defer<any>();
     this._send(['call', 'sendMoney', 'callAPIFunction', txObject])
     this.$rootScope.$on('sendMoney', (event, opts) => {
-      if(!opts.unsignedTransactionBytes) {
+      if (!opts.unsignedTransactionBytes) {
         deferred.reject(opts.errorDescription)
       }
       let userService: UserService = heat.$inject.get('user')
@@ -162,7 +187,7 @@ class MofoSocketService {
 
   public getAccountAssets = (account) => {
     let deferred = this.$q.defer<any>();
-    this._send(['call', 'getAccountAssets', 'callAPIFunction', {requestType:'getAccountAssets',account:account}])
+    this._send(['call', 'getAccountAssets', 'callAPIFunction', { requestType: 'getAccountAssets', account: account }])
     this.$rootScope.$on('getAccountAssets', (event, opts) => {
       if (!opts.errorCode) {
         deferred.resolve(opts.accountAssets);

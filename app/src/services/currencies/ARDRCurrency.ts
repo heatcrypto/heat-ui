@@ -3,15 +3,14 @@ class ARDRCurrency implements ICurrency {
   private ardorBlockExplorerService: ArdorBlockExplorerService;
   public symbol = 'ARDR'
   public homePath
-  private user: UserService;
   private pendingTransactions: ArdorPendingTransactionsService
 
   private $rootScope;
   private $q;
 
-  constructor(public secretPhrase: string,
+  constructor(public masterSecretPhrase: string,
+              public secretPhrase: string,
               public address: string) {
-    this.user = heat.$inject.get('user')
     this.homePath = `/ardor-account/${this.address}`
     this.pendingTransactions = heat.$inject.get('ardorPendingTransactions')
     this.ardorBlockExplorerService = heat.$inject.get('ardorBlockExplorerService')
@@ -45,7 +44,8 @@ class ARDRCurrency implements ICurrency {
   invokeSendDialog($event) {
     this.sendArdr($event).then(
       data => {
-        let address = this.user.account
+        if (!data) return
+        let address = this.address
         let timestamp = new Date().getTime()
         this.pendingTransactions.add(address, data.txId, timestamp, data.fullHash)
       },
@@ -64,10 +64,10 @@ class ARDRCurrency implements ICurrency {
 
   sendArdr($event) {
     function DialogController2($scope: angular.IScope, $mdDialog: angular.material.IDialogService) {
-      $scope['vm'].cancelButtonClick = function () {
+      this.cancelButtonClick = function () {
         $mdDialog.cancel()
       }
-      $scope['vm'].okButtonClick = function ($event) {
+      this.okButtonClick = function ($event) {
         let user = <UserService> heat.$inject.get('user')
         let ardorBlockExplorerService = <ArdorBlockExplorerService> heat.$inject.get('ardorBlockExplorerService')
 
@@ -75,7 +75,7 @@ class ARDRCurrency implements ICurrency {
         let amountNQT = utils.convertToNQT(String($scope['vm'].data.amountNQT))
         let feeNQT = utils.convertToNQT(String($scope['vm'].data.feeNQT))
         let recipientPublicKey;
-        let txObject;
+        let requestParams;
         if($scope['vm'].data.recipientPublicKey) {
           recipientPublicKey = converters.hexStringToByteArray($scope['vm'].data.recipientPublicKey)
         }
@@ -84,14 +84,14 @@ class ARDRCurrency implements ICurrency {
           let options: heat.crypto.IEncryptOptions = {
             "publicKey": recipientPublicKey
           };
-          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.secretPhrase)
-          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
+          let encryptedNote = heat.crypto.encryptNote(userMessage, options, user.currency.secretPhrase)
+          requestParams = `requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&encryptedMessageData=${encryptedNote.message}&encryptedMessageNonce=${encryptedNote.nonce}&messageToEncryptIsText=true&encryptedMessageIsPrunable=true&chain=1`;
         }
         else {
-          txObject = `nxt?requestType=sendMoney&secretPhrase=${user.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
+          requestParams = `requestType=sendMoney&secretPhrase=${user.currency.secretPhrase}&recipient=${to}&amountNQT=${amountNQT}&feeNQT=${feeNQT}&deadline=60&chain=1`;
         }
         $scope['vm'].disableOKBtn = true
-        ardorBlockExplorerService.sendTransactionWithSecret(txObject).then(
+        ardorBlockExplorerService.sendTransactionWithSecret(requestParams).then(
           data => {
             $mdDialog.hide(data).then(() => {
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
@@ -104,10 +104,10 @@ class ARDRCurrency implements ICurrency {
           }
         )
       }
-      $scope['vm'].disableOKBtn = false
+      this.disableOKBtn = false
 
       let defaultFee = '1.0'
-      $scope['vm'].data = {
+      this.data = {
         amountNQT: '',
         recipient: '',
         recipientInfo: '',
@@ -137,7 +137,7 @@ class ARDRCurrency implements ICurrency {
           }
         )
       }, 1000, false)
-      $scope['vm'].recipientChanged = function () {
+      this.recipientChanged = function () {
         $scope['vm'].data.recipientInfo = ''
         lookup()
       }
@@ -188,7 +188,7 @@ class ARDRCurrency implements ICurrency {
               <span flex></span>
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button ng-disabled="!vm.data.recipient || !vm.data.amountNQT || vm.disableOKBtn"
-                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="OK">OK</md-button>
+                  class="md-primary" ng-click="vm.okButtonClick()" aria-label="Send now">Send now</md-button>
             </md-dialog-actions>
           </form>
         </md-dialog>

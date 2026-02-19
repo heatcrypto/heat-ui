@@ -20,14 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Component({
   selector: 'userBalance',
   template: `
     <div layout="column">
       <span>
         <md-tooltip ng-if="vm.showError" md-direction="bottom">{{vm.errorDescription}}</md-tooltip>
-        <span class="balance">{{vm.formattedBalance}}</span>
-        <span class="fraction">{{vm.formattedFraction}}</span>&nbsp;
+        <span class="balance">{{vm.formattedBalance}}</span><span class="fraction">{{vm.formattedFraction}}</span>
         <span class="currencyName">{{vm.user.currency.symbol}}</span>
         <md-icon ng-if="vm.showError" md-font-library="material-icons">error</md-icon>
       </span>
@@ -37,6 +37,7 @@
 @Inject('$scope','user','heat','$q','$interval')
 class UserBalanceComponent {
 
+  private balance: string = "0";
   private formattedBalance: string = "0";
   private formattedFraction: string = ".00";
   private loading: boolean = true;
@@ -56,12 +57,13 @@ class UserBalanceComponent {
     $scope.$on('$destroy', unsubscribe)
 
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
+
+    let interval = $interval(() => this.refresh(), 5*1000)
+
     $scope.$on('$destroy', () => {
+      $interval.cancel(interval)
       this.user.removeListener(UserService.EVENT_UNLOCKED, refresh)
     })
-
-    let interval = $interval(refresh, 10*1000)
-    $scope.$on('$destroy', () => { $interval.cancel(interval) })
 
     this.refresh();
 
@@ -70,25 +72,44 @@ class UserBalanceComponent {
   // REFACTOR..
   refresh() {
     this.$scope.$evalAsync(() => {
-      this.loading = true;
-    });
-    let address = this.user.currency.address
+      this.loading = true
+    })
+
+    let formatBalance = (balance: string) => {
+      let formatted = balance.split(".")
+      this.formattedBalance = formatted[0]
+      this.formattedFraction = "." + (formatted[1]||"00")
+      this.showError = false
+      this.loading = false
+    }
+
+    let ab = wlt.aggregatedBalances[this.user.account]
+    ab = ab ? ab[this.user.currency.symbol] : undefined
+    if (utils.isNumber(ab)) {
+      this.balance = ab
+      let b = this.user.currency.symbol == 'HEAT' ? utils.formatHeat('' + ab) : '' + ab
+      formatBalance(b)
+    }
+    //update balance for currency
     this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
-        var formatted = balance.split(".");
-        this.formattedBalance = formatted[0];
-        this.formattedFraction = "." + (formatted[1]||"00");
-        this.showError = false;
-        this.loading = false;
+        this.balance = balance
+        if (this.user.currency.symbol == 'HEAT') {
+          formatBalance(utils.formatHeat(balance))
+        } else {
+          if (angular.isUndefined(ab)) formatBalance(balance)
+        }
       });
     }, (error: ServerEngineError) => {
       this.$scope.$evalAsync(() => {
-        this.formattedBalance = "0";
-        this.formattedFraction = ".00000000";
-        this.showError = true;
-        this.errorDescription = error.description;
-        this.loading = false;
+        if (angular.isUndefined(this.balance)) {
+          formatBalance('0')
+          this.showError = true
+          this.errorDescription = error ? error.description : "-"
+          this.loading = false
+        }
       });
     })
+
   }
 }

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
-declare var Clipboard: any;
+//declare var Clipboard: any;
 @Service('clipboard')
 @Inject('$q', '$mdToast')
 class ClipboardService {
@@ -58,14 +58,19 @@ class ClipboardService {
     return deferred.promise;
   }
 
-  copyText(text: string) {
-    var tempInput = <any> document.createElement("input");
+  copyText(text: string, successMessage?: string) {
+    var tempInput = <any> document.createElement("TextArea");
     tempInput.style = "position: absolute; left: -1000px; top: -1000px";
     tempInput.value = text;
     document.body.appendChild(tempInput);
     tempInput.select();
     document.execCommand("copy");
     document.body.removeChild(tempInput);
+    if (successMessage) {
+      this.$mdToast.show(
+        this.$mdToast.simple().textContent(successMessage).hideDelay(5000)
+      )
+    }
   }
 
   /**
@@ -91,4 +96,107 @@ class ClipboardService {
       }
     )
   }
+
+  showSecret(secret: string, currencySymbol?: string) {
+    if (currencySymbol == "ETH") secret = "0x" + secret
+    let panel: PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <md-menu>
+            <md-button style="margin-top: 5px; margin-right: 20px; padding: 20px;" ng-click="$mdMenu.open($event)" >
+              <i>If you are sure that you want to see the secret data click here</i>
+            </md-button>
+            <md-menu-content class="toolbar-copy-passphrase">
+              <textarea style="min-height: 44px; width: 600px; border: none; background: transparent;" rows="2"
+                    flex ng-bind="vm.secret" readonly ng-trim="false" aria-label="secret"></textarea>
+              <div class="qrcodeBox" id="PKQRCode"></div>
+              <p>
+              <md-button ng-click="vm.copyToClipboard()" aria-label="Copy" style="color: white !important;">copy</md-button>
+              <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Close" style="float: right; color: white !important;">Close</md-button>
+              </p>
+            </md-menu-content>
+          </md-menu>
+        </md-input-container>
+      </div>
+    `, {
+        panel: panel,
+        secret: secret,
+        copyToClipboard: () => {
+          this.copyText(secret, 'Copied data to clipboard')
+        }
+      }
+    )
+    setTimeout(() => {
+      new QRCode("PKQRCode", {
+        text: secret,
+        width: 160,
+        height: 160,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      })
+    }, 800)
+  }
+
+  showTxnBytes(txnHEX: string, width= 180, height= 180) {
+    let panel: PanelService = heat.$inject.get('panel')
+    setTimeout(() => {
+      new QRCode("txnHEX", {
+        text: txnHEX,
+        width: width,
+        height: height,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      })
+    }, 500)
+    return panel.show(`
+      <div layout="column" flex class="toolbar-copy-passphrase">
+        <md-input-container flex>
+          <textarea style="min-height: 44px; width: 600px; overflow: scroll; border: none; background: transparent;" rows="3"
+                flex ng-bind="vm.txnHEX" readonly ng-trim="false" aria-label="transaction bytes"></textarea>
+          <div class="qrcodeBox" id="txnHEX"></div>
+          <p>
+          <md-button ng-click="vm.copyToClipboard()" aria-label="Copy" style="color: white !important;">copy</md-button>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Close" style="float: right; color: white !important;">Close</md-button>
+          </p>
+        </md-input-container>
+      </div>
+    `, {
+          panel: panel,
+          txnHEX: txnHEX,
+          copyToClipboard: () => {
+            this.copyText(txnHEX, 'Copied data to clipboard')
+          }
+        }
+    )
+  }
+
+  showQRCode(data, width = 160, height = 160) {
+    let panel: PanelService = heat.$inject.get('panel')
+    panel.show(`
+      <div layout="column" flex>
+        <md-input-container flex>
+          <div class="qrcodeBox" id="addressQRCode"></div>
+          <p>
+          <md-button class="md-primary" ng-click="vm.panel.close()" aria-label="Cancel" style="float: right; margin: -50px 12px">Close</md-button>
+          </p>
+        </md-input-container>
+      </div>
+    `,
+        {panel: panel}
+    )
+    setTimeout(() => {
+      new QRCode("addressQRCode", {
+        text: data,
+        width: width,
+        height: height,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+      })
+    }, 800);
+  }
+
 }

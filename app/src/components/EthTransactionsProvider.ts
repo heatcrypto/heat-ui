@@ -22,15 +22,15 @@
  * */
 
 @Service('ethTransactionsProviderFactory')
-@Inject('http','$q','ethplorer','ethTransactionParser')
-class EthTransactionsProviderFactory  {
+@Inject('http', '$q', 'ethBlockExplorerService', 'ethTransactionParser')
+class EthTransactionsProviderFactory {
   constructor(private http: HttpService,
-              private $q: angular.IQService,
-              private ethplorer: EthplorerService,
-              private ethTransactionParser: EthTransactionParserService) {}
+    private $q: angular.IQService,
+    private ethBlockExplorerService: EthBlockExplorerService,
+    private ethTransactionParser: EthTransactionParserService) { }
 
   public createProvider(account: string): IPaginatedDataProvider {
-    return new EthTransactionsProvider(this.http, this.$q, this.ethplorer, this.ethTransactionParser, account);
+    return new EthTransactionsProvider(this.http, this.$q, this.ethBlockExplorerService, this.ethTransactionParser, account);
   }
 }
 
@@ -40,37 +40,63 @@ class EthTransactionsProvider implements IPaginatedDataProvider {
   private lastIndex: number = 0
 
   constructor(private http: HttpService,
-              private $q: angular.IQService,
-              private ethplorer: EthplorerService,
-              private ethTransactionParser: EthTransactionParserService,
-              private account: string) {
-    this.paginator = ethplorer.createPaginator(account)
+    private $q: angular.IQService,
+    private ethBlockExplorerService: EthBlockExplorerService,
+    private ethTransactionParser: EthTransactionParserService,
+    private account: string) {
   }
 
   /* Be notified this provider got destroyed */
-  public destroy() {}
+  public destroy() { }
 
   /* The number of items available */
   public getPaginatedLength(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>()
-    this.paginator.getCount().then(count => {
-      deferred.resolve(Math.min(this.lastIndex + 40, count))
-    }, deferred.reject)
+    if (this.ethBlockExplorerService.getProviderName() === 'Ethplorer') {
+      if (!this.paginator) {
+        let ethplorer = <EthplorerService>heat.$inject.get('ethplorer');
+        this.paginator = ethplorer.createPaginator(this.account)
+      }
+      this.paginator.getCount().then(count => {
+        deferred.resolve(Math.min(this.lastIndex + 40, count))
+      }, deferred.reject)
+    } else {
+      this.ethBlockExplorerService.getTransactionCount(this.account).then(result => {
+        deferred.resolve(result)
+      }, () => {
+        deferred.reject()
+      })
+    }
+
     return deferred.promise
   }
 
   /* Returns results starting at firstIndex and up to and including lastIndex */
   public getPaginatedResults(firstIndex: number, lastIndex: number): angular.IPromise<Array<EthplorerAddressTransactionExtended>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>()
-    if (lastIndex > this.lastIndex) {
-      this.lastIndex = lastIndex
+    if (this.ethBlockExplorerService.getProviderName() === 'Ethplorer') {
+      if (lastIndex > this.lastIndex) {
+        this.lastIndex = lastIndex
+      }
+      if (!this.paginator) {
+        let ethplorer = <EthplorerService>heat.$inject.get('ethplorer');
+        this.paginator = ethplorer.createPaginator(this.account)
+      }
+      this.paginator.getItems(firstIndex, lastIndex).then(
+        transactions => {
+          deferred.resolve(this.ethTransactionParser.parse(transactions))
+        },
+        deferred.reject
+      )
+    } else {
+      let pageNum = (lastIndex / 20) || 0;
+      this.ethBlockExplorerService.getAddressTransactions(this.account, pageNum).then(
+        transactions => {
+          deferred.resolve(this.ethTransactionParser.parse(transactions))
+        },
+        deferred.reject
+      )
     }
-    this.paginator.getItems(firstIndex, lastIndex).then(
-      transactions => {
-        deferred.resolve(this.ethTransactionParser.parse(transactions))
-      },
-      deferred.reject
-    )
     return deferred.promise
   }
 

@@ -21,7 +21,7 @@
  * SOFTWARE.
  * */
 
-declare var saveAs: any;
+//declare var saveAs: any;
 @RouteConfig('/login')
 @Component({
   selector: 'login',
@@ -64,7 +64,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex ng-show="vm.pageSigninAccount">
                 <label>Password (or Pin Code)</label>
-                <input type="password" ng-model="vm.pageSigninPincode" required name="pincode" maxlength="15">
+                <input type="password" ng-model="vm.pageSigninPincode" required name="pincode" maxlength="64">
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center" ng-show="vm.pageSigninWrongPincode">
@@ -101,8 +101,9 @@ declare var saveAs: any;
             </div>
             <div layout="column" flex>
               <md-input-container flex>
-                <label>Password (or Pin Code) (required)</label>
-                <input type="password" ng-model="vm.pageCreatePincode" required name="pincode" maxlength="15">
+                <label>Password (or Pin Code) (required min length 4)</label>
+                <input type="password" ng-model="vm.pageCreatePincode" required name="pincode" maxlength="64"
+                    ng-pattern="/^[a-zA-Z0-9_.-]{4,15}$/">
               </md-input-container>
             </div>
             <div layout="column" flex>
@@ -121,12 +122,16 @@ declare var saveAs: any;
                 Renew pass
               </md-button>
               <md-button class="md-primary md-raised" ng-click="vm.page='create1'"
-                ng-disabled="!vm.pageCreateUserName||!vm.pageCreateSecretPhrase||!vm.isValidPincode(vm.pageCreatePincode)"
+                ng-disabled="!vm.pageCreateUserName || !vm.pageCreateSecretPhrase || !vm.isValidPincode(vm.pageCreatePincode)"
                 aria-label="Continue">Continue</md-button>
             </div>
             <div layout="column" layout-align="center center">
               <br>
               <span class="account-preview">{{vm.pageCreateAccount}}</span>
+              <br>
+              Public key
+              <br>
+              <span class="account-preview">{{vm.pageCreatePublicKey}}</span>
               <br>
               <span>BIP44 compatible = <b>{{vm.bip44Compatible?'TRUE':'FALSE'}}</b></span>
             </div>
@@ -174,24 +179,25 @@ declare var saveAs: any;
             <div layout="row" layout-align="center center">
               <md-button ng-click="vm.printPassphrase()">
                 <md-icon md-font-library="material-icons">print</md-icon>
-                &nbsp;&nbsp;Print
+                &nbsp;Print
               </md-button>
               <md-button ng-click="vm.savePassphrase()" ng-if="vm.isFileSaverSupported">
                 <md-icon md-font-library="material-icons">save</md-icon>
-                &nbsp;&nbsp;Save
+                &nbsp;Save
               </md-button>
               <md-button ng-click="vm.showPassphrase()">
                 <md-icon md-font-library="material-icons">content_copy</md-icon>
-                &nbsp;&nbsp;Copy
+                &nbsp;Show
               </md-button>
-              <md-button ng-click="vm.showPassphrase=!vm.showPassphrase">
+              <md-button ng-click="vm.visiblePassphrase = !vm.visiblePassphrase">
                 <md-icon md-font-library="material-icons">arrow_drop_down_circle</md-icon>
-                &nbsp;&nbsp;{{vm.showPassphrase?'Hide':'Reveal'}}
+                &nbsp;{{vm.visiblePassphrase ? 'Hide' : 'Reveal'}}
               </md-button>
             </div>
-            <div layout="column" layout-align="center center" ng-show="vm.showPassphrase">
+            <div layout="column" layout-align="center center" ng-show="vm.visiblePassphrase">
               <p>Passphrase for {{vm.pageCreateUserName}} ({{vm.pageCreateAccount}}):</p>
               <p><code id="claim2-passphrase">{{vm.pageCreateSecretPhrase}}</code></p>
+              <p>Public key:<br><code id="claim2-pubkey">{{vm.pageCreatePublicKey}}</code></p>
             </div>
             <div layout="row" layout-align="center center">
               <md-checkbox ng-model="vm.passphraseBackedUp" aria-label="I have backed up my passphrase">
@@ -212,10 +218,17 @@ declare var saveAs: any;
                 <md-tooltip md-direction="bottom">Add single key through secret phrase</md-tooltip>
                 Secret Phrase
               </md-button>
-              <md-button class="md-primary md-raised" ng-click="vm.page='addWallet'" aria-label="Open wallet file">
-                <md-tooltip md-direction="bottom">Load wallet file</md-tooltip>
-                Wallet File
+              
+              <!-- Open File input is hidden -->
+              <md-button class="md-primary md-raised" aria-label="Open wallet file">
+                <md-tooltip md-direction="bottom">Import wallet from file</md-tooltip>
+                <label for="walet-input-file">
+                  Wallet File
+                </label>
               </md-button>
+              
+              <input type="file" onchange="angular.element(this).scope().vm.pageAddFileInputChange(this.files); angular.element(this).val(null)" class="ng-hide" id="walet-input-file">
+
             </div>
           </div>
 
@@ -230,7 +243,7 @@ declare var saveAs: any;
             <div layout="column" flex>
               <md-input-container flex>
                 <label>Password (or Pin Code) (required)</label>
-                <input type="password" ng-model="vm.pageAddPincode" required name="pincode" maxlength="5">
+                <input type="password" ng-model="vm.pageAddPincode" required name="pincode" maxlength="64">
               </md-input-container>
             </div>
             <div layout="row" layout-align="center center">
@@ -306,7 +319,7 @@ class LoginComponent {
   pageAddPincode: string;
   pageAddSecretPhraseHasHiddenChars: boolean;
   pageAddCalculatedAccountId: string = 'Enter secret phrase to see account id';
-  pageAddWallet: IHeatWalletFile;
+  pageAddWallet: IHeatWalletFile | any;
   pageAddWalletInvalid: boolean = false;
 
   pageSigninPincode: string;
@@ -324,6 +337,8 @@ class LoginComponent {
   pageCreateLoading: boolean = false;
   pageCreateError: string;
   pageCreateTransaction: string;
+
+  visiblePassphrase = true
 
   constructor(private $scope: angular.IScope,
               private $q: angular.IQService,
@@ -343,29 +358,31 @@ class LoginComponent {
     try {
       this.isFileSaverSupported = !!new Blob;
     } catch (e) {}
-    this.useExternalCaptcha = env.type!=EnvType.BROWSER;
+    this.useExternalCaptcha = !env.isBrowser
     this.generateNewSecretPhrase();
-    this.initLocalKeys();
 
-    if (this.localKeys.length != 0) {
-      this.pageSigninAccount = this.localKeys[0].account;
-      this.page='signin';
-    }
-    else {
-      this.page='create';
-    }
+    this.initLocalKeys().then(localKeys => {
+      if (localKeys.length == 0) {
+        this.page = 'create';
+      } else {
+        this.pageSigninAccount = localKeys[0].account;
+        this.page = 'signin';
+      }
+    })
 
     // @ts-ignore
     new ClipboardJS('#copy-secret');
   }
 
   initLocalKeys() {
-    this.localKeys = this.localKeyStore.list().map((account:string) => {
-      return {
-        name: this.localKeyStore.keyName(account),
-        account: account
-      }
-    });
+    return this.localKeyStore.list().then(walletEntries => {
+      return this.localKeys = walletEntries.map(entry => {
+        return {
+          name: entry.name,
+          account: entry.account
+        }
+      })
+    })
   }
 
   apiServerChanged() {
@@ -404,51 +421,28 @@ class LoginComponent {
       pincode: this.pageAddPincode,
       name: ''
     };
-    this.localKeyStore.add(key);
+    this.localKeyStore.put(key);
     this.user.unlock(this.pageAddSecretPhrase, key, this.lightwalletService.validSeed(this.pageAddSecretPhrase)).then(() => {
       this.$location.path(`explorer-account/${this.user.account}/transactions`);
     });
   }
 
   pageAddFileInputChange(files: FileList) {
-    if (files && files[0]) {
-      let reader = new FileReader();
-      reader.onload = () => {
-        this.$scope.$evalAsync(() => {
-          this.pageAddWalletInvalid = true;
-          let fileContents = reader.result;
-          this.pageAddWallet = this.walletFile.createFromText(fileContents);
-          if (this.pageAddWallet) {
-            this.pageAddWalletInvalid = false;
-          }
-        })
-      };
-      reader.readAsText(files[0]);
-    }
-  }
-
-  pageAddWalletImportContinue() {
-    let addedKeys = this.localKeyStore.import(this.pageAddWallet);
-    this.initLocalKeys();
-    let message = `Imported ${addedKeys.length} keys into this device`;
-    this.$mdToast.show(this.$mdToast.simple().textContent(message).hideDelay(5000));
-    this.$scope.$evalAsync(()=>{
-      this.page = '';
-    });
+    importExport.importWallet(files, this.$scope, this.$mdToast, this.localKeyStore, this.walletFile)
   }
 
   pageSinginLogin() {
-    this.$scope.$evalAsync(()=>{
-      this.pageSigninWrongPincode = false;
-      var key = this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode);
-      if (key) {
-        this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
-          this.$location.path(`explorer-account/${this.user.account}/transactions`);
-        });
-      }
-      else {
-        this.pageSigninWrongPincode = true;
-      }
+    this.$scope.$evalAsync(() => {
+      this.pageSigninWrongPincode = false
+      this.localKeyStore.load(this.pageSigninAccount, this.pageSigninPincode).then(key => {
+        if (key) {
+          this.user.unlock(key.secretPhrase, key, this.lightwalletService.validSeed(key.secretPhrase)).then(() => {
+            this.$location.path(`explorer-account/${this.user.account}/transactions`)
+          })
+        } else {
+          this.pageSigninWrongPincode = true
+        }
+      }).catch(e => console.log(e))
     })
   }
 
@@ -488,6 +482,7 @@ class LoginComponent {
   }
 
   isValidPincode(pincode) {
+    if (!pincode || pincode.trim().length == 0) return false;
     return /^[a-zA-Z0-9_.-]{4,15}$/.test(pincode);
   }
 
@@ -522,11 +517,14 @@ class LoginComponent {
     this.panel.show(`
       <div layout="column" flex class="toolbar-copy-passphrase">
         <md-input-container flex>
-          <textarea rows="2" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+          <textarea rows="3" flex ng-bind="vm.secretPhrase" readonly ng-trim="false"></textarea>
+          <div>Public key:</div>
+          <div>{{vm.publicKey}}</div>
         </md-input-container>
       </div>
     `, {
-      secretPhrase: this.pageCreateSecretPhrase
+      secretPhrase: this.pageCreateSecretPhrase,
+      publicKey: this.pageCreatePublicKey
     })
   }
 
@@ -559,7 +557,7 @@ class LoginComponent {
       `Publickey:`,
       this.pageCreatePublicKey,
       '',
-      '<a href="https://heatwallet.com" target="_blank">https://heatwallet.com</a>'].join('<br>');
+      '<a href="https://heatwallet.com" target="_blank" rel="noopener noreferrer">https://heatwallet.com</a>'].join('<br>');
   }
 
   createLocalAccount() {
@@ -569,7 +567,7 @@ class LoginComponent {
       pincode: this.pageCreatePincode,
       name: this.pageCreateUserName
     };
-    this.localKeyStore.add(key);
+    this.localKeyStore.put(key);
     this.user.unlock(this.pageCreateSecretPhrase, key, this.lightwalletService.validSeed(this.pageCreateSecretPhrase)).then(() => {
       this.$location.path('new');
     });
@@ -617,4 +615,32 @@ class LoginComponent {
     }, false);
     return deferred.promise;
   }
+
+  private importDatabaseFile(file, fileContent) {
+    let doWork = () => {
+      const blob = new Blob([fileContent], { type: file?.type })
+      return db.importDatabase(blob).then(() => {
+        setTimeout(() => window.location.reload(), 4000)
+        this.$mdToast.show(this.$mdToast.simple().textContent('Data is imported. The app will now restart...').hideDelay(7000))
+      }).catch(reason => {
+        let s = `Import error ${reason}`
+        this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+      })
+    }
+
+    return db.checkDatabaseEmpty().then(isEmpty => {
+      if (isEmpty) {
+        doWork()
+      } else {
+        return dialogs.confirm('Import wallet database',
+            'Detected not empty database in this app. It will be cleared and filled from the file').then(() => {
+          db.deleteDatabase().then(() => doWork()).catch(reason => {
+            let s = `Error ${reason}`
+            this.$mdToast.show(this.$mdToast.simple().textContent(s).hideDelay(12000))
+          })
+        })
+      }
+    })
+  }
+
 }

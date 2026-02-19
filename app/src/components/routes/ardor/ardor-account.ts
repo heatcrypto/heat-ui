@@ -16,7 +16,8 @@
           </div>
           <div class="col-item">
             <div class="title">
-              Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
+              Balance:
+              <md-progress-circular style="display: initial; position: fixed;" md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
             </div>
             <div class="value">
               {{vm.balanceUnconfirmed}} ARDR
@@ -29,7 +30,7 @@
               ARDOR Server:
             </div>
             <div class="value">
-              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeSocketAddress()">
+              <md-select class="md-select-ws" ng-model="vm.selectSocketEndPoint" ng-change="vm.changeHostAddress()">
                 <md-option ng-repeat="socket in vm.sockets" value="{{socket.name}}">{{socket.name}}</md-option>
               </md-select>
             </div>
@@ -79,38 +80,41 @@ class ArdorAccountComponent {
               private $mdToast: angular.material.IToastService,
               private settings: SettingsService,
               private user: UserService) {
+  }
 
+  $onInit() {
     this.refresh();
 
     let listener = this.updatePendingTransactions.bind(this)
-    ardorPendingTransactions.addListener(listener)
+    this.ardorPendingTransactions.addListener(listener)
     this.updatePendingTransactions()
 
-    let promise = $interval(this.timerHandler.bind(this), 30000)
+    let promise = this.$interval(this.timerHandler.bind(this), 7000)
     this.timerHandler()
 
-    $scope.$on('$destroy', () => {
-      ardorPendingTransactions.removeListener(listener)
-      $interval.cancel(promise)
+    this.$scope.$on('$destroy', () => {
+      this.ardorPendingTransactions.removeListener(listener)
+      this.$interval.cancel(promise)
     })
 
     this.sockets = [
       {
         name: 'HEAT_Ardr_node',
-        socketUrl: 'https://bitnode.heatwallet.com:27876/'
+        hostUrl: 'https://ardr1.heatwallet.com'
       },
       {
         name: 'Localhost',
-        socketUrl: 'http://localhost:27876/'
+        hostUrl: 'http://localhost:27876'
       }
     ]
-
-    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.ardorBlockExplorerService.getSocketUrl() == w.socketUrl).name
+    this.$scope['vm'].selectSocketEndPoint = this.sockets.find(w => this.ardorBlockExplorerService.getHostUrl() == w.hostUrl).name
   }
 
-  changeSocketAddress() {
+  changeHostAddress() {
     let ret = this.sockets.find(w => this.$scope['vm'].selectSocketEndPoint == w.name)
-    this.ardorBlockExplorerService.setUrl(ret.socketUrl)
+    this.ardorBlockExplorerService.setUrl(ret.hostUrl)
+    let host = ret.hostUrl.split(':27876')[0]
+    SettingsService.changeCryptoNodeProperty('ARDR', host, 'priority', 0)
   }
 
   timerHandler() {
@@ -121,6 +125,9 @@ class ArdorAccountComponent {
         this.prevIndex = 0
       }
       let pendingTxn = this.pendingTransactions[this.prevIndex]
+      if (!pendingTxn.fullHash || pendingTxn.fullHash == "undefined") {
+        this.ardorPendingTransactions.remove(pendingTxn.address, pendingTxn.txId, pendingTxn.time, pendingTxn.fullHash)
+      }
       this.ardorBlockExplorerService.getTransactionStatus(pendingTxn.fullHash).then(
         data => {
           if (data.confirmations) {
@@ -138,10 +145,10 @@ class ArdorAccountComponent {
   updatePendingTransactions() {
     this.$scope.$evalAsync(() => {
       this.pendingTransactions = []
-      let addr = this.user.account
+      let addr = this.user.currency.address
       let txns = this.ardorPendingTransactions.pending[addr]
       if (txns) {
-        var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+        const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
         txns.forEach(tx => {
           this.pendingTransactions.push({
             date: dateFormat(new Date(tx.time), format),

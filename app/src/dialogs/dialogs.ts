@@ -51,19 +51,32 @@ interface IWizardPage {
   okBtnLabel?: string;
 }
 
+heat.Loader.directive('autoFocus', function ($timeout) {
+  'use strict';
+  return {
+    restrict: 'A',
+    link: function (_scope, _element) {
+      $timeout(function () {
+        _element[0].focus();
+      }, 500);
+    }
+  };
+});
+
 module dialogs {
   export function $mdDialog(): angular.material.IDialogService {
     return <angular.material.IDialogService> heat.$inject.get('$mdDialog');
   }
 
-  export function dialog(options: IDialogOptions): angular.IPromise<any> {
+  export function dialog(options: IDialogOptions, extOptions?: angular.material.IDialogOptions): angular.IPromise<any> {
     if (angular.isString(options.style)) {
       var styleId = 'dialog-style-' + options.id;
       if (!document.getElementById(styleId)) {
         angular.element(document).find('head').append(`<style type="text/css" id="${styleId}">${options.style}</style>`);
       }
     }
-    return dialogs.$mdDialog().show(<angular.material.IDialogOptions>{
+    const dialogOptions: angular.material.IDialogOptions = {
+      // @ts-ignore
       controller: options.controller || function () {},
       locals: angular.extend({
         isBetanet: heat.isBetanet,
@@ -87,7 +100,7 @@ module dialogs {
           <md-toolbar>
             <div class="md-toolbar-tools"><h2>{{vm.title}}</h2></div>
           </md-toolbar>
-          <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
+          <md-dialog-content style="min-width:500px;max-width:650px" layout="column" layout-padding>
             <div flex layout="column">
               ${options.template}
             </div>
@@ -95,13 +108,17 @@ module dialogs {
           <md-dialog-actions layout="row">
             <span flex></span>
             <md-button ng-if="vm.cancelButton" class="md-warn" ng-click="vm.cancelButtonClick ? vm.cancelButtonClick() : vm.$mdDialog.cancel()" aria-label="Cancel">Cancel</md-button>
-            <md-button ng-disabled="dialogForm.$invalid" ng-if="vm.okButton" class="md-primary"
+            <md-button type="submit" ng-disabled="dialogForm.$invalid" ng-if="vm.okButton" class="md-primary"
               ng-click="vm.okButtonClick ? vm.okButtonClick() : vm.$mdDialog.hide()" aria-label="OK">{{vm.okButtonLabel?vm.okButtonLabel:'OK'}}</md-button>
           </md-dialog-actions>
         </form>
       </md-dialog>
       `
-    });
+    }
+    if (extOptions) {
+      Object.assign(dialogOptions, extOptions)
+    }
+    return dialogs.$mdDialog().show(<angular.material.IDialogOptions> dialogOptions);
   }
 
   export function wizard(options: IWizardOptions): angular.IPromise<any> {

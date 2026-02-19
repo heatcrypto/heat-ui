@@ -1,64 +1,72 @@
 @Service('fimkCryptoService')
-@Inject('$window', 'mofoSocketService', '$rootScope')
+@Inject('$window', 'mofoSocketService', '$rootScope', 'storage')
 class FIMKCryptoService {
 
   private nxtCrypto;
-  private socket;
+  private store: Store;
 
   constructor(private $window: angular.IWindowService,
     private mofoSocketService: MofoSocketService,
-    private $rootScope: angular.IRootScopeService) {
+    private $rootScope: angular.IRootScopeService,
+    storage: StorageService) {
     this.nxtCrypto = $window.heatlibs.nxtCrypto;
-    this.socket = this.mofoSocketService.mofoSocket();
+    this.store = storage.namespace('wallet-address', $rootScope, true);
   }
 
   /* Sets the seed to this wallet */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(seedOrPrivateKey: any): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let walletType = { addresses: [] }
-      walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'FIM'), privateKey: seedOrPrivateKey }
-      resolve(walletType);
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey);
+      let encryptedWallet = this.store.get(`FIM-${heatAddress}`)
+      if (encryptedWallet) {
+        if(!encryptedWallet.data) {
+          // Temporary fix. To remove unusable data from local storage
+          this.store.remove(`FIM-${heatAddress}`)
+          this.unlock(seedOrPrivateKey)
+        }
+        let decryptedWallet = heat.crypto.decryptMessage(encryptedWallet.data, encryptedWallet.nonce, heatAddress, seedOrPrivateKey)
+        resolve(JSON.parse(decryptedWallet));
+      } else {
+        let walletType = { addresses: [] }
+        walletType.addresses[0] = { address: this.nxtCrypto.getAccountRSFromSecretPhrase(seedOrPrivateKey, 'FIM'), privateKey: seedOrPrivateKey }
+        let encryptedWallet = heat.crypto.encryptMessage(JSON.stringify(walletType), heatAddress, seedOrPrivateKey)
+        this.store.put(`FIM-${heatAddress}`, encryptedWallet);
+        resolve(walletType);
+      }
     });
   }
 
-  getSocket() {
-    return new Promise((resolve, reject) => {
-      let status = this.socket['readyState'];
-      if(status == 1)
-        resolve(status);
-      else
-        reject(0);
-    });
-  }
-
-  refreshAdressBalances(wallet: WalletType) {
+  refreshBalances(wallet: WalletAddresses) {
     let address = wallet.addresses[0].address
     return new Promise((resolve, reject) => {
       let mofoSocketService: MofoSocketService = heat.$inject.get('mofoSocketService')
-      mofoSocketService.getTransactions(address).then(transactions => {
-        mofoSocketService.getAccount(address).then(info => {
-          wallet.addresses[0].inUse = true;
-          let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
-          let formattedBalance = new Big(balance + "")
-          let balanceUnconfirmed = new Big(formattedBalance).toFixed(8);
-          wallet.addresses[0].balance = balanceUnconfirmed
-          mofoSocketService.getAccountAssets(address).then(accountAssets => {
-            wallet.addresses[0].tokensBalances = []
-            accountAssets.forEach(asset => {
-              wallet.addresses[0].tokensBalances.push({
-                symbol: asset?asset.name:'',
-                name: asset?asset.name:'',
-                decimals: asset.decimals,
-                balance: utils.formatQNT(asset.unconfirmedQuantityQNT,asset.decimals),
-                address: asset.asset
-              })
-            });
-            resolve(true)
+      mofoSocketService.mofoSocket().then(()=> {
+        mofoSocketService.getTransactions(address).then(transactions => {
+          mofoSocketService.getAccount(address).then(info => {
+            wallet.addresses[0].inUse = true;
+            let balance = parseInt(info.unconfirmedBalanceNQT) / 100000000;
+            let formattedBalance = new Big(balance + "")
+            let balanceUnconfirmed = new Big(formattedBalance).toFixed(8);
+            wallet.addresses[0].balance = balanceUnconfirmed
+            mofoSocketService.getAccountAssets(address).then(accountAssets => {
+              wallet.addresses[0].tokensBalances = []
+              accountAssets.forEach(asset => {
+                wallet.addresses[0].tokensBalances.push({
+                  symbol: asset?asset.name:'',
+                  name: asset?asset.name:'',
+                  decimals: asset.decimals,
+                  balance: utils.formatQNT(asset.unconfirmedQuantityQNT,asset.decimals),
+                  address: asset.asset
+                })
+              });
+              resolve(true)
+            })
           })
-        })
-      }, err => {
+        }, err => {
+          if (err) console.error(err)
           resolve(false)
-      })
+        })
+      }).catch(reject)
     })
   }
 }

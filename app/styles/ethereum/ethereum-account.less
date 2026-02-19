@@ -25,8 +25,24 @@ ethereum-account {
     &.pop-col {
       max-width: initial;
     }
+    &.inoutgoing-col {
+      max-width: 20px;
+      min-width: 20px;
+      padding-right: 15px;
+      padding-left: 15px;
+      .outgoing {
+        color: #c40f0f !important;
+      }
+      .incoming {
+        color: green !important;
+      }
+
+    }
     &.info-col {
       max-width: initial !important;
+    }
+    &.amount-col {
+      max-width: 90px;
     }
     &.json-col {
       min-width: 30px;

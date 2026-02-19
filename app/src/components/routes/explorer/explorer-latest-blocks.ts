@@ -22,35 +22,42 @@
  * */
 @Component({
   selector: 'explorerLatestBlocks',
-  inputs: ['blockObject','account','hideLabel'],
+  inputs: ['blockObject', 'account', 'hideLabel'],
   styles: [`
-  .he {         
-    min-width: 40px !important;         
-    max-width: 70px !important;         
+  .he {
+    min-width: 40px !important;
+    max-width: 70px !important;
   }
-  .tx {         
-    min-width: 20px !important;         
-    max-width: 40px !important;         
+  .tx {
+    min-width: 20px !important;
+    max-width: 40px !important;
   }
-  .fee {         
-    max-width: 70px !important;         
+  .fee {
+    max-width: 70px !important;
+  }
+  .loadingIcon {
+    color: grey;
+    flex: auto;
+    margin-left: 10px;
   }
   `],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Blocks
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+      <div>Latest Blocks</div>
+      <div><md-icon md-font-library="material-icons" class="loadingIcon rotate" ng-if="vm.loadedPages.inProgress">sync</md-icon></div>
       </div>
+
       <md-list flex layout-fill layout="column" >
         <md-list-item class="header">
           <div class="he truncate-col height-col left">Height</div>
           <div class="truncate-col date-col left">Time</div>
           <div class="truncate-col block-col block left">Block</div>
-          <div class="truncate-col generator-col block left" ng-if="!vm.account">Generator</div>
+          <div class="truncate-col generator-col block left" ng-if="!vm.account">{{vm.minerHeader}}</div>
           <div class="tx truncate-col transactions-col">Tx</div>
           <div class="truncate-col amount-col">Amount</div>
-          <div class="fee truncate-col fee-col">Fee</div>
-          <div class="truncate-col pos-col left">POS Reward</div>
-          <div class="truncate-col pop-col left" flex>POP Reward</div>
+          <div class="fee truncate-col fee-col">Fees</div>
+          <div class="truncate-col pop-col left" flex>{{vm.popHeader}}</div>
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
         </md-list-item>
@@ -59,12 +66,15 @@
             <div class="he truncate-col height-col left">{{item.height}}</div>
             <div class="truncate-col date-col left">{{item.time}}</div>
             <div class="truncate-col block-col block left"><a href="#/explorer-block/{{item.block}}">{{item.block}}</a></div>
-            <div class="truncate-col generator-col block left" ng-if="!vm.account"><a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a></div>
+            <div class="truncate-col generator-col block left" ng-if="!vm.account">
+                <a href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a>
+            </div>
             <div class="tx truncate-col transactions-col">{{item.numberOfTransactions}}</div>
             <div class="truncate-col amount-col">{{item.amount}}</div>
             <div class="fee truncate-col fee-col">{{item.fee}}</div>
-            <div class="truncate-col pos-col left">{{item.pos}}</div>
-            <div class="truncate-col pop-col left" flex>{{item.pop}}</div>
+            <div class="truncate-col pop-col left" flex>
+                <a ng-if="item.popRewardHQT != '0'" href="#/explorer-account/{{item.generator}}/transactions">{{item.generatorPublicName||item.generator}}</a>
+            </div>
             <!-- JSON -->
             <div class="truncate-col json-col">
               <a ng-click="vm.jsonDetails($event, item)">
@@ -77,11 +87,14 @@
     </div>
   `
 })
-@Inject('$scope','$q','heat','latestBlocksProviderFactory','settings')
+@Inject('$scope', '$q', 'heat', 'latestBlocksProviderFactory', 'settings')
 class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
 
   blockObject: IHeatBlock; // @input
   account: string; // @input
+  minerHeader: string = "Miner";
+  popHeaderOrig: string = "POP reward";
+  popHeader: string = this.popHeaderOrig;
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -89,29 +102,41 @@ class ExplorerLatestBlocksComponent extends VirtualRepeatComponent {
               private latestBlocksProviderFactory: LatestBlocksProviderFactory,
               private settings: SettingsService) {
     super($scope, $q);
+  }
 
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  $onInit() {
+    const format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+    let headerInitialized = false;
     this.initializeVirtualRepeat(
       this.latestBlocksProviderFactory.createProvider(this.blockObject, this.account),
       /* decorator function */
-      (block: any|IHeatBlock) => {
-        var date = utils.timestampToDate(block.timestamp);
+      (block: any | IHeatBlock) => {
+        const date = utils.timestampToDate(block.timestamp);
         block.time = dateFormat(date, format);
         block.amount = utils.formatQNT(block.totalAmountHQT, 8) + " HEAT";
-        block.fee = utils.trimDecimals(utils.formatQNT(block.totalFeeHQT, 8),2) + " HEAT";
-        block.pos = utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8),2) + " HEAT";
-        block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8),2) + " HEAT";
+        block.fee = utils.trimDecimals(utils.formatQNT(block.totalFeeHQT, 8), 2) + " HEAT";
+        block.pos = utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8), 2) + " HEAT";
+        block.pop = utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8), 2) + " HEAT";
+        if (!headerInitialized) {
+          this.minerHeader = `Miner (${utils.trimDecimals(utils.formatQNT(block.posRewardHQT, 8), 2)} HEAT)`;
+          headerInitialized = true;
+        }
+        if (this.popHeader == this.popHeaderOrig && block.popRewardHQT != '0') {
+          this.popHeader = `POP reward (${utils.trimDecimals(utils.formatQNT(block.popRewardHQT, 8), 2)} HEAT)`;
+        }
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    heat.subscriber.blockPopped({}, refresh, $scope);
-    heat.subscriber.blockPushed({}, refresh, $scope);
+    const refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+    this.heat.subscriber.blockPushed({}, refresh, this.$scope);
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Block: '+item.block);
+    let fields = [["block"], ["generator", "generator account"], ["height", "block height"], ["time"], ["amount"], ["fee"], ["pos", "POS reward"], ["pop", "POP reward"]]
+    dialogs.jsonDetails($event, item, 'Block: ' + item.block, fields)
   }
 
-  onSelect(selectedBlock) {}
+  onSelect(selectedBlock) {
+  }
 }

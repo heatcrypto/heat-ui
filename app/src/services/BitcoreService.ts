@@ -2,20 +2,27 @@
 @Inject('$window')
 class BitcoreService {
 
-  static readonly BIP44 = "m/44'/0'/0'/0/";
+  static readonly BIP44_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/44'/0'/0'/0/" : "m/44'/1'/0'/0/"
+  static readonly BIP49_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/49'/0'/0'/0/" : "m/49'/1'/0'/0/"
+  static readonly BIP84_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/84'/0'/0'/0/" : "m/84'/1'/0'/0/"
   private bitcore;
   private bip39;
 
-  constructor($window: angular.IWindowService) {
+  private BITCOIN_MESSAGE_MAGIC_BYTES
+
+  constructor(private $window: angular.IWindowService) {
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
+    this.BITCOIN_MESSAGE_MAGIC_BYTES = new this.bitcore.deps.Buffer('Bitcoin Signed Message:\n')
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: any): Promise<WalletType> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
-        let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
+      if (walletAddresses) {
+        resolve(walletAddresses)
+      } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
+        let walletType = this.generateAddresses(seedOrPrivateKey, 20)
         if (walletType.addresses.length === 20) {
           resolve(walletType);
         }
@@ -24,142 +31,274 @@ class BitcoreService {
           let privateKey = this.bitcore.PrivateKey.fromWIF(seedOrPrivateKey)
           let address = privateKey.toAddress();
           let walletType = { addresses: [] }
-          walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
+          walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toWIF() }
           resolve(walletType)
         } catch (e) {
           // resolve empty promise if private key is not of this network so that next .then executes
-          resolve()
+          resolve(null)
         }
       }
       else {
-        reject();
+        reject("Seed (or private key) is not valid for currency")
       }
     });
   }
 
-  getNWalletsFromMnemonics(mnemonic: string, keyCount: number) {
+  generateAddresses(mnemonic: string, keyCount: number) {
     let walletType = { addresses: [] }
     for (let i = 0; i < keyCount; i++) {
-      let wallet = this.getBitcoinWallet(mnemonic, i)
-      walletType.addresses[i] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
+      let a = this.generateBitcoinAddress(mnemonic, i)
+      // let a = this.generateSegwitBitcoinAddress(mnemonic, i)
+      walletType.addresses[i] = { address: a.address, privateKey: a.privateKey, index: i, balance: "0", inUse: false }
     }
     return walletType;
   }
 
-  refreshAdressBalances(wallet: WalletType) {
+  refreshBalances(wallet: WalletAddresses, btcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
     /* list all addresses in bip44 order */
-    let addresses = wallet.addresses.map(a => a.address)
+    wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
+    let addresses = wallet.addresses.filter(a => !a.isDeleted).map(a => a.address)
+    let emptyAddressCounter = 0
 
     function processNext() {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses[0]
-        addresses.shift()
+        let address = addresses.shift()
+        if (!address) {
+          resolve(false)
+          return
+        }
+
+        btcCurrencyAddressLoading.address = address
 
         /* look up its data on btcBlockExplorerService */
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-        btcBlockExplorerService.refresh().then(() => {
-          btcBlockExplorerService.getAddressInfo(address).then(info => {
+        btcBlockExplorerService.getAddressInfo(address, true).then(info => {
 
-            /* lookup the 'real' WalletAddress */
-            let walletAddress = wallet.addresses.find(x => x.address == address)
-            if (!walletAddress)
-              return
-
-            walletAddress.inUse = info.txApperances != 0
-            if (!walletAddress.inUse) {
-              resolve(false)
-              return
-            }
-
-            walletAddress.balance = info.balanceSat / 100000000 + ""
-            resolve(true)
-          }, () => {
+          /* lookup the 'real' WalletAddress */
+          let walletAddress = wallet.addresses.find(x => x.address == address)
+          if (!walletAddress) {
+            console.error(`Address ${address} is not found among addresses`, wallet.addresses)
             resolve(false)
-          })
+            return
+          }
+
+          emptyAddressCounter++
+
+          walletAddress.balance = info.balanceSat == undefined ? "" : info.balanceSat / 100000000 + ""
+          walletAddress.inUse = info.txApperances ? info.txApperances != 0 : null
+
+          if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
+
+          // if there are 2 zero addresses in a row, then we do not load the addresses further
+          if (emptyAddressCounter >= 2) {
+            resolve(false)
+            return
+          }
+          resolve(true)
+        }).catch(reason => {
+          console.error(reason)
+          reject(reason)
         })
       })
     }
 
-    let recurseToNext = function recurseToNext(resolve) {
+    let recurseToNext = function recurseToNext(resolve, reject) {
       processNext().then(
         hasMore => {
           if (hasMore) {
             setTimeout(function () {
-              recurseToNext(resolve)
+              recurseToNext(resolve, reject)
             }, 100)
-          }
-          else {
-            resolve()
+          } else {
+            resolve(null)
           }
         }
-      )
+      ).catch(reason => reject(reason))
     }
 
-    return new Promise(resolve => {
-      recurseToNext(resolve)
+    return new Promise((resolve, reject) => {
+      recurseToNext(resolve, reject)
     })
   }
 
-  signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
+  createOneToOneTransaction(txObject: any, uncheckedSerialize: boolean = false, utxoData?: string): Promise<{inputsSum: number, rawTx: string}> {
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-    return new Promise((resolve, reject) => {
-      btcBlockExplorerService.getUnspentUtxos(txObject.from).then(
-        utxos => {
-          try {
-            let tx = this.bitcore.Transaction();
-            tx.from(utxos)
-            tx.to(txObject.to, txObject.amount)
-            tx.change(txObject.from)
-            tx.fee(txObject.fee)
-            tx.sign(txObject.privateKey)
-            let rawTx;
-            if(uncheckedSerialize)
-              rawTx = tx.uncheckedSerialize()
-            else
-              rawTx = tx.serialize()
-            resolve(rawTx)
 
-          } catch (err) {
-            reject(err)
+    return new Promise((resolve, reject) => {
+      const createTx = (utxos) => {
+        const privateKeyHex = heat.heatAppLib.BITCOIN_WIF_TO_HEX({privateKey: txObject.privateKey, network: wlt.CURRENCIES.Bitcoin.network})
+
+        let inputs = utxos.map(v => ({
+          vout: v.vout,
+          txId: v.txid,
+          txHex: v.txhex,
+          value: v.value,
+          privateKey: privateKeyHex,
+          address: txObject.from,
+          addressType: this.resolveAddressType(txObject.from, wlt.CURRENCIES.Bitcoin.network)
+        }))
+
+        //todo include min sufficient of inputs for sending amount only
+        let inputsSum: number = inputs.reduce((v, {value}) => v + parseInt(value), 0)
+        let changeAmount = inputsSum - txObject.amount - (txObject.txnFeeSatoshi || (uncheckedSerialize ? 0 : txObject.txnFeeSatoshi))
+
+        if (changeAmount < 0) {
+          reject('amount with fee is too big')
+          return
+        }
+
+        if (isNaN(changeAmount) || changeAmount > inputsSum) {
+          reject(`wrong value among 1) inputs sum ${inputsSum}; 2) amount ${txObject.amount}; 3) fee ${txObject.fee}`)
+          return
+        }
+
+        let outputs = [
+          {
+            address: txObject.to,
+            value: txObject.amount
           }
+        ]
+
+        if (changeAmount > 0) {
+          outputs.push({
+            address: txObject.changeAddress,
+            value: changeAmount
+          })
+        }
+
+        resolve({
+          inputsSum: inputsSum,
+          rawTx: heat.heatAppLib.BITCOIN_CREATE_1_TO_1_TRANSACTION({inputs, outputs, network: wlt.CURRENCIES.Bitcoin.network}) + ""
+        })
+      }
+
+      if (utxoData) {
+        createTx(JSON.parse(utxoData))
+      } else {
+        btcBlockExplorerService.getUtxos(txObject.from).then(
+            utxos => createTx(utxos),
+            err => {
+              reject(err)
+            }
+        ).catch(reason => reject(reason))
+      }
+    })
+  }
+
+  sendBitcoins(rawTx: string): Promise<{ txId: string, message: string }> {
+    return new Promise((resolve, reject) => {
+      let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
+      btcBlockExplorerService.broadcast(rawTx).then(
+        txId => {
+          resolve({txId : txId.txId, message: ''})
         },
-        err => {
-          reject(err)
+        error => {
+          reject(error)
         }
       )
     })
   }
 
-  sendBitcoins(txObject: any): Promise<{ txId: string, message: string }> {
-    let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
-    return new Promise((resolve, reject) => {
-      this.signTransaction(txObject).then(rawTx => {
-        btcBlockExplorerService.broadcast(rawTx).then(
-          txId => {
-            resolve({txId : txId.txId, message: ''})
-          },
-          error => {
-            reject(error)
-          }
-        )
-      })
-    })
-  }
-
-  getBitcoinWallet(mnemonic: string, index: Number = 0) {
-
-    let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
-    let HDPrivateKey = this.bitcore.HDPrivateKey;
-    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
-
-    let derived = hdPrivateKey.derive(BitcoreService.BIP44 + index);
-    let address = derived.privateKey.toAddress();
-    let privateKey = derived.privateKey.toWIF();
-    return {
-      address: address.toString(),
-      privateKey: privateKey.toString()
+  generateBitcoinAddress(secret: string, index = 0, toIndex?: number) {
+    if (this.bip39.validateMnemonic(secret)) {
+      let seedHex = this.bip39.mnemonicToSeedHex(secret)
+      let HDPrivateKey = this.bitcore.HDPrivateKey
+      let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? 'mainnet' : wlt.CURRENCIES.Bitcoin.network)
+      let path = BitcoreService.BIP44_PATH() + index
+      let derived = hdPrivateKey.derive(path)
+      return {
+        path: path,
+        address: derived.privateKey.toAddress().toString(),
+        privateKey: derived.privateKey.toWIF().toString()
+      }
+    } else {
+      let privateKey = this.bitcore.PrivateKey(secret)
+      let address = privateKey.toAddress()
+      return {
+        address: address.toString(),
+        privateKey: privateKey.toWIF()
+      }
     }
   }
+
+  generateSegwitBitcoinAddresses(secret: string, nativeSegwit: boolean, index= 0, toIndex?: number) {
+    let pks: {privateKey: any, privateKeyWif: any}[]
+
+    if (this.bip39.validateMnemonic(secret)) {
+      let paths = []
+      toIndex = toIndex >= index ? toIndex : index
+      for (let i = index; i <= toIndex; i++) {
+        paths.push({
+          path: (nativeSegwit ? BitcoreService.BIP84_PATH() : BitcoreService.BIP49_PATH()) + i,
+          includeWif: true
+        })
+      }
+      const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic: secret})
+      const keyPairs: [] = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})
+      pks = keyPairs.map((v: any) => {return {privateKey: v.privateKey, privateKeyWif: v.wif}})
+    } else {
+      let pk = this.bitcore.PrivateKey.fromWIF(secret)
+      pks = [{privateKey: pk.toString(), privateKeyWif: pk.toWIF()}]
+    }
+    let addresses = pks.map(v => {
+      const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: v.privateKey, network: wlt.CURRENCIES.Bitcoin.network })
+      let a = nativeSegwit
+          ? heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
+          : heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
+      return {
+        address: a,
+        privateKey: v.privateKeyWif
+      }
+    })
+    return addresses
+  }
+
+  resolveAddressType(address: string, network = 'bitcoin') {
+    const prefixes = {
+      bitcoin: {
+        '1': 'p2pkh',
+        '3': 'p2wpkh_in_p2sh',
+        'bc1q': 'p2wpkh',
+        'bc1p': 'p2tr'
+      },
+      testnet: {
+        'm': 'p2pkh',
+        'n': 'p2pkh',
+        '2': 'p2wpkh_in_p2sh',
+        'tb1': 'p2wpkh'
+      }
+    }
+    let p = prefixes[network]
+    for (const [key, value] of Object.entries(p)) {
+      if (address.startsWith(key)) return value
+    }
+  }
+
+  signBitcoinMessage(address: string, message: string, privateKey: string) {
+    let privateKeyHex = this.bitcore.PrivateKey.fromWIF(privateKey).toString()
+    let addressType = this.resolveAddressType(address)
+    let signatureHex = heat.heatAppLib.BITCOIN_BIP137_SIGN({
+      privateKeyHex: privateKeyHex,
+      network: wlt.CURRENCIES.Bitcoin.network,
+      addressType: addressType,
+      message: message,
+      extraEntropyHex: "00000000000000000000000000000000000000000000000000000000000007ba",
+    })
+    const signatureBase64 = this.$window.heatlibs.safeBuffer.Buffer.from(signatureHex, "hex").toString("base64")
+    //const signatureBase64 = Buffer.from(signatureHex, "hex").toString("base64")
+    return signatureBase64
+  }
+
+  privateKeyToWIF(hexOrWIF: string) {
+    let pk
+    try {
+      pk = new this.bitcore.PrivateKey(hexOrWIF)
+    } catch (e) {
+      pk = this.bitcore.PrivateKey.fromWIF(hexOrWIF)
+    }
+    return pk?.toWIF()
+  }
+
 }

@@ -42,7 +42,11 @@
         <md-list-item md-virtual-repeat="item in vm.markets | filter: vm.filterFunc">
           <div class="truncate-col market-col">
             <a href="#/trader/{{item.currency}}/{{item.asset}}">
-              <span ng-class="{certified:item.currencyInfo.certified}">{{item.currencyInfo.symbol}}</span>/<span ng-class="{certified:item.assetInfo.certified}">{{item.assetInfo.symbol}}</span>
+              <span ng-class="{certified:item.currencyInfo.certified, expired: item.currencyInfo.expired}">
+              {{item.currencyInfo.symbol}}</span>
+              /
+              <span ng-class="{certified:item.assetInfo.certified, expired: item.assetInfo.expired}">
+              {{item.assetInfo.symbol}}</span>
             </a>
           </div>
           <div class="truncate-col change-col">{{item.change}}</div>
@@ -124,9 +128,18 @@ class TraderMarketsComponent {
 
         /* PATCHUP IN AWAITING OF SERVER FUNCTIONALITY - also cleanup toolbar.ts */
 
-        var mymarkets = this.storage.namespace('trader').get('my-markets');
+        let traderStorage = this.storage.namespace('trader');
+        let mymarkets = traderStorage.enabled ? traderStorage.get('my-markets') : null;
         if (angular.isArray(mymarkets)) {
-          mymarkets = mymarkets.filter((m)=>!this.markets.find((_m)=>_m.currency==m.currency.id&&_m.asset==m.asset.id));
+          //remove internal duplicates
+          mymarkets = mymarkets.reduce(
+            (x, y) => x.findIndex(e => e.currency.id == y.currency.id && e.asset.id == y.asset.id) < 0 ? [...x, y] : x,
+            []
+          )
+          //remove duplicates with markets
+          mymarkets = mymarkets.filter((m) =>
+            !this.markets.find((_m) => _m.currency == m.currency.id && _m.asset == m.asset.id)
+          );
           this.storage.namespace('trader').put('my-markets', mymarkets);
           /* {currency:{id: currency,symbol: currencySymbol},
               asset:{id:asset,symbol: assetSymbol}} */

@@ -37,7 +37,7 @@ module dialogs {
       template: `
         <p>{{vm.description}}</p>
         <md-input-container flex>
-          <input type="password" ng-model="vm.v.value" autocomplete="off"></input><br>
+          <input id="pwd" type="password" ng-model="vm.v.value" autocomplete="off" aria-label="Password" auto-focus/><br>
         </md-input-container>
       `,
       locals: locals
@@ -50,7 +50,59 @@ module dialogs {
     return deferred.promise
   }
 
-  export function alert($event, title:string, description:string): angular.IPromise<any> {
+  export function simplePrompt(
+    $event,
+    title: string,
+    description: string,
+    fields: {label: string, value: string, rows?: number, required?: boolean}[],
+    actions?: {label: string, execute: Function}[]
+  ): angular.IPromise<string[]> {
+    let $q = <angular.IQService>heat.$inject.get('$q');
+    let deferred = $q.defer<string[]>();
+    let locals = {
+      description: description,
+      fields: fields,
+      actions: actions
+    }
+    dialogs.dialog({
+      id: 'prompt',
+      title: title,
+      targetEvent: $event,
+      template: `
+        <p>{{vm.description}}</p>
+        <md-list>
+          <md-list-item class="md-2-line" ng-repeat="item in vm.fields">
+            <md-input-container flex>
+              <label>{{item.label}}</label>
+              <!--<input id="1" type="text" ng-model="item.value" autocomplete="off" auto-focus/>-->
+              <input type="text" ng-if="!(item.rows > 1)" ng-model="item.value" autocomplete="off" ng-required="item.required || false" auto-focus />
+              <textarea ng-if="item.rows > 1" ng-model="item.value" rows="{{item.rows}}" wrap="soft" style="overflow: scroll;line-height: normal;max-height: 80px;"></textarea>
+            </md-input-container>
+          </md-list-item>
+        </md-list>
+        <div>
+          <md-list layout="row">
+            <md-list-item class="md-1-line" ng-repeat="item in vm.actions">
+              <md-button ng-click="item.execute()" aria-label="{{item.label}}">{{item.label}}</md-button>
+              <!--<md-input-container flex>
+                <label>{{item.label}}</label>
+                <input type="text" ng-model="item.value" autocomplete="off" ng-required="item.required || false" auto-focus//>
+              </md-input-container>-->
+            </md-list-item>
+          </md-list>
+        </div>
+      `,
+      locals: locals
+    }, {multiple: true}).then(
+      () => {
+        deferred.resolve(locals.fields.map(v => v.value))
+      },
+      deferred.reject
+    )
+    return deferred.promise
+  }
+
+  export function alert($event, title:string, description:string, extOptions?: angular.material.IDialogOptions): angular.IPromise<any> {
     let $q = <angular.IQService> heat.$inject.get('$q');
     let deferred = $q.defer<string>();
     let locals = {
@@ -64,7 +116,7 @@ module dialogs {
         <p>{{vm.description}}</p>
       `,
       locals: locals
-    }).then(
+    }, extOptions).then(
       () => {
         deferred.resolve()
       },

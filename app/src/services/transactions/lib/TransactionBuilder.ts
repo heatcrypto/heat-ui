@@ -54,7 +54,7 @@ class TransactionBuilder {
   private _recipient: string;
   private _attachment: any;
   private _transactionArgs: IHeatCreateTransactionInput;
-  private _transactionData: IHeatCreateTransactionOutput;
+  private _transactionData: IHeatCreateTransactionOutput;  //from server api
   private _transactionBytes: string;
 
   /* Client side calculated transaction full hash, set when `sign` completes */
@@ -111,22 +111,22 @@ class TransactionBuilder {
    *
    * @returns Promise
    */
-  public create(): angular.IPromise<any> {
+  public create(createTransactionApiFunc = (input:IHeatCreateTransactionInput) => this.heat.api.createTransaction(input)): angular.IPromise<any> {
     var deferred = this.$q.defer();
     try {
 
       /* could throw an error during encrypting of message */
       this._transactionArgs = this.getCreateTransactionArgs();
 
-      var p = this.heat.api.createTransaction(this._transactionArgs);
-      p.then((data: IHeatCreateTransactionOutput) => {
-        this._transactionData = data;
-        deferred.resolve();
-      }).
-      catch((error: ServerEngineError) => {
-        console.log(error);
-        deferred.reject(error);
-      });
+      createTransactionApiFunc(this._transactionArgs)
+          .then((data: IHeatCreateTransactionOutput) => {
+            this._transactionData = data;
+            deferred.resolve();
+          })
+          .catch((error: ServerEngineError) => {
+            console.log(error);
+            deferred.reject(error);
+          });
 
     } catch (e) {
       console.log(e);
@@ -139,7 +139,7 @@ class TransactionBuilder {
   public sign(): angular.IPromise<any> {
     var deferred = this.$q.defer();
     var signature = heat.crypto.signBytes(
-      this._transactionData.unsignedTransactionBytes,
+        this._transactionData.unsignedTransactionBytes,
         converters.stringToHexString(this._secretPhrase));
 
     var publicKey = heat.crypto.secretPhraseToPublicKey(this._secretPhrase);

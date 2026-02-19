@@ -58,7 +58,9 @@ class ExplorerRewardsBlocksComponent extends VirtualRepeatComponent {
               private rewardsProviderFactory: RewardsProviderFactory,
               private settings: SettingsService) {
     super($scope, $q);
+  }
 
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.rewardsProviderFactory.createProvider(),
@@ -72,8 +74,8 @@ class ExplorerRewardsBlocksComponent extends VirtualRepeatComponent {
     );
 
     var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    heat.subscriber.blockPopped({}, refresh, $scope);
-    heat.subscriber.blockPushed({}, refresh, $scope);
+    this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+    this.heat.subscriber.blockPushed({}, refresh, this.$scope);
   }
 
   onSelect(selectedBlock) {}

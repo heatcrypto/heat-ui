@@ -25,11 +25,15 @@
 @Inject('env', 'http')
 class SettingsService {
 
+  public static instance: SettingsService
+
   /* DO NOT TOUCH.
      Replaced with contents of VERSION file by release.sh */
   private VERSION = "%BUILD_OVERRIDE_VERSION%";
   private BUILD = "%BUILD_OVERRIDE_BUILD%";
+  public static BUILD_NUM = "%BUILD_OVERRIDE_NUM%";
   public static EMBEDDED_HEATLEDGER_VERSION = "%BUILD_OVERRIDE_HEATLEDGER_VERSION%";
+  public static EMBEDDED_HEATLEDGER_BUILD_DATE = "%BUILD_OVERRIDE_HEATLEDGER_BUILD_DATE%";
 
   /*public static WEBSOCKET_URL = 'settings.websocket_url';
   public static WEBSOCKET_URL_FALLBACK = 'settings.websocket_url_fallback';
@@ -58,7 +62,7 @@ class SettingsService {
   public static HEAT_WEBSOCKET_REMOTE = 'settings.heat_websocket_remote';
   public static HEAT_WEBSOCKET_LOCAL = 'settings.heat_websocket_local';
   public static HEAT_WEBSOCKET = 'settings.heat_websocket';
-  public static HEAT_WEBRTC_WEBSOCKET = 'settings.heat_webrtc_websocket';
+  public static HEAT_MESSAGING = 'settings.heat_messaging';
   public static LOG_HEAT_ERRORS = 'settings.log_heat_errors';
   public static LOG_HEAT_ALL = 'settings.log_heat_all';
   public static LOG_HEAT_NOTIFY_ALL = 'settings.log_heat_notify_all';
@@ -84,11 +88,25 @@ class SettingsService {
   public static ETH_TX_GAS_PRICE = 'settings.gas_price';
   public static ETH_TX_GAS_REQUIRED = 'settings.gas';
 
+  public static BENCHMARK_WEB_URL = 'https://benchmarkrewards.com';
+
   public static FAILOVER_DESCRIPTOR: FailoverDescriptor;
+
+  public static CRYPTO_NODES: CryptoNodesDescriptorMap[];
+  public initialized: Promise<any>;
+  failoverEnabled: boolean = true;
+
+  /**
+   * List of URLs that require API key
+   */
+  public static REQ_API_KEY_URLS: string[]
+  static apiKey: string
 
   static getFailoverDescriptor(): FailoverDescriptor {
     if (!SettingsService.FAILOVER_DESCRIPTOR)
       SettingsService.FAILOVER_DESCRIPTOR =  {
+        messaging: {host: "", port: 0, websocket: ""},
+        failoverEnabled: false,
         heightDeltaThreshold: 2,
         balancesMismatchesThreshold: 0.9,
         balancesEqualityThreshold: 0.8,
@@ -99,7 +117,36 @@ class SettingsService {
   }
 
   /**
-   * failover will choose this host by priority
+   *
+   * @param currency currency name- BTC, NXT etc
+   * @param host hostname to be searched for in app-config.json
+   * @param property name of the property of node to be updated- status, priotity
+   * @param value value of property of node to be updated
+   */
+  static changeCryptoNodeProperty(currency: string, host: string, property: string, value: any) {
+    if(!SettingsService.CRYPTO_NODES) return;
+    let node = SettingsService.CRYPTO_NODES.find((descriptor) => descriptor.currencyName === currency).nodes.find(node => node.host === host)
+    if(!node) return;
+    node[property] = value;
+  }
+
+  static getCryptoServer(currency: string, index = 0, name?: string): CryptoNodeDescriptor {
+    let nodes = SettingsService.CRYPTO_NODES
+        .find((descriptor) => descriptor.currencyName === currency)
+        .nodes.filter(node => node.status === 'ACTIVE' && (!name ? true : node.name === name) )
+    return nodes.sort((n1, n2) => n1.priority < n2.priority ? -1 : 1)[index]
+  }
+
+  static getCryptoServerEndpoint(currency: string, index = 0, name?: string): string {
+    if (!SettingsService.CRYPTO_NODES) return "";
+
+    let node = this.getCryptoServer(currency, index, name);
+    if (!node) return "";
+    return node.port ? `${node.host}:${node.port}` : `${node.host}`;
+  }
+
+  /**
+   * set high failover priority for the host
    */
   static forceServerPriority(host: string, port: string) {
     let portNum = parseInt(port);
@@ -108,8 +155,7 @@ class SettingsService {
         server.originalPriority = server.priority;
         server.priority = 0;
       } else {
-        if (server.originalPriority)
-          server.priority = server.originalPriority;
+        if (server.originalPriority) server.priority = server.originalPriority;
       }
     }
   }
@@ -127,20 +173,20 @@ class SettingsService {
     this.settings[SettingsService.BASE_FEE] = '0.1';*/
 
     /* @see http://blog.stevenlevithan.com/archives/date-time-format */
-    this.settings[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
-    this.settings[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
+    this.values[SettingsService.DATEFORMAT_DEFAULT] = 'yyyy-mm-dd HH:MM:ss';
+    this.values[SettingsService.TIMEFORMAT_DEFAULT] = 'HH:MM:ss';
 
-    this.settings[SettingsService.APPLICATION_NAME] = 'HEAT';
-    this.settings[SettingsService.APPLICATION_VERSION] = this.VERSION;
-    this.settings[SettingsService.APPLICATION_BUILD] = this.BUILD;
-    this.settings[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
-    this.settings[SettingsService.LOG_API_ERRORS] = true;
-    this.settings[SettingsService.LOG_API_ALL] = false;
-    this.settings[SettingsService.LOG_NOTIFY_ALL] = false;
+    this.values[SettingsService.APPLICATION_NAME] = 'Heatwallet';
+    this.values[SettingsService.APPLICATION_VERSION] = this.VERSION;
+    this.values[SettingsService.APPLICATION_BUILD] = this.BUILD;
+    this.values[SettingsService.SOCKET_RPC_TIMEOUT] = 30 * 1000;
+    this.values[SettingsService.SOCKET_RECONNECT_DELAY] = 2000;
+    this.values[SettingsService.LOG_API_ERRORS] = true;
+    this.values[SettingsService.LOG_API_ALL] = false;
+    this.values[SettingsService.LOG_NOTIFY_ALL] = false;
 
-    this.settings[SettingsService.DICE_WORD_FOLDER] = "dice-words";
-    this.settings[SettingsService.DICE_WORD_SUPPORTED_LANG] = {
+    this.values[SettingsService.DICE_WORD_FOLDER] = "dice-words";
+    this.values[SettingsService.DICE_WORD_SUPPORTED_LANG] = {
       "de": ["de.txt","677da2d5148342780f3cd1b09eaf489fac4ba00fe1083ba3296d41bdf088f471"],
       "en": ["en.txt","b329cea782bdd8b1de49bbb9fbdef9e8230e15eb08f0d7952613992246c38f96"],
       "fi": ["fi.txt","62323e0dc9ee39e191c98a361f20aa1417cb58da2eb5e40b9008d7973017d138"],
@@ -152,110 +198,209 @@ class SettingsService {
       "sv": ["sv.txt","87d1bf55193c95c03aa8e0d221dfaa94ccd8d6ea153b3d735eac235d592273fe"]
     };
 
-    this.settings[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
-    this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
-    this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
-    this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = "wss://heatwallet.com:7755/ws/";
-    this.settings[SettingsService.LOG_HEAT_ERRORS] = true;
-    this.settings[SettingsService.LOG_HEAT_ALL] = false;
-    this.settings[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
-    this.settings[SettingsService.LOG_HEAT_SERVER_ALL] = false;
-    this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
-    this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
-    this.settings[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
-    this.settings[SettingsService.HEAT_PORT_LOCAL] = "7733";
-    this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
-    this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '5592059897546023466';
-    this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '14439304480879065693';
+    // Uncomment to switch between backend servers..
 
-    this.settings[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
-    this.settings[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
-    this.settings[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
+    this.values[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heat1.heatwallet.com/ws/";
+    this.values[SettingsService.HEAT_HOST_REMOTE] = "https://heat1.heatwallet.com"; // mainnet
+    this.values[SettingsService.HEAT_PORT_REMOTE] = "";
 
-    this.settings[SettingsService.ETHPLORER_INFO_URL] = "https://api.ethplorer.io/getAddressInfo/:address?apiKey=lwA5173TDKj60";
-    this.settings[SettingsService.ETHERSCAN_BALANCES_URL] = "https://api.etherscan.io/api?module=account&action=balancemulti&address=:addresses&tag=latest&apikey=:apiToken";
-    this.settings[SettingsService.ETHERSCAN_TRANSACTION_URL] = "https://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
-    this.settings[SettingsService.ETHERSCAN_CONTRACT_ABI] = "https://api.etherscan.io/api?module=contract&action=getabi&address=:address&apikey=:apiToken"
+    // this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7755/ws/";
+    // this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://heatwallet.com"; // mainnet
+    // this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734";
 
-    this.settings[SettingsService.ETHERSCAN_API_TOKEN] = "S54GZXNCVGEAVCF1AQZZ8A8WDMQ9811HW9";
-    this.settings[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/OT4wn16VtAydG2y9NVna";
-    this.settings[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;
-    this.settings[SettingsService.ETH_TX_GAS_REQUIRED] = 21000;
-    this.settings[SettingsService.BIP44_WALLET] = "m/44'/60'/0'/0";
+    this.values[SettingsService.HEAT_RPC_TIMEOUT] = 30 * 1000;
+    this.values[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7755/ws/";
+    this.values[SettingsService.LOG_HEAT_ERRORS] = true;
+    this.values[SettingsService.LOG_HEAT_ALL] = false;
+    this.values[SettingsService.LOG_HEAT_NOTIFY_ALL] = true;
+    this.values[SettingsService.LOG_HEAT_SERVER_ALL] = false;
+
+    this.values[SettingsService.HEAT_HOST_LOCAL] = "http://localhost";
+    this.values[SettingsService.HEAT_PORT_LOCAL] = "7733";
+    this.values[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '2243498237075721643';
+    this.values[SettingsService.HEATLEDGER_BTC_ASSET] = '5592059897546023466';
+    this.values[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '14439304480879065693';
+
+    this.values[SettingsService.TRANSACTION_PROCESSING_VISUALIZATION] = 111; /* Use 666 for longer visuals */
+    this.values[SettingsService.CAPTCHA_SITE_KEY] = "6Le7pBITAAAAANPHWrIsoP_ZvlxWr0bSjOPrlszc";
+    this.values[SettingsService.CAPTCHA_POPUP] = "https://heatwallet.com/captcha.html";
+
+    this.values[SettingsService.ETHPLORER_INFO_URL] = "https://api.ethplorer.io/getAddressInfo/:address?apiKey=lwA5173TDKj60";
+    this.values[SettingsService.ETHERSCAN_BALANCES_URL] = "https://api.etherscan.io/api?module=account&action=balancemulti&address=:addresses&tag=latest&apikey=:apiToken";
+    this.values[SettingsService.ETHERSCAN_TRANSACTION_URL] = "https://api.etherscan.io/api?module=account&action=txlist&address=:address&startblock=0&endblock=99999999&page=:page&offset=:offset&sort=desc&apikey=:apiToken";
+    this.values[SettingsService.ETHERSCAN_CONTRACT_ABI] = "https://api.etherscan.io/api?module=contract&action=getabi&address=:address&apikey=:apiToken"
+
+    this.values[SettingsService.ETHERSCAN_API_TOKEN] = "S54GZXNCVGEAVCF1AQZZ8A8WDMQ9811HW9";
+    this.values[SettingsService.WEB3PROVIDER] = "https://mainnet.infura.io/OT4wn16VtAydG2y9NVna";
+    this.values[SettingsService.ETH_TX_GAS_PRICE] = 20000000000;
+    this.values[SettingsService.ETH_TX_GAS_REQUIRED] = 21000;
+    this.values[SettingsService.BIP44_WALLET] = "m/44'/60'/0'/0";
 
     /* Override with test endpoints */
     if (heat.isTestnet) {
-      this.settings[SettingsService.HEAT_HOST_REMOTE] = "https://alpha.heatledger.com"; // testnet
-      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
-      this.settings[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
-      this.settings[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
-      this.settings[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
-      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
-      this.settings[SettingsService.HEAT_WEBRTC_WEBSOCKET] = "wss://alpha.heatledger.com:7755/ws/";
+      this.values[SettingsService.HEAT_HOST_REMOTE] = "https://alpha.heatledger.com"; // testnet
+      this.values[SettingsService.HEAT_PORT_REMOTE] = "7734"; // testnet
+      this.values[SettingsService.HEATLEDGER_CERTIFIER_ACCOUNT] = '4729421738299387565';
+      this.values[SettingsService.HEATLEDGER_BTC_ASSET] = '2801534132504071984';
+      this.values[SettingsService.HEATLEDGER_NAME_ASSIGNER] = '0000000';
+      this.values[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://alpha.heatledger.com:7755/ws/";
     }
 
     /* betanet overrides */
     if (heat.isBetanet) {
-      this.settings[SettingsService.HEAT_PORT_REMOTE] = "7762";
-      this.settings[SettingsService.HEAT_PORT_LOCAL] = "7761";
-      this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7763/ws/";
-      this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7763/ws/";
+      this.values[SettingsService.HEAT_PORT_REMOTE] = "7762";
+      this.values[SettingsService.HEAT_PORT_LOCAL] = "7761";
+      this.values[SettingsService.HEAT_WEBSOCKET_REMOTE] = "wss://heatwallet.com:7763/ws/";
+      this.values[SettingsService.HEAT_WEBSOCKET_LOCAL] = "ws://localhost:7763/ws/";
     }
 
-    this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_REMOTE];
-    this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_REMOTE];
-    this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_REMOTE];
+    this.values[SettingsService.HEAT_HOST] = this.values[SettingsService.HEAT_HOST_REMOTE];
+    this.values[SettingsService.HEAT_PORT] = this.values[SettingsService.HEAT_PORT_REMOTE];
+    this.values[SettingsService.HEAT_WEBSOCKET] = this.values[SettingsService.HEAT_WEBSOCKET_REMOTE];
 
-    // if (true) {
-    //   this.settings[SettingsService.HEAT_HOST] = this.settings[SettingsService.HEAT_HOST_LOCAL];
-    //   this.settings[SettingsService.HEAT_PORT] = this.settings[SettingsService.HEAT_PORT_LOCAL];
-    //   this.settings[SettingsService.HEAT_WEBSOCKET] = this.settings[SettingsService.HEAT_WEBSOCKET_LOCAL];
-    // }
+    let usingServerValue = sessionStorage.getItem(heat.serverDescriptionKey)
+    if (usingServerValue) {
+      try {
+        let usingServer: ServerDescriptor = JSON.parse(usingServerValue)
+        this.values[SettingsService.HEAT_HOST] = usingServer.host
+        this.values[SettingsService.HEAT_PORT] = usingServer.port
+        this.values[SettingsService.HEAT_WEBSOCKET] = usingServer.websocket
+      } catch (e) {
+        console.error("error on process sessionStorage value by key " + heat.serverDescriptionKey, e)
+      }
+    }
+
+    this.generateApiKeyForBrowser()
+
+    SettingsService.instance = this
+
+    // this.initialized.then(value => {
+    //   this.setHost("local", false, true)
+    // })
   }
 
-  settings={};
+  values = {}
+
+  public setConnectionWay(connectionWay: {way: "local" | "remote", failoverEnabled: boolean, sameMessagingHost: boolean}) {
+    this.failoverEnabled = connectionWay.failoverEnabled;
+    this.values[SettingsService.HEAT_HOST] =
+      this.values[connectionWay.way == "local" ? SettingsService.HEAT_HOST_LOCAL : SettingsService.HEAT_HOST_REMOTE]
+    this.values[SettingsService.HEAT_PORT] =
+      this.values[connectionWay.way == "local" ? SettingsService.HEAT_PORT_LOCAL : SettingsService.HEAT_PORT_REMOTE]
+    this.values[SettingsService.HEAT_WEBSOCKET] =
+      this.values[connectionWay.way == "local" ? SettingsService.HEAT_WEBSOCKET_LOCAL : SettingsService.HEAT_WEBSOCKET_REMOTE]
+    this.values[SettingsService.HEAT_MESSAGING] = connectionWay.sameMessagingHost
+      ? {
+        host: this.values[SettingsService.HEAT_HOST],
+        port: this.values[SettingsService.HEAT_PORT],
+        websocket: this.values[SettingsService.HEAT_WEBSOCKET]
+      }
+      : SettingsService.FAILOVER_DESCRIPTOR.messaging
+  }
 
   public get(id:string) {
-    return this.settings[id];
+    return this.values[id];
   }
 
   public put(id:string,value:string) {
-    return this.settings[id]=value;
+    return this.values[id]=value;
   }
 
-  public setCurrentServer(server) {
-    this.settings[SettingsService.HEAT_HOST] = server.host;
-    this.settings[SettingsService.HEAT_PORT] = server.port;
-    this.settings[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+  public setCurrentServer(server: ServerDescriptor) {
+    this.values[SettingsService.HEAT_HOST] = server.host;
+    this.values[SettingsService.HEAT_PORT] = server.port;
+    this.values[SettingsService.HEAT_WEBSOCKET] = server.websocket;
+  }
+
+  public getCurrentServer(): ServerDescriptor {
+    return {
+      host: this.values[SettingsService.HEAT_HOST],
+      port: this.values[SettingsService.HEAT_PORT],
+      websocket: this.values[SettingsService.HEAT_WEBSOCKET]
+    }
+  }
+
+  getHeatwalletConfigFilePath() {
+    let fileName = 'app-config.json'
+    if (this.env.isBrowser) {
+      return fileName
+    }
+    if (this.env.isNodeEnv) {
+      let path = require('path')
+      return path.join(__dirname, '..', '..', fileName)
+    }
   }
 
   public applyFailoverConfig() {
-    let resolveFailoverDescriptor: Function = function(json: any) {
-      if (heat.isTestnet)
-        SettingsService.FAILOVER_DESCRIPTOR = json.testnet;
-      else if (heat.isBetanet)
-        SettingsService.FAILOVER_DESCRIPTOR = json.betanet;
-      else
-        SettingsService.FAILOVER_DESCRIPTOR = json.mainnet;
+    let resolveFailoverDescriptor = (json: any) => {
+      if (heat.isTestnet) {
+        SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.testnet;
+      } else if (heat.isBetanet) {
+        SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.betanet;
+      } else {
+        SettingsService.FAILOVER_DESCRIPTOR = json.heatNodes.mainnet;
+      }
+      this.values[SettingsService.HEAT_MESSAGING] = SettingsService.FAILOVER_DESCRIPTOR.messaging;
+      SettingsService.CRYPTO_NODES = json.cryptoNodes;
+      this.failoverEnabled = SettingsService.FAILOVER_DESCRIPTOR.failoverEnabled || true;
     };
-    if (this.env.type == EnvType.BROWSER) {
-      this.http.get('failover-config.json').then((json: any) => {
-        resolveFailoverDescriptor(json);
-      }, (reason) => {
-        console.log("Cannot load 'failover-config.json': " + reason ? reason : "");
-      });
-    } else if (this.env.type == EnvType.NODEJS) {
-      // @ts-ignore
-      const fs = require('fs');
-      fs.readFile('failover-config.json', (err, data) => {
-        if (err) {
-          console.log("Cannot load 'failover-config.json': " + err);
-          throw err;
-        }
-        let json = JSON.parse(data);
-        resolveFailoverDescriptor(json);
-      });
+    this.initialized = new Promise<void>((resolve, reject) => {
+      if (this.env.isBrowser) {
+        this.http.get('app-config.json').then((json: any) => {
+          resolveFailoverDescriptor(json);
+          resolve();
+        }, (reason) => {
+          let message = "Cannot load 'app-config.json': " + reason ? reason : "";
+          console.log(message);
+          reject(message);
+        });
+      } else if (this.env.isNodeEnv) {
+        // @ts-ignore
+        const fs = require('fs');
+        fs.readFile(this.getHeatwalletConfigFilePath(), (err, data) => {
+          if (err) {
+            let message = `Cannot load '${this.getHeatwalletConfigFilePath()}'. Error: ${err}`;
+            console.log(message);
+            reject(message);
+            throw err;
+          }
+          let json = JSON.parse(data);
+          resolveFailoverDescriptor(json);
+          resolve();
+        });
+      }
+    });
+  }
+
+  generateApiKeyForBrowser() {
+    if (!SettingsService.REQ_API_KEY_URLS) {
+      //fill list of service urls that required api key added to url
+      this.initialized.then(value => {
+        let ar: CryptoNodeDescriptor[] = []
+        SettingsService.CRYPTO_NODES.forEach(v => ar.push(...v.nodes))
+        SettingsService.REQ_API_KEY_URLS = ar.filter(v => v.status == 'ACTIVE')
+            .map(v => v.host)
+            .filter(v => v.indexOf("heatwallet.com") > -1)
+            || []
+        return value
+      })
     }
+
+    //generate api key
+    const now = new Date()
+    const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 0))
+    // @ts-ignore
+    const diff = now - startOfYear
+    const oneDay = 1000 * 60 * 60 * 24
+    const dayOfYear = Math.floor(diff / oneDay)
+    const hashInput = `${now.getUTCFullYear()}-${dayOfYear}`
+
+    const encoder = new TextEncoder()
+    const data = encoder.encode(hashInput)
+    return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      SettingsService.apiKey = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    })
   }
 
 }
@@ -272,9 +417,30 @@ interface ServerDescriptor {
 }
 
 interface FailoverDescriptor {
+  failoverEnabled: boolean;
   heightDeltaThreshold: number;  // e.g.  2 means 2 blocks ahead
   balancesMismatchesThreshold: number;  // 0 - 1
   balancesEqualityThreshold: number;  // 0 - 1
   connectedPeersThreshold: number;  // 0 - 1
   knownServers: ServerDescriptor[];
+  messaging: { //central messaging/signaling host
+    host: string;
+    port: number;
+    websocket: string;
+  }
+  signalingUrl?: string;  //central WebRTC signaling server, regardless the choosed server
+}
+
+interface CryptoNodesDescriptorMap {
+  currencyName: string;
+  nodes: CryptoNodeDescriptor[];
+}
+
+interface CryptoNodeDescriptor {
+  host: string;
+  port?: number;
+  priority: number;
+  status?: string;
+  timeout?: number;
+  name?: string;
 }

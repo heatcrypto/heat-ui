@@ -27,7 +27,13 @@ class HeatAPI implements IHeatAPI {
     standard: utils.convertToQNT('0.01'),
     assetIssue: utils.convertToQNT('500.00'),
     assetIssueMore: utils.convertToQNT('0.01'),
+    whitelistAssetAccount: utils.convertToQNT('100.00'),
+    assetAssignFee: utils.convertToQNT('0.1'),
+    assetAssignExpiration: utils.convertToQNT('0.01'),
     whitelistMarket: utils.convertToQNT('10.00'),
+    registerInternetAddressFee: utils.convertToQNT('100.00'),
+    supervisoryAccountFee: utils.convertToQNT('0.01'),
+    accountAssetLimitFee: utils.convertToQNT('0.01')
   };
 
   constructor(private heat: HeatService,
@@ -45,7 +51,7 @@ class HeatAPI implements IHeatAPI {
   getServerHealth(host?: string, port?: number):angular.IPromise<IHeatServerHealth> {
     if (!host)
       return this.heat.get('/tools/telemetry/health');
-    return this.heat.getRaw(host, port, '/tools/telemetry/health');
+    return this.heat.getRaw(host, port, '/tools/telemetry/health', null, false);
   }
 
   getBlocks(from: number, to: number):angular.IPromise<Array<IHeatBlockCondensed>> {
@@ -68,15 +74,18 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/blockchain/blocks/account/count/${account}`, "count");
   }
 
-  getPublicKey(account: string): angular.IPromise<string> {
+  getPublicKey(account: string, ignoreErrorResponse?: boolean): angular.IPromise<string> {
     let deferred = this.$q.defer<string>();
-    this.heat.get(`/account/publickey/${account}`,"value").then((publicKey)=> {
-      var test = heat.crypto.getAccountIdFromPublicKey(publicKey);
+    this.heat.get(`/account/publickey/${account}`, "value", ignoreErrorResponse).then((publicKey)=> {
+      if (!publicKey) {
+        deferred.resolve(null)
+        return
+      }
+      let test = heat.crypto.getAccountIdFromPublicKey(publicKey);
       if (test != account) {
         console.log("Public key returned from server does not match account");
         deferred.reject();
-      }
-      else {
+      } else {
         deferred.resolve(publicKey);
       }
     }, deferred.reject);
@@ -264,6 +273,10 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/messages/contact/${accountA}/${accountB}/${from}/${to}`);
   }
 
+  getMessagingContactMessagesByTimestampRange(accountA: string, accountB: string, fromTimestamp: number, toTimestamp: number): angular.IPromise<Array<IHeatMessage>> {
+    return this.heat.get(`/messages/contacttimestamprange/${accountA}/${accountB}/${fromTimestamp}/${toTimestamp}`);
+  }
+
   getMessagingContacts(account: string, from: number, to: number): angular.IPromise<Array<IHeatMessageContact>> {
     return this.heat.get(`/messages/latest/${account}/${from}/${to}`);
   }
@@ -284,8 +297,15 @@ class HeatAPI implements IHeatAPI {
     return this.heat.post('/mining/stop?api_key=secret', {secretPhrase:secretPhrase}, false, null, true);
   }
 
-  getAccountByNumericId(numericId: string): angular.IPromise<IHeatAccount> {
-    return this.heat.get(`/account/find/${numericId}`);
+  getAccountByNumericId(numericId: string, ignoreErrorResponse?: boolean): angular.IPromise<IHeatAccount> {
+    return this.heat.get(`/account/find/${numericId}`, null, ignoreErrorResponse);
+  }
+
+  /**
+   * Find account by name (public and private)
+   */
+  findAccountByName(name: string, ignoreErrorResponse?: boolean): angular.IPromise<IHeatAccount> {
+    return this.heat.get(`/account/find/name/${name}`, null, ignoreErrorResponse);
   }
 
   getTransaction(transaction: string): angular.IPromise<IHeatTransaction> {
@@ -328,8 +348,8 @@ class HeatAPI implements IHeatAPI {
     return this.heat.get(`/search/accounts/count/${query}`, "count");
   }
 
-  searchPublicNames(query: string, from: number, to: number): angular.IPromise<Array<IHeatAccount>> {
-    return this.heat.get(`/account/search/0/${query}/${from}/${to}`);
+  searchPublicNames(query: string, from: number, to: number, ignoreErrorResponse?: boolean): angular.IPromise<Array<IHeatAccount>> {
+    return this.heat.get(`/account/search/0/${query}/${from}/${to}`, null, ignoreErrorResponse);
   }
 
   rewardsAccount(account: string): angular.IPromise<IHeatRewardsInfo> {
@@ -343,4 +363,68 @@ class HeatAPI implements IHeatAPI {
   rewardsListCount(): angular.IPromise<number> {
     return this.heat.get('/mining/rewards/list/count','count');
   }
+
+  getKeystoreEntryCountByAccount(account: string): angular.IPromise<number> {
+    return this.heat.get(`/keystore/count/${account}`, 'count');
+  }
+
+  getKeystoreAccountEntry(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction> {
+    return this.heat.get(`/keystore/get/${account}/${key}`);
+  }
+
+  getKeystoreAccountEntryExt(account: string, keys: string): angular.IPromise<{entries: IHEATKeystoreTransaction[]}> {
+    return this.heat.get(`/keystore/getExt/${account}/${keys}`);
+  }
+
+  listKeystoreAccountEntries(account: string, from: string, to: string): angular.IPromise<Array<IHEATKeystoreTransaction>> {
+    return this.heat.get(`/keystore/list/${account}/${from}/${to}`);
+  }
+
+  saveKeystoreEntry(key: string, value: string, secretPhrase: string): angular.IPromise<IHeatCreateTransactionOutput> {
+    return this.heat.post(`/keystore/put`, {key, value, fee: 1000000, deadline: 1440, secretPhrase});
+  }
+
+  listMasternodes(): angular.IPromise<Array<IHEATMasternode>> {
+    return this.heat.get(`/account/internetaddress/list`);
+  }
+
+  baseTimestamp(): angular.IPromise<string> {
+    return this.heat.get('/blockchain/basetimestamp');
+  }
+
+  /**
+   * Send file to the server
+   * @param fileName to use on the server, it can be different to name of the original file on client
+   * @param file file to send
+   */
+  uploadFile(fileName: string, arrayBuffer): angular.IPromise<any> {
+    return this.heat.post(
+      '/messaging/file/upload',
+      {
+        fileName: fileName,
+        arrayBuffer: arrayBuffer
+      },
+      undefined,
+      undefined,
+      undefined,
+      true,
+      this.heat.settings.get(SettingsService.HEAT_MESSAGING)
+    )
+  }
+
+  /**
+   * Download file from the server
+   * @param fileName
+   */
+  downloadFile(fileName: string): angular.IPromise<ArrayBuffer> {
+    //overwrite host and port because messaging uses the central host
+    return this.heat.get(
+      `/messaging/file/download/${fileName}`,
+      undefined,
+      undefined,
+      true,
+      this.heat.settings.get(SettingsService.HEAT_MESSAGING)
+    )
+  }
+
 }

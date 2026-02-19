@@ -1,0 +1,188 @@
+@Service('ltcCryptoService')
+@Inject('$window')
+class LTCCryptoService {
+
+  static readonly BIP44 = "m/44'/2'/0'/0/"
+  private litecore
+  private bip39
+
+  constructor($window: angular.IWindowService) {
+    this.litecore = $window.heatlibs.litecore
+    this.bip39 = $window.heatlibs.bip39
+  }
+
+  /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: any, reset?: boolean): Promise<WalletAddresses> {
+    return new Promise((resolve, reject) => {
+      if (walletAddresses) {
+        resolve(walletAddresses)
+      } else if (this.bip39.validateMnemonic(seedOrPrivateKey)) {
+        let walletType = this.getNWalletsFromMnemonics(seedOrPrivateKey, 20)
+        resolve(walletType)
+      } else if (this.litecore.PrivateKey.isValid(seedOrPrivateKey)) {
+        try {
+          let privateKey = this.litecore.PrivateKey.fromWIF(seedOrPrivateKey)
+          let address = privateKey.toAddress();
+          let walletType = { addresses: [] }
+          walletType.addresses[0] = { address: address.toString(), privateKey: privateKey.toString() }
+          resolve(walletType)
+        } catch (e) {
+          // resolve empty promise if private key is not of this network so that next .then executes
+          resolve(null)
+        }
+      }
+      else {
+        reject()
+      }
+    })
+  }
+
+  getNWalletsFromMnemonics(mnemonic: string, keyCount: number) {
+    let walletType = { addresses: [] }
+    for (let i = 0; i < keyCount; i++) {
+      let wallet = this.getLitecoinWallet(mnemonic, i)
+      walletType.addresses[i] = { address: wallet.address, privateKey: wallet.privateKey, index: i, balance: "0", inUse: false }
+    }
+    return walletType
+  }
+
+  refreshBalances(wallet: WalletAddresses, ltcCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
+    /* list all addresses in bip44 order */
+    wallet.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
+    let addresses = wallet.addresses.filter(a => !a.isDeleted).map(a => a.address)
+    let emptyAddressCounter = 0
+    let ltcBlockExplorerService: LtcBlockExplorerService = heat.$inject.get('ltcBlockExplorerService')
+
+    function processNext() {
+      return new Promise((resolve, reject) => {
+
+        /* get the first element from the list */
+        let address = addresses.shift()
+        if (!address) {
+          resolve(false)
+          return
+        }
+
+        ltcCurrencyAddressLoading.address = address
+
+        ltcBlockExplorerService.getAddressInfo(address, true).then(info => {
+
+          let walletAddress = wallet.addresses.find(x => x.address == address)
+          if (!walletAddress) {
+            console.error(`Address ${address} is not found among addresses`, wallet.addresses)
+            resolve(false)
+            return
+          }
+
+          emptyAddressCounter++
+
+          walletAddress.inUse = info.txs != 0
+          walletAddress.balance = parseFloat(info.balance) / 100000000 + ""
+
+          if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
+
+          // if there are 2 zero addresses in a row, then we do not load the addresses further
+          if (emptyAddressCounter >= 2) {
+            resolve(false)
+            return
+          }
+          resolve(true)
+        }, (reason) => {
+          console.error(reason)
+          resolve(false)
+        })
+      })
+    }
+
+    let recurseToNext = function recurseToNext(resolve) {
+      processNext().then(
+        hasMore => {
+          if (hasMore) {
+            setTimeout(function () {
+              recurseToNext(resolve)
+            }, 100)
+          }
+          else {
+            resolve()
+          }
+        }
+      )
+    }
+
+    return new Promise((resolve, reject) => {
+      ltcBlockExplorerService.isSyncing().then(() => {recurseToNext(resolve)}).catch(reject)
+    })
+  }
+
+  signTransaction(txObject: any, uncheckedSerialize: boolean = false): Promise<string> {
+    let ltcBlockExplorerService = <LtcBlockExplorerService>heat.$inject.get('ltcBlockExplorerService')
+    return new Promise((resolve, reject) => {
+      ltcBlockExplorerService.getUnspentUtxos(txObject.sender).then(utxos => {
+        if (utxos.length === 0) {
+          reject(new Error('No utxo found'));
+        }
+        ltcBlockExplorerService.getTxInfo(utxos[0].txid).then(txData => {
+          let script = ""
+          for (let i = 0; i < txData.vout.length; i += 1) {
+            if (txData.vout[i].addresses[0] === txObject.sender) {
+              script = txData.vout[i].hex
+              break
+            }
+          }
+
+          let unspent = [];
+          let availableSatoshis = 0;
+          for (let i = 0; i < utxos.length; i += 1) {
+            let utxo = {
+              txid: utxos[i].txid,
+              vout: utxos[i].vout,
+              satoshis: parseInt(utxos[i].value),
+              script
+            }
+            unspent.push(utxo)
+            availableSatoshis += parseInt(utxos[i].value);
+            if (availableSatoshis >= txObject.value + txObject.fee) break;
+          }
+
+          if (availableSatoshis < txObject.value + txObject.fee) {
+            reject(new Error('Insufficient balance to broadcast transaction'))
+          }
+
+          try {
+            let tx = this.litecore.Transaction();
+            tx.from(unspent)
+            tx.to(txObject.recipient, txObject.value)
+            tx.change(txObject.sender)
+            tx.fee(txObject.fee)
+            tx.sign(txObject.privateKey)
+            let rawTx = uncheckedSerialize ? tx.uncheckedSerialize() : tx.serialize()
+            resolve(rawTx)
+          } catch (err) {
+            reject(err)
+          }
+        },
+        err => {
+          reject(err)
+        })
+      },
+      err => {
+        reject(err)
+      })
+    })
+  }
+
+  getLitecoinWallet(mnemonic: string, index: Number = 0) {
+    let seedHex = this.bip39.mnemonicToSeedHex(mnemonic)
+    let HDPrivateKey = this.litecore.HDPrivateKey;
+    let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, 'mainnet')
+
+    let derived = hdPrivateKey.derive(LTCCryptoService.BIP44 + index);
+    let address = derived.privateKey.toAddress();
+    let privateKey = derived.privateKey.toWIF();
+    return {
+      address: address.toString(),
+      privateKey: privateKey.toString()
+    }
+  }
+
+}

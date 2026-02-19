@@ -34,7 +34,9 @@
             </md-button>
           </span>
           <span class="market-title-text">
-            <span ng-class="{certified:vm.currencyInfo.certified}">{{vm.currencyInfo.symbol}}</span>/<span ng-class="{certified:vm.assetInfo.certified}">{{vm.assetInfo.symbol}}</span>
+            <span ng-class="{certified:vm.currencyInfo.certified, expired: vm.currencyInfo.expired}">{{vm.currencyInfo.symbol}}</span>
+            /
+            <span ng-class="{certified:vm.assetInfo.certified, expired: vm.assetInfo.expired}">{{vm.assetInfo.symbol}}</span>
           </span>
         </div>
       </div>

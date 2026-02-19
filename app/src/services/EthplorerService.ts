@@ -21,120 +21,11 @@
  * SOFTWARE.
  * */
 
-interface EthplorerTokenInfo {
-  address: string;
-  totalSupply: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  // token price (false, if not available)
-  price: {
-    rate: string;
-    currency: string;
-    diff: number;
-    ts: number;
-  };
-  owner: string;
-  countOps: string;
-  totalIn: number;
-  totalOut: number;
-  holdersCount: number;
-  issuancesCount: number;
-}
-
-interface EthplorerAddressInfo {
-  address: string;
-  ETH: {
-    balance: string;
-    totalIn: string;
-    totalOut: string;
-  };
-  // exists if specified address is a contract
-  contractInfo: {
-    creatorAddress: string;
-    transactionHash: string;
-    timestamp: number;
-  };
-  // exists if specified address is a token contract address (same format as token info),
-  tokenInfo: EthplorerTokenInfo;
-  // exists if specified address has any token balances
-  tokens: Array<{
-    tokenInfo: EthplorerTokenInfo;
-    // token balance (as is, not reduced to a floating point value)
-    balance: string;
-    totalIn: string;
-    totalOut: string;
-  }>;
-  // Total count of incoming and outcoming transactions (including creation one)
-  countTxs: number;
-}
-
-/* These are all address transactions including 0x txns  */
-interface EthplorerAddressTransaction {
-  // operation timestamp
-  timestamp: number
-  // source address (if two addresses involved)
-  from: string
-  // destination address (if two addresses involved)
-  to: string
-  // transaction hash
-  hash: string
-  // ETH value (as is, not reduced to a floating point value)
-  value: string
-  // input data
-  input: string
-  // true if transactions was completed, false if failed
-  success: boolean
-}
-
-/* These are all address operations, these contain parsed input data turned into operations */
-interface EthplorerAddressHistoryOperation {
-  // operation timestamp
-  timestamp: number
-  transactionHash: string;
-  // token data (same format as token info)
-  tokenInfo: EthplorerTokenInfo
-  // operation type (transfer, approve, issuance, mint, burn, etc)
-  type: string
-  // operation target address (if one)
-  address: string
-  // source address (if two addresses involved),
-  from: string
-  // destination address (if two addresses involved),
-  to: string
-  // operation value (as is, not reduced to a floating point value),
-  value: string
-}
-
-interface EthplorerTxInfo {
-  // transaction hash
-  hash: string
-  // transaction block time
-  timestamp: number
-  // transaction block number
-  blockNumber: number
-  // number of confirmations
-  confirmations: number
-  // true if there were no errors during tx execution
-  success: boolean
-  // source address
-  from: string
-  // destination address
-  to: string
-  // ETH send value
-  value: string
-  // transaction input data (hex)
-  input: string
-  // gas limit set to this transaction
-  gasLimit: string
-  // gas used for this transaction
-  gasUsed: string
-}
-
 class EthplorerTransactionPaginator {
   private $q: angular.IQService
   private pool: Array<EthplorerAddressTransaction> = []
   private endReached = false
+  private newTxsAdded = 0
 
   constructor(private address: string, private ethplorer: EthplorerService) {
     this.$q = this.ethplorer.$q
@@ -146,18 +37,28 @@ class EthplorerTransactionPaginator {
     let deferred = this.$q.defer<boolean>();
     if (this.endReached) {
       deferred.resolve(false)
-    }
-    else {
+    } else {
       // the last timestamp is where we start
-      let timestamp = this.pool.length ? this.pool[this.pool.length-1].timestamp : 0
-      this.ethplorer.getAddressTransactions(this.address, timestamp).then(
+      let timestamp = this.pool.length ? this.pool[this.pool.length - 1].timestamp : 0
+      // it is mystery that if timestamp less ~1730000000 the response is Invalid timestamp
+      timestamp = timestamp == 0 ? 0 : Math.max(timestamp, 1730000000)
+      let specificParams
+      if (this.newTxsAdded > 0) {
+        timestamp = 0
+        specificParams = {limit: 2}
+      }
+      this.ethplorer.getAddressTransactions(this.address, timestamp, null, specificParams).then(
         transactions => {
+          let len = this.pool.length
           /* To prevent overlap check if transaction exists before placing in pool */
           transactions.forEach(txn => {
             if (!this.pool.find(tx => tx.hash == txn.hash)) {
               this.pool.push(txn)
             }
           })
+          if (len != this.pool.length) {
+            this.pool.sort((a, b) => b.timestamp - a.timestamp)
+          }
           this.endReached = transactions.length != 50
           deferred.resolve(!this.endReached)
         },
@@ -179,30 +80,23 @@ class EthplorerTransactionPaginator {
     /* We have enough entries in our pool */
     if (this.pool.length > minLength) {
       deferred.resolve(this.pool.length)
-    }
-    else {
+    } else {
       /* Loads and stores in pool the next batch of 50 transactions */
       this.getNextBatch().then(hasMore => {
-        if (this.pool.length-1 > minLength || !hasMore) {
+        if (this.pool.length - 1 > minLength || !hasMore) {
           deferred.resolve(this.pool.length)
-        }
-        else {
-
+        } else {
           // we simply place the next batch to load in here - when supporting unlimited
           // number of transactions this has to updated of course.
-
           this.getNextBatch().then(hasMore => {
-            if (this.pool.length-1 > minLength || !hasMore) {
+            if (this.pool.length - 1 > minLength || !hasMore) {
               deferred.resolve(this.pool.length)
-            }
-            else {
-
+            } else {
               // we simply place the next batch to load in here - when supporting unlimited
               // number of transactions this has to updated of course.
               this.getNextBatch().then(hasMore => {
                 deferred.resolve(this.pool.length)
               }, deferred.reject)
-
             }
           }, deferred.reject)
         }
@@ -214,8 +108,11 @@ class EthplorerTransactionPaginator {
   /* Transaction count is hardcoded to return max 150 results */
   getCount(): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
-    this.ethplorer.getEthplorerTransactionCount(this.address).then(
+    this.ethplorer.getTransactionCount(this.address).then(
       count => {
+        let delta = count - this.pool.length
+        this.newTxsAdded = this.endReached ? delta : 0
+        this.endReached = delta <= 0
         deferred.resolve(Math.min(count, 1000))
       }, deferred.reject
     )
@@ -237,19 +134,25 @@ class EthplorerTransactionPaginator {
 
 @Service('ethplorer')
 @Inject('$q', 'http', 'settings','web3')
-class EthplorerService {
+class EthplorerService implements IEthereumAPIList{
 
-  public tokenInfoCache: {[key:string]: EthplorerTokenInfo} = {}
-  private cachedGetCachedAddressInfo = null
-
+  private providerName = 'Ethplorer'
+  public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
+  private cachedGetCachedAddressInfo: { [address: string]: any } = {}
+  private apiKey: string;
+  private static endPoint: string;
   constructor(public $q: angular.IQService,
               private http: HttpService,
               private settingsService: SettingsService,
               private web3: Web3Service) {
+
+    EthplorerService.endPoint = 'https://api.ethplorer.io'
+    this.apiKey = 'apiKey=lwA5173TDKj60'
+
     http.get('https://raw.githubusercontent.com/dmdeklerk/ethereum-lists/master/dist/tokens/eth/tokens-eth.min.json').then(response => {
       let array = angular.isString(response) ? JSON.parse(response) : response
       array.forEach(x => {
-        this.tokenInfoCache[x.address] = <any> {
+        this.tokenInfoCache[x.address] = <any>{
           address: x.address,
           totalSupply: 0,
           name: x.name,
@@ -260,22 +163,13 @@ class EthplorerService {
     })
   }
 
+  public getProviderName() {return this.providerName;}
+
   createPaginator(address: string) : EthplorerTransactionPaginator {
     return new EthplorerTransactionPaginator(address, this);
   }
 
-  public getErc20Tokens(address: string): angular.IPromise<any> {
-    let deferred = this.$q.defer<any>();
-    this.getCachedAddressInfo(address).then(response => {
-      deferred.resolve(response)
-    }, err => {
-      console.log(err)
-      deferred.resolve([])
-    })
-    return deferred.promise
-  }
-
-  public getEthplorerTransactionCount(address: string): angular.IPromise<number> {
+  public getTransactionCount(address: string): angular.IPromise<number> {
     let deferred = this.$q.defer<number>();
     this.getCachedAddressInfo(address).then(info => {
       deferred.resolve(info.countTxs)
@@ -291,27 +185,35 @@ class EthplorerService {
     return deferred.promise;
   }
 
-  /* Calls ethplorer getAddressInfo and caches the result for 10 seconds,
+  /* Calls ethplorer getAddressInfo and caches the result for 60 seconds,
      this is needed since both the virtual repeat and the erc20 token list call this method
      on page load and refresh */
   private getCachedAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
-    if (this.cachedGetCachedAddressInfo)
-      return this.cachedGetCachedAddressInfo
+    let v = this.cachedGetCachedAddressInfo[address]
+    if (v) return v
 
     let deferred = this.$q.defer();
-    this.cachedGetCachedAddressInfo = deferred.promise
-    this.getAddressInfo(address).then(deferred.resolve, deferred.reject)
-    this.cachedGetCachedAddressInfo.finally(() => {
+    this.cachedGetCachedAddressInfo[address] = deferred.promise
+    this.getAddressInfo(address, false).then(deferred.resolve, deferred.reject)
+    this.cachedGetCachedAddressInfo[address].finally(() => {
       setTimeout(()=> {
-        this.cachedGetCachedAddressInfo = null
-      }, 5*1000)
+        this.cachedGetCachedAddressInfo[address] = null
+      }, 60 * 1000)
     })
-    return this.cachedGetCachedAddressInfo
+    return this.cachedGetCachedAddressInfo[address]
   }
 
-  public getAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
+  public getAddressInfoUrl(address: string): string {
+    return `${EthplorerService.endPoint}/getAddressInfo/${address}?${this.apiKey}&showTxsCount=true`
+  }
+
+  public getAddressInfo(address: string, useCache = false): angular.IPromise<EthplorerAddressInfo> {
+    if (useCache) {
+      return this.getCachedAddressInfo(address)
+    }
+
     let deferred = this.$q.defer<EthplorerAddressInfo>();
-    let url = `https://api.ethplorer.io/getAddressInfo/${address}?apiKey=lwA5173TDKj60`
+    let url = this.getAddressInfoUrl(address)
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -332,12 +234,11 @@ class EthplorerService {
                 }
               })
             }
-
-            deferred.resolve(info);
+            wlt.saveCurrencyBalance(address, "ETH", info.ETH.balance).then(() => deferred.resolve(info))
           }
-        }, () => {
-          console.log(`HTTP reject for ${url}`)
-          deferred.reject(null);
+        }, (reason) => {
+          console.log(`HTTP reject for ${url}: ${reason}`)
+          deferred.reject()
         });
     return deferred.promise
   }
@@ -351,10 +252,10 @@ class EthplorerService {
    *
    *    var ts = Math.round((new Date()).getTime() / 1000);
    */
-  public getAddressTransactions(address: string, timestamp: number, showZeroValues?: number): angular.IPromise<Array<EthplorerAddressTransaction>> {
+  public getAddressTransactions(address: string, timestamp?: number, showZeroValues?: number, specificParams?: any): angular.IPromise<Array<EthplorerAddressTransaction>> {
     let deferred = this.$q.defer<Array<EthplorerAddressTransaction>>();
     showZeroValues = showZeroValues || 1
-    let url = `https://api.ethplorer.io/getAddressTransactions/${address}?apiKey=lwA5173TDKj60&limit=50&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
+    let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?${this.apiKey}&limit=${specificParams?.limit || 50}&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -365,48 +266,29 @@ class EthplorerService {
           else {
             deferred.resolve(parsed);
           }
-        }, () => {
-          console.log(`HTTP reject for ${url}`)
-          deferred.resolve([]);
-        });
+        }, (reason) => {
+          //console.log(`HTTP reject for ${url}`)
+          deferred.reject(reason);
+        }, deferred.reject);
     return deferred.promise
   }
 
-  /**
-   * [[
-   *    THIS IS NOT USED AT THIS TIME, WE USE RAW TRANSACTIONS INSTEAD WHICH WE PARSE.
-   *    TOKEN NAMES, SYMBOLS AND DECIMALS ARE OBTAINED THROUGH getAddressInfo AND
-   *    ARE CACHED FOR SYNCED ACCESS FROM TXN RENDER SERVICE
-   * ]]
-   *
-   * These are our token operations, these are constructed by parsing the transactions inputs
-   * and are collected by ethplorer.
-   *
-   * Pagination happens through timestamp param.
-   */
-  public getAddressHistory(address: string, timestamp: number): angular.IPromise<Array<EthplorerAddressHistoryOperation>> {
-    let deferred = this.$q.defer<Array<EthplorerAddressHistoryOperation>>();
-    let url = `https://api.ethplorer.io/getAddressHistory/${address}?apiKey=lwA5173TDKj60&limit=10&timestamp=${timestamp}`
-    this.http.get(url)
-        .then((response) => {
-          var parsed = angular.isString(response) ? JSON.parse(response) : response;
-          if (parsed.error) {
-            console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
-            deferred.resolve([])
-          }
-          else {
-            deferred.resolve(parsed.operations);
-          }
-        }, () => {
-          console.log(`HTTP reject for ${url}`)
-          deferred.resolve([]);
-        });
-    return deferred.promise
+  public broadcast(rawTx: string) {
+    let deferred = this.$q.defer();
+    let url = `https://api.blockcypher.com/v1/eth/main/txs/push?token=d7995959366d4369976aabb3355c7216`
+    rawTx = rawTx.startsWith("0x") ? rawTx.substring(2) : rawTx
+    this.http.post2(url, {"tx":rawTx}).then((response: any) => {
+      response.txId = response.hash;
+      deferred.resolve(response)
+    }, (e) => {
+      deferred.reject( e?.error ? e.error.toString() : 'Error broadcasting transaction')
+    })
+    return deferred.promise;
   }
 
   public getTxInfo(txHash: string): angular.IPromise<EthplorerTxInfo> {
     let deferred = this.$q.defer<EthplorerTxInfo>();
-    let url = `https://api.ethplorer.io/getTxInfo/${txHash}?apiKey=lwA5173TDKj60`
+    let url = `${EthplorerService.endPoint}/getTxInfo/${txHash}?${this.apiKey}`
     this.http.get(url)
         .then((response) => {
           var parsed = angular.isString(response) ? JSON.parse(response) : response;
@@ -422,6 +304,40 @@ class EthplorerService {
           deferred.reject(error)
         });
     return deferred.promise
+  }
+
+  /* This is just a temporory fix to see if Ethplorer APIs are functional */
+  public getTopTokens() {
+    let deferred = this.$q.defer();
+    let url = `${EthplorerService.endPoint}/getTop?${this.apiKey}`;
+    this.http.get(url).then((response) => {
+      deferred.resolve();
+    }, error => {
+      deferred.reject()
+    }).catch(() => deferred.reject())
+
+    return deferred.promise;
+  }
+
+  public getLastBlockHeight() {
+    let deferred = this.$q.defer();
+    this.http.get(`${EthplorerService.endPoint}/getLastBlock?${this.apiKey}`).then((response) => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
+      if (parsed.error) {
+        console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
+        deferred.reject(parsed)
+      } else {
+        deferred.resolve(parsed.lastBlock)
+      }
+    }, error => {
+      deferred.reject(error)
+    }).catch((reason) => deferred.reject(reason))
+
+    return deferred.promise;
+  }
+
+  getEndPoint(): string {
+    return EthplorerService.endPoint
   }
 
 }

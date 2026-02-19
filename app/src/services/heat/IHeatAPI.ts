@@ -184,6 +184,9 @@ interface IHeatAPI {
    */
   getMessagingContactMessages(accountA:string, accountB:string, from:number, to:number):angular.IPromise<Array<IHeatMessage>>;
 
+  getMessagingContactMessagesByTimestampRange(
+    accountA: string, accountB: string, fromTimestamp: number, toTimestamp: number): angular.IPromise<Array<IHeatMessage>>;
+
   /**
    * Lists latest message contacts (requires replicator)
    */
@@ -265,6 +268,15 @@ interface IHeatAPI {
   rewardsAccount(account: string): angular.IPromise<IHeatRewardsInfo>;
   rewardsList(from: number, to: number): angular.IPromise<Array<IHeatRewardsInfo>>;
   rewardsListCount(): angular.IPromise<number>;
+
+  /**
+   * Keystore APIs
+   */
+  getKeystoreEntryCountByAccount(account: string): angular.IPromise<number>;
+  getKeystoreAccountEntry(account: string, key: string): angular.IPromise<IHEATKeystoreTransaction>;
+  getKeystoreAccountEntryExt(account: string, key: string): angular.IPromise<{entries: IHEATKeystoreTransaction[]}>;
+  listKeystoreAccountEntries(account: string, from: string, to: string): angular.IPromise<Array<IHEATKeystoreTransaction>>;
+  saveKeystoreEntry(key: string, value: string, secretPhrase: string): angular.IPromise<IHeatCreateTransactionOutput>;
 }
 interface IHeatAccount {
   id: string;
@@ -283,7 +295,9 @@ interface IHeatAccount {
   nextLeasingHeightFrom: number;
   nextLeasingHeightTo: number;
   lessors: Array<string|IHeatLessors>;
-  publicName: string;
+  lessorsBalance: string;
+  publicName: string; // if  this.publicName == this.id  then account has the private name
+  supervisoryAccount: string;
 }
 interface IHeatLessors {
   id: string;
@@ -351,9 +365,11 @@ interface IHeatCreateTransactionInput {
    */
   broadcast: boolean;
   /**
-   * Either UTF-8 text or a string of hex digits (perhaps previously encoded using an arbitrary algorithm) to be converted into a bytecode with a maximum length of one kilobyte
+   * Either UTF-8 text or a string of hex digits (perhaps previously encoded using an arbitrary algorithm) to be converted into a bytecode with a maximum length of one kilobyte.
+   * It is possible when message is formed on server side on transaction creation.
+   * In this case this field should be assigned boolean false that is indicator than message appendix should not be validated on client side.
    */
-  message?: string;
+  message?: string | boolean;
   /**
    * False if the message is a hex string, otherwise the message is text (optional)
    */
@@ -417,6 +433,7 @@ interface IHeatCreateTransactionInput {
 
   // attachements
   EffectiveBalanceLeasing?: IHeatCreateEffectiveBalanceLeasing;
+  InternetAddress?: IHeatRegisterInternetAddress;
   AskOrderCancellation?: IHeatCreateAskOrderCancellation;
   BidOrderCancellation?: IHeatCreateBidOrderCancellation;
   AskOrderPlacement?: IHeatCreateAskOrderPlacement;
@@ -427,9 +444,16 @@ interface IHeatCreateTransactionInput {
   OrdinaryPayment?: IHeatCreateOrdinaryPayment;
   ArbitraryMessage?: IHeatCreateArbitraryMessage;
   WhitelistMarket?: IHeatCreateWhitelistMarket;
+  WhitelistAssetAccount?: IHeatCreateWhitelistAssetAccount;
+  AssetAssignFees?: IHeatCreateAssetAssignFees;
+  AssetExpiration?: IHeatCreateAssetExpiration;
+  AccountAssetLimit?: IHeatCreateAccountAssetLimit;
 }
 interface IHeatCreateEffectiveBalanceLeasing {
   period: number;
+}
+interface IHeatRegisterInternetAddress {
+  internetAddress: string;
 }
 interface IHeatCreateAskOrderCancellation {
   orderId: string;
@@ -443,6 +467,7 @@ interface IHeatCreateAskOrderPlacement {
   quantity: string;
   price: string;
   expiration: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateBidOrderPlacement {
   currencyId: string;
@@ -450,13 +475,17 @@ interface IHeatCreateBidOrderPlacement {
   quantity: string;
   price: string;
   expiration: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateAssetIssuance {
   descriptionUrl: string;
   descriptionHash: string;
   quantityQNT: string;
   decimals: number;
-  dillutable: boolean;
+  dilutable: boolean;
+  expiration: number;
+  type: number;
+  isSenderFeePayer: boolean;
 }
 interface IHeatCreateAssetIssueMore {
   assetId: string;
@@ -473,6 +502,28 @@ interface IHeatCreateArbitraryMessage {}
 interface IHeatCreateWhitelistMarket {
   currencyId: string;
   assetId: string;
+  isIssuerFeePayer: number;
+}
+interface IHeatCreateWhitelistAssetAccount {
+  assetId: string;
+  accountId: string;
+  endHeight: number;
+}
+interface IHeatCreateAssetAssignFees {
+  assetId: string;
+  orderFee: number;
+  tradeFee: number;
+  feeRecipient: string;
+}
+interface IHeatCreateAssetExpiration {
+  assetId: string;
+  expiration: number;
+}
+interface IHeatCreateSupervisoryAccount {}
+interface IHeatCreateAccountAssetLimit {
+  assetId: string;
+  amount: string;
+  interval: number;
 }
 
 interface IHeatCreateTransactionOutput {
@@ -516,7 +567,7 @@ interface IHeatTransaction {
    */
   subtype: number;
   /**
-   * The time (in seconds since 24 november 2013 00:00 UTC) of the transaction
+   * The time (in seconds since base timestamp) of the transaction
    */
   timestamp: number;
   /**
@@ -592,7 +643,7 @@ interface IHeatTransaction {
    */
   block: string;
   /**
-   * The timestamp (in seconds since 24 november 2013 00:00 UTC) of the block
+   * The timestamp (in seconds since base timestamp) of the block
    */
   blockTimestamp: number;
 
@@ -625,6 +676,11 @@ interface IHeatBroadcastOutput {
   transaction: string;
 }
 interface IHeatAsset {
+
+  /**
+   * 0 - standard, 1 - private asset.
+   */
+  type: number;
   /**
    * The number of the account that issued the asset
    */
@@ -653,7 +709,15 @@ interface IHeatAsset {
   /**
    * True in case new assets can later be issued by the asset issuer
    */
-  dillutable: boolean;
+  dilutable: boolean;
+
+  orderFee: string;
+
+  tradeFee: string;
+
+  feeRecipient: string;
+
+  expiration?: number;
 
   properties?: string;
 }
@@ -708,7 +772,7 @@ interface IHeatAssetProperties extends IHeatAsset {
 
 interface IHeatOrder {
   /**
-   * The expiration time (in seconds since 24 november 2013 00:00 UTC)
+   * The expiration time (in seconds since base timestamp)
    */
   expiration: number;
   /**
@@ -765,6 +829,7 @@ interface IHeatOrder {
    */
   currentlyNotValid: boolean;
 }
+
 interface IHeatTrade {
   /**
    * The ID of the block that contains the trade (0 for unconfirmed trades)
@@ -775,7 +840,7 @@ interface IHeatTrade {
    */
   height: number;
   /**
-   * The trade timestamp (in seconds since 24 november 2013 00:00 UTC)
+   * The trade timestamp (in seconds since base timestamp)
    */
   timestamp: number;
   /**
@@ -832,7 +897,28 @@ interface IHeatTrade {
    * Asset properties based on protocol and account id (blank for all but 'list account trades')
    */
   assetProperties: string;
+
+  /**
+   * The trade fee for the price
+   */
+  totalOrderPriceFee: string;
+
+  /**
+   * The trade fee for the quantity
+   */
+  quantityFee: string;
+
+  /**
+   * Account received the trade fee of asset by assetId
+   */
+  quantityFeeRecipient: string;
+
+  /**
+   * Account received the trade fee of asset by currencyId
+   */
+  totalOrderPriceFeeRecipient: string;
 }
+
 interface IHeatAccountBalance {
   /**
    * Asset ID, asset=0 is your HEAT balance all others are assets you own
@@ -917,6 +1003,10 @@ interface IHeatMarket {
    * Asset decimals
    */
   assetDecimals: number;
+  /**
+   * Is private asset issuer network fee payer
+   */
+  isIssuerFeePayer: boolean;
 }
 interface IHeatChart {
   currency: string;
@@ -941,6 +1031,7 @@ interface IHeatChartData {
   close: string;
 }
 interface IHeatPayment {
+  transaction: string;
   currency: string;
   quantity: string;
   sender: string;
@@ -951,12 +1042,15 @@ interface IHeatPayment {
   recipientPublicName: string;
   senderPublicKey: string;
   recipientPublicKey: string;
+  height: number;
   timestamp: number;
   blockId: string;
   messageBytes: string;
   messageIsText: boolean;
   messageIsEncrypted: boolean;
   messageIsEncryptedToSelf: boolean;
+  isAtomicTransfer: boolean;
+  num: number;  //has sense for atomic multi transfer when on one transaction are created multiple payments
 }
 interface IHeatBlockchainStatus {
   isScanning: boolean;
@@ -1013,6 +1107,10 @@ interface IHeatBlock {
   height: number;
   timestamp: number;
 }
+interface currencyAddressMap {
+  name: string;
+  address: string;
+}
 interface IHeatMessageContact {
   account: string;
   privateName: string;
@@ -1020,6 +1118,12 @@ interface IHeatMessageContact {
   publicKey: string;
   timestamp: number;
   activityTimestamp?: number;
+  cryptoAddresses?: currencyAddressMap[];
+  newIncomingContact?: boolean;
+  isP2POnlyContact?: boolean;
+  unreadStatus?: number; // 0: has no unread messages;
+                                // 1: active (selected) contact (also no unread messages);
+                                // message timestamp: has unread messages
 }
 interface IHeatMessage {
   transaction: string;
@@ -1059,4 +1163,29 @@ interface IHeatServerHealth {
     all: number;
     timestamp: number;
   }
+}
+interface IHEATKeystoreTransaction {
+  account: string,
+  key: string,
+  value: string,
+  transaction: string
+}
+interface IHEATMasternode {
+  account: string,
+  internetAddress: string,
+  height: number,
+  expirationHeight: number
+}
+
+interface IHeatPeer {
+  address: string
+  downloaded: number
+  uploaded: number
+  version: string
+  state: string
+  stateNote?: string
+  platform: string
+  application: string
+  height: number
+  connectedChangedTime: number
 }

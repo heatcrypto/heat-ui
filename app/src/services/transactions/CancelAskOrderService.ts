@@ -35,12 +35,12 @@ class CancelAskOrderService extends AbstractTransaction {
     return new CancelAskOrderDialog($event, this, this.$q, this.user, order, readonly);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 5) return false;
 
-    transaction.order = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.order = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
     return transaction.order === data.AskOrderCancellation.orderId;
   }

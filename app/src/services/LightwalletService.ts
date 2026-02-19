@@ -27,7 +27,7 @@ declare type WalletAddress = {
   /* ks.exportPrivateKey */
   privateKey: string;
 
-  /* BIP44 key index */
+  /* BIP44,BIP49 key index */
   index: number;
 
   /* Balance is full ETH */
@@ -37,40 +37,44 @@ declare type WalletAddress = {
       (not completely accurate since a user can use an address which has a zero balance) */
   inUse: boolean;
 
-  accountId: string;
+  created?: boolean;
+
+  accountId?: string;
+
+  /* Allow user to soft delete address from wallet */
+  isDeleted?: boolean;
 
   /* ERC20 token balances */
-  tokensBalances: Array<{
+  tokensBalances?: Array<{
     symbol: string;
-
     name: string;
-
     decimals: number;
-
     balance: string;
-
     address: string;
+    rawBalance?: string;
   }>
 }
-declare type WalletType = {
+declare type WalletAddresses = {
   addresses: Array<WalletAddress>
 }
 
 @Service('lightwalletService')
-@Inject('web3', 'user', 'settings', '$rootScope', 'ethplorer', '$window')
+@Inject('web3', 'user', 'settings', '$rootScope', '$window', 'storage')
 class LightwalletService {
 
-  //public wallet: WalletType
+  //public wallet: WalletAddresses
   static readonly BIP44 = "m/44'/60'/0'/0";
   private lightwallet;
+  private ethBlockExplorerService: EthBlockExplorerService
 
   constructor(private web3Service: Web3Service,
     private userService: UserService,
     private settingsService: SettingsService,
     private $rootScope: angular.IRootScopeService,
-    private ethplorer: EthplorerService,
-    private $window: angular.IWindowService,) {
-      this.lightwallet = $window.heatlibs.lightwallet;
+    private $window: angular.IWindowService,
+    storage: StorageService) {
+    this.lightwallet = $window.heatlibs.lightwallet;
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
   }
 
   generateRandomSeed() {
@@ -78,81 +82,105 @@ class LightwalletService {
   }
 
   validSeed(seed) {
-    return this.lightwallet.keystore.isSeedValid(seed)
+    try {
+      return this.lightwallet.keystore.isSeedValid(seed)
+    } catch (e) {
+      console.error("Error on seed validation: " + e)
+    }
+    return false
   }
 
   validPrivateKey(privKey) {
-    return utils.isHex(privKey) && privKey.length > 32
+    return utils.isHex(privKey) && privKey.length == 64
   }
 
   /* Sets the 12 word seed to this wallet, note that seeds have to be bip44 compatible */
-  unlock(seedOrPrivateKey: string, password?: string): Promise<WalletType> {
+  unlock(walletAddresses: WalletAddresses, seedOrPrivateKey: string, reset?: boolean): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
-      let promise:Promise<WalletType>;
-      if (this.validSeed(seedOrPrivateKey)) {
-        promise = this.getEtherWallet(seedOrPrivateKey, password || "")
+      let heatAddress = heat.crypto.getAccountId(seedOrPrivateKey)
+      if (!reset && walletAddresses) {
+        resolve(walletAddresses)
+      } else {
+        let promise: Promise<WalletAddresses>
+        if (this.validSeed(seedOrPrivateKey)) {
+          promise = this.createEtherAddresses(seedOrPrivateKey, '')
+        } else if (this.validPrivateKey(seedOrPrivateKey)) {
+          promise = this.createEtherAddressesFromPrivateKey(seedOrPrivateKey, '')
+        } else {
+          reject("Invalid seed or private key")
+        }
+        promise.then(walletAddresses => {
+          let encryptedAddresses = heat.crypto.encryptMessage(JSON.stringify(walletAddresses), heatAddress, seedOrPrivateKey)
+          return db.putCryptoAddresses(heatAddress, 'ETH', encryptedAddresses)
+              .then(recordId => resolve(walletAddresses))
+        }).catch(reject)
       }
-      else if (this.validPrivateKey(seedOrPrivateKey)) {
-        promise = this.getEtherWalletFromPrivateKey(seedOrPrivateKey, password || "")
-      }
-      else {
-        reject()
-      }
-      promise.then(wallet => {
-        // console.log('wallet', wallet)
-        resolve(wallet)
-      }).catch(() => {
-        reject()
-      })
-    });
+    })
   }
 
-  refreshAdressBalances(wallet:WalletType) {
-    /* list all addresses in bip44 order */
-    let addresses = wallet.addresses.map(a => a.address)
+  loadAddressInfo(walletAddress: WalletAddress) {
+    return this.ethBlockExplorerService.getAddressInfo(walletAddress.address, true).then(info => {
+      walletAddress.balance = info.ETH.balance + ""
+      walletAddress.tokensBalances = []
+      walletAddress.inUse = (info.txs || info.countTxs) > 0
+      if (info.tokens) {
+        info.tokens.forEach(token => {
+          let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[token.tokenInfo.address]
+          let decimals = tokenInfo ? +(tokenInfo.decimals || 0) : 8
+          let amount = token.balance ? new Big(token.balance + "").toFixed() : "0"
+          walletAddress.tokensBalances.push({
+            symbol: tokenInfo ? tokenInfo.symbol : '',
+            name: tokenInfo ? tokenInfo.name : '',
+            decimals: decimals,
+            balance: utils.formatERC20TokenAmount(amount, decimals),
+            rawBalance: token.rawBalance,
+            address: token.tokenInfo.address
+          })
+        })
+      }
+      return walletAddress
+    })
+  }
 
-    function processNext() {
+  refreshBalances(walletAddresses: WalletAddresses, ethCurrencyAddressLoading: wlt.CurrencyAddressLoading) {
+    /* list all addresses in bip44 order */
+    walletAddresses.addresses.forEach(value => value.balance = "")  // balances are unknown until load from blockchain
+    let actualWalletAddresses = walletAddresses.addresses.filter(a => !a.isDeleted)
+    let emptyAddressCounter = 0
+    let self = this
+
+    let processNext = () => {
       return new Promise((resolve, reject) => {
 
         /* get the first element from the list */
-        let address = addresses[0]
-        addresses.shift()
-
-        /* look up its data on ethplorer */
-        let ethplorer: EthplorerService = heat.$inject.get('ethplorer')
-        ethplorer.getAddressInfo(address).then(info => {
-
-          /* lookup the 'real' WalletAddress */
-          let walletAddress = wallet.addresses.find(x => x.address == address)
-          if (!walletAddress)
-            return
-
-          walletAddress.inUse = info.countTxs!=0
-          if (!walletAddress.inUse) {
-            resolve(false)
-            return
-          }
-
-          walletAddress.balance = info.ETH.balance+""
-          walletAddress.tokensBalances = []
-
-          if (info.tokens) {
-            info.tokens.forEach(token => {
-              let tokenInfo = ethplorer.tokenInfoCache[token.tokenInfo.address]
-              let decimals = tokenInfo?tokenInfo.decimals:8
-              let amount = token.balance ? new Big(token.balance+"").toFixed() : "0"
-              walletAddress.tokensBalances.push({
-                symbol: tokenInfo?tokenInfo.symbol:'',
-                name: tokenInfo?tokenInfo.name:'',
-                decimals: decimals,
-                balance: utils.formatQNT(amount,decimals),
-                address: token.tokenInfo.address
-              })
-            })
-          }
-          resolve(true)
-        }, () => {
+        let walletAddress = actualWalletAddresses.shift()
+        if (!walletAddress) {
           resolve(false)
+          return
+        }
+
+        ethCurrencyAddressLoading.address = walletAddress.address
+
+        /* look up its data on ethBlockExplorerService */
+        self.ethBlockExplorerService.refresh().then(() => {
+          self.loadAddressInfo(walletAddress).then((walletAddress: WalletAddress) => {
+            if (!walletAddress) {
+              resolve(false)
+              return
+            }
+            emptyAddressCounter++
+            if (walletAddress.inUse) emptyAddressCounter = 0  // reset counter since need extra unused addresses
+
+            // if there are 2 zero addresses in a row, then we do not load the addresses further
+            if (emptyAddressCounter >= 2) {
+              resolve(false)
+              return
+            }
+            resolve(true)
+          }, (reason) => {
+            console.error(reason)
+            reject(false)
+          })
         })
       })
     }
@@ -164,15 +192,14 @@ class LightwalletService {
             setTimeout(function () {
               recurseToNext(resolve)
             }, 100)
-          }
-          else {
+          } else {
             resolve()
           }
         }
       )
     }
 
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       recurseToNext(resolve)
     })
   }
@@ -193,7 +220,7 @@ class LightwalletService {
 
   */
 
-  getEtherWallet(seed: string, password: string): Promise<WalletType> {
+  createEtherAddresses(seed: string, password: string): Promise<WalletAddresses> {
     let that = this;
     return new Promise((resolve, reject) => {
       try {
@@ -248,8 +275,7 @@ class LightwalletService {
     })
   }
 
-  getEtherWalletFromPrivateKey(privkeyHex: string, password: string): Promise<WalletType> {
-    let that = this;
+  createEtherAddressesFromPrivateKey(privkeyHex: string, password: string): Promise<WalletAddresses> {
     return new Promise((resolve, reject) => {
       try {
         this.lightwallet.keystore.createVault({
@@ -294,7 +320,7 @@ class LightwalletService {
               for (let i = 0; i < addresses.length; i++) {
                 let walletAddress = addresses[i];
                 let privateKey = ks.exportPrivateKey(walletAddress, pwDerivedKey);
-                wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "0", inUse: false }
+                wallet.addresses[i] = { address: walletAddress, privateKey, index: i, balance: "", inUse: false }
               }
               resolve(wallet);
 
@@ -310,5 +336,11 @@ class LightwalletService {
       }
     })
   }
+
+  signEthereumMessage(address: string, message: string, privateKey: string) {
+    let signatureHex = heat.heatAppLib.ETHEREUM_SIGN_MESSAGE_SYNC({ privateKey, message })
+    return signatureHex
+  }
+
 
 }

@@ -22,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Service('assetTransfer')
 @Inject('$q','user','heat')
 class AssetTransferService extends AbstractTransaction {
@@ -36,14 +37,14 @@ class AssetTransferService extends AbstractTransaction {
     return new AssetTransferDialog($event, this, this.$q, this.user, this.heat, recipient, recipientPublicKey, asset, amount, userMessage);
   }
 
-  verify(transaction: any, bytes: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
+  verify(transaction: any, attachment: IByteArrayWithPosition, data: IHeatCreateTransactionInput): boolean {
     if (transaction.type !== 2) return false;
     if (transaction.subtype !== 2) return false;
 
-    transaction.assetId = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
-    transaction.quantity = String(converters.byteArrayToBigInteger(bytes.byteArray, bytes.pos));
-    bytes.pos += 8;
+    transaction.assetId = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
+    transaction.quantity = String(converters.byteArrayToBigInteger(attachment.byteArray, attachment.pos));
+    attachment.pos += 8;
 
    return transaction.assetId === data.AssetTransfer.assetId &&
           transaction.quantity === data.AssetTransfer.quantity;
@@ -111,14 +112,17 @@ class AssetTransferDialog extends GenericDialog {
               label('Asset').
               onchange(() => {
                 /* when the asset changes we update the symbol and precission of the amount field */
-                var amountField = <DialogFieldMoney> this.fields['amount'];
-                var assetField = <DialogFieldAsset> this.fields['asset'];
-                var assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+                let amountField = <DialogFieldMoney> this.fields['amount'];
+                let assetField = <DialogFieldAsset> this.fields['asset'];
+                let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
                 if (assetInfo) {
                   amountField.symbol(assetInfo.symbol);
                   amountField.precision(assetInfo.decimals);
+                  $scope.$evalAsync(() => {
+                    amountField.value = "0"
+                    amountField.changed(true)
+                  });
                 }
-                this.fields['amount'].changed();
               }).
               validate("You dont own this asset", () => {
                 var assetField = <DialogFieldAsset> this.fields['asset'];
@@ -186,21 +190,25 @@ class AssetTransferDialog extends GenericDialog {
 
   /* @override */
   getTransactionBuilder(): TransactionBuilder {
-    var builder = new TransactionBuilder(this.transaction);
-    builder.secretPhrase(this.user.secretPhrase)
-           .feeNQT(HeatAPI.fee.standard)
-           .attachment('AssetTransfer', <IHeatCreateAssetTransfer>{
-              assetId: this.fields['asset'].value,
-              quantity: this.fields['amount'].value
-            });
-    builder.recipient(this.fields['recipient'].value);
-    builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
-    if (this.fields['message'].value) {
-      builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
+    let builder = new TransactionBuilder(this.transaction);
+    let assetField = <DialogFieldAsset> this.fields['asset'];
+    let assetInfo = assetField.getAssetInfo(this.fields['asset'].value);
+    if (assetInfo) {
+      builder.secretPhrase(this.user.secretPhrase)
+        .feeNQT(HeatAPI.fee.standard)
+        .attachment('AssetTransfer', <IHeatCreateAssetTransfer>{
+          assetId: this.fields['asset'].value,
+          quantity: this.fields['amount'].value
+        });
+      builder.recipient(this.fields['recipient'].value);
+      builder.recipientPublicKey(this.fields['recipientPublicKey'].value);
+      if (this.fields['message'].value) {
+        builder.message(this.fields['message'].value, TransactionMessageType.TO_RECIPIENT);
+      }
+      // if (angular.isDefined(this.bundle)) {
+      //   builder.bundle(this.bundle);
+      // }
+      return builder;
     }
-    // if (angular.isDefined(this.bundle)) {
-    //   builder.bundle(this.bundle);
-    // }
-    return builder;
   }
 }

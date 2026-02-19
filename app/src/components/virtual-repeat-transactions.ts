@@ -1,7 +1,7 @@
 ///<reference path='VirtualRepeatComponent.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 Heat Ledger Ltd.
+ * Copyright (c) 2020 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,9 +24,18 @@
 @Component({
   selector: 'virtualRepeatTransactions',
   inputs: ['account','block','personalize','transactionObject','hideLabel'],
+  styles: [`
+  .loadingIcon {
+    color: grey;
+    flex: auto;
+    margin-left: 10px;
+  }
+  `],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+      <div>Latest Transactions</div>
+      <div><md-icon md-font-library="material-icons" class="loadingIcon rotate" ng-show="vm.loadedPages.inProgress">sync</md-icon></div>
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -142,7 +151,10 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
               private $mdPanel: angular.material.IPanelService,
               private controlCharRender: ControlCharRenderService) {
     super($scope, $q);
-    var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
+  }
+
+  $onInit() {
+    let format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.transactionsProviderFactory.createProvider(this.account, this.block, this.transactionObject),
       /* decorator function */
@@ -192,15 +204,25 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
       }
     );
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    if (angular.isString(this.account)) {
-      heat.subscriber.unconfirmedTransaction({recipient:this.account}, refresh, $scope);
-      heat.subscriber.unconfirmedTransaction({sender:this.account}, refresh, $scope);
+    let refreshOneMore = false
+    let onBlockRefresh = (block: IHeatBlock) => {
+      if ((block && block.numberOfTransactions > 0) || refreshOneMore) {
+        setTimeout(() => this.determineLength(), 2400)  //delay to fetch the actual transaction list
+        refreshOneMore = (block && block.numberOfTransactions > 0)
+      }
     }
-    if (angular.isUndefined(this.block)&&angular.isUndefined(this.account)) {
-      heat.subscriber.unconfirmedTransaction({}, refresh, $scope);
-      heat.subscriber.blockPopped({}, refresh, $scope);
-      heat.subscriber.blockPushed({}, refresh, $scope);
+    let onBlockRefreshDebounced = utils.debounce(angular.bind(this, onBlockRefresh), 500, false);
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+
+    if (angular.isString(this.account)) {
+      this.heat.subscriber.unconfirmedTransaction({recipient: this.account}, refresh, this.$scope);
+      this.heat.subscriber.unconfirmedTransaction({sender: this.account}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, onBlockRefreshDebounced, this.$scope);
+    }
+    if (angular.isUndefined(this.block) && angular.isUndefined(this.account)) {
+      this.heat.subscriber.unconfirmedTransaction({}, refresh, this.$scope);
+      this.heat.subscriber.blockPopped({}, refresh, this.$scope);
+      this.heat.subscriber.blockPushed({}, onBlockRefreshDebounced, this.$scope);
     }
   }
 
@@ -231,7 +253,8 @@ class VirtualRepeatTransactionsComponent extends VirtualRepeatComponent {
   }
 
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
+    let fields = [["transaction"], ["senderPublicName", "sender"], ["recipientPublicName", "recipient"], ["height"], ["time"], ["amount"], ["fee"], ["messageText", "message text"], ["type"], ["subtype"]]
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.transaction, fields)
   }
 
   onSelect(selectedTransaction) {}
@@ -301,10 +324,13 @@ class TransactionRenderer {
   private SUBTYPE_COLORED_COINS_BID_ORDER_PLACEMENT = 4;
   private SUBTYPE_COLORED_COINS_ASK_ORDER_CANCELLATION = 5;
   private SUBTYPE_COLORED_COINS_BID_ORDER_CANCELLATION = 6;
-  private SUBTYPE_COLORED_COINS_WHITELIST_ACCOUNT_ADDITION = 7;
-  private SUBTYPE_COLORED_COINS_WHITELIST_ACCOUNT_REMOVAL = 8;
+  private SUBTYPE_COLORED_COINS_WHITELIST_ASSET_ACCOUNT = 7;
   private SUBTYPE_COLORED_COINS_WHITELIST_MARKET = 9;
+  private SUBTYPE_COLORED_COINS_ATOMIC_MULTI_TRANSFER = 10;
+  private SUBTYPE_COLORED_COINS_ASSET_ASSIGN_FEES = 11;
+  private SUBTYPE_COLORED_COINS_ASSET_EXPIRATION = 12;
   private SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
+  private SUBTYPE_ACCOUNT_CONTROL_INTERNET_ADDRESS = 1;
 
   private heat: HeatService;
   private assetInfo: AssetInfoService;
@@ -348,12 +374,15 @@ class TransactionRenderer {
     this.transactionTypes[key] = 'ISSUE ASSET';
     this.renderers[key] = new TransactionRenderHelper(
       (t) => {
-        return provider.personalize ? 'Asset $asset' : "<b>ISSUE ASSET</b> Issuer $sender asset $asset";
+        return provider.personalize ? '$private Asset $asset' : "<b>ISSUE $private ASSET</b> Issuer $sender asset $asset";
       },
       (t) => {
+        this.asset(t.transaction) //fill cache
+        let info = this.assetInfo.cache[t.transaction]
         return {
           sender: this.account(t.sender, t.senderPublicName),
-          asset: t.transaction
+          asset: t.transaction,
+          private: info && info.type == 1 ? 'PRIVATE' : ''
         }
       }
     );
@@ -364,11 +393,12 @@ class TransactionRenderer {
         return provider.personalize ? '' : "<b>TRANSFER ASSET</b> $asset from $sender to $recipient amount $amount";
       },
       (t) => {
+        let assetId = t.attachment['asset']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           recipient: this.account(t.recipient, t.recipientPublicName),
-          asset: this.asset(t.attachment['asset']),
-          amount: this.amount(t.attachment['quantity'], 8),
+          asset: this.asset(assetId),
+          amount: this.amount(t.attachment['quantity'], this.assetInfo.cache[assetId])
         }
       }
     );
@@ -381,12 +411,14 @@ class TransactionRenderer {
           "<b>SELL ORDER</b> $sender placed sell order $currency/$asset amount $amount price $price";
       },
       (t) => {
+        let assetId = t.attachment['asset']
+        let currencyId = t.attachment['currency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           currency: this.asset(t.attachment['currency']),
           asset: this.asset(t.attachment['asset']),
-          amount: this.amount(t.attachment['quantity'], 8),
-          price: this.amount(t.attachment['price'], 8),
+          amount: this.amount(t.attachment['quantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t.attachment['price'], this.assetInfo.cache[currencyId]),
         }
       }
     );
@@ -399,15 +431,18 @@ class TransactionRenderer {
           "<b>BUY ORDER</b> $sender placed buy order $currency/$asset amount $amount price $price";
       },
       (t) => {
+        let assetId = t.attachment['asset']
+        let currencyId = t.attachment['currency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
-          currency: this.asset(t.attachment['currency']),
-          asset: this.asset(t.attachment['asset']),
-          amount: this.amount(t.attachment['quantity'], 8),
-          price: this.amount(t.attachment['price'], 8),
+          currency: this.asset(currencyId),
+          asset: this.asset(assetId),
+          amount: this.amount(t.attachment['quantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t.attachment['price'], this.assetInfo.cache[currencyId]),
         }
       }
     );
+
     key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_ASK_ORDER_CANCELLATION;
     this.transactionTypes[key] = 'CANCEL SELL';
     this.renderers[key] = new TransactionRenderHelper(
@@ -417,16 +452,19 @@ class TransactionRenderer {
           '<b>CANCEL SELL</b> $sender cancelled order $currency/$asset amount $amount price $price';
       },
       (t) => {
+        let assetId = t.attachment['cancelledAskAsset']
+        let currencyId = t.attachment['cancelledAskCurrency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           order: t.attachment['order'],
           currency: this.asset(t['cancelledAskCurrency']),
           asset: this.asset(t['cancelledAskAsset']),
-          amount: this.amount(t['cancelledAskQuantity'], 8),
-          price: this.amount(t['cancelledAskPrice'], 8)
+          amount: this.amount(t['cancelledAskQuantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t['cancelledAskPrice'], this.assetInfo.cache[currencyId])
         }
       }
     );
+
     key = this.TYPE_COLORED_COINS+":"+this.SUBTYPE_COLORED_COINS_BID_ORDER_CANCELLATION;
     this.transactionTypes[key] = 'CANCEL BUY';
     this.renderers[key] = new TransactionRenderHelper(
@@ -436,16 +474,87 @@ class TransactionRenderer {
           '<b>CANCEL BUY</b> $sender cancelled order $currency/$asset amount $amount price $price';
       },
       (t) => {
+        let assetId = t.attachment['cancelledAskAsset']
+        let currencyId = t.attachment['cancelledAskCurrency']
         return {
           sender: this.account(t.sender, t.senderPublicName),
           order: t.attachment['order'],
           currency: this.asset(t['cancelledBidCurrency']),
           asset: this.asset(t['cancelledBidAsset']),
-          amount: this.amount(t['cancelledBidQuantity'], 8),
-          price: this.amount(t['cancelledBidPrice'], 8)
+          amount: this.amount(t['cancelledBidQuantity'], this.assetInfo.cache[assetId]),
+          price: this.amount(t['cancelledBidPrice'], this.assetInfo.cache[currencyId])
         }
       }
     );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_ATOMIC_MULTI_TRANSFER;
+    this.transactionTypes[key] = 'MULTI TRANSFER';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>MULTI TRANSFER</b> From $sender'
+      },
+      (t) => {
+        return {
+          sender: this.account(t.sender, t.senderPublicName)
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_ASSET_ASSIGN_FEES;
+    this.transactionTypes[key] = 'ASSET ASSIGN FEES';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>ASSIGN PRIVATE ASSET FEES</b> Asset $asset'
+      },
+      (t) => {
+        return {
+          asset: this.asset(t.attachment['asset'])
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_ASSET_EXPIRATION;
+    this.transactionTypes[key] = 'ASSET EXPIRATION';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>ASSIGN ASSET EXPIRATION</b> Asset $asset expiration $dateTime'
+      },
+      (t) => {
+        return {
+          asset: this.asset(t.attachment['asset']),
+          dateTime: utils.timestampToDate(parseInt(this.asset(t.attachment['asset']))).toLocaleString()
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_WHITELIST_MARKET;
+    this.transactionTypes[key] = 'WHITELIST MARKET';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>WHITELIST MARKET</b> Currency $currency Asset $asset'
+      },
+      (t) => {
+        return {
+          currency: this.asset(t.attachment['currency']),
+          asset: this.asset(t.attachment['asset'])
+        }
+      }
+    );
+
+    key = this.TYPE_COLORED_COINS + ":" + this.SUBTYPE_COLORED_COINS_WHITELIST_ASSET_ACCOUNT;
+    this.transactionTypes[key] = 'WHITELIST ASSET ACCOUNT';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize ? '' : '<b>WHITELIST ACCOUNT FOR PRIVATE ASSET</b> Asset $asset Account $account'
+      },
+      (t) => {
+        return {
+          asset: this.asset(t.attachment['asset']),
+          account: this.account(t.attachment['account'])
+        }
+      }
+    );
+
     key = this.TYPE_ACCOUNT_CONTROL+":"+this.SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING;
     this.transactionTypes[key] = 'BALANCE LEASE';
     this.renderers[key] = new TransactionRenderHelper(
@@ -457,6 +566,22 @@ class TransactionRenderer {
           sender: this.account(t.sender, t.senderPublicName),
           recipient: this.account(t.recipient, t.recipientPublicName),
           period: utils.commaFormat(t.attachment['period'].toString())
+        }
+      }
+    );
+
+    key = this.TYPE_ACCOUNT_CONTROL + ":" + this.SUBTYPE_ACCOUNT_CONTROL_INTERNET_ADDRESS;
+    this.transactionTypes[key] = 'INTERNET ADDRESS';
+    this.renderers[key] = new TransactionRenderHelper(
+      (t) => {
+        return provider.personalize
+          ? 'internet address $a'
+          : '<b>REGISTER INTERNET ADDRESS</b> $sender registered internet address "$a"'
+      },
+      (t) => {
+        return {
+          sender: this.account(t.sender, t.senderPublicName),
+          a: t.attachment['internetAddress']
         }
       }
     );
@@ -505,15 +630,16 @@ class TransactionRenderer {
         }
       }
       if (angular.isString(amount)) {
-        if (angular.isDefined(this.assetInfo.cache[currency])) {
-          let symbol = this.assetInfo.cache[currency].symbol;
+        let assetInfo = this.assetInfo.cache[currency];
+        if (angular.isDefined(assetInfo)) {
+          let symbol = assetInfo.symbol;
           if (angular.isString(symbol)) {
-            return this.formatAmount(amount, symbol, neg);
+            return this.formatAmount(amount, symbol, neg, assetInfo);
           }
         }
         let deferred = this.$q.defer<string>();
         this.assetInfo.getInfo(currency).then(info=>{
-          deferred.resolve(this.formatAmount(amount, info.symbol, neg))
+          deferred.resolve(this.formatAmount(amount, info.symbol, neg, info))
         }, deferred.reject);
         return deferred.promise;
       }
@@ -528,8 +654,8 @@ class TransactionRenderer {
     return this.account(transaction.sender, transaction.senderPublicName);
   }
 
-  formatAmount(amount: string, symbol: string, neg: boolean): string {
-    let returns = this.amount(amount, 8, symbol);
+  formatAmount(amount: string, symbol: string, neg: boolean, assetInfo?: AssetInfo): string {
+    let returns = this.amount(amount, assetInfo ? assetInfo.decimals : 8, symbol);
     return (neg?'-':'+') + returns;
   }
 
@@ -544,23 +670,23 @@ class TransactionRenderer {
     return `not supported type=${transaction.type} subtype=${transaction.subtype}`;
   }
 
-  account(account: string, publicName: string): string {
+  account(account: string, publicName?: string): string {
     return account == '0' ? '' : `<a href="#/explorer-account/${account}/transactions">${publicName||account}</a>`;
   }
 
-  amount(amountHQT: string, decimals: number, symbol?: string) {
-    return `<span>${utils.formatQNT(amountHQT||"0", decimals)} ${symbol||""}</span>`;
+  amount(amountHQT: string, decimalsInfo: number | AssetInfo, symbol?: string) {
+    let decimals = decimalsInfo
+      ? (typeof decimalsInfo === "number" ? decimalsInfo : decimalsInfo.decimals)
+      : 8;
+    return `<span>${utils.formatQNT(amountHQT || "0", decimals)} ${symbol || ""}</span>`;
   }
 
   asset(asset:string) {
-    if (asset=="5592059897546023466")
-      return "<b>BTC</b>"
-    if (asset=="0")
-      return "<b>HEAT</b>";
-    if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol)
-      return this.assetInfo.cache[asset].symbol;
-    else
-      this.assetInfo.getInfo(asset);
+    if (!asset) return "?"
+    if (asset=="5592059897546023466") return "<b>BTC</b>"
+    if (asset=="0") return "<b>HEAT</b>";
+    if (this.assetInfo.cache[asset] && this.assetInfo.cache[asset].symbol) return this.assetInfo.cache[asset].symbol;
+    this.assetInfo.getInfo(asset);
     return asset;
   }
 }

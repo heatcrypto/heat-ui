@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2021 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,19 +22,54 @@
  * */
 @Component({
   selector: 'messageBatchEntry',
-  inputs: ['message'],
+  inputs: ['message', 'room'],
   styles: [`
-    message-batch-entry md-icon {
-      padding: 0 13px 7px 0;
-      font-size: 32px !important;
-    }
     message-batch-entry .header {
-      font-size: 15px;
+      font-size: 12px;
     }
     message-batch-entry .batch-entry {
       padding-left: 0px;
     }
-    message-batch-entry .message-content pre {
+    message-batch-entry .message-content {
+      font-size: 16px;
+    }
+    message-batch-entry .status {
+      font-size: 12px;
+      float: right;
+      margin-left: 7px;
+      margin-right: -12px;
+    }
+    message-batch-entry .column {
+      border-radius: 15px;
+      min-width: 120px;
+      padding-top: 5px;
+    }
+    message-batch-entry .outgoing {
+      float: right;
+      background-color: #0c5f68;
+      color: white;
+      padding-left: 10px;
+      padding-top: 10px;
+      padding-right: 10px;
+      padding-bottom: 0px;
+      border-radius: .4em;
+      max-width: 75%;
+      min-width: 20%;
+    }
+    message-batch-entry .incoming {
+      text-align: left;
+      float: left;
+      background-color: #52a7b1;
+      color: black;
+      padding-left: 10px;
+      padding-top: 10px;
+      padding-right: 10px;
+      padding-botton: 0px;
+      border-radius: .4em;
+      max-width: 75%;
+      min-width: 20%;
+    }
+    message-batch-entry .message-content p {
       white-space: pre-wrap;       /* Since CSS 2.1 */
       white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
       white-space: -pre-wrap;      /* Opera 4-6 */
@@ -46,29 +81,97 @@
       -webkit-hyphens: auto;
       hyphens: auto;
     }
+    message-batch-entry .offchain {
+      border-left: solid 7px green;
+    }
+    message-batch-entry .onchain, message-batch-entry .chain {
+      border-left: solid 7px #ff3301;
+    }
+    message-batch-entry .p2p {
+      border-left: solid 7px green;
+    }
+    message-batch-entry .server {
+      border-left: solid 7px skyblue;
+    }
   `],
   template: `
-    <div layout="row" flex layout-align="start start" layout-padding class="batch-entry">
-      <div layout="column">
-        <md-icon md-font-library="material-icons">{{::vm.icon}}</md-icon>
+    <div class="{{vm.message.transport}}" ng-class="{'outgoing': vm.message.outgoing, 'incoming': !vm.message.outgoing}">
+      <div class="header">
+        <span>{{vm.message.date}}</span>
+        <!-- delivered icon, stage == 1 means Delivered -->
+        <md-icon class="status" md-font-library="material-icons" ng-if="vm.stage==1">check</md-icon>
       </div>
-      <div layout="column" flex layout-padding>
-        <div layout="row" class="header">
-          <b ng-if="!vm.message.outgoing">{{vm.message.sender}}&nbsp;&nbsp;&nbsp;&nbsp;</b>{{::vm.message.date}}
-        </div>
-        <!-- look into allowing html messages later on
-        <div layout="column" class="message-content" ng-bind-html="vm.message.html"></div>
-        -->
-        <div layout="column" class="message-content"><pre>{{vm.message.contents}}</pre></div>
+      <div ng-if="!vm.fileIndicator" class="message-content"><p>{{vm.text}}</p></div>
+      <div ng-if="vm.fileIndicator" class="message-content">
+        <p>{{vm.text}}</p>
+        <p ng-if="vm.fileIndicator == 1"><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile()">download</a></p>
+        <pre ng-if="vm.fileIndicator == 2">File is downloaded</pre>
       </div>
     </div>
   `
 })
-//@Inject('$scope','$q','$timeout')
+@Inject('$rootScope', '$scope', 'P2PMessaging', 'heat', '$mdToast')
 class MessageBatchEntryComponent {
-  message: IHeatMessage; // @input
-  icon: string;
-  constructor() {
-    this.icon = this.message['outgoing'] ? 'chat_bubble_outline' : 'comment';
+  message: any // @input
+  room: p2p.Room // @input
+  io: string
+  stage: number
+  text: string
+  fileIndicator: number = 0  // 0 - it is not "incoming file" message; 1 - file is not downloaded; 2 - file is downloaded
+  private fileDescriptor: { fileName: string; fileSize: number; fileSender: string }
+
+  constructor(private $rootScope: angular.IScope,
+              private $scope: angular.IScope,
+              private messaging: P2PMessaging,
+              private heat: HeatService,
+              private $mdToast: angular.material.IToastService) {
+    $rootScope.$on('OFFCHAIN_MESSAGE_EXTRA_INFO', (event, msgId: string, messageStatus: p2p.MessageStatus) => {
+      if (this.message.msgId == msgId) {
+        this.$scope.$evalAsync(() => {
+          this.message.status = messageStatus
+          this.stage = this.message.status?.stage
+        })
+      }
+    });
   }
+
+  $onInit() {
+    this.io = this.message['outgoing'] ? 'outgoing' : 'incoming'
+    this.stage = this.message.status?.stage
+    if (!this.message.type || this.message.type == "chat") {
+      this.text = this.message.contents
+    } else if (this.message.type == "file") {
+      let s: string = this.message.contents
+      let delimiterPos = s?.indexOf("|")
+      if (delimiterPos > 0) {
+        this.fileDescriptor = {
+          fileName: s.substr(delimiterPos + 1).trim(),
+          fileSize: parseInt(s.substr(0, delimiterPos)),
+          fileSender: this.message.fromPeer
+        }
+        if (this.io == 'incoming') {
+          this.text = `file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
+          //link to file
+          this.fileIndicator = this.message.status?.fileIndicator || 1
+        } else {
+          this.text = `sent file "${this.fileDescriptor.fileName}", size ${this.fileDescriptor.fileSize} bytes`
+        }
+      }
+    }
+  }
+
+  //download message's file
+  downloadFile() {
+    //this.messaging.u2uProtocol.requestFile(this.message.msgId, this.message.fromPeer, this.fileDescriptor)
+    this.heat.api.downloadFile(this.message.msgId).then(encryptedFileContent => {
+      this.messaging.onFile(encryptedFileContent, this.room, this.message.msgId, this.fileDescriptor,
+        () => {
+          this.fileIndicator = 2
+        })
+    }).catch(reason => {
+      this.$mdToast.show(this.$mdToast.simple().textContent(`Error on file downloading`).hideDelay(6000))
+      console.error(reason)
+    })
+  }
+
 }

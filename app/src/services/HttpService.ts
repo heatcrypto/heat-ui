@@ -30,6 +30,15 @@ interface QueuedRequest {
 @Inject('$http','env','$q')
 class HttpService {
 
+  static prepareUrl(url: string, forcedApiKey = false): string {
+    if (!SettingsService.REQ_API_KEY_URLS) return url
+    if (!forcedApiKey && !SettingsService.REQ_API_KEY_URLS.find(search => url.indexOf(search) > -1)) return url
+    let s = "apiKey=" + SettingsService.apiKey
+    return url.indexOf("?") == -1
+        ? url + "?" + s
+        : url + "&" + s
+  }
+
   /**
    * The queue index in this.queues is obtained by comparing the url of the GET request
    * to the prefixes in this.throttled. If the url starts with this.throttled[0] the index
@@ -111,11 +120,13 @@ class HttpService {
     return deferred.promise
   }
 
-  public get(url:string): angular.IPromise<string> {
+  public get(url:string, forcedApiKey = false): angular.IPromise<string> {
+    url = HttpService.prepareUrl(url, forcedApiKey)
+
     let deferred = this.$q.defer<string>();
     let promise = deferred.promise
     this.waitTurn(url, promise).then(() => {
-      if (this.env.type == EnvType.BROWSER) {
+      if (this.env.isBrowser || this.env.isElectron) {
         this.browserHttpGet(url, deferred.resolve, deferred.reject);
       }
       else {
@@ -162,10 +173,21 @@ class HttpService {
     req.end();
   }
 
-  public post(url:string, data:{[key:string]:any}): angular.IPromise<Object> {
+  public post(url:string, data:{[key:string]:any}) {
+    return this.postInternal(url, data, true)
+  }
+
+  /**
+   * Do POST without request transformation.
+   */
+  public post2(url:string, data: any) {
+    return this.postInternal(url, data, false)
+  }
+
+  private postInternal(url:string, data:{[key:string]:any} | any, isTransformRequest?): angular.IPromise<Object> {
     let deferred = this.$q.defer<Object>();
-    if (this.env.type == EnvType.BROWSER) {
-      this.browserHttpPost(url, data, deferred.resolve, deferred.reject);
+    if (this.env.isBrowser || this.env.isElectron) {
+      this.browserHttpPost(url, data, deferred.resolve, deferred.reject, isTransformRequest)
     }
     else {
       let a = document.createElement('a')
@@ -179,22 +201,25 @@ class HttpService {
     return deferred.promise;
   }
 
-  private browserHttpPost(url: string, data:{[key:string]:any}, onSuccess: Function, onFailure: Function) {
-    this.$http({
+  private browserHttpPost(url: string, data: {[key:string]:any} | any, onSuccess: Function, onFailure: Function, isTransformRequest) {
+    let config: any = {
       method: 'POST',
       url: url,
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      transformRequest: function(obj) {
+      data: data
+    }
+    if (isTransformRequest) {
+      config.transformRequest = function(obj) {
         var str = [];
         for(var p in obj)
           str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
         return str.join("&");
-      },
-      data: data
-  }).then(
+      }
+    }
+    this.$http(config).then(
     (response:any) => { onSuccess(response.data) },
     (response) => { onFailure(response.data) }
-  );
+    );
   }
 
   private nodeHttpPost(isHttps: boolean, hostname: string, port: number, path: string, request: any, onSuccess: Function, onFailure: Function) {
@@ -220,4 +245,5 @@ class HttpService {
     req.write(body);
     req.end();
   }
+
 }

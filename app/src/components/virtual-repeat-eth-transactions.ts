@@ -1,7 +1,7 @@
 ///<reference path='VirtualRepeatComponent.ts'/>
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 Heat Ledger Ltd.
+ * Copyright (c) 2021 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,9 +24,21 @@
 @Component({
   selector: 'virtualRepeatEthTransactions',
   inputs: ['account','personalize'],
+  styles: [`
+    .failed {
+      color: red;
+    }
+    .pending {
+      color: coral;
+    }
+    .pointer {
+      cursor: pointer;
+    }
+  `],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+        Latest Transactions <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp;&nbsp; (cached)</span>
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -47,13 +59,16 @@
           <!-- <div class="truncate-col transaction-col left" ng-if="vm.personalize">Transaction</div> -->
 
           <!-- AMOUNT -->
-          <div class="truncate-col amount-col left" ng-if="vm.personalize">Amount</div>
+          <div class="truncate-col amount-col" ng-if="vm.personalize">Amount</div>
 
           <!-- TOFROM -->
           <div class="truncate-col tofrom-col left" ng-if="vm.personalize">To/From</div>
 
           <!-- INFO -->
           <div class="truncate-col info-col left" flex>Info</div>
+
+          <!-- Memo -->
+          <div class="truncate-col left" flex>Memo</div>
 
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
@@ -66,7 +81,7 @@
             <div class="he truncate-col height-col left" ng-if="!vm.personalize">
               <span ng-show="item.height!=2147483647">{{item.heightDisplay}}</span>
               <span>
-                <a target="_blank" href="https://etherscan.io/block/{{item.heightDisplay}}">{{item.heightDisplay}}</a>
+                <a target="_blank" rel="noopener noreferrer" href="https://etherscan.io/block/{{item.heightDisplay}}">{{item.heightDisplay}}</a>
               </span>
             </div>
             -->
@@ -76,12 +91,12 @@
 
             <!-- ID -->
             <div class="truncate-col id-col left" ng-if="vm.personalize || vm.account">
-              <a target="_blank" href="https://ethplorer.io/tx/{{item.hash}}">{{item.hash}}</a>
+              <a class="pointer" ng-click="vm.txnDetails($event, item)">{{item.hash}}</a>
             </div>
 
             <!-- INOUT -->
             <div class="truncate-col inoutgoing-col left" ng-if="vm.personalize">
-              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: !item.outgoing}">
+              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: item.outgoing==false}">
                 {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
               </md-icon>
             </div>
@@ -92,19 +107,31 @@
             </div> -->
 
             <!-- AMOUNT -->
-            <div class="truncate-col amount-col left" ng-if="vm.personalize">
+            <div class="truncate-col amount-col" ng-if="vm.personalize">
               <span ng-bind-html="item.renderedAmount"></span>
             </div>
 
             <!-- TOFROM -->
             <div class="truncate-col tofrom-col left" ng-if="vm.personalize">
-              <span ng-bind-html="item.renderedToFrom"></span>
+<!--              <a class="pointer" ng-click="vm.addressDetails($event, item.renderedToFrom)">{{item.renderedToFrom}}</a>-->
+              <a href="#/ethereum-account/{{item.renderedToFrom}}">{{item.renderedToFrom}}</a>
+<!--              <span ng-bind-html="item.renderedToFrom"></span>-->
             </div>
 
             <!-- INFO -->
             <div class="truncate-col info-col left" flex>
               <span ng-bind-html="item.renderedInfo"></span>
             </div>
+
+            <!-- MEMO -->
+            <div ng-if="item.message" class="truncate-col left" flex>
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
+                {{item.message.text}}
+                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+            </div>
+            <span ng-if="!item.message" class="truncate-col left">
+              <a class="pointer" ng-click="vm.paymentMemoDialog($event, item)">create</a>
+            </span>
 
             <!-- JSON -->
             <div class="truncate-col json-col">
@@ -121,13 +148,14 @@
 })
 
 @Inject('$scope','$q','ethTransactionsProviderFactory','settings','user','render',
-  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions')
+  '$mdPanel','controlCharRender','web3','ethereumPendingTransactions', 'storage', 'http')
 class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
   personalize: boolean; // @input
 
   renderer: EthTransactionRenderer = new EthTransactionRenderer(this);
+  private ethBlockExplorerService: EthBlockExplorerService;
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -138,8 +166,18 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
               private $mdPanel: angular.material.IPanelService,
               private controlCharRender: ControlCharRenderService,
               private web3: Web3Service,
-              private ethereumPendingTransactions: EthereumPendingTransactionsService) {
-    super($scope, $q);
+              private ethereumPendingTransactions: EthereumPendingTransactionsService,
+              private storage: StorageService,
+              private http: HttpService) {
+    super($scope, $q)
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
+    this.cache = {
+      get: key => db.getValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key).then(r => r?.value),
+      put: (key, value) => db.putValue(wlt.CACHE_KEY.addressInfo('ETH', this.account) + '-' + key, value),
+    }
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
     this.initializeVirtualRepeat(
       this.ethTransactionsProviderFactory.createProvider(this.account),
@@ -150,7 +188,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         transaction['time'] = dateFormat(date, format);
         transaction['heightDisplay'] = 'no height'
         if (this.personalize) {
-          transaction['outgoing'] = this.user.account == transaction.from;
+          transaction['outgoing'] = this.user.currency.address.toUpperCase() == transaction.from.toUpperCase();
 
           //transaction['renderedTransactionType'] = this.renderer.renderTransactionType(transaction);
           let amountVal = this.renderer.renderAmount(transaction);
@@ -161,29 +199,89 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
         let renderedInfo = this.renderer.renderInfo(transaction);
         if (angular.isString(renderedInfo)) {
           transaction['renderedInfo'] = renderedInfo;
-        }
-        else if (angular.isObject(renderedInfo)) {
-          renderedInfo.then((text)=>{
+        } else if (angular.isObject(renderedInfo)) {
+          renderedInfo.then((text) => {
             transaction['renderedInfo'] = text;
           })
         }
+
+        //processed item has message value or null so undefined only should be processed
+        if (transaction['message'] === undefined) {
+          let p = <Promise<{ method: number; text: string; }>>wlt.loadPaymentMessage(transaction.hash)
+          p.then(v => transaction['message'] = v)
+              .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
+        }
+
       }
-    );
+    ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
-    let timeout = setTimeout(refresh, 10*1000)
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
+    let interval = setInterval(refresh, 60 * 1000)
 
-    let listener = this.determineLength.bind(this)
-    ethereumPendingTransactions.addListener(listener)
+    let listener = this.updateOnNewTransaction.bind(this)
+    this.ethereumPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      ethereumPendingTransactions.removeListener(listener)
-      clearTimeout(timeout)
+    this.$scope.$on('$destroy', () => {
+      this.ethereumPendingTransactions.removeListener(listener)
+      clearInterval(interval)
     })
   }
 
+  updateOnNewTransaction(pendingTxRemoved) {
+    if (pendingTxRemoved) {
+      setTimeout(this.determineLength.bind(this), 500)
+    } else {
+      let interval = setInterval(this.determineLength.bind(this), 7 * 1000)
+      setTimeout(() => clearInterval(interval), 50 * 1000)
+    }
+  }
+
   jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: '+item.transaction);
+    let fields = [["hash", "id"], ["time"], ["from"], ["to"], ["renderedAmount", "amount"]]
+    dialogs.jsonDetails($event, item, 'Transaction: ' + item.hash, fields)
+  }
+
+  txnDetails($event, item) {
+    this.ethBlockExplorerService.getTxInfo(item.hash).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
+      if (parsed) {
+        let fields = [["hash", "id"], ["time"], ["from"], ["to"], ["renderedAmount", "amount"]]
+        dialogs.jsonDetails($event, parsed, 'Transaction: ' + (parsed.txid || parsed.hash), fields, item, true)
+      }
+    },
+    reason => {
+      if (reason) console.error(reason)
+    })
+  }
+
+  addressDetails($event, address) {
+    this.ethBlockExplorerService.getAddressInfo(address, true).then(response => {
+      let parsed = angular.isString(response) ? JSON.parse(response) : response
+      if (parsed) {
+        parsed.renderedAmount = (parsed.ETH?.balance || ((parsed.balance || 0) / 1000000000000000000)) + " ETH"
+        parsed.countTxs = parsed.countTxs || parsed.txs
+        let fields = [["address"], ["renderedAmount", "balance"], ["countTxs", "number of transactions"]]
+        if (parsed.nonce) fields.push(["nonce"])
+        dialogs.jsonDetails(null, parsed, 'Address: ' + parsed.address, fields, null, true)
+      }
+    },reason => {
+      if (reason) console.error(reason)
+    })
+  }
+
+  paymentMemoDialog($event, item) {
+    let heatService = <HeatService>heat.$inject.get('heat')
+    return wlt.getHeatUnavailableReason(heatService, this.user.account)
+        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.hash, heatUnavailableReason))
+        .then(paymentMessage => {
+          if (paymentMessage) {
+            item.message = paymentMessage // to display message
+          }
+          return paymentMessage
+        })
+        .catch(reason => {
+          if (reason) console.error(reason)
+        })
   }
 
   imageUrl(contractAddress: string) {
@@ -206,7 +304,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
 }
 
 interface EthTemplateFunction {
-  (transaction: IHeatTransaction):string;
+  (transaction: EthplorerAddressTransactionExtended):string;
 }
 
 class EthTransactionRenderHelper {
@@ -278,21 +376,20 @@ class EthTransactionRenderer {
   private renderers: IStringHashMap<EthTransactionRenderHelper> = {};
   private transactionTypes: IStringHashMap<string> = {};
   private ethTransactionParser: EthTransactionParserService
-  private ethplorer: EthplorerService
+  private ethBlockExplorerService: EthBlockExplorerService
 
   constructor(private provider?: {account?: string, personalize: boolean}) {
     let key;
     this.$q = <angular.IQService> heat.$inject.get('$q');
     this.ethTransactionParser = <EthTransactionParserService> heat.$inject.get('ethTransactionParser');
-    this.ethplorer = heat.$inject.get('ethplorer')
+    this.ethBlockExplorerService = heat.$inject.get('ethBlockExplorerService')
     key = this.TYPE_ETHEREUM_TRANSFER;
     this.transactionTypes[key] = 'TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return '<b>TRANSFER</b> $amount from $from to $to'
-      },
+      "$status<b>TRANSFER</b> $amount from $from to $to",
       (t) => {
         return {
+          status: this.status(t),
           from: this.account(t.from),
           to: this.account(t.to),
           amount: this.amount(t.value)
@@ -302,11 +399,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ERC20_APPROVE;
     this.transactionTypes[key] = 'ERC20 APPROVE';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return '<b>ERC20 APPROVE</b> $from $to $spender $value'
-      },
+      "$status<b>ERC20 APPROVE</b> $from $to $spender $value",
       (t) => {
         return {
+          status: this.status(t),
           from: this.account(t.from),
           to: this.account(t.to),
           spender: this.account(t.abi.decodedData.params[0].value),
@@ -328,41 +424,38 @@ class EthTransactionRenderer {
     key = this.TYPE_ERC20_TRANSFER
     this.transactionTypes[key] = 'ERC20 TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>ERC20 TRANSFER</b> Send $value $token from $from to $to";
-      },
+      "$status<b>ERC20 TRANSFER</b> Send $value $token from $from to $to",
       (t) => {
         return {
+          status: this.status(t),
           token: this.token(t.to),
           from: this.account(t.from),
           to: this.account(t.abi.decodedData.params[0].value),
-          value: this.amount(t.abi.decodedData.params[1].value, this.ethplorer.tokenInfoCache[t.to])
+          value: this.amount(t.abi.decodedData.params[1].value, this.ethBlockExplorerService.tokenInfoCache[t.to])
         }
       }
     );
     key = this.TYPE_ERC20_TRANSFER_FROM
     this.transactionTypes[key] = 'ERC20 TRANSFER FROM';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>ERC20 TRANSFER FROM</b> $asset from $sender to $recipient amount $amount";
-      },
+      "$status<b>ERC20 TRANSFER FROM</b> $asset from $sender to $recipient amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           asset: this.token(t.to),
           sender: this.account(t.abi.decodedData.params[0].value),
           recipient: this.account(t.abi.decodedData.params[1].value),
-          amount: this.amount(t.abi.decodedData.params[2].value, this.ethplorer.tokenInfoCache[t.to])
+          amount: this.amount(t.abi.decodedData.params[2].value, this.ethBlockExplorerService.tokenInfoCache[t.to])
         }
       }
     );
     key = this.TYPE_ETHERDELTA_DEPOSIT_TOKEN
     this.transactionTypes[key] = 'DELTA DEPOSIT';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA DEPOSIT</b> Deposit $amount $token";
-      },
+      "$status<b>DELTA DEPOSIT</b> Deposit $amount $token",
       (t) => {
         return {
+          status: this.status(t),
           token: this.token(t.abi.decodedData.params[0].value),
           amount: this.amount(t.abi.decodedData.params[1].value)
         }
@@ -371,11 +464,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_WITHDRAWAL
     this.transactionTypes[key] = 'DELTA WITHDRAW';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA WITHDRAW</b> Withdraw $amount";
-      },
+      "$status<b>DELTA WITHDRAW</b> Withdraw $amount",
       (t) => {
         return {
+          status: this.status(t),
           amount: this.amount(t.abi.decodedData.params[0].value)
         }
       }
@@ -383,11 +475,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_WITHDRAWAL_TOKEN
     this.transactionTypes[key] = 'DELTA WITHDRAW TOKEN';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA WITHDRAW TOKEN</b> Withdraw $amount $token";
-      },
+      "$status<b>DELTA WITHDRAW TOKEN</b> Withdraw $amount $token",
       (t) => {
         return {
+          status: this.status(t),
           token: this.token(t.abi.decodedData.params[0].value),
           amount: this.amount(t.abi.decodedData.params[1].value)
         }
@@ -396,11 +487,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_ORDER
     this.transactionTypes[key] = 'DELTA ORDER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA ORDER</b> Order get $amountGet $tokenGet pay $amountGive $tokenGive";
-      },
+      "$status<b>DELTA ORDER</b> Order get $amountGet $tokenGet pay $amountGive $tokenGive",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -412,11 +502,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_TRADE
     this.transactionTypes[key] = 'DELTA TRADE';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA TRADE</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount";
-      },
+      "$status<b>DELTA TRADE</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -430,11 +519,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_TRADE_BALANCES
     this.transactionTypes[key] = 'DELTA TRADE BALANCES';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA TRADE BALANCES</b> Trade balances get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount";
-      },
+      "$status<b>DELTA TRADE BALANCES</b> Trade balances get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -447,11 +535,10 @@ class EthTransactionRenderer {
     key = this.TYPE_ETHERDELTA_CANCEL_ORDER
     this.transactionTypes[key] = 'DELTA CANCEL ORDER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      (t) => {
-        return "<b>DELTA CANCEL ORDER</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount";
-      },
+      "$status<b>DELTA CANCEL ORDER</b> Trade get $amountGet $tokenGet pay $amountGive $tokenGive from $user amount $amount",
       (t) => {
         return {
+          status: this.status(t),
           tokenGet: this.token(t.abi.decodedData.params[0].value),
           amountGet: this.amount(t.abi.decodedData.params[1].value),
           tokenGive: this.token(t.abi.decodedData.params[2].value),
@@ -474,10 +561,9 @@ class EthTransactionRenderer {
 
   /* Returns HTML */
   renderedToFrom(transaction: EthplorerAddressTransactionExtended): string {
-    if (transaction.from == this.provider.account) {
-      return this.account(transaction.to);
-    }
-    return this.account(transaction.from);
+    return transaction.from.toUpperCase() == this.provider.account.toUpperCase()
+        ? transaction.to
+        : transaction.from;
   }
 
   // formatAmount(amount: string, symbol: string, neg: boolean): string {
@@ -486,7 +572,7 @@ class EthTransactionRenderer {
   // }
 
   isOutgoing(transaction: EthplorerAddressTransactionExtended): boolean {
-    return transaction.from == this.provider.account;
+    return transaction.from.toUpperCase() == this.provider.account.toUpperCase();
   }
 
   renderInfo(transaction: EthplorerAddressTransactionExtended) {
@@ -501,18 +587,18 @@ class EthTransactionRenderer {
   }
 
   account(account: string): string {
-    if (account == this.provider.account) {
-      return `<a target="_blank" href="https://ethplorer.io/address/${account}">Myself</a>`;
-    }
-    return `<a target="_blank" href="https://ethplorer.io/address/${account}">${account}</a>`;
+    if (!account) return
+    //let url = this.ethBlockExplorerService.getAddressInfoUrl(account)
+    let s = account.toUpperCase() == this.provider.account.toUpperCase() ? "Myself" : account
+    //return `<a target="_blank" rel="noopener noreferrer" href="${url}">${s}</a>`
+    return `<a href="#/ethereum-account/${account}">${s}</a>`
   }
 
   token(address: string) {
-    let tokenInfo = this.ethplorer.tokenInfoCache[address]
-    if (tokenInfo) {
-      return `<a target="_blank" href="https://ethplorer.io/address/${address}">${tokenInfo.symbol}</a>`;
-    }
-    return `<a target="_blank" href="https://ethplorer.io/address/${address}">${address}</a>`;
+    let tokenInfo = this.ethBlockExplorerService.tokenInfoCache[address]
+    let url = this.ethBlockExplorerService.getAddressInfoUrl(address)
+    let s = tokenInfo ? tokenInfo.symbol : address
+    return `<a target="_blank" rel="noopener noreferrer" href="${url}">${s}</a>`
   }
 
   amount(amount: string, tokenInfo?: EthplorerTokenInfo) {
@@ -522,8 +608,17 @@ class EthTransactionRenderer {
       str = utils.formatQNT(amount, tokenInfo.decimals) + ' ' + tokenInfo.symbol
     }
     else {
-      str = utils.commaFormat(Number(amount).toFixed(18)).replace(/(\.\d*?[1-9])0+$/g, "$1" ) + ' ETH'
+      str = utils.commaFormat(amount).replace(/(\.\d*?[1-9])0+$/g, "$1" ) + ' ETH'
     }
     return `<span>${str}</span>`;
+  }
+
+  private status(t: EthplorerAddressTransactionExtended) {
+    // status 1 OK, 0 Fail, -1 pending
+    if (t.ethereumSpecific) {
+      if (t.ethereumSpecific.status == 0) return "<span class='failed'>[FAILED] </span>"
+      if (t.ethereumSpecific.status == -1) return "<span class='pending'>[PENDING] </span>"
+    }
+    return ""
   }
 }

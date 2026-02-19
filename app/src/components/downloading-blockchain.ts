@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2016 Heat Ledger Ltd.
+ * Copyright (c) 2019 Heat Ledger Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,48 +20,83 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * */
+
 @Component({
   selector: 'downloadingBlockchain',
   template: `
     <div layout="column" flex layout-fill ng-show="vm.showComponent">
       <md-progress-linear md-mode="indeterminate"></md-progress-linear>
-      <center><div><b>Attention!!</b></div>
-      <div>Downloading blockchain last block height: {{vm.lastBlockHeight}}, time {{vm.lastBlockTime}}</div></center>
+      <div style="text-align: center;">
+        Downloading blockchain last block height: {{vm.lastBlockHeight}}, time {{vm.lastBlockTime}}.
+        &nbsp;&nbsp;
+        <span><i>Server: {{vm.serverUrl}}</i></span>
+      </div>
     </div>
   `
 })
-@Inject('$rootScope', '$scope','heat','$interval','settings', '$router')
+@Inject('$rootScope', '$scope','heat','$interval','settings', '$router', '$mdToast')
 class DownloadingBlockchainComponent {
   showComponent = false;
+  serverUrl = ''
   lastBlockHeight = 0;
   lastBlockTime = 0;
-  heatServerLocation;
+  refreshInterval;
+  preHeight = 0;
   constructor(private $rootScope: angular.IScope,
               private $scope: angular.IScope,
               private heat: HeatService,
               private $interval: angular.IIntervalService,
               private settings: SettingsService,
-              private router) {
-    this.refresh();
+              private router,
+              private $mdToast: angular.material.IToastService) {
 
-    let interval = $interval(()=>{ this.refresh() }, 60*1000, 0, false);
-    let checkServerHealthInterval = $interval(()=>{ this.checkServerHealth(this.settings) }, 33*1000, 0, false);
+    setTimeout(() => this.refresh(), 1000)
 
-    $scope.$on('$destroy',()=>{
-      $interval.cancel(interval);
-      $interval.cancel(checkServerHealthInterval);
+    let currentServerUrl = () => this.settings.get(SettingsService.HEAT_HOST) + ':' + this.settings.get(SettingsService.HEAT_PORT)
+    this.serverUrl = currentServerUrl()
+
+    let skip = 0  //control the speed of refreshing depending on the download blocks count
+    this.refreshInterval = $interval(() => {
+      if (this.serverUrl != currentServerUrl()) {
+        this.serverUrl = currentServerUrl()
+        this.refresh()
+        return
+      }
+      if (skip > 0) {
+        skip--
+        return
+      }
+      this.refresh()
+      if (this.lastBlockHeight - this.preHeight > 20) {
+        skip = 0
+      } else {
+        skip = 10
+      }
+      this.preHeight = this.lastBlockHeight
+    }, 6 * 1000, 0, false);
+
+    setTimeout(() => this.notifyOnServerLocationUpdating(), 1000)
+
+    let checkServerHealthInterval
+    settings.initialized.then(value => {
+      checkServerHealthInterval = $interval(() => {
+        if (this.settings.failoverEnabled) {
+          this.checkServerHealth(this.settings)
+        }
+      }, 33 * 1000, 0, false);
+
+      setTimeout(() => {
+        if (this.settings.failoverEnabled) {
+          //Check servers health to choose the right
+          this.checkServerHealth(this.settings, true)
+        }
+      }, 300)
+    })
+
+    $scope.$on('$destroy', () => {
+      $interval.cancel(this.refreshInterval);
+      if (checkServerHealthInterval) $interval.cancel(checkServerHealthInterval);
     });
-
-    //Check servers health to choose the right
-    //wait for loading  failover-config.json
-    setTimeout(() => {
-      if (SettingsService.getFailoverDescriptor())
-        this.checkServerHealth(this.settings, true);
-      else
-        setTimeout(() => {
-          this.checkServerHealth(this.settings, true);
-        }, 500)
-    }, 200);
   }
 
   refresh() {
@@ -71,12 +106,7 @@ class DownloadingBlockchainComponent {
         let date = utils.timestampToDate(status.lastBlockTimestamp);
         this.lastBlockTime = dateFormat(date, format);
         this.lastBlockHeight = status.numberOfBlocks;
-        if ((Date.now() - date.getTime()) > 1000 * 60 * 60) {
-          this.showComponent = true;
-        }
-        else {
-          this.showComponent = false;
-        }
+        this.showComponent = (Date.now() - date.getTime()) > 1000 * 60 * 5;
       })
     }, ()=>{
       this.$scope.$evalAsync(()=>{
@@ -94,23 +124,25 @@ class DownloadingBlockchainComponent {
     let knownServers: ServerDescriptor[] = SettingsService.getFailoverDescriptor().knownServers || [];
 
     let currentServerHealth: IHeatServerHealth;
-    let promises = [];
+    let promises = []
     knownServers.forEach(server => {
-      promises.push(
-        this.heat.api.getServerHealth(server.host, server.port).then(health=> {
-          server.health = health;
-          server.statusError = null;
-        }).catch(function (err) {
-          server.health = null;
-          server.statusError = err;
-          return err;
+      let p = new Promise<any>((resolve, reject) => {
+        this.heat.api.getServerHealth(server.host, server.port).then(health => {
+          server.health = health
+          server.statusError = null
+          resolve(server)
+        }, reason => {
+          server.health = null
+          server.statusError = reason
+          resolve(server)
         })
-      )
-    });
+      })
+      promises.push(p)
+    })
 
     let minEqualityServersNumber = heat.isTestnet ? 3 : 10;
 
-    Promise.all(promises).then(() => {
+    let onHealthResponse = () => {
       let currentServerIsAlive = false;
       let currentServer = null;
 
@@ -120,22 +152,19 @@ class DownloadingBlockchainComponent {
         server.statusScore = null;
         if (health)
           server.statusScore = 0; // has health means has min score
-        if (server.host == settings.get(SettingsService.HEAT_HOST) && server.port == settings.get(SettingsService.HEAT_PORT)) {
+        if (server.host == settings.get(SettingsService.HEAT_HOST) && (server.port || "") == settings.get(SettingsService.HEAT_PORT)) {
           currentServerHealth = health;
           currentServer = server;
-          if (!this.heatServerLocation)
-            this.notifyOnServerLocationUpdating(currentServer);
           //if the server response is nothing then server is down
           currentServerIsAlive = !server.statusError;
           server.statusScore = currentServerIsAlive ? 0 : null;
         }
       });
 
-      if (!currentServer)
-        return;
+      if (!currentServer) return;
 
-      if (currentServerIsAlive && ! currentServerHealth)
-        return;  //has no health (old version or monitoring API is disabled) so nothing to compare
+      //has no health (old version or monitoring API is disabled) so nothing to compare
+      if (currentServerIsAlive && ! currentServerHealth) return;
 
       //compare health of other servers with health of the current server
       knownServers.forEach(server => {
@@ -147,53 +176,75 @@ class DownloadingBlockchainComponent {
         let balancesEqualityEstimation = this.calculateBalancesEqualityEstimation(currentServerHealth, health);
         let peerEstimation = this.calculatePeerEstimation(currentServerHealth, health);
 
-        if (blocksEstimation == 1 && balancesEqualityEstimation >= 0 && peerEstimation >= 0)
-          server.statusScore = blocksEstimation + balancesEqualityEstimation + peerEstimation;
-        else
-          server.statusScore = 0;
+        server.statusScore = (blocksEstimation == 1 && balancesEqualityEstimation >= 0 && peerEstimation >= 0)
+          ? blocksEstimation + balancesEqualityEstimation + peerEstimation
+          : 0;
       });
 
       let best: ServerDescriptor = currentServer;
-      let causeToSelectBest;
+      let causeToSelectBest: String;
       knownServers.forEach(server => {
         if (best == currentServer && !currentServerIsAlive) {
           best = server; //if current server is not alive switch to other server in any case
           let se = currentServer.statusError;
-          causeToSelectBest = "Сurrent server is not alive"
+          causeToSelectBest = "Current host is unavailable"
             + (se.code ? ". Code: " + se.code : "") + (se.description ? ". Description: " + se.description : "");
+          return;
         }
         if (server.statusScore >= 0 || !currentServerIsAlive) {
           if ((server.statusScore != null && best.statusScore == null) || server.statusScore > best.statusScore) {
             best = server;
             causeToSelectBest = "Status score is better";
+            return;
           }
-          if (server.statusScore == best.statusScore && server.priority < best.priority) {
+          if (server.statusScore == best.statusScore && server.priority < best.priority && best != server) {
             best = server;
             causeToSelectBest = "Server priority";
+            return;
           }
         }
       });
       if (best && best != currentServer) {
         let bestIsAlive = !best.statusError;
         if (bestIsAlive) {
-          settings.setCurrentServer(best);
-          this.notifyOnServerLocationUpdating(best);
-          this.heat.resetSubscriber();
-          if (firstTime) {
-            //on initializing (first time) switched silently and starts from login page
-            this.router.navigate('/login');
-          } else {
-            let message = currentServer
-              ? "Client API address switched from \n" + currentServer.host + ":" + currentServer.port
-                + "\nto\n" + best.host + ":" + best.port
-              : "Client API address switched to\n" + best.host + ":" + best.port;
-            if (causeToSelectBest)
-              message = message + " \n\n" + "Reason: " + causeToSelectBest;
-            alert(message);
+          if (this.settings.failoverEnabled) {
+            this.switchToBestServer(settings, best, currentServer, firstTime, causeToSelectBest)
           }
         }
       }
-    })
+    }
+    Promise.all(promises)
+      .then(onHealthResponse, reason => console.error(reason))
+      .catch(reason => {
+        console.error(reason)
+      })
+  }
+
+  private switchToBestServer(
+      settings: SettingsService,
+      bestServer: ServerDescriptor,
+      currentServer: ServerDescriptor,
+      firstTime: boolean,
+      causeToSelectBest: String) {
+    settings.setCurrentServer(bestServer);
+    console.debug("api server is changed from " + currentServer.host + ":" + (currentServer.port || "") + " to " +  bestServer.host + ":" + (bestServer.port || ""))
+    this.notifyOnServerLocationUpdating(bestServer);
+    this.heat.resetSubscriber();
+    if (!firstTime) {
+      let message = currentServer
+          ? "Client API address switched from \n" + currentServer.host + ":" + (currentServer.port || "")
+          + "\n to \n" + bestServer.host + ":" + bestServer.port
+          : "Client API address switched to\n" + bestServer.host + ":" + (bestServer.port || "");
+      if (causeToSelectBest) message = message + " \n" + "Reason: " + causeToSelectBest;
+      this.$mdToast.show(
+          this.$mdToast.simple()
+              .textContent(message)
+              .highlightAction(true)
+              .action('close')
+              .highlightClass('md-warn')
+              .hideDelay(0)
+      )
+    }
   }
 
   /**
@@ -226,6 +277,8 @@ class DownloadingBlockchainComponent {
   }
 
   calculatePeerEstimation(currentServerHealth: IHeatServerHealth, health: IHeatServerHealth): number {
+    if (!health.peersIndicator) return -1;
+    if (!currentServerHealth.peersIndicator) return 1;
     let connected = health.peersIndicator.connected / health.peersIndicator.all;
     let currentServerConnected = currentServerHealth.peersIndicator.connected / currentServerHealth.peersIndicator.all;
     let threshold = SettingsService.getFailoverDescriptor().connectedPeersThreshold;
@@ -236,9 +289,8 @@ class DownloadingBlockchainComponent {
         : 0;
   }
 
-  private notifyOnServerLocationUpdating(sd: ServerDescriptor) {
-    this.heatServerLocation = sd.host + ":" + sd.port;
-    this.$rootScope.$emit('HEAT_SERVER_LOCATION', this.heatServerLocation);
+  private notifyOnServerLocationUpdating(bestServer?: ServerDescriptor) {
+    this.$rootScope.$emit('HEAT_SERVER_LOCATION', bestServer)
   }
 
 }

@@ -23,23 +23,21 @@
 let QRCode:any;
 module dialogs {
   export function depositAsset($event, assetInfo: AssetInfo) {
-    var http = <HttpService> heat.$inject.get('http');
-    var user = <UserService> heat.$inject.get('user');
-    var $q = <angular.IQService> heat.$inject.get('$q');
-    var clipboard = <ClipboardService> heat.$inject.get('clipboard');
-    var localKeyStore = <LocalKeyStoreService> heat.$inject.get('localKeyStore');
-    var env = <EnvService> heat.$inject.get('env');
+    const http = <HttpService>heat.$inject.get('http');
+    const user = <UserService>heat.$inject.get('user');
+    const $q = <angular.IQService>heat.$inject.get('$q');
+    const clipboard = <ClipboardService>heat.$inject.get('clipboard');
+    const localKeyStore = <LocalKeyStoreService>heat.$inject.get('localKeyStore');
+    const env = <EnvService>heat.$inject.get('env');
 
-    var account = user.account, publicKey = user.publicKey
-    if (user.currency.symbol != 'HEAT') {
-      account = localKeyStore.list()[0]
-      publicKey = 'xx-yy-zz'
-    }
+    let account = user.account, publicKey = user.publicKey;
 
-    var url = `https://heatwallet.com/getaddr.cgi?heataccount=${account}&publickey=${publicKey}&aid=${assetInfo.id}`;
-    var deferred = $q.defer();
+    let noteOne = `Deposit address is associated with account HEAT ${account} and public key ${publicKey}`
+
+    let url = `https://heatwallet.com/getaddr.cgi?heataccount=${account}&publickey=${publicKey}&aid=${assetInfo.id}`;
+    const deferred = $q.defer();
     http.get(url).then((response)=>{
-      var parsed = angular.isString(response) ? JSON.parse(response) : response;
+      const parsed = angular.isString(response) ? JSON.parse(response) : response;
       dialogs.dialog({
         id: 'depositAsset',
         title: `Deposit ${assetInfo.symbol}`,
@@ -53,6 +51,7 @@ module dialogs {
         template: `
           <div>
             <p>{{vm.symbol}} Deposit address <b id="deposit-dialog-btc-address-element">{{vm.address}}</b>&nbsp;<a ng-click="vm.copyAddress()">[copy]</a></p>
+            <p>{{vm.noteOne}}</p>
             <p><div class="qrcodeBox" id="depositeAddressQRCode"></div></p>
             <p></p>
             <p>
@@ -61,6 +60,7 @@ module dialogs {
           </div>
         `,
         locals: {
+          noteOne: noteOne,
           dialogue: parsed.deposit.dialogue,
           isBtc: parsed.deposit.dialogue.includes('5592059897546023466'),
           address:parsed.deposit.address,

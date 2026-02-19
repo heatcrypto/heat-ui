@@ -5,7 +5,9 @@
   inputs: ['account'],
   template: `
     <div layout="column" flex layout-fill>
-      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">Latest Transactions
+      <div layout="row" class="trader-component-title" ng-hide="vm.hideLabel">
+        Latest Transactions
+        <span ng-if="vm.cachedItems" style="opacity: 0.8; color: darkorange">&nbsp;&nbsp; (cached)</span>
       </div>
       <md-list flex layout-fill layout="column">
         <md-list-item class="header">
@@ -13,14 +15,16 @@
           <div class="truncate-col date-col left">Time</div>
           <!-- TX ID  -->
           <div class="truncate-col tx-col left">Transaction ID</div>
+          <!-- INOUT -->
+          <div class="truncate-col inoutgoing-col left">In/Out</div>
           <!-- FROM -->
-          <div class="truncate-col info-col left">FROM</div>
+          <div class="truncate-col message-col left">FROM</div>
           <!-- TO -->
-          <div class="truncate-col info-col left">TO</div>
+          <div class="truncate-col message-col left">TO</div>
           <!-- AMOUNT -->
           <div class="truncate-col amount-col right">Amount</div>
-          <!-- MESSAGE -->
-          <div class="truncate-col message-col left">Message</div>
+          <!-- MEMO -->
+          <div class="truncate-col message-col left">Memo</div>
           <!-- JSON -->
           <div class="truncate-col json-col"></div>
         </md-list-item>
@@ -30,30 +34,44 @@
             <div class="truncate-col date-col left">{{item.dateTime}}</div>
             <!-- TX ID -->
             <div class="truncate-col tx-col left" >
+              <span ng-if="item.blockheight == -1">[unconfirmed]</span>
               <span>
-                <a target="_blank" href="https://live.blockcypher.com/btc/tx/{{item.txid}}">{{item.txid}}</a>
+                <a target="_blank" rel="noopener noreferrer" href="https://live.blockcypher.com/btc/tx/{{item.txid}}">{{item.txid}}</a>
               </span>
             </div>
+            <!-- INOUT -->
+            <div class="truncate-col inoutgoing-col left">
+              <md-icon md-font-library="material-icons" ng-class="{outgoing: item.outgoing, incoming: item.outgoing==false}">
+                {{item.outgoing ? 'keyboard_arrow_up': 'keyboard_arrow_down'}}
+              </md-icon>
+            </div>
             <!-- FROM -->
-            <div class="truncate-col info-col left">
-             <span>{{item.from}}</span>
+            <div class="truncate-col message-col left">
+<!--             <span>{{item.from}}</span>-->
+             <a href="#/bitcoin-account/{{item.from}}">{{vm.account == item.from ? 'Myself' : item.from}}</a>
             </div>
             <!-- TO -->
-            <div class="truncate-col info-col left">
-              <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
-              <a ng-show = "item.to === 'Multiple Outputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
+            <div class="truncate-col message-col left">
+<!--              <span>{{item.to}}</span>-->
+              <a href="#/bitcoin-account/{{item.to}}">{{vm.account == item.to ? 'Myself' : item.to}}</a>
             </div>
             <!-- AMOUNT -->
             <div class="truncate-col amount-col right">
               <span>{{item.amount}}</span>
             </div>
-            <!-- MESSAGE -->
-            <div class="truncate-col message-col left">
-              <span>{{item.displayMessage}}</span>
+            <!-- MEMO -->
+            <div ng-if="item.message" class="truncate-col message-col left" flex>
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
+                {{item.message.text}}
+                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
             </div>
+            <span ng-if="!item.message" class="truncate-col message-col left">
+              <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">create</a>
+            </span>
+            
             <!-- JSON -->
             <div class="truncate-col json-col">
-              <a ng-click="vm.jsonDetails($event, item.json)">
+              <a ng-click="vm.jsonDetails($event, item.json, item)">
                 <md-icon md-font-library="material-icons">code</md-icon>
               </a>
             </div>
@@ -64,39 +82,37 @@
   `
 })
 
-@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions', 'user', 'bitcoinMessagesService')
+@Inject('$scope', '$q', 'btcTransactionsProviderFactory', 'settings', 'bitcoinPendingTransactions', 'user', 'storage')
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
-  btcMessages: Array<{ txId: string, message: string }> = []
+
   constructor(protected $scope: angular.IScope,
-    protected $q: angular.IQService,
-    private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
-    private settings: SettingsService,
-    private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
-    private user: UserService,
-    private bitcoinMessagesService: BitcoinMessagesService) {
-    super($scope, $q);
+              protected $q: angular.IQService,
+              private btcTransactionsProviderFactory: BtcTransactionsProviderFactory,
+              private settings: SettingsService,
+              private bitcoinPendingTransactions: BitcoinPendingTransactionsService,
+              private user: UserService,
+              private storage: StorageService) {
+
+    super($scope, $q)
+    this.cache = {
+        get: key => db.getValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key).then(r => r?.value),
+        put: (key, value) => db.putValue(wlt.CACHE_KEY.addressInfo('BTC', this.account) + '-' + key, value),
+    }
+  }
+
+  $onInit() {
     var format = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-    let privateKey = this.user.secretPhrase;
-    let publicKey = this.user.publicKey;
-    this.getBitcoinMessages(privateKey, publicKey)
+
     this.initializeVirtualRepeat(
       this.btcTransactionsProviderFactory.createProvider(this.account),
       /* decorator function */
       (transaction: any) => {
         transaction.amount = transaction.vout[0].value;
-        this.btcMessages.forEach(message => {
-          if (message.txId == transaction.txid) {
-            transaction.displayMessage = message.message;
-            if(transaction.displayMessage.length > 13) {
-              transaction.displayMessage = transaction.displayMessage.substr(0, 10).concat('...')
-            }
-            transaction.message = message.message
-          }
-        })
         transaction.dateTime = dateFormat(new Date(transaction.time * 1000), format);
         transaction.from = transaction.vin[0].addr;
+        transaction['outgoing'] = this.account.toUpperCase() == transaction.from.toUpperCase();
         let totalInputs = 0;
         let inputs = '';
         for (let i = 0; i < transaction.vin.length; i++) {
@@ -135,19 +151,34 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
         // if BTC were transferred from the unlocked account address then show it as "-Amount"
         if (inputs.includes(this.account)) {
-          transaction.amount = `-${transaction.amount}`;
+          let totalOut = 0
+          for (let i = 0; i < transaction.vout.length; i++) {
+            let addresses = transaction.vout[i].scriptPubKey.addresses
+            if (addresses && addresses[0] !== this.account) {
+              totalOut = totalOut + parseFloat(transaction.vout[i].value)
+            }
+          }
+          transaction.amount = `-${totalOut}`
         } else {
           // if input does not include the current unlocked account address then output will always have it
           for (let i = 0; i < transaction.vout.length; i++) {
             if (transaction.vout[i].scriptPubKey.addresses && transaction.vout[i].scriptPubKey.addresses[0] === this.account) {
-              transaction.to = this.account;
-              transaction.amount = transaction.vout[i].value;
+              transaction.to = this.account
+              transaction.amount = transaction.vout[i].value
+              break
             }
           }
         }
         // if change address was different then show hardcoded output
         if (!outputs.includes(this.account) && transaction.vout.length > 1) {
-          transaction.to = 'Multiple Outputs';
+          transaction.to = 'Multiple Outputs'
+        }
+
+        //processed item has message value or null so undefined only should be processed
+        if (transaction.message === undefined) {
+            let p = <Promise<{ method: number; text: string; }>>wlt.loadPaymentMessage(transaction.txid)
+            p.then(v => transaction.message = v)
+                .catch(reason => console.warn("payment message is not loaded: " + JSON.stringify(reason)))
         }
 
         transaction.json = {
@@ -161,44 +192,48 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
           inputs: inputs.trim(),
           outputs: outputs.trim(),
           size: transaction.size,
-          message: transaction.message ? transaction.message : ''
+          message: transaction.message || ''
         }
       }
-    );
+    ).catch(reason =>
+        console.warn("initialization btc list component error " + (reason ? JSON.stringify(reason) : "")))
 
-    var refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false);
+    let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
     let timeout = setTimeout(refresh, 10 * 1000)
+    let interval = setInterval(refresh, 60 * 1000)
 
     let listener = this.determineLength.bind(this)
     this.PAGE_SIZE = 10;
-    bitcoinPendingTransactions.addListener(listener)
+    this.bitcoinPendingTransactions.addListener(listener)
 
-    $scope.$on('$destroy', () => {
-      bitcoinPendingTransactions.removeListener(listener)
+    this.$scope.$on('$destroy', () => {
+      this.bitcoinPendingTransactions.removeListener(listener)
       clearTimeout(timeout)
+      clearInterval(interval)
     })
   }
 
-  jsonDetails($event, item) {
-    dialogs.jsonDetails($event, item, 'Transaction: ' + item.txid);
-  }
-
-
-  onSelect(selectedTransaction) { }
-
-  getBitcoinMessages = (privateKey: string, publicKey: string) => {
-    this.btcMessages = []
-    let addr = this.user.account
-    let messages = this.bitcoinMessagesService.messages[addr]
-    if (messages) {
-      messages.forEach(entry => {
-        let parts = entry.message.split(':'), data = parts[0], nonce = parts[1]
-        let message = heat.crypto.decryptMessage(data, nonce, publicKey, privateKey)
-        this.btcMessages.push({
-          txId: entry.txId,
-          message: message
-        })
-      })
+    jsonDetails($event, jsonObject, detailedObject?) {
+        let fields = [["txid", "id"], ["dateTime", "time"], ["blockheight", "block height"], ["from"], ["to"], ["amount"]]
+        dialogs.jsonDetails($event, jsonObject, 'Transaction: ' + jsonObject.txid, fields, detailedObject, true);
     }
-  }
+
+    paymentMemoDialog($event, item) {
+        let heatService = <HeatService>heat.$inject.get('heat')
+        wlt.getHeatUnavailableReason(heatService, this.user.account)
+            .then(heatUnavailableReason => wlt.paymentMemoDialog(item.txid, heatUnavailableReason))
+            .then(paymentMessage => {
+                if (paymentMessage) {
+                    item.message = paymentMessage // to display message
+                }
+                return paymentMessage
+            })
+            .catch(reason => {
+                if (reason) console.error(reason)
+            })
+    }
+
+    onSelect(selectedTransaction) {
+    }
+
 }

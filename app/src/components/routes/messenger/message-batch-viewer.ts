@@ -65,13 +65,13 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
     super($scope, $q, $timeout);
     this.store = storage.namespace('contacts.latestTimestamp',$scope);
     this.dateFormat = this.settings.get(SettingsService.DATEFORMAT_DEFAULT);
-
-    var refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
+    let refresh = utils.debounce((angular.bind(this, this.onMessageAdded)), 500, false);
     heat.subscriber.message({sender:this.user.account}, refresh, $scope);
     heat.subscriber.message({recipient:this.user.account}, refresh, $scope);
+  }
 
+  $onInit() {
     this.loadInitial();
-
     if (this.publickey == this.user.publicKey) {
       throw Error("Same public key as logged in user");
     }
@@ -100,6 +100,7 @@ class MessageBatchViewerComponent extends AbstractBatchViewerComponent {
   /* websocket event listener */
   onMessageAdded() {
     var batch = this.getFirst();
+    if (!batch) return
     batch.loadMore().then(() => {
       var entry = batch.getLast();
       var id = entry.__id;
