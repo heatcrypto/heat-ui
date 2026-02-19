@@ -74,7 +74,7 @@ class UserService extends EventEmitter {
   }
 
   //public accountNameIsPrivate: boolean;
-  public __accountNameIsPrivate: boolean;
+  private __accountNameIsPrivate: boolean;
   get accountNameIsPrivate() {
     return this.__accountNameIsPrivate
   }
@@ -226,8 +226,16 @@ class UserService extends EventEmitter {
       this.accountNameIsPrivate = match[1] == 'private';
       this.accountName = match[2];
 
+      //remove private name from local db
+      //in future this code will be obsolete
+      if (this.accountNameIsPrivate && this.accountName) {
+        db.getWalletEntry(this.account).then(entry => {
+          if (entry?.name) return db.saveWalletEntry(this.account, {name: null})
+        })
+      }
+
       // update local wallet name
-      if (this.key && this.key.name != this.accountName) {
+      if (!this.accountNameIsPrivate && this.key && this.key.name != this.accountName) {
         this.key.name = this.accountName;
         this.localKeyStore.put(this.key);
       }

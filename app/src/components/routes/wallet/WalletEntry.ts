@@ -160,7 +160,11 @@ namespace wlt {
               heat.fullApplicationScopeReload()
             }
           }
-      )
+      ).then(() => {
+        if (user.accountNameIsPrivate) {
+          this.walletEntry.name = user.accountName
+        }
+      })
     }
 
     public isZeroBalance() {
