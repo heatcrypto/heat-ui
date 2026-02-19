@@ -37,6 +37,7 @@
 @Inject('$scope','user','heat','$q','$interval')
 class UserBalanceComponent {
 
+  private balance: string = "0";
   private formattedBalance: string = "0";
   private formattedFraction: string = ".00";
   private loading: boolean = true;
@@ -85,12 +86,14 @@ class UserBalanceComponent {
     let ab = wlt.aggregatedBalances[this.user.account]
     ab = ab ? ab[this.user.currency.symbol] : undefined
     if (utils.isNumber(ab)) {
+      this.balance = ab
       let b = this.user.currency.symbol == 'HEAT' ? utils.formatHeat('' + ab) : '' + ab
       formatBalance(b)
     }
     //update balance for currency
     this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
+        this.balance = balance
         if (this.user.currency.symbol == 'HEAT') {
           formatBalance(utils.formatHeat(balance))
         } else {
@@ -99,11 +102,12 @@ class UserBalanceComponent {
       });
     }, (error: ServerEngineError) => {
       this.$scope.$evalAsync(() => {
-        this.formattedBalance = "0"
-        this.formattedFraction = ".00000000"
-        this.showError = true
-        this.errorDescription = error ? error.description : "-"
-        this.loading = false
+        if (angular.isUndefined(this.balance)) {
+          formatBalance('0')
+          this.showError = true
+          this.errorDescription = error ? error.description : "-"
+          this.loading = false
+        }
       });
     })
 
