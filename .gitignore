@@ -14,3 +14,4 @@ blockchain
 /.out/
 /*.iml
 .DS_Store
+/.vscode/
