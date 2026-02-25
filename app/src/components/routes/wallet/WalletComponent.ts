@@ -750,6 +750,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
               count += 1
               this.localKeyStore.rememberPassword(walletEntry.account, pin)
               walletEntry.pin = pin
+              walletEntry.name = key.name
               walletEntry.secretPhrase = key.secretPhrase
               walletEntry.bip44Compatible = this.lightwalletService.validSeed(key.secretPhrase)
               walletEntry.creationTimestamp = key.creationTimestamp

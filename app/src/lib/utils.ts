@@ -481,6 +481,12 @@ module utils {
     fullExport: () => {
       return wltStandalone.exportLocalstorage()
     },
+    printAccountName: (account) => {
+      account = account?.trim()
+      return db.getWalletEntry(account).then(entry => {
+        console.log(entry ? `${account}: [${entry.name}]` : `${account} not found`)
+      })
+    },
     tmp: () => {
       Object.keys(localStorage).forEach(key => {
         if (key.indexOf('p2pContacts') > 0) {

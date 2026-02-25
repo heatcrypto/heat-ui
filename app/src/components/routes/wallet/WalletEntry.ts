@@ -359,7 +359,6 @@ namespace wlt {
   export class WalletEntry extends wlt.EntryAbstract {
     public isWalletEntry = true
     public selected = true
-    public identifier: string
     public label: string
     public secretPhrase: string
     public selectedCurrencies: string[]
@@ -369,22 +368,25 @@ namespace wlt {
     public pin: string
     public unlocked = false
     public expanded = false
-    private filter: wlt.WalletEntryFilter;
+    private filter: wlt.WalletEntryFilter
 
     constructor(public component: wlt.WalletComponentAbstract,
                 public account: string,
-                public name: string, //user may assign any text for wallet account
+                public name: string, // HEAT account name
                 selectedCurrencies: string[]
     ) {
       super()
       this.visible = true
-      this.identifier = name ? `${account} | ${name == account ? '[private]' : name}` : account
       //this.visibleLabel = getEntryVisibleLabel(this.account)
       wlt.getEntryVisibleLabel(this.account, '').then(value => this.visibleLabel = value)
       getEntryBip44Compatible(this.account).then(bip44 => this.bip44Compatible = bip44)
       this.selectedCurrencies = (selectedCurrencies || []).sort()
 
       this.filter = new WalletEntryFilter(this)
+    }
+
+    get identifier(): string {
+      return this.name ? `${this.account} | ${this.name == this.account ? '[private]' : this.name}` : this.account
     }
 
     setWalletComponent(component: WalletComponentAbstract) {
