@@ -318,7 +318,7 @@ class BTCCurrency implements ICurrency {
         //for test: Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
           data => {
             let sendingResult =
-                Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.fee})
+                Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.txnFee})
             $mdDialog.hide(sendingResult).then(() => {
               data.message = vm.data.message;
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
@@ -405,7 +405,7 @@ class BTCCurrency implements ICurrency {
         let txObject = createTxObject(true)
         btcBlockExplorerService.getBalance(txObject.from, false).then(value => {
           let satoshiAmount = value - vm.data.txnFeeSatoshi
-          vm.data.amount = new Big(satoshiAmount).div(wlt.SATOSHI_PER_BTC).toFixed(8)
+          vm.data.amount = new Big(satoshiAmount).div(wlt.SATOSHI_PER_BTC).toFixed()
           calculateRawTxDebounced()
         })
       }
