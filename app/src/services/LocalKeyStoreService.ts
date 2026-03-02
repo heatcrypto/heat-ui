@@ -86,7 +86,16 @@ class LocalKeyStoreService {
                         }, reason => errors.push({account: entry.account, reason})
                     )
               }, reason => {
-                if (reason?.description?.indexOf('Unknown account') == -1) errors.push({account: entry.account, reason})
+                if (reason?.description?.indexOf('Unknown account') == -1) {
+                  db.updateWalletEntryProps(entry.account, {name: ''}).then(
+                    () => {
+                      successN++
+                      console.log(`account ${entry.account} is unknown: ${entry.name} => empty value`)
+                      entry.name = ''
+                    }, reason => errors.push({account: entry.account, reason}))
+                } else {
+                  errors.push({account: entry.account, reason})
+                }
               })
           )
         }
