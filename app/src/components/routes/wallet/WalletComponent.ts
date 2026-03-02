@@ -275,7 +275,7 @@
                       </md-button>
                     </md-menu-item>
                     <md-menu-item>
-                      <md-button aria-label="explorer" ng-hide="entry.symbol==='HEAT'" ng-click="vm.deleteAddressEntry(entry)">
+                      <md-button aria-label="explorer" ng-hide="entry.symbol==='HEAT'" ng-click="vm.removeAddressEntry(entry)">
                         <md-icon md-font-library="material-icons">delete_forever</md-icon>
                         Remove address  <span class="name">{{entry.name}} <span ng-if="entry.index!=undefined">#{{entry.index}}</span></span>
                       </md-button>
@@ -530,7 +530,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
     )
   }
 
-  deleteAddressEntry(entry) {
+  removeAddressEntry(entry) {
     if (!entry.address || !entry.walletEntry) return
     let removingAddress = entry.address
     dialogs.confirm(`Remove ${entry.symbol} Address`,
@@ -539,8 +539,11 @@ class WalletComponent extends wlt.WalletComponentAbstract {
       if (!entry.walletEntry) return
       let walletEntry = entry.walletEntry
       walletEntry.currencies = walletEntry.currencies
-          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress == currency.address));
-      let currencySymbol = entry.symbol;
+          .filter((currency) => !(currency instanceof wlt.CurrencyBalance && removingAddress == currency.address))
+
+      wlt.currencyBalanceCache.delete(walletEntry.account + '-' + removingAddress)
+
+      let currencySymbol = entry.symbol
       wlt.getCryptoAddresses(walletEntry, currencySymbol).then(walletType => {
         let addressToDelete
         if (['FIM', /*'NXT', 'ARDR'*/].indexOf(entry.symbol) !== -1) {
