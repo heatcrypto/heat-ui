@@ -58,7 +58,7 @@ class UserBalanceComponent {
 
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
 
-    let interval = $interval(() => this.refresh(), 5*1000)
+    let interval = $interval(() => this.refresh(), 7*1000)
 
     $scope.$on('$destroy', () => {
       $interval.cancel(interval)
@@ -76,38 +76,34 @@ class UserBalanceComponent {
     })
 
     let formatBalance = (balance: string) => {
-      let formatted = balance.split(".")
+      let b = new Big(balance).toFixed(8)
+      let formatted = b.split(".")
       this.formattedBalance = formatted[0]
-      this.formattedFraction = "." + (formatted[1]||"00")
+      this.formattedFraction = "." + (formatted[1] || "00")
       this.showError = false
-      this.loading = false
     }
 
     let ab = wlt.aggregatedBalances[this.user.account]
     ab = ab ? ab[this.user.currency.symbol] : undefined
     if (utils.isNumber(ab)) {
       this.balance = ab
-      let b = this.user.currency.symbol == 'HEAT' ? utils.formatHeat('' + ab) : '' + ab
-      formatBalance(b)
+      formatBalance(ab)
     }
     //update balance for currency
     this.user.currency.getBalance().then(balance => {
       this.$scope.$evalAsync(() => {
         this.balance = balance
-        if (this.user.currency.symbol == 'HEAT') {
-          formatBalance(utils.formatHeat(balance))
-        } else {
-          if (angular.isUndefined(ab)) formatBalance(balance)
-        }
-      });
+        if (angular.isUndefined(ab)) formatBalance(balance)
+        this.loading = false
+      })
     }, (error: ServerEngineError) => {
       this.$scope.$evalAsync(() => {
         if (angular.isUndefined(this.balance)) {
           formatBalance('0')
           this.showError = true
           this.errorDescription = error ? error.description : "-"
-          this.loading = false
         }
+        this.loading = false
       });
     })
 

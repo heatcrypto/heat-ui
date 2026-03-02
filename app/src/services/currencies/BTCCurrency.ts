@@ -54,6 +54,19 @@ class BTCCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
+    let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.address)
+    if (cb) {
+      this.recentBalance.unconfirmed = cb.balance
+      return this.btcBlockExplorerService.getBalance(this.address).then(
+        balanceSat => {
+          // todo save actual balance (if it is changed)
+          this.recentBalance.confirmed = String(new Big(balanceSat).div(wlt.SATOSHI_PER_BTC))
+          return this.recentBalance.confirmed
+        }
+      ).finally(() => this.format(this.recentBalance.confirmed))
+    }
+
+    // old way
     return wlt.getSavedCurrencyBalance(this.address, this.symbol)
         .then(b => {
           this.recentBalance.confirmed = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed() : null
@@ -314,8 +327,8 @@ class BTCCurrency implements ICurrency {
 
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
+        //Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(  // for test
         self.bitcoreService.sendBitcoins(vm.data.rawTx).then(
-        //for test: Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
           data => {
             let sendingResult =
                 Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.txnFee})
@@ -551,7 +564,7 @@ class BTCCurrency implements ICurrency {
             <md-toolbar>
               <div class="md-toolbar-tools">
                 <h2>Send BTC</h2>
-                <span style="margin-left: 20px;color: grey;font-size: small;">from 
+                <span style="margin-left: 20px;color: grey;font-size: small;">from
                 <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
                 </span>
               </div>

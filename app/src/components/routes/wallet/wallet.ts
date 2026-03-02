@@ -115,7 +115,7 @@ namespace wlt {
 
       if (!ab[cb.walletEntry.account]) ab[cb.walletEntry.account] = {}
       let bs = ab[cb.walletEntry.account]
-      bs[cb.symbol] = (bs[cb.symbol] || 0) + parseFloat(cb.balance)
+      bs[cb.symbol] = (bs[cb.symbol] || 0) + parseFloat(cb.balance || '0')
     }
   }
 
