@@ -72,47 +72,52 @@ namespace wlt {
       //load each page sequentially until the empty page. Do not look behind 100th page
       let pages: any[] = []
       let num = 0
-      let p = () => {
+
+      let getCachedTxPage = () => {
         return db.getValue(wlt.CACHE_KEY.addressInfo(currency.symbol, a.address) + '-' + num).then(r => {
           let page: any[] = r?.value
           if (page && num < 100) {
             pages.push(page)
             num++
-            return p()
+            return getCachedTxPage()
           }
         })
       }
 
-      return p().then(() => {
+      let handleDetection = (detection) => {
+        if (detection) {
+          isFind = true
+          queryTokens?.splice(queryTokens.indexOf(queryTokens.find(v => v.toUpperCase() != detection.token.toUpperCase())), 1)
+        }
+      }
+
+      let promises2: Promise<any>[] = []
+      return getCachedTxPage().then(() => {
         for (const page of pages) {
           for (const tx of page) {
             let txStr = `${currency.name} ${typeof a.index === "number" ? '#' + a.index : ''}`
             //find tx id
             let txId = tx.hash || tx.txid
             let detection = find(`${txStr} transaction id`, txId)
-            if (detection) {
-              isFind = true
-              queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            }
+            handleDetection(detection)
             //find tx from/to
             detection = find(`${txStr} transaction from/to`, `${tx.from} / ${tx.to}`)
-            if (detection) {
-              isFind = true
-              queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-            }
+            handleDetection(detection)
             //find payment memo
-            let localPaymentMessages: {method: number, text: string} = tx.message
-            if (localPaymentMessages?.text) {
-              detection = find(`${txStr} payment memo`, localPaymentMessages.text)
-              if (detection) {
-                isFind = true
-                queryTokens = queryTokens?.filter(v => v.toUpperCase() != detection.token.toUpperCase())
-              }
-            }
+            //let localPaymentMessages: {method: number, text: string} = tx.message
+            promises2.push(wlt.loadPaymentMessage(txId, this.we.secretPhrase, true).then(localPaymentMessages => {
+                if (localPaymentMessages?.text) {
+                  detection = find(`${txStr} transaction memo`, localPaymentMessages.text)
+                  handleDetection(detection)
+                }
+              }).catch(reason => console.error(reason))
+            )
           }
         }
-        if (queryTokens == null) return isFind  //for applying OR operator
-        return queryTokens  //for applying AND operator
+        return Promise.all(promises2).then(() => {
+          if (queryTokens == null) return isFind  //for applying OR operator
+          return queryTokens  //for applying AND operator
+        })
       })
     }
 
@@ -238,7 +243,7 @@ namespace wlt {
           queryTokens = doFind(queryTokens,`${c.name} #${typeof a.index === "number" ? a.index : ''}`, a.address)
           // search in cached transactions
           promises.push(
-              this.findInTransactions(find, queryTokens, c, a).then(queryTokensUpdated => queryTokens = queryTokensUpdated)
+            this.findInTransactions(find, queryTokens, c, a).then(queryTokensUpdated => queryTokens = queryTokensUpdated)
           )
         }
 
@@ -271,9 +276,10 @@ namespace wlt {
         }
       }
 
-      this.we.filtered = (queryTokens.length == 0)
-
-      return Promise.all(promises)
+      return Promise.all(promises).then(() => {
+        this.we.filtered = (queryTokens.length == 0)
+        return queryTokens
+      })
     }
 
     toString(): string {

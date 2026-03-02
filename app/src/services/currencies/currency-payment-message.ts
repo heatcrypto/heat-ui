@@ -50,7 +50,7 @@ namespace wlt {
             message,
             recipientPubKey,
             user.secretPhrase)
-        let messageId = createMessageId(txId, recipientPubKey)
+        let messageId = createMessageId(txId, recipientPubKey, user.secretPhrase)
 
         let sendHeatPaymentMessage = (resolve, reject, resultMessage: {method: number, text: string}) => {
             let errorCallback = reason => reject("linked message error: " + JSON.stringify(reason))
@@ -124,17 +124,19 @@ namespace wlt {
 
     let apiGetKeystoreValueFunc
 
-    export function loadPaymentMessage(txId: string, accountSecretPhrase?: string, localOnly = false) {
-        let user = getUserService()
-        let pair = accountSecretPhrase
-            ? {pubKey: heat.crypto.secretPhraseToPublicKey(accountSecretPhrase), secret: accountSecretPhrase}
-            : {pubKey: user.publicKey, secret: user.secretPhrase}
+    export function loadPaymentMessage(txId: string, secretPhrase?: string, localOnly = false) {
+        let u = getUserService()
+        let pubKey = secretPhrase ? heat.crypto.secretPhraseToPublicKey(secretPhrase) : u.publicKey
+        let actualSecretPhrase = secretPhrase || u.secretPhrase
+        let account = secretPhrase ? heat.crypto.getAccountId(secretPhrase) : u.account
+
+        let pair = {pubKey: pubKey, secret: actualSecretPhrase}
 
         //todo не работает сканирование payment messages из WalletEntry
         //pair = {pubKey: user.publicKey, secret: user.secretPhrase}  // DEBUG
 
-        //hide original txId in message id
-        let messageId = createMessageId(txId, pair.pubKey)
+        // message id is derived from txId to hide original txId
+        let messageId = createMessageId(txId, pair.pubKey, actualSecretPhrase)
 
         let decrypt = (encrypted: heat.crypto.IEncryptedMessage) => {
             try {
@@ -163,7 +165,7 @@ namespace wlt {
                 }
 
                 //there is no message in local store so try find the entry in HEAT Keystore using 2 ids
-                apiGetKeystoreValueFunc(user.account, messageId).then(response => {
+                apiGetKeystoreValueFunc(account, messageId).then(response => {
                     let parsed = utils.parseResponse(response)
                     if (parsed.errorDescription) {
                         reject(parsed.errorDescription)
@@ -197,9 +199,8 @@ namespace wlt {
         return store.keys().map(k => ({id: k, content: store.get(k)}))
     }
 
-    function createMessageId(txId: string, recipientPubKey: string) {
-        let userPrivateKeyBytes = converters.hexStringToByteArray(
-            heat.crypto.getPrivateKey(getUserService().secretPhrase))
+    function createMessageId(txId: string, recipientPubKey: string, secretPhrase: string) {
+        let userPrivateKeyBytes = converters.hexStringToByteArray(heat.crypto.getPrivateKey(secretPhrase))
         const recipientPubKeyBytes = converters.hexStringToByteArray(recipientPubKey)
         let sharedSecret = heat.crypto.getSharedKey(userPrivateKeyBytes, recipientPubKeyBytes)
         return heat.crypto.calculateStringHash(txId + sharedSecret)
