@@ -76,10 +76,11 @@ class UserBalanceComponent {
     })
 
     let formatBalance = (balance: string) => {
-      let b = new Big(balance).toFixed(8)
-      let formatted = b.split(".")
-      this.formattedBalance = formatted[0]
-      this.formattedFraction = "." + (formatted[1] || "00")
+      let b = new Big(balance).round(8).toString()
+      let ss = b.split(".")
+      if (ss.length == 1) ss.push('00')
+      this.formattedBalance = ss[0]
+      this.formattedFraction = "." + ss[1].padEnd(2, '0')  // 12.1 -> 12.10
       this.showError = false
     }
 

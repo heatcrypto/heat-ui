@@ -188,6 +188,12 @@ class BitcoinAccountComponent {
     })
   }
 
+  formatBalance(balance: string, scaleFromSatoshi = false) {
+    return scaleFromSatoshi
+      ? new Big(balance).div(wlt.SATOSHI_PER_BTC).round(8).toString()
+      : new Big(balance).round(8).toString()
+  }
+
   refresh() {
     this.busy = true
     let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.account)
@@ -195,8 +201,8 @@ class BitcoinAccountComponent {
     let getSaved = (confirmed = true, unconfirmed = true) => {
       wlt.getSavedCurrencyBalance(this.account, "BTC").then(b => {
         this.$scope.$evalAsync(() => {
-          if (confirmed && !angular.isUndefined(b.confirmed)) this.balance = new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8)
-          if (unconfirmed && !angular.isUndefined(b.unconfirmed)) this.balanceUnconfirmed = new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed(8)
+          if (confirmed && !angular.isUndefined(b.confirmed)) this.balance = this.formatBalance(b.confirmed, true)
+          if (unconfirmed && !angular.isUndefined(b.unconfirmed)) this.balanceUnconfirmed = this.formatBalance(b.unconfirmed, true)
         })
       })
     }
@@ -205,14 +211,14 @@ class BitcoinAccountComponent {
 
     if (cb?.refresh) {
       cb.refresh().then(balanceAmount => {
-        if (utils.isNumber(balanceAmount)) this.balanceUnconfirmed = new Big(balanceAmount).toFixed(8)
+        if (utils.isNumber(balanceAmount)) this.balanceUnconfirmed = this.formatBalance(balanceAmount)
         getSaved(true, false)
         this.busy = false
       })
     } else {
       this.btcBlockExplorerService.getBalance(this.account).then(b => {
         this.$scope.$evalAsync(() => {
-          this.balance = new Big(b).div(wlt.SATOSHI_PER_BTC).toFixed(8)
+          this.balance = this.formatBalance(String(b), true)
           this.busy = false
         })
       }).finally(getSaved)
