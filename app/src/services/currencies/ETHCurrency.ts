@@ -91,9 +91,9 @@ class ETHCurrency extends EventEmitter implements ICurrency {
 
   /* Invoke SEND currency dialog */
   invokeSendDialog($event) {
-    let selectTransfer = (selectionCallback: (transferTypeItem: TokenDescriptor|string) => any) => {
-      if (true || !this.erc20Tokens?.length) {  // "true || " is added to disable ERC20 token transfer until complete feature and tested
-        selectionCallback('ETH')
+    let selectTransfer = (executeTransfer: (transferTypeItem: TokenDescriptor|string) => any) => {
+      if (!this.erc20Tokens?.length) {
+        executeTransfer('ETH')
         return
       }
       let panel: PanelService = heat.$inject.get('panel')
@@ -111,7 +111,7 @@ class ETHCurrency extends EventEmitter implements ICurrency {
             panel: panel,
             erc20Tokens: this.erc20Tokens,
             select: (selectedValue) => {
-              selectionCallback(selectedValue)
+              executeTransfer(selectedValue)
               panel.close()
             }
           }
@@ -154,7 +154,7 @@ class ETHCurrency extends EventEmitter implements ICurrency {
       vm.stage = "create"
       vm.enterNonceManually = false
       vm.transferDescriptor = transferDescriptor
-      vm.transferName = utils.limitedString(vm.transferDescriptor.name || vm.transferDescriptor, 20)
+      vm.transferName = utils.limitedString(vm.transferDescriptor.name || vm.transferDescriptor.contractAddress || vm.transferDescriptor, 20)
 
       const ethBlockExplorerService = <EthBlockExplorerService> heat.$inject.get('ethBlockExplorerService')
       //vm.broadcastProvider = [ethBlockExplorerService.ethApiProvider, ethBlockExplorerService.ethApiProviderAlternative]
@@ -179,11 +179,6 @@ class ETHCurrency extends EventEmitter implements ICurrency {
       }
 
       vm.generateTxnBytes = function (forceEnterNonce = false) {
-        let web3 = <Web3Service> heat.$inject.get('web3')
-        let amount = this.data.amount.replace(',','')
-        let amountInWei = web3.web3.toWei(amount, 'ether')
-        let from = {privateKey: self.user.currency.secretPhrase, address: self.user.currency.address}
-
         let gasPriceWei = Math.trunc(this.data.gasPrice * Web3Service.GWEI_SCALE)
         if (gasPriceWei < 1) {
           vm.errorMessage = 'Gas price is too low'
@@ -214,7 +209,12 @@ class ETHCurrency extends EventEmitter implements ICurrency {
               if (typeof nonce === "string") return parseInt(nonce)
             })
 
+        let web3 = <Web3Service> heat.$inject.get('web3')
+        let from = {privateKey: self.user.currency.secretPhrase, address: self.user.currency.address}
+        let amount = this.data.amount.replace(',','')
+
         if (transferDescriptor == 'ETH') {
+          let amountInWei = web3.web3.toWei(amount, 'ether')
           return web3.createRawTx2(
               from,
               this.data.recipient,
@@ -297,14 +297,12 @@ class ETHCurrency extends EventEmitter implements ICurrency {
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
         // let provider = vm.broadcastProvider[vm.broadcastProviderIndex]
-        // Promise.resolve({txId: '0x' + heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
+        //Promise.resolve({txId: '0x' + heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
         vm.broadcastProvider.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
               result.message = vm.data.message
-              let web3 = <Web3Service> heat.$inject.get('web3')
-              let amount = vm.data.amount.replace(',','')
-              let amountInWei = web3.web3.toWei(amount, 'ether')
+              let amount = transferDescriptor == 'ETH' ? vm.data.amount.replace(',','') : '0'
               let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod, amount, fee: vm.data.fee})
               $mdDialog.hide(sendingResult).then(() => {
                 dialogs.alert(event, 'Success', `TxHash: ${result.txId}`)
@@ -428,7 +426,7 @@ class ETHCurrency extends EventEmitter implements ICurrency {
 
                 <md-input-container flex ng-if="vm.transferDescriptor != 'ETH'">
                   <label>Contract address</label>
-                  <input ng-model="vm.data.contractAddress" required name="contractAddress">
+                  <input ng-model="vm.data.contractAddress" required readonly name="contractAddress">
                 </md-input-container>
 
                 <md-input-container flex >
