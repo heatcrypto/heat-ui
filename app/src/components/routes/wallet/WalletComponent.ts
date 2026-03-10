@@ -480,7 +480,7 @@ class WalletComponent extends wlt.WalletComponentAbstract {
   }
 
   exploreAddresses(walletEntry: wlt.WalletEntry, currencyName) {
-    wlt.exploreAddresses(walletEntry, currencyName, this)
+    wlt.exploreAddresses(currencyName, walletEntry, this)
   }
 
   signBitcoinMessage($event, entry: wlt.CurrencyBalance) {

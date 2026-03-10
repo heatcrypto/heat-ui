@@ -38,8 +38,15 @@ namespace wlt {
 
   export const CURRENCIES = {
     HEAT: {name: 'HEAT', symbol: 'HEAT', multiAddress: true, formatBalance: defaultFormatBalance},
-    Ethereum: {name: 'Ethereum', symbol: 'ETH', multiAddress: true, formatBalance: defaultFormatBalance},
-    Bitcoin: {name: 'Bitcoin', symbol: 'BTC', multiAddress: true, formatBalance: defaultFormatBalance, network: 'bitcoin'},
+    Ethereum: {name: 'Ethereum', symbol: 'ETH', multiAddress: true, formatBalance: defaultFormatBalance,
+      derivationPaths: [
+        {path: LightwalletService.BIP44, desc: 'Standard Path'},
+        {path: LightwalletService.BIP4461, desc: 'Ethereum Classic (ETC)'}
+      ]
+    },
+    Bitcoin: {name: 'Bitcoin', symbol: 'BTC', multiAddress: true, formatBalance: defaultFormatBalance, network: 'bitcoin',
+      derivationPaths: []  //filled in other place
+    },
     FIMK: {name: 'FIMK', symbol: 'FIM', multiAddress: false, formatBalance: defaultFormatBalance},
     NXT: {name: 'NXT', symbol: 'NXT', multiAddress: false, formatBalance: defaultFormatBalance},
     ARDOR: {name: 'ARDOR', symbol: 'ARDR', multiAddress: false, formatBalance: defaultFormatBalance},
@@ -391,7 +398,7 @@ namespace wlt {
   }
 
 
-  export function findBitcoinAddresses(walletEntry: wlt.WalletEntry) {
+  export function findBitcoinAddresses(walletEntry: wlt.WalletEntry, derivationPath: string) {
     let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
     let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
     let promises: angular.IPromise<{index: number, path: string, address: string, privateKey: string, balance: number, txs: number}>[] = []
@@ -408,23 +415,20 @@ namespace wlt {
           }
         }))
 
-    let nativeSegwitAddresses = bitcoreService.generateSegwitBitcoinAddresses(
-        walletEntry.secretPhrase,  true, 0, wlt.DISPLAYED_MAX_EMPTY_ADDRESSES - 1)
-    let segwitAddresses = bitcoreService.generateSegwitBitcoinAddresses(
-        walletEntry.secretPhrase, false, 0, wlt.DISPLAYED_MAX_EMPTY_ADDRESSES - 1)
+    let segwitAddresses = derivationPath.indexOf("m/84'/") > -1 || derivationPath.indexOf("m/49'/") > -1
+      ? bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, derivationPath, 0, wlt.DISPLAYED_MAX_EMPTY_ADDRESSES - 1)
+      : null
     for (let i = 0; i < wlt.DISPLAYED_MAX_EMPTY_ADDRESSES; i++) {
-      let legacy = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, i)
-      promises.push(
-          requestAddressInfo(i, legacy, i * 210),
-          requestAddressInfo(i, nativeSegwitAddresses[i], i * 210 + 30),
-          requestAddressInfo(i, segwitAddresses[i], i * 210 + 60)
-      )
+      let a = segwitAddresses
+        ? segwitAddresses[i]
+        : bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, derivationPath, i)  // legacy address started with '1'
+      promises.push(requestAddressInfo(i, a, i * 210))
     }
     return Promise.resolve(promises)
   }
 
-  export function findEthereumAddresses(walletEntry: wlt.WalletEntry, lightwalletService: LightwalletService) {
-    return lightwalletService.createEtherAddresses(walletEntry.secretPhrase, '').then((wa: WalletAddresses) => {
+  export function findEthereumAddresses(walletEntry: wlt.WalletEntry, derivationPath, lightwalletService: LightwalletService) {
+    return lightwalletService.createEtherAddresses(walletEntry.secretPhrase, '', derivationPath).then((wa: WalletAddresses) => {
       let addresses = wa.addresses
       let promises: PromiseLike<{ index: number, path: string, address: string, privateKey: string, balance: number, txs: number }>[] = []
       let ethService: EthBlockExplorerService = heat.$inject.get('ethBlockExplorerService')

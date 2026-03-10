@@ -5,12 +5,20 @@ class BitcoreService {
   static readonly BIP44_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/44'/0'/0'/0/" : "m/44'/1'/0'/0/"
   static readonly BIP49_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/49'/0'/0'/0/" : "m/49'/1'/0'/0/"
   static readonly BIP84_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/84'/0'/0'/0/" : "m/84'/1'/0'/0/"
+  static readonly BIP86_PATH = () => wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? "m/86'/0'/0'/0/" : "m/86'/1'/0'/0/"
+
   private bitcore;
   private bip39;
 
   private BITCOIN_MESSAGE_MAGIC_BYTES
 
   constructor(private $window: angular.IWindowService) {
+    wlt.CURRENCIES.Bitcoin.derivationPaths = [
+      {path: BitcoreService.BIP44_PATH(), desc: 'Legacy (P2PKH, prefix 1)'},
+      {path: BitcoreService.BIP49_PATH(), desc: 'Nested SegWit (P2SH, prefix 3)'},
+      {path: BitcoreService.BIP84_PATH(), desc: 'Native SegWit (Bech32, prefix bc1q)'},
+      //{path: BitcoreService.BIP86_PATH(), desc: 'Taproot (Bech32m, prefix bc1p)'}
+    ]
     this.bitcore = $window.heatlibs.bitcore;
     this.bip39 = $window.heatlibs.bip39;
     this.BITCOIN_MESSAGE_MAGIC_BYTES = new this.bitcore.deps.Buffer('Bitcoin Signed Message:\n')
@@ -47,8 +55,7 @@ class BitcoreService {
   generateAddresses(mnemonic: string, keyCount: number) {
     let walletType = { addresses: [] }
     for (let i = 0; i < keyCount; i++) {
-      let a = this.generateBitcoinAddress(mnemonic, i)
-      // let a = this.generateSegwitBitcoinAddress(mnemonic, i)
+      let a = this.generateBitcoinAddress(mnemonic, BitcoreService.BIP44_PATH(), i)
       walletType.addresses[i] = { address: a.address, privateKey: a.privateKey, index: i, balance: "0", inUse: false }
     }
     return walletType;
@@ -201,12 +208,12 @@ class BitcoreService {
     })
   }
 
-  generateBitcoinAddress(secret: string, index = 0, toIndex?: number) {
+  generateBitcoinAddress(secret: string, derivationPath, index = 0, toIndex?: number) {
     if (this.bip39.validateMnemonic(secret)) {
       let seedHex = this.bip39.mnemonicToSeedHex(secret)
       let HDPrivateKey = this.bitcore.HDPrivateKey
       let hdPrivateKey = HDPrivateKey.fromSeed(seedHex, wlt.CURRENCIES.Bitcoin.network == 'bitcoin' ? 'mainnet' : wlt.CURRENCIES.Bitcoin.network)
-      let path = BitcoreService.BIP44_PATH() + index
+      let path = derivationPath + index
       let derived = hdPrivateKey.derive(path)
       return {
         path: path,
@@ -223,25 +230,29 @@ class BitcoreService {
     }
   }
 
-  generateSegwitBitcoinAddresses(secret: string, nativeSegwit: boolean, index= 0, toIndex?: number) {
-    let pks: {privateKey: any, privateKeyWif: any}[]
+  generateSegwitBitcoinAddresses(secret: string, derivationPath: string, index= 0, toIndex?: number) {
+    let pks: {privateKey: any, privateKeyWif: any, path?: string}[] = []
 
     if (this.bip39.validateMnemonic(secret)) {
       let paths = []
       toIndex = toIndex >= index ? toIndex : index
       for (let i = index; i <= toIndex; i++) {
         paths.push({
-          path: (nativeSegwit ? BitcoreService.BIP84_PATH() : BitcoreService.BIP49_PATH()) + i,
+          path: derivationPath + i,
           includeWif: true
         })
       }
       const seedHex = heat.heatAppLib.WALLET_MNEMONIC_TO_SEED_SYNC({mnemonic: secret})
-      const keyPairs: [] = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})
-      pks = keyPairs.map((v: any) => {return {privateKey: v.privateKey, privateKeyWif: v.wif}})
+      const keyPairs: any[] = heat.heatAppLib.WALLET_DERIVE_KEY_PAIRS({seedHex, paths})
+      for (let i = 0; i < keyPairs.length; i++) {
+        let v = keyPairs[i]
+        pks.push({privateKey: v.privateKey, privateKeyWif: v.wif, path: paths[i].path})
+      }
     } else {
       let pk = this.bitcore.PrivateKey.fromWIF(secret)
       pks = [{privateKey: pk.toString(), privateKeyWif: pk.toWIF()}]
     }
+    let nativeSegwit = derivationPath.indexOf("m/84'/") > -1
     let addresses = pks.map(v => {
       const publicKey = heat.heatAppLib.BITCOIN_GET_PUBLICKEY_FROM_PRIVATEKEY({privateKey: v.privateKey, network: wlt.CURRENCIES.Bitcoin.network })
       let a = nativeSegwit
@@ -249,7 +260,8 @@ class BitcoreService {
           : heat.heatAppLib.BITCOIN_PUBLICKEY_TO_P2WPKH_IN_P2SH({publicKey: publicKey, network: wlt.CURRENCIES.Bitcoin.network})
       return {
         address: a,
-        privateKey: v.privateKeyWif
+        privateKey: v.privateKeyWif,
+        path: v.path
       }
     })
     return addresses

@@ -64,6 +64,7 @@ class LightwalletService {
 
   //public wallet: WalletAddresses
   static readonly BIP44 = "m/44'/60'/0'/0";
+  static readonly BIP4461 = "m/44'/61'/0'/0/0";
   private lightwallet;
   private ethBlockExplorerService: EthBlockExplorerService
 
@@ -220,14 +221,14 @@ class LightwalletService {
 
   */
 
-  createEtherAddresses(seed: string, password: string): Promise<WalletAddresses> {
+  createEtherAddresses(seed: string, password: string, derivationPath = LightwalletService.BIP44): Promise<WalletAddresses> {
     let that = this;
     return new Promise((resolve, reject) => {
       try {
         this.lightwallet.keystore.createVault({
           password: password,
           seedPhrase: seed,
-          hdPathString: LightwalletService.BIP44
+          hdPathString: derivationPath
         }, (err, ks) => {
           if (err) {
             reject();

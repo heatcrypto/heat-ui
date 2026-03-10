@@ -100,7 +100,7 @@ module dialogs {
           <md-toolbar>
             <div class="md-toolbar-tools"><h2>{{vm.title}}</h2></div>
           </md-toolbar>
-          <md-dialog-content style="min-width:500px;max-width:650px" layout="column" layout-padding>
+          <md-dialog-content style="min-width:500px;max-width:700px" layout="column" layout-padding>
             <div flex layout="column">
               ${options.template}
             </div>
