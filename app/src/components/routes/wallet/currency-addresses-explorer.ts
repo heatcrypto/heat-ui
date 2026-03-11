@@ -1,6 +1,6 @@
 namespace wlt {
 
-  function search(report: any[], currency, derivationPath, walletEntry: wlt.WalletEntry, walletComponent: WalletComponent) {
+  function search(progress: string[], report: any[], currency, derivationPath, walletEntry: wlt.WalletEntry, walletComponent: WalletComponent) {
     walletComponent.$scope.$evalAsync(() => {
       //remove previous empty addresses
       for (let i = report.length - 1; i >= 0; i--) {
@@ -10,6 +10,7 @@ namespace wlt {
       if (currency.name == 'Bitcoin') addressesPromise = wlt.findBitcoinAddresses(walletEntry, derivationPath)
       if (currency.name == 'Ethereum') addressesPromise = wlt.findEthereumAddresses(walletEntry, derivationPath, walletComponent.lightwalletService)
       addressesPromise.then(promises => {
+        let progressAr = new Array(promises.length).fill('-')
         for (const p of promises) {
           p.then(item => {
             report.push(item)
@@ -27,20 +28,24 @@ namespace wlt {
                 }, Math.random() * 1500)
               }, 1000 + Math.random() * 2000)
             }
+            progressAr[item.index] = 'X'
+            progress[0] = progressAr.join('')
           }).catch(reason => console.error(reason))
         }
-        Promise.all(promises).then(() => report.sort((a, b) => a.index - b.index))
-      })
+        return Promise.all(promises).then(() => report.sort((a, b) => a.index - b.index))
+      }).finally(() => progress.length = 0)
     })
   }
 
   export function exploreAddresses(currencyName, walletEntry: wlt.WalletEntry, walletComponent: WalletComponent) {
     let currency = wlt.CURRENCIES[currencyName]
+
     showAddresses(currency, walletEntry, walletComponent)
   }
 
   function showAddresses(currency, walletEntry: wlt.WalletEntry, walletComponent: WalletComponent) {
     let report = []
+    let progress = ['']
     return dialogs.dialog({
       id: 'exploredAddresses',
       title: `${currency.name} addresses explorer for account ${walletEntry.account}`,
@@ -49,13 +54,14 @@ namespace wlt {
       cancelButton: false,
       locals: {
         report: report,
+        progress: progress,
         account: walletEntry.account,
         currencyName: currency.name,
         currencySym: currency.symbol,
         displayIncludingEmpty: false,
         derivationPath: currency.derivationPaths[0].path,
         standardDerivationPaths: currency.derivationPaths,
-        search: (derivationPath) => search(report, currency, derivationPath, walletEntry, walletComponent),
+        search: (derivationPath) => search(progress, report, currency, derivationPath, walletEntry, walletComponent),
         updateView: displayNotEmptyOnly => {
           walletComponent.$scope.$evalAsync(() => {
             for (const item of report) {
@@ -107,6 +113,7 @@ namespace wlt {
           <md-button ng-if="vm.derivationPath" ng-click="vm.search(vm.derivationPath)">Search</md-button>
         </div>
         <md-checkbox ng-model="vm.displayIncludingEmpty">Display empty addresses</md-checkbox>
+        <code class="progress" ng-if="vm.progress.length > 0">{{vm.progress[0]}}</code>
         <div layout="column" flex>
           <code ng-repeat="item in vm.report" class="explore-address-item item"
                     ng-if="vm.displayIncludingEmpty || !item.empty"
@@ -149,6 +156,11 @@ namespace wlt {
       white-space: nowrap;
       color: lightgray;
       padding: 0px 2px 0px 4px;
+    }
+    .progress {
+      font-size: large;
+      color: gray;
+      letter-spacing: 20%;
     }
       `
     })
