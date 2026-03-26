@@ -125,9 +125,13 @@
 
             <!-- MEMO -->
             <div ng-if="item.message" class="truncate-col left" flex>
+                <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">
+                    <md-icon md-font-library="material-icons" style="margin-top: 8px; font-size: 15px; color: currentColor">edit</md-icon></a>
                 <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
-                {{item.message.text}}
-                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+                <span>
+                    {{item.message.text}}
+                    <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+                </span>
             </div>
             <span ng-if="!item.message" class="truncate-col left">
               <a class="pointer" ng-click="vm.paymentMemoDialog($event, item)">create</a>
@@ -275,7 +279,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
   paymentMemoDialog($event, item) {
     let heatService = <HeatService>heat.$inject.get('heat')
     return wlt.getHeatUnavailableReason(heatService, this.user.account)
-        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.hash, heatUnavailableReason))
+        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.hash, heatUnavailableReason, item.message))
         .then(paymentMessage => {
           if (paymentMessage) {
             item.message = paymentMessage // to display message

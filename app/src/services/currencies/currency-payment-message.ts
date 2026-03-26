@@ -5,18 +5,19 @@ namespace wlt {
     let heatService: HeatService
     let userService: UserService
 
-    export function paymentMemoDialog(txId: string, heatUnavailableReason: string) {
+    export function paymentMemoDialog(txId: string, heatUnavailableReason: string, existingMessage?: any) {
         let locals = {
             txId: txId,
             v: {
-                text: "",
-                paymentMessageMethod: undefined,
-                heatUnavailableReason: heatUnavailableReason
+                text: existingMessage?.text || "",
+                paymentMessageMethod: existingMessage ? existingMessage.method : undefined,
+                heatUnavailableReason: heatUnavailableReason,
+                paymentMessageMethodDisabled: !!existingMessage
             }
         }
         return dialogs.dialog({
             id: 'paymentMemo',
-            title: "Payment Memo",
+            title: existingMessage ? 'Update Payment Memo' : 'Payment Memo',
             okButton: true,
             cancelButton: true,
             locals: locals,
@@ -27,7 +28,7 @@ namespace wlt {
               </p>
               <md-input-container flex style="margin-bottom: 16px;">
                   <p>Store message on:</p>
-                  <md-radio-group ng-model="vm.v.paymentMessageMethod" layout="row">
+                  <md-radio-group ng-model="vm.v.paymentMessageMethod" layout="row" ng-disabled="vm.v.paymentMessageMethodDisabled">
                     <md-radio-button value=0 >This device</md-radio-button>
                     <md-radio-button value=1 ng-disabled="vm.v.heatUnavailableReason">Heat blockchain</md-radio-button>
                     <span ng-if="vm.v.heatUnavailableReason" style="color: grey"> &nbsp;&nbsp;({{vm.v.heatUnavailableReason}})</span>
@@ -35,7 +36,7 @@ namespace wlt {
               </md-input-container>
               <md-input-container flex>
                   <label>Payment message / memo (encrypted)</label>
-                  <input required ng-model="vm.v.text" name="message" ng-maxlength="500" ng-disabled="!vm.v.paymentMessageMethod">
+                  <input required ng-model="vm.v.text" name="message" ng-maxlength="500" ng-disabled="vm.v.paymentMessageMethod == undefined">
               </md-input-container>
             `
         }).then(value => {
@@ -132,7 +133,7 @@ namespace wlt {
 
         let pair = {pubKey: pubKey, secret: actualSecretPhrase}
 
-        //todo не работает сканирование payment messages из WalletEntry
+        //todo payment messages scanning is not working in the WalletEntry
         //pair = {pubKey: user.publicKey, secret: user.secretPhrase}  // DEBUG
 
         // message id is derived from txId to hide original txId
