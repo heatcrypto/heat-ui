@@ -10,6 +10,7 @@ npm-debug.log
 releases
 blockchain
 /tmp
+/.tmp
 /.idea/
 /out/
 /.out/
