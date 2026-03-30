@@ -44,14 +44,14 @@
 
             <!-- FROM -->
             <div class="truncate-col info-col left">
-              <span ng-show = "item.from !== 'Multiple Inputs'">{{item.from}}</span>
-              <a ng-show = "item.from === 'Multiple Inputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.from}}</a>
+              <span ng-show = "item.from !== vm.MULT_INPUTS">{{item.from}}</span>
+              <a ng-show = "item.from === vm.MULT_INPUTS" ng-click="vm.jsonDetails($event, item.json)">{{item.from}}</a>
             </div>
 
             <!-- TO -->
             <div class="truncate-col info-col left">
-              <span ng-show = "item.to !== 'Multiple Outputs'">{{item.to}}</span>
-              <a ng-show = "item.to === 'Multiple Outputs'" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
+              <span ng-show = "item.to !== vm.MULT_OUTS">{{item.to}}</span>
+              <a ng-show = "item.to === vm.MULT_OUTS" ng-click="vm.jsonDetails($event, item.json)">{{item.to}}</a>
             </div>
 
             <!-- AMOUNT -->
@@ -77,6 +77,9 @@
 class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
+
+  MULT_OUTS =  'Multiple Outputs'
+  MULT_INPUTS =  'Multiple Inputs'
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -139,7 +142,7 @@ class VirtualRepeatBchTransactionsComponent extends VirtualRepeatComponent {
           }
         }
         if (!outputs.includes(this.account) && transaction.vout.length > 1) {
-          transaction.to = 'Multiple Outputs';
+          transaction.to = this.MULT_OUTS
         }
 
         transaction.json = {

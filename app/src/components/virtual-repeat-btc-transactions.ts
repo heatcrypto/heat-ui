@@ -54,7 +54,8 @@
             <!-- TO -->
             <div class="truncate-col message-col left">
 <!--              <span>{{item.to}}</span>-->
-              <a href="#/bitcoin-account/{{item.to}}">{{vm.account == item.to ? 'Myself' : item.to}}</a>
+              <a ng-if = "item.to !== vm.MULT_OUTS" href="#/bitcoin-account/{{item.to}}">{{vm.account == item.to ? 'Myself' : item.to}}</a>
+              <span ng-if = "item.to == vm.MULT_OUTS">{{item.to}}</span>
             </div>
 
             <!-- AMOUNT -->
@@ -93,6 +94,8 @@
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
+
+  MULT_OUTS =  'Multiple Outputs'
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -178,7 +181,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         }
         // if change address was different then show hardcoded output
         if (!outputs.includes(this.account) && transaction.vout.length > 1) {
-          transaction.to = 'Multiple Outputs'
+          transaction.to = this.MULT_OUTS
         }
 
         //processed item has message value or null so undefined only should be processed
