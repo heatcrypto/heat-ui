@@ -232,6 +232,7 @@
           <md-menu-content width="4">
             <md-menu-item ng-repeat="item in vm.localHeatMasterAccounts">
               <md-button ng-click="vm.selectWalletAccount($event, item)">
+                <md-icon ng-if="!item.locked" md-font-library="material-icons" class="ng-scope material-icons" role="img" aria-hidden="true">lock_open</md-icon>
                 <code>{{item.account}}</code>
                 <span ng-if="item.name" style="color: black">&nbsp;&nbsp;{{item.name == item.account ? '[private]' : item.name}}</span>
               </md-button>
@@ -406,9 +407,11 @@ class ToolbarComponent {
               private p2pMessaging: P2PMessaging,
               private settings: SettingsService) {
 
-    var refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
+    let refresh = utils.debounce(this.refreshLocalWallet.bind(this), 1000, false)
     this.user.on(UserService.EVENT_UNLOCKED, refresh)
     this.refreshLocalWallet()
+
+    let refreshInterval = setInterval(() => this.refreshLocalWallet(), 60000)
 
     $rootScope.$on('HEAT_SERVER_LOCATION', (event, nothing) => {
       let port = settings.get(SettingsService.HEAT_PORT)
@@ -422,7 +425,11 @@ class ToolbarComponent {
       })
     })
     this.p2pMessaging.on(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener);
-    $scope.$on('$destroy', () => this.p2pMessaging.removeListener(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener));
+
+    $scope.$on('$destroy', () => {
+      this.p2pMessaging.removeListener(P2PMessaging.EVENT_UNREAD_STATUS_CHANGED, unreadStatusChangedListener)
+      clearInterval(refreshInterval)
+    })
   }
 
   localHeatMasterAccounts: Array<{ account: string, locked: boolean, identifier: string, name: string }> = []
@@ -467,9 +474,11 @@ class ToolbarComponent {
     this.localHeatMasterAccounts = [];
     this.localKeyStore.list().then(walletEntries => {
       walletEntries.map(entry => {
+        let cachedWalletEntry = wlt.walletEntriesCache.get(entry.account)
+        entry = cachedWalletEntry || entry
         this.localHeatMasterAccounts.push({
           account: entry.account,
-          locked: !!this.localKeyStore.getPasswordForAccount(entry.account),
+          locked: !entry.unlocked,
           identifier: entry.name || entry.account,
           name: entry.name
         })

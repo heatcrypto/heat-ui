@@ -113,6 +113,9 @@
 @Inject('$scope','user','heat','$q','$interval','$timeout','$location','$rootScope', 'P2PMessaging', '$mdToast', 'contactService')
 class UserContactsComponent {
 
+  static contactsCached : Array<IHeatMessageContact> = []
+  static userAccountCached: string
+
   public contacts : Array<IHeatMessageContact> = [];
   private refresh: IEventListenerFunction;
   private activePublicKey: string;
@@ -129,6 +132,11 @@ class UserContactsComponent {
               public p2pMessaging: P2PMessaging,
               private $mdToast: angular.material.IToastService,
               private contactService: ContactService) {
+
+    if (this.user.account != UserContactsComponent.userAccountCached) {
+      UserContactsComponent.userAccountCached = this.user.account
+      UserContactsComponent.contactsCached = []
+    }
 
     this.refresh = utils.debounce(() => this.refreshContacts(), 1000);
     heat.subscriber.unconfirmedTransaction({recipient: this.user.account}, ()=>{
@@ -338,8 +346,10 @@ class UserContactsComponent {
   }
 
   refreshContacts() {
+    this.contacts = UserContactsComponent.contactsCached
     return this.contactService.getContacts(this.activePublicKey).then(contacts => {
       this.contacts = contacts
+      UserContactsComponent.contactsCached = contacts
       if (this.getActivePublicKeyParam() == "0") this.updateActivePublicKey()
 
       // fill contacts unreadStatuses

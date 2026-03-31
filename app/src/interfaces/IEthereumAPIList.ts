@@ -18,7 +18,6 @@ interface IEthereumAPIList {
   getProviderName(): string
 
   getEndPoint(): string
-
 }
 
 interface EthplorerTokenInfo {
@@ -129,4 +128,6 @@ interface EthplorerTxInfo {
   gasLimit: string
   // gas used for this transaction
   gasUsed: string
+  //token operations
+  operations?: any[]
 }

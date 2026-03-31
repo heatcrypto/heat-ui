@@ -32,6 +32,7 @@ interface EthplorerAddressTransactionExtended extends EthplorerAddressTransactio
     }
   }
   ethereumSpecific?: any
+  operations?: any[]
 }
 
 declare type JSONTokenMap = {[address:string]:{symbol:string,decimal:number}}

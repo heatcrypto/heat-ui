@@ -60,7 +60,7 @@ class BtcBlockExplorerService {
     this.cachedGetCachedAccountBalance.get(address).finally(() => {
       setTimeout(() => {
         this.cachedGetCachedAccountBalance.set(address, null);
-      }, 5 * 60 * 1000)
+      }, 60 * 1000)
     })
     return this.cachedGetCachedAccountBalance.get(address)
   }

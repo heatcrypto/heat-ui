@@ -274,24 +274,21 @@ namespace wlt {
         let btcBlockExplorerService: BtcBlockExplorerService = heat.$inject.get('btcBlockExplorerService')
 
         cb.refresh = () => {
+          let f = (balance) => {
+            cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
+            if (cb.balance) {
+              let pendingAmount = pendingService.getPendingAmount(cb.address)
+              cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
+            }
+            return cb.balance
+          }
           return btcBlockExplorerService.getBalance(walletAddress.address).then(balance => {
                 cb.stateMessage = null
-                cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
-                if (cb.balance) {
-                  let pendingAmount = pendingService.getPendingAmount(cb.address)
-                  cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
-                }
-                return cb.balance
+                return f(balance)
               },
               reason => {
                 return wlt.getSavedCurrencyBalance(walletAddress.address, "BTC").then(r => {
-                  let balance = r.confirmed
-                  cb.balance = balance ? new Big(balance).div(SATOSHI_PER_BTC).toString() : ''
-                  if (cb.balance) {
-                    let pendingAmount = pendingService.getPendingAmount(cb.address)
-                    cb.balance = String(parseFloat(cb.balance) - parseFloat(pendingAmount))
-                  }
-                  return cb.balance
+                  return f(r.confirmed)
                 })
               }
           )

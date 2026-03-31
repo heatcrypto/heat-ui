@@ -9,9 +9,9 @@ class BTCCurrency implements ICurrency {
         ? 0
         : existing[existing.length - 1].index + 1
     let bitcoreService = <BitcoreService> heat.$inject.get('bitcoreService')
-    let nativeSegwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, true, nextIndex)
-    let segwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, false, nextIndex)
-    let legacyAddress = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, nextIndex)
+    let nativeSegwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, BitcoreService.BIP84_PATH(), nextIndex)
+    let segwitAddress = bitcoreService.generateSegwitBitcoinAddresses(walletEntry.secretPhrase, BitcoreService.BIP49_PATH(), nextIndex)
+    let legacyAddress = bitcoreService.generateBitcoinAddress(walletEntry.secretPhrase, BitcoreService.BIP44_PATH(), nextIndex)
     return new Promise<WalletAddress>((resolve, reject) => {
       return selectItem(`Select desired address #${nextIndex || ""}`,
           [["Native Segwit: " + nativeSegwitAddress[0].address, nativeSegwitAddress[0]],
@@ -54,6 +54,19 @@ class BTCCurrency implements ICurrency {
 
   /* Returns the currency balance, fraction is delimited with a period (.) */
   getBalance(): angular.IPromise<string> {
+    let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.address)
+    if (cb) {
+      this.recentBalance.unconfirmed = cb.balance
+      return this.btcBlockExplorerService.getBalance(this.address).then(
+        balanceSat => {
+          // todo save actual balance (if it is changed)
+          this.recentBalance.confirmed = String(new Big(balanceSat).div(wlt.SATOSHI_PER_BTC))
+          return this.recentBalance.confirmed
+        }
+      ).finally(() => this.format(this.recentBalance.confirmed))
+    }
+
+    // old way
     return wlt.getSavedCurrencyBalance(this.address, this.symbol)
         .then(b => {
           this.recentBalance.confirmed = b.confirmed ? new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed() : null
@@ -314,11 +327,11 @@ class BTCCurrency implements ICurrency {
 
       this.okButtonClick = function ($event) {
         vm.disableOKBtn = true
+        //Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(  // for test
         self.bitcoreService.sendBitcoins(vm.data.rawTx).then(
-        //for test: Promise.resolve({txId: heat.crypto.hash(Math.random().toString()), message: 'test'}).then(
           data => {
             let sendingResult =
-                Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.fee})
+                Object.assign(data, {paymentMessageMethod: vm.paymentMessageMethod, amount: vm.data.amount, fee: vm.data.txnFee})
             $mdDialog.hide(sendingResult).then(() => {
               data.message = vm.data.message;
               dialogs.alert(event, 'Success', `TxId: ${data.txId}`);
@@ -405,7 +418,7 @@ class BTCCurrency implements ICurrency {
         let txObject = createTxObject(true)
         btcBlockExplorerService.getBalance(txObject.from, false).then(value => {
           let satoshiAmount = value - vm.data.txnFeeSatoshi
-          vm.data.amount = new Big(satoshiAmount).div(wlt.SATOSHI_PER_BTC).toFixed(8)
+          vm.data.amount = new Big(satoshiAmount).div(wlt.SATOSHI_PER_BTC).toFixed()
           calculateRawTxDebounced()
         })
       }
@@ -551,7 +564,7 @@ class BTCCurrency implements ICurrency {
             <md-toolbar>
               <div class="md-toolbar-tools">
                 <h2>Send BTC</h2>
-                <span style="margin-left: 20px;color: grey;font-size: small;">from 
+                <span style="margin-left: 20px;color: grey;font-size: small;">from
                 <span style="color: darkgrey;font-family: monospace;"> {{vm.data.sender}}</span>
                 </span>
               </div>

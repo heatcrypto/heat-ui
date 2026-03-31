@@ -125,9 +125,13 @@
 
             <!-- MEMO -->
             <div ng-if="item.message" class="truncate-col left" flex>
+                <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">
+                    <md-icon md-font-library="material-icons" style="margin-top: 8px; font-size: 15px; color: currentColor">edit</md-icon></a>
                 <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
-                {{item.message.text}}
-                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+                <span>
+                    {{item.message.text}}
+                    <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+                </span>
             </div>
             <span ng-if="!item.message" class="truncate-col left">
               <a class="pointer" ng-click="vm.paymentMemoDialog($event, item)">create</a>
@@ -196,14 +200,17 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
           transaction['renderedToFrom'] = this.renderer.renderedToFrom(transaction);
         }
 
-        let renderedInfo = this.renderer.renderInfo(transaction);
-        if (angular.isString(renderedInfo)) {
-          transaction['renderedInfo'] = renderedInfo;
-        } else if (angular.isObject(renderedInfo)) {
-          renderedInfo.then((text) => {
-            transaction['renderedInfo'] = text;
-          })
-        }
+        // give time to load the data before render
+        setTimeout(() => {
+          let renderedInfo = this.renderer.renderInfo(transaction);
+          if (angular.isString(renderedInfo)) {
+            transaction['renderedInfo'] = renderedInfo;
+          } else if (angular.isObject(renderedInfo)) {
+            renderedInfo.then((text) => {
+              transaction['renderedInfo'] = text;
+            })
+          }
+        }, 777)
 
         //processed item has message value or null so undefined only should be processed
         if (transaction['message'] === undefined) {
@@ -272,7 +279,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
   paymentMemoDialog($event, item) {
     let heatService = <HeatService>heat.$inject.get('heat')
     return wlt.getHeatUnavailableReason(heatService, this.user.account)
-        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.hash, heatUnavailableReason))
+        .then(heatUnavailableReason => wlt.paymentMemoDialog(item.hash, heatUnavailableReason, item.message))
         .then(paymentMessage => {
           if (paymentMessage) {
             item.message = paymentMessage // to display message
@@ -424,14 +431,22 @@ class EthTransactionRenderer {
     key = this.TYPE_ERC20_TRANSFER
     this.transactionTypes[key] = 'ERC20 TRANSFER';
     this.renderers[key] = new EthTransactionRenderHelper(
-      "$status<b>ERC20 TRANSFER</b> Send $value $token from $from to $to",
+      "$status<b>ERC20 TRANSFER</b> $value $token from $from to $to",
       (t) => {
+        let amountStr, toStr
+        if (t.operations) {
+          amountStr = utils.formatERC20TokenAmount(t.operations[0].value, t.operations[0].decimals)
+          toStr = t.operations[0].to
+        } else if (t.abi.decodedData) {
+          amountStr = this.amount(t.abi.decodedData?.params[1].value, this.ethBlockExplorerService.tokenInfoCache[t.to])
+          toStr = this.account(t.abi.decodedData?.params[0].value || t.operations ? t.operations[0].to : null)
+        }
         return {
           status: this.status(t),
           token: this.token(t.to),
           from: this.account(t.from),
-          to: this.account(t.abi.decodedData.params[0].value),
-          value: this.amount(t.abi.decodedData.params[1].value, this.ethBlockExplorerService.tokenInfoCache[t.to])
+          to: toStr,
+          value: amountStr
         }
       }
     );
@@ -579,10 +594,11 @@ class EthTransactionRenderer {
     let key = this.TYPE_ETHEREUM_TRANSFER
     if (transaction.abi && transaction.abi.decodedData) {
       key = transaction.abi.decodedData.name
+    } else if (transaction.operations?.length > 0) {
+      key = transaction.operations[0].type
     }
-    var renderer = this.renderers[key];
-    if (renderer)
-      return renderer.render(transaction);
+    let renderer = this.renderers[key];
+    if (renderer) return renderer.render(transaction);
     return `not supported ${key}`;
   }
 

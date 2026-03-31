@@ -53,14 +53,8 @@ module utils {
   }
 
   export function isNumber(value: string) {
-    var num = String(value).replace(/,/g,'');
-    if(num.match(/^\d+$/)) {
-      return true;
-    }
-    else if(num.match(/^\d+\.\d+$/)) {
-      return true;
-    }
-    return false;
+    let s = String(value).replace(/,/g,'').trim()
+    return /^[+-]?\d+(\.\d+)?$/.test(s)
   }
 
   export function isHex(value: string) {
@@ -480,6 +474,12 @@ module utils {
     },
     fullExport: () => {
       return wltStandalone.exportLocalstorage()
+    },
+    printAccountName: (account) => {
+      account = account?.trim()
+      return db.getWalletEntry(account).then(entry => {
+        console.log(entry ? `${account}: [${entry.name}]` : `${account} not found`)
+      })
     },
     tmp: () => {
       Object.keys(localStorage).forEach(key => {

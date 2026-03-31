@@ -50,7 +50,7 @@ type PendingType = {
           </div>
           <div class="col-item">
             <div class="title">
-              Balance: <md-progress-circular md-mode="indeterminate" md-diameter="20px" ng-show="vm.busy"></md-progress-circular>
+              Balance:
             </div>
             <div class="value" ng-if="vm.balanceUnconfirmed && vm.balanceUnconfirmed != vm.balance">
               {{vm.balanceUnconfirmed}} BTC
@@ -188,29 +188,37 @@ class BitcoinAccountComponent {
     })
   }
 
+  formatBalance(balance: string, scaleFromSatoshi = false) {
+    return scaleFromSatoshi
+      ? new Big(balance).div(wlt.SATOSHI_PER_BTC).round(8).toString()
+      : new Big(balance).round(8).toString()
+  }
+
   refresh() {
     this.busy = true
     let cb = wlt.currencyBalanceCache.get(this.user.account + '-' + this.account)
 
-    let getSaved = () => {
+    let getSaved = (confirmed = true, unconfirmed = true) => {
       wlt.getSavedCurrencyBalance(this.account, "BTC").then(b => {
         this.$scope.$evalAsync(() => {
-          if (!angular.isUndefined(b.confirmed)) this.balance = new Big(b.confirmed).div(wlt.SATOSHI_PER_BTC).toFixed()
-          if (!angular.isUndefined(b.unconfirmed)) this.balanceUnconfirmed = new Big(b.unconfirmed).div(wlt.SATOSHI_PER_BTC).toFixed()
+          if (confirmed && !angular.isUndefined(b.confirmed)) this.balance = this.formatBalance(b.confirmed, true)
+          if (unconfirmed && !angular.isUndefined(b.unconfirmed)) this.balanceUnconfirmed = this.formatBalance(b.unconfirmed, true)
         })
       })
     }
 
+    getSaved()
+
     if (cb?.refresh) {
       cb.refresh().then(balanceAmount => {
-        this.balanceUnconfirmed = balanceAmount
-        getSaved()
+        if (utils.isNumber(balanceAmount)) this.balanceUnconfirmed = this.formatBalance(balanceAmount)
+        getSaved(true, false)
         this.busy = false
       })
     } else {
       this.btcBlockExplorerService.getBalance(this.account).then(b => {
         this.$scope.$evalAsync(() => {
-          this.balance = new Big(b).div(wlt.SATOSHI_PER_BTC).toFixed()
+          this.balance = this.formatBalance(String(b), true)
           this.busy = false
         })
       }).finally(getSaved)

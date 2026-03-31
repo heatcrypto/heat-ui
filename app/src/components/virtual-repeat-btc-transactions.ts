@@ -50,25 +50,33 @@
 <!--             <span>{{item.from}}</span>-->
              <a href="#/bitcoin-account/{{item.from}}">{{vm.account == item.from ? 'Myself' : item.from}}</a>
             </div>
+
             <!-- TO -->
             <div class="truncate-col message-col left">
 <!--              <span>{{item.to}}</span>-->
-              <a href="#/bitcoin-account/{{item.to}}">{{vm.account == item.to ? 'Myself' : item.to}}</a>
+              <a ng-if = "item.to !== vm.MULT_OUTS" href="#/bitcoin-account/{{item.to}}">{{vm.account == item.to ? 'Myself' : item.to}}</a>
+              <span ng-if = "item.to == vm.MULT_OUTS">{{item.to}}</span>
             </div>
+
             <!-- AMOUNT -->
             <div class="truncate-col amount-col right">
               <span>{{item.amount}}</span>
             </div>
+
             <!-- MEMO -->
             <div ng-if="item.message" class="truncate-col message-col left" flex>
-                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span> 
-                {{item.message.text}}
-                <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+                <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">
+                    <md-icon md-font-library="material-icons" style="margin-top: 8px; font-size: 15px; color: currentColor">edit</md-icon></a>
+                <span style="opacity: 0.5">[{{item.message.method == 0 ? "local" : "HEAT"}}]</span>
+                <span>
+                    {{item.message.text}}
+                    <md-tooltip md-delay="800">{{item.message.text}}</md-tooltip>
+                </span>
             </div>
             <span ng-if="!item.message" class="truncate-col message-col left">
               <a href="javascript:void(0);" ng-click="vm.paymentMemoDialog($event, item)">create</a>
             </span>
-            
+
             <!-- JSON -->
             <div class="truncate-col json-col">
               <a ng-click="vm.jsonDetails($event, item.json, item)">
@@ -86,6 +94,8 @@
 class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
 
   account: string; // @input
+
+  MULT_OUTS =  'Multiple Outputs'
 
   constructor(protected $scope: angular.IScope,
               protected $q: angular.IQService,
@@ -171,7 +181,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
         }
         // if change address was different then show hardcoded output
         if (!outputs.includes(this.account) && transaction.vout.length > 1) {
-          transaction.to = 'Multiple Outputs'
+          transaction.to = this.MULT_OUTS
         }
 
         //processed item has message value or null so undefined only should be processed
@@ -221,7 +231,7 @@ class VirtualRepeatBtcTransactionsComponent extends VirtualRepeatComponent {
     paymentMemoDialog($event, item) {
         let heatService = <HeatService>heat.$inject.get('heat')
         wlt.getHeatUnavailableReason(heatService, this.user.account)
-            .then(heatUnavailableReason => wlt.paymentMemoDialog(item.txid, heatUnavailableReason))
+            .then(heatUnavailableReason => wlt.paymentMemoDialog(item.txid, heatUnavailableReason, item.message))
             .then(paymentMessage => {
                 if (paymentMessage) {
                     item.message = paymentMessage // to display message

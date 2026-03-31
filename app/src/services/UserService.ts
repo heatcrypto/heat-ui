@@ -74,7 +74,7 @@ class UserService extends EventEmitter {
   }
 
   //public accountNameIsPrivate: boolean;
-  public __accountNameIsPrivate: boolean;
+  private __accountNameIsPrivate: boolean;
   get accountNameIsPrivate() {
     return this.__accountNameIsPrivate
   }
@@ -158,8 +158,7 @@ class UserService extends EventEmitter {
     this.$rootScope.$evalAsync(()=> {
       /* Now all ng-if="vn.user.unlocked" are destroyed */
       this.$rootScope.$evalAsync(()=> {
-        if(key)
-          this.key = key;
+        if(key) this.key = key
 
         this.unlocked = true;
         this.accountName = '[no name]';
@@ -202,12 +201,14 @@ class UserService extends EventEmitter {
 
   lock(noreload?:boolean) {
     this.key = null
-    this.secretPhrase = null;
-    this.unlocked = false;
-    this.account = null;
+    this.secretPhrase = null
+    this.unlocked = false
+    this.account = null
+    this.accountName = null
+    this.accountNameIsPrivate = null
     this.currency = null
     this.bip44Compatible = false
-    this.emit(UserService.EVENT_LOCKED);
+    this.emit(UserService.EVENT_LOCKED)
     if (noreload) return
     dialogs.showProgressMessage(null, "Signing out")
     setTimeout(() => window.location.reload(), 2000)
@@ -226,8 +227,16 @@ class UserService extends EventEmitter {
       this.accountNameIsPrivate = match[1] == 'private';
       this.accountName = match[2];
 
+      //remove private name from local db
+      //in future this code will be obsolete
+      if (this.accountNameIsPrivate && this.accountName) {
+        db.getWalletEntry(this.account).then(entry => {
+          if (this.account != entry?.name) return db.saveWalletEntry(this.account, {name: this.account})
+        })
+      }
+
       // update local wallet name
-      if (this.key && this.key.name != this.accountName) {
+      if (!this.accountNameIsPrivate && this.key && this.key.name != this.accountName) {
         this.key.name = this.accountName;
         this.localKeyStore.put(this.key);
       }

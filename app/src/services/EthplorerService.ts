@@ -135,7 +135,6 @@ class EthplorerTransactionPaginator {
 @Service('ethplorer')
 @Inject('$q', 'http', 'settings','web3')
 class EthplorerService implements IEthereumAPIList{
-
   private providerName = 'Ethplorer'
   public tokenInfoCache: { [key: string]: EthplorerTokenInfo } = {}
   private cachedGetCachedAddressInfo: { [address: string]: any } = {}
@@ -258,13 +257,19 @@ class EthplorerService implements IEthereumAPIList{
     let url = `${EthplorerService.endPoint}/getAddressTransactions/${address}?${this.apiKey}&limit=${specificParams?.limit || 50}&timestamp=${timestamp}&showZeroValues=${showZeroValues}`
     this.http.get(url)
         .then((response) => {
-          var parsed = angular.isString(response) ? JSON.parse(response) : response;
+          let parsed = angular.isString(response) ? JSON.parse(response) : response;
           if (parsed.error) {
             console.log(`Ethplorer Error: ${JSON.stringify(parsed)}`)
             deferred.resolve([])
-          }
-          else {
-            deferred.resolve(parsed);
+          } else {
+            parsed?.forEach(tx => {
+              /* Is recipient a token contract address ? */
+              let tokenInfo = this.tokenInfoCache[tx.to]
+              if (tokenInfo) {
+                this.fillTokenInfo(tx)
+              }
+            })
+            deferred.resolve(parsed)
           }
         }, (reason) => {
           //console.log(`HTTP reject for ${url}`)
@@ -304,6 +309,23 @@ class EthplorerService implements IEthereumAPIList{
           deferred.reject(error)
         });
     return deferred.promise
+  }
+
+  fillTokenInfo(tx): void {
+    this.getTxInfo(tx.hash).then((info) => {
+      if (info.operations) {
+        tx.operations = info.operations.map(op => ({
+          orig: op,
+          type: op.type,
+          from: op.from,
+          to: op.to,
+          value: op.value,
+          decimals: op.tokenInfo?.decimals,
+          name: op.tokenInfo?.name,
+          symbol: op.tokenInfo?.symbol
+        }))
+      }
+    })
   }
 
   /* This is just a temporory fix to see if Ethplorer APIs are functional */
