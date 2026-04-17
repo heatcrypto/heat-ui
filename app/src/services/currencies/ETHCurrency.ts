@@ -35,6 +35,12 @@ type ERC20TokensType = Array<TokenDescriptor>
 
 class ETHCurrency extends EventEmitter implements ICurrency {
 
+  /**
+   * disable cache for address: set(address, endTime)
+   */
+  public static cacheOff = new Map<string, number>
+  static CACHE_OFF_DURATION = 120_000
+
   private ethBlockExplorerService: EthBlockExplorerService
   public symbol = wlt.CURRENCIES.Ethereum.symbol
   public homePath
@@ -314,6 +320,8 @@ class ETHCurrency extends EventEmitter implements ICurrency {
         vm.broadcastProvider.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
+              ETHCurrency.cacheOff.set(vm.data.sender, Date.now() + ETHCurrency.CACHE_OFF_DURATION) // do not use cached address info during interval
+              ETHCurrency.cacheOff.set(vm.data.recipient, Date.now() + ETHCurrency.CACHE_OFF_DURATION)
               result.message = vm.data.message
               let amount = transferDescriptor == 'ETH' ? vm.data.amount.replace(',','') : '0'
               let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod, amount, fee: vm.data.fee})

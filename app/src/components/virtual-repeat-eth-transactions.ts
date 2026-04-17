@@ -223,7 +223,7 @@ class VirtualRepeatEthTransactionsComponent extends VirtualRepeatComponent {
     ).catch(reason => console.warn("initialization eth list component error " + (reason ? JSON.stringify(reason) : "")))
 
     let refresh = utils.debounce(angular.bind(this, this.determineLength), 500, false)
-    let interval = setInterval(refresh, 60 * 1000)
+    let interval = setInterval(refresh, 30 * 1000)
 
     let listener = this.updateOnNewTransaction.bind(this)
     this.ethereumPendingTransactions.addListener(listener)
