@@ -22,14 +22,14 @@
           "host": "http://localhost",
           "port": 7733,
           "websocket": "ws://localhost:7755/ws/",
-          "priority": 3
+          "priority": 0
         }
       ],
-      "signalingUrl": "wss://heatwallet.com:7755/ws/",
+      "signalingUrl": "wss://localhost:7755/ws/",
       "messaging": {
-        "host": "https://heatwallet.com",
-        "port": 7734,
-        "websocket": "wss://heatwallet.com:7755/ws/"
+        "host": "http://localhost",
+        "port": 7733,
+        "websocket": "ws://localhost:7755/ws/"
       }
     },
     "testnet": {
