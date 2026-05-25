@@ -39,7 +39,7 @@
         //padding: 4px;
         //margin: 4px;
         background-color: #b0ffb07a;
-        min-width: 5px;    
+        min-width: 5px;
         min-height: 16px;
         max-height: 16px;
         white-space: nowrap;
@@ -51,7 +51,7 @@
         //padding: 4px;
         //margin: 4px;
         background-color: #7175f552;
-        min-width: 5px;    
+        min-width: 5px;
         min-height: 16px;
         max-height: 16px;
         white-space: nowrap;
@@ -64,19 +64,19 @@
         margin: 2px;
         //background-color: rgb(255 60 30 / 0.45);
         min-width: 5px;
-        max-width: 320px;    
+        max-width: 320px;
         height: 3px;
         white-space: nowrap;
     }
     .speed {
-        -webkit-transition: all 3s; 
-        -moz-transition: all 3s; 
-        -ms-transition: all 3s; 
-        -o-transition: all 3s; 
-        transition: all 3s;  
+        -webkit-transition: all 3s;
+        -moz-transition: all 3s;
+        -ms-transition: all 3s;
+        -o-transition: all 3s;
+        transition: all 3s;
     }
     .connected {
-        color: springgreen;  
+        color: springgreen;
     }
     .stats {
       display: grid;
@@ -89,11 +89,11 @@
 
     .feeder-timeline {
         font-family: monospace;
-        -webkit-transition: all 3s; 
-        -moz-transition: all 3s; 
-        -ms-transition: all 3s; 
-        -o-transition: all 3s; 
-        transition: all 3s ease-in-out;  
+        -webkit-transition: all 3s;
+        -moz-transition: all 3s;
+        -ms-transition: all 3s;
+        -o-transition: all 3s;
+        transition: all 3s ease-in-out;
     }
     .last-feeder {
         background-color: rgb(255 128 171 / 40%);
@@ -272,7 +272,7 @@ class PeersComponent {
     }
 
     formatBytes(value: number) {
-        return utils.formatBytes(value, value > 1024 * 1024 * 1024 ? 2 : 0)
+        return utils.formatBytes(value)
     }
 
 }

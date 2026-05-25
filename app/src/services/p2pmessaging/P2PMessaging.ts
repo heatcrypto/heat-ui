@@ -112,7 +112,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         peerId => this.processIncomingCall(peerId),
         (reason, protocol) => this.onError(reason, protocol),
         dataHex => this.sign(dataHex),
-        (message, peerPublicKey) => this.encrypt(message, peerPublicKey),
+        (data, peerPublicKey) => this.encrypt(data, peerPublicKey),
         (message: heat.crypto.IEncryptedMessage, peerPublicKey: string) => this.decrypt(message, peerPublicKey),
         protocols
       )
@@ -153,14 +153,13 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
   onMessage(msg: p2p.U2UMessage, room: p2p.Room) {
     this.displayNewMessagePopup(msg, room)
     this.contactService.getContacts().then(contacts => {
-      let c = contacts.find(v => v.publicKey == msg.fromPeerId)
-      if (!c) {
-        let senderAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
-        if (senderAccount) {
-          this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
-        }
+      let senderAccount= heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
+      let fromContact = contacts.find(v => v.publicKey == msg.fromPeerId)
+      if (!fromContact) {
+        this.contactService.saveContact(msg.fromPeerId, null, -Date.now(), true)
       }
-    }).then(() => {
+      return {senderAccount, senderPublicName: fromContact?.publicName}
+    }).then(sender => {
       if (msg.type == "contactUpdate") {
         let parsedMessage = JSON.parse(msg.text)
         let contactAccount = heat.crypto.getAccountIdFromPublicKey(msg.fromPeerId)
@@ -176,8 +175,74 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
           }
         })
       }
+      return sender
+    }).then(sender => {
+      if (msg.type == "file" && msg.transport == "p2p") {
+        let decrypted: ArrayBuffer = <ArrayBuffer>this.decrypt(msg.data, msg.fromPeerId)
+        let uint8Array = new Uint8Array(decrypted)
+        const view = new DataView(uint8Array.buffer)
+        let fileSize = view.getInt32(4, true)
+        let decoder = new TextDecoder('utf-8')
+        let fileNameEndIndex= view.getInt32(0, true)
+        let fileName = decoder.decode(uint8Array.subarray(8, fileNameEndIndex))
+        let fileContent = uint8Array.subarray(fileNameEndIndex)
+        this.saveP2PFile(fileContent, room, msg.id, {fileName: fileName, fileSize: fileSize, fileSender: sender})
+      }
     }).then(() => this.emit(P2PMessaging.EVENT_NEW_MESSAGE, msg, room))
     .catch(reason => console.error(reason))
+  }
+
+  /**
+   * Save file in case of p2p transport sent file
+   */
+  saveP2PFile(fileContent: ArrayBuffer, room: p2p.Room,
+              fileTransferMessageId: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: { senderAccount: string; senderPublicName: string } },
+              fileSavedCallback?: Function): any {
+    let fileSizeStr= utils.formatBytes(fileDescriptor.fileSize)
+    let fs = fileDescriptor.fileSender
+    let senderPubName= fs.senderPublicName == fs.senderAccount || !fs.senderPublicName ? '' : fs.senderPublicName
+    dialogs.confirm(
+      "Save incoming file",
+      `Account <b>${fileDescriptor.fileSender.senderAccount}  ${senderPubName}</b><br>
+            sent you the file <br>${fileDescriptor.fileName}<br> size ${fileSizeStr}<br> using direct channel.<br>
+            Do you want to save the file on your device?`
+    ).then(() => {
+      saveAs(new Blob([fileContent], {type: "text/text"}), fileDescriptor.fileName)
+      setTimeout(() => {
+        // todo inform sender the file is accepted   this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
+        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 2, 'status.stage': 2})
+        if (fileSavedCallback) fileSavedCallback()
+      }, 250)
+    }, reason => {
+      // file is not accepted by user
+      room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 1, 'status.stage': 2})
+    })
+  }
+
+  onFile(fileContent: string | ArrayBuffer | heat.crypto.IEncryptedMessage, room: p2p.Room,
+         fileTransferMessageId: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
+         fileSavedCallback?: Function): any {
+    let encryptedMessage: heat.crypto.IEncryptedMessage
+    if (fileContent instanceof ArrayBuffer) {
+      encryptedMessage = JSON.parse(converters.arrayBufferToString(fileContent))
+    } else if (typeof fileContent === "string") {
+      encryptedMessage = JSON.parse(fileContent)
+    } else {
+      encryptedMessage = fileContent
+    }
+    let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
+
+    dialogs.confirm(
+      "Save file",
+      "Note the file will be deleted on the server after you confirm this.<br>Do you want to save the file on your device?"
+    ).then(() => {
+      saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
+      setTimeout(() => {
+        this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
+        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 2, 'status.stage': 2})
+        if (fileSavedCallback) fileSavedCallback()
+      }, 250)
+    })
   }
 
   sendFile(messageId: string, file: File, recipientPublicKey: string) {
@@ -211,27 +276,6 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
         ).hideDelay(6000))
       })
     }
-  }
-
-  onFile(fileContent: string | ArrayBuffer, room: p2p.Room,
-         fileTransferMessageId: string, fileDescriptor: { fileName: string; fileSize: number; fileSender: string },
-         fileSavedCallback?: Function): any {
-    let encryptedMessage: heat.crypto.IEncryptedMessage = typeof fileContent === "string"
-      ? JSON.parse(fileContent)
-      : JSON.parse(converters.arrayBufferToString(fileContent))
-    let buffer = <ArrayBuffer>this.decrypt(encryptedMessage, fileDescriptor.fileSender)
-
-    dialogs.confirm(
-      "Save file",
-      "Note the file will be deleted on the server after you confirm this.<br>Do you want to save the file on your device?"
-    ).then(() => {
-      saveAs(new Blob([buffer], {type: "text/text"}), fileDescriptor.fileName)
-      setTimeout(() => {
-        this.u2uProtocol.sendFileIsReceived(fileTransferMessageId)
-        room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 2, 'status.stage': 2})
-        if (fileSavedCallback) fileSavedCallback()
-      }, 250)
-    })
   }
 
   onServerMessageRemoved(messages: RemoveMessageDoneAccumulator): void {

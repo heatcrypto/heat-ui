@@ -701,8 +701,8 @@ module p2p {
         return `Message validation error: ${validateResult}`
       }
 
-      room.onMessageInternal(msg);
-      this.messenger.onMessage(msg, room);
+      room.onMessageInternal(msg)
+      this.messenger.onMessage(msg, room)
     }
 
     /**

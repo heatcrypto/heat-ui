@@ -39,27 +39,24 @@ module p2p {
     //Message can be transported via blockchain or via p2p (webrtc) or via node. Set the value when a message is received
     transport?: TransportType
 
-    constructor(type: MessageType, timestamp: number, text?: string, file?: File) {
+    constructor(type: MessageType, timestamp: number, text?: string, file?: File, promiseWrapper?: PromiseLike<any>[]) {
       this.type = type;
       this.timestamp = timestamp;
 
       if (file) {
         this.text = `${file.size} | ${file.name}`
-        // this.ready = file.arrayBuffer().then(buffer => {
-        //   /*
-        //   //header format:  0: header length  1: file size in bytes  2: file name
-        //   let fileNameBuffer = converters.stringToArrayBuffer(file.name)
-        //   let headerLength = 4 + 4 + fileNameBuffer.byteLength
-        //   let header = converters.concatenate(
-        //     new Uint32Array([headerLength, file.size]).buffer,
-        //     fileNameBuffer
-        //   )
-        //   let messageContentBuffer = converters.concatenate(header, buffer)
-        //   this.text = converters.arrayBufferToString(messageContentBuffer)
-        //   */
-        //   this.data = buffer
-        //   this.text = `${file.size} | ${file.name}`
-        // })
+        promiseWrapper[0] = file.arrayBuffer().then(buffer => {
+          //header format:  0: header length  1: file size in bytes  2: file name
+          let fileNameBuffer = converters.stringToArrayBuffer(file.name)
+          let headerLength = 4 + 4 + fileNameBuffer.byteLength
+          let header = converters.concatenate(
+            new Uint32Array([headerLength, file.size]).buffer,
+            fileNameBuffer
+          )
+          // let messageContentBuffer = converters.concatenate(header, buffer)
+          // this.text = converters.arrayBufferToString(messageContentBuffer)
+          this.data = converters.concatenate(header, buffer)
+        })
       } else {
         if (text?.length > MESSAGE_TEXT_MAX_SIZE) {
           throw new Error(`Text length ${text.length} is too big, the length is limited to ${MESSAGE_TEXT_MAX_SIZE}`)
@@ -121,12 +118,18 @@ module p2p {
     sendFiles(files: File[], recipientPublicKey: string) {
       for (const file of files) {
         if (file.size > 0) {
-          let m = new p2p.U2UMessage("file", Date.now(), null, file)
-          this.connector.messenger.sendFile(m.id, file, recipientPublicKey).then(responseStatusMessage => {
-            if (typeof responseStatusMessage == "string" && responseStatusMessage.toUpperCase() == "OK") {
-              this.sendMessage(m)
-            }
-          })
+          let p: PromiseLike<any>[] = [null]
+          let message = new p2p.U2UMessage("file", Date.now(), null, file, p)
+          p[0].then(() => {
+            let result = this.connector.sendMessage(this.key, message)
+            return this.registerInHistory(true, message, result)
+          }, reason => console.error(reason))
+
+          // this.connector.messenger.sendFile(m.id, file, recipientPublicKey).then(responseStatusMessage => {
+          //   if (typeof responseStatusMessage == "string" && responseStatusMessage.toUpperCase() == "OK") {
+          //     this.sendMessage(m)
+          //   }
+          // })
         }
       }
     }

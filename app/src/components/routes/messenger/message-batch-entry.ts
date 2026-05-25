@@ -145,8 +145,8 @@ class MessageBatchEntryComponent {
       let delimiterPos = s?.indexOf("|")
       if (delimiterPos > 0) {
         this.fileDescriptor = {
-          fileName: s.substr(delimiterPos + 1).trim(),
-          fileSize: parseInt(s.substr(0, delimiterPos)),
+          fileName: s.substring(delimiterPos + 1).trim(),
+          fileSize: parseInt(s.substring(0, delimiterPos)),
           fileSender: this.message.fromPeer
         }
         if (this.io == 'incoming') {

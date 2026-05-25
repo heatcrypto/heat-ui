@@ -56,7 +56,7 @@
           </md-button>
         </form>
         <textarea hide-xs ng-model="vm.messageText" flex rows="3" class="edit-message-textarea"
-          ng-class="{'room-registered': vm.p2pMessaging.contactStatus(vm.publickey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online', 
+          ng-class="{'room-registered': vm.p2pMessaging.contactStatus(vm.publickey)=='roomRegistered' && vm.p2pMessaging.onlineStatus == 'online',
             'offchain': vm.p2pMessaging.contactStatus(vm.publickey)=='channelOpened'}"
           ng-keypress="vm.onKeyPress($event)" placeholder="Hit ENTER key to send, SHIFT+ENTER for new line. &#10;Drag and drop file (max 2MB) here to encrypt and send instantly"></textarea>
       </div>
@@ -176,6 +176,12 @@ class EditMessageComponent {
       errorMessage = "Too many files, limit is 10"
     } else {
       for (const file of files) {
+        if (this.p2pMessaging.contactStatus(this.publickey)=='channelOpened') {
+          if (file.size > 64 * 1024) {
+            errorMessage = `File size of "${file.name}" is too big, limit is 64 KB for used direct channel`
+            break
+          }
+        }
         if (file.size > 2 * 1024 * 1024) {
           errorMessage = `File size of "${file.name}" is too big, limit is 2 MB`
           break

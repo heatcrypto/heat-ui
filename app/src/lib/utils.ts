@@ -250,11 +250,14 @@ module utils {
     return returnNullZero && !result.match(/[^0\.]/) ? null : result;
   }
 
-  export function formatBytes(bytes: number, decimals = 2) {
+  export function formatBytes(bytes: number, decimals?: number) {
     if (!+bytes) return '0 Bytes'
 
     const k = 1024
-    const dm = decimals < 0 ? 0 : decimals
+    let dm = decimals
+    if (!(dm >= 0)) {
+      dm = bytes > 1024 * 1024 * 1024 ? 2 : 0
+    }
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
 
     const i = Math.floor(Math.log(bytes) / Math.log(k))
