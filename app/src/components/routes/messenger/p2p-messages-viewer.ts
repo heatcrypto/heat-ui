@@ -144,6 +144,7 @@
       <div ng-if="item.status.fileIndicator == 2" class="file-status">File is downloaded</div>
       <div ng-if="item.status.fileIndicator == 3" class="file-status">downloading <elipses-loading></elipses-loading></div>
       <div ng-if="item.status.fileIndicator == 4" class="file-status">file download error</div>
+      <div ng-if="item.status.fileIndicator == 5" class="file-status">file is canceled</div>
     </div>
 </div>
 </div>

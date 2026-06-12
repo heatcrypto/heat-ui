@@ -215,7 +215,7 @@ class P2PMessaging extends EventEmitter implements p2p.P2PMessenger {
       }, 250)
     }, reason => {
       // file is not accepted by user
-      room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 1, 'status.stage': 2})
+      room.getMessageHistory().updateMessageStatus(fileTransferMessageId, {'status.fileIndicator': 5, 'status.stage': 2})
     })
   }
 

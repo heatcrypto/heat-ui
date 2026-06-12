@@ -106,6 +106,7 @@
         <p>{{vm.text}}</p>
         <p ng-if="vm.fileIndicator == 1"><a class="md-primary md-button md-ink-ripple" ng-click="vm.downloadFile()">download</a></p>
         <pre ng-if="vm.fileIndicator == 2">File is downloaded</pre>
+        <pre ng-if="vm.fileIndicator == 5">File is canceled</pre>
       </div>
     </div>
   `

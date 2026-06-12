@@ -161,7 +161,10 @@ class EditMessageComponent {
   }
 
   onDrop($event) {
-    if (!($event.dataTransfer.files && $event.dataTransfer.files.length > 0)) return
+    let files: File[] = $event.dataTransfer.files
+    let errorMessage
+
+    if (!($event.dataTransfer.files && files.length > 0)) return
 
     $event.preventDefault()
     if (this.p2pMessaging.onlineStatus != "online") {
@@ -170,24 +173,30 @@ class EditMessageComponent {
       )
       return;
     }
-    let files: File[] = $event.dataTransfer.files
-    let errorMessage
-    if (files.length > 10) {
-      errorMessage = "Too many files, limit is 10"
+
+    let isDirectChannel = this.p2pMessaging.contactStatus(this.publickey) == 'channelOpened'
+    if (isDirectChannel) {
+      if (files.length > 1) {
+        errorMessage = "Too many files, the limit is 1 because the direct channel is used"
+      } else {
+        let file = files[0]
+        if (file.size > 64 * 1024) {
+          errorMessage = `File size ${file.size} of "${file.name}" is too big, the limit is 64 KB because the direct channel is used`
+        }
+      }
     } else {
-      for (const file of files) {
-        if (this.p2pMessaging.contactStatus(this.publickey)=='channelOpened') {
-          if (file.size > 64 * 1024) {
-            errorMessage = `File size of "${file.name}" is too big, limit is 64 KB for used direct channel`
+      if (files.length > 10) {
+        errorMessage = "Too many files, the limit is 10"
+      } else {
+        for (const file of files) {
+          if (file.size > 2 * 1024 * 1024) {
+            errorMessage = `File size of "${file.name}" is too big, limit is 2 MB`
             break
           }
         }
-        if (file.size > 2 * 1024 * 1024) {
-          errorMessage = `File size of "${file.name}" is too big, limit is 2 MB`
-          break
-        }
       }
     }
+
     if (errorMessage) {
       this.$mdToast.show(
         this.$mdToast.simple().textContent(`File(s) is not accepted. ${errorMessage}`).hideDelay(3000)

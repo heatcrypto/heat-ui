@@ -142,6 +142,8 @@ module p2p {
           throw new Error("Received a message with a duplicate ID (previously there was a message with the same ID)");
         }
       }).then(() => {
+        //direct file transfer is not registered in the history as fileIndicator because of no need further actions
+        let fileIndicator = message.transport != "p2p" && !outgoing && message.type == "file" ? 1 : 0
         let item: MessageHistoryItem = {
           msgId: message.id,
           roomKey: this.key,
@@ -152,9 +154,9 @@ module p2p {
           fromPeer: outgoing ? this.user.publicKey : message.fromPeerId,
           content: message.text,
           transport: outgoing ? sendResult?.transport : message.transport,
-          status: {stage: 0, remark: '', fileIndicator: !outgoing && message.type == "file" ? 1 : 0}
+          status: {stage: 0, remark: '', fileIndicator: fileIndicator}
         }
-        if (outgoing && message.transport == "p2p" && sendResult?.count > 0) {
+        if (message.transport == "p2p" && outgoing && sendResult?.count > 0) {
           //webrtc message is sent, it means the channel is opened, it means that delivered
           item.status.stage = 1
         }
