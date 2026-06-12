@@ -108,7 +108,7 @@ class EditMessageComponent {
     }
   }
 
-  sendP2PMessage($event, files?: File[]) {
+  sendP2PMessage($event, files?: File[], isDirectChannel = false) {
     let notSentReason: string;
     let room = this.p2pMessaging.getOneToOneRoom(this.publickey)
     if (room) {
@@ -116,7 +116,7 @@ class EditMessageComponent {
       if (peer) {
         try {
           if (files) {
-            room.sendFiles(files, this.publickey)
+            room.sendFiles(files, this.publickey, isDirectChannel)
           } else {
             let count = room.sendMessage(new p2p.U2UMessage("chat", Date.now(), this.messageText))
             this.$scope.$evalAsync(() => this.messageText = '')
@@ -203,7 +203,8 @@ class EditMessageComponent {
       )
       return
     }
-    this.sendP2PMessage($event, files)
+
+    this.sendP2PMessage($event, files, isDirectChannel)
   }
 
   onDragover($event) {
