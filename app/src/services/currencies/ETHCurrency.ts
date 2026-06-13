@@ -35,6 +35,12 @@ type ERC20TokensType = Array<TokenDescriptor>
 
 class ETHCurrency extends EventEmitter implements ICurrency {
 
+  /**
+   * disable cache for address: set(address, endTime)
+   */
+  public static cacheOff = new Map<string, number>
+  static CACHE_OFF_DURATION = 120_000
+
   private ethBlockExplorerService: EthBlockExplorerService
   public symbol = wlt.CURRENCIES.Ethereum.symbol
   public homePath
@@ -178,6 +184,8 @@ class ETHCurrency extends EventEmitter implements ICurrency {
         rawTx: ''
       }
 
+      vm.formDisabled = null
+
       vm.generateTxnBytes = function (forceEnterNonce = false) {
         let gasPriceWei = Math.trunc(this.data.gasPrice * Web3Service.GWEI_SCALE)
         if (gasPriceWei < 1) {
@@ -258,6 +266,7 @@ class ETHCurrency extends EventEmitter implements ICurrency {
       }
 
       this.createTxnButtonClick = function ($event) {
+        vm.formDisabled = true
         let gasPrice = parseFloat(this.data.gasPrice)
         vm.gasPriceMessage = gasPrice > 11
             ? 'gas price is too high'
@@ -266,14 +275,24 @@ class ETHCurrency extends EventEmitter implements ICurrency {
 
         vm.data.rawTx = null
         vm.parsedTx = null
-        vm.generateTxnBytes(vm.enterNonceManually).then(rawTx => {
+        let p = vm.generateTxnBytes(vm.enterNonceManually).then(rawTx => {
           $scope.$evalAsync(() => {
             vm.stage = "broadcast"
             vm.data.rawTx = rawTx
             vm.parsedTx = decodeRawTxHex(rawTx)
+            vm.formDisabled = null
           })
           if (!rawTx) setTimeout(() => $scope.$evalAsync(() => {this.stage = "create"}), 500)
-        }).catch(reason => console.error(reason))
+        }).catch(reason => {
+          console.error(reason)
+          vm.formDisabled = null
+        })
+        utils.timeoutPromise(p, 8000).catch(reason => {
+          console.error(reason)
+          vm.formDisabled = null
+          vm.errorMessage = "Timeout of creation transaction bytes"
+          setTimeout(() => vm.errorMessage = null, 7000)
+        })
       }
 
       this.backButtonClick = function ($event) {
@@ -301,6 +320,8 @@ class ETHCurrency extends EventEmitter implements ICurrency {
         vm.broadcastProvider.broadcast(vm.data.rawTx).then(
           result => {
             if (result.txId) {
+              ETHCurrency.cacheOff.set(vm.data.sender, Date.now() + ETHCurrency.CACHE_OFF_DURATION) // do not use cached address info during interval
+              ETHCurrency.cacheOff.set(vm.data.recipient, Date.now() + ETHCurrency.CACHE_OFF_DURATION)
               result.message = vm.data.message
               let amount = transferDescriptor == 'ETH' ? vm.data.amount.replace(',','') : '0'
               let sendingResult = Object.assign(result, {paymentMessageMethod: vm.paymentMessageMethod, amount, fee: vm.data.fee})
@@ -415,6 +436,8 @@ class ETHCurrency extends EventEmitter implements ICurrency {
                 </span>
               </div>
             </md-toolbar>
+
+            <fieldset ng-disabled="!!vm.formDisabled" style="border: none">
             <md-dialog-content style="min-width:500px;max-width:600px" layout="column" layout-padding>
               <div flex layout="column" ng-if="vm.stage=='create'">
 
@@ -447,12 +470,12 @@ class ETHCurrency extends EventEmitter implements ICurrency {
                   <input ng-model="vm.data.gasLimit" ng-change="vm.gasChanged()" required name="gasLimit">
                 </md-input-container>
 
-                <p>
+                <md-input-container>
                   Fee: {{vm.data.fee}} ETH
                   <md-checkbox ng-model="vm.enterNonceManually" style="float:right">
                     Enter nonce manually
                   </md-checkbox>
-                </p>
+                </md-input-container>
               </div>
 
               <div ng-if="vm.errorMessage" class="has-error" style="color: orange;">
@@ -484,6 +507,7 @@ class ETHCurrency extends EventEmitter implements ICurrency {
               </md-input-container>-->
 
             </md-dialog-content>
+            </fieldset>
 
             <md-dialog-actions layout="row">
 <!--
@@ -502,7 +526,7 @@ class ETHCurrency extends EventEmitter implements ICurrency {
 
               <md-button class="md-warn" ng-click="vm.cancelButtonClick()" aria-label="Cancel">Cancel</md-button>
               <md-button class="md-warn" ng-if="vm.stage=='broadcast' || vm.stage=='insertedBytes'" ng-click="vm.backButtonClick()" aria-label="Back">Back</md-button>
-              <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn"
+              <md-button ng-if="vm.stage=='create'" ng-disabled="!vm.data.recipient || !vm.data.amount || vm.disableOKBtn || vm.formDisabled"
                   class="md-primary" ng-click="vm.createTxnButtonClick()" aria-label="Create">Next</md-button>
               <md-button ng-if="vm.stage=='create'"
                   class="md-primary" ng-click="vm.useTxBytesButtonClick()" aria-label="Use transaction bytes">Use transaction bytes</md-button>

@@ -78,7 +78,7 @@ class EthplorerTransactionPaginator {
     let deferred = this.$q.defer<number>();
 
     /* We have enough entries in our pool */
-    if (this.pool.length > minLength) {
+    if (this.pool.length > minLength && !(this.newTxsAdded > 0)) {
       deferred.resolve(this.pool.length)
     } else {
       /* Loads and stores in pool the next batch of 50 transactions */
@@ -188,8 +188,11 @@ class EthplorerService implements IEthereumAPIList{
      this is needed since both the virtual repeat and the erc20 token list call this method
      on page load and refresh */
   private getCachedAddressInfo(address: string): angular.IPromise<EthplorerAddressInfo> {
-    let v = this.cachedGetCachedAddressInfo[address]
-    if (v) return v
+    let cacheOffEnd = ETHCurrency.cacheOff.get(address) || 0
+    if (cacheOffEnd < Date.now()) {
+      let v = this.cachedGetCachedAddressInfo[address]
+      if (v) return v
+    }
 
     let deferred = this.$q.defer();
     this.cachedGetCachedAddressInfo[address] = deferred.promise
@@ -197,7 +200,7 @@ class EthplorerService implements IEthereumAPIList{
     this.cachedGetCachedAddressInfo[address].finally(() => {
       setTimeout(()=> {
         this.cachedGetCachedAddressInfo[address] = null
-      }, 60 * 1000)
+      }, 40 * 1000)
     })
     return this.cachedGetCachedAddressInfo[address]
   }
