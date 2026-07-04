@@ -199,7 +199,7 @@ class EditMessageComponent {
 
     if (errorMessage) {
       this.$mdToast.show(
-        this.$mdToast.simple().textContent(`File(s) is not accepted. ${errorMessage}`).hideDelay(3000)
+        this.$mdToast.simple().textContent(`File(s) is not accepted. ${errorMessage}`).hideDelay(9000)
       )
       return
     }
